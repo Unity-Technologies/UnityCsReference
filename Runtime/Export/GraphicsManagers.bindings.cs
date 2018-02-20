@@ -13,6 +13,7 @@ using ReflectionMode = UnityEngine.Rendering.DefaultReflectionMode;
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Camera/RenderSettings.h")]
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
     public sealed partial class RenderSettings : Object
     {
@@ -47,20 +48,10 @@ namespace UnityEngine
         extern public static float haloStrength   { get; set; }
         extern public static float flareStrength  { get; set; }
         extern public static float flareFadeSpeed { get; set; }
-    }
 
-    [NativeHeader("Runtime/Camera/RenderSettings.h")]
-    public sealed partial class RenderSettings : Object
-    {
         [FreeFunction("GetRenderSettings")] extern internal static Object GetRenderSettings();
-    }
-
-    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
-    public sealed partial class RenderSettings : Object
-    {
         [StaticAccessor("RenderSettingsScripting", StaticAccessorType.DoubleColon)] extern internal static void Reset();
     }
-
 
     [NativeHeader("Runtime/Graphics/QualitySettings.h")]
     [StaticAccessor("GetQualitySettings()", StaticAccessorType.Dot)]
@@ -99,17 +90,17 @@ namespace UnityEngine
 
         extern public static BlendWeights blendWeights   { get; set; }
 
+        extern public static bool streamingMipmapsFeatureEnabled { get; set; }
+        extern public static bool streamingMipmapsActive { get; set; }
+        extern public static float textureStreamingBudget { get; set; }
+        extern public static int   minStreamingMipLevel { get; set; }
+
+        [StaticAccessor("QualitySettingsScripting", StaticAccessorType.DoubleColon)] extern public static int maxQueuedFrames { get; set; }
 
         [NativeName("GetCurrentIndex")] extern public static int  GetQualityLevel();
         [NativeName("SetCurrentIndex")] extern public static void SetQualityLevel(int index, [uei.DefaultValue("true")] bool applyExpensiveChanges);
 
         [NativeProperty("QualitySettingsNames")] extern public static string[] names { get; }
-    }
-
-    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
-    public sealed partial class QualitySettings : Object
-    {
-        [StaticAccessor("QualitySettingsScripting", StaticAccessorType.DoubleColon)] extern public static int maxQueuedFrames { get; set; }
     }
 
     // both desiredColorSpace/activeColorSpace should be deprecated
@@ -124,5 +115,15 @@ namespace UnityEngine
         {
             [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)][NativeName("GetColorSpace")] get;
         }
+    }
+}
+
+namespace UnityEditor.Experimental
+{
+    [NativeHeader("Runtime/Camera/RenderSettings.h")]
+    [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
+    public sealed partial class RenderSettings : Object
+    {
+        extern public static bool useRadianceAmbientProbe { get; set; }
     }
 }

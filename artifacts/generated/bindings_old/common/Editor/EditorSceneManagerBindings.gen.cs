@@ -252,6 +252,7 @@ public static bool SaveScene(Scene scene, [uei.DefaultValue("\"\"")]  string dst
             internal static UnityAction<Scene, NewSceneMode> sceneWasCreated;
             internal static UnityAction<Scene, OpenSceneMode> sceneWasOpened;
     
+    
     private static void Internal_NewSceneWasCreated(Scene scene, NewSceneMode mode)
         {
             if (sceneWasCreated != null)
@@ -262,6 +263,18 @@ public static bool SaveScene(Scene scene, [uei.DefaultValue("\"\"")]  string dst
         {
             if (sceneWasOpened != null)
                 sceneWasOpened(scene, mode);
+        }
+    
+            public static event UnityAction<Scene, Scene> activeSceneChangedInEditMode;
+    
+    
+    [RequiredByNativeCode]
+    private static void Internal_ActiveSceneChangedInEditor(Scene previousActiveScene, Scene newActiveScene)
+        {
+            if (activeSceneChangedInEditMode != null)
+            {
+                activeSceneChangedInEditMode(previousActiveScene, newActiveScene);
+            }
         }
     
     

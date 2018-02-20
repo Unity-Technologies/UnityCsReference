@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    internal class ContextualMenuManipulator : MouseManipulator
+    public class ContextualMenuManipulator : MouseManipulator
     {
         System.Action<ContextualMenuPopulateEvent> m_MenuBuilder;
 

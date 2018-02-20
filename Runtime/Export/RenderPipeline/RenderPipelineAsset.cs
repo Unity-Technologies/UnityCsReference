@@ -85,12 +85,12 @@ namespace UnityEngine.Experimental.Rendering
             return m_CreatedPipelines;
         }
 
-        private void OnValidate()
+        protected virtual void OnValidate()
         {
             DestroyCreatedInstances();
         }
 
-        private void OnDisable()
+        protected virtual void OnDisable()
         {
             DestroyCreatedInstances();
         }

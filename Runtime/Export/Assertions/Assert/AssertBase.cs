@@ -18,10 +18,11 @@ namespace UnityEngine.Assertions
 
         static void Fail(string message, string userMessage)
         {
+            //Just throw an exception for now.
+            //One day maybe we can implement it with a proper opcode
             if (Debugger.IsAttached)
-                //Just thrown an exception for now.
-                //One day maybe we can implement it with a proper opcode
                 throw new AssertionException(message, userMessage);
+
             if (raiseExceptions)
                 throw new AssertionException(message, userMessage);
             if (message == null)

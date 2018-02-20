@@ -182,7 +182,7 @@ namespace UnityEditor.U2D
     {
         class Styles
         {
-            public GUIContent generateOutlineLabel = EditorGUIUtility.TrTextContent("Update", "Update new outline based on mesh detail value.");
+            public GUIContent generateOutlineLabel = EditorGUIUtility.TrTextContent("Generate", "Generate new outline based on mesh detail value.");
             public GUIContent outlineTolerance = EditorGUIUtility.TrTextContent("Outline Tolerance", "Sets how tight the outline should be from the sprite.");
             public GUIContent snapButtonLabel = EditorGUIUtility.TrTextContent("Snap", "Snap points to nearest pixel");
             public GUIContent generatingOutlineDialogTitle = EditorGUIUtility.TrTextContent("Outline");
@@ -227,7 +227,7 @@ namespace UnityEditor.U2D
 
         public override string moduleName
         {
-            get { return "Edit Outline"; }
+            get { return "Custom Outline"; }
         }
 
         public override bool ApplyRevert(bool apply)
@@ -614,7 +614,8 @@ namespace UnityEditor.U2D
 
                 if (m_Selected != null)
                 {
-                    SetupShapeEditorOutline(m_Selected);
+                    if (!HasShapeOutline(m_Selected))
+                        SetupShapeEditorOutline(m_Selected);
                     m_ShapeEditors = new ShapeEditor[selectedShapeOutline.Count];
 
                     for (int i = 0; i < selectedShapeOutline.Count; ++i)
@@ -655,36 +656,33 @@ namespace UnityEditor.U2D
         protected virtual bool HasShapeOutline(SpriteRect spriteRect)
         {
             var outline = m_Outline[spriteRect.spriteID]?.spriteOutlines;
-            return outline != null && outline.Count > 0;
+            return outline != null;
         }
 
         protected virtual void SetupShapeEditorOutline(SpriteRect spriteRect)
         {
             var outline = m_Outline[spriteRect.spriteID];
-            if (outline.spriteOutlines == null || outline.spriteOutlines.Count == 0)
+            var outlines = GenerateSpriteRectOutline(spriteRect.rect,
+                    Math.Abs(outline.tessellationDetail - (-1f)) < Mathf.Epsilon ? 0 : outline.tessellationDetail,
+                    0, m_TextureDataProvider);
+            if (outlines.Count == 0)
             {
-                var outlines = GenerateSpriteRectOutline(spriteRect.rect,
-                        Math.Abs(outline.tessellationDetail - (-1f)) < Mathf.Epsilon ? 0 : outline.tessellationDetail,
-                        0, m_TextureDataProvider);
-                if (outlines.Count == 0)
+                Vector2 halfSize = spriteRect.rect.size * 0.5f;
+                outlines = new List<SpriteOutline>()
                 {
-                    Vector2 halfSize = spriteRect.rect.size * 0.5f;
-                    outlines = new List<SpriteOutline>()
+                    new SpriteOutline()
                     {
-                        new SpriteOutline()
+                        m_Path = new List<Vector2>()
                         {
-                            m_Path = new List<Vector2>()
-                            {
-                                new Vector2(-halfSize.x, -halfSize.y),
-                                new Vector2(-halfSize.x, halfSize.y),
-                                new Vector2(halfSize.x, halfSize.y),
-                                new Vector2(halfSize.x, -halfSize.y),
-                            }
+                            new Vector2(-halfSize.x, -halfSize.y),
+                            new Vector2(-halfSize.x, halfSize.y),
+                            new Vector2(halfSize.x, halfSize.y),
+                            new Vector2(halfSize.x, -halfSize.y),
                         }
-                    };
-                }
-                m_Outline[spriteRect.spriteID].spriteOutlines = outlines;
+                    }
+                };
             }
+            m_Outline[spriteRect.spriteID].spriteOutlines = outlines;
         }
 
         public Vector3 SnapPoint(Vector3 position)

@@ -397,7 +397,7 @@ namespace UnityEditor
 
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsDuckVolume() && effect.enableWetMix)
                 {
-                    menu.AddItem(new GUIContent("Copy effect settings to all snapshots, including wet level"), false, delegate()
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Copy effect settings to all snapshots, including wet level"), false, delegate()
                         {
                             Undo.RecordObject(controller, "Copy effect settings to all snapshots, including wet level");
                             controller.CopyEffectSettingsToAllSnapshots(group, effectIndex, controller.TargetSnapshot, true);

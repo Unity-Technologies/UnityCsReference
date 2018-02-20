@@ -75,7 +75,8 @@ namespace UnityEditor
 
         static readonly Dictionary<string, string> s_blackListNativeClassesDependencyNames = new Dictionary<string, string>
         {
-            {"ParticleSystemRenderer", "ParticleSystem"}
+            {"ParticleSystemRenderer", "ParticleSystem"},
+            {"ParticleSystem", "ParticleSystemRenderer"}
         };
 
         static Dictionary<UnityType, UnityType> s_blackListNativeClassesDependency;
@@ -270,14 +271,17 @@ namespace UnityEditor
                 if (includeSetting == ModuleIncludeSetting.ForceInclude)
                 {
                     nativeModules.Add(module);
-                    var moduleClasses = ModuleMetadata.GetModuleTypes(module);
-                    foreach (var klass in moduleClasses)
+                    if (nativeClasses != null)
                     {
-                        nativeClasses.Add(klass);
-                        if (strippingInfo != null)
+                        var moduleClasses = ModuleMetadata.GetModuleTypes(module);
+                        foreach (var klass in moduleClasses)
                         {
-                            strippingInfo.RegisterDependency(klass.name, "Force included module");
-                            strippingInfo.RegisterDependency(StrippingInfo.ModuleName(module), klass.name);
+                            nativeClasses.Add(klass);
+                            if (strippingInfo != null)
+                            {
+                                strippingInfo.RegisterDependency(klass.name, "Force included module");
+                                strippingInfo.RegisterDependency(StrippingInfo.ModuleName(module), klass.name);
+                            }
                         }
                     }
 
@@ -289,12 +293,16 @@ namespace UnityEditor
                     if (nativeModules.Contains(module))
                     {
                         nativeModules.Remove(module);
-                        var moduleClasses = ModuleMetadata.GetModuleTypes(module);
-                        foreach (var klass in moduleClasses)
+
+                        if (nativeClasses != null)
                         {
-                            if (nativeClasses.Contains(klass))
+                            var moduleClasses = ModuleMetadata.GetModuleTypes(module);
+                            foreach (var klass in moduleClasses)
                             {
-                                nativeClasses.Remove(klass);
+                                if (nativeClasses.Contains(klass))
+                                {
+                                    nativeClasses.Remove(klass);
+                                }
                             }
                         }
 
@@ -590,7 +598,7 @@ namespace UnityEditor
         {
             using (TextWriter w = new StreamWriter(file))
             {
-                w.WriteLine("template <typename T> void RegisterClass(const char*);");
+                w.WriteLine("template <typename T> void RegisterUnityClass(const char*);");
                 w.WriteLine("template <typename T> void RegisterStrippedType(int, const char*, const char*);");
 
                 w.WriteLine();
@@ -611,7 +619,7 @@ namespace UnityEditor
                             w.Write("class {0}; ", type.name);
 
                         if (nativeClasses.Contains(type))
-                            w.WriteLine("template <> void RegisterClass<{0}>(const char*);", type.qualifiedName);
+                            w.WriteLine("template <> void RegisterUnityClass<{0}>(const char*);", type.qualifiedName);
                         else
                             w.WriteLine();
                     }
@@ -640,7 +648,7 @@ namespace UnityEditor
                         if (classesToSkip.Contains(klass))
                             w.WriteLine("\t//Skipping {0}", klass.qualifiedName);
                         else
-                            w.WriteLine("\tRegisterClass<{0}>(\"{1}\");", klass.qualifiedName, klass.module);
+                            w.WriteLine("\tRegisterUnityClass<{0}>(\"{1}\");", klass.qualifiedName, klass.module);
                         ++index;
                     }
                     w.WriteLine();

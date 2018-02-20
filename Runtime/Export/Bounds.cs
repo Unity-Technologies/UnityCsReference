@@ -3,16 +3,22 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.InteropServices;
+using UnityEngine.Scripting;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
+using UnityEngine.Bindings;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 namespace UnityEngine
 {
+    [NativeHeader("Runtime/Geometry/AABB.h")]
+    [NativeClass("AABB")]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
     public partial struct Bounds
     {
         private Vector3 m_Center;
+        [NativeName("m_Extent")]
         private Vector3 m_Extents;
 
         // Creates new Bounds with a given /center/ and total /size/. Bound ::ref::extents will be half the given size.

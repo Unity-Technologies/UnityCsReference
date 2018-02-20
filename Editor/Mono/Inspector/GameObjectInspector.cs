@@ -36,8 +36,8 @@ namespace UnityEditor
             public GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
             public GUIContent tagContent = EditorGUIUtility.TrTextContent("Tag", "The tag that this GameObject has.\n\nChoose Untagged to remove the current tag.\n\nChoose Add Tag... to edit the list of available tags.");
 
-            public float tagFieldWidth = EditorStyles.boldLabel.CalcSize(EditorGUIUtility.TempContent("Tag")).x;
-            public float layerFieldWidth = EditorStyles.boldLabel.CalcSize(EditorGUIUtility.TempContent("Layer")).x;
+            public float tagFieldWidth;
+            public float layerFieldWidth;
 
             public GUIStyle staticDropdown = "StaticDropdown";
             public GUIStyle header = new GUIStyle("IN GameObjectHeader");
@@ -61,6 +61,8 @@ namespace UnityEditor
 
             public Styles()
             {
+                tagFieldWidth = EditorStyles.boldLabel.CalcSize(tagContent).x;
+                layerFieldWidth = EditorStyles.boldLabel.CalcSize(layerContent).x;
                 GUIStyle miniButtonMid = "MiniButtonMid";
                 instanceManagementInfo.padding = miniButtonMid.padding;
                 instanceManagementInfo.alignment = miniButtonMid.alignment;
@@ -102,6 +104,7 @@ namespace UnityEditor
                     return;
                 renderUtility.Cleanup();
                 UnityObject.DestroyImmediate(gameObject);
+                m_GameObject = null;
                 m_Disposed = true;
             }
         }
@@ -143,8 +146,12 @@ namespace UnityEditor
             }
         }
 
-        void OnDisable() {}
-
+        void OnDisable()
+        {
+            foreach (var previewData in m_PreviewInstances.Values)
+                previewData.Dispose();
+            m_PreviewInstances.Clear();
+        }
 
         private static bool ShowMixedStaticEditorFlags(StaticEditorFlags mask)
         {
@@ -305,7 +312,7 @@ namespace UnityEditor
                     {
                         if (GUILayout.Button("Select", "MiniButtonLeft"))
                         {
-                            Selection.activeObject = PrefabUtility.GetPrefabParent(target);
+                            Selection.activeObject = PrefabUtility.GetCorrespondingObjectFromSource(target);
                             EditorGUIUtility.PingObject(Selection.activeObject);
                         }
                     }
@@ -339,8 +346,8 @@ namespace UnityEditor
 
                                 if (GUILayout.Button("Apply", "MiniButtonRight"))
                                 {
-                                    UnityObject prefabParent = PrefabUtility.GetPrefabParent(rootUploadGameObject);
-                                    string prefabAssetPath = AssetDatabase.GetAssetPath(prefabParent);
+                                    UnityObject correspondingAssetObject = PrefabUtility.GetCorrespondingObjectFromSource(rootUploadGameObject);
+                                    string prefabAssetPath = AssetDatabase.GetAssetPath(correspondingAssetObject);
 
                                     bool editablePrefab = Provider.PromptAndCheckoutIfNeeded(
                                             new string[] { prefabAssetPath },
@@ -366,7 +373,7 @@ namespace UnityEditor
                     {
                         if (GUILayout.Button("Open", "MiniButtonRight"))
                         {
-                            AssetDatabase.OpenAsset(PrefabUtility.GetPrefabParent(target));
+                            AssetDatabase.OpenAsset(PrefabUtility.GetCorrespondingObjectFromSource(target));
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -509,15 +516,9 @@ namespace UnityEditor
                 previewData = new PreviewData(target);
                 m_PreviewInstances.Add(referenceTargetIndex, previewData);
             }
-
+            if (!previewData.gameObject)
+                ReloadPreviewInstances();
             return previewData;
-        }
-
-        public void OnDestroy()
-        {
-            foreach (var previewData in m_PreviewInstances.Values)
-                previewData.Dispose();
-            m_PreviewInstances.Clear();
         }
 
         public static bool HasRenderableParts(GameObject go)

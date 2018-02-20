@@ -118,6 +118,7 @@ namespace UnityEngine.Experimental.UIElements
             Add(new VisualElement() { name = "TrackElement" });
 
             dragElement = new VisualElement() { name = "DragElement" };
+            dragElement.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
 
             Add(dragElement);
 
@@ -248,6 +249,17 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        void UpdateDragElementPosition(GeometryChangedEvent evt)
+        {
+            // Only affected by dimension changes
+            if (evt.oldRect.size == evt.newRect.size)
+            {
+                return;
+            }
+
+            UpdateDragElementPosition();
+        }
+
         void UpdateDragElementPosition()
         {
             // UpdateDragElementPosition() might be called at times where we have no panel
@@ -275,19 +287,10 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == PostLayoutEvent.TypeId())
+            if (evt.GetEventTypeId() == GeometryChangedEvent.TypeId())
             {
-                var postLayoutEvt = (PostLayoutEvent)evt;
-                OnPostLayout(postLayoutEvt.hasNewLayout);
+                UpdateDragElementPosition((GeometryChangedEvent)evt);
             }
-        }
-
-        private void OnPostLayout(bool hasNewLayout)
-        {
-            if (!hasNewLayout)
-                return;
-
-            UpdateDragElementPosition();
         }
     }
 }

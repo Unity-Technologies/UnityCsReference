@@ -54,14 +54,6 @@ namespace UnityEditor
                     return "Default References (" + (script ? script.name : string.Empty) + ")";
                 }
 
-                var substanceImporter = o as SubstanceImporter;
-                if (substanceImporter)
-                {
-                    var assetObject = substanceImporter.GetSubstanceArchive();
-                    if (assetObject)
-                        return assetObject.name + " (Substance Archive)";
-                }
-
                 return o.GetType().Name;
             }
 
@@ -83,6 +75,37 @@ namespace UnityEditor
                 title += " (Deprecated)";
 
             return title;
+        }
+
+        // Like GetClassName but handles folders, scenes, GUISkins, and other default assets as separate types.
+        internal static string GetTypeName(Object obj)
+        {
+            // Return "Object" when null so we have a icon in the inspector(null does not have an icon). case 707513.
+            if (obj == null)
+                return "Object";
+
+            string pathLower = AssetDatabase.GetAssetPath(obj).ToLower();
+            if (pathLower.EndsWith(".unity"))
+                return "Scene";
+            else if (pathLower.EndsWith(".guiskin"))
+                return "GUI Skin";
+            else if (System.IO.Directory.Exists(AssetDatabase.GetAssetPath(obj)))
+                return "Folder";
+            else if (obj.GetType() == typeof(Object))
+                return System.IO.Path.GetExtension(pathLower) + " File";
+            return ObjectNames.GetClassName(obj);
+        }
+
+        [Obsolete("Please use NicifyVariableName instead")]
+        public static string MangleVariableName(string name)
+        {
+            return NicifyVariableName(name);
+        }
+
+        [Obsolete("Please use GetInspectorTitle instead")]
+        public static string GetPropertyEditorTitle(Object obj)
+        {
+            return GetInspectorTitle(obj);
         }
     }
 }

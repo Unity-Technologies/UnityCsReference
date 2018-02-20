@@ -274,7 +274,9 @@ namespace UnityEditor
             if (String.IsNullOrEmpty(assetPath))
                 return true; // assetPath can be empty in some cases where Unity is checking for stuff in Library folder
 
-            if (AssetDatabase.IsPackagedAssetPath(assetPath))
+            bool rootFolder, readOnly;
+            bool validPath = AssetDatabase.GetAssetFolderInfo(assetPath, out rootFolder, out readOnly);
+            if (validPath && readOnly)
             {
                 return false;
             }

@@ -4,12 +4,11 @@
 
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.ProjectWindowCallback;
 using UnityEngine;
 using UnityEditorInternal;
-
+using UnityEditor.Experimental;
 
 namespace UnityEditor
 {
@@ -54,7 +53,7 @@ namespace UnityEditor
 
             int minDepth = property.depth + (showRootItem ? 0 : 1);
             int[] expanded = expandedIDs.ToArray();
-            Texture2D emptyFolderIcon = EditorGUIUtility.FindTexture(EditorResourcesUtility.emptyFolderIconName);
+            Texture2D emptyFolderIcon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
 
             // Fetch visible items
             m_Rows = new List<TreeViewItem>();

@@ -2,26 +2,22 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using scm = System.ComponentModel;
-using uei = UnityEngine.Internal;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
-using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
-
-using System;
-using UnityEngine;
-using Object = UnityEngine.Object;
-
 namespace UnityEngine
 {
     public sealed partial class RectTransformUtility
     {
-        private static Vector3[] s_Corners = new Vector3[4];
+        private static readonly Vector3[] s_Corners = new Vector3[4];
 
         private RectTransformUtility() {}
 
         public static bool RectangleContainsScreenPoint(RectTransform rect, Vector2 screenPoint)
         {
             return RectangleContainsScreenPoint(rect, screenPoint, null);
+        }
+
+        public static bool RectangleContainsScreenPoint(RectTransform rect, Vector2 screenPoint, Camera cam)
+        {
+            return PointInRectangle(screenPoint, rect, cam);
         }
 
         public static bool ScreenPointToWorldPointInRectangle(RectTransform rect, Vector2 screenPoint, Camera cam, out Vector3 worldPoint)

@@ -121,6 +121,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             persistenceKey = Guid.NewGuid().ToString();
         }
 
+        static GraphElement()
+        {
+            RegisterAll();
+        }
+
         // TODO: Remove when removing presenters.
         public T GetPresenter<T>() where T : GraphElementPresenter
         {
@@ -299,6 +304,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             return false;
+        }
+
+        static void RegisterAll()
+        {
+            Factories.RegisterFactory<Pill>((_, __) => new Pill());
         }
     }
 }

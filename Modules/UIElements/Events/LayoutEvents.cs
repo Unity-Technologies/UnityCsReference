@@ -4,24 +4,27 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class PostLayoutEvent : EventBase<PostLayoutEvent>, IPropagatableEvent
+    public class GeometryChangedEvent : EventBase<GeometryChangedEvent>, IPropagatableEvent
     {
-        public static PostLayoutEvent GetPooled(bool hasNewLayout)
+        public static GeometryChangedEvent GetPooled(Rect oldRect, Rect newRect)
         {
-            PostLayoutEvent e = GetPooled();
-            e.hasNewLayout = hasNewLayout;
+            GeometryChangedEvent e = GetPooled();
+            e.oldRect = oldRect;
+            e.newRect = newRect;
             return e;
         }
 
         protected override void Init()
         {
             base.Init();
-            hasNewLayout = false;
+            oldRect = Rect.zero;
+            newRect = Rect.zero;
         }
 
-        public bool hasNewLayout { get; private set; }
+        public Rect oldRect { get; private set; }
+        public Rect newRect { get; private set; }
 
-        public PostLayoutEvent()
+        public GeometryChangedEvent()
         {
             Init();
         }

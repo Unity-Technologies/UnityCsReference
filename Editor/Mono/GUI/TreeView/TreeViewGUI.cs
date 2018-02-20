@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditorInternal;
+using UnityEditor.Experimental;
 
 namespace UnityEditor.IMGUI.Controls
 {
@@ -53,7 +53,7 @@ namespace UnityEditor.IMGUI.Controls
             public static GUIStyle lineStyle = new GUIStyle("PR Label");
             public static GUIStyle lineBoldStyle;
             public static GUIStyle selectionStyle = new GUIStyle("PR Label");
-            public static GUIContent content = new GUIContent(EditorGUIUtility.FindTexture(EditorResourcesUtility.folderIconName));
+            public static GUIContent content = new GUIContent(EditorGUIUtility.FindTexture(EditorResources.folderIconName));
 
             static Styles()
             {

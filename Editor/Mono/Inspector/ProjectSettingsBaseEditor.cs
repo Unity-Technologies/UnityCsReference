@@ -27,4 +27,9 @@ namespace UnityEditorInternal
             }
         }
     }
+
+    [NativeClass(null)]
+    [ExcludeFromObjectFactory]
+    internal abstract class ProjectSettingsBase : Object
+    {}
 }

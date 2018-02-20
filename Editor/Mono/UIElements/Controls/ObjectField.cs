@@ -9,10 +9,10 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class ObjectField : VisualElement, INotifyValueChanged<Object>
+    public class ObjectField : BaseControl<Object>
     {
         private Object m_Value;
-        public Object value
+        public override Object value
         {
             get
             {
@@ -70,14 +70,18 @@ namespace UnityEditor.Experimental.UIElements
                 m_ObjectLabel.text = content.text;
             }
 
-            protected internal override void ExecuteDefaultAction(EventBase evt)
+            protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
             {
-                base.ExecuteDefaultAction(evt);
+                base.ExecuteDefaultActionAtTarget(evt);
 
-                if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
-                    OnMouseDown();
-                else if (evt.GetEventTypeId() == IMGUIEvent.TypeId())
-                    OnIMGUI(evt);
+                if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+                    OnMouseDown(evt as MouseDownEvent);
+                else if ((evt as KeyDownEvent)?.character == '\n')
+                    OnKeyboardEnter();
+                else if (evt.GetEventTypeId() == DragUpdatedEvent.TypeId())
+                    OnDragUpdated(evt);
+                else if (evt.GetEventTypeId() == DragPerformEvent.TypeId())
+                    OnDragPerform(evt);
                 else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
                     OnMouseLeave();
             }
@@ -88,72 +92,82 @@ namespace UnityEditor.Experimental.UIElements
                 RemoveFromClassList("acceptDrop");
             }
 
-            private void OnMouseDown()
+            private void OnMouseDown(MouseDownEvent evt)
             {
                 Object actualTargetObject = m_ObjectField.value;
                 Component com = actualTargetObject as Component;
                 if (com)
                     actualTargetObject = com.gameObject;
 
+                if (actualTargetObject == null)
+                    return;
+
                 // One click shows where the referenced object is, or pops up a preview
-                if (Event.current.clickCount == 1)
+                if (evt.clickCount == 1)
                 {
-                    PingObject(actualTargetObject);
+                    // ping object
+                    bool anyModifiersPressed = evt.shiftKey || evt.ctrlKey;
+                    if (!anyModifiersPressed && actualTargetObject)
+                    {
+                        EditorGUIUtility.PingObject(actualTargetObject);
+                    }
+                    evt.StopPropagation();
                 }
                 // Double click opens the asset in external app or changes selection to referenced object
-                else if (Event.current.clickCount == 2)
+                else if (evt.clickCount == 2)
                 {
                     if (actualTargetObject)
                     {
                         AssetDatabase.OpenAsset(actualTargetObject);
                         GUIUtility.ExitGUI();
                     }
+                    evt.StopPropagation();
                 }
             }
 
-            private void OnIMGUI(EventBase evt)
+            private void OnKeyboardEnter()
             {
-                if (evt.imguiEvent.type == EventType.DragUpdated || evt.imguiEvent.type == EventType.DragPerform)
+                m_ObjectField.ShowObjectSelector();
+            }
+
+            private Object DNDValidateObject()
+            {
+                Object[] references = DragAndDrop.objectReferences;
+                Object validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, m_ObjectField.objectType, null, EditorGUI.ObjectFieldValidatorOptions.None);
+
+                if (validatedObject != null)
                 {
-                    Object[] references = DragAndDrop.objectReferences;
-                    Object validatedObject = EditorGUI.ValidateObjectFieldAssignment(references, m_ObjectField.objectType, null, EditorGUI.ObjectFieldValidatorOptions.None);
+                    // If scene objects are not allowed and object is a scene object then clear
+                    if (!m_ObjectField.allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
+                        validatedObject = null;
+                }
+                return validatedObject;
+            }
 
-                    if (validatedObject != null)
-                    {
-                        // If scene objects are not allowed and object is a scene object then clear
-                        if (!m_ObjectField.allowSceneObjects && !EditorUtility.IsPersistent(validatedObject))
-                            validatedObject = null;
-                    }
+            private void OnDragUpdated(EventBase evt)
+            {
+                Object validatedObject = DNDValidateObject();
+                if (validatedObject != null)
+                {
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+                    AddToClassList("acceptDrop");
 
-                    if (validatedObject != null)
-                    {
-                        DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
-                        if (evt.imguiEvent.type == EventType.DragPerform)
-                        {
-                            m_ObjectField.SetValueAndNotify(validatedObject);
-
-                            DragAndDrop.AcceptDrag();
-                            RemoveFromClassList("acceptDrop");
-                        }
-                        else
-                        {
-                            AddToClassList("acceptDrop");
-                        }
-                    }
+                    evt.StopPropagation();
                 }
             }
 
-            private void PingObject(Object targetObject)
+            private void OnDragPerform(EventBase evt)
             {
-                if (targetObject == null)
-                    return;
-
-                Event evt = Event.current;
-                // ping object
-                bool anyModifiersPressed = evt.shift || evt.control;
-                if (!anyModifiersPressed)
+                Object validatedObject = DNDValidateObject();
+                if (validatedObject != null)
                 {
-                    EditorGUIUtility.PingObject(targetObject);
+                    DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
+                    m_ObjectField.SetValueAndNotify(validatedObject);
+
+                    DragAndDrop.AcceptDrag();
+                    RemoveFromClassList("acceptDrop");
+
+                    evt.StopPropagation();
                 }
             }
         }
@@ -171,13 +185,8 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.ExecuteDefaultAction(evt);
 
-                if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
-                    OnMouseDown();
-            }
-
-            private void OnMouseDown()
-            {
-                ObjectSelector.get.Show(m_ObjectField.value, m_ObjectField.objectType, null, m_ObjectField.allowSceneObjects, null, m_ObjectField.OnObjectChanged, m_ObjectField.OnObjectChanged);
+                if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse)
+                    m_ObjectField.ShowObjectSelector();
             }
         }
 
@@ -194,7 +203,7 @@ namespace UnityEditor.Experimental.UIElements
             Add(objectSelector);
         }
 
-        public void SetValueAndNotify(Object newValue)
+        public override void SetValueAndNotify(Object newValue)
         {
             if (newValue != value)
             {
@@ -205,11 +214,6 @@ namespace UnityEditor.Experimental.UIElements
                     UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                 }
             }
-        }
-
-        public void OnValueChanged(EventCallback<ChangeEvent<Object>> callback)
-        {
-            RegisterCallback(callback);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -223,6 +227,11 @@ namespace UnityEditor.Experimental.UIElements
         private void OnObjectChanged(Object obj)
         {
             SetValueAndNotify(obj);
+        }
+
+        internal void ShowObjectSelector()
+        {
+            ObjectSelector.get.Show(value, objectType, null, allowSceneObjects, null, OnObjectChanged, OnObjectChanged);
         }
     }
 }

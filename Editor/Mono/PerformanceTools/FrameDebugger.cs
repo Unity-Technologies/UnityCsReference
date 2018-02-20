@@ -184,25 +184,25 @@ namespace UnityEditorInternal
 
     // Match C++ ScriptingFrameDebuggerRasterState memory layout!
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    struct FrameDebuggerRasterState
+    internal struct FrameDebuggerRasterState
     {
         public CullMode cullMode;
         public int depthBias;
-        public bool depthClip;
         public float slopeScaledDepthBias;
-    };
+        public bool depthClip;
+    }
 
     // Match C++ ScriptingFrameDebuggerDepthState memory layout!
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    struct FrameDebuggerDepthState
+    internal struct FrameDebuggerDepthState
     {
         public int depthWrite;
         public CompareFunction depthFunc;
-    };
+    }
 
     // Match C++ ScriptingFrameDebuggerStencilState memory layout!
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    struct FrameDebuggerStencilState
+    internal struct FrameDebuggerStencilState
     {
         public bool stencilEnable;
         public byte readMask;
@@ -216,7 +216,7 @@ namespace UnityEditorInternal
         public StencilOp stencilPassOpBack;
         public StencilOp stencilFailOpBack;
         public StencilOp stencilZFailOpBack;
-    };
+    }
 }
 
 namespace UnityEditor

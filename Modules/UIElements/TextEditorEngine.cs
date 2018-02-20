@@ -6,12 +6,17 @@ namespace UnityEngine.Experimental.UIElements
 {
     internal class TextEditorEngine : TextEditor
     {
-        public TextEditorEngine(TextInputFieldBase field)
-        {
-            textInputField = field;
-        }
+        internal delegate void OnDetectFocusChangeFunction();
+        internal delegate void OnIndexChangeFunction();
 
-        TextInputFieldBase textInputField { get; set; }
+        private OnDetectFocusChangeFunction m_DetectFocusChangeFunction;
+        private OnIndexChangeFunction m_IndexChangeFunction;
+
+        public TextEditorEngine(OnDetectFocusChangeFunction detectFocusChange, OnIndexChangeFunction indexChangeFunction)
+        {
+            m_DetectFocusChangeFunction = detectFocusChange;
+            m_IndexChangeFunction = indexChangeFunction;
+        }
 
         internal override Rect localPosition
         {
@@ -20,20 +25,17 @@ namespace UnityEngine.Experimental.UIElements
 
         internal override void OnDetectFocusChange()
         {
-            if (m_HasFocus && !textInputField.hasFocus)
-                OnFocus();
-            if (!m_HasFocus && textInputField.hasFocus)
-                OnLostFocus();
+            m_DetectFocusChangeFunction();
         }
 
         internal override void OnCursorIndexChange()
         {
-            textInputField.Dirty(ChangeType.Repaint);
+            m_IndexChangeFunction();
         }
 
         internal override void OnSelectIndexChange()
         {
-            textInputField.Dirty(ChangeType.Repaint);
+            m_IndexChangeFunction();
         }
     }
 }

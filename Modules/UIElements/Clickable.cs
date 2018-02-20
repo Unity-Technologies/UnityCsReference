@@ -6,10 +6,13 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class Clickable : MouseManipulator
     {
+        public event System.Action<EventBase> clickedWithEventInfo;
         public event System.Action clicked;
 
         private readonly long m_Delay; // in milliseconds
         private readonly long m_Interval; // in milliseconds
+
+        protected bool m_Active;
 
         public Vector2 lastMousePosition { get; private set; }
 
@@ -21,6 +24,13 @@ namespace UnityEngine.Experimental.UIElements
         {
             m_Delay = delay;
             m_Interval = interval;
+            m_Active = false;
+        }
+
+        public Clickable(System.Action<EventBase> handler)
+        {
+            clickedWithEventInfo = handler;
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
         }
 
         // Click-once type constructor
@@ -29,6 +39,8 @@ namespace UnityEngine.Experimental.UIElements
             clicked = handler;
 
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
+
+            m_Active = false;
         }
 
         private void OnTimer(TimerState timerState)
@@ -70,15 +82,19 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (CanStartManipulation(evt))
             {
+                m_Active = true;
                 target.TakeMouseCapture();
                 lastMousePosition = evt.localMousePosition;
 
                 if (IsRepeatable())
                 {
                     // Repeatable button clicks are performed on the MouseDown and at timer events
-                    if (clicked != null && target.ContainsPoint(evt.localMousePosition))
+                    if (target.ContainsPoint(evt.localMousePosition))
                     {
-                        clicked();
+                        if (clicked != null)
+                            clicked();
+                        else if (clickedWithEventInfo != null)
+                            clickedWithEventInfo(evt);
                     }
 
                     if (m_Repeater == null)
@@ -93,13 +109,13 @@ namespace UnityEngine.Experimental.UIElements
 
                 target.pseudoStates |= PseudoStates.Active;
 
-                evt.StopPropagation();
+                evt.StopImmediatePropagation();
             }
         }
 
         protected void OnMouseMove(MouseMoveEvent evt)
         {
-            if (target.HasMouseCapture())
+            if (m_Active)
             {
                 lastMousePosition = evt.localMousePosition;
                 evt.StopPropagation();
@@ -108,8 +124,9 @@ namespace UnityEngine.Experimental.UIElements
 
         protected void OnMouseUp(MouseUpEvent evt)
         {
-            if (CanStopManipulation(evt))
+            if (m_Active && CanStopManipulation(evt))
             {
+                m_Active = false;
                 target.ReleaseMouseCapture();
 
                 if (IsRepeatable())
@@ -123,9 +140,12 @@ namespace UnityEngine.Experimental.UIElements
                 else
                 {
                     // Non repeatable button clicks are performed on the MouseUp
-                    if (clicked != null && target.ContainsPoint(evt.localMousePosition))
+                    if (target.ContainsPoint(evt.localMousePosition))
                     {
-                        clicked();
+                        if (clicked != null)
+                            clicked();
+                        else if (clickedWithEventInfo != null)
+                            clickedWithEventInfo(evt);
                     }
                 }
                 target.pseudoStates &= ~PseudoStates.Active;

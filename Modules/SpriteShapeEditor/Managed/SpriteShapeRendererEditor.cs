@@ -20,8 +20,8 @@ namespace UnityEditor.Experimental.U2D
         private static Texture2D s_WarningIcon;
         private static class Contents
         {
-            public static readonly GUIContent materialLabel = EditorGUIUtility.TextContent("Material|Material to be used by SpriteRenderer");
-            public static readonly GUIContent colorLabel = EditorGUIUtility.TextContent("Color|Rendering color for the Sprite graphic");
+            public static readonly GUIContent materialLabel = EditorGUIUtility.TrTextContent("Material", "Material to be used by SpriteRenderer");
+            public static readonly GUIContent colorLabel = EditorGUIUtility.TrTextContent("Color", "Rendering color for the Sprite graphic");
             public static readonly Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
         }
 

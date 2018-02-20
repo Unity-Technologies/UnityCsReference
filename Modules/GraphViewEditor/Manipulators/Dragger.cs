@@ -98,10 +98,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (m_Active)
             {
+                Vector2 diff = e.localMousePosition - m_Start;
+                Rect rect = CalculatePosition(target.layout.x + diff.x, target.layout.y + diff.y, target.layout.width, target.layout.height);
+
                 if (target.style.positionType == PositionType.Manual)
                 {
-                    Vector2 diff = e.localMousePosition - m_Start;
-                    target.layout = CalculatePosition(target.layout.x + diff.x, target.layout.y + diff.y, target.layout.width, target.layout.height);
+                    target.layout = rect;
+                }
+                else if (target.style.positionType == PositionType.Absolute)
+                {
+                    target.style.positionLeft = rect.x;
+                    target.style.positionTop = rect.y;
                 }
 
                 e.StopPropagation();

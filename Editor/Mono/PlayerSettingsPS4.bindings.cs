@@ -39,6 +39,7 @@ namespace UnityEditor
             {
                 CircleButton = 0,
                 CrossButton = 1,
+                SystemDefined = 2,
             }
 
             public enum PlayStationVREyeToEyeDistanceSettings

@@ -88,7 +88,7 @@ namespace UnityEditor
             return sb.ToString().Normalize(NormalizationForm.FormC);
         }
 
-        public static void ParseCredits()
+        static void ParseCredits()
         {
             using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("credits.csv"))
             {
@@ -118,6 +118,12 @@ namespace UnityEditor
                     while (line != null);
                 }
             }
+        }
+
+        public static void ParseCreditsIfNecessary()
+        {
+            if (s_Credits.Count == 0)
+                ParseCredits();
         }
 
         // TODO: Proper choice is pagination, and page size choice

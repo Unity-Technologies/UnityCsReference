@@ -13,6 +13,28 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal abstract class ScriptCompilerBase : IDisposable
     {
+        public class ResponseFileData
+        {
+            public class Reference
+            {
+                public String Alias;
+                public String Assembly;
+            }
+
+            public string[] Defines;
+            public Reference[] References;
+            public bool Unsafe;
+            public string[] Errors;
+        }
+
+        public class CompilerOption
+        {
+            public string Arg;
+            public string Value;
+        }
+
+        static readonly char[] CompilerOptionArgumentSeperators = { ';', ',' };
+
         private Program process;
         private string _responseFile = null;
         private bool _runAPIUpdater;
@@ -97,33 +119,31 @@ namespace UnityEditor.Scripting.Compilers
             return true;
         }
 
-        protected string GenerateResponseFile(List<string> arguments)
-        {
-            _responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
-            return _responseFile;
-        }
-
-        public static string[] GetResponseFileDefinesFromFile(string responseFileName)
+        public static ResponseFileData ParseResponseFileFromFile(string responseFileName)
         {
             var relativeCustomResponseFilePath = Path.Combine("Assets", responseFileName);
 
             if (!File.Exists(relativeCustomResponseFilePath))
-                return new string[0];
+            {
+                var empty = new ResponseFileData
+                {
+                    Defines = new string[0],
+                    References = new ResponseFileData.Reference[0],
+                    Unsafe = false,
+                    Errors = new string[0]
+                };
+
+                return empty;
+            }
 
             var responseFileText = File.ReadAllText(relativeCustomResponseFilePath);
 
-            return GetResponseFileDefinesFromText(responseFileText);
+            return ParseResponseFileText(responseFileText);
         }
 
-        public static string[] GetResponseFileDefinesFromText(string responseFileText)
+        public static ResponseFileData ParseResponseFileText(string responseFileText)
         {
-            const string defineString = "-define:";
-            var defineStringLength = defineString.Length;
-
-            if (!responseFileText.Contains(defineString))
-                return new string[0];
-
-            List<string> result = new List<string>();
+            var compilerOptions = new List<CompilerOption>();
 
             var textLines = responseFileText.Split(' ', '\n');
 
@@ -131,15 +151,115 @@ namespace UnityEditor.Scripting.Compilers
             {
                 var trimmedLine = line.Trim();
 
-                if (trimmedLine.StartsWith(defineString))
+                int idx = trimmedLine.IndexOf(':');
+                string arg, value;
+
+                if (idx == -1)
                 {
-                    var definesSubString = trimmedLine.Substring(defineStringLength);
-                    var defines = definesSubString.Split(',', ';');
-                    result.AddRange(defines);
+                    arg = trimmedLine;
+                    value = "";
+                }
+                else
+                {
+                    arg = trimmedLine.Substring(0, idx);
+                    value = trimmedLine.Substring(idx + 1);
+                }
+
+                if (!string.IsNullOrEmpty(arg) && arg[0] == '-')
+                    arg = '/' + arg.Substring(1);
+
+                compilerOptions.Add(new CompilerOption { Arg = arg, Value = value });
+            }
+
+            var defines = new List<string>();
+            var references = new List<ResponseFileData.Reference>();
+            bool unsafeDefined = false;
+            var errors = new List<string>();
+
+            foreach (var option in compilerOptions)
+            {
+                var arg = option.Arg;
+                var value = option.Value;
+
+                switch (arg)
+                {
+                    case "/d":
+                    case "/define":
+                    {
+                        if (value.Length == 0)
+                        {
+                            errors.Add("No value set for define");
+                            break;
+                        }
+
+                        var defs = value.Split(CompilerOptionArgumentSeperators);
+                        foreach (string define in defs)
+                            defines.Add(define.Trim());
+                    }
+                    break;
+
+                    case "/r":
+                    case "/reference":
+                    {
+                        if (value.Length == 0)
+                        {
+                            errors.Add("No value set for reference");
+                            break;
+                        }
+
+                        string[] refs = value.Split(CompilerOptionArgumentSeperators);
+
+                        if (refs.Length != 1)
+                        {
+                            errors.Add("Cannot specify multiple aliases using single /reference option");
+                            break;
+                        }
+
+                        foreach (string reference in refs)
+                        {
+                            if (reference.Length == 0)
+                                continue;
+
+                            int index = reference.IndexOf('=');
+                            if (index > -1)
+                            {
+                                string alias = reference.Substring(0, index);
+                                string assembly = reference.Substring(index + 1);
+
+                                references.Add(new ResponseFileData.Reference { Alias = alias, Assembly = assembly });
+                            }
+                            else
+                            {
+                                references.Add(new ResponseFileData.Reference { Alias = string.Empty, Assembly = reference });
+                            }
+                        }
+                    }
+                    break;
+
+                    case "/unsafe":
+                    case "/unsafe+":
+                    {
+                        unsafeDefined = true;
+                    }
+                    break;
+
+                    case "/unsafe-":
+                    {
+                        unsafeDefined = false;
+                    }
+                    break;
                 }
             }
 
-            return result.ToArray();
+            var responseFileData = new ResponseFileData
+            {
+                Defines = defines.ToArray(),
+                References = references.ToArray(),
+                Unsafe = unsafeDefined,
+                Errors = errors.ToArray()
+            };
+
+            return responseFileData;
         }
 
         protected static string PrepareFileName(string fileName)

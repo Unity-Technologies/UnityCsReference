@@ -109,7 +109,7 @@ namespace UnityEditor.VisualStudioIntegration
             string extension = Path.GetExtension(file);
 
             // Exclude files coming from packages except if they are internalized.
-            if (AssetDatabase.IsPackagedAssetPath(file))
+            if (UnityEditor.PackageManager.Folders.IsPackagedAssetPath(file))
             {
                 var absolutePath = Path.GetFullPath(file).ConvertSeparatorsToUnity();
                 if (!absolutePath.StartsWith(_projectDirectory))
@@ -198,6 +198,7 @@ namespace UnityEditor.VisualStudioIntegration
             SetupProjectSupportedExtensions();
 
             bool externalCodeAlreadyGeneratedProjects = AssetPostprocessingInternal.OnPreGeneratingCSProjectFiles();
+
             if (!externalCodeAlreadyGeneratedProjects)
             {
                 var scriptEditor = ScriptEditorUtility.GetScriptEditorFromPreferences();
@@ -206,25 +207,38 @@ namespace UnityEditor.VisualStudioIntegration
                 if (scriptEditor == ScriptEditorUtility.ScriptEditor.SystemDefault || scriptEditor == ScriptEditorUtility.ScriptEditor.Other)
                     return;
 
-                // Only synchronize islands that have associated source files and ones that we actually want in the project.
-                // This also filters out DLLs coming from .asmdef files in packages.
-                IEnumerable<MonoIsland> islands = EditorCompilationInterface.GetAllMonoIslands().
-                    Where(i => 0 < i._files.Length && i._files.Any(f => ShouldFileBePartOfSolution(f)));
-
-                var allAssetProjectParts = GenerateAllAssetProjectParts();
-
-                var responseFileDefines = ScriptCompilerBase.GetResponseFileDefinesFromFile(MonoCSharpCompiler.ReponseFilename);
-
-                SyncSolution(islands);
-                var allProjectIslands = RelevantIslandsForMode(islands, ModeForCurrentExternalEditor()).ToList();
-                foreach (MonoIsland island in allProjectIslands)
-                    SyncProject(island, allAssetProjectParts, responseFileDefines, allProjectIslands);
-
-                if (scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
-                    WriteVSCodeSettingsFiles();
+                GenerateAndWriteSolutionAndProjects(scriptEditor);
             }
 
             AssetPostprocessingInternal.CallOnGeneratedCSProjectFiles();
+        }
+
+        internal void GenerateAndWriteSolutionAndProjects(ScriptEditorUtility.ScriptEditor scriptEditor)
+        {
+            // Only synchronize islands that have associated source files and ones that we actually want in the project.
+            // This also filters out DLLs coming from .asmdef files in packages.
+            IEnumerable<MonoIsland> islands = EditorCompilationInterface.GetAllMonoIslands().
+                Where(i => 0 < i._files.Length && i._files.Any(f => ShouldFileBePartOfSolution(f)));
+
+            var allAssetProjectParts = GenerateAllAssetProjectParts();
+
+            var responseFilePath = Path.Combine("Assets", MonoCSharpCompiler.ReponseFilename);
+
+            var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(Path.Combine(_projectDirectory, responseFilePath));
+
+            if (responseFileData.Errors.Length > 0)
+            {
+                foreach (var error in responseFileData.Errors)
+                    UnityEngine.Debug.LogErrorFormat("{0} Parse Error : {1}", responseFilePath, error);
+            }
+
+            SyncSolution(islands);
+            var allProjectIslands = RelevantIslandsForMode(islands, ModeForCurrentExternalEditor()).ToList();
+            foreach (MonoIsland island in allProjectIslands)
+                SyncProject(island, allAssetProjectParts, responseFileData, allProjectIslands);
+
+            if (scriptEditor == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
+                WriteVSCodeSettingsFiles();
         }
 
         Dictionary<string, string> GenerateAllAssetProjectParts()
@@ -234,13 +248,12 @@ namespace UnityEditor.VisualStudioIntegration
             foreach (string asset in AssetDatabase.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
-                if (AssetDatabase.IsPackagedAssetPath(asset))
+                if (PackageManager.Folders.IsPackagedAssetPath(asset))
                 {
                     var absolutePath = Path.GetFullPath(asset).ConvertSeparatorsToUnity();
                     if (!absolutePath.StartsWith(_projectDirectory))
                         continue;
                 }
-
                 string extension = Path.GetExtension(asset);
                 if (IsSupportedExtension(extension) && ScriptingLanguage.None == ScriptingLanguageFor(extension))
                 {
@@ -271,9 +284,29 @@ namespace UnityEditor.VisualStudioIntegration
             return result;
         }
 
-        void SyncProject(MonoIsland island, Dictionary<string, string> allAssetsProjectParts, string[] additionalDefines, List<MonoIsland> allProjectIslands)
+        void SyncProject(MonoIsland island,
+            Dictionary<string, string> allAssetsProjectParts,
+            ScriptCompilerBase.ResponseFileData responseFileData,
+            List<MonoIsland> allProjectIslands)
         {
-            SyncFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), allAssetsProjectParts, additionalDefines, allProjectIslands));
+            SyncProjectFileIfNotChanged(ProjectFile(island), ProjectText(island, ModeForCurrentExternalEditor(), allAssetsProjectParts, responseFileData, allProjectIslands));
+        }
+
+        static void SyncProjectFileIfNotChanged(string path, string newContents)
+        {
+            if (Path.GetExtension(path) == ".csproj")
+            {
+                newContents = AssetPostprocessingInternal.CallOnGeneratedCSProject(path, newContents);
+            }
+
+            SyncFileIfNotChanged(path, newContents);
+        }
+
+        static void SyncSolutionFileIfNotChanged(string path, string newContents)
+        {
+            newContents = AssetPostprocessingInternal.CallOnGeneratedSlnSolution(path, newContents);
+
+            SyncFileIfNotChanged(path, newContents);
         }
 
         private static void SyncFileIfNotChanged(string filename, string newContents)
@@ -310,9 +343,13 @@ namespace UnityEditor.VisualStudioIntegration
             return false;
         }
 
-        string ProjectText(MonoIsland island, Mode mode, Dictionary<string, string> allAssetsProjectParts, string[] additionalDefines, List<MonoIsland> allProjectIslands)
+        string ProjectText(MonoIsland island,
+            Mode mode,
+            Dictionary<string, string> allAssetsProjectParts,
+            ScriptCompilerBase.ResponseFileData responseFileData,
+            List<MonoIsland> allProjectIslands)
         {
-            var projectBuilder = new StringBuilder(ProjectHeader(island, additionalDefines));
+            var projectBuilder = new StringBuilder(ProjectHeader(island, responseFileData.Defines));
             var references = new List<string>();
             var projectReferences = new List<Match>();
             Match match;
@@ -348,7 +385,7 @@ namespace UnityEditor.VisualStudioIntegration
 
             var allAdditionalReferenceFilenames = new List<string>();
 
-            foreach (string reference in references.Union(island._references))
+            foreach (string reference in references.Union(island._references).Union(responseFileData.References.Select(r => r.Assembly)))
             {
                 if (reference.EndsWith("/UnityEditor.dll") || reference.EndsWith("/UnityEngine.dll") || reference.EndsWith("\\UnityEditor.dll") || reference.EndsWith("\\UnityEngine.dll"))
                     continue;
@@ -463,7 +500,8 @@ namespace UnityEditor.VisualStudioIntegration
                 EditorSettings.projectGenerationRootNamespace,
                 targetframeworkversion,
                 targetLanguageVersion,
-                baseDirectory
+                baseDirectory,
+                island._allowUnsafeCode
             };
 
             try
@@ -478,7 +516,7 @@ namespace UnityEditor.VisualStudioIntegration
 
         private void SyncSolution(IEnumerable<MonoIsland> islands)
         {
-            SyncFileIfNotChanged(SolutionFile(), SolutionText(islands, ModeForCurrentExternalEditor()));
+            SyncSolutionFileIfNotChanged(SolutionFile(), SolutionText(islands, ModeForCurrentExternalEditor()));
         }
 
         private static Mode ModeForCurrentExternalEditor()
@@ -543,7 +581,7 @@ namespace UnityEditor.VisualStudioIntegration
             var projectDir = _projectDirectory.ConvertSeparatorsToWindows();
             file = file.ConvertSeparatorsToWindows();
             var path = Paths.SkipPathPrefix(file, projectDir);
-            if (AssetDatabase.IsPackagedAssetPath(path.ConvertSeparatorsToUnity()))
+            if (PackageManager.Folders.IsPackagedAssetPath(path.ConvertSeparatorsToUnity()))
             {
                 var absolutePath = Path.GetFullPath(path).ConvertSeparatorsToWindows();
                 path = Paths.SkipPathPrefix(absolutePath, projectDir);
@@ -652,7 +690,6 @@ namespace UnityEditor.VisualStudioIntegration
             return ProjectExtensions[language];
         }
     }
-
     /// <summary>
     /// SolutionPostProcessor inherit from AssetPostprocessor in order to be called by AssetPostprocessingInternal.CallOnGeneratedCSProjectFiles().
     /// <para>
@@ -679,7 +716,7 @@ namespace UnityEditor.VisualStudioIntegration
         private static bool ReplacePathInNode(XmlNode node, string projectDir)
         {
             var path = node.Attributes["Include"].Value;
-            if (AssetDatabase.IsPackagedAssetPath(path.ConvertSeparatorsToUnity()))
+            if (PackageManager.Folders.IsPackagedAssetPath(path.ConvertSeparatorsToUnity()))
             {
                 var absolutePath = Path.GetFullPath(path).ConvertSeparatorsToWindows();
                 var newPath = Paths.SkipPathPrefix(absolutePath, projectDir);

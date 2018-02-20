@@ -44,41 +44,30 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Func<Exception, bool> endContainerGUIFromException;
 
-        /// The current UI scaling factor for high-DPI displays. For instance, 2.0 on a retina display
-        internal static float pixelsPerPoint
-        {
-            [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-            get { return Internal_GetPixelsPerPoint(); }
-        }
-
-        /// *listonly*
         public static int GetControlID(FocusType focus)
         {
             return GetControlID(0, focus);
         }
 
-        /// *listonly*
         public static int GetControlID(GUIContent contents, FocusType focus)
         {
             return GetControlID(contents.hash, focus);
         }
 
-        /// *listonly*
         public static int GetControlID(FocusType focus, Rect position)
         {
-            return Internal_GetNextControlID2(0, focus, position);
-        }
-
-        /// *listonly*
-        public static int GetControlID(int hint, FocusType focus, Rect position)
-        {
-            return Internal_GetNextControlID2(hint, focus, position);
+            return GetControlID(0, focus, position);
         }
 
         // Get a unique ID for a control.
         public static int GetControlID(GUIContent contents, FocusType focus, Rect position)
         {
-            return Internal_GetNextControlID2(contents.hash, focus, position);
+            return GetControlID(contents.hash, focus, position);
+        }
+
+        public static int GetControlID(int hint, FocusType focus)
+        {
+            return GetControlID(hint, focus, Rect.zero);
         }
 
         // Get a state object from a controlID.
@@ -104,15 +93,13 @@ namespace UnityEngine
         [RequiredByNativeCode]
         internal static void TakeCapture()
         {
-            if (takeCapture != null)
-                takeCapture();
+            takeCapture?.Invoke();
         }
 
         [RequiredByNativeCode]
         internal static void RemoveCapture()
         {
-            if (releaseCapture != null)
-                releaseCapture();
+            releaseCapture?.Invoke();
         }
 
         // The controlID of the control that has keyboard focus.
@@ -137,12 +124,12 @@ namespace UnityEngine
 
         internal static GUISkin GetDefaultSkin(int skinMode)
         {
-            return Internal_GetDefaultSkin(skinMode);
+            return Internal_GetDefaultSkin(skinMode) as GUISkin;
         }
 
         internal static GUISkin GetDefaultSkin()
         {
-            return Internal_GetDefaultSkin(s_SkinMode);
+            return Internal_GetDefaultSkin(s_SkinMode) as GUISkin;
         }
 
         // internal so we can get to it from EditorGUIUtility.GetBuiltinSkin
@@ -168,8 +155,7 @@ namespace UnityEngine
 
         internal static void CleanupRoots()
         {
-            if (cleanupRoots != null)
-                cleanupRoots();
+            cleanupRoots?.Invoke();
         }
 
         [RequiredByNativeCode]
@@ -266,7 +252,7 @@ namespace UnityEngine
         // Only allow calling GUI functions from inside OnGUI
         internal static void CheckOnGUI()
         {
-            if (Internal_GetGUIDepth() <= 0)
+            if (guiDepth <= 0)
                 throw new ArgumentException("You can only call GUI functions from inside OnGUI.");
         }
 
@@ -325,13 +311,13 @@ namespace UnityEngine
         internal struct ManualTex2SRGBScope : IDisposable
         {
             private bool m_Disposed;
-            private bool m_WasEnabled;
+            private readonly bool m_WasEnabled;
 
             public ManualTex2SRGBScope(bool enabled)
             {
                 m_Disposed = false;
-                m_WasEnabled = GUIUtility.manualTex2SRGBEnabled;
-                GUIUtility.manualTex2SRGBEnabled = enabled;
+                m_WasEnabled = manualTex2SRGBEnabled;
+                manualTex2SRGBEnabled = enabled;
             }
 
             public void Dispose()
@@ -339,7 +325,7 @@ namespace UnityEngine
                 if (m_Disposed)
                     return;
                 m_Disposed = true;
-                GUIUtility.manualTex2SRGBEnabled = m_WasEnabled;
+                manualTex2SRGBEnabled = m_WasEnabled;
             }
         }
     }
@@ -352,7 +338,6 @@ namespace UnityEngine
         {
             private bool m_Disposed;
 
-            /// <param name="clipRect">AABB in the transformed space.</param>
             public ParentClipScope(Matrix4x4 objectTransform, Rect clipRect)
             {
                 m_Disposed = false;
@@ -371,7 +356,7 @@ namespace UnityEngine
         // Push a clip rect to the stack with pixel offsets.
         internal static void Push(Rect screenRect, Vector2 scrollOffset, Vector2 renderOffset, bool resetOffset)
         {
-            GUIClip.Internal_Push(screenRect, scrollOffset, renderOffset, resetOffset);
+            Internal_Push(screenRect, scrollOffset, renderOffset, resetOffset);
         }
 
         // Removes the topmost clipping rectangle, undoing the effect of the latest GUIClip.Push
@@ -383,64 +368,54 @@ namespace UnityEngine
         // Unclips /pos/ to IMGUI container coordinates.
         public static Vector2 Unclip(Vector2 pos)
         {
-            Unclip_Vector2(ref pos);
-            return pos;
+            return Unclip_Vector2(pos);
         }
 
         // Unclips /rect/ to IMGUI container coordinates.
         public static Rect Unclip(Rect rect)
         {
-            Unclip_Rect(ref rect);
-            return rect;
+            return Unclip_Rect(rect);
         }
 
         // Clips /absolutePos/ to IMGUI container coordinates
         public static Vector2 Clip(Vector2 absolutePos)
         {
-            Clip_Vector2(ref absolutePos);
-            return absolutePos;
+            return Clip_Vector2(absolutePos);
         }
 
         // Convert /absoluteRect/ to IMGUI container coordinates
         public static Rect Clip(Rect absoluteRect)
         {
-            Internal_Clip_Rect(ref absoluteRect);
-            return absoluteRect;
+            return Internal_Clip_Rect(absoluteRect);
         }
 
-        // Unclips /pos/ to window coordinater.
+        // Unclips /pos/ to window coordinator.
         public static Vector2 UnclipToWindow(Vector2 pos)
         {
-            UnclipToWindow_Vector2(ref pos);
-            return pos;
+            return UnclipToWindow_Vector2(pos);
         }
 
         // Unclips /rect/ to window coordinates.
         public static Rect UnclipToWindow(Rect rect)
         {
-            UnclipToWindow_Rect(ref rect);
-            return rect;
+            return UnclipToWindow_Rect(rect);
         }
 
         // Clips /absolutePos/ to window coordinates
         public static Vector2 ClipToWindow(Vector2 absolutePos)
         {
-            ClipToWindow_Vector2(ref absolutePos);
-            return absolutePos;
+            return ClipToWindow_Vector2(absolutePos);
         }
 
         // Convert /absoluteRect/ to window coordinates
         public static Rect ClipToWindow(Rect absoluteRect)
         {
-            ClipToWindow_Rect(ref absoluteRect);
-            return absoluteRect;
+            return ClipToWindow_Rect(absoluteRect);
         }
 
         public static Vector2 GetAbsoluteMousePosition()
         {
-            Vector2 vec;
-            Internal_GetAbsoluteMousePosition(out vec);
-            return vec;
+            return Internal_GetAbsoluteMousePosition();
         }
     }
 }

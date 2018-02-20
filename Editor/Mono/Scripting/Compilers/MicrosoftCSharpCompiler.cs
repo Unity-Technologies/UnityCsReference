@@ -104,9 +104,11 @@ namespace UnityEditor.Scripting.Compilers
             {
                 "/target:library",
                 "/nowarn:0169",
-                "/unsafe",
                 "/out:" + outputPath
             };
+
+            if (_island._allowUnsafeCode)
+                arguments.Add("/unsafe");
 
             if (!_island._development_player)
             {

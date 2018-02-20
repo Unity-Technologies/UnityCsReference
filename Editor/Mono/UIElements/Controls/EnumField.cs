@@ -8,12 +8,12 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class EnumField : BaseTextElement, INotifyValueChanged<Enum>
+    public class EnumField : BaseTextControl<Enum>
     {
         private Type m_EnumType;
 
         private Enum m_Value;
-        public Enum value
+        public override Enum value
         {
             get { return m_Value; }
             set
@@ -21,19 +21,26 @@ namespace UnityEditor.Experimental.UIElements
                 if (m_Value != value)
                 {
                     m_Value = value;
-                    text = m_Value.ToString();
+                    text = ObjectNames.NicifyVariableName(m_Value.ToString());
                     Dirty(ChangeType.Repaint);
                 }
             }
         }
 
+        public EnumField() {}
+
         public EnumField(Enum defaultValue)
+        {
+            Init(defaultValue);
+        }
+
+        public void Init(Enum defaultValue)
         {
             m_EnumType = defaultValue.GetType();
             value = defaultValue;
         }
 
-        public void SetValueAndNotify(Enum newValue)
+        public override void SetValueAndNotify(Enum newValue)
         {
             if (value != newValue)
             {
@@ -46,27 +53,26 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        public void OnValueChanged(EventCallback<ChangeEvent<Enum>> callback)
-        {
-            RegisterCallback(callback);
-        }
-
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
-                OnMouseDown();
+            if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
+                ShowMenu();
         }
 
-        private void OnMouseDown()
+        private void ShowMenu()
         {
+            if (m_EnumType == null)
+                return;
+
             var menu = new GenericMenu();
 
             foreach (Enum item in Enum.GetValues(m_EnumType))
             {
                 bool isSelected = item.CompareTo(value) == 0;
-                menu.AddItem(new GUIContent(item.ToString()), isSelected,
+                string label = ObjectNames.NicifyVariableName(item.ToString());
+                menu.AddItem(new GUIContent(label), isSelected,
                     contentView => ChangeValueFromMenu(contentView),
                     item);
             }

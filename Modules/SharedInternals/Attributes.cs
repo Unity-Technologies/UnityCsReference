@@ -50,22 +50,7 @@ namespace UnityEngine.Scripting
 
         public string Name { get; set; }
         public bool Optional { get; set; }
-    }
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
-    [VisibleToOtherModules]
-    internal class GenerateManagedProxyAttribute : Attribute
-    {
-        public GenerateManagedProxyAttribute()
-        {
-        }
-
-        public GenerateManagedProxyAttribute(string nativeType)
-        {
-            NativeType = nativeType;
-        }
-
-        public string NativeType { get; set; }
+        public bool GenerateProxy { get; set; }
     }
 
     // NOTE(rb): This is a temporary attribute that UnityBindingsParser will

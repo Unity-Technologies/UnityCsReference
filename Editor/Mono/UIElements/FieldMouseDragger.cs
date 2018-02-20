@@ -57,7 +57,7 @@ namespace UnityEditor.Experimental.UIElements
             Rect dragHotZone;
             if (m_DragHotZone.width < 0 || m_DragHotZone.height < 0)
             {
-                dragHotZone = m_DragElement.localBound;
+                dragHotZone = m_DragElement.rect;
             }
             else
             {

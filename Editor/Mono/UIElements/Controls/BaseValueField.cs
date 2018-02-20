@@ -8,11 +8,11 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public abstract class BaseValueField<T> : VisualElement, INotifyValueChanged<T>
+    public abstract class BaseValueField<T> : BaseControl<T>
     {
         protected T m_Value;
 
-        public T value
+        public override T value
         {
             get { return m_Value; }
             set
@@ -27,7 +27,7 @@ namespace UnityEditor.Experimental.UIElements
 
         protected abstract void UpdateDisplay();
 
-        public void SetValueAndNotify(T newValue)
+        public override void SetValueAndNotify(T newValue)
         {
             if (!EqualityComparer<T>.Default.Equals(m_Value, newValue))
             {
@@ -38,11 +38,6 @@ namespace UnityEditor.Experimental.UIElements
                     UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                 }
             }
-        }
-
-        public void OnValueChanged(EventCallback<ChangeEvent<T>> callback)
-        {
-            RegisterCallback(callback);
         }
     }
 }

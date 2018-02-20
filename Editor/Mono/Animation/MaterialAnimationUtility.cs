@@ -48,6 +48,11 @@ namespace UnityEditorInternal
             return modifications;
         }
 
+        static PropertyModification[] MaterialPropertyToPropertyModifications(MaterialProperty materialProp, Object target, Vector4 vec)
+        {
+            return MaterialPropertyToPropertyModifications(materialProp.name, target, vec);
+        }
+
         static PropertyModification[] MaterialPropertyToPropertyModifications(string name, Object target, Vector4 vec)
         {
             PropertyModification[] modifications = CreatePropertyModifications(4, target);
@@ -66,8 +71,8 @@ namespace UnityEditorInternal
                 undoModifications[i].previousValue = modifications[i];
             }
 
-            UndoPropertyModification[] ret = Undo.postprocessModifications(undoModifications);
-            return (ret.Length != modifications.Length);
+            UndoPropertyModification[] ret = Undo.InvokePostprocessModifications(undoModifications);
+            return ret.Length != modifications.Length;
         }
 
         static public bool OverridePropertyColor(MaterialProperty materialProp, Renderer target, out Color color)

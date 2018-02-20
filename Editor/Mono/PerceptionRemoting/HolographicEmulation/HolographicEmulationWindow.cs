@@ -11,6 +11,7 @@ using UnityEditor;
 using UnityEditorInternal.VR;
 using UnityEngine;
 using UnityEngine.XR;
+using UnityEngine.XR.WSA;
 
 namespace UnityEditorInternal.VR
 {
@@ -79,7 +80,7 @@ namespace UnityEditorInternal.VR
             EditorGUIUtility.TrTextContent("Right Hand"),
         };
 
-        public EmulationMode emulationMode
+        internal EmulationMode emulationMode
         {
             get { return m_Mode; }
             set { m_Mode = value; Repaint(); }

@@ -17,7 +17,7 @@ namespace UnityEditor
             public static GUIContent colorGradient = EditorGUIUtility.TrTextContent("Color", "The gradient describing the color along the line.");
             public static GUIContent numCornerVertices = EditorGUIUtility.TrTextContent("Corner Vertices", "How many vertices to add for each corner.");
             public static GUIContent numCapVertices = EditorGUIUtility.TrTextContent("End Cap Vertices", "How many vertices to add at each end.");
-            public static GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Lines can rotate to face their transform component or the camera. Note that when using Local mode, lines will face the XY plane of the Transform.");
+            public static GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Lines can rotate to face their transform component or the camera. When using TransformZ mode, lines extrude along the XY plane of the Transform.");
             public static GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
             public static GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
         }
@@ -43,6 +43,7 @@ namespace UnityEditor
                 excludedProperties.Add("m_MotionVectors");
             if (!SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
                 excludedProperties.Add("m_ReceiveShadows");
+            excludedProperties.Add("m_RenderingLayerMask");
             m_ExcludedProperties = excludedProperties.ToArray();
 
             m_CurveEditor.OnEnable(serializedObject);

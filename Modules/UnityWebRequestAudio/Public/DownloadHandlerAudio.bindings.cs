@@ -42,6 +42,10 @@ namespace UnityEngine.Networking
 
         public extern AudioClip audioClip { get; }
 
+        public extern bool streamAudio { get; set; }
+
+        public extern bool compressed { get; set; }
+
         public static AudioClip GetContent(UnityWebRequest www)
         {
             return GetCheckedDownloader<DownloadHandlerAudioClip>(www).audioClip;

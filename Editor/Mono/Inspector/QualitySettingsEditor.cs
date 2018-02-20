@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor.Build;
 using System.Linq;
 using UnityEditorInternal;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -19,8 +20,9 @@ namespace UnityEditor
             public static readonly GUIStyle kToggle = "OL Toggle";
             public static readonly GUIStyle kDefaultToggle = "OL ToggleWhite";
 
-            public static readonly GUIContent kPlatformTooltip = new GUIContent("", "Allow quality setting on platform");
+            public static readonly GUIContent kPlatformTooltip = EditorGUIUtility.TrTextContent("", "Allow quality setting on platform");
             public static readonly GUIContent kAddQualityLevel = EditorGUIUtility.TrTextContent("Add Quality Level");
+            public static readonly GUIContent kTextureStreamingBudget = EditorGUIUtility.TrTextContent("Texture Streaming Budget", "Texture Streaming Budget in MB");
 
             public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
             public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require using Deferred Lighting or making camera render the depth texture.");
@@ -40,6 +42,7 @@ namespace UnityEditor
         public const int kMaxAsyncRingBufferSize = 512;
         public const int kMinAsyncUploadTimeSlice = 1;
         public const int kMaxAsyncUploadTimeSlice = 33;
+        public const int kTextureStreamSmallestMip = 8; // This needs to match definition in TextureStreamingManager.h
 
         private SerializedObject m_QualitySettings;
         private SerializedProperty m_QualitySettingsProperty;
@@ -534,14 +537,16 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
             GUILayout.Space(10);
 
+            GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
+            if (SupportedRenderingFeatures.IsMixedLightingModeSupported(MixedLightingMode.Shadowmask))
+                EditorGUILayout.PropertyField(shadowMaskUsageProperty);
+
             if (!usingSRP)
             {
-                GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
                 EditorGUILayout.PropertyField(shadowsProperty);
                 EditorGUILayout.PropertyField(shadowResolutionProperty);
                 EditorGUILayout.PropertyField(shadowProjectionProperty);
                 EditorGUILayout.PropertyField(shadowDistanceProperty);
-                EditorGUILayout.PropertyField(shadowMaskUsageProperty);
                 EditorGUILayout.PropertyField(shadowNearPlaneOffsetProperty);
                 EditorGUILayout.PropertyField(shadowCascadesProperty);
 
@@ -565,6 +570,18 @@ namespace UnityEditor
             asyncUploadTimeSliceProperty.intValue = Mathf.Clamp(asyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
             asyncUploadBufferSizeProperty.intValue = Mathf.Clamp(asyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);
 
+            GUILayout.Space(10);
+            var streamingMipmapsFeatureEnabledProperty = currentSettings.FindPropertyRelative("streamingMipmapsFeatureEnabled");
+            EditorGUILayout.PropertyField(streamingMipmapsFeatureEnabledProperty);
+            if (streamingMipmapsFeatureEnabledProperty.boolValue)
+            {
+                var streamingMipmapsActiveProperty = currentSettings.FindPropertyRelative("streamingMipmapsActive");
+                EditorGUILayout.PropertyField(streamingMipmapsActiveProperty);
+                var textureStreamingBudgetProperty = currentSettings.FindPropertyRelative("textureStreamingBudget");
+                EditorGUILayout.PropertyField(textureStreamingBudgetProperty, Styles.kTextureStreamingBudget);
+                var minStreamingMipLevelProperty = currentSettings.FindPropertyRelative("minStreamingMipLevel");
+                EditorGUILayout.PropertyField(minStreamingMipLevelProperty);
+            }
 
             if (m_Dragging != null && m_Dragging.m_Position != m_Dragging.m_StartPosition)
             {

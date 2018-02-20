@@ -116,7 +116,7 @@ namespace UnityEditor
                 connectedActor == null ? Quaternion.identity : connectedActor.transform.rotation;
 
             // to enhance usability, orient the limit region so the dynamic body is within it, assuming bodies were bound on opposite sides of the anchor
-            var jointFrame = joint.GetActorLocalPose(jointFrameActorIndex);
+            var jointFrame = joint.GetLocalPoseMatrix(jointFrameActorIndex);
             var jointFrameOrientation = Quaternion.LookRotation(
                     jointFrame.MultiplyVector(Vector3.forward),
                     jointFrame.MultiplyVector(rightHandedLimit ? Vector3.down : Vector3.up)

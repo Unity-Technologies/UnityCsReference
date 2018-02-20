@@ -26,7 +26,7 @@ internal class ParticleSystemCurveEditor
         public GUIStyle yAxisHeader = new GUIStyle(ParticleSystemStyles.Get().label);
         public GUIContent optimizeCurveText = EditorGUIUtility.TrTextContent("Optimize", "Click to optimize curve. Optimized curves are defined by having at most 3 keys, with a key at both ends, and do not support loop or ping pong wrapping.");
         public GUIContent removeCurveText = EditorGUIUtility.TrTextContent("Remove", "Remove selected curve(s)");
-        public GUIContent curveLibraryPopup = new GUIContent("", "Open curve library");
+        public GUIContent curveLibraryPopup = EditorGUIUtility.TrTextContent("", "Open curve library");
         public GUIContent presetTooltip = new GUIContent();
     }
     internal static Styles s_Styles;

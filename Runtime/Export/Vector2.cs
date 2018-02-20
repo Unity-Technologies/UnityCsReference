@@ -5,14 +5,15 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
     // Representation of 2D vectors and points.
-    [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [GenerateManagedProxy("Vector2f")]
+    [NativeClass("Vector2f")]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     public struct Vector2
     {
         // X component of the vector.

@@ -50,6 +50,8 @@ namespace UnityEditor
             public SerializedProperty orthographic { get; private set; }
             public SerializedProperty orthographicSize { get; private set; }
             public SerializedProperty depth { get; private set; }
+            public SerializedProperty streamingMipmapBias { get; private set; }
+            public SerializedProperty streamingInfluence { get; private set; }
             public SerializedProperty cullingMask { get; private set; }
             public SerializedProperty renderingPath { get; private set; }
             public SerializedProperty occlusionCulling { get; private set; }
@@ -87,6 +89,8 @@ namespace UnityEditor
                 orthographic = m_SerializedObject.FindProperty("orthographic");
                 orthographicSize = m_SerializedObject.FindProperty("orthographic size");
                 depth = m_SerializedObject.FindProperty("m_Depth");
+                streamingMipmapBias = m_SerializedObject.FindProperty("m_StreamingMipmapBias");
+                streamingInfluence = m_SerializedObject.FindProperty("m_StreamingInfluence");
                 cullingMask = m_SerializedObject.FindProperty("m_CullingMask");
                 renderingPath = m_SerializedObject.FindProperty("m_RenderingPath");
                 occlusionCulling = m_SerializedObject.FindProperty("m_OcclusionCulling");
@@ -115,12 +119,12 @@ namespace UnityEditor
 
             public void DrawClearFlags()
             {
-                EditorGUILayout.PropertyField(clearFlags, EditorGUIUtility.TextContent("Clear Flags|What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas."));
+                EditorGUILayout.PropertyField(clearFlags, EditorGUIUtility.TrTextContent("Clear Flags", "What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas."));
             }
 
             public void DrawBackgroundColor()
             {
-                EditorGUILayout.PropertyField(backgroundColor, EditorGUIUtility.TextContent("Background|The Camera clears the screen to this color before rendering."));
+                EditorGUILayout.PropertyField(backgroundColor, EditorGUIUtility.TrTextContent("Background", "The Camera clears the screen to this color before rendering."));
             }
 
             public void DrawCullingMask()
@@ -133,7 +137,7 @@ namespace UnityEditor
                 ProjectionType projectionType = orthographic.boolValue ? ProjectionType.Orthographic : ProjectionType.Perspective;
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = orthographic.hasMultipleDifferentValues;
-                projectionType = (ProjectionType)EditorGUILayout.EnumPopup(EditorGUIUtility.TextContent("Projection|How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective."), projectionType);
+                projectionType = (ProjectionType)EditorGUILayout.EnumPopup(EditorGUIUtility.TrTextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective."), projectionType);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                     orthographic.boolValue = (projectionType == ProjectionType.Orthographic);
@@ -141,9 +145,9 @@ namespace UnityEditor
                 if (!orthographic.hasMultipleDifferentValues)
                 {
                     if (projectionType == ProjectionType.Orthographic)
-                        EditorGUILayout.PropertyField(orthographicSize, new GUIContent("Size"));
+                        EditorGUILayout.PropertyField(orthographicSize, EditorGUIUtility.TrTextContent("Size"));
                     else
-                        EditorGUILayout.Slider(fieldOfView, 1f, 179f, EditorGUIUtility.TextContent("Field of View|The width of the Camera’s view angle, measured in degrees along the local Y axis."));
+                        EditorGUILayout.Slider(fieldOfView, 1f, 179f, EditorGUIUtility.TrTextContent("Field of View", "The width of the Camera’s view angle, measured in degrees along the local Y axis."));
                 }
             }
 
@@ -154,13 +158,20 @@ namespace UnityEditor
 
             public void DrawNormalizedViewPort()
             {
-                EditorGUILayout.PropertyField(normalizedViewPortRect, EditorGUIUtility.TextContent("Viewport Rect|Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1)."));
+                EditorGUILayout.PropertyField(normalizedViewPortRect, EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1)."));
             }
 
             public void DrawDepth()
             {
                 EditorGUILayout.PropertyField(depth);
             }
+
+            public void DrawStreamingMipmap()
+            {
+                EditorGUILayout.PropertyField(streamingMipmapBias);
+                EditorGUILayout.PropertyField(streamingInfluence);
+            }
+
 
             public void DrawRenderingPath()
             {
@@ -228,13 +239,16 @@ namespace UnityEditor
 
             public void DrawTargetEye()
             {
-                EditorGUILayout.IntPopup(targetEye, kTargetEyes, kTargetEyeValues, EditorGUIUtility.TempContent("Target Eye"));
+                if (PlayerSettings.virtualRealitySupported)
+                {
+                    EditorGUILayout.IntPopup(targetEye, kTargetEyes, kTargetEyeValues, EditorGUIUtility.TempContent("Target Eye"));
+                }
             }
         }
 
         private class Styles
         {
-            public static GUIContent iconRemove = EditorGUIUtility.IconContent("Toolbar Minus", "|Remove command buffer");
+            public static GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove command buffer");
             public static GUIStyle invisibleButton = "InvisibleButton";
         }
 
@@ -450,8 +464,10 @@ namespace UnityEditor
 
             settings.DrawClearFlags();
 
-            using (new EditorGUILayout.FadeGroupScope(m_ShowBGColorOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_ShowBGColorOptions.faded))
                 settings.DrawBackgroundColor();
+            EditorGUILayout.EndFadeGroup();
+
             settings.DrawCullingMask();
 
             EditorGUILayout.Space();
@@ -464,6 +480,7 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
             settings.DrawDepth();
+            settings.DrawStreamingMipmap();
             settings.DrawRenderingPath();
             if (m_ShowOrthoOptions.target && wantDeferredRendering)
                 EditorGUILayout.HelpBox("Deferred rendering does not work with Orthographic camera, will use Forward.",
@@ -480,8 +497,9 @@ namespace UnityEditor
             settings.DrawVR();
             settings.DrawMultiDisplay();
 
-            using (new EditorGUILayout.FadeGroupScope(m_ShowTargetEyeOption.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_ShowTargetEyeOption.faded))
                 settings.DrawTargetEye();
+            EditorGUILayout.EndFadeGroup();
 
             DepthTextureModeGUI();
             CommandBufferGUI();
@@ -520,7 +538,7 @@ namespace UnityEditor
             previewSize.y *= Mathf.Max(normalizedViewPortRect.height, 0f);
 
             // Prevent using invalid previewSize
-            if (previewSize.x <= 0f || previewSize.y <= 0f)
+            if (previewSize.x < 1f || previewSize.y < 1f)
                 return;
 
             float aspect = previewSize.x / previewSize.y;
@@ -562,8 +580,9 @@ namespace UnityEditor
                     }
                 }
 
+
                 var previewTexture = GetPreviewTextureWithSize((int)cameraRect.width, (int)cameraRect.height);
-                previewTexture.antiAliasing = QualitySettings.antiAliasing;
+                previewTexture.antiAliasing = Mathf.Max(1, QualitySettings.antiAliasing);
                 previewCamera.targetTexture = previewTexture;
                 previewCamera.pixelRect = new Rect(0, 0, cameraRect.width, cameraRect.height);
 

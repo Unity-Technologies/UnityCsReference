@@ -113,7 +113,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 m_TextElement.RemoveFromHierarchy();
                 m_TextElement.style.wordWrap = true;
-                m_TextElement.RegisterCallback<PostLayoutEvent>((evt) => ComputeTextSize());
+                m_TextElement.RegisterCallback<GeometryChangedEvent>((evt) => ComputeTextSize());
 
                 clippingOptions = ClippingOptions.NoClipping;
             }
@@ -248,7 +248,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
-            if (evt.GetEventTypeId() == PostLayoutEvent.TypeId())
+            if (evt.GetEventTypeId() == GeometryChangedEvent.TypeId())
             {
                 if (m_Attacher != null)
                     PerformTipLayout();
@@ -263,6 +263,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
             else if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
             {
+                //we make sure we sit on top of whatever siblings we have
+                BringToFront();
                 ShowText();
             }
             else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())

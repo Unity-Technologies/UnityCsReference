@@ -405,7 +405,6 @@ namespace UnityEditor
                 s_CurrentInspectorWindow = this;
                 Editor[] editors = tracker.activeEditors;
 
-                AssignAssetEditor(editors);
                 Profiler.BeginSample("InspectorWindow.DrawEditors()");
                 DrawEditors(editors);
                 Profiler.EndSample();
@@ -624,7 +623,7 @@ namespace UnityEditor
                 }
             }
 
-            editorDragging.HandleDraggingToBottomArea(remainingRect, m_Tracker);
+            editorDragging.HandleDraggingToBottomArea(editors, remainingRect);
         }
 
         static bool HasLabel(Object target)
@@ -997,25 +996,6 @@ namespace UnityEditor
             EditorGUI.LabelField(textRect, content, styles.preToolbar2);
         }
 
-        protected void AssignAssetEditor(Editor[] editors)
-        {
-            // Assign asset editor to importer editor
-            if (editors.Length > 1 && editors[0] is AssetImporterEditor)
-            {
-                (editors[0] as AssetImporterEditor).assetEditor = editors[1];
-                // if we have an asset editor but no target, it's likely the asset was just imported and we lost the target
-                // get the target back from the serialized object for all editors
-                // (dealing with multiple editors when a GameObject is involved)
-                for (int i = 0; i < editors.Length; i++)
-                {
-                    if (editors[i].target == null)
-                    {
-                        editors[i].InternalSetTargets(editors[i].serializedObject.targetObjects);
-                    }
-                }
-            }
-        }
-
         private void DrawEditors(Editor[] editors)
         {
             if (editors.Length == 0)
@@ -1034,7 +1014,7 @@ namespace UnityEditor
             // When inspecting a material asset force visible properties (MaterialEditor can be collapsed when shown on a GameObject)
             if (inspectedObject is Material)
             {
-                // Find material editor. MaterialEditor is in either index 0 or 1 (ProceduralMaterialInspector is in index 0).
+                // Find material editor. MaterialEditor is in either index 0 or 1.
                 for (int i = 0; i <= 1 && i < editors.Length; i++)
                 {
                     MaterialEditor me = editors[i] as MaterialEditor;
@@ -1114,14 +1094,15 @@ namespace UnityEditor
                 return;
 
             Object target = editor.target;
-            // see case 891450:
-            // inspector onGui starts, fetch ActiveEditorTrackers - this includes a MaterialEditor created with a canvasRenderer material
-            // then, disabling a Mask component deletes this material
-            // after that, either Active Editors are fetched again and the count is different OR the material is invalid and crashes the whole app
-            // The target is considered invalid if the MonoBehaviour is missing, to ensure that the missing MonoBehaviour field is drawn
-            // we only do not draw an editor if the target is invalid and it is not a MonoBehaviour. case: 917810
-            if (!target && target.GetType() != typeof(UnityEngine.MonoBehaviour))
+
+            // Avoid drawing editor if native target object is not alive, unless it's a MonoBehaviour/ScriptableObject
+            // We want to draw the generic editor with a warning about missing/invalid script
+            // Case 891450:
+            // - ActiveEditorTracker will automatically create editors for materials of components on tracked game objects
+            // - UnityEngine.UI.Mask will destroy this material in OnDisable (e.g. disabling it with the checkbox) causing problems when drawing the material editor
+            if (target == null && target.GetType() != typeof(MonoBehaviour) && target.GetType() != typeof(ScriptableObject))
                 return;
+
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
 
@@ -1325,7 +1306,7 @@ namespace UnityEditor
                 }
             }
 
-            editorDragging.HandleDraggingToEditor(editorIndex, dragRect, contentRect, m_Tracker);
+            editorDragging.HandleDraggingToEditor(editors, editorIndex, dragRect, contentRect);
 
             // Check and try to cleanup layout groups.
             if (GUILayoutUtility.current.topLevel != expectedGroup)
@@ -1394,7 +1375,7 @@ namespace UnityEditor
             Object currentTarget = editors[editorIndex].target;
 
             // Objects that should always be hidden
-            if (currentTarget is SubstanceImporter || currentTarget is ParticleSystemRenderer)
+            if (currentTarget is ParticleSystemRenderer)
                 return true;
 
             // Hide regular AssetImporters (but not inherited types)
@@ -1629,7 +1610,9 @@ namespace UnityEditor
             // set the tracker to the serialized list. if it contains nulls or is empty, the tracker won't lock
             // this fixes case 775007
             m_Tracker.SetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
-            m_Tracker.RebuildIfNecessary();
+            // since this method likely got called during OnEnable, and rebuilding the tracker could call OnDisable on all Editors,
+            // some of which might not have gotten their enable yet, the rebuilding needs to happen delayed in EditorApplication.update
+            new DelayedCallback(tracker.RebuildIfNecessary, 0f);
         }
     }
 }

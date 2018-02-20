@@ -60,15 +60,6 @@ public enum AndroidActivityIndicatorStyle
     InversedSmall = 3,
 }
 
-public enum TizenActivityIndicatorStyle
-{
-    DontShow = -1,
-    Large = 0,
-    InversedLarge = 1,
-    Small = 2,
-    InversedSmall = 3,
-}
-
 public sealed partial class Handheld
 {
     public static bool PlayFullScreenMovie (string path, [uei.DefaultValue("Color.black")]  Color bgColor , [uei.DefaultValue("FullScreenMovieControlMode.Full")]  FullScreenMovieControlMode controlMode , [uei.DefaultValue("FullScreenMovieScalingMode.AspectFit")]  FullScreenMovieScalingMode scalingMode ) {
@@ -125,12 +116,6 @@ public sealed partial class Handheld
     
     
     public static void SetActivityIndicatorStyle(AndroidActivityIndicatorStyle style)
-        {
-            SetActivityIndicatorStyleImpl((int)style);
-        }
-    
-    
-    public static void SetActivityIndicatorStyle(TizenActivityIndicatorStyle style)
         {
             SetActivityIndicatorStyleImpl((int)style);
         }
@@ -198,7 +183,6 @@ public sealed partial class TouchScreenKeyboard
                     case RuntimePlatform.IPhonePlayer:
                     case RuntimePlatform.tvOS:
                     case RuntimePlatform.Android:
-                    case RuntimePlatform.TizenPlayer:
                     case RuntimePlatform.Switch:
                         return true;
                     case RuntimePlatform.WSAPlayerX86:
@@ -333,6 +317,16 @@ public static TouchScreenKeyboard Open(string text, [uei.DefaultValue("TouchScre
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
+    }
+
+    public extern  int characterLimit
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
     }
 
     public extern  bool canGetSelection

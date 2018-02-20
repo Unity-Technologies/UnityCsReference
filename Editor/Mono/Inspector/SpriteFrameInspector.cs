@@ -238,7 +238,7 @@ namespace UnityEditor
 
             float pixelsToUnits = sprite.rect.width / sprite.bounds.size.x;
             Vector2[] vertices = sprite.vertices;
-            Vector2[] uvs = sprite.uv;
+            Vector2[] uvs = Sprites.SpriteUtility.GetSpriteUVs(sprite, false);
             ushort[] triangles = sprite.triangles;
             Vector2 pivot = sprite.pivot;
 

@@ -21,7 +21,7 @@ namespace UnityEditor
     [Serializable]
     internal class CurveEditorWindow : EditorWindow
     {
-        enum NormalizationMode
+        public enum NormalizationMode
         {
             None = 0,
             Normalize = 1,
@@ -162,17 +162,17 @@ namespace UnityEditor
         }
 
         // Returns true if a valid normalizationRect is returned (ranges are bounded)
-        bool GetNormalizationRect(out Rect normalizationRect)
+        static bool GetNormalizationRect(out Rect normalizationRect, CurveEditor curveEditor)
         {
             normalizationRect = new Rect();
-            if (m_CurveEditor.settings.hasUnboundedRanges)
+            if (curveEditor.settings.hasUnboundedRanges)
                 return false;
 
             normalizationRect = new Rect(
-                    m_CurveEditor.settings.hRangeMin,
-                    m_CurveEditor.settings.vRangeMin,
-                    m_CurveEditor.settings.hRangeMax - m_CurveEditor.settings.hRangeMin,
-                    m_CurveEditor.settings.vRangeMax - m_CurveEditor.settings.vRangeMin);
+                    curveEditor.settings.hRangeMin,
+                    curveEditor.settings.vRangeMin,
+                    curveEditor.settings.hRangeMax - curveEditor.settings.hRangeMin,
+                    curveEditor.settings.vRangeMax - curveEditor.settings.vRangeMin);
             return true;
         }
 
@@ -409,10 +409,10 @@ namespace UnityEditor
             }
         }
 
-        Keyframe[] NormalizeKeys(Keyframe[] sourceKeys, NormalizationMode normalization)
+        public static Keyframe[] NormalizeKeys(Keyframe[] sourceKeys, NormalizationMode normalization, CurveEditor curveEditor)
         {
             Rect normalizationRect;
-            if (!GetNormalizationRect(out normalizationRect))
+            if (!GetNormalizationRect(out normalizationRect, curveEditor))
                 // No normalization rect, just return a copy of the source keyframes
                 normalization = NormalizationMode.None;
             return CopyAndScaleCurveKeys(sourceKeys, normalizationRect, normalization);
@@ -420,12 +420,22 @@ namespace UnityEditor
 
         Keyframe[] GetDenormalizedKeys(Keyframe[] sourceKeys)
         {
-            return NormalizeKeys(sourceKeys, NormalizationMode.Denormalize);
+            return GetDenormalizedKeys(sourceKeys, m_CurveEditor);
+        }
+
+        public static Keyframe[] GetDenormalizedKeys(Keyframe[] sourceKeys, CurveEditor curveEditor)
+        {
+            return NormalizeKeys(sourceKeys, NormalizationMode.Denormalize, curveEditor);
         }
 
         Keyframe[] GetNormalizedKeys(Keyframe[] sourceKeys)
         {
-            return NormalizeKeys(sourceKeys, NormalizationMode.Normalize);
+            return GetNormalizedKeys(sourceKeys, m_CurveEditor);
+        }
+
+        public static Keyframe[] GetNormalizedKeys(Keyframe[] sourceKeys, CurveEditor curveEditor)
+        {
+            return NormalizeKeys(sourceKeys, NormalizationMode.Normalize, curveEditor);
         }
 
         void OnGUI()
@@ -526,7 +536,7 @@ namespace UnityEditor
         void ValidateCurveLibraryTypeAndScale()
         {
             Rect normalizationRect;
-            if (GetNormalizationRect(out normalizationRect))
+            if (GetNormalizationRect(out normalizationRect, m_CurveEditor))
             {
                 if (curveLibraryType != CurveLibraryType.NormalizedZeroToOne)
                     Debug.LogError("When having a normalize rect we should be using curve library type: NormalizedZeroToOne (normalizationRect: " + normalizationRect + ")");

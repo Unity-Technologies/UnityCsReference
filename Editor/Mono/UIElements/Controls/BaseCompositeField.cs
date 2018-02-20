@@ -80,6 +80,15 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            // Focus first field if any
+            if (evt.GetEventTypeId() == FocusEvent.TypeId() && m_Fields.Count > 0)
+                m_Fields[0].Focus();
+        }
+
         private DoubleField AddDoubleField(EventCallback<ChangeEvent<double>> callback)
         {
             var field = new DoubleField();

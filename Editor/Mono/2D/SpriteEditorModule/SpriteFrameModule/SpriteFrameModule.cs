@@ -134,10 +134,10 @@ namespace UnityEditor
                     }
                 }
                 else
-                    AddSpriteWithUniqueName(frame, alignment, pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, index++);
+                    AddSpriteWithUniqueName(frame, alignment, pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, index++, Vector4.zero);
             }
             else
-                AddSprite(frame, alignment, pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, GetSpriteNamePrefix() + "_" + index++);
+                AddSprite(frame, alignment, pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, GetSpriteNamePrefix() + "_" + index++, Vector4.zero);
         }
 
         private SpriteRect GetExistingOverlappingSprite(Rect rect)
@@ -165,7 +165,7 @@ namespace UnityEditor
             return m_AlphaPixelCache[index];
         }
 
-        private SpriteRect AddSprite(Rect rect, int alignment, Vector2 pivot, int colliderAlphaCutoff, float colliderDetail, string name)
+        private SpriteRect AddSprite(Rect rect, int alignment, Vector2 pivot, int colliderAlphaCutoff, float colliderDetail, string name, Vector4 border)
         {
             SpriteRect spriteRect = new SpriteRect();
 
@@ -175,7 +175,7 @@ namespace UnityEditor
 
             spriteRect.name = name;
             spriteRect.originalName = spriteRect.name;
-            spriteRect.border = Vector4.zero;
+            spriteRect.border = border;
             spriteEditor.SetDataModified();
 
             m_RectsCache.spriteRects.Add(spriteRect);
@@ -184,10 +184,10 @@ namespace UnityEditor
             return spriteRect;
         }
 
-        public SpriteRect AddSpriteWithUniqueName(Rect rect, int alignment, Vector2 pivot, int colliderAlphaCutoff, float colliderDetail, int nameIndexingHint)
+        public SpriteRect AddSpriteWithUniqueName(Rect rect, int alignment, Vector2 pivot, int colliderAlphaCutoff, float colliderDetail, int nameIndexingHint, Vector4 border)
         {
             string name = GetUniqueName(GetSpriteNamePrefix(), nameIndexingHint);
-            return AddSprite(rect, alignment, pivot, colliderAlphaCutoff, colliderDetail, name);
+            return AddSprite(rect, alignment, pivot, colliderAlphaCutoff, colliderDetail, name, border);
         }
 
         private string GetSpriteNamePrefix()
@@ -225,7 +225,7 @@ namespace UnityEditor
             m_RectsCache.spriteRects.Clear();
 
             foreach (Rect frame in frames)
-                AddSprite(frame, alignment, pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, GetSpriteNamePrefix() + "_" + index++);
+                AddSprite(frame, alignment, pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, GetSpriteNamePrefix() + "_" + index++, Vector4.zero);
 
             selected = null;
             spriteEditor.SetDataModified();
@@ -296,7 +296,7 @@ namespace UnityEditor
             if (selected != null)
             {
                 undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Duplicate sprite");
-                selected = AddSpriteWithUniqueName(selected.rect, (int)selected.alignment, selected.pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, 0);
+                selected = AddSpriteWithUniqueName(selected.rect, (int)selected.alignment, selected.pivot, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, 0, selected.border);
             }
         }
 
@@ -304,7 +304,7 @@ namespace UnityEditor
         {
             rect = ClampSpriteRect(rect, textureActualWidth, textureActualHeight);
             undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Create sprite");
-            selected = AddSpriteWithUniqueName(rect, 0, Vector2.zero, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, 0);
+            selected = AddSpriteWithUniqueName(rect, 0, Vector2.zero, kDefaultColliderAlphaCutoff, kDefaultColliderDetail, 0, Vector4.zero);
         }
 
         public void DeleteSprite()

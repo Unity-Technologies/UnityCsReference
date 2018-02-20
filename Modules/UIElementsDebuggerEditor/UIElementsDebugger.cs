@@ -22,6 +22,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         [SerializeField]
         private string m_LastWindowTitle;
 
+        private EditorWindow m_ScheduledWindowPicking;
         private bool m_ScheduleRestoreSelection;
 
         private HashSet<int> m_CurFoldout = new HashSet<int>();
@@ -58,34 +59,58 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             GetWindow<UIElementsDebugger>().Show();
         }
 
+        public static void OpenAndInspectWindow(EditorWindow window)
+        {
+            var uiElementsDebugger = GetWindow<UIElementsDebugger>();
+            uiElementsDebugger.Show();
+            uiElementsDebugger.m_ScheduledWindowPicking = window;
+        }
+
         private bool InterceptEvents(Event ev)
         {
             if (!m_CurPanel.HasValue)
                 return false;
+
+            if (m_CurPanel.Value.Panel.visualTree.IsDirty(ChangeType.Layout))
+            {
+                m_Refresh = true;
+            }
+
+            if (!m_PickingElementInPanel)
+                return false;
+
             if (Event.current == null || !Event.current.isMouse)
                 return false;
+
             VisualElement e = m_CurPanel.Value.Panel.Pick(ev.mousePosition);
             if (e != null)
                 ((PanelDebug)m_CurPanel.Value.Panel.panelDebug).highlightedElement = e.controlid;
 
-            // stop intercepting events
             if (ev.clickCount > 0 && ev.button == 0)
             {
-                m_CurPanel.Value.Panel.panelDebug.interceptEvents = null;
                 m_PickingElementInPanel = false;
-                m_VisualTreeTreeView.ExpandAll();
-                VisualTreeItem node = m_VisualTreeTreeView.GetRows()
-                    .OfType<VisualTreeItem>()
-                    .FirstOrDefault(vti => e != null && vti.elt.controlid == e.controlid);
-                if (node != null)
-                    m_VisualTreeTreeView.SetSelection(new List<int> { node.id }, TreeViewSelectionOptions.RevealAndFrame);
+
+                if (e != null)
+                {
+                    m_VisualTreeTreeView.FrameItem((int)e.controlid);
+                    m_VisualTreeTreeView.SetSelection(new List<int> { (int)e.controlid }, TreeViewSelectionOptions.RevealAndFrame);
+                }
             }
             return true;
         }
 
         public void OnGUI()
         {
-            if (m_ScheduleRestoreSelection)
+            if (m_ScheduledWindowPicking)
+            {
+                if (m_PickingData.TrySelectWindow(m_ScheduledWindowPicking))
+                {
+                    EndPicking(m_PickingData.Selected);
+                    m_VisualTreeTreeView.ExpandAll();
+                }
+                m_ScheduledWindowPicking = null;
+            }
+            else if (m_ScheduleRestoreSelection)
             {
                 m_ScheduleRestoreSelection = false;
                 if (m_PickingData.TryRestoreSelectedWindow(m_LastWindowTitle))
@@ -101,15 +126,11 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             bool refresh = false;
 
             EditorGUI.BeginChangeCheck();
-            m_PickingData.DoSelectDropDown();
-            if (EditorGUI.EndChangeCheck())
-            {
-                refresh = true;
-            }
-            if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(50)))
-            {
-                m_PickingData.Refresh();
-            }
+            m_PickingData.DoSelectDropDown(() =>
+                {Dictionary<int, Panel>.Enumerator it = UIElementsUtility.GetPanelsIterator();
+                 while (it.MoveNext())
+                     it.Current.Value.panelDebug = null;
+                 m_Refresh = true; });
 
             bool includeShadowHierarchy = GUILayout.Toggle(m_VisualTreeTreeView.includeShadowHierarchy, Styles.includeShadowHierarchyContent, EditorStyles.toolbarButton);
             if (includeShadowHierarchy != m_VisualTreeTreeView.includeShadowHierarchy)
@@ -118,36 +139,34 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 refresh = true;
             }
 
-            if (m_CurPanel.HasValue)
-            {
-                bool newPickingElementInPanel = GUILayout.Toggle(m_PickingElementInPanel, Styles.pickElementInPanelContent, EditorStyles.toolbarButton);
-                if (newPickingElementInPanel != m_PickingElementInPanel)
-                {
-                    m_PickingElementInPanel = newPickingElementInPanel;
-                    if (m_PickingElementInPanel)
-                        m_CurPanel.Value.Panel.panelDebug.interceptEvents = InterceptEvents;
-                }
-            }
+            GUI.enabled = m_CurPanel.HasValue;
+            bool newPickingElementInPanel = GUILayout.Toggle(m_PickingElementInPanel, Styles.pickElementInPanelContent, EditorStyles.toolbarButton);
+            m_PickingElementInPanel = newPickingElementInPanel;
+            GUI.enabled = true;
 
             m_Overlay = GUILayout.Toggle(m_Overlay, Styles.overlayContent, EditorStyles.toolbarButton);
 
-            bool uxmlLiveReloadIsEnabled = RetainedMode.UxmlLiveReloadIsEnabled;
-            bool newUxmlLiveReloadIsEnabled = GUILayout.Toggle(uxmlLiveReloadIsEnabled, Styles.liveReloadContent, EditorStyles.toolbarButton);
-            if (newUxmlLiveReloadIsEnabled != uxmlLiveReloadIsEnabled)
-                RetainedMode.UxmlLiveReloadIsEnabled = newUxmlLiveReloadIsEnabled;
+            // Note for future us : the UXML reload feature isn't quite ready to be public
+            if (Unsupported.IsDeveloperBuild())
+            {
+                bool uxmlLiveReloadIsEnabled = RetainedMode.UxmlLiveReloadIsEnabled;
+                bool newUxmlLiveReloadIsEnabled = GUILayout.Toggle(uxmlLiveReloadIsEnabled, Styles.liveReloadContent, EditorStyles.toolbarButton);
+                if (newUxmlLiveReloadIsEnabled != uxmlLiveReloadIsEnabled)
+                    RetainedMode.UxmlLiveReloadIsEnabled = newUxmlLiveReloadIsEnabled;
+            }
 
             EditorGUILayout.EndHorizontal();
 
-            if (refresh)
+            if (refresh || m_Refresh)
             {
                 EndPicking(m_PickingData.Selected);
             }
 
             if (m_CurPanel.HasValue)
             {
-                if (m_CurPanel.Value.Panel.panelDebug.enabled != m_Overlay)
+                if (m_CurPanel.Value.Panel.panelDebug.enabled != (m_Overlay || m_PickingElementInPanel))
                 {
-                    m_CurPanel.Value.Panel.panelDebug.enabled = m_Overlay;
+                    m_CurPanel.Value.Panel.panelDebug.enabled = m_Overlay || m_PickingElementInPanel;
                     m_CurPanel.Value.Panel.visualTree.Dirty(ChangeType.Repaint);
                 }
 
@@ -171,9 +190,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         private void EndPicking(ViewPanel? viewPanel)
         {
-            Dictionary<int, Panel>.Enumerator it = UIElementsUtility.GetPanelsIterator();
-            while (it.MoveNext())
-                it.Current.Value.panelDebug = null;
+            bool expand = !viewPanel.Equals(m_CurPanel);
             m_CurPanel = viewPanel;
             if (m_CurPanel.HasValue)
             {
@@ -181,12 +198,19 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
                 if (m_CurPanel.Value.Panel.panelDebug == null)
                     m_CurPanel.Value.Panel.panelDebug = new PanelDebug();
-                m_CurPanel.Value.Panel.panelDebug.enabled = true;
+
+                m_CurPanel.Value.Panel.panelDebug.interceptEvents = InterceptEvents;
+                m_CurPanel.Value.Panel.panelDebug.enabled = m_Overlay;
 
                 m_CurPanel.Value.Panel.visualTree.Dirty(ChangeType.Repaint);
                 m_VisualTreeTreeView.panel = (m_CurPanel.Value.Panel);
                 m_VisualTreeTreeView.Reload();
+
+                if (expand)
+                    m_VisualTreeTreeView.ExpandAll();
             }
+            else
+                m_LastWindowTitle = String.Empty;
         }
 
         private void DrawSelection(Rect rect)
@@ -293,6 +317,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         private string m_SelectedElementUxml;
         private ReorderableList m_ClassList;
         private string m_NewClass;
+        private bool m_Refresh;
 
         private void GetElementMatchers()
         {
@@ -321,9 +346,11 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 textElement.text = EditorGUILayout.TextField("Text", textElement.text);
             }
             m_SelectedElement.clippingOptions = (VisualElement.ClippingOptions)EditorGUILayout.EnumPopup("Clipping Option", m_SelectedElement.clippingOptions);
-            m_SelectedElement.visible = EditorGUILayout.Toggle("Visible", m_SelectedElement.visible);
+            m_SelectedElement.pickingMode = (PickingMode)EditorGUILayout.EnumPopup("Picking Mode", m_SelectedElement.pickingMode);
+
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
+            m_SelectedElement.pickingMode = (PickingMode)EditorGUILayout.EnumPopup("Picking Mode", m_SelectedElement.pickingMode);
 
             if (m_ClassList == null)
                 InitClassList();
@@ -337,6 +364,17 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             VisualElementStylesData styles = m_SelectedElement.effectiveStyle;
             bool anyChanged = false;
+
+            if (styles.m_CustomProperties != null && styles.m_CustomProperties.Any())
+            {
+                foreach (KeyValuePair<string, CustomProperty> customProperty in styles.m_CustomProperties)
+                {
+                    foreach (StyleValueHandle handle in customProperty.Value.handles)
+                    {
+                        EditorGUILayout.LabelField(customProperty.Key,  customProperty.Value.data.ReadAsString(handle));
+                    }
+                }
+            }
 
             foreach (PropertyInfo field in m_Sort ? k_SortedFieldInfos : k_FieldInfos)
             {
@@ -734,7 +772,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         internal HashSet<string> selectedElementStylesheets = new HashSet<string>();
 
         private VisualElement m_Target;
-        private List<VisualElement> m_Hierarchy = new List<VisualElement>();
+        private List<VisualElement> m_Hierarchy = VisualElementListPool.Get();  //TODO: Properly release it when Traversal is done
         private int m_Index;
 
         internal struct MatchedRule

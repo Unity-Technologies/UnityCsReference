@@ -16,38 +16,6 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-
-
-[UsedByNativeCode]
-public partial class Texture : Object
-{
-    public  Hash128 imageContentsHash
-    {
-        get { Hash128 tmp; INTERNAL_get_imageContentsHash(out tmp); return tmp;  }
-        set { INTERNAL_set_imageContentsHash(ref value); }
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private  void INTERNAL_get_imageContentsHash (out Hash128 value) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private  void INTERNAL_set_imageContentsHash (ref Hash128 value) ;
-
-    public extern  uint updateCount
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void IncrementUpdateCount () ;
-
-}
-
 [UsedByNativeCode]
 public sealed partial class Texture2D : Texture
 {
@@ -130,10 +98,6 @@ public Color[] GetPixels( [uei.DefaultValue("0")] int miplevel )
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public bool Resize (int width, int height, TextureFormat format, bool hasMipMap) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public Rect[] PackTextures (Texture2D[] textures, int padding, [uei.DefaultValue("2048")]  int maximumAtlasSize , [uei.DefaultValue("false")]  bool makeNoLongerReadable ) ;
 
     [uei.ExcludeFromDocs]
@@ -149,45 +113,6 @@ public Color[] GetPixels( [uei.DefaultValue("0")] int miplevel )
         return PackTextures ( textures, padding, maximumAtlasSize, makeNoLongerReadable );
     }
 
-    public static bool GenerateAtlas(Vector2[] sizes, int padding, int atlasSize, List<Rect> results)
-        {
-            if (sizes == null)
-                throw new ArgumentException("sizes array can not be null");
-            if (results == null)
-                throw new ArgumentException("results list cannot be null");
-            if (padding < 0)
-                throw new ArgumentException("padding can not be negative");
-            if (atlasSize <= 0)
-                throw new ArgumentException("atlas size must be positive");
-
-            results.Clear();
-            if (sizes.Length == 0)
-            {
-                return true;
-            }
-
-            GenerateAtlasInternal(sizes, padding, atlasSize, results);
-            return results.Count != 0;
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void GenerateAtlasInternal (Vector2[] sizes, int padding, int atlasSize, object resultList) ;
-
-    public void ReadPixels (Rect source, int destX, int destY, [uei.DefaultValue("true")]  bool recalculateMipMaps ) {
-        INTERNAL_CALL_ReadPixels ( this, ref source, destX, destY, recalculateMipMaps );
-    }
-
-    [uei.ExcludeFromDocs]
-    public void ReadPixels (Rect source, int destX, int destY) {
-        bool recalculateMipMaps = true;
-        INTERNAL_CALL_ReadPixels ( this, ref source, destX, destY, recalculateMipMaps );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_ReadPixels (Texture2D self, ref Rect source, int destX, int destY, bool recalculateMipMaps);
     [Flags]
     public enum EXRFlags    
     {
@@ -392,21 +317,9 @@ public sealed partial class SparseTexture : Texture
         get;
     }
 
-    public SparseTexture(int width, int height, TextureFormat format, int mipCount)
-        {
-            Internal_Create(this, width, height, format, mipCount, false);
-        }
-    
-    
-    public SparseTexture(int width, int height, TextureFormat format, int mipCount, bool linear)
-        {
-            Internal_Create(this, width, height, format, mipCount, linear);
-        }
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  void Internal_Create ([Writable] SparseTexture mono, int width, int height, TextureFormat format, int mipCount, bool linear) ;
+    extern private static  void Internal_Create ([Writable] SparseTexture mono, int width, int height, TextureFormat format, bool linear, int mipCount) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -457,22 +370,6 @@ public partial class RenderTexture : Texture
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void ReleaseTemporary (RenderTexture temp) ;
 
-    public void ResolveAntiAliasedSurface()
-        {
-            Internal_ResolveAntiAliasedSurface(null);
-        }
-    
-    
-    public void ResolveAntiAliasedSurface(RenderTexture target)
-        {
-            Internal_ResolveAntiAliasedSurface(target);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Internal_ResolveAntiAliasedSurface (RenderTexture target) ;
-
     public extern  int depth
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -483,89 +380,6 @@ public partial class RenderTexture : Texture
         set;
     }
 
-    public void DiscardContents () {
-        INTERNAL_CALL_DiscardContents ( this );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_DiscardContents (RenderTexture self);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void DiscardContents (bool discardColor, bool discardDepth) ;
-
-    public void MarkRestoreExpected () {
-        INTERNAL_CALL_MarkRestoreExpected ( this );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_MarkRestoreExpected (RenderTexture self);
-    public RenderBuffer colorBuffer { get { RenderBuffer res; GetColorBuffer(out res); return res; } }
-    
-    
-    public RenderBuffer depthBuffer { get { RenderBuffer res; GetDepthBuffer(out res); return res; } }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void GetColorBuffer (out RenderBuffer res) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void GetDepthBuffer (out RenderBuffer res) ;
-
-    public IntPtr GetNativeDepthBufferPtr () {
-        IntPtr result;
-        INTERNAL_CALL_GetNativeDepthBufferPtr ( this, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetNativeDepthBufferPtr (RenderTexture self, out IntPtr value);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetGlobalShaderProperty (string propertyName) ;
-
-    public extern static RenderTexture active
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    [System.Obsolete ("RenderTexture.enabled is always now, no need to use it")]
-    public extern static bool enabled
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    [System.Obsolete ("GetTexelOffset always returns zero now, no point in using it.")]
-public Vector2 GetTexelOffset()
-        {
-            return Vector2.zero;
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  bool SupportsStencil (RenderTexture rt) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private static  VRTextureUsage GetActiveVRUsage () ;
-
-    [System.Obsolete ("SetBorderColor is no longer supported.", true)]
-public void SetBorderColor(Color color) {}
 }
 
 [System.Serializable]

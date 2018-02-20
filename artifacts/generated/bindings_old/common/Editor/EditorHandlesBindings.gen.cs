@@ -61,6 +61,7 @@ public sealed partial class Handles
     
     
     private const int kMaxDottedLineVertices = 1000;
+    private static GUIContent s_Static = EditorGUIUtility.TrTextContent("Static");
     
             internal static int s_SliderHash = "SliderHash".GetHashCode();
             internal static int s_Slider2DHash = "Slider2DHash".GetHashCode();
@@ -1055,10 +1056,10 @@ public static void BeginGUI(Rect position)
             style.alignment = TextAnchor.MiddleLeft;
             style.fixedWidth = 0;
             Handles.BeginGUI();
-            Rect rect = HandleUtility.WorldPointToSizedRect(pos, EditorGUIUtility.TempContent("Static"), style);
+            Rect rect = HandleUtility.WorldPointToSizedRect(pos, s_Static, style);
             rect.x += 10;
             rect.y += 10;
-            GUI.Label(rect, EditorGUIUtility.TempContent("Static"), style);
+            GUI.Label(rect, s_Static, style);
             Handles.EndGUI();
         }
     

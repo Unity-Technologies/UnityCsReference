@@ -5,6 +5,8 @@
 using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Experimental.Rendering;
+using System;
 
 namespace UnityEditor
 {
@@ -81,7 +83,7 @@ namespace UnityEditor
                 public readonly GUIContent CookieSize = EditorGUIUtility.TrTextContent("Cookie Size", "Controls the size of the cookie mask currently assigned to the light.");
                 public readonly GUIContent DrawHalo = EditorGUIUtility.TrTextContent("Draw Halo", "When enabled, draws a spherical halo of light with a radius equal to the lights range value.");
                 public readonly GUIContent Flare = EditorGUIUtility.TrTextContent("Flare", "Specifies the flare object to be used by the light to render lens flares in the scene.");
-                public readonly GUIContent RenderMode = EditorGUIUtility.TrTextContent("Render Mode", "Specifies the importance of the light which impacts lighting fidelity and performance. Options are Auto, Important, and Not Important. This only affects Forward Rendering");
+                public readonly GUIContent RenderMode = EditorGUIUtility.TrTextContent("Render Mode", "Specifies the importance of the light which impacts lighting fidelity and performance. Options are Auto, Important, and Not Important. This only affects Forward Rendering.");
                 public readonly GUIContent CullingMask = EditorGUIUtility.TrTextContent("Culling Mask", "Specifies which layers will be affected or excluded from the light's effect on objects in the scene.");
 
                 public readonly GUIContent AreaWidth = EditorGUIUtility.TrTextContent("Width", "Controls the width in units of the area light.");
@@ -90,6 +92,8 @@ namespace UnityEditor
                 public readonly GUIContent BakingWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. Enable Baked Global Illumination to use Mixed or Baked light modes.");
                 public readonly GUIContent IndirectBounceShadowWarning = EditorGUIUtility.TrTextContent("Realtime indirect bounce shadowing is not supported for Spot and Point lights.");
                 public readonly GUIContent CookieWarning = EditorGUIUtility.TrTextContent("Cookie textures for spot lights should be set to clamp, not repeat, to avoid artifacts.");
+                public readonly GUIContent MixedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Mixed mode and/or any of the lighting modes.");
+                public readonly GUIContent BakedUnsupportedWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. The current render pipeline doesn't support Baked mode.");
 
                 public readonly GUIContent[] LightmapBakeTypeTitles = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Mixed"), EditorGUIUtility.TrTextContent("Baked") };
                 public readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
@@ -97,17 +101,34 @@ namespace UnityEditor
 
             static Styles s_Styles;
 
-            public bool isRealtime { get { return lightmapping.intValue == 4; } }
-            public bool isCompletelyBaked { get { return lightmapping.intValue == 2; } }
+            public bool isRealtime { get { return lightmapping.intValue == (int)LightmapBakeType.Realtime; } }
+            public bool isMixed { get { return lightmapping.intValue == (int)LightmapBakeType.Mixed; } }
+            public bool isCompletelyBaked { get { return lightmapping.intValue == (int)LightmapBakeType.Baked; } }
             public bool isBakedOrMixed { get { return !isRealtime; } }
-            public Texture cookie { get { return cookieProp.objectReferenceValue as Texture; } }
 
             internal bool typeIsSame { get { return !lightType.hasMultipleDifferentValues; } }
             internal bool shadowTypeIsSame { get { return !shadowsType.hasMultipleDifferentValues; } }
-            private bool lightmappingTypeIsSame { get { return !lightmapping.hasMultipleDifferentValues; } }
-            public Light light { get { return m_SerializedObject.targetObject as Light; } }
+            internal bool lightmappingTypeIsSame { get { return !lightmapping.hasMultipleDifferentValues; } }
 
-            internal bool bounceWarningValue
+            internal bool isPrefabAsset
+            {
+                get
+                {
+                    if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
+                        return false;
+
+                    PrefabType type = PrefabUtility.GetPrefabType(m_SerializedObject.targetObject);
+                    return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+                }
+            }
+
+            public Light light { get { return m_SerializedObject.targetObject as Light; } }
+            public Texture cookie { get { return cookieProp.objectReferenceValue as Texture; } }
+
+            internal bool showMixedModeUnsupportedWarning { get { return !isPrefabAsset && isMixed && lightmappingTypeIsSame && !SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Mixed); } }
+            internal bool showBakedModeUnsupportedWarning { get { return !isPrefabAsset && isCompletelyBaked && lightmappingTypeIsSame && !SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked); } }
+
+            internal bool showBounceWarning
             {
                 get
                 {
@@ -115,9 +136,9 @@ namespace UnityEditor
                         lightmappingTypeIsSame && isRealtime && !bounceIntensity.hasMultipleDifferentValues && bounceIntensity.floatValue > 0.0F;
                 }
             }
-            internal bool bakingWarningValue { get { return !Lightmapping.bakedGI && lightmappingTypeIsSame && isBakedOrMixed; } }
+            internal bool showBakingWarning { get { return !isPrefabAsset && !Lightmapping.bakedGI && lightmappingTypeIsSame && isBakedOrMixed; } }
 
-            internal bool cookieWarningValue
+            internal bool showCookieWarning
             {
                 get
                 {
@@ -250,15 +271,50 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(color, s_Styles.Color);
             }
 
+            void OnLightmappingItemSelected(object userData)
+            {
+                lightmapping.intValue = (int)userData;
+                m_SerializedObject.ApplyModifiedProperties();
+            }
+
             public void DrawLightmapping()
             {
-                EditorGUILayout.IntPopup(lightmapping, s_Styles.LightmapBakeTypeTitles, s_Styles.LightmapBakeTypeValues, s_Styles.LightmappingMode);
+                var rect = EditorGUILayout.GetControlRect();
+                EditorGUI.BeginProperty(rect, s_Styles.LightmappingMode, lightmapping);
+                rect = EditorGUI.PrefixLabel(rect, s_Styles.LightmappingMode);
 
-                // Warning if GI Baking disabled and m_Lightmapping isn't realtime
-                if (bakingWarningValue)
+                int index = Math.Max(0, Array.IndexOf(s_Styles.LightmapBakeTypeValues, lightmapping.intValue));
+
+                if (EditorGUI.DropdownButton(rect, s_Styles.LightmapBakeTypeTitles[index], FocusType.Passive))
                 {
-                    EditorGUILayout.HelpBox(s_Styles.BakingWarning.text, MessageType.Info);
+                    var menu = new GenericMenu();
+
+                    for (int i = 0; i < s_Styles.LightmapBakeTypeValues.Length; i++)
+                    {
+                        int value = s_Styles.LightmapBakeTypeValues[i];
+                        bool selected = (lightmappingTypeIsSame && (value == lightmapping.intValue));
+
+                        if (((value == (int)LightmapBakeType.Mixed) || (value == (int)LightmapBakeType.Baked)) &&
+                            ((!SupportedRenderingFeatures.IsLightmapBakeTypeSupported((LightmapBakeType)value) || !Lightmapping.bakedGI) && !isPrefabAsset))
+                        {
+                            menu.AddDisabledItem(s_Styles.LightmapBakeTypeTitles[i], selected);
+                        }
+                        else
+                        {
+                            menu.AddItem(s_Styles.LightmapBakeTypeTitles[i], selected, OnLightmappingItemSelected, value);
+                        }
+                    }
+                    menu.DropDown(rect);
                 }
+                EditorGUI.EndProperty();
+
+                // first make sure that the modes arent unsupported, then unenabled
+                if (showMixedModeUnsupportedWarning)
+                    EditorGUILayout.HelpBox(s_Styles.MixedUnsupportedWarning.text, MessageType.Warning);
+                else if (showBakedModeUnsupportedWarning)
+                    EditorGUILayout.HelpBox(s_Styles.BakedUnsupportedWarning.text, MessageType.Warning);
+                else if (showBakingWarning)
+                    EditorGUILayout.HelpBox(s_Styles.BakingWarning.text, MessageType.Warning);
             }
 
             public void DrawIntensity()
@@ -270,9 +326,9 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(bounceIntensity, s_Styles.LightBounceIntensity);
                 // Indirect shadows warning (Should be removed when we support realtime indirect shadows)
-                if (bounceWarningValue)
+                if (showBounceWarning)
                 {
-                    EditorGUILayout.HelpBox(s_Styles.IndirectBounceShadowWarning.text, MessageType.Info);
+                    EditorGUILayout.HelpBox(s_Styles.IndirectBounceShadowWarning.text, MessageType.Warning);
                 }
             }
 
@@ -280,7 +336,7 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(cookieProp, s_Styles.Cookie);
 
-                if (cookieWarningValue)
+                if (showCookieWarning)
                 {
                     // warn on spotlights if the cookie is set to repeat
                     EditorGUILayout.HelpBox(s_Styles.CookieWarning.text, MessageType.Warning);
@@ -523,37 +579,44 @@ namespace UnityEditor
             //bool keepRangeHidden = m_ShowDirOptions.isAnimating && m_ShowDirOptions.target;
             //float fadeRange = keepRangeHidden ? 0.0f : 1.0f - m_ShowDirOptions.faded;
             // Light Range
-            using (new EditorGUILayout.FadeGroupScope(1.0f - m_AnimShowDirOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(1.0f - m_AnimShowDirOptions.faded))
                 settings.DrawRange(m_AnimShowAreaOptions.target);
+            EditorGUILayout.EndFadeGroup();
 
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowSpotOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowSpotOptions.faded))
                 settings.DrawSpotAngle();
+            EditorGUILayout.EndFadeGroup();
 
             // Area width & height
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowAreaOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowAreaOptions.faded))
                 settings.DrawArea();
+            EditorGUILayout.EndFadeGroup();
 
             settings.DrawColor();
 
             EditorGUILayout.Space();
 
             // Baking type
-            using (new EditorGUILayout.FadeGroupScope(1.0F - m_AnimShowAreaOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(1.0F - m_AnimShowAreaOptions.faded))
                 settings.DrawLightmapping();
+            EditorGUILayout.EndFadeGroup();
 
             settings.DrawIntensity();
 
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowLightBounceIntensity.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowLightBounceIntensity.faded))
                 settings.DrawBounceIntensity();
+            EditorGUILayout.EndFadeGroup();
 
             ShadowsGUI();
 
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowRuntimeOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowRuntimeOptions.faded))
                 settings.DrawCookie();
+            EditorGUILayout.EndFadeGroup();
 
             // Cookie size also requires directional light
-            using (new EditorGUILayout.FadeGroupScope(m_AnimShowRuntimeOptions.faded * m_AnimShowDirOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(m_AnimShowRuntimeOptions.faded * m_AnimShowDirOptions.faded))
                 settings.DrawCookieSize();
+            EditorGUILayout.EndFadeGroup();
 
             settings.DrawHalo();
             settings.DrawFlare();
@@ -576,20 +639,29 @@ namespace UnityEditor
 
             // Shadows drop-down. Area lights can only be baked and always have shadows.
             float show = 1 - m_AnimShowAreaOptions.faded;
-            using (new EditorGUILayout.FadeGroupScope(show))
+
+            if (EditorGUILayout.BeginFadeGroup(show))
                 settings.DrawShadowsType();
+            EditorGUILayout.EndFadeGroup();
 
             EditorGUI.indentLevel += 1;
             show *= m_AnimShowShadowOptions.faded;
+
             // Baked Shadow radius
-            using (new EditorGUILayout.FadeGroupScope(show * m_AnimBakedShadowRadiusOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowRadiusOptions.faded))
                 settings.DrawBakedShadowRadius();
+            EditorGUILayout.EndFadeGroup();
+
             // Baked Shadow angle
-            using (new EditorGUILayout.FadeGroupScope(show * m_AnimBakedShadowAngleOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowAngleOptions.faded))
                 settings.DrawBakedShadowAngle();
+            EditorGUILayout.EndFadeGroup();
+
             // Runtime shadows - shadow strength, resolution, bias
-            using (new EditorGUILayout.FadeGroupScope(show * m_AnimShowRuntimeOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimShowRuntimeOptions.faded))
                 settings.DrawRuntimeShadow();
+            EditorGUILayout.EndFadeGroup();
+
             EditorGUI.indentLevel -= 1;
 
             EditorGUILayout.Space();

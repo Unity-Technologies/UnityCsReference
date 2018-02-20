@@ -16,63 +16,36 @@ using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
-
-
-public sealed partial class Shader : Object
-{
-    internal extern  string customEditor
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    [ThreadAndSerializationSafe ()]
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  int PropertyToID (string name) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  string IDToProperty (int id) ;
-
-}
-
 public partial class Material : Object
 {
-    
-    
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void Lerp (Material start, Material end, float t) ;
+    extern public String[] GetTexturePropertyNames () ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public bool SetPass (int pass) ;
+    extern public int[] GetTexturePropertyNameIDs () ;
 
-    [System.Obsolete ("Creating materials from shader source string will be removed in the future. Use Shader assets instead.")]
-static public Material Create(string scriptContents)
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void GetTexturePropertyNamesInternal (object outNames) ;
+
+    public void GetTexturePropertyNames(List<string> outNames)
         {
-            return new Material(scriptContents);
+            GetTexturePropertyNamesInternal(outNames);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void CopyPropertiesFromMaterial (Material mat) ;
+    extern private void GetTexturePropertyNameIDsInternal (object outNames) ;
 
-    public extern  String[] shaderKeywords
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
+    public void GetTexturePropertyNameIDs(List<int> outNames)
+        {
+            GetTexturePropertyNameIDsInternal(outNames);
+        }
+    
+    
 }
 
 

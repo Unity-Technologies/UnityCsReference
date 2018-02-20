@@ -396,5 +396,25 @@ namespace UnityEngine
         Ignore = 1,
         Collide = 2
     }
+
+    public enum CollisionDetectionMode
+    {
+        Discrete = 0,
+        Continuous = 1,
+        ContinuousDynamic = 2
+    }
+
+    public enum ConfigurableJointMotion
+    {
+        Locked = 0,
+        Limited = 1,
+        Free = 2
+    }
+
+    public enum RotationDriveMode
+    {
+        XYAndZ = 0,
+        Slerp = 1
+    }
 } // namespace
 

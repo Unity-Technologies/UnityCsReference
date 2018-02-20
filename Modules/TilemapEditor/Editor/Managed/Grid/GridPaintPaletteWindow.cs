@@ -15,28 +15,8 @@ namespace UnityEditor
 {
     internal class GridPaintPaletteWindow : EditorWindow
     {
-        static class Styles
+        static class MouseStyles
         {
-            public static readonly GUIContent[] toolContents =
-            {
-                EditorGUIUtility.IconContent("Grid.Default", "|Select an area of the grid (S)"),
-                EditorGUIUtility.IconContent("Grid.MoveTool", "|Move selection with active brush (M)"),
-                EditorGUIUtility.IconContent("Grid.PaintTool", "|Paint with active brush (B)"),
-                EditorGUIUtility.IconContent("Grid.BoxTool", "|Paint a filled box with active brush (U)"),
-                EditorGUIUtility.IconContent("Grid.PickingTool", "|Pick or marquee select new brush (Ctrl/CMD)."),
-                EditorGUIUtility.IconContent("Grid.EraserTool", "|Erase with active brush (Shift)"),
-                EditorGUIUtility.IconContent("Grid.FillTool", "|Flood fill with active brush (G)")
-            };
-            public static readonly EditMode.SceneViewEditMode[] sceneViewEditModes =
-            {
-                EditMode.SceneViewEditMode.GridSelect,
-                EditMode.SceneViewEditMode.GridMove,
-                EditMode.SceneViewEditMode.GridPainting,
-                EditMode.SceneViewEditMode.GridBox,
-                EditMode.SceneViewEditMode.GridPicking,
-                EditMode.SceneViewEditMode.GridEraser,
-                EditMode.SceneViewEditMode.GridFloodFill
-            };
             // The following paths match the enums in OperatingSystemFamily
             public static readonly string[] mouseCursorOSPath =
             {
@@ -65,6 +45,37 @@ namespace UnityEditor
                 "Grid.FillTool.png",
             };
             public static readonly Texture2D[] mouseCursorTextures;
+            static MouseStyles()
+            {
+                mouseCursorTextures = new Texture2D[mouseCursorTexturePaths.Length];
+                int osIndex = (int)SystemInfo.operatingSystemFamily;
+                for (int i = 0; i < mouseCursorTexturePaths.Length; ++i)
+                {
+                    if ((mouseCursorOSPath[osIndex] != null && mouseCursorOSPath[osIndex].Length > 0)
+                        && (mouseCursorTexturePaths[i] != null && mouseCursorTexturePaths[i].Length > 0))
+                    {
+                        string cursorPath = Utils.Paths.Combine(mouseCursorOSPath[osIndex], mouseCursorTexturePaths[i]);
+                        mouseCursorTextures[i] = EditorGUIUtility.LoadRequired(cursorPath) as Texture2D;
+                    }
+                    else
+                        mouseCursorTextures[i] = null;
+                }
+            }
+        }
+
+        static class Styles
+        {
+            public static readonly GUIContent[] toolContents =
+            {
+                EditorGUIUtility.IconContent("Grid.Default", "|Select an area of the grid (S)"),
+                EditorGUIUtility.IconContent("Grid.MoveTool", "|Move selection with active brush (M)"),
+                EditorGUIUtility.IconContent("Grid.PaintTool", "|Paint with active brush (B)"),
+                EditorGUIUtility.IconContent("Grid.BoxTool", "|Paint a filled box with active brush (U)"),
+                EditorGUIUtility.IconContent("Grid.PickingTool", "|Pick or marquee select new brush (Ctrl)."),
+                EditorGUIUtility.IconContent("Grid.EraserTool", "|Erase with active brush (Shift)"),
+                EditorGUIUtility.IconContent("Grid.FillTool", "|Flood fill with active brush (G)")
+            };
+
 
             public static readonly GUIContent emptyProjectInfo = EditorGUIUtility.TrTextContent("Create a new palette in the dropdown above.");
             public static readonly GUIContent emptyClipboardInfo = EditorGUIUtility.TrTextContent("Drag Tile, Sprite or Sprite Texture assets here.");
@@ -80,31 +91,28 @@ namespace UnityEditor
             public static readonly GUIContent activeTargetLabel = EditorGUIUtility.TrTextContent("Active Tilemap", "Specifies the currently active Tilemap used for painting in the Scene View.");
 
             public static readonly GUIContent edit = EditorGUIUtility.TrTextContent("Edit");
-            public static readonly GUIContent editModified = EditorGUIUtility.TextContent("Edit*");
+            public static readonly GUIContent editModified = EditorGUIUtility.TrTextContent("Edit*");
             public static readonly GUIStyle ToolbarStyle = "preToolbar";
             public static readonly GUIStyle ToolbarTitleStyle = "preToolbar";
             public static float toolbarWidth;
 
             static Styles()
             {
-                mouseCursorTextures = new Texture2D[mouseCursorTexturePaths.Length];
-                int osIndex = (int)SystemInfo.operatingSystemFamily;
-                for (int i = 0; i < mouseCursorTexturePaths.Length; ++i)
-                {
-                    if ((mouseCursorOSPath[osIndex] != null && mouseCursorOSPath[osIndex].Length > 0)
-                        && (mouseCursorTexturePaths[i] != null && mouseCursorTexturePaths[i].Length > 0))
-                    {
-                        string cursorPath = Utils.Paths.Combine(mouseCursorOSPath[osIndex], mouseCursorTexturePaths[i]);
-                        mouseCursorTextures[i] = EditorGUIUtility.LoadRequired(cursorPath) as Texture2D;
-                    }
-                    else
-                        mouseCursorTextures[i] = null;
-                }
-
                 GUIStyle toolbarStyle = "Command";
                 toolbarWidth = toolContents.Sum(x => toolbarStyle.CalcSize(x).x);
             }
         }
+
+        static readonly EditMode.SceneViewEditMode[] k_SceneViewEditModes =
+        {
+            EditMode.SceneViewEditMode.GridSelect,
+            EditMode.SceneViewEditMode.GridMove,
+            EditMode.SceneViewEditMode.GridPainting,
+            EditMode.SceneViewEditMode.GridBox,
+            EditMode.SceneViewEditMode.GridPicking,
+            EditMode.SceneViewEditMode.GridEraser,
+            EditMode.SceneViewEditMode.GridFloodFill
+        };
 
         private const float k_DropdownWidth = 200f;
         private const float k_ActiveTargetLabelWidth = 90f;
@@ -234,7 +242,7 @@ namespace UnityEditor
             EditorGUILayout.BeginHorizontal();
             float leftMargin = (Screen.width / EditorGUIUtility.pixelsPerPoint - Styles.toolbarWidth) * 0.5f;
             GUILayout.Space(leftMargin);
-            EditMode.DoInspectorToolbar(Styles.sceneViewEditModes, Styles.toolContents, GridPaintingState.instance);
+            EditMode.DoInspectorToolbar(k_SceneViewEditModes, Styles.toolContents, GridPaintingState.instance);
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(leftMargin);
@@ -525,7 +533,7 @@ namespace UnityEditor
         private void PrefabInstanceUpdated(GameObject updatedPrefab)
         {
             // case 947462: Reset the palette instance after its prefab has been updated as it could have been changed
-            if (m_PaletteInstance != null && PrefabUtility.GetPrefabParent(updatedPrefab) == m_Palette && !GridPaintingState.savingPalette)
+            if (m_PaletteInstance != null && PrefabUtility.GetCorrespondingObjectFromSource(updatedPrefab) == m_Palette && !GridPaintingState.savingPalette)
             {
                 ResetPreviewInstance();
                 Repaint();
@@ -557,7 +565,19 @@ namespace UnityEditor
         {
             CallOnToolDeactivated();
             instances.Remove(this);
+            if (instances.Count <= 1)
+                GridPaintingState.gridBrush = null;
             DestroyPreviewInstance();
+            DestroyImmediate(clipboardView);
+            DestroyImmediate(m_PaintableSceneViewGrid);
+
+            if (m_PreviewUtility != null)
+                m_PreviewUtility.Cleanup();
+            m_PreviewUtility = null;
+
+            if (PaintableGrid.InGridEditMode())
+                EditMode.QuitEditMode();
+
             EditorApplication.globalEventHandler -= HotkeyHandler;
             EditMode.editModeStarted -= OnEditModeStart;
             EditMode.editModeEnded -= OnEditModeEnd;
@@ -575,23 +595,6 @@ namespace UnityEditor
             DisableFocus();
             EnableFocus();
             Repaint();
-        }
-
-        public void OnDestroy()
-        {
-            DestroyPreviewInstance();
-            DestroyImmediate(clipboardView);
-            DestroyImmediate(m_PaintableSceneViewGrid);
-
-            if (m_PreviewUtility != null)
-                m_PreviewUtility.Cleanup();
-            m_PreviewUtility = null;
-
-            if (PaintableGrid.InGridEditMode())
-                EditMode.QuitEditMode();
-
-            if (instances.Count <= 1)
-                GridPaintingState.gridBrush = null;
         }
 
         public void ChangeToTool(GridBrushBase.Tool tool)
@@ -703,12 +706,12 @@ namespace UnityEditor
                 m_PreviousToolActivatedEditor = GridPaintingState.activeBrushEditor;
                 m_PreviousToolActivated = tool;
 
-                for (int i = 0; i < Styles.sceneViewEditModes.Length; ++i)
+                for (int i = 0; i < k_SceneViewEditModes.Length; ++i)
                 {
-                    if (Styles.sceneViewEditModes[i] == editMode)
+                    if (k_SceneViewEditModes[i] == editMode)
                     {
-                        Cursor.SetCursor(Styles.mouseCursorTextures[i],
-                            Styles.mouseCursorTextures[i] != null ? Styles.mouseCursorOSHotspot[(int)SystemInfo.operatingSystemFamily] : Vector2.zero,
+                        Cursor.SetCursor(MouseStyles.mouseCursorTextures[i],
+                            MouseStyles.mouseCursorTextures[i] != null ? MouseStyles.mouseCursorOSHotspot[(int)SystemInfo.operatingSystemFamily] : Vector2.zero,
                             CursorMode.Auto);
                         break;
                     }

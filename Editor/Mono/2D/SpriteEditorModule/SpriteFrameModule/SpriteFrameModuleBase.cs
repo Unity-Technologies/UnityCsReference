@@ -50,6 +50,7 @@ namespace UnityEditor
             textureActualHeight = height;
             m_RectsCache = ScriptableObject.CreateInstance<SpriteRectModel>();
             m_RectsCache.spriteRects = m_SpriteDataProvider.GetSpriteRects().ToList();
+            spriteEditor.spriteRects = m_RectsCache.spriteRects;
             if (spriteEditor.selectedSpriteRect != null)
                 spriteEditor.selectedSpriteRect = m_RectsCache.spriteRects.FirstOrDefault(x => x.spriteID == spriteEditor.selectedSpriteRect.spriteID);
         }

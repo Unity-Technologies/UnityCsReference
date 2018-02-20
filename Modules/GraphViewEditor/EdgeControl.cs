@@ -6,6 +6,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using System.Collections.Generic;
+using UnityEngine.Profiling;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
@@ -26,22 +27,37 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private VisualElement m_ToCap;
         private GraphView m_GraphView;
 
+        private static Stack<VisualElement> capPool = new Stack<VisualElement>();
+
+        private static VisualElement GetCap()
+        {
+            VisualElement result = null;
+            if (capPool.Count > 0)
+            {
+                result = capPool.Pop();
+            }
+            else
+            {
+                result = new VisualElement();
+                result.AddToClassList("edgeCap");
+            }
+
+            return result;
+        }
+
+        private static void RecycleCap(VisualElement cap)
+        {
+            capPool.Push(cap);
+        }
+
         public EdgeControl()
         {
             RegisterCallback<DetachFromPanelEvent>(OnLeavePanel);
 
-            m_FromCap = new VisualElement();
-            m_FromCap.AddToClassList("edgeCap");
-            m_FromCap.pseudoStates |= PseudoStates.Invisible;
-            Add(m_FromCap);
+            m_FromCap = null;
+            m_ToCap = null;
 
-            m_ToCap = new VisualElement();
-            m_ToCap.AddToClassList("edgeCap");
-            m_ToCap.pseudoStates |= PseudoStates.Invisible;
-            Add(m_ToCap);
-
-            m_DrawFromCap = false;
-            m_DrawToCap = false;
+            pickingMode = PickingMode.Ignore;
         }
 
         private bool m_ControlPointsDirty = true;
@@ -56,15 +72,28 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private const float k_EdgeSweepResampleRatio = 4.0f;
         private const int k_EdgeStraightLineSegmentDivisor = 5;
 
-        private Orientation m_Orientation;
-        public Orientation orientation
+        private Orientation m_InputOrientation;
+        public Orientation inputOrientation
         {
-            get { return m_Orientation; }
+            get { return m_InputOrientation; }
             set
             {
-                if (m_Orientation == value)
+                if (m_InputOrientation == value)
                     return;
-                m_Orientation = value;
+                m_InputOrientation = value;
+                Dirty(ChangeType.Repaint);
+            }
+        }
+
+        private Orientation m_OutputOrientation;
+        public Orientation outputOrientation
+        {
+            get { return m_OutputOrientation; }
+            set
+            {
+                if (m_OutputOrientation == value)
+                    return;
+                m_OutputOrientation = value;
                 Dirty(ChangeType.Repaint);
             }
         }
@@ -120,8 +149,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_FromCapColor == value)
                     return;
                 m_FromCapColor = value;
-                m_FromCap.style.backgroundColor = m_FromCapColor;
-                Dirty(ChangeType.Repaint);
+
+                if (m_FromCap != null)
+                {
+                    m_FromCap.style.backgroundColor = m_FromCapColor;
+                }
             }
         }
 
@@ -134,8 +166,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_ToCapColor == value)
                     return;
                 m_ToCapColor = value;
-                m_ToCap.style.backgroundColor = m_ToCapColor;
-                Dirty(ChangeType.Repaint);
+
+                if (m_ToCap != null)
+                {
+                    m_ToCap.style.backgroundColor = m_ToCapColor;
+                }
             }
         }
 
@@ -214,101 +249,148 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public Vector2[] renderPoints
-        {
-            get
-            {
-                UpdateRenderPoints();
-                return m_RenderPoints.ToArray();
-            }
-        }
 
-        private bool m_DrawFromCap;
         public bool drawFromCap
         {
-            get { return m_DrawFromCap; }
+            get { return m_FromCap != null; }
             set
             {
-                if (value == m_DrawFromCap)
-                    return;
-                m_DrawFromCap = value;
-                if (!m_DrawFromCap)
-                    m_FromCap.pseudoStates |= PseudoStates.Invisible;
+                if (!value)
+                {
+                    if (m_FromCap != null)
+                    {
+                        m_FromCap.RemoveFromHierarchy();
+                        RecycleCap(m_FromCap);
+                        m_FromCap = null;
+                    }
+                }
                 else
-                    m_FromCap.pseudoStates &= ~PseudoStates.Invisible;
-                Dirty(ChangeType.Layout);
+                {
+                    if (m_FromCap == null)
+                    {
+                        m_FromCap = GetCap();
+                        m_FromCap.style.backgroundColor = m_FromCapColor;
+                        Add(m_FromCap);
+                    }
+                }
             }
         }
 
-        private bool m_DrawToCap;
         public bool drawToCap
         {
-            get { return m_DrawToCap; }
+            get { return m_ToCap != null; }
             set
             {
-                if (value == m_DrawToCap)
-                    return;
-                m_DrawToCap = value;
-                if (!m_DrawToCap)
-                    m_ToCap.pseudoStates |= PseudoStates.Invisible;
+                if (!value)
+                {
+                    if (m_ToCap != null)
+                    {
+                        m_ToCap.RemoveFromHierarchy();
+                        RecycleCap(m_ToCap);
+                        m_ToCap = null;
+                    }
+                }
                 else
-                    m_ToCap.pseudoStates &= ~PseudoStates.Invisible;
-                Dirty(ChangeType.Layout);
+                {
+                    if (m_ToCap == null)
+                    {
+                        m_ToCap = GetCap();
+                        m_ToCap.style.backgroundColor = m_ToCapColor;
+                        Add(m_ToCap);
+                    }
+                }
+            }
+        }
+
+        void UpdateEdgeCaps()
+        {
+            if (m_FromCap != null)
+            {
+                Vector2 size = m_FromCap.layout.size;
+                m_FromCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_From) - (size / 2), size);
+            }
+            if (m_ToCap != null)
+            {
+                Vector2 size = m_ToCap.layout.size;
+                m_ToCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_To) - (size / 2), size);
             }
         }
 
         public override void DoRepaint()
         {
-            m_FromCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_From) - (m_FromCap.layout.size / 2), m_FromCap.layout.size);
-            m_ToCap.layout = new Rect(parent.ChangeCoordinatesTo(this, m_To) - (m_ToCap.layout.size / 2), m_ToCap.layout.size);
-
+            UnityEngine.Profiling.Profiler.BeginSample("DrawEdge");
+            UpdateEdgeCaps();
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
             DrawEdge();
+
+            UnityEngine.Profiling.Profiler.EndSample();
         }
 
         public override bool ContainsPoint(Vector2 localPoint)
         {
-            // bounding box check succeeded, do more fine grained check by measuring distance to bezier points
-            // exclude endpoints
-            if (Vector2.Distance(from, localPoint) <= 2 * capRadius ||
-                Vector2.Distance(to, localPoint) <= 2 * capRadius)
+            Profiler.BeginSample("EdgeControl.ContainsPoint");
+
+            if (!base.ContainsPoint(localPoint))
             {
+                Profiler.EndSample();
                 return false;
             }
 
-            Vector2[] allPoints = renderPoints;
+            // bounding box check succeeded, do more fine grained check by measuring distance to bezier points
+            // exclude endpoints
 
-            for (var i = 0; i < allPoints.Length - 1; i++)
+            float capMaxDist = 4 * capRadius * capRadius; //(2 * CapRadius)^2
+
+            if ((from - localPoint).sqrMagnitude <= capMaxDist ||
+                (to - localPoint).sqrMagnitude <= capMaxDist)
             {
-                Vector2 currentPoint = allPoints[i];
-                Vector2 nextPoint = allPoints[i + 1];
-                float distance = Vector2.Distance(currentPoint, localPoint);
-                float distanceNext = Vector2.Distance(nextPoint, localPoint);
-                float distanceLine = Vector2.Distance(currentPoint, nextPoint);
-                if (distance < distanceLine && distanceNext < distanceLine) // the point is somewhere between the two points
+                Profiler.EndSample();
+                return false;
+            }
+
+            var allPoints = m_RenderPoints;
+
+            if (allPoints.Count > 0)
+            {
+                //we use squareDistance to avoid sqrts
+                float distance = (allPoints[0] - localPoint).sqrMagnitude;
+                for (var i = 0; i < allPoints.Count - 1; i++)
                 {
-                    //https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
-                    if (Mathf.Abs((nextPoint.y - currentPoint.y) * localPoint.x -
-                            (nextPoint.x - currentPoint.x) * localPoint.y + nextPoint.x * currentPoint.y -
-                            nextPoint.y * currentPoint.x) / distanceLine < interceptWidth)
+                    Vector2 currentPoint = allPoints[i];
+                    Vector2 nextPoint = allPoints[i + 1];
+
+                    float distanceNext = (nextPoint - localPoint).sqrMagnitude;
+                    float distanceLine = (currentPoint - nextPoint).sqrMagnitude;
+                    if (distance < distanceLine && distanceNext < distanceLine
+                        ) // the point is somewhere between the two points
                     {
-                        return true;
+                        //https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+                        if (Mathf.Abs((nextPoint.y - currentPoint.y) * localPoint.x -
+                                (nextPoint.x - currentPoint.x) * localPoint.y + nextPoint.x * currentPoint.y -
+                                nextPoint.y * currentPoint.x) / Mathf.Sqrt(distanceLine) < interceptWidth)
+                        {
+                            Profiler.EndSample();
+                            return true;
+                        }
                     }
+
+                    distance = distanceNext;
                 }
             }
 
+            Profiler.EndSample();
             return false;
         }
 
         public override bool Overlaps(Rect rect)
         {
-            for (int a = 0; a < m_RenderPoints.Count - 1; a++)
+            if (base.Overlaps(rect))
             {
-                var segmentA = new Vector2(m_RenderPoints[a].x, m_RenderPoints[a].y);
-                var segmentB = new Vector2(m_RenderPoints[a + 1].x, m_RenderPoints[a + 1].y);
-
-                if (RectUtils.IntersectsSegment(rect, segmentA, segmentB))
-                    return true;
+                for (int a = 0; a < m_RenderPoints.Count - 1; a++)
+                {
+                    if (RectUtils.IntersectsSegment(rect, m_RenderPoints[a], m_RenderPoints[a + 1]))
+                        return true;
+                }
             }
 
             return false;
@@ -323,6 +405,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         // The points that will be rendered. Expressed in coordinates local to the element.
         List<Vector2> m_RenderPoints = new List<Vector2>();
 
+        static bool Approximately(Vector2 v1, Vector2 v2)
+        {
+            return Mathf.Approximately(v1.x, v2.x) && Mathf.Approximately(v1.y, v2.y);
+        }
+
         public virtual void UpdateLayout()
         {
             if (parent == null) return;
@@ -334,6 +421,28 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_ControlPointsDirty = false;
         }
 
+        private List<Vector2> lastLocalControlPoints = new List<Vector2>();
+
+        void RenderStraightLines(Vector2 p1, Vector2 p2, Vector2 p3, Vector2 p4)
+        {
+            float safeSpan = outputOrientation == Orientation.Horizontal
+                ? Mathf.Abs((p1.x + k_EdgeLengthFromPort) - (p4.x - k_EdgeLengthFromPort))
+                : Mathf.Abs((p1.y + k_EdgeLengthFromPort) - (p4.y - k_EdgeLengthFromPort));
+
+            float safeSpan3 = safeSpan / k_EdgeStraightLineSegmentDivisor;
+            float nodeToP2Dist = Mathf.Min(safeSpan3, k_EdgeTurnDiameter);
+            nodeToP2Dist = Mathf.Max(0, nodeToP2Dist);
+
+            var offset = outputOrientation == Orientation.Horizontal
+                ? new Vector2(k_EdgeTurnDiameter - nodeToP2Dist, 0)
+                : new Vector2(0, k_EdgeTurnDiameter - nodeToP2Dist);
+
+            m_RenderPoints.Add(p1);
+            m_RenderPoints.Add(p2 - offset);
+            m_RenderPoints.Add(p3 + offset);
+            m_RenderPoints.Add(p4);
+        }
+
         protected virtual void UpdateRenderPoints()
         {
             ComputeControlPoints(); // This should have been updated before : make sure anyway.
@@ -343,6 +452,30 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
+            Vector2 p1 = parent.ChangeCoordinatesTo(this, m_ControlPoints[0]);
+            Vector2 p2 = parent.ChangeCoordinatesTo(this, m_ControlPoints[1]);
+            Vector2 p3 = parent.ChangeCoordinatesTo(this, m_ControlPoints[2]);
+            Vector2 p4 = parent.ChangeCoordinatesTo(this, m_ControlPoints[3]);
+
+            // Only compute this when the "local" points have actually changed
+            if (lastLocalControlPoints.Count == 4)
+            {
+                if (Approximately(p1, lastLocalControlPoints[0]) &&
+                    Approximately(p2, lastLocalControlPoints[1]) &&
+                    Approximately(p3, lastLocalControlPoints[2]) &&
+                    Approximately(p4, lastLocalControlPoints[3]))
+                {
+                    m_RenderPointsDirty = false;
+                    return;
+                }
+            }
+
+            Profiler.BeginSample("EdgeControl.UpdateRenderPoints");
+            lastLocalControlPoints.Clear();
+            lastLocalControlPoints.Add(p1);
+            lastLocalControlPoints.Add(p2);
+            lastLocalControlPoints.Add(p3);
+            lastLocalControlPoints.Add(p4);
             m_RenderPointsDirty = false;
             m_MeshDirty = true;
 
@@ -350,52 +483,42 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             float diameter = k_EdgeTurnDiameter;
 
-            Vector2 p1 = parent.ChangeCoordinatesTo(this, m_ControlPoints[0]);
-            Vector2 p2 = parent.ChangeCoordinatesTo(this, m_ControlPoints[1]);
-            Vector2 p3 = parent.ChangeCoordinatesTo(this, m_ControlPoints[2]);
-            Vector2 p4 = parent.ChangeCoordinatesTo(this, m_ControlPoints[3]);
-
             // We have to handle a special case of the edge when it is a straight line, but not
             // when going backwards in space (where the start point is in front in y to the end point).
             // We do this by turning the line into 3 linear segments with no curves. This also
             // avoids possible NANs in later angle calculations.
-            if ((orientation == Orientation.Horizontal && Mathf.Abs(p1.y - p4.y) < 2 && p1.x + k_EdgeLengthFromPort < p4.x - k_EdgeLengthFromPort) ||
-                (orientation == Orientation.Vertical && Mathf.Abs(p1.x - p4.x) < 2 && p1.y + k_EdgeLengthFromPort < p4.y - k_EdgeLengthFromPort))
+            bool sameOrientations = outputOrientation == inputOrientation;
+            if (sameOrientations &&
+                ((outputOrientation == Orientation.Horizontal && Mathf.Abs(p1.y - p4.y) < 2 && p1.x + k_EdgeLengthFromPort < p4.x - k_EdgeLengthFromPort) ||
+                 (outputOrientation == Orientation.Vertical && Mathf.Abs(p1.x - p4.x) < 2 && p1.y + k_EdgeLengthFromPort < p4.y - k_EdgeLengthFromPort)))
             {
-                float safeSpan = orientation == Orientation.Horizontal
-                    ? Mathf.Abs((p1.x + k_EdgeLengthFromPort) - (p4.x - k_EdgeLengthFromPort))
-                    : Mathf.Abs((p1.y + k_EdgeLengthFromPort) - (p4.y - k_EdgeLengthFromPort));
+                RenderStraightLines(p1, p2, p3, p4);
 
-                float safeSpan3 = safeSpan / k_EdgeStraightLineSegmentDivisor;
-                float nodeToP2Dist = Mathf.Min(safeSpan3, diameter);
-                nodeToP2Dist = Mathf.Max(0, nodeToP2Dist);
+                Profiler.EndSample();
+                return;
+            }
 
-                var offset = orientation == Orientation.Horizontal
-                    ? new Vector2(diameter - nodeToP2Dist, 0)
-                    : new Vector2(0, diameter - nodeToP2Dist);
 
-                m_RenderPoints.Add(p1);
-                m_RenderPoints.Add(p2 - offset);
-                m_RenderPoints.Add(p3 + offset);
-                m_RenderPoints.Add(p4);
+            EdgeCornerSweepValues corner1 = GetCornerSweepValues(p1, p2, p3, diameter, Direction.Output);
+            EdgeCornerSweepValues corner2 = GetCornerSweepValues(p2, p3, p4, diameter, Direction.Input);
 
+            if (!ValidateCornerSweepValues(ref corner1, ref corner2))
+            {
+                RenderStraightLines(p1, p2, p3, p4);
+                Profiler.EndSample();
                 return;
             }
 
             m_RenderPoints.Add(p1);
 
-            EdgeCornerSweepValues corner1 = GetCornerSweepValues(p1, p2, p3, diameter, Direction.Output);
-            EdgeCornerSweepValues corner2 = GetCornerSweepValues(p2, p3, p4, diameter, Direction.Input);
-
-            ValidateCornerSweepValues(ref corner1, ref corner2);
-
             GetRoundedCornerPoints(m_RenderPoints, corner1, Direction.Output);
             GetRoundedCornerPoints(m_RenderPoints, corner2, Direction.Input);
 
             m_RenderPoints.Add(p4);
+            Profiler.EndSample();
         }
 
-        private void ValidateCornerSweepValues(ref EdgeCornerSweepValues corner1, ref EdgeCornerSweepValues corner2)
+        private bool ValidateCornerSweepValues(ref EdgeCornerSweepValues corner1, ref EdgeCornerSweepValues corner2)
         {
             // Get the midpoint between the two corner circle centers.
             Vector2 circlesMidpoint = (corner1.circleCenter + corner2.circleCenter) / 2;
@@ -403,9 +526,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Find the angle to the corner circles midpoint so we can compare it to the sweep angles of each corner.
             Vector2 p2CenterToCross1 = corner1.circleCenter - corner1.crossPoint1;
             Vector2 p2CenterToCirclesMid = corner1.circleCenter - circlesMidpoint;
-            double angleToCirclesMid = orientation == Orientation.Horizontal
+            double angleToCirclesMid = outputOrientation == Orientation.Horizontal
                 ? Math.Atan2(p2CenterToCross1.y, p2CenterToCross1.x) - Math.Atan2(p2CenterToCirclesMid.y, p2CenterToCirclesMid.x)
                 : Math.Atan2(p2CenterToCross1.x, p2CenterToCross1.y) - Math.Atan2(p2CenterToCirclesMid.x, p2CenterToCirclesMid.y);
+
+            if (double.IsNaN(angleToCirclesMid))
+                return false;
 
             // We need the angle to the circles midpoint to match the turn direction of the first corner's sweep angle.
             angleToCirclesMid = Math.Sign(angleToCirclesMid) * 2 * Mathf.PI - angleToCirclesMid;
@@ -424,6 +550,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 corner1.sweepAngle = Math.Sign(corner1.sweepAngle) * Mathf.Min(maxSweepAngle, Mathf.Abs((float)corner1.sweepAngle));
                 corner2.sweepAngle = Math.Sign(corner2.sweepAngle) * Mathf.Min(maxSweepAngle, Mathf.Abs((float)corner2.sweepAngle));
             }
+
+            return true;
         }
 
         private EdgeCornerSweepValues GetCornerSweepValues(
@@ -532,7 +660,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 // don't cause the edge polygons to twist.
                 if (i == 0 && backwards)
                 {
-                    if (orientation == Orientation.Horizontal)
+                    if (outputOrientation == Orientation.Horizontal)
                     {
                         if (corner.sweepAngle < 0 && points[points.Count - 1].y > pointY)
                             continue;
@@ -556,6 +684,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (m_ControlPointsDirty == false) return;
 
+            Profiler.BeginSample("EdgeControl.ComputeControlPoints");
+
             float offset = k_EdgeLengthFromPort + k_EdgeTurnDiameter;
 
             // This is to ensure we don't have the edge extending
@@ -570,22 +700,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             m_ControlPoints[0] = from;
 
-            if (orientation == Orientation.Horizontal)
-            {
+            if (outputOrientation == Orientation.Horizontal)
                 m_ControlPoints[1] = new Vector2(from.x + offset, from.y);
-                m_ControlPoints[2] = new Vector2(to.x - offset, to.y);
-            }
             else
-            {
                 m_ControlPoints[1] = new Vector2(from.x, from.y + offset);
+
+            if (inputOrientation == Orientation.Horizontal)
+                m_ControlPoints[2] = new Vector2(to.x - offset, to.y);
+            else
                 m_ControlPoints[2] = new Vector2(to.x, to.y - offset);
-            }
 
             m_ControlPoints[3] = to;
+            Profiler.EndSample();
         }
 
         void ComputeLayout()
         {
+            Profiler.BeginSample("EdgeControl.ComputeLayout");
             Vector2 to = m_ControlPoints[m_ControlPoints.Length - 1];
             Vector2 from = m_ControlPoints[0];
 
@@ -622,6 +753,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 layout = rect;
                 m_RenderPointsDirty = true;
             }
+            Profiler.EndSample();
         }
 
         static Material s_LineMat;
@@ -661,110 +793,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 m_MeshDirty = false;
 
-                int cpt = m_RenderPoints.Count;
-
-                float polyLineLength = 0;
-
-                for (int i = 1; i < cpt; ++i)
-                {
-                    polyLineLength += (m_RenderPoints[i - 1] - m_RenderPoints[i]).magnitude;
-                }
-
-                if (m_Mesh == null)
-                {
-                    m_Mesh = new Mesh();
-                    m_Mesh.hideFlags = HideFlags.HideAndDontSave;
-                }
-
-                Vector3[] vertices = m_Mesh.vertices;
-                Vector2[] uvs = m_Mesh.uv;
-                Vector3[] normals = m_Mesh.normals;
-                bool newIndices = false;
-                int wantedLength = (cpt) * 2;
-                if (vertices == null || vertices.Length != wantedLength)
-                {
-                    vertices = new Vector3[wantedLength];
-                    uvs = new Vector2[wantedLength];
-                    normals = new Vector3[wantedLength];
-                    newIndices = true;
-                    m_Mesh.triangles = new int[] {};
-                }
-
-                float halfWidth = edgeWidth * 0.5f;
-
-                float vertexHalfWidth = halfWidth + 2;
-
-                float currentLength = 0;
-
-                for (int i = 0; i < cpt; ++i)
-                {
-                    Vector2 dir;
-                    if (i > 0 && i < cpt - 1)
-                    {
-                        dir = (m_RenderPoints[i] - m_RenderPoints[i - 1]).normalized + (m_RenderPoints[i + 1] - m_RenderPoints[i]).normalized;
-                        dir.Normalize();
-                    }
-                    else if (i > 0)
-                    {
-                        dir = (m_RenderPoints[i] - m_RenderPoints[i - 1]).normalized;
-                    }
-                    else
-                    {
-                        dir = (m_RenderPoints[i + 1] - m_RenderPoints[i]).normalized;
-                    }
-
-                    Vector2 norm = new Vector3(dir.y, -dir.x, 0);
-
-                    Vector2 border = -norm * vertexHalfWidth;
-
-                    uvs[i * 2] = new Vector2(-vertexHalfWidth, halfWidth);
-                    vertices[i * 2] = m_RenderPoints[i];
-                    // normals store the Vector2 normal in x,y and the progress in the edge in z ( which drive the gradient ).
-                    normals[i * 2] = new Vector3(-border.x, -border.y, currentLength / polyLineLength);
-
-                    uvs[i * 2 + 1] = new Vector2(vertexHalfWidth, halfWidth);
-                    vertices[i * 2 + 1] = m_RenderPoints[i];
-                    normals[i * 2 + 1] = new Vector3(border.x, border.y, currentLength / polyLineLength);
-
-                    if (i < cpt - 2)
-                    {
-                        currentLength += (m_RenderPoints[i + 1] - m_RenderPoints[i]).magnitude;
-                    }
-                    else
-                    {
-                        currentLength = polyLineLength;
-                    }
-                }
-
-                m_Mesh.vertices = vertices;
-                m_Mesh.normals = normals;
-                m_Mesh.uv = uvs;
-
-                if (newIndices)
-                {
-                    //fill triangle indices as it is a triangle strip
-                    int[] indices = new int[(wantedLength - 2) * 3];
-
-                    for (int i = 0; i < wantedLength - 2; ++i)
-                    {
-                        if ((i % 2) == 0)
-                        {
-                            indices[i * 3] = i;
-                            indices[i * 3 + 1] = i + 1;
-                            indices[i * 3 + 2] = i + 2;
-                        }
-                        else
-                        {
-                            indices[i * 3] = i + 1;
-                            indices[i * 3 + 1] = i;
-                            indices[i * 3 + 2] = i + 2;
-                        }
-                    }
-
-                    m_Mesh.triangles = indices;
-                }
-
-                m_Mesh.RecalculateBounds();
+                RecomputeMesh();
             }
 
             // Send the view zoom factor so that the antialias width do not grow when zooming in.
@@ -778,6 +807,129 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             lineMat.SetPass(0);
 
             Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
+        }
+
+        private void RecomputeMesh()
+        {
+            int cpt = m_RenderPoints.Count;
+
+            float polyLineLength = 0;
+
+            for (int i = 1; i < cpt; ++i)
+            {
+                polyLineLength += (m_RenderPoints[i - 1] - m_RenderPoints[i]).sqrMagnitude;
+            }
+
+            if (m_Mesh == null)
+            {
+                m_Mesh = new Mesh();
+                m_Mesh.hideFlags = HideFlags.HideAndDontSave;
+            }
+
+            Vector3[] vertices = m_Mesh.vertices;
+            Vector2[] uvs = m_Mesh.uv;
+            Vector3[] normals = m_Mesh.normals;
+            bool newIndices = false;
+            int wantedLength = (cpt) * 2;
+            if (vertices == null || vertices.Length != wantedLength)
+            {
+                vertices = new Vector3[wantedLength];
+                uvs = new Vector2[wantedLength];
+                normals = new Vector3[wantedLength];
+                newIndices = true;
+                m_Mesh.triangles = new int[] {};
+            }
+
+            float halfWidth = edgeWidth * 0.5f;
+
+            float vertexHalfWidth = halfWidth + 2;
+
+            float currentLength = 0;
+
+            Vector2 unitPreviousSegment = Vector2.zero;
+            for (int i = 0; i < cpt; ++i)
+            {
+                Vector2 dir;
+                Vector2 unitNextSegment = Vector2.zero;
+                Vector2 nextSegment = Vector2.zero;
+
+                if (i < cpt - 1)
+                {
+                    nextSegment = (m_RenderPoints[i + 1] - m_RenderPoints[i]);
+                    unitNextSegment = nextSegment.normalized;
+                }
+
+
+                if (i > 0 && i < cpt - 1)
+                {
+                    dir = unitPreviousSegment + unitNextSegment;
+                    dir.Normalize();
+                }
+                else if (i > 0)
+                {
+                    dir = unitPreviousSegment;
+                }
+                else
+                {
+                    dir = unitNextSegment;
+                }
+
+                Vector2 norm = new Vector3(dir.y, -dir.x, 0);
+
+                Vector2 border = -norm * vertexHalfWidth;
+
+                int index = i * 2;
+                uvs[index] = new Vector2(-vertexHalfWidth, halfWidth);
+                vertices[index] = m_RenderPoints[i];
+                // normals store the Vector2 normal in x,y and the progress in the edge in z ( which drive the gradient ).
+                normals[index] = new Vector3(-border.x, -border.y, currentLength / polyLineLength);
+
+                uvs[index + 1] = new Vector2(vertexHalfWidth, halfWidth);
+                vertices[index + 1] = m_RenderPoints[i];
+                normals[index + 1] = new Vector3(border.x, border.y, currentLength / polyLineLength);
+
+                if (i < cpt - 2)
+                {
+                    currentLength += nextSegment.sqrMagnitude;
+                }
+                else
+                {
+                    currentLength = polyLineLength;
+                }
+
+                unitPreviousSegment = unitNextSegment;
+            }
+
+            m_Mesh.vertices = vertices;
+            m_Mesh.normals = normals;
+            m_Mesh.uv = uvs;
+
+            if (newIndices)
+            {
+                //fill triangle indices as it is a triangle strip
+                int[] indices = new int[(wantedLength - 2) * 3];
+
+                for (int i = 0; i < wantedLength - 2; ++i)
+                {
+                    int index = i * 3;
+                    if ((i & 0x01) == 0)
+                    {
+                        indices[index] = i;
+                        indices[index + 1] = i + 1;
+                        indices[index + 2] = i + 2;
+                    }
+                    else
+                    {
+                        indices[index] = i + 1;
+                        indices[index + 1] = i;
+                        indices[index + 2] = i + 2;
+                    }
+                }
+
+                m_Mesh.triangles = indices;
+            }
+
+            m_Mesh.RecalculateBounds();
         }
 
         void OnLeavePanel(DetachFromPanelEvent e)

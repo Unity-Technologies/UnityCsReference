@@ -20,7 +20,7 @@ namespace UnityEngine.Experimental.UIElements
 
         string m_PreDrawCursorText;
 
-        public KeyboardTextEditorEventHandler(TextEditorEngine editorEngine, TextInputFieldBase textInputField)
+        public KeyboardTextEditorEventHandler(TextEditorEngine editorEngine, ITextInputField textInputField)
             : base(editorEngine, textInputField)
         {
         }
@@ -45,9 +45,13 @@ namespace UnityEngine.Experimental.UIElements
             {
                 OnKeyDown(evt as KeyDownEvent);
             }
-            else if (evt.GetEventTypeId() == IMGUIEvent.TypeId())
+            else if (evt.GetEventTypeId() == ValidateCommandEvent.TypeId())
             {
-                OnIMGUIEvent(evt as IMGUIEvent);
+                OnValidateCommandEvent(evt as ValidateCommandEvent);
+            }
+            else if (evt.GetEventTypeId() == ExecuteCommandEvent.TypeId())
+            {
+                OnExecuteCommandEvent(evt as ExecuteCommandEvent);
             }
         }
 
@@ -232,7 +236,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 // Simplest test: only allow the character if the display font supports it.
                 Font font = editorEngine.style.font;
-                if ((font != null && font.HasCharacter(c)) || c == '\n')
+                if (font != null && font.HasCharacter(c) || c == '\n')
                 {
                     // Input event
                     editorEngine.Insert(c);
@@ -260,7 +264,7 @@ namespace UnityEngine.Experimental.UIElements
             editorEngine.UpdateScrollOffset();
         }
 
-        void OnIMGUIEvent(IMGUIEvent evt)
+        void OnValidateCommandEvent(ValidateCommandEvent evt)
         {
             if (!textInputField.hasFocus)
                 return;
@@ -268,77 +272,79 @@ namespace UnityEngine.Experimental.UIElements
             textInputField.SyncTextEngine();
             m_Changed = false;
 
-            switch (evt.imguiEvent.type)
+            switch (evt.commandName)
             {
-                case EventType.ValidateCommand:
-                    switch (evt.imguiEvent.commandName)
-                    {
-                        case EventCommandNames.Cut:
-                        case EventCommandNames.Copy:
-                            if (!editorEngine.hasSelection)
-                                return;
-                            break;
-                        case EventCommandNames.Paste:
-                            if (!editorEngine.CanPaste())
-                                return;
-                            break;
-                        case EventCommandNames.SelectAll:
-                        case EventCommandNames.Delete:
-                            break;
-                        case EventCommandNames.UndoRedoPerformed:
-                            // TODO: ????? editor.text = text; --> see EditorGUI's DoTextField
-                            break;
-                    }
-                    evt.StopPropagation();
-                    break;
-
-                case EventType.ExecuteCommand:
-                    bool mayHaveChanged = false;
-                    string oldText = editorEngine.text;
-
-                    if (!textInputField.hasFocus)
+                case EventCommandNames.Cut:
+                case EventCommandNames.Copy:
+                    if (!editorEngine.hasSelection)
                         return;
-
-                    switch (evt.imguiEvent.commandName)
-                    {
-                        case EventCommandNames.OnLostFocus:
-                            evt.StopPropagation();
-                            return;
-                        case EventCommandNames.Cut:
-                            editorEngine.Cut();
-                            mayHaveChanged = true;
-                            break;
-                        case EventCommandNames.Copy:
-                            editorEngine.Copy();
-                            evt.StopPropagation();
-                            return;
-                        case EventCommandNames.Paste:
-                            editorEngine.Paste();
-                            mayHaveChanged = true;
-                            break;
-                        case EventCommandNames.SelectAll:
-                            editorEngine.SelectAll();
-                            evt.StopPropagation();
-                            return;
-                        case EventCommandNames.Delete:
-                            // This "Delete" command stems from a Shift-Delete in the text
-                            // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
-                            if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
-                                editorEngine.Delete();
-                            else
-                                editorEngine.Cut();
-                            mayHaveChanged = true;
-                            break;
-                    }
-
-                    if (mayHaveChanged)
-                    {
-                        if (oldText != editorEngine.text)
-                            m_Changed = true;
-
-                        evt.StopPropagation();
-                    }
                     break;
+                case EventCommandNames.Paste:
+                    if (!editorEngine.CanPaste())
+                        return;
+                    break;
+                case EventCommandNames.SelectAll:
+                case EventCommandNames.Delete:
+                    break;
+                case EventCommandNames.UndoRedoPerformed:
+                    // TODO: ????? editor.text = text; --> see EditorGUI's DoTextField
+                    break;
+            }
+            evt.StopPropagation();
+        }
+
+        void OnExecuteCommandEvent(ExecuteCommandEvent evt)
+        {
+            if (!textInputField.hasFocus)
+                return;
+
+            textInputField.SyncTextEngine();
+            m_Changed = false;
+
+            bool mayHaveChanged = false;
+            string oldText = editorEngine.text;
+
+            if (!textInputField.hasFocus)
+                return;
+
+            switch (evt.commandName)
+            {
+                case EventCommandNames.OnLostFocus:
+                    evt.StopPropagation();
+                    return;
+                case EventCommandNames.Cut:
+                    editorEngine.Cut();
+                    mayHaveChanged = true;
+                    break;
+                case EventCommandNames.Copy:
+                    editorEngine.Copy();
+                    evt.StopPropagation();
+                    return;
+                case EventCommandNames.Paste:
+                    editorEngine.Paste();
+                    mayHaveChanged = true;
+                    break;
+                case EventCommandNames.SelectAll:
+                    editorEngine.SelectAll();
+                    evt.StopPropagation();
+                    return;
+                case EventCommandNames.Delete:
+                    // This "Delete" command stems from a Shift-Delete in the text
+                    // On Windows, Shift-Delete in text does a cut whereas on Mac, it does a delete.
+                    if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
+                        editorEngine.Delete();
+                    else
+                        editorEngine.Cut();
+                    mayHaveChanged = true;
+                    break;
+            }
+
+            if (mayHaveChanged)
+            {
+                if (oldText != editorEngine.text)
+                    m_Changed = true;
+
+                evt.StopPropagation();
             }
 
             if (m_Changed)

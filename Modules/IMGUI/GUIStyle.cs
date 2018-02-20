@@ -17,21 +17,12 @@ namespace UnityEngine
         internal IntPtr m_Ptr;
 
         // Pointer to the source GUIStyle so it doesn't get garbage collected.
-        // If NULL, it means we own m_Ptr and need to delete it when this gets displosed
+        // If NULL, it means we own m_Ptr and need to delete it when this gets disposed
         readonly GUIStyle m_SourceStyle;
-
-        // Pointer to the texture that is referenced from the GUIStyleState.
-        // Necessary for the Asset Garbage Collector to find the texture reference
-    #pragma warning disable 414
-        [NonSerialized]
-        private Texture2D m_Background;
-        [System.NonSerialized]
-        private Texture2D[] m_ScaledBackgrounds;
-    #pragma warning restore 414
 
         public GUIStyleState()
         {
-            Init();
+            m_Ptr = Init();
         }
 
         private GUIStyleState(GUIStyle sourceStyle, IntPtr source)
@@ -44,37 +35,24 @@ namespace UnityEngine
         internal static GUIStyleState ProduceGUIStyleStateFromDeserialization(GUIStyle sourceStyle, IntPtr source)
         {
             GUIStyleState newState = new GUIStyleState(sourceStyle, source);
-            newState.m_Background = newState.GetBackgroundInternalFromDeserialization();
-            newState.m_ScaledBackgrounds = newState.GetScaledBackgroundsInternalFromDeserialization();
             return newState;
         }
 
         internal static GUIStyleState GetGUIStyleState(GUIStyle sourceStyle, IntPtr source)
         {
             GUIStyleState newState = new GUIStyleState(sourceStyle, source);
-            newState.m_Background = newState.GetBackgroundInternal();
-            newState.m_ScaledBackgrounds = newState.GetScaledBackgroundsInternalFromDeserialization();
             return newState;
         }
 
         ~GUIStyleState()
         {
             if (m_SourceStyle == null)
+            {
                 Cleanup();
-        }
-
-        public Texture2D background
-        {
-            get { return GetBackgroundInternal(); }
-            set { SetBackgroundInternal(value); m_Background = value; }
-        }
-        public Texture2D[] scaledBackgrounds
-        {
-            get { return GetScaledBackgroundsInternal(); }
-            set { SetScaledBackgroundsInternal(value); m_ScaledBackgrounds = value; }
+                m_Ptr = IntPtr.Zero;
+            }
         }
     }
-
 
     // How image and text is placed inside [[GUIStyle]].
     public enum ImagePosition
@@ -96,18 +74,22 @@ namespace UnityEngine
         // Constructor for empty GUIStyle.
         public GUIStyle()
         {
-            Init();
+            m_Ptr = Internal_Create(this);
         }
 
         // Constructs GUIStyle identical to given other GUIStyle.
         public GUIStyle(GUIStyle other)
         {
-            InitCopy(other);
+            m_Ptr = Internal_Copy(this, other);
         }
 
         ~GUIStyle()
         {
-            Cleanup();
+            if (m_Ptr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
         }
 
         static internal void CleanupRoots()
@@ -119,7 +101,6 @@ namespace UnityEngine
         //Called during Deserialization from cpp
         internal void InternalOnAfterDeserialize()
         {
-            m_FontInternal = GetFontInternalDuringLoadingThread();
             m_Normal    = GUIStyleState.ProduceGUIStyleStateFromDeserialization(this, GetStyleStatePtr(0));
             m_Hover     = GUIStyleState.ProduceGUIStyleStateFromDeserialization(this, GetStyleStatePtr(1));
             m_Active    = GUIStyleState.ProduceGUIStyleStateFromDeserialization(this, GetStyleStatePtr(2));
@@ -138,11 +119,6 @@ namespace UnityEngine
 
         [NonSerialized]
         RectOffset m_Border, m_Padding, m_Margin, m_Overflow;
-
-    #pragma warning disable 414
-        [NonSerialized]
-        private Font m_FontInternal;
-    #pragma warning restore 414
 
         // Rendering settings for when the component is displayed normally.
         public GUIStyleState normal
@@ -305,33 +281,8 @@ namespace UnityEngine
             set { AssignRectOffset(3, value.m_Ptr); }
         }
 
-        // *undocumented* Clip offset to apply to the content of this GUIstyle
-        [Obsolete("warning Don't use clipOffset - put things inside BeginGroup instead. This functionality will be removed in a later version.")]
-        public Vector2 clipOffset { get { return Internal_clipOffset; }   set {Internal_clipOffset = value; } }
-
-        // The font to use for rendering. If null, the default font for the current [[GUISkin]] is used instead.
-        public Font font
-        {
-            get { return GetFontInternal(); }
-            set { SetFontInternal(value); m_FontInternal = value; }
-        }
-
-        // The height of one line of text with this style, measured in pixels. (RO)
-        public float lineHeight { get { return Mathf.Round(Internal_GetLineHeight(m_Ptr)); } }
-
-
-        // Draw this GUIStyle on to the screen.
-        private static void Internal_Draw(IntPtr target, Rect position, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
-        {
-            Internal_DrawArguments arguments = new Internal_DrawArguments();
-            arguments.target = target;
-            arguments.position = position;
-            arguments.isHover = isHover ? 1 : 0;
-            arguments.isActive = isActive ? 1 : 0;
-            arguments.on = on ? 1 : 0;
-            arguments.hasKeyboardFocus = hasKeyboardFocus ? 1 : 0;
-            Internal_Draw(content, ref arguments);
-        }
+        // The height of one line of text with this style, measured in pixels.
+        public float lineHeight => Mathf.Round(Internal_GetLineHeight(m_Ptr));
 
         // Draw plain GUIStyle without text nor image.
         public void Draw(Rect position, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
@@ -341,7 +292,7 @@ namespace UnityEngine
                 Debug.LogError("Style.Draw may not be called if it is not a repaint event");
                 return;
             }
-            Internal_Draw(m_Ptr, position, GUIContent.none, isHover, isActive, on, hasKeyboardFocus);
+            Internal_Draw(position, GUIContent.none, isHover, isActive, on, hasKeyboardFocus);
         }
 
         // Draw the GUIStyle with a text string inside.
@@ -352,7 +303,7 @@ namespace UnityEngine
                 Debug.LogError("Style.Draw may not be called if it is not a repaint event");
                 return;
             }
-            Internal_Draw(m_Ptr, position, GUIContent.Temp(text), isHover, isActive, on, hasKeyboardFocus);
+            Internal_Draw(position, GUIContent.Temp(text), isHover, isActive, on, hasKeyboardFocus);
         }
 
         // Draw the GUIStyle with an image inside. If the image is too large to fit within the content area of the style it is scaled down.
@@ -363,7 +314,7 @@ namespace UnityEngine
                 Debug.LogError("Style.Draw may not be called if it is not a repaint event");
                 return;
             }
-            Internal_Draw(m_Ptr, position, GUIContent.Temp(image), isHover, isActive, on, hasKeyboardFocus);
+            Internal_Draw(position, GUIContent.Temp(image), isHover, isActive, on, hasKeyboardFocus);
         }
 
         // Draw the GUIStyle with text and an image inside. If the image is too large to fit within the content area of the style it is scaled down.
@@ -375,8 +326,7 @@ namespace UnityEngine
                 return;
             }
 
-            Internal_Draw(m_Ptr, position, content, isHover, isActive, on, hasKeyboardFocus);
-
+            Internal_Draw(position, content, isHover, isActive, on, hasKeyboardFocus);
         }
 
         public void Draw(Rect position, GUIContent content, int controlID)
@@ -393,12 +343,12 @@ namespace UnityEngine
             }
 
             if (content != null)
-                Internal_Draw2(m_Ptr, position, content, controlID, on);
+                Internal_Draw2(position, content, controlID, on);
             else
                 Debug.LogError("Style.Draw may not be called with GUIContent that is null.");
         }
 
-        // PrefixLabel has to be drawn with an alternative draw mathod.
+        // PrefixLabel has to be drawn with an alternative draw method.
         // The normal draw methods use MonoGUIContentToTempNative which means they all share the same temp GUIContent on the native side.
         // A native IMGUI control such as GUIButton is already using this temp GUIContent when it calls GetControlID, which,
         // because of the delayed feature in PrefixLabel, can end up calling a style draw function again to draw the PrefixLabel.
@@ -408,18 +358,17 @@ namespace UnityEngine
         internal void DrawPrefixLabel(Rect position, GUIContent content, int controlID)
         {
             if (content != null)
-                Internal_DrawPrefixLabel(m_Ptr, position, content, controlID, false);
+                Internal_DrawPrefixLabel(position, content, controlID, false);
             else
                 Debug.LogError("Style.DrawPrefixLabel may not be called with GUIContent that is null.");
         }
-
 
 
         // Does the ID-based Draw function show keyboard focus? Disabled by windows when they don't have keyboard focus
         internal static bool showKeyboardFocus = true;
 
         // Draw this GUIStyle with selected content.
-        public void DrawCursor(Rect position, GUIContent content, int controlID, int Character)
+        public void DrawCursor(Rect position, GUIContent content, int controlID, int character)
         {
             Event e = Event.current;
             if (e.type == EventType.Repaint)
@@ -427,13 +376,11 @@ namespace UnityEngine
                 // Figure out the cursor color...
                 Color cursorColor = new Color(0, 0, 0, 0);
                 float cursorFlashSpeed = GUI.skin.settings.cursorFlashSpeed;
-                float cursorFlashRel = ((Time.realtimeSinceStartup - Internal_GetCursorFlashOffset()) % cursorFlashSpeed) / cursorFlashSpeed;
+                float cursorFlashRel = (Time.realtimeSinceStartup - Internal_GetCursorFlashOffset()) % cursorFlashSpeed / cursorFlashSpeed;
                 if (cursorFlashSpeed == 0 || cursorFlashRel < .5f)
-                {
                     cursorColor = GUI.skin.settings.cursorColor;
-                }
 
-                Internal_DrawCursor(m_Ptr, position, content, Character, cursorColor);
+                Internal_DrawCursor(position, content, character, cursorColor);
             }
         }
 
@@ -446,29 +393,15 @@ namespace UnityEngine
                 return;
             }
 
-            Event e = Event.current;
-
             // Figure out the cursor color...
             Color cursorColor = new Color(0, 0, 0, 0);
             float cursorFlashSpeed = GUI.skin.settings.cursorFlashSpeed;
-            float cursorFlashRel = ((Time.realtimeSinceStartup - Internal_GetCursorFlashOffset()) % cursorFlashSpeed) / cursorFlashSpeed;
+            float cursorFlashRel = (Time.realtimeSinceStartup - Internal_GetCursorFlashOffset()) % cursorFlashSpeed / cursorFlashSpeed;
             if (cursorFlashSpeed == 0 || cursorFlashRel < .5f)
                 cursorColor = GUI.skin.settings.cursorColor;
 
-            Internal_DrawWithTextSelectionArguments arguments = new Internal_DrawWithTextSelectionArguments();
-            arguments.target = m_Ptr;
-            arguments.position = position;
-            arguments.firstPos = firstSelectedCharacter;
-            arguments.lastPos = lastSelectedCharacter;
-            arguments.cursorColor = cursorColor;
-            arguments.selectionColor = GUI.skin.settings.selectionColor;
-            arguments.isHover = position.Contains(e.mousePosition) ? 1 : 0;
-            arguments.isActive = isActive ? 1 : 0;
-            arguments.on = 0;
-            arguments.hasKeyboardFocus = hasKeyboardFocus ? 1 : 0;
-            arguments.drawSelectionAsComposition = drawSelectionAsComposition ? 1 : 0;
-
-            Internal_DrawWithTextSelection(content, ref arguments);
+            Internal_DrawWithTextSelection(position, content, position.Contains(Event.current.mousePosition), isActive, false,
+                hasKeyboardFocus, drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, GUI.skin.settings.selectionColor);
         }
 
         internal void DrawWithTextSelection(Rect position, GUIContent content, int controlID, int firstSelectedCharacter,
@@ -503,36 +436,31 @@ namespace UnityEngine
         // Get the pixel position of a given string index.
         public Vector2 GetCursorPixelPosition(Rect position, GUIContent content, int cursorStringIndex)
         {
-            Vector2 temp;
-            Internal_GetCursorPixelPosition(m_Ptr, position, content, cursorStringIndex, out temp);
-            return temp;
+            return Internal_GetCursorPixelPosition(position, content, cursorStringIndex);
         }
 
         // Get the cursor position (indexing into contents.text) when the user clicked at cursorPixelPosition
         public int GetCursorStringIndex(Rect position, GUIContent content, Vector2 cursorPixelPosition)
         {
-            return Internal_GetCursorStringIndex(m_Ptr, position, content, cursorPixelPosition);
+            return Internal_GetCursorStringIndex(position, content, cursorPixelPosition);
         }
 
         // Returns number of characters that can fit within width, returns -1 if fails due to missing font
         internal int GetNumCharactersThatFitWithinWidth(string text, float width)
         {
-            return Internal_GetNumCharactersThatFitWithinWidth(m_Ptr, text, width);
+            return Internal_GetNumCharactersThatFitWithinWidth(text, width);
         }
 
         // Calculate the size of a some content if it is rendered with this style.
         public Vector2 CalcSize(GUIContent content)
         {
-            Vector2 temp; Internal_CalcSize(m_Ptr, content, out temp);
-            return temp;
+            return Internal_CalcSize(content);
         }
 
         // Calculate the size of a some content if it is rendered with this style.
         internal Vector2 CalcSizeWithConstraints(GUIContent content, Vector2 constraints)
         {
-            Vector2 temp;
-            Internal_CalcSizeWithConstraints(m_Ptr, content, constraints, out temp);
-            return temp;
+            return Internal_CalcSizeWithConstraints(content, constraints);
         }
 
         // Calculate the size of an element formatted with this style, and a given space to content.
@@ -547,25 +475,19 @@ namespace UnityEngine
         // How tall this element will be when rendered with /content/ and a specific /width/.
         public float CalcHeight(GUIContent content, float width)
         {
-            return Internal_CalcHeight(m_Ptr, content, width);
+            return Internal_CalcHeight(content, width);
         }
 
-        // *undocumented*
-        public bool isHeightDependantOnWidth
-        {
-            get
-            {
-                return fixedHeight == 0 && (wordWrap == true && imagePosition != ImagePosition.ImageOnly);
-            }
-        }
+        public bool isHeightDependantOnWidth => fixedHeight == 0 && (wordWrap && imagePosition != ImagePosition.ImageOnly);
 
         // Calculate the minimum and maximum widths for this style rendered with /content/.
         public void CalcMinMaxWidth(GUIContent content, out float minWidth, out float maxWidth)
         {
-            Internal_CalcMinMaxWidth(m_Ptr, content, out minWidth, out maxWidth);
+            Vector2 size = Internal_CalcMinMaxWidth(content);
+            minWidth = size.x;
+            maxWidth = size.y;
         }
 
-        // *undocumented
         public override string ToString()
         {
             return UnityString.Format("GUIStyle '{0}'", name);

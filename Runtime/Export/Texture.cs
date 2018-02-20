@@ -3,7 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 using uei = UnityEngine.Internal;
+using UnityEngine.Experimental.Rendering;
+
 
 namespace UnityEngine
 {
@@ -129,6 +133,17 @@ namespace UnityEngine
             SetRenderTextureDescriptor(textureToCopy.descriptor);
         }
 
+        public RenderTexture(int width, int height, int depth, GraphicsFormat format)
+        {
+            if (!ValidateFormat(format, FormatUsage.Render))
+                return;
+
+            Internal_Create(this);
+            this.width = width; this.height = height; this.depth = depth; this.format = GraphicsFormatUtility.GetRenderTextureFormat(format);
+
+            SetSRGBReadWrite(GraphicsFormatUtility.IsSRGBFormat(format));
+        }
+
         public RenderTexture(int width, int height, int depth, [uei.DefaultValue("RenderTextureFormat.Default")] RenderTextureFormat format, [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite)
         {
             Internal_Create(this);
@@ -138,11 +153,13 @@ namespace UnityEngine
             SetSRGBReadWrite(readWrite == RenderTextureReadWrite.Default ? defaultSRGB : readWrite == RenderTextureReadWrite.sRGB);
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth, RenderTextureFormat format)
             : this(width, height, depth, format, RenderTextureReadWrite.Default)
         {
         }
 
+        [uei.ExcludeFromDocs]
         public RenderTexture(int width, int height, int depth)
             : this(width, height, depth, RenderTextureFormat.Default, RenderTextureReadWrite.Default)
         {
@@ -158,29 +175,15 @@ namespace UnityEngine
         private static void ValidateRenderTextureDesc(RenderTextureDescriptor desc)
         {
             if (desc.width <= 0)
-            {
                 throw new ArgumentException("RenderTextureDesc width must be greater than zero.", "desc.width");
-            }
-
             if (desc.height <= 0)
-            {
                 throw new ArgumentException("RenderTextureDesc height must be greater than zero.", "desc.height");
-            }
-
             if (desc.volumeDepth <= 0)
-            {
                 throw new ArgumentException("RenderTextureDesc volumeDepth must be greater than zero.", "desc.volumeDepth");
-            }
-
             if (desc.msaaSamples != 1 && desc.msaaSamples != 2 && desc.msaaSamples != 4 && desc.msaaSamples != 8)
-            {
                 throw new ArgumentException("RenderTextureDesc msaaSamples must be 1, 2, 4, or 8.", "desc.msaaSamples");
-            }
-
             if (desc.depthBufferBits != 0 && desc.depthBufferBits != 16 && desc.depthBufferBits != 24)
-            {
                 throw new ArgumentException("RenderTextureDesc depthBufferBits must be 0, 16, or 24.", "desc.depthBufferBits");
-            }
         }
     }
 
@@ -214,7 +217,7 @@ namespace UnityEngine
         // most detailed overload: use it to specify default values for docs
         public static RenderTexture GetTemporary(int width, int height,
             [uei.DefaultValue("0")] int depthBuffer, [uei.DefaultValue("RenderTextureFormat.Default")] RenderTextureFormat format,
-            [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite, [uei.DefaultValue("1")] int antiAliasing ,
+            [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite, [uei.DefaultValue("1")] int antiAliasing,
             [uei.DefaultValue("RenderTextureMemoryless.None")] RenderTextureMemoryless memorylessMode,
             [uei.DefaultValue("VRTextureUsage.None")] VRTextureUsage vrUsage, [uei.DefaultValue("false")] bool useDynamicScale
             )
@@ -222,45 +225,76 @@ namespace UnityEngine
             return GetTemporaryImpl(width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale);
         }
 
-        // the rest
+        // the rest will be excluded from docs (to "pretend" we have one method with default args)
+        [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, RenderTextureMemoryless memorylessMode, VRTextureUsage vrUsage)
         {
             return GetTemporaryImpl(width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage);
         }
 
+        [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing, RenderTextureMemoryless memorylessMode)
         {
             return GetTemporaryImpl(width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode);
         }
 
+        [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite, int antiAliasing)
         {
             return GetTemporaryImpl(width, height, depthBuffer, format, readWrite, antiAliasing);
         }
 
+        [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format, RenderTextureReadWrite readWrite)
         {
             return GetTemporaryImpl(width, height, depthBuffer, format, readWrite);
         }
 
+        [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer, RenderTextureFormat format)
         {
             return GetTemporaryImpl(width, height, depthBuffer, format);
         }
 
+        [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height, int depthBuffer)
         {
             return GetTemporaryImpl(width, height, depthBuffer);
         }
 
+        [uei.ExcludeFromDocs]
         public static RenderTexture GetTemporary(int width, int height)
         {
             return GetTemporaryImpl(width, height);
         }
     }
 
+    public sealed partial class CustomRenderTexture : RenderTexture
+    {
+        public CustomRenderTexture(int width, int height, GraphicsFormat format)
+        {
+            Internal_CreateCustomRenderTexture(this, GraphicsFormatUtility.IsSRGBFormat(format) ? RenderTextureReadWrite.sRGB : RenderTextureReadWrite.Linear);
+            this.width = width;
+            this.height = height;
+            this.format = GraphicsFormatUtility.GetRenderTextureFormat(format);
+        }
+    }
+
     public partial class Texture : Object
     {
+        internal bool ValidateFormat(GraphicsFormat format, FormatUsage usage)
+        {
+            if (SystemInfo.IsFormatSupported(format, usage))
+            {
+                return true;
+            }
+            else
+            {
+                Debug.LogError(String.Format("'{1}' is not supported on this platform. Texture '{0}' creation failed.", name, format), this);
+                return false;
+            }
+        }
+
         internal UnityException CreateNonReadableException(Texture t)
         {
             return new UnityException(
@@ -272,18 +306,35 @@ namespace UnityEngine
 
     public partial class Texture2D : Texture
     {
-        internal Texture2D(int width, int height, TextureFormat format, bool mipmap, bool linear, IntPtr nativeTex)
+        internal Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
         {
-            Internal_Create(this, width, height, format, mipmap, linear, nativeTex);
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, height, format, flags, nativeTex);
         }
 
-        public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat format, [uei.DefaultValue("true")] bool mipmap, [uei.DefaultValue("false")] bool linear)
-            : this(width, height, format, mipmap, linear, IntPtr.Zero)
+        public Texture2D(int width, int height, GraphicsFormat format, TextureCreationFlags flags)
+            : this(width, height, format, flags, IntPtr.Zero)
         {
         }
 
-        public Texture2D(int width, int height, TextureFormat format, bool mipmap)
-            : this(width, height, format, mipmap, false, IntPtr.Zero)
+        internal Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain, bool linear, IntPtr nativeTex)
+        {
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, linear);
+            TextureCreationFlags flags = TextureCreationFlags.None;
+            if (mipChain)
+                flags |= TextureCreationFlags.MipChain;
+            if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
+                flags |= TextureCreationFlags.Crunch;
+            Internal_Create(this, width, height, format, flags, nativeTex);
+        }
+
+        public Texture2D(int width, int height, [uei.DefaultValue("TextureFormat.RGBA32")] TextureFormat textureFormat, [uei.DefaultValue("true")] bool mipChain, [uei.DefaultValue("false")] bool linear)
+            : this(width, height, textureFormat, mipChain, linear, IntPtr.Zero)
+        {
+        }
+
+        public Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain)
+            : this(width, height, textureFormat, mipChain, false, IntPtr.Zero)
         {
         }
 
@@ -292,11 +343,11 @@ namespace UnityEngine
         {
         }
 
-        public static Texture2D CreateExternalTexture(int width, int height, TextureFormat format, bool mipmap, bool linear, IntPtr nativeTex)
+        public static Texture2D CreateExternalTexture(int width, int height, TextureFormat format, bool mipChain, bool linear, IntPtr nativeTex)
         {
             if (nativeTex == IntPtr.Zero)
                 throw new ArgumentException("nativeTex can not be null");
-            return new Texture2D(width, height, format, mipmap, linear, nativeTex);
+            return new Texture2D(width, height, format, mipChain, linear, nativeTex);
         }
 
         public void SetPixel(int x, int y, Color color)
@@ -370,24 +421,71 @@ namespace UnityEngine
             if (!IsReadable()) throw CreateNonReadableException(this);
             return ResizeImpl(width, height);
         }
+
+        public bool Resize(int width, int height, TextureFormat format, bool hasMipMap)
+        {
+            if (!IsReadable()) throw CreateNonReadableException(this);
+            return ResizeWithFormatImpl(width, height, format, hasMipMap);
+        }
+
+        public void ReadPixels(Rect source, int destX, int destY, [uei.DefaultValue("true")] bool recalculateMipMaps)
+        {
+            if (!IsReadable()) throw CreateNonReadableException(this);
+            ReadPixelsImpl(source, destX, destY, recalculateMipMaps);
+        }
+
+        [uei.ExcludeFromDocs] public void ReadPixels(Rect source, int destX, int destY) { ReadPixels(source, destX, destY, true); }
+
+        public static bool GenerateAtlas(Vector2[] sizes, int padding, int atlasSize, List<Rect> results)
+        {
+            if (sizes == null)
+                throw new ArgumentException("sizes array can not be null");
+            if (results == null)
+                throw new ArgumentException("results list cannot be null");
+            if (padding < 0)
+                throw new ArgumentException("padding can not be negative");
+            if (atlasSize <= 0)
+                throw new ArgumentException("atlas size must be positive");
+
+            results.Clear();
+            if (sizes.Length == 0)
+                return true;
+
+            NoAllocHelpers.EnsureListElemCount(results, sizes.Length);
+            GenerateAtlasImpl(sizes, padding, atlasSize, NoAllocHelpers.ExtractArrayFromListT(results));
+            return results.Count != 0;
+        }
     }
 
     public sealed partial class Cubemap : Texture
     {
-        internal Cubemap(int ext, TextureFormat format, bool mipmap, IntPtr nativeTex)
+        public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags)
         {
-            Internal_Create(this, ext, format, mipmap, nativeTex);
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, format, flags, IntPtr.Zero);
         }
 
-        public Cubemap(int ext, TextureFormat format, bool mipmap) : this(ext, format, mipmap, IntPtr.Zero)
+        internal Cubemap(int width, TextureFormat textureFormat, bool mipChain, IntPtr nativeTex)
+        {
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            TextureCreationFlags flags = TextureCreationFlags.None;
+            if (mipChain)
+                flags |= TextureCreationFlags.MipChain;
+            if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
+                flags |= TextureCreationFlags.Crunch;
+            Internal_Create(this, width, format, flags, nativeTex);
+        }
+
+        public Cubemap(int width, TextureFormat textureFormat, bool mipChain)
+            : this(width, textureFormat, mipChain, IntPtr.Zero)
         {
         }
 
-        public static Cubemap CreateExternalTexture(int ext, TextureFormat format, bool mipmap, IntPtr nativeTex)
+        public static Cubemap CreateExternalTexture(int width, TextureFormat format, bool mipmap, IntPtr nativeTex)
         {
             if (nativeTex == IntPtr.Zero)
                 throw new ArgumentException("nativeTex can not be null");
-            return new Cubemap(ext, format, mipmap, nativeTex);
+            return new Cubemap(width, format, mipmap, nativeTex);
         }
 
         public void SetPixel(CubemapFace face, int x, int y, Color color)
@@ -413,9 +511,21 @@ namespace UnityEngine
 
     public sealed partial class Texture3D : Texture
     {
-        public Texture3D(int width, int height, int depth, TextureFormat format, bool mipmap)
+        public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
         {
-            Internal_Create(this, width, height, depth, format, mipmap);
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, height, depth, format, flags);
+        }
+
+        public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
+        {
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
+            TextureCreationFlags flags = TextureCreationFlags.None;
+            if (mipChain)
+                flags |= TextureCreationFlags.MipChain;
+            if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
+                flags |= TextureCreationFlags.Crunch;
+            Internal_Create(this, width, height, depth, format, flags);
         }
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)
@@ -430,13 +540,25 @@ namespace UnityEngine
 
     public sealed partial class Texture2DArray : Texture
     {
-        public Texture2DArray(int width, int height, int depth, TextureFormat format, bool mipmap, [uei.DefaultValue("false")] bool linear)
+        public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
         {
-            Internal_Create(this, width, height, depth, format, mipmap, linear);
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, height, depth, format, flags);
         }
 
-        public Texture2DArray(int width, int height, int depth, TextureFormat format, bool mipmap)
-            : this(width, height, depth, format, mipmap, false)
+        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear)
+        {
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, linear);
+            TextureCreationFlags flags = TextureCreationFlags.None;
+            if (mipChain)
+                flags |= TextureCreationFlags.MipChain;
+            if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
+                flags |= TextureCreationFlags.Crunch;
+            Internal_Create(this, width, height, depth, format, flags);
+        }
+
+        public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
+            : this(width, height, depth, textureFormat, mipChain, false)
         {
         }
 
@@ -452,13 +574,25 @@ namespace UnityEngine
 
     public sealed partial class CubemapArray : Texture
     {
-        public CubemapArray(int faceSize, int cubemapCount, TextureFormat format, bool mipmap, [uei.DefaultValue("false")] bool linear)
+        public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags)
         {
-            Internal_Create(this, faceSize, cubemapCount, format, mipmap, linear);
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, cubemapCount, format, flags);
         }
 
-        public CubemapArray(int faceSize, int cubemapCount, TextureFormat format, bool mipmap)
-            : this(faceSize, cubemapCount, format, mipmap, false)
+        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear)
+        {
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, linear);
+            TextureCreationFlags flags = TextureCreationFlags.None;
+            if (mipChain)
+                flags |= TextureCreationFlags.MipChain;
+            if (GraphicsFormatUtility.IsCrunchFormat(textureFormat))
+                flags |= TextureCreationFlags.Crunch;
+            Internal_Create(this, width, cubemapCount, format, flags);
+        }
+
+        public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain)
+            : this(width, cubemapCount, textureFormat, mipChain, false)
         {
         }
 
@@ -470,5 +604,24 @@ namespace UnityEngine
 
         public void Apply(bool updateMipmaps)   { Apply(updateMipmaps, false); }
         public void Apply()                     { Apply(true, false); }
+    }
+
+    public sealed partial class SparseTexture : Texture
+    {
+        public SparseTexture(int width, int height, GraphicsFormat format, int mipCount)
+        {
+            if (ValidateFormat(format, FormatUsage.Sample))
+                Internal_Create(this, width, height, GraphicsFormatUtility.GetTextureFormat(format), GraphicsFormatUtility.IsSRGBFormat(format), mipCount);
+        }
+
+        public SparseTexture(int width, int height, TextureFormat format, int mipCount)
+        {
+            Internal_Create(this, width, height, format, false, mipCount);
+        }
+
+        public SparseTexture(int width, int height, TextureFormat format, int mipCount, bool linear)
+        {
+            Internal_Create(this, width, height, format, linear, mipCount);
+        }
     }
 }

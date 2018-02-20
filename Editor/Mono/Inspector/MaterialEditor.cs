@@ -19,7 +19,7 @@ namespace UnityEditor
         {
             public static readonly GUIStyle kReflectionProbePickerStyle = "PaneOptions";
             public static readonly GUIContent lightmapEmissiveLabel = EditorGUIUtility.TrTextContent("Global Illumination", "Controls if the emission is baked or realtime.\n\nBaked only has effect in scenes where baked global illumination is enabled.\n\nRealtime uses realtime global illumination if enabled in the scene. Otherwise the emission won't light up other objects.");
-            public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
+            public static GUIContent[] lightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked"), EditorGUIUtility.TrTextContent("None") };
             public static int[]  lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive, (int)MaterialGlobalIlluminationFlags.None };
             public static string propBlockInfo = EditorGUIUtility.TrTextContent("MaterialPropertyBlock is used to modify these values").text;
 
@@ -234,7 +234,7 @@ namespace UnityEditor
             }
             else
             {
-                // ensure e.g., ProceduralMaterialInspector correctly rebuilds textures (case 879446)
+                // ensure e.g., correctly rebuilt textures (case 879446)
                 OnShaderChanged();
             }
         }
@@ -242,7 +242,6 @@ namespace UnityEditor
         private void UpdateAllOpenMaterialEditors()
         {
             // copy current list contents to array in case it changes during iteration
-            // e.g., changing shader in ProceduralMaterialInspector will destroy/recreate editors
             foreach (var materialEditor in s_MaterialEditors.ToArray())
                 materialEditor.DetectShaderEditorNeedsUpdate();
         }

@@ -268,6 +268,9 @@ namespace UnityEditor
         internal static GUIStyle dropDownList { get { return s_Current.m_DropDownList; } }
         private GUIStyle m_DropDownList;
 
+        internal static GUIStyle minMaxStateDropdown { get { return s_Current.m_MinMaxStateDropdown; } }
+        private GUIStyle m_MinMaxStateDropdown;
+
         internal static GUIStyle progressBarBack { get { return s_Current.m_ProgressBarBack; } }
         internal static GUIStyle progressBarBar { get { return s_Current.m_ProgressBarBar; } }
         internal static GUIStyle progressBarText { get { return s_Current.m_ProgressBarText; } }
@@ -345,6 +348,7 @@ namespace UnityEditor
             m_SelectionRect = GetStyle("selectionRect");
             m_MinMaxHorizontalSliderThumb = GetStyle("MinMaxHorizontalSliderThumb");
             m_DropDownList = GetStyle("DropDownButton");
+            m_MinMaxStateDropdown = GetStyle("IN MinMaxStateDropdown");
             m_BoldFont = GetStyle("BoldLabel").font;
             m_StandardFont = GetStyle("Label").font;
             m_MiniFont = GetStyle("MiniLabel").font;

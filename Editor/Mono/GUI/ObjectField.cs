@@ -11,6 +11,10 @@ namespace UnityEditor
 {
     public sealed partial class EditorGUI
     {
+        static private GUIContent s_SceneMismatch = EditorGUIUtility.TrTextContent("Scene mismatch (cross scene references not supported)");
+        static private GUIContent s_TypeMismatch = EditorGUIUtility.TrTextContent("Type mismatch");
+        static private GUIContent s_Select = EditorGUIUtility.TrTextContent("Select");
+
         [Flags]
         internal enum ObjectFieldValidatorOptions
         {
@@ -259,12 +263,12 @@ namespace UnityEditor
                             if (EditorSceneManager.preventCrossSceneReferences && CheckForCrossSceneReferencing(obj, property.serializedObject.targetObject))
                             {
                                 if (!EditorApplication.isPlaying)
-                                    temp = EditorGUIUtility.TempContent("Scene mismatch (cross scene references not supported)");
+                                    temp = s_SceneMismatch;
                                 else
                                     temp.text = temp.text + string.Format(" ({0})", GetGameObjectFromObject(obj).scene.name);
                             }
                             else if (validator(references, objType, property, ObjectFieldValidatorOptions.ExactObjectTypeValidation) == null)
-                                temp = EditorGUIUtility.TempContent("Type mismatch");
+                                temp = s_TypeMismatch;
                         }
                     }
                     else
@@ -347,7 +351,7 @@ namespace UnityEditor
                 EndHandleMixedValueContentColor();
             }
             GUIStyle s3 = thumbStyle.name + "Overlay2";
-            s3.Draw(position, EditorGUIUtility.TempContent("Select"), id);
+            s3.Draw(position, s_Select, id);
         }
 
         private static void DrawObjectFieldMiniThumb(Rect position, int id, Object obj, GUIContent content)

@@ -11,6 +11,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor;
 using UnityEditorInternal;
+using UnityEditor.Experimental;
 using UnityEditor.AnimatedValues;
 using System.Collections;
 using System.Collections.Generic;
@@ -693,7 +694,7 @@ namespace UnityEditor
             // Load brushes from editor resources
             do
             {
-                t = (Texture2D)EditorGUIUtility.Load(EditorResourcesUtility.brushesPath + "builtin_brush_" + idx + ".png");
+                t = (Texture2D)EditorGUIUtility.Load(EditorResources.brushesPath + "builtin_brush_" + idx + ".png");
                 if (t) arr.Add(t);
                 idx++;
             }
@@ -1754,7 +1755,7 @@ namespace UnityEditor
             {
                 if (selectedTool == TerrainTool.PlaceTree)
                 {
-                    projector.material.mainTexture = (Texture2D)EditorGUIUtility.Load(EditorResourcesUtility.brushesPath + "builtin_brush_4.png");
+                    projector.material.mainTexture = (Texture2D)EditorGUIUtility.Load(EditorResources.brushesPath + "builtin_brush_4.png");
 
                     size = TreePainter.brushSize / 0.80f;
                     aspect = 1;

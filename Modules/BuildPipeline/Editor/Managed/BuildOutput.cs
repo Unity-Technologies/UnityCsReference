@@ -53,17 +53,9 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [StructLayout(LayoutKind.Sequential)]
     public struct WriteResult
     {
-        [NativeName("assetBundleName")]
-        internal string m_AssetBundleName;
-        public string assetBundleName { get { return m_AssetBundleName; } }
-
-        [NativeName("assetBundleAssets")]
-        internal GUID[] m_AssetBundleAssets;
-        public ReadOnlyCollection<GUID> assetBundleAssets { get { return Array.AsReadOnly(m_AssetBundleAssets); } }
-
-        [NativeName("assetBundleObjects")]
-        internal ObjectSerializedInfo[] m_AssetBundleObjects;
-        public ReadOnlyCollection<ObjectSerializedInfo> assetBundleObjects { get { return Array.AsReadOnly(m_AssetBundleObjects); } }
+        [NativeName("serializedObjects")]
+        internal ObjectSerializedInfo[] m_SerializedObjects;
+        public ReadOnlyCollection<ObjectSerializedInfo> serializedObjects { get { return Array.AsReadOnly(m_SerializedObjects); } }
 
         [NativeName("resourceFiles")]
         internal ResourceFile[] m_ResourceFiles;
@@ -72,16 +64,5 @@ namespace UnityEditor.Experimental.Build.AssetBundle
         [NativeName("includedTypes")]
         internal Type[] m_IncludedTypes;
         public ReadOnlyCollection<Type> includedTypes { get { return Array.AsReadOnly(m_IncludedTypes); } }
-    }
-
-
-    [Serializable]
-    [UsedByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
-    public struct BuildOutput
-    {
-        [NativeName("results")]
-        internal WriteResult[] m_Results;
-        public ReadOnlyCollection<WriteResult> results { get { return Array.AsReadOnly(m_Results); } }
     }
 }

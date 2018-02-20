@@ -217,6 +217,12 @@ namespace UnityEngine.Playables
             playable.SetInputWeight(inputIndex, weight);
         }
 
+        public static void DisconnectInput<U>(this U playable, int inputPort)
+            where U : struct, IPlayable
+        {
+            playable.GetGraph().Disconnect(playable, inputPort);
+        }
+
         public static int AddInput<U, V>(this U playable, V sourcePlayable, int sourceOutputIndex, float weight = 0.0f)
             where U : struct, IPlayable
             where V : struct, IPlayable

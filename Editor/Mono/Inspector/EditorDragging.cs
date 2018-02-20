@@ -37,7 +37,7 @@ namespace UnityEditor
             m_InspectorWindow = inspectorWindow;
         }
 
-        public void HandleDraggingToEditor(int editorIndex, Rect dragRect, Rect contentRect, ActiveEditorTracker tracker)
+        public void HandleDraggingToEditor(Editor[] editors, int editorIndex, Rect dragRect, Rect contentRect)
         {
             if (dragRect.height == 0f)
                 return;
@@ -53,17 +53,17 @@ namespace UnityEditor
             m_LastIndex = editorIndex;
             m_LastMarkerY = markerY;
 
-            HandleEditorDragging(editorIndex, targetRect, markerY, false, tracker);
+            HandleEditorDragging(editors, editorIndex, targetRect, markerY, false);
         }
 
-        public void HandleDraggingToBottomArea(Rect bottomRect, ActiveEditorTracker tracker)
+        public void HandleDraggingToBottomArea(Editor[] editors, Rect bottomRect)
         {
             var editorIndex = m_LastIndex;
-            if (editorIndex >= 0 && editorIndex < tracker.activeEditors.Length)
-                HandleEditorDragging(editorIndex, bottomRect, m_LastMarkerY, true, tracker);
+            if (editorIndex >= 0 && editorIndex < editors.Length)
+                HandleEditorDragging(editors, editorIndex, bottomRect, m_LastMarkerY, true);
         }
 
-        void HandleEditorDragging(int editorIndex, Rect targetRect, float markerY, bool bottomTarget, ActiveEditorTracker tracker)
+        void HandleEditorDragging(Editor[] editors, int editorIndex, Rect targetRect, float markerY, bool bottomTarget)
         {
             var evt = Event.current;
             switch (evt.type)
@@ -90,9 +90,6 @@ namespace UnityEditor
 
                         if (draggingMode.Value != DraggingMode.NotApplicable)
                         {
-                            var editors = tracker.activeEditors;
-                            var draggedObjects = DragAndDrop.objectReferences;
-
                             if (bottomTarget)
                             {
                                 m_TargetAbove = false;
@@ -173,7 +170,6 @@ namespace UnityEditor
                             return;
                         }
 
-                        var editors = tracker.activeEditors;
                         if (!editors[m_TargetIndex].targets.All(t => t is Component))
                             return;
 

@@ -1469,6 +1469,16 @@ namespace UnityEditor
                         {
                             duplicateKeyframe.key.inTangent = (keyframe.key.outTangent != Mathf.Infinity) ? -keyframe.key.outTangent : Mathf.Infinity;
                             duplicateKeyframe.key.outTangent = (keyframe.key.inTangent != Mathf.Infinity) ? -keyframe.key.inTangent : Mathf.Infinity;
+
+                            if (keyframe.key.weightedMode == WeightedMode.In)
+                                duplicateKeyframe.key.weightedMode = WeightedMode.Out;
+                            else if (keyframe.key.weightedMode == WeightedMode.Out)
+                                duplicateKeyframe.key.weightedMode = WeightedMode.In;
+                            else
+                                duplicateKeyframe.key.weightedMode = keyframe.key.weightedMode;
+
+                            duplicateKeyframe.key.inWeight = keyframe.key.outWeight;
+                            duplicateKeyframe.key.outWeight = keyframe.key.inWeight;
                         }
 
                         // if it's fully selected, also move on Y
@@ -2670,7 +2680,7 @@ namespace UnityEditor
                     m_NewTime,
                     x => GetKeyframeFromSelection(x).time,
                     (r, id, time) => TimeField(r, id, time, invSnap, timeFormat),
-                    "time");
+                    settings.xAxisLabel);
             if (EditorGUI.EndChangeCheck())
             {
                 m_TimeWasEdited = true;
@@ -2684,7 +2694,7 @@ namespace UnityEditor
                     m_NewValue,
                     x => GetKeyframeFromSelection(x).value,
                     (r, id, value) => ValueField(r, id, value),
-                    "value");
+                    settings.yAxisLabel);
             if (EditorGUI.EndChangeCheck())
             {
                 m_ValueWasEdited = true;
@@ -3335,16 +3345,18 @@ namespace UnityEditor
 
         List<Vector3> CreateRegion(CurveWrapper minCurve, CurveWrapper maxCurve, float deltaTime)
         {
+            var range = settings.curveRegionDomain;
+
             // Create list of triangle points
             List<Vector3> region = new List<Vector3>();
 
             List<float> sampleTimes = new List<float>();
-            float sampleTime = deltaTime;
-            for (; sampleTime <= 1.0f; sampleTime += deltaTime)
+            float sampleTime = range.x + deltaTime;
+            for (; sampleTime <= range.y; sampleTime += deltaTime)
                 sampleTimes.Add(sampleTime);
 
-            if (sampleTime != 1.0f)
-                sampleTimes.Add(1.0f);
+            if (sampleTime != range.y)
+                sampleTimes.Add(range.y);
 
             // To handle constant curves (high gradient) we add key time samples on both side of the keys as well
             // the key time itself.
@@ -3353,7 +3365,7 @@ namespace UnityEditor
             for (int i = 0; i < maxKeys.Length; ++i)
             {
                 Keyframe key = maxKeys[i];
-                if (key.time > 0f && key.time < 1.0f)
+                if (key.time > range.x && key.time < range.y)
                 {
                     sampleTimes.Add(key.time - 0.0001f);
                     sampleTimes.Add(key.time);
@@ -3364,7 +3376,7 @@ namespace UnityEditor
             for (int i = 0; i < minKeys.Length; ++i)
             {
                 Keyframe key = minKeys[i];
-                if (key.time > 0f && key.time < 1.0f)
+                if (key.time > range.x && key.time < range.y)
                 {
                     sampleTimes.Add(key.time - 0.0001f);
                     sampleTimes.Add(key.time);
@@ -3374,8 +3386,8 @@ namespace UnityEditor
 
             sampleTimes.Sort();
 
-            Vector3 prevA = new Vector3(0.0f, maxCurve.renderer.EvaluateCurveSlow(0.0f), 0.0f);
-            Vector3 prevB = new Vector3(0.0f, minCurve.renderer.EvaluateCurveSlow(0.0f), 0.0f);
+            Vector3 prevA = new Vector3(range.x, maxCurve.renderer.EvaluateCurveSlow(0.0f), 0.0f);
+            Vector3 prevB = new Vector3(range.x, minCurve.renderer.EvaluateCurveSlow(0.0f), 0.0f);
 
             Vector3 screenPrevA = drawingToViewMatrix.MultiplyPoint(prevA);
             Vector3 screenPrevB = drawingToViewMatrix.MultiplyPoint(prevB);

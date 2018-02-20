@@ -229,6 +229,7 @@ namespace UnityEditor
             ConnectSendContext context = (ConnectSendContext)obj;
             Undo.RecordObject(context.sendEffect, "Change Send Target");
             context.sendEffect.sendTarget = context.targetEffect;
+            AudioMixerUtility.RepaintAudioMixerAndInspectors();
         }
 
         private bool ClipRect(Rect r, Rect clipRect, ref Rect overlap)
@@ -368,7 +369,7 @@ namespace UnityEditor
             public float x, y;
         };
 
-        GUIContent bypassButtonContent = new GUIContent("", "Toggle bypass on this effect");
+        GUIContent bypassButtonContent = EditorGUIUtility.TrTextContent("", "Toggle bypass on this effect");
         void EffectSlot(Rect effectRect, AudioMixerSnapshotController snapshot, AudioMixerEffectController effect, int effectIndex, ref int highlightEffectIndex, ChannelStripParams p, ref Dictionary<AudioMixerEffectController, PatchSlot> patchslots)
         {
             if (effect == null)

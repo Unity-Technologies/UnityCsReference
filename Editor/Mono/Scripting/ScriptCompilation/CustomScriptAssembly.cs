@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Compilation;
 
@@ -17,6 +18,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] optionalUnityReferences;
         public string[] includePlatforms;
         public string[] excludePlatforms;
+        public bool allowUnsafeCode;
 
         public static CustomScriptAssemblyData FromJson(string json)
         {
@@ -85,6 +87,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set;  }
 
         public EditorCompilation.PackageAssembly? PackageAssembly { get; set; }
+        public ScriptCompilerOptions CompilerOptions { get; set; }
 
         public AssemblyFlags AssemblyFlags
         {
@@ -98,10 +101,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         public static CustomScriptAssemblyPlatform[] Platforms { get; private set; }
+        public static CustomScriptAssemblyPlatform[] DeprecatedPlatforms { get; private set; }
+
         public static CustomScriptOptinalUnityAssembly[] OptinalUnityAssemblies { get; private set; }
 
         static CustomScriptAssembly()
         {
+            // When removing a platform from Platforms, please add it to DeprecatedPlatforms.
             Platforms = new CustomScriptAssemblyPlatform[]
             {
                 new CustomScriptAssemblyPlatform("Editor", "Editor", BuildTarget.NoTarget),
@@ -114,8 +120,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("iOS", BuildTarget.iOS),
                 new CustomScriptAssemblyPlatform("Android", BuildTarget.Android),
                 new CustomScriptAssemblyPlatform("WebGL", BuildTarget.WebGL),
-                new CustomScriptAssemblyPlatform("WSA", "Windows Store App", BuildTarget.WSAPlayer),
-                new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen),
+                new CustomScriptAssemblyPlatform("WSA", "Universal Windows Platform", BuildTarget.WSAPlayer),
                 new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2),
                 new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4),
                 new CustomScriptAssemblyPlatform("XboxOne", BuildTarget.XboxOne),
@@ -123,6 +128,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS),
                 new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch),
             };
+
+#pragma warning disable 0618
+            DeprecatedPlatforms = new CustomScriptAssemblyPlatform[]
+            {
+                new CustomScriptAssemblyPlatform("PSMobile", BuildTarget.PSM),
+                new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen),
+                new CustomScriptAssemblyPlatform("WiiU", BuildTarget.WiiU),
+            };
+#pragma warning restore 0618
 
             OptinalUnityAssemblies = new[]
             {
@@ -187,6 +201,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.FilePath = modifiedDirectory;
             customScriptAssembly.PathPrefix = modifiedDirectory;
             customScriptAssembly.References = new string[0];
+            customScriptAssembly.CompilerOptions = new ScriptCompilerOptions();
 
             return customScriptAssembly;
         }
@@ -213,12 +228,43 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             if (customScriptAssemblyData.includePlatforms != null && customScriptAssemblyData.includePlatforms.Length > 0)
-                customScriptAssembly.IncludePlatforms = customScriptAssemblyData.includePlatforms.Select(name => GetPlatformFromName(name)).ToArray();
+                customScriptAssembly.IncludePlatforms = GetPlatformsFromNames(customScriptAssemblyData.includePlatforms);
 
             if (customScriptAssemblyData.excludePlatforms != null && customScriptAssemblyData.excludePlatforms.Length > 0)
-                customScriptAssembly.ExcludePlatforms = customScriptAssemblyData.excludePlatforms.Select(name => GetPlatformFromName(name)).ToArray();
+                customScriptAssembly.ExcludePlatforms = GetPlatformsFromNames(customScriptAssemblyData.excludePlatforms);
+
+            var compilerOptions = new ScriptCompilerOptions();
+
+            compilerOptions.AllowUnsafeCode = customScriptAssemblyData.allowUnsafeCode;
+
+            customScriptAssembly.CompilerOptions = compilerOptions;
 
             return customScriptAssembly;
+        }
+
+        public static CustomScriptAssemblyPlatform[] GetPlatformsFromNames(string[] names)
+        {
+            var platforms = new List<CustomScriptAssemblyPlatform>();
+
+            foreach (var name in names)
+            {
+                // Ignore deprecated platforms.
+                if (IsDeprecatedPlatformName(name))
+                    continue;
+
+                platforms.Add(GetPlatformFromName(name));
+            }
+
+            return platforms.ToArray();
+        }
+
+        public static bool IsDeprecatedPlatformName(string name)
+        {
+            foreach (var platform in DeprecatedPlatforms)
+                if (string.Equals(platform.Name, name, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+
+            return false;
         }
 
         public static CustomScriptAssemblyPlatform GetPlatformFromName(string name)

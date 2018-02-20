@@ -79,7 +79,7 @@ namespace UnityEditor
         [System.Obsolete("BlackBerry has been removed in 5.4")]
         BlackBerry = 28,
 
-        // *undocumented*
+        [System.Obsolete("Tizen has been removed in 2017.3")]
         Tizen = 29,
 
         /// Build a Vita Standalone
@@ -92,7 +92,7 @@ namespace UnityEditor
 
         /// Build a Unity PlayStation Mobile (PSM) application
         /// SA: BuildPipeline.BuildPlayer.
-        [System.Obsolete("warning PSM has been removed in >= 5.3")]
+        [System.Obsolete("PSM has been removed in >= 5.3")]
         PSM = 32,
 
         /// Build an Xbox One Standalone

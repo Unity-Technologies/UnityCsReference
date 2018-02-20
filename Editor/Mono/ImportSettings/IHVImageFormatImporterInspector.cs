@@ -19,6 +19,8 @@ namespace UnityEditor
         SerializedProperty  m_WrapU;
         SerializedProperty  m_WrapV;
         SerializedProperty  m_WrapW;
+        SerializedProperty  m_StreamingMipmaps;
+        SerializedProperty  m_StreamingMipmapsPriority;
 
         internal class Styles
         {
@@ -27,11 +29,13 @@ namespace UnityEditor
             public static readonly GUIContent sRGBTexture   = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
             public static readonly GUIContent wrapMode      = EditorGUIUtility.TrTextContent("Wrap Mode");
             public static readonly GUIContent filterMode    = EditorGUIUtility.TrTextContent("Filter Mode");
+            public static readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mipmaps", "Only load larger mip maps as needed to render the current game cameras.");
+            public static readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Streaming Mipmaps Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
 
             public static readonly int[] filterModeValues           =
             { (int)FilterMode.Point, (int)FilterMode.Bilinear, (int)FilterMode.Trilinear };
             public static readonly GUIContent[] filterModeOptions   =
-            { EditorGUIUtility.TextContent("Point (no filter)"), EditorGUIUtility.TextContent("Bilinear"), EditorGUIUtility.TrTextContent("Trilinear") };
+            { EditorGUIUtility.TrTextContent("Point (no filter)"), EditorGUIUtility.TrTextContent("Bilinear"), EditorGUIUtility.TrTextContent("Trilinear") };
         }
 
 
@@ -43,6 +47,8 @@ namespace UnityEditor
             m_WrapU         = serializedObject.FindProperty("m_TextureSettings.m_WrapU");
             m_WrapV         = serializedObject.FindProperty("m_TextureSettings.m_WrapV");
             m_WrapW         = serializedObject.FindProperty("m_TextureSettings.m_WrapW");
+            m_StreamingMipmaps         = serializedObject.FindProperty("m_StreamingMipmaps");
+            m_StreamingMipmapsPriority = serializedObject.FindProperty("m_StreamingMipmapsPriority");
         }
 
         // alas it looks impossible to share code so we copy paste from TextureImporterInspector.TextureSettingsGUI()
@@ -86,6 +92,13 @@ namespace UnityEditor
                     }
                 }
                 SceneView.RepaintAll();
+            }
+
+            EditorGUILayout.PropertyField(m_StreamingMipmaps, Styles.streamingMipmaps);
+
+            if (m_StreamingMipmaps.boolValue && !m_StreamingMipmaps.hasMultipleDifferentValues)
+            {
+                EditorGUILayout.PropertyField(m_StreamingMipmapsPriority, Styles.streamingMipmapsPriority);
             }
 
             GUILayout.BeginHorizontal();

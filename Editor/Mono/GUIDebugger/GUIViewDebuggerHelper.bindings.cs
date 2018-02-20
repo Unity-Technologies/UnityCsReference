@@ -109,6 +109,7 @@ namespace UnityEditor
         public StackFrame[] stack;
 
         public int typeInstructionIndex;
+        public bool enabled;
     }
 
     [NativeHeader("Editor/Mono/GUIDebugger/GUIViewDebuggerHelper.bindings.h")]

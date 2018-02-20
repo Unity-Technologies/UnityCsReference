@@ -17,6 +17,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public VisualElement inputContainer { get; private set; }
         public VisualElement outputContainer { get; private set; }
 
+        private VisualElement m_InputContainerParent;
+        private VisualElement m_OutputContainerParent;
+
         //This directly contains input and output containers
         public VisualElement topContainer { get; private set; }
         public VisualElement extensionContainer { get; private set; }
@@ -184,9 +187,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public virtual Port InstantiatePort(Orientation orientation, Direction direction, Type type)
+        public virtual Port InstantiatePort(Orientation orientation, Direction direction, Port.Capacity capacity, Type type)
         {
-            return Port.Create<Edge>(orientation, direction, type);
+            return Port.Create<Edge>(orientation, direction, capacity, type);
         }
 
         public virtual Port InstantiatePort(PortPresenter newPres)
@@ -265,12 +268,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             foreach (Port input in updatedInputs)
             {
+                // Make sure we don't register these more than once.
+                input.OnConnect -= OnPortConnectAction;
+                input.OnDisconnect -= OnPortConnectAction;
+
                 input.OnConnect += OnPortConnectAction;
                 input.OnDisconnect += OnPortConnectAction;
             }
 
             foreach (Port output in updatedOutputs)
             {
+                // Make sure we don't register these more than once.
+                output.OnConnect -= OnPortConnectAction;
+                output.OnDisconnect -= OnPortConnectAction;
+
                 output.OnConnect += OnPortConnectAction;
                 output.OnDisconnect += OnPortConnectAction;
             }
@@ -286,15 +297,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Show output container only if we have one or more child
             if (outputVisible)
             {
-                if (outputContainer.shadow.parent != topContainer)
+                if (outputContainer.shadow.parent != m_OutputContainerParent)
                 {
-                    topContainer.Add(outputContainer);
+                    m_OutputContainerParent.Add(outputContainer);
                     outputContainer.BringToFront();
                 }
             }
             else
             {
-                if (outputContainer.shadow.parent == topContainer)
+                if (outputContainer.shadow.parent == m_OutputContainerParent)
                 {
                     outputContainer.RemoveFromHierarchy();
                 }
@@ -302,21 +313,24 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (inputVisible)
             {
-                if (inputContainer.shadow.parent != topContainer)
+                if (inputContainer.shadow.parent != m_InputContainerParent)
                 {
-                    topContainer.Add(inputContainer);
+                    m_InputContainerParent.Add(inputContainer);
                     inputContainer.SendToBack();
                 }
             }
             else
             {
-                if (inputContainer.shadow.parent == topContainer)
+                if (inputContainer.shadow.parent == m_InputContainerParent)
                 {
                     inputContainer.RemoveFromHierarchy();
                 }
             }
 
-            SetElementVisible(divider, inputVisible && outputVisible);
+            if (divider != null)
+            {
+                SetElementVisible(divider, inputVisible && outputVisible);
+            }
 
             return inputVisible || outputVisible;
         }
@@ -347,10 +361,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
             }
 
-            if (canCollapse)
-                m_CollapseButton.pseudoStates &= ~PseudoStates.Disabled;
-            else
-                m_CollapseButton.pseudoStates |= PseudoStates.Disabled;
+            if (m_CollapseButton != null)
+            {
+                if (canCollapse)
+                    m_CollapseButton.pseudoStates &= ~PseudoStates.Disabled;
+                else
+                    m_CollapseButton.pseudoStates |= PseudoStates.Disabled;
+            }
         }
 
         public override void OnDataChanged()
@@ -389,10 +406,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             expanded = !expanded;
         }
 
-        public Node()
+        public Node() : this("UXML/GraphView/Node.uxml")
+        {
+        }
+
+        public Node(string uiFile)
         {
             clippingOptions = ClippingOptions.NoClipping;
-            var tpl = EditorGUIUtility.Load("UXML/GraphView/Node.uxml") as VisualTreeAsset;
+            var tpl = EditorGUIUtility.Load(uiFile) as VisualTreeAsset;
 
             tpl.CloneTree(this, new Dictionary<string, VisualElement>());
 
@@ -411,12 +432,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             titleContainer = main.Q(name: "title");
             inputContainer = main.Q(name: "input");
+
+            if (inputContainer != null)
+            {
+                m_InputContainerParent = inputContainer.shadow.parent;
+            }
+
             m_CollapsibleArea = main.Q(name: "collapsible-area");
             extensionContainer = main.Q("extension");
             VisualElement output = main.Q(name: "output");
             outputContainer = output;
 
-            topContainer = output.parent;
+            if (outputContainer != null)
+            {
+                m_OutputContainerParent = outputContainer.shadow.parent;
+                topContainer = output.parent;
+            }
 
             m_TitleLabel = main.Q<Label>(name: "title-label");
             m_CollapseButton = main.Q<VisualElement>(name: "collapse-button");
@@ -460,7 +491,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             toDelete.UnionWith(toDeleteList);
         }
 
-        void DisconnectAll(EventBase evt)
+        void DisconnectAll(ContextualMenu.MenuAction a)
         {
             HashSet<GraphElement> toDelete = new HashSet<GraphElement>();
 
@@ -479,7 +510,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        ContextualMenu.MenuAction.StatusFlags DisconnectAllStatus(EventBase evt)
+        ContextualMenu.MenuAction.StatusFlags DisconnectAllStatus(ContextualMenu.MenuAction a)
         {
             VisualElement[] containers =
             {

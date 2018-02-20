@@ -3,9 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.IMGUI.Controls;
-using UnityEditorInternal;
+using UnityEditor.Experimental;
 using UnityEngine;
-
 
 namespace UnityEditor.TreeViewExamples
 {
@@ -22,7 +21,7 @@ namespace UnityEditor.TreeViewExamples
 
     class TestGUI : TreeViewGUI
     {
-        private Texture2D m_FolderIcon = EditorGUIUtility.FindTexture(EditorResourcesUtility.folderIconName);
+        private Texture2D m_FolderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
         private Texture2D m_Icon = EditorGUIUtility.FindTexture("boo Script Icon");
         private GUIStyle m_LabelStyle;
         private GUIStyle m_LabelStyleRightAlign;

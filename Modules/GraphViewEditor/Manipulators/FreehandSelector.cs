@@ -52,9 +52,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            if (e.target != target)
-                return;
-
             if (CanStartManipulation(e))
             {
                 m_GraphView.ClearSelection();
@@ -67,7 +64,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 m_Active = true;
                 target.TakeMouseCapture();
-                e.StopPropagation();
+                e.StopImmediatePropagation();
             }
         }
 

@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class TextField : TextInputFieldBase, INotifyValueChanged<string>
+    public class TextField : TextInputFieldBase<string>
     {
         // TODO: Switch over to default style properties
 
@@ -40,13 +40,14 @@ namespace UnityEngine.Experimental.UIElements
 
         public TextField(int maxLength, bool multiline, bool isPasswordField, char maskChar) : base(maxLength, maskChar)
         {
+            m_Value = "";
             this.multiline = multiline;
             this.isPasswordField = isPasswordField;
         }
 
         protected string m_Value;
 
-        public string value
+        public override string value
         {
             get { return m_Value; }
             set
@@ -56,22 +57,10 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public void SetValueAndNotify(string newValue)
+        public void SelectAndReplaceCurrentWord(string newWord)
         {
-            if (!EqualityComparer<string>.Default.Equals(value, newValue))
-            {
-                using (ChangeEvent<string> evt = ChangeEvent<string>.GetPooled(value, newValue))
-                {
-                    evt.target = this;
-                    value = newValue;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
-                }
-            }
-        }
-
-        public void OnValueChanged(EventCallback<ChangeEvent<string>> callback)
-        {
-            RegisterCallback(callback);
+            editorEngine.SelectCurrentWord();
+            editorEngine.ReplaceSelection(newWord);
         }
 
         public override void OnPersistentDataReady()
@@ -128,7 +117,16 @@ namespace UnityEngine.Experimental.UIElements
             if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
             {
                 KeyDownEvent kde = evt as KeyDownEvent;
-                if (kde.character == '\n')
+                if (!isDelayed || kde.character == '\n')
+                {
+                    SetValueAndNotify(text);
+                }
+            }
+            else if (evt.GetEventTypeId() == ExecuteCommandEvent.TypeId())
+            {
+                ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
+                string cmdName = commandEvt.commandName;
+                if (!isDelayed && (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut))
                 {
                     SetValueAndNotify(text);
                 }
@@ -139,7 +137,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == BlurEvent.TypeId())
+            if (!isDelayed || evt.GetEventTypeId() == BlurEvent.TypeId())
             {
                 SetValueAndNotify(text);
             }

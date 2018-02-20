@@ -158,7 +158,7 @@ namespace UnityEditor.Presets
                             }
                             else
                             {
-                                menu.AddItem(new GUIContent("None"), false, null);
+                                menu.AddItem(EditorGUIUtility.TrTextContent("None"), false, null);
                             }
                             menu.ShowAsContext();
                             Event.current.Use();

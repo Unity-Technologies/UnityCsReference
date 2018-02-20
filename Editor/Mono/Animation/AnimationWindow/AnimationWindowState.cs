@@ -928,6 +928,16 @@ namespace UnityEditorInternal
                         {
                             liveEditKey.key.inTangent = (liveEditKey.keySnapshot.outTangent != Mathf.Infinity) ? -liveEditKey.keySnapshot.outTangent : Mathf.Infinity;
                             liveEditKey.key.outTangent = (liveEditKey.keySnapshot.inTangent != Mathf.Infinity) ? -liveEditKey.keySnapshot.inTangent : Mathf.Infinity;
+
+                            if (liveEditKey.keySnapshot.weightedMode == WeightedMode.In)
+                                liveEditKey.key.weightedMode = WeightedMode.Out;
+                            else if (liveEditKey.keySnapshot.weightedMode == WeightedMode.Out)
+                                liveEditKey.key.weightedMode = WeightedMode.In;
+                            else
+                                liveEditKey.key.weightedMode = liveEditKey.keySnapshot.weightedMode;
+
+                            liveEditKey.key.inWeight = liveEditKey.keySnapshot.outWeight;
+                            liveEditKey.key.outWeight = liveEditKey.keySnapshot.inWeight;
                         }
 
                         if (!liveEditKey.key.isPPtrCurve)

@@ -24,37 +24,36 @@ namespace UnityEditor.Experimental.UIElements
     }
 
     // Implements a control with a value of type T backed by a text.
-    public abstract class TextValueField<T> : TextInputFieldBase, INotifyValueChanged<T>, IValueField<T>
+    public abstract class TextValueField<T> : TextInputFieldBase<T>, IValueField<T>
     {
         protected TextValueField(int maxLength)
             : base(maxLength, Char.MinValue)
         {
+            m_UpdateTextFromValue = true;
+            value = default(T);
         }
 
-        public void OnValueChanged(EventCallback<ChangeEvent<T>> callback)
-        {
-            RegisterCallback(callback);
-        }
-
+        private bool m_UpdateTextFromValue;
         protected T m_Value;
 
-        public T value
+        public override T value
         {
             get { return m_Value; }
             set
             {
                 m_Value = value;
-                text = ValueToString(m_Value);
+                if (m_UpdateTextFromValue)
+                    text = ValueToString(m_Value);
             }
         }
 
-        public void UpdateValueFromText()
+        private void UpdateValueFromText()
         {
             T newValue = StringToValue(text);
             SetValueAndNotify(newValue);
         }
 
-        public void SetValueAndNotify(T newValue)
+        public override void SetValueAndNotify(T newValue)
         {
             if (!EqualityComparer<T>.Default.Equals(value, newValue))
             {
@@ -64,6 +63,12 @@ namespace UnityEditor.Experimental.UIElements
                     value = newValue;
                     UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                 }
+            }
+            else if (!isDelayed && m_UpdateTextFromValue)
+            {
+                // Value is the same but the text might not be in sync
+                // In the case of an expression like 2+2, the text might not be equal to the result
+                text = ValueToString(m_Value);
             }
         }
 
@@ -79,12 +84,41 @@ namespace UnityEditor.Experimental.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
+            bool hasChanged = false;
             if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
             {
                 KeyDownEvent kde = evt as KeyDownEvent;
                 if (kde.character == '\n')
                 {
                     UpdateValueFromText();
+                }
+                else
+                {
+                    hasChanged = true;
+                }
+            }
+            else if (evt.GetEventTypeId() == ExecuteCommandEvent.TypeId())
+            {
+                ExecuteCommandEvent commandEvt = evt as ExecuteCommandEvent;
+                string cmdName = commandEvt.commandName;
+                if (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut)
+                {
+                    hasChanged = true;
+                }
+            }
+
+            if (!isDelayed && hasChanged)
+            {
+                // Prevent text from changing when the value change
+                // This allow expression (2+2) or string like 00123 to remain as typed in the TextField until enter is pressed
+                m_UpdateTextFromValue = false;
+                try
+                {
+                    UpdateValueFromText();
+                }
+                finally
+                {
+                    m_UpdateTextFromValue = true;
                 }
             }
         }
@@ -95,7 +129,15 @@ namespace UnityEditor.Experimental.UIElements
 
             if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
-                UpdateValueFromText();
+                if (string.IsNullOrEmpty(text))
+                {
+                    // Make sure that empty field gets the default value
+                    value = default(T);
+                }
+                else
+                {
+                    UpdateValueFromText();
+                }
             }
         }
     }

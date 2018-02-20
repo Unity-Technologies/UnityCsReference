@@ -126,6 +126,9 @@ namespace UnityEditor
                     }
                 }
 
+                scaleDelta.x = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.x, minDifference.x);
+                scaleDelta.y = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.y, minDifference.y);
+                scaleDelta.z = MathUtils.RoundBasedOnMinimumDifference(scaleDelta.z, minDifference.z);
                 SetScaleValue(Vector3.Scale(scale, scaleDelta));
             }
 
@@ -137,19 +140,32 @@ namespace UnityEditor
             public void SetPositionDelta(Vector3 positionDelta, bool applySmartRounding)
             {
                 Vector3 localPositionDelta = positionDelta;
-                Vector3 minDifference = ManipulationToolUtility.minDragDifference;
                 if (transform.parent != null)
                 {
                     localPositionDelta = transform.parent.InverseTransformVector(localPositionDelta);
-                    minDifference.x /= transform.parent.lossyScale.x;
-                    minDifference.y /= transform.parent.lossyScale.y;
-                    minDifference.z /= transform.parent.lossyScale.z;
+
+                    if (!applySmartRounding)
+                        applySmartRounding = !transform.parent.localRotation.Equals(Quaternion.identity);
                 }
 
-                // For zero delta, we don't want to change the value so we ignore rounding
-                bool zeroXDelta = Mathf.Approximately(localPositionDelta.x, 0f);
-                bool zeroYDelta = Mathf.Approximately(localPositionDelta.y, 0f);
-                bool zeroZDelta = Mathf.Approximately(localPositionDelta.z, 0f);
+                bool zeroXDelta = false;
+                bool zeroYDelta = false;
+                bool zeroZDelta = false;
+                Vector3 minDifference = ManipulationToolUtility.minDragDifference;
+                if (applySmartRounding)
+                {
+                    // For zero delta, we don't want to change the value so we ignore rounding
+                    zeroXDelta = Mathf.Approximately(localPositionDelta.x, 0f);
+                    zeroYDelta = Mathf.Approximately(localPositionDelta.y, 0f);
+                    zeroZDelta = Mathf.Approximately(localPositionDelta.z, 0f);
+
+                    if (transform.parent != null)
+                    {
+                        minDifference.x /= transform.parent.lossyScale.x;
+                        minDifference.y /= transform.parent.lossyScale.y;
+                        minDifference.z /= transform.parent.lossyScale.z;
+                    }
+                }
 
                 if (rectTransform == null)
                 {

@@ -98,17 +98,6 @@ namespace UnityEditor
         iPadImage = 2,
     }
 
-    [Flags]
-    public enum iOSSystemGestureDeferMode: uint
-    {
-        None = 0,
-        TopEdge = 1 << 0,
-        LeftEdge = 1 << 1,
-        BottomEdge = 1 << 2,
-        RightEdge = 1 << 3,
-        All = TopEdge | LeftEdge | BottomEdge | RightEdge
-    }
-
     // extern splash screen type (on iOS)
     public enum iOSLaunchScreenType
     {
@@ -270,6 +259,12 @@ namespace UnityEditor
                 }
             }
 
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetiOSMinimumVersionString")]
+            static extern string GetMinimumVersionString();
+
+            internal static readonly Version minimumOsVersion = new Version(GetMinimumVersionString());
+
             [NativeProperty("iOSTargetOSVersion")]
             public extern static string targetOSVersionString
             {
@@ -324,9 +319,9 @@ namespace UnityEditor
             [NativeProperty("DeferSystemGesturesMode")]
             private extern static int deferSystemGesturesModeInternal { get; set; }
 
-            public static iOSSystemGestureDeferMode deferSystemGesturesMode
+            public static UnityEngine.iOS.SystemGestureDeferMode deferSystemGesturesMode
             {
-                get { return (iOSSystemGestureDeferMode)deferSystemGesturesModeInternal; }
+                get { return (UnityEngine.iOS.SystemGestureDeferMode)deferSystemGesturesModeInternal; }
                 set { deferSystemGesturesModeInternal = (int)value; }
             }
 
@@ -366,16 +361,27 @@ namespace UnityEditor
             public extern static bool allowHTTPDownload { get; set; }
 
             [NativeProperty("AppleDeveloperTeamID")]
-            public extern static string appleDeveloperTeamID
+            private extern static string appleDeveloperTeamIDInternal
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
                 set;
             }
+
+            public static string appleDeveloperTeamID
+            {
+                get
+                {
+                    return appleDeveloperTeamIDInternal.Length < 1 ?
+                        EditorPrefs.GetString("DefaultiOSAutomaticSignTeamId") : appleDeveloperTeamIDInternal;
+                }
+                set { appleDeveloperTeamIDInternal = value; }
+            }
+
 
             [NativeProperty("iOSManualProvisioningProfileID")]
-            public extern static string iOSManualProvisioningProfileID
+            private extern static string iOSManualProvisioningProfileIDInternal
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;
@@ -383,14 +389,36 @@ namespace UnityEditor
                 set;
             }
 
+            public static string iOSManualProvisioningProfileID
+            {
+                get
+                {
+                    return String.IsNullOrEmpty(iOSManualProvisioningProfileIDInternal) ?
+                        EditorPrefs.GetString("DefaultiOSProvisioningProfileUUID") : iOSManualProvisioningProfileIDInternal;
+                }
+                set { iOSManualProvisioningProfileIDInternal = value; }
+            }
+
+
             [NativeProperty("tvOSManualProvisioningProfileID")]
-            public extern static string tvOSManualProvisioningProfileID
+            private extern static string tvOSManualProvisioningProfileIDInternal
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;
                 [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
                 set;
             }
+
+            public static string tvOSManualProvisioningProfileID
+            {
+                get
+                {
+                    return String.IsNullOrEmpty(tvOSManualProvisioningProfileIDInternal) ?
+                        EditorPrefs.GetString("DefaulttvOSProvisioningProfileUUID") : tvOSManualProvisioningProfileIDInternal;
+                }
+                set { tvOSManualProvisioningProfileIDInternal = value; }
+            }
+
 
             [NativeProperty("AppleEnableAutomaticSigning")]
             private extern static int appleEnableAutomaticSigningInternal
@@ -405,7 +433,9 @@ namespace UnityEditor
             {
                 get
                 {
-                    return appleEnableAutomaticSigningInternal == (int)iOSAutomaticallySignValue.AutomaticallySignValueTrue;
+                    return appleEnableAutomaticSigningInternal == (int)iOSAutomaticallySignValue.AutomaticallySignValueNotSet ?
+                        EditorPrefs.GetBool("DefaultiOSAutomaticallySignBuild") :
+                        (iOSAutomaticallySignValue)appleEnableAutomaticSigningInternal == iOSAutomaticallySignValue.AutomaticallySignValueTrue;
                 }
                 set
                 {
@@ -520,8 +550,15 @@ namespace UnityEditor
 
             internal static bool IsTargetVersionEqualOrHigher(Version requiredVersion)
             {
-                Version minimumVersion = new Version(8, 0);
-                Version requestedVersion = string.IsNullOrEmpty(PlayerSettings.iOS.targetOSVersionString) ? minimumVersion : new Version(PlayerSettings.iOS.targetOSVersionString);
+                Version requestedVersion;
+                try
+                {
+                    requestedVersion = new Version(targetOSVersionString);
+                }
+                catch (Exception)
+                {
+                    requestedVersion = minimumOsVersion;
+                }
                 return requestedVersion >= requiredVersion;
             }
 

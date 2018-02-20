@@ -396,7 +396,7 @@ namespace UnityEditor
                     rectTransform => rectTransform.sizeDelta.x,
                     (rectTransform, val) => rectTransform.sizeDelta = new Vector2(val, rectTransform.sizeDelta.y),
                     DrivenTransformProperties.SizeDeltaX,
-                    anyStretchX ? EditorGUIUtility.TrTextContent("W Delta") : new GUIContent("Width"));
+                    anyStretchX ? EditorGUIUtility.TrTextContent("W Delta") : EditorGUIUtility.TrTextContent("Width"));
                 SetFadingBasedOnControlID(ref m_ChangingWidth, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
             }
@@ -423,7 +423,7 @@ namespace UnityEditor
                     rectTransform => rectTransform.sizeDelta.y,
                     (rectTransform, val) => rectTransform.sizeDelta = new Vector2(rectTransform.sizeDelta.x, val),
                     DrivenTransformProperties.SizeDeltaY,
-                    anyStretchY ? EditorGUIUtility.TrTextContent("H Delta") : new GUIContent("Height"));
+                    anyStretchY ? EditorGUIUtility.TrTextContent("H Delta") : EditorGUIUtility.TrTextContent("Height"));
                 SetFadingBasedOnControlID(ref m_ChangingHeight, EditorGUIUtility.s_LastControlID);
                 EditorGUI.EndProperty();
             }

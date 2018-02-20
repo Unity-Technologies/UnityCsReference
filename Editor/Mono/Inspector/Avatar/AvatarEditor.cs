@@ -216,8 +216,6 @@ namespace UnityEditor
                 switch (m_TabIndex)
                 {
                     case sMuscleTab: return m_MuscleEditor;
-                    case sHandleTab: return m_HandleEditor;
-                    case sColliderTab: return m_ColliderEditor;
                     default:
                     case sMappingTab: return m_MappingEditor;
                 }
@@ -227,22 +225,16 @@ namespace UnityEditor
                 switch (m_TabIndex)
                 {
                     case sMuscleTab: m_MuscleEditor = value as AvatarMuscleEditor; break;
-                    case sHandleTab: m_HandleEditor = value as AvatarHandleEditor; break;
-                    case sColliderTab: m_ColliderEditor = value as AvatarColliderEditor; break;
                     default:
                     case sMappingTab: m_MappingEditor = value as AvatarMappingEditor; break;
                 }
             }
         }
         private AvatarMuscleEditor m_MuscleEditor;
-        private AvatarHandleEditor m_HandleEditor;
-        private AvatarColliderEditor m_ColliderEditor;
         private AvatarMappingEditor m_MappingEditor;
 
         const int sMappingTab = 0;
         const int sMuscleTab = 1;
-        const int sHandleTab = 2;
-        const int sColliderTab = 3;
         const int sDefaultTab = sMappingTab;
 
         public GameObject prefab
@@ -324,8 +316,6 @@ namespace UnityEditor
             switch (m_TabIndex)
             {
                 case sMuscleTab: editor = ScriptableObject.CreateInstance<AvatarMuscleEditor>(); break;
-                case sHandleTab: editor = ScriptableObject.CreateInstance<AvatarHandleEditor>(); break;
-                case sColliderTab: editor = ScriptableObject.CreateInstance<AvatarColliderEditor>(); break;
                 default:
                 case sMappingTab: editor = ScriptableObject.CreateInstance<AvatarMappingEditor>(); break;
             }

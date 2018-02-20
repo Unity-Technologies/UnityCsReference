@@ -20,14 +20,14 @@ namespace UnityEditor.Experimental.UIElements
     [ScriptedImporter(3, "uxml", 0)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
-        private const string k_XmlTemplate = "<" + k_TemplateNode + @" xmlns:ui=""UnityEngine.Experimental.UIElements"">
+        private const string k_XmlTemplate = "<" + k_RootNode + @" xmlns:ui=""UnityEngine.Experimental.UIElements"">
   <ui:Label text=""New UXML"" />
-</" + k_TemplateNode + ">";
+</" + k_RootNode + ">";
 
         [MenuItem("Assets/Create/UIElements View")]
         public static void CreateTemplateMenuItem()
         {
-            ProjectWindowUtil.CreateAssetWithContent("New UXML.uxml", k_XmlTemplate, EditorGUIUtility.FindTexture("UxmlScript Icon"));
+            ProjectWindowUtil.CreateAssetWithContent("New UXML.uxml", k_XmlTemplate, EditorGUIUtility.FindTexture(typeof(VisualTreeAsset)));
         }
 
         internal struct Error
@@ -63,13 +63,17 @@ namespace UnityEditor.Experimental.UIElements
                     case ImportErrorCode.InvalidXml:
                         return "Xml is not valid, exception during parsing: {0}";
                     case ImportErrorCode.InvalidRootElement:
-                        return "Expected the XML Root element name to be '" + k_TemplateNode + "', found '{0}'";
-                    case ImportErrorCode.UsingHasEmptyAlias:
-                        return "'" + k_UsingNode + "' declaration requires a non-empty '" + k_UsingAliasAttr + "' attribute";
-                    case ImportErrorCode.MissingPathAttributeOnUsing:
-                        return "'" + k_UsingNode + "' declaration requires a '" + k_UsingPathAttr + "' attribute referencing another uxml file";
-                    case ImportErrorCode.DuplicateUsingAlias:
-                        return "Duplicate alias '{0}'";
+                        return "Expected the XML Root element name to be '" + k_RootNode + "', found '{0}'";
+                    case ImportErrorCode.TemplateHasEmptyName:
+                        return "'" + k_TemplateNode + "' declaration requires a non-empty '" + k_TemplateNameAttr + "' attribute";
+                    case ImportErrorCode.TemplateInstanceHasEmptySource:
+                        return "'" + k_TemplateInstanceNode + "' declaration requires a non-empty '" + k_TemplateInstanceSourceAttr + "' attribute";
+                    case ImportErrorCode.MissingPathAttributeOnTemplate:
+                        return "'" + k_TemplateNode + "' declaration requires a '" + k_TemplatePathAttr + "' attribute referencing another uxml file";
+                    case ImportErrorCode.DuplicateTemplateName:
+                        return "Duplicate name '{0}'";
+                    case ImportErrorCode.UnknownTemplate:
+                        return "Unknown template name '{0}'";
                     case ImportErrorCode.UnknownElement:
                         return "Unknown element name '{0}'";
                     case ImportErrorCode.UnknownAttribute:
@@ -171,15 +175,17 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        private const StringComparison k_Comparison = StringComparison.InvariantCulture;
-        private const string k_TemplateNode = "UXML";
-        private const string k_UsingNode = "Using";
-        private const string k_UsingAliasAttr = "alias";
-        private const string k_UsingPathAttr = "path";
-        private const string k_StyleReferenceNode = "Style";
-        private const string k_StylePathAttr = "path";
-        private const string k_SlotDefinitionAttr = "slot-name";
-        private const string k_SlotUsageAttr = "slot";
+        const StringComparison k_Comparison = StringComparison.InvariantCulture;
+        const string k_RootNode = "UXML";
+        const string k_TemplateNode = "Template";
+        const string k_TemplateNameAttr = "name";
+        const string k_TemplatePathAttr = "path";
+        const string k_TemplateInstanceNode = "Instance";
+        const string k_TemplateInstanceSourceAttr = "template";
+        const string k_StyleReferenceNode = "Style";
+        const string k_StylePathAttr = "path";
+        const string k_SlotDefinitionAttr = "slot-name";
+        const string k_SlotUsageAttr = "slot";
 
         internal static DefaultLogger logger = new DefaultLogger();
 
@@ -228,7 +234,7 @@ namespace UnityEditor.Experimental.UIElements
         private static void LoadXmlRoot(XDocument doc, VisualTreeAsset vta, StyleSheetBuilder ssb)
         {
             XElement elt = doc.Root;
-            if (!string.Equals(elt.Name.LocalName, k_TemplateNode, k_Comparison))
+            if (!string.Equals(elt.Name.LocalName, k_RootNode, k_Comparison))
             {
                 logger.LogError(ImportErrorType.Semantic,
                     ImportErrorCode.InvalidRootElement,
@@ -242,8 +248,8 @@ namespace UnityEditor.Experimental.UIElements
             {
                 switch (child.Name.LocalName)
                 {
-                    case k_UsingNode:
-                        LoadUsingNode(vta, elt, child);
+                    case k_TemplateNode:
+                        LoadTemplateNode(vta, elt, child);
                         break;
                     default:
                         LoadXml(child, null, vta, ssb);
@@ -252,25 +258,25 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        private static void LoadUsingNode(VisualTreeAsset vta, XElement elt, XElement child)
+        private static void LoadTemplateNode(VisualTreeAsset vta, XElement elt, XElement child)
         {
             bool hasPath = false;
-            string alias = null;
+            string name = null;
             string path = null;
             foreach (var xAttribute in child.Attributes())
             {
                 switch (xAttribute.Name.LocalName)
                 {
-                    case k_UsingPathAttr:
+                    case k_TemplatePathAttr:
                         hasPath = true;
                         path = xAttribute.Value;
                         break;
-                    case k_UsingAliasAttr:
-                        alias = xAttribute.Value;
-                        if (alias == String.Empty)
+                    case k_TemplateNameAttr:
+                        name = xAttribute.Value;
+                        if (name == String.Empty)
                         {
                             logger.LogError(ImportErrorType.Semantic,
-                                ImportErrorCode.UsingHasEmptyAlias,
+                                ImportErrorCode.TemplateHasEmptyName,
                                 child,
                                 Error.Level.Fatal,
                                 child
@@ -291,7 +297,7 @@ namespace UnityEditor.Experimental.UIElements
             if (!hasPath)
             {
                 logger.LogError(ImportErrorType.Semantic,
-                    ImportErrorCode.MissingPathAttributeOnUsing,
+                    ImportErrorCode.MissingPathAttributeOnTemplate,
                     null,
                     Error.Level.Fatal,
                     elt
@@ -299,30 +305,28 @@ namespace UnityEditor.Experimental.UIElements
                 return;
             }
 
-            if (String.IsNullOrEmpty(alias))
-                alias = Path.GetFileNameWithoutExtension(path);
+            if (String.IsNullOrEmpty(name))
+                name = Path.GetFileNameWithoutExtension(path);
 
-            if (vta.AliasExists(alias))
+            if (vta.TemplateExists(name))
             {
                 logger.LogError(ImportErrorType.Semantic,
-                    ImportErrorCode.DuplicateUsingAlias,
-                    alias,
+                    ImportErrorCode.DuplicateTemplateName,
+                    name,
                     Error.Level.Fatal,
                     elt
                     );
                 return;
             }
 
-            vta.RegisterUsing(alias, path);
+            vta.RegisterTemplate(name, path);
         }
 
         private static void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta, StyleSheetBuilder ssb)
         {
-            VisualElementAsset vea;
-
-            if (!ResolveType(elt, vta, out vea))
+            VisualElementAsset vea = ResolveType(elt, vta);
+            if (vea == null)
             {
-                logger.LogError(ImportErrorType.Semantic, ImportErrorCode.UnknownElement, elt.Name.LocalName, Error.Level.Fatal, elt);
                 return;
             }
 
@@ -367,33 +371,51 @@ namespace UnityEditor.Experimental.UIElements
             vea.stylesheets.Add(pathAttr.Value);
         }
 
-        private static bool ResolveType(XElement elt, VisualTreeAsset visualTreeAsset, out VisualElementAsset vea)
+        private static VisualElementAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
         {
-            string fullName;
-            if (visualTreeAsset.AliasExists(elt.Name.LocalName))
+            VisualElementAsset vea = null;
+
+            if (elt.Name.LocalName == k_TemplateInstanceNode && elt.Name.NamespaceName == "UnityEngine.Experimental.UIElements")
             {
-                vea = new TemplateAsset(elt.Name.LocalName);
+                XAttribute sourceAttr = elt.Attribute(k_TemplateInstanceSourceAttr);
+                if (sourceAttr == null || String.IsNullOrEmpty(sourceAttr.Value))
+                {
+                    logger.LogError(ImportErrorType.Semantic, ImportErrorCode.TemplateInstanceHasEmptySource, null, Error.Level.Fatal, elt);
+                }
+                else
+                {
+                    string templateName = sourceAttr.Value;
+                    if (!visualTreeAsset.TemplateExists(templateName))
+                    {
+                        logger.LogError(ImportErrorType.Semantic, ImportErrorCode.UnknownTemplate, templateName, Error.Level.Fatal, elt);
+                    }
+                    else
+                    {
+                        vea = new TemplateAsset(templateName);
+                    }
+                }
             }
             else
             {
-                fullName = String.IsNullOrEmpty(elt.Name.NamespaceName)
+                string fullName = String.IsNullOrEmpty(elt.Name.NamespaceName)
                     ? elt.Name.LocalName
                     : elt.Name.NamespaceName + "." + elt.Name.LocalName;
 
                 // HACK: wait for Theo's PR OR go with that
-                if (fullName == typeof(VisualElement).FullName)
-                    fullName = typeof(VisualContainer).FullName;
+                if (fullName == "UnityEngine.Experimental.UIElements.VisualContainer")
+                {
+                    Debug.LogWarning("VisualContainer is obsolete, use VisualElement now");
+                    fullName = typeof(VisualElement).FullName;
+                }
+
                 vea = new VisualElementAsset(fullName);
             }
 
-            return true;
+            return vea;
         }
 
         private static bool ParseAttributes(XElement elt, VisualElementAsset res, StyleSheetBuilder ssb, VisualTreeAsset vta, VisualElementAsset parent)
         {
-            // underscore means "unnamed element but it would not look pretty in the project window without one"
-            res.name = "_" + res.GetType().Name;
-
             bool startedRule = false;
 
             foreach (XAttribute xattr in elt.Attributes())
@@ -428,7 +450,7 @@ namespace UnityEditor.Experimental.UIElements
                         continue;
                     case k_SlotUsageAttr:
                         var templateAsset = parent as TemplateAsset;
-                        if (!(templateAsset != null))
+                        if (templateAsset == null)
                         {
                             logger.LogError(ImportErrorType.Semantic, ImportErrorCode.SlotUsageInNonTemplate, parent, Error.Level.Fatal, elt);
                             continue;
@@ -493,13 +515,15 @@ namespace UnityEditor.Experimental.UIElements
     internal enum ImportErrorCode
     {
         InvalidRootElement,
-        DuplicateUsingAlias,
+        DuplicateTemplateName,
+        UnknownTemplate,
         UnknownElement,
         UnknownAttribute,
         InvalidXml,
         InvalidCssInStyleAttribute,
-        MissingPathAttributeOnUsing,
-        UsingHasEmptyAlias,
+        MissingPathAttributeOnTemplate,
+        TemplateHasEmptyName,
+        TemplateInstanceHasEmptySource,
         StyleReferenceEmptyOrMissingPathAttr,
         DuplicateSlotDefinition,
         SlotUsageInNonTemplate,

@@ -221,7 +221,7 @@ namespace UnityEngine.Windows.Speech
             }
 
             Keywords = keywords;
-            m_Recognizer = CreateFromKeywords(keywords, minimumConfidence);
+            m_Recognizer = CreateFromKeywords(this, keywords, minimumConfidence);
         }
     }
 
@@ -243,7 +243,7 @@ namespace UnityEngine.Windows.Speech
                 throw new ArgumentException("Grammar file path cannot be empty.");
 
             GrammarFilePath = grammarFilePath;
-            m_Recognizer = CreateFromGrammarFile(grammarFilePath, minimumConfidence);
+            m_Recognizer = CreateFromGrammarFile(this, grammarFilePath, minimumConfidence);
         }
     }
 
@@ -316,7 +316,7 @@ namespace UnityEngine.Windows.Speech
 
         public DictationRecognizer(ConfidenceLevel minimumConfidence, DictationTopicConstraint topic)
         {
-            m_Recognizer = Create(minimumConfidence, topic);
+            m_Recognizer = Create(this, minimumConfidence, topic);
         }
 
         ~DictationRecognizer()

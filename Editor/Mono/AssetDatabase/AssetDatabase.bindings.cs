@@ -37,13 +37,12 @@ namespace UnityEditor
                 if (path == "")
                     continue;
 
-                if (path.Equals("Assets") || path.Equals("Packages"))
-                    continue;
-
-                if (AssetDatabase.IsPackagedAssetPath(path))
-                    continue;
-
                 if (InternalEditorUtility.IsUnityExtensionRegistered(path))
+                    continue;
+
+                bool rootFolder, readOnly;
+                bool validPath = GetAssetFolderInfo(path, out rootFolder, out readOnly);
+                if (validPath && (rootFolder || readOnly))
                     continue;
 
                 GUID guid = new GUID(AssetPathToGUID(path));

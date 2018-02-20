@@ -7,90 +7,62 @@ namespace UnityEngine
     // The GUILayout class is the interface for Unity gui with automatic layout.
     public partial class GUILayout
     {
-        /// *listonly*
         static public void Label(Texture image, params GUILayoutOption[] options)                      { DoLabel(GUIContent.Temp(image), GUI.skin.label, options); }
-        /// *listonly*
         static public void Label(string text, params GUILayoutOption[] options)                        { DoLabel(GUIContent.Temp(text), GUI.skin.label, options); }
-        /// *listonly*
         static public void Label(GUIContent content, params GUILayoutOption[] options)                 { DoLabel(content, GUI.skin.label, options); }
-        /// *listonly*
         static public void Label(Texture image, GUIStyle style, params GUILayoutOption[] options)      { DoLabel(GUIContent.Temp(image), style, options); }
-        /// *listonly*
         static public void Label(string text, GUIStyle style, params GUILayoutOption[] options)        { DoLabel(GUIContent.Temp(text), style, options); }
         // Make an auto-layout label.
         static public void Label(GUIContent content, GUIStyle style, params GUILayoutOption[] options) { DoLabel(content, style, options); }
         static void DoLabel(GUIContent content, GUIStyle style, GUILayoutOption[] options)
         { GUI.Label(GUILayoutUtility.GetRect(content, style, options), content, style); }
 
-
-        /// *listonly*
         static public void Box(Texture image, params GUILayoutOption[] options)                        { DoBox(GUIContent.Temp(image), GUI.skin.box, options); }
-        /// *listonly*
         static public void Box(string text, params GUILayoutOption[] options)                          { DoBox(GUIContent.Temp(text), GUI.skin.box, options); }
-        /// *listonly*
         static public void Box(GUIContent content, params GUILayoutOption[] options)                   { DoBox(content, GUI.skin.box, options); }
-        /// *listonly*
         static public void Box(Texture image, GUIStyle style, params GUILayoutOption[] options)        { DoBox(GUIContent.Temp(image), style, options); }
-        /// *listonly*
         static public void Box(string text, GUIStyle style, params GUILayoutOption[] options)          { DoBox(GUIContent.Temp(text), style, options); }
         // Make an auto-layout box.
         static public void Box(GUIContent content, GUIStyle style, params GUILayoutOption[] options)   { DoBox(content, style, options); }
         static void DoBox(GUIContent content, GUIStyle style, GUILayoutOption[] options)
         { GUI.Box(GUILayoutUtility.GetRect(content, style, options), content, style); }
 
-        /// *listonly*
         static public bool Button(Texture image, params GUILayoutOption[] options)                         { return DoButton(GUIContent.Temp(image), GUI.skin.button, options); }
-        /// *listonly*
         static public bool Button(string text, params GUILayoutOption[] options)                           { return DoButton(GUIContent.Temp(text), GUI.skin.button, options); }
-        /// *listonly*
         static public bool Button(GUIContent content, params GUILayoutOption[] options)                    { return DoButton(content, GUI.skin.button, options); }
-        /// *listonly*
         static public bool Button(Texture image, GUIStyle style, params GUILayoutOption[] options)         { return DoButton(GUIContent.Temp(image), style, options); }
-        /// *listonly*
         static public bool Button(string text, GUIStyle style, params GUILayoutOption[] options)           { return DoButton(GUIContent.Temp(text), style, options); }
         // Make a single press button. The user clicks them and something happens immediately.
         static public bool Button(GUIContent content, GUIStyle style, params GUILayoutOption[] options)    { return DoButton(content, style, options); }
         static bool DoButton(GUIContent content, GUIStyle style, GUILayoutOption[] options)
         { return GUI.Button(GUILayoutUtility.GetRect(content, style, options), content, style); }
 
-
-        /// *listonly*
         static public bool RepeatButton(Texture image, params GUILayoutOption[] options)                       { return DoRepeatButton(GUIContent.Temp(image), GUI.skin.button, options); }
-        /// *listonly*
         static public bool RepeatButton(string text, params GUILayoutOption[] options)                         { return DoRepeatButton(GUIContent.Temp(text), GUI.skin.button, options); }
-        /// *listonly*
         static public bool RepeatButton(GUIContent content, params GUILayoutOption[] options)                  { return DoRepeatButton(content, GUI.skin.button, options); }
-        /// *listonly*
         static public bool RepeatButton(Texture image, GUIStyle style, params GUILayoutOption[] options)       { return DoRepeatButton(GUIContent.Temp(image), style, options); }
-        /// *listonly*
         static public bool RepeatButton(string text, GUIStyle style, params GUILayoutOption[] options)         { return DoRepeatButton(GUIContent.Temp(text), style, options); }
         // Make a repeating button. The button returns true as long as the user holds down the mouse
         static public bool RepeatButton(GUIContent content, GUIStyle style, params GUILayoutOption[] options)  { return DoRepeatButton(content, style, options); }
         static bool DoRepeatButton(GUIContent content, GUIStyle style, GUILayoutOption[] options)
         { return GUI.RepeatButton(GUILayoutUtility.GetRect(content, style, options), content, style); }
 
-        /// *listonly*
         public static string TextField(string text, params GUILayoutOption[] options)                                  { return DoTextField(text, -1, false, GUI.skin.textField, options); }
-        /// *listonly*
         public static string TextField(string text, int maxLength, params GUILayoutOption[] options)                   { return DoTextField(text, maxLength, false, GUI.skin.textField, options); }
-        /// *listonly*
         public static string TextField(string text, GUIStyle style, params GUILayoutOption[] options)                  { return DoTextField(text, -1, false, style, options); }
         // Make a single-line text field where the user can edit a string.
         public static string TextField(string text, int maxLength, GUIStyle style, params GUILayoutOption[] options)   { return DoTextField(text, maxLength, true, style, options); }
 
-        /// *listonly*
         public static string PasswordField(string password, char maskChar, params GUILayoutOption[] options)
         {
             return PasswordField(password, maskChar, -1, GUI.skin.textField, options);
         }
 
-        /// *listonly*
         public static string PasswordField(string password, char maskChar, int maxLength, params GUILayoutOption[] options)
         {
             return PasswordField(password, maskChar, maxLength, GUI.skin.textField, options);
         }
 
-        /// *listonly*
         public static string PasswordField(string password, char maskChar, GUIStyle style, params GUILayoutOption[] options)
         {
             return PasswordField(password, maskChar, -1, style, options);
@@ -103,11 +75,8 @@ namespace UnityEngine
             return GUI.PasswordField(GUILayoutUtility.GetRect(t, GUI.skin.textField, options), password, maskChar, maxLength, style);
         }
 
-        /// *listonly*
         public static string TextArea(string text, params GUILayoutOption[] options)                                   { return DoTextField(text, -1, true, GUI.skin.textArea, options); }
-        /// *listonly*
         public static string TextArea(string text, int maxLength, params GUILayoutOption[] options)                    { return DoTextField(text, maxLength, true, GUI.skin.textArea, options); }
-        /// *listonly*
         public static string TextArea(string text, GUIStyle style, params GUILayoutOption[] options)                   { return DoTextField(text, -1, true, style, options); }
         // Make a multi-line text field where the user can edit a string.
         public static string TextArea(string text, int maxLength, GUIStyle style, params GUILayoutOption[] options)    { return DoTextField(text, maxLength, true, style, options); }
@@ -129,39 +98,24 @@ namespace UnityEngine
             return content.text;
         }
 
-        /// *listonly*
         static public bool Toggle(bool value, Texture image, params GUILayoutOption[] options)                         { return DoToggle(value, GUIContent.Temp(image), GUI.skin.toggle, options); }
-        /// *listonly*
         static public bool Toggle(bool value, string text, params GUILayoutOption[] options)                           { return DoToggle(value, GUIContent.Temp(text), GUI.skin.toggle, options); }
-        /// *listonly*
         static public bool Toggle(bool value, GUIContent content, params GUILayoutOption[] options)                    { return DoToggle(value, content, GUI.skin.toggle, options); }
-        /// *listonly*
         static public bool Toggle(bool value, Texture image, GUIStyle style, params GUILayoutOption[] options)         { return DoToggle(value, GUIContent.Temp(image), style, options); }
-        /// *listonly*
         static public bool Toggle(bool value, string text, GUIStyle style, params GUILayoutOption[] options)           { return DoToggle(value, GUIContent.Temp(text), style, options); }
         // Make an on/off toggle button.
         static public bool Toggle(bool value, GUIContent content, GUIStyle style, params GUILayoutOption[] options)    { return DoToggle(value, content, style, options); }
 
-        //*undocumented*
         static bool DoToggle(bool value, GUIContent content, GUIStyle style, GUILayoutOption[] options)
         { return GUI.Toggle(GUILayoutUtility.GetRect(content, style, options), value, content, style); }
 
-
-        /// *listonly*
         public static int Toolbar(int selected, string[] texts, params GUILayoutOption[] options)                      { return Toolbar(selected, GUIContent.Temp(texts), GUI.skin.button, options); }
-        /// *listonly*
         public static int Toolbar(int selected, Texture[] images, params GUILayoutOption[] options)                    { return Toolbar(selected, GUIContent.Temp(images), GUI.skin.button, options); }
-        /// *listonly*
         public static int Toolbar(int selected, GUIContent[] contents, params GUILayoutOption[] options)                { return Toolbar(selected, contents, GUI.skin.button, options); }
-        /// *listonly*
         public static int Toolbar(int selected, string[] texts, GUIStyle style, params GUILayoutOption[] options)      { return Toolbar(selected, GUIContent.Temp(texts), style, options); }
-        /// *listonly*
         public static int Toolbar(int selected, Texture[] images, GUIStyle style, params GUILayoutOption[] options)    { return Toolbar(selected, GUIContent.Temp(images), style, options); }
-        /// *listonly*
         public static int Toolbar(int selected, string[] texts, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)   { return Toolbar(selected, GUIContent.Temp(texts), style, buttonSize, options); }
-        /// *listonly*
         public static int Toolbar(int selected, Texture[] images, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options) { return Toolbar(selected, GUIContent.Temp(images), style, buttonSize, options); }
-        /// *listonly*
         public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, params GUILayoutOption[] options) { return Toolbar(selected, contents, style, GUI.ToolbarButtonSize.Fixed, options); }
         // Make a toolbar
         public static int Toolbar(int selected, GUIContent[] contents, GUIStyle style, GUI.ToolbarButtonSize buttonSize, params GUILayoutOption[] options)
@@ -218,15 +172,10 @@ namespace UnityEngine
             return GUI.Toolbar(GUILayoutUtility.GetRect(size.x, size.y, style, options), selected, contents, style, buttonSize);
         }
 
-        /// *listonly*
         public static int SelectionGrid(int selected, string[] texts, int xCount, params GUILayoutOption[] options)                    { return SelectionGrid(selected, GUIContent.Temp(texts), xCount, GUI.skin.button, options); }
-        /// *listonly*
         public static int SelectionGrid(int selected, Texture[] images, int xCount, params GUILayoutOption[] options)                  { return SelectionGrid(selected, GUIContent.Temp(images), xCount, GUI.skin.button, options); }
-        /// *listonly*
         public static int SelectionGrid(int selected, GUIContent[] content, int xCount, params GUILayoutOption[] options)              { return SelectionGrid(selected, content, xCount, GUI.skin.button, options); }
-        /// *listonly*
         public static int SelectionGrid(int selected, string[] texts, int xCount, GUIStyle style, params GUILayoutOption[] options)    { return SelectionGrid(selected, GUIContent.Temp(texts), xCount, style, options); }
-        /// *listonly*
         public static int SelectionGrid(int selected, Texture[] images, int xCount, GUIStyle style, params GUILayoutOption[] options)  { return SelectionGrid(selected, GUIContent.Temp(images), xCount, style, options); }
         // Make a Selection Grid
         public static int SelectionGrid(int selected, GUIContent[] contents, int xCount, GUIStyle style, params GUILayoutOption[] options)
@@ -234,7 +183,6 @@ namespace UnityEngine
             return GUI.SelectionGrid(GUIGridSizer.GetRect(contents, xCount, style, options), selected, contents, xCount, style);
         }
 
-        /// *listonly*
         static public float HorizontalSlider(float value, float leftValue, float rightValue, params GUILayoutOption[] options)
         { return DoHorizontalSlider(value, leftValue, rightValue, GUI.skin.horizontalSlider, GUI.skin.horizontalSliderThumb, options); }
         // A horizontal slider the user can drag to change a value between a min and a max.
@@ -243,7 +191,6 @@ namespace UnityEngine
         static float DoHorizontalSlider(float value, float leftValue, float rightValue, GUIStyle slider, GUIStyle thumb, GUILayoutOption[] options)
         { return GUI.HorizontalSlider(GUILayoutUtility.GetRect(GUIContent.Temp("mmmm"), slider, options), value, leftValue, rightValue, slider, thumb); }
 
-        /// *listonly*
         static public float VerticalSlider(float value, float leftValue, float rightValue, params GUILayoutOption[] options)
         { return DoVerticalSlider(value, leftValue, rightValue, GUI.skin.verticalSlider, GUI.skin.verticalSliderThumb, options); }
         // A vertical slider the user can drag to change a value between a min and a max.
@@ -252,16 +199,12 @@ namespace UnityEngine
         static float DoVerticalSlider(float value, float leftValue, float rightValue, GUIStyle slider, GUIStyle thumb, params GUILayoutOption[] options)
         { return GUI.VerticalSlider(GUILayoutUtility.GetRect(GUIContent.Temp("\n\n\n\n\n"), slider, options), value, leftValue, rightValue, slider, thumb); }
 
-
-        /// *listonly*
         public static float HorizontalScrollbar(float value, float size, float leftValue, float rightValue, params GUILayoutOption[] options)
         { return HorizontalScrollbar(value, size, leftValue, rightValue, GUI.skin.horizontalScrollbar, options); }
         // Make a horiztonal scrollbar.
         public static float HorizontalScrollbar(float value, float size, float leftValue, float rightValue, GUIStyle style, params GUILayoutOption[] options)
         { return GUI.HorizontalScrollbar(GUILayoutUtility.GetRect(GUIContent.Temp("mmmm"), style, options), value, size, leftValue, rightValue, style); }
 
-
-        /// *listonly*
         public static float VerticalScrollbar(float value, float size, float topValue, float bottomValue, params GUILayoutOption[] options)
         { return VerticalScrollbar(value, size, topValue, bottomValue, GUI.skin.verticalScrollbar, options); }
         // Make a vertical scrollbar.
@@ -292,16 +235,10 @@ namespace UnityEngine
             GUILayoutUtility.GetRect(0, 0, GUILayoutUtility.spaceStyle, op);
         }
 
-        /// *listonly*
-        public static void BeginHorizontal(params GUILayoutOption[] options)
-        { BeginHorizontal(GUIContent.none, GUIStyle.none, options); }
-        /// *listonly*
-        public static void BeginHorizontal(GUIStyle style, params GUILayoutOption[] options)
-        { BeginHorizontal(GUIContent.none, style, options); }
-        /// *listonly*
-        public static void BeginHorizontal(string text, GUIStyle style, params GUILayoutOption[] options)
-        { BeginHorizontal(GUIContent.Temp(text), style, options); }
-        /// *listonly*
+        public static void BeginHorizontal(params GUILayoutOption[] options) { BeginHorizontal(GUIContent.none, GUIStyle.none, options); }
+        public static void BeginHorizontal(GUIStyle style, params GUILayoutOption[] options) { BeginHorizontal(GUIContent.none, style, options); }
+        public static void BeginHorizontal(string text, GUIStyle style, params GUILayoutOption[] options) { BeginHorizontal(GUIContent.Temp(text), style, options); }
+
         public static void BeginHorizontal(Texture image, GUIStyle style, params GUILayoutOption[] options)
         { BeginHorizontal(GUIContent.Temp(image), style, options); }
         // Begin a Horizontal control group.
@@ -319,18 +256,11 @@ namespace UnityEngine
             GUILayoutUtility.EndLayoutGroup();
         }
 
-        /// *listonly*
-        public static void BeginVertical(params GUILayoutOption[] options)
-        { BeginVertical(GUIContent.none, GUIStyle.none, options); }
-        /// *listonly*
-        public static void BeginVertical(GUIStyle style, params GUILayoutOption[] options)
-        { BeginVertical(GUIContent.none, style, options); }
-        /// *listonly*
-        public static void BeginVertical(string text, GUIStyle style, params GUILayoutOption[] options)
-        { BeginVertical(GUIContent.Temp(text), style, options); }
-        /// *listonly*
-        public static void BeginVertical(Texture image, GUIStyle style, params GUILayoutOption[] options)
-        { BeginVertical(GUIContent.Temp(image), style, options); }
+        public static void BeginVertical(params GUILayoutOption[] options) { BeginVertical(GUIContent.none, GUIStyle.none, options); }
+        public static void BeginVertical(GUIStyle style, params GUILayoutOption[] options) { BeginVertical(GUIContent.none, style, options); }
+        public static void BeginVertical(string text, GUIStyle style, params GUILayoutOption[] options) { BeginVertical(GUIContent.Temp(text), style, options); }
+        public static void BeginVertical(Texture image, GUIStyle style, params GUILayoutOption[] options) { BeginVertical(GUIContent.Temp(image), style, options); }
+
         // Begin a vertical control group.
         public static void BeginVertical(GUIContent content, GUIStyle style, params GUILayoutOption[] options)
         {
@@ -346,19 +276,12 @@ namespace UnityEngine
             GUILayoutUtility.EndLayoutGroup();
         }
 
-        /// *listonly*
         static public void BeginArea(Rect screenRect)                                  { BeginArea(screenRect, GUIContent.none, GUIStyle.none); }
-        /// *listonly*
         static public void BeginArea(Rect screenRect, string text)                     { BeginArea(screenRect, GUIContent.Temp(text), GUIStyle.none); }
-        /// *listonly*
         static public void BeginArea(Rect screenRect, Texture image)                   { BeginArea(screenRect, GUIContent.Temp(image), GUIStyle.none); }
-        /// *listonly*
         static public void BeginArea(Rect screenRect, GUIContent content)              { BeginArea(screenRect, content, GUIStyle.none); }
-        /// *listonly*
         static public void BeginArea(Rect screenRect, GUIStyle style)                  { BeginArea(screenRect, GUIContent.none, style); }
-        /// *listonly*
         static public void BeginArea(Rect screenRect, string text, GUIStyle style)     { BeginArea(screenRect, GUIContent.Temp(text), style); }
-        /// *listonly*
         static public void BeginArea(Rect screenRect, Texture image, GUIStyle style)   { BeginArea(screenRect, GUIContent.Temp(image), style); }
 
         // Begin a GUILayout block of GUI controls in a fixed screen area.
@@ -389,23 +312,18 @@ namespace UnityEngine
         }
 
         // ====================================================== SCROLLVIEWS ===============================
-        /// *listonly*
         public static Vector2 BeginScrollView(Vector2 scrollPosition, params GUILayoutOption[] options)        { return BeginScrollView(scrollPosition, false, false, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, GUI.skin.scrollView, options); }
-        /// *listonly*
         public static Vector2 BeginScrollView(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, params GUILayoutOption[] options)        { return BeginScrollView(scrollPosition, alwaysShowHorizontal, alwaysShowVertical, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, GUI.skin.scrollView, options); }
-        /// *listonly*
         public static Vector2 BeginScrollView(Vector2 scrollPosition, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, params GUILayoutOption[] options)      { return BeginScrollView(scrollPosition, false, false, horizontalScrollbar, verticalScrollbar, GUI.skin.scrollView, options); }
 
         // We need to keep both of the following versions of BeginScrollView() since it was added with a different signature in 3.5
         // Adding an optional argument with params unfortunately *does* change the function signature
-        /// *listonly*
         public static Vector2 BeginScrollView(Vector2 scrollPosition, GUIStyle style)
         {
             GUILayoutOption[] option = null;
             return BeginScrollView(scrollPosition, style, option);
         }
 
-        /// *listonly*
         public static Vector2 BeginScrollView(Vector2 scrollPosition, GUIStyle style, params GUILayoutOption[] options)
         {
             string name = style.name;
@@ -419,7 +337,6 @@ namespace UnityEngine
             return BeginScrollView(scrollPosition, false, false, horizontal, vertical, style, options);
         }
 
-        /// *listonly*
         public static Vector2 BeginScrollView(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, params GUILayoutOption[] options)
         { return BeginScrollView(scrollPosition, alwaysShowHorizontal, alwaysShowVertical, horizontalScrollbar, verticalScrollbar, GUI.skin.scrollView, options); }
 
@@ -460,15 +377,10 @@ namespace UnityEngine
             GUI.EndScrollView(handleScrollWheel);
         }
 
-        /// *listonly*
         public static Rect Window(int id, Rect screenRect, GUI.WindowFunction func, string text, params GUILayoutOption[] options)                        { return DoWindow(id, screenRect, func, GUIContent.Temp(text), GUI.skin.window, options); }
-        /// *listonly*
         public static Rect Window(int id, Rect screenRect, GUI.WindowFunction func, Texture image, params GUILayoutOption[] options)              { return DoWindow(id, screenRect, func, GUIContent.Temp(image), GUI.skin.window, options); }
-        /// *listonly*
         public static Rect Window(int id, Rect screenRect, GUI.WindowFunction func, GUIContent content, params GUILayoutOption[] options)             { return DoWindow(id, screenRect, func, content, GUI.skin.window, options); }
-        /// *listonly*
         public static Rect Window(int id, Rect screenRect, GUI.WindowFunction func, string text, GUIStyle style, params GUILayoutOption[] options)            { return DoWindow(id, screenRect, func, GUIContent.Temp(text), style, options); }
-        /// *listonly*
         public static Rect Window(int id, Rect screenRect, GUI.WindowFunction func, Texture image, GUIStyle style, params GUILayoutOption[] options)  { return DoWindow(id, screenRect, func, GUIContent.Temp(image), style, options); }
 
         // Make a popup window that layouts its contents automatically.
@@ -487,7 +399,7 @@ namespace UnityEngine
             readonly Rect m_ScreenRect;
             readonly GUILayoutOption[] m_Options;
             readonly GUIStyle m_Style;
-            //*undocumented*
+
             internal LayoutedWindow(GUI.WindowFunction f, Rect screenRect, GUIContent content, GUILayoutOption[] options, GUIStyle style)
             {
                 m_Func = f;
@@ -496,7 +408,6 @@ namespace UnityEngine
                 m_Style = style;
             }
 
-            //*undocumented*
             public void DoWindow(int windowID)
             {
                 GUILayoutGroup g = GUILayoutUtility.current.topLevel;
@@ -541,5 +452,161 @@ namespace UnityEngine
         static public GUILayoutOption ExpandWidth(bool expand)             { return new GUILayoutOption(GUILayoutOption.Type.stretchWidth, expand ? 1 : 0); }
         // Option passed to a control to allow or disallow vertical expansion.
         static public GUILayoutOption ExpandHeight(bool expand)            { return new GUILayoutOption(GUILayoutOption.Type.stretchHeight, expand ? 1 : 0); }
+
+        public class HorizontalScope : GUI.Scope
+        {
+            public HorizontalScope(params GUILayoutOption[] options)
+            {
+                BeginHorizontal(options);
+            }
+
+            public HorizontalScope(GUIStyle style, params GUILayoutOption[] options)
+            {
+                BeginHorizontal(style, options);
+            }
+
+            public HorizontalScope(string text, GUIStyle style, params GUILayoutOption[] options)
+            {
+                BeginHorizontal(text, style, options);
+            }
+
+            public HorizontalScope(Texture image, GUIStyle style, params GUILayoutOption[] options)
+            {
+                BeginHorizontal(image, style, options);
+            }
+
+            public HorizontalScope(GUIContent content, GUIStyle style, params GUILayoutOption[] options)
+            {
+                BeginHorizontal(content, style, options);
+            }
+
+            protected override void CloseScope()
+            {
+                EndHorizontal();
+            }
+        }
+
+        public class VerticalScope : GUI.Scope
+        {
+            public VerticalScope(params GUILayoutOption[] options)
+            {
+                BeginVertical(options);
+            }
+
+            public VerticalScope(GUIStyle style, params GUILayoutOption[] options)
+            {
+                BeginVertical(style, options);
+            }
+
+            public VerticalScope(string text, GUIStyle style, params GUILayoutOption[] options)
+            {
+                BeginVertical(text, style, options);
+            }
+
+            public VerticalScope(Texture image, GUIStyle style, params GUILayoutOption[] options)
+            {
+                BeginVertical(image, style, options);
+            }
+
+            public VerticalScope(GUIContent content, GUIStyle style, params GUILayoutOption[] options)
+            {
+                BeginVertical(content, style, options);
+            }
+
+            protected override void CloseScope()
+            {
+                EndVertical();
+            }
+        }
+
+        public class AreaScope : GUI.Scope
+        {
+            public AreaScope(Rect screenRect)
+            {
+                BeginArea(screenRect);
+            }
+
+            public AreaScope(Rect screenRect, string text)
+            {
+                BeginArea(screenRect, text);
+            }
+
+            public AreaScope(Rect screenRect, Texture image)
+            {
+                BeginArea(screenRect, image);
+            }
+
+            public AreaScope(Rect screenRect, GUIContent content)
+            {
+                BeginArea(screenRect, content);
+            }
+
+            public AreaScope(Rect screenRect, string text, GUIStyle style)
+            {
+                BeginArea(screenRect, text, style);
+            }
+
+            public AreaScope(Rect screenRect, Texture image, GUIStyle style)
+            {
+                BeginArea(screenRect, image, style);
+            }
+
+            public AreaScope(Rect screenRect, GUIContent content, GUIStyle style)
+            {
+                BeginArea(screenRect, content, style);
+            }
+
+            protected override void CloseScope()
+            {
+                EndArea();
+            }
+        }
+
+        public class ScrollViewScope : GUI.Scope
+        {
+            public Vector2 scrollPosition { get; private set; }
+            public bool handleScrollWheel { get; set; }
+
+            public ScrollViewScope(Vector2 scrollPosition, params GUILayoutOption[] options)
+            {
+                handleScrollWheel = true;
+                this.scrollPosition = BeginScrollView(scrollPosition, options);
+            }
+
+            public ScrollViewScope(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, params GUILayoutOption[] options)
+            {
+                handleScrollWheel = true;
+                this.scrollPosition = BeginScrollView(scrollPosition, alwaysShowHorizontal, alwaysShowVertical, options);
+            }
+
+            public ScrollViewScope(Vector2 scrollPosition, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, params GUILayoutOption[] options)
+            {
+                handleScrollWheel = true;
+                this.scrollPosition = BeginScrollView(scrollPosition, horizontalScrollbar, verticalScrollbar, options);
+            }
+
+            public ScrollViewScope(Vector2 scrollPosition, GUIStyle style, params GUILayoutOption[] options)
+            {
+                handleScrollWheel = true;
+                this.scrollPosition = BeginScrollView(scrollPosition, style, options);
+            }
+
+            public ScrollViewScope(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, params GUILayoutOption[] options)
+            {
+                handleScrollWheel = true;
+                this.scrollPosition = BeginScrollView(scrollPosition, alwaysShowHorizontal, alwaysShowVertical, horizontalScrollbar, verticalScrollbar, options);
+            }
+
+            public ScrollViewScope(Vector2 scrollPosition, bool alwaysShowHorizontal, bool alwaysShowVertical, GUIStyle horizontalScrollbar, GUIStyle verticalScrollbar, GUIStyle background, params GUILayoutOption[] options)
+            {
+                handleScrollWheel = true;
+                this.scrollPosition = BeginScrollView(scrollPosition, alwaysShowHorizontal, alwaysShowVertical, horizontalScrollbar, verticalScrollbar, background, options);
+            }
+
+            protected override void CloseScope()
+            {
+                EndScrollView(handleScrollWheel);
+            }
+        }
     }
 }

@@ -886,14 +886,14 @@ namespace UnityEditor
             menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
 
             menu.AddSeparator("");
-            bool hasPrefabParent = false;
+            bool hasCorrespondingAssetObject = false;
 
             if (m_TreeViewState.selectedIDs.Count == 1)
             {
                 GameObjectTreeViewItem item = treeView.FindItem(m_TreeViewState.selectedIDs[0]) as GameObjectTreeViewItem;
                 if (item != null)
                 {
-                    UnityEngine.Object prefab = PrefabUtility.GetPrefabParent(item.objectPPTR);
+                    UnityEngine.Object prefab = PrefabUtility.GetCorrespondingObjectFromSource(item.objectPPTR);
                     if (prefab != null)
                     {
                         menu.AddItem(EditorGUIUtility.TrTextContent("Select Prefab"), false, () =>
@@ -902,12 +902,12 @@ namespace UnityEditor
                                 EditorGUIUtility.PingObject(prefab.GetInstanceID());
                             });
 
-                        hasPrefabParent = true;
+                        hasCorrespondingAssetObject = true;
                     }
                 }
             }
 
-            if (!hasPrefabParent)
+            if (!hasCorrespondingAssetObject)
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Prefab"));
 
             menu.AddSeparator("");

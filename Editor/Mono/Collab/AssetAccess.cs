@@ -73,7 +73,7 @@ namespace UnityEditor.Collaboration
 
             if (prefabType == PrefabType.PrefabInstance)
             {
-                prefabObject = PrefabUtility.GetPrefabParent(gameObject);
+                prefabObject = PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
             }
             else if (prefabType == PrefabType.Prefab)
             {

@@ -20,8 +20,9 @@ namespace UnityEditor
         PS3,
         [System.Obsolete("Wii U support was removed in 2018.1", false)]
         WiiU,
+        [System.Obsolete("Tizen has been removed in 2017.3", false)]
         Tizen,
-        [Obsolete("Windows Phone 8 was removed in 5.3", false)]
+        [System.Obsolete("Windows Phone 8 was removed in 5.3", false)]
         WP8,
         N3DS,
         HMD
@@ -34,7 +35,6 @@ namespace UnityEditor
         [SerializeField] GameViewSizeGroup m_Standalone = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_iOS = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_Android = new GameViewSizeGroup();
-        [SerializeField] GameViewSizeGroup m_Tizen = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_N3DS = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_HMD = new GameViewSizeGroup();
 
@@ -68,6 +68,7 @@ namespace UnityEditor
                 case GameViewSizeGroupType.WebPlayer:
                 case GameViewSizeGroupType.WP8:
                 case GameViewSizeGroupType.PS3:
+                case GameViewSizeGroupType.Tizen:
                 case GameViewSizeGroupType.WiiU:
 #pragma warning restore 618
                 case GameViewSizeGroupType.Standalone:
@@ -76,8 +77,6 @@ namespace UnityEditor
                     return m_iOS;
                 case GameViewSizeGroupType.Android:
                     return m_Android;
-                case GameViewSizeGroupType.Tizen:
-                    return m_Tizen;
                 case GameViewSizeGroupType.N3DS:
                     return m_N3DS;
                 case GameViewSizeGroupType.HMD:
@@ -213,10 +212,6 @@ namespace UnityEditor
             GameViewSize k_16_10_Portrait = new GameViewSize(GameViewSizeType.AspectRatio, 10, 16, "16:10 Portrait");
             GameViewSize k_16_10_Landscape = new GameViewSize(GameViewSizeType.AspectRatio, 16, 10, "16:10 Landscape");
 
-            // Tizen
-            GameViewSize k_Tizen_720p_16_9 = new GameViewSize(GameViewSizeType.FixedResolution, 1280, 720, "16:9 Landscape");
-            GameViewSize k_Tizen_720p_9_16 = new GameViewSize(GameViewSizeType.FixedResolution, 720, 1280, "9:16 Portrait");
-
             // Nintendo 3DS
             GameViewSize kN3DSTopScreen = new GameViewSize(GameViewSizeType.FixedResolution, 400, 240, "Top Screen");
             GameViewSize kN3DSBottomScreen = new GameViewSize(GameViewSizeType.FixedResolution, 320, 240, "Bottom Screen");
@@ -238,9 +233,6 @@ namespace UnityEditor
                 k_WXGA_Portrait, k_WXGA_Landscape,
                 k_3_2_Portrait, k_3_2_Landscape,
                 k_16_10_Portrait, k_16_10_Landscape);
-            m_Tizen.AddBuiltinSizes(kFree,
-                k_Tizen_720p_16_9,
-                k_Tizen_720p_9_16);
 
             m_N3DS.AddBuiltinSizes(kFree, kN3DSTopScreen, kN3DSBottomScreen);
 
@@ -268,7 +260,6 @@ namespace UnityEditor
                     return true;
                 case GameViewSizeGroupType.iOS:
                 case GameViewSizeGroupType.Android:
-                case GameViewSizeGroupType.Tizen:
                 default:
                     return false;
             }
@@ -493,9 +484,6 @@ namespace UnityEditor
 
                 case BuildTargetGroup.Android:
                     return GameViewSizeGroupType.Android;
-
-                case BuildTargetGroup.Tizen:
-                    return GameViewSizeGroupType.Tizen;
 
                 case BuildTargetGroup.N3DS:
                     return GameViewSizeGroupType.N3DS;

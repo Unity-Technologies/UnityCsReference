@@ -8,6 +8,15 @@ using UnityEditorInternal;
 
 namespace UnityEditor
 {
+    public enum HighlightSearchMode
+    {
+        None = 0,
+        Auto = 1,
+        Identifier = 2,
+        PrefixLabel = 3,
+        Content = 4,
+    }
+
     public partial class Highlighter
     {
         private static GUIView s_View;
@@ -102,24 +111,6 @@ namespace UnityEditor
         }
 
         public static bool active { get; private set; }
-
-        public static bool activeVisible
-        {
-            get { return internal_get_activeVisible(); }
-            private set { internal_set_activeVisible(value); }
-        }
-
-        public static string activeText
-        {
-            get { return internal_get_activeText(); }
-            private set { internal_set_activeText(value); }
-        }
-
-        public static Rect activeRect
-        {
-            get { return internal_get_activeRect(); }
-            private set { internal_set_activeRect(value); }
-        }
 
         public static void HighlightIdentifier(Rect position, string identifier)
         {
@@ -274,5 +265,7 @@ namespace UnityEditor
             GUI.color = oldColor;
             GUI.matrix = oldMatrix;
         }
+
+        internal static bool searching => searchMode != HighlightSearchMode.None;
     }
 }

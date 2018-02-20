@@ -104,7 +104,7 @@ namespace UnityEditorInternal
                     return "net20";
 
                 case ApiCompatibilityLevel.NET_4_6:
-                    return "net45";
+                    return "unityjit";
 
                 case ApiCompatibilityLevel.NET_Standard_2_0:
                     return "unityaot";
@@ -195,7 +195,7 @@ namespace UnityEditorInternal
                 arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
                 arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
                 if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
-                    arguments.Add("--dotnetprofile=\"net45\"");
+                    arguments.Add("--dotnetprofile=\"unityjit\"");
                 if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_Standard_2_0)
                     arguments.Add("--dotnetprofile=\"unityaot\"");
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
@@ -275,28 +275,30 @@ namespace UnityEditorInternal
             if (m_PlatformProvider.enableDivideByZeroCheck)
                 arguments.Add("--enable-divide-by-zero-check");
 
-            if (m_PlatformProvider.developmentMode)
-                arguments.Add("--development-mode");
-
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
-            //Currently In Development, Not yet ready to enable
-            //if (m_PlatformProvider.enableDebugger)
-            //    arguments.Add("--enable-debugger");
-
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-            if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
-                arguments.Add("--dotnetprofile=\"net45\"");
+            var useDebugBuild = EditorUserBuildSettings.allowDebugging;
 
-            if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_Standard_2_0)
-                arguments.Add("--dotnetprofile=\"unityaot\"");
+            switch (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))
+            {
+                case ApiCompatibilityLevel.NET_4_6:
+                    arguments.Add("--dotnetprofile=\"unityjit\"");
+                    break;
+
+                case ApiCompatibilityLevel.NET_Standard_2_0:
+                    arguments.Add("--dotnetprofile=\"unityaot\"");
+                    break;
+            }
+
+            //Currently In Development, Not yet ready to enable
+            //if (useDebugBuild)
+            //    arguments.Add("--enable-debugger");
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
             {
-                var useDebugBuild = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup) == Il2CppCompilerConfiguration.Debug;
-
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
                 arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, useDebugBuild));
             }
@@ -404,10 +406,8 @@ namespace UnityEditorInternal
         bool enableDivideByZeroCheck { get; }
         string nativeLibraryFileName { get; }
         string il2CppFolder { get; }
-        bool developmentMode { get; }
         string moduleStrippingInformationFolder { get; }
         bool supportsEngineStripping { get; }
-        bool enableDebugger { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -430,19 +430,15 @@ namespace UnityEditorInternal
 
         public virtual string libraryFolder { get; private set; }
 
-        public virtual bool developmentMode
-        {
-            get { return false; }
-        }
-
         public virtual bool emitNullChecks
         {
             get { return true; }
         }
 
+        // This is an opt-in setting, as most platforms will want to use native stacktrace mechanisms enabled by MapFileParser
         public virtual bool enableStackTraces
         {
-            get { return true; }
+            get { return false; }
         }
 
         public virtual bool enableArrayBoundsCheck
@@ -456,11 +452,6 @@ namespace UnityEditorInternal
         }
 
         public virtual bool supportsEngineStripping
-        {
-            get { return false; }
-        }
-
-        public virtual bool enableDebugger
         {
             get { return false; }
         }

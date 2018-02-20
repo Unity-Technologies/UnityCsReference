@@ -16,7 +16,7 @@ namespace UnityEditor.StyleSheets
 
         protected void OnEnable()
         {
-            m_FileTypeIcon = EditorGUIUtility.FindTexture("UssScript Icon");
+            m_FileTypeIcon = EditorGUIUtility.FindTexture(typeof(StyleSheet));
         }
 
         public override bool HasPreviewGUI()

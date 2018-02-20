@@ -77,9 +77,11 @@ namespace UnityEditorInternal
             State state;
             string key = prop.propertyPath;
             m_States.TryGetValue(key, out state);
-            if (state == null)
+            // ensure the cached SerializedProperty is synchronized (case 974069)
+            if (state == null || state.m_ReorderableList.serializedProperty.serializedObject != prop.serializedObject)
             {
-                state = new State();
+                if (state == null)
+                    state = new State();
 
                 SerializedProperty listenersArray = prop.FindPropertyRelative("m_PersistentCalls.m_Calls");
                 state.m_ReorderableList = new ReorderableList(prop.serializedObject, listenersArray, false, true, true, true);

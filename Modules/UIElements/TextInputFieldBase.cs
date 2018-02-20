@@ -7,7 +7,21 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class TextInputFieldBase : BaseTextElement
+    internal interface ITextInputField : IEventHandler
+    {
+        bool hasFocus { get; }
+        string text { get; }
+
+        bool doubleClickSelectsWord { get; }
+        bool tripleClickSelectsLine { get; }
+
+        void SyncTextEngine();
+        bool AcceptCharacter(char c);
+        string CullString(string s);
+        void UpdateText(string value);
+    }
+
+    public abstract class TextInputFieldBase<T> : BaseTextControl<T>, ITextInputField
     {
         const string SelectionColorProperty = "selection-color";
         const string CursorColorProperty = "cursor-color";
@@ -23,7 +37,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public void UpdateText(string value)
+        internal void UpdateText(string value)
         {
             if (text != value)
             {
@@ -50,12 +64,16 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_CursorColor.GetSpecifiedValueOrDefault(Color.clear); }
         }
 
+        public int cursorIndex { get { return editorEngine.cursorIndex; } }
+
         public int maxLength { get; set; }
 
         internal const int kMaxLengthNone = -1;
 
         public bool doubleClickSelectsWord { get; set; }
         public bool tripleClickSelectsLine { get; set; }
+
+        public bool isDelayed { get; set; }
 
         bool touchScreenTextField
         {
@@ -77,7 +95,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override string text
         {
-            set
+            protected set
             {
                 base.text = value;
                 editorEngine.text = value;
@@ -89,7 +107,7 @@ namespace UnityEngine.Experimental.UIElements
             this.maxLength = maxLength;
             this.maskChar = maskChar;
 
-            editorEngine = new TextEditorEngine(this);
+            editorEngine = new TextEditorEngine(OnDetectFocusChange, OnCursorIndexChange);
 
             if (touchScreenTextField)
             {
@@ -106,22 +124,19 @@ namespace UnityEngine.Experimental.UIElements
 
             // Make the editor style unique across all textfields
             editorEngine.style = new GUIStyle(editorEngine.style);
-
-            // TextField are focusable by default.
-            focusIndex = 0;
         }
 
-        ContextualMenu.MenuAction.StatusFlags CutCopyActionStatus(EventBase e)
+        ContextualMenu.MenuAction.StatusFlags CutCopyActionStatus(ContextualMenu.MenuAction a)
         {
             return (editorEngine.hasSelection && !isPasswordField) ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled;
         }
 
-        ContextualMenu.MenuAction.StatusFlags PasteActionStatus(EventBase e)
+        ContextualMenu.MenuAction.StatusFlags PasteActionStatus(ContextualMenu.MenuAction a)
         {
             return (editorEngine.CanPaste() ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled);
         }
 
-        void Cut(EventBase e)
+        void Cut(ContextualMenu.MenuAction a)
         {
             editorEngine.Cut();
 
@@ -129,12 +144,12 @@ namespace UnityEngine.Experimental.UIElements
             UpdateText(editorEngine.text);
         }
 
-        void Copy(EventBase e)
+        void Copy(ContextualMenu.MenuAction a)
         {
             editorEngine.Copy();
         }
 
-        void Paste(EventBase e)
+        void Paste(ContextualMenu.MenuAction a)
         {
             editorEngine.Paste();
 
@@ -174,7 +189,7 @@ namespace UnityEngine.Experimental.UIElements
             // When this is used, we can get rid of the content.text trick and use mask char directly in the text to print
             if (touchScreenTextField)
             {
-                TouchScreenTextEditorEventHandler touchScreenEditor = editorEventHandler as TouchScreenTextEditorEventHandler;
+                var touchScreenEditor = editorEventHandler as TouchScreenTextEditorEventHandler;
                 if (touchScreenEditor != null && editorEngine.keyboardOnScreen != null)
                 {
                     UpdateText(CullString(editorEngine.keyboardOnScreen.text));
@@ -207,7 +222,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal void DrawWithTextSelectionAndCursor(IStylePainter painter, string newText)
         {
-            KeyboardTextEditorEventHandler keyboardTextEditor = editorEventHandler as KeyboardTextEditorEventHandler;
+            var keyboardTextEditor = editorEventHandler as KeyboardTextEditorEventHandler;
             if (keyboardTextEditor == null)
                 return;
 
@@ -226,7 +241,7 @@ namespace UnityEngine.Experimental.UIElements
             textParams.wordWrap = false;
 
             float lineHeight = painter.ComputeTextHeight(textParams);
-            float wordWrapWidth = style.wordWrap ? contentRect.width : 0.0f;
+            float contentWidth = contentRect.width;
 
             Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
                 new Vector2(localPosition.x, localPosition.y + lineHeight);
@@ -255,7 +270,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 cursorParams = painter.GetDefaultCursorPositionParameters(this);
                 cursorParams.text = editorEngine.text;
-                cursorParams.wordWrapWidth = wordWrapWidth;
+                cursorParams.wordWrapWidth = contentWidth;
                 cursorParams.cursorIndex = min;
 
                 Vector2 minPos = painter.GetCursorPosition(cursorParams);
@@ -273,20 +288,23 @@ namespace UnityEngine.Experimental.UIElements
                 else
                 {
                     // Draw first line
-                    painterParams.rect = new Rect(minPos.x, minPos.y, wordWrapWidth - minPos.x, lineHeight);
+                    painterParams.rect = new Rect(minPos.x, minPos.y, contentRect.xMax - minPos.x, lineHeight);
                     painter.DrawRect(painterParams);
 
                     var inbetweenHeight = (maxPos.y - minPos.y) - lineHeight;
                     if (inbetweenHeight > 0f)
                     {
                         // Draw all lines in-between
-                        painterParams.rect = new Rect(0f, minPos.y + lineHeight, wordWrapWidth, inbetweenHeight);
+                        painterParams.rect = new Rect(contentRect.x, minPos.y + lineHeight, contentWidth, inbetweenHeight);
                         painter.DrawRect(painterParams);
                     }
 
-                    // Draw last line
-                    painterParams.rect = new Rect(0f, maxPos.y, maxPos.x, lineHeight);
-                    painter.DrawRect(painterParams);
+                    // Draw last line if not empty
+                    if (maxPos.x != contentRect.x)
+                    {
+                        painterParams.rect = new Rect(contentRect.x, maxPos.y, maxPos.x, lineHeight);
+                        painter.DrawRect(painterParams);
+                    }
                 }
             }
 
@@ -307,7 +325,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 cursorParams = painter.GetDefaultCursorPositionParameters(this);
                 cursorParams.text = editorEngine.text;
-                cursorParams.wordWrapWidth = wordWrapWidth;
+                cursorParams.wordWrapWidth = contentWidth;
                 cursorParams.cursorIndex = cursorIndex;
 
                 Vector2 cursorPosition = painter.GetCursorPosition(cursorParams);
@@ -325,7 +343,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 cursorParams = painter.GetDefaultCursorPositionParameters(this);
                 cursorParams.text = editorEngine.text.Substring(0, editorEngine.altCursorPosition);
-                cursorParams.wordWrapWidth = wordWrapWidth;
+                cursorParams.wordWrapWidth = contentWidth;
                 cursorParams.cursorIndex = editorEngine.altCursorPosition;
 
                 Vector2 altCursorPosition = painter.GetCursorPosition(cursorParams);
@@ -349,12 +367,25 @@ namespace UnityEngine.Experimental.UIElements
 
         protected virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            if (evt.target is TextInputFieldBase)
+            if (evt.target is TextInputFieldBase<T>)
             {
                 evt.menu.AppendAction("Cut", Cut, CutCopyActionStatus);
                 evt.menu.AppendAction("Copy", Copy, CutCopyActionStatus);
                 evt.menu.AppendAction("Paste", Paste, PasteActionStatus);
             }
+        }
+
+        private void OnDetectFocusChange()
+        {
+            if (editorEngine.m_HasFocus && !hasFocus)
+                editorEngine.OnFocus();
+            if (!editorEngine.m_HasFocus && hasFocus)
+                editorEngine.OnLostFocus();
+        }
+
+        private void OnCursorIndexChange()
+        {
+            Dirty(ChangeType.Repaint);
         }
 
         protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -374,7 +405,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (count > 0 && e.menu.MenuItems().Count > count)
                 {
-                    e.menu.InsertSeparator(count);
+                    e.menu.InsertSeparator(null, count);
                 }
             }
 
@@ -386,6 +417,36 @@ namespace UnityEngine.Experimental.UIElements
             base.ExecuteDefaultAction(evt);
 
             editorEventHandler.ExecuteDefaultAction(evt);
+        }
+
+        bool ITextInputField.hasFocus
+        {
+            get { return hasFocus; }
+        }
+
+        string ITextInputField.text
+        {
+            get { return text; }
+        }
+
+        void ITextInputField.SyncTextEngine()
+        {
+            SyncTextEngine();
+        }
+
+        bool ITextInputField.AcceptCharacter(char c)
+        {
+            return AcceptCharacter(c);
+        }
+
+        string ITextInputField.CullString(string s)
+        {
+            return CullString(s);
+        }
+
+        void ITextInputField.UpdateText(string value)
+        {
+            UpdateText(value);
         }
     }
 }

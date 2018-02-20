@@ -9,6 +9,7 @@ using System.IO;
 using UnityEngine;
 using UnityEditor.Utils;
 using System.Text;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -30,8 +31,10 @@ namespace UnityEditor.Scripting.Compilers
                 "-langversion:" + ((EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest) ? "6" : "4"),
                 "-out:" + PrepareFileName(_island._output),
                 "-nostdlib",
-                "-unsafe"
             };
+
+            if (_island._allowUnsafeCode)
+                arguments.Add("-unsafe");
 
             if (!_island._development_player && !_island._editor)
                 arguments.Add("-optimize");
@@ -59,13 +62,10 @@ namespace UnityEditor.Scripting.Compilers
             var compilerPath = Path.Combine(dir, "mcs.exe");
             if (File.Exists(compilerPath))
             {
-                var profile = _island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0  ? "2.0-api"
-                    : BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
+                var systemAssemblyDirectory = MonoLibraryHelpers.GetSystemReferenceDirectory(_island._api_compatibility_level);
 
-                if (_island._api_compatibility_level != ApiCompatibilityLevel.NET_Standard_2_0)
-                {
-                    arguments.Add("-lib:" + PrepareFileName(MonoInstallationFinder.GetProfileDirectory(profile, MonoInstallationFinder.MonoBleedingEdgeInstallation)));
-                }
+                if (!string.IsNullOrEmpty(systemAssemblyDirectory) && Directory.Exists(systemAssemblyDirectory))
+                    arguments.Add("-lib:" + PrepareFileName(systemAssemblyDirectory));
                 return compilerPath;
             }
 
@@ -77,9 +77,9 @@ namespace UnityEditor.Scripting.Compilers
             return new MonoCSharpCompilerOutputParser();
         }
 
-        public static string[] Compile(string[] sources, string[] references, string[] defines, string outputFile)
+        public static string[] Compile(string[] sources, string[] references, string[] defines, string outputFile, bool allowUnsafeCode)
         {
-            var island = new MonoIsland(BuildTarget.StandaloneWindows, ApiCompatibilityLevel.NET_2_0_Subset, sources, references, defines, outputFile);
+            var island = new MonoIsland(BuildTarget.StandaloneWindows, ApiCompatibilityLevel.NET_2_0_Subset, allowUnsafeCode, sources, references, defines, outputFile);
             using (var c = new MonoCSharpCompiler(island, false))
             {
                 c.BeginCompiling();

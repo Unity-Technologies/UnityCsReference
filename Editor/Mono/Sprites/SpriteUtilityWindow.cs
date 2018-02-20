@@ -223,10 +223,8 @@ namespace UnityEditor
         protected void DrawTexture()
         {
             int texWidth = Mathf.Max(m_Texture.width, 1);
-            float mipLevel = Mathf.Min(m_MipLevel, TextureUtil.GetMipmapCount(m_Texture) - 1);
+            float mipLevel = Mathf.Min(m_MipLevel, TextureUtil.GetMipmapCount(m_Texture) - 1)  - Log2(texWidth / m_TextureRect.width);
 
-            float oldBias = m_Texture.mipMapBias;
-            TextureUtil.SetMipMapBiasNoDirty(m_Texture, mipLevel - Log2(texWidth / m_TextureRect.width));
             FilterMode oldFilter = m_Texture.filterMode;
             TextureUtil.SetFilterModeNoDirty(m_Texture, FilterMode.Point);
 
@@ -234,15 +232,14 @@ namespace UnityEditor
             {
                 // check if we have a valid alpha texture
                 if (m_TextureAlphaOverride != null)
-                    EditorGUI.DrawTextureTransparent(m_TextureRect, m_TextureAlphaOverride);
+                    EditorGUI.DrawTextureTransparent(m_TextureRect, m_TextureAlphaOverride, ScaleMode.StretchToFill, 0, mipLevel);
                 // else use the original texture and display its alpha
                 else
-                    EditorGUI.DrawTextureAlpha(m_TextureRect, m_Texture);
+                    EditorGUI.DrawTextureAlpha(m_TextureRect, m_Texture, ScaleMode.StretchToFill, 0, mipLevel);
             }
             else
-                EditorGUI.DrawTextureTransparent(m_TextureRect, m_Texture);
+                EditorGUI.DrawTextureTransparent(m_TextureRect, m_Texture, ScaleMode.StretchToFill, 0, mipLevel);
 
-            TextureUtil.SetMipMapBiasNoDirty(m_Texture, oldBias);
             TextureUtil.SetFilterModeNoDirty(m_Texture, oldFilter);
         }
 

@@ -20,6 +20,7 @@ namespace UnityEngine
         public delegate void UpdatedEventHandler();
         public static event UpdatedEventHandler Updated;
         public static event Action BeforeFetchFromServer;
+        public static event Action<bool, bool, int> Completed;
 
         [RequiredByNativeCode]
         internal static void RemoteSettingsUpdated(bool wasLastUpdatedFromServer)
@@ -35,6 +36,14 @@ namespace UnityEngine
             var handler = BeforeFetchFromServer;
             if (handler != null)
                 handler();
+        }
+
+        [RequiredByNativeCode]
+        internal static void RemoteSettingsUpdateCompleted(bool wasLastUpdatedFromServer, bool settingsChanged, int response)
+        {
+            var handler = Completed;
+            if (handler != null)
+                handler(wasLastUpdatedFromServer, settingsChanged, response);
         }
 
         [Obsolete("Calling CallOnUpdate() is not necessary any more and should be removed. Use RemoteSettingsUpdated instead", true)]

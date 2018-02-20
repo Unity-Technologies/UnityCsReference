@@ -3,13 +3,18 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
     // Representation of RGBA colors.
 
-    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/Math/Color.h")]
+    [NativeClass("ColorRGBAf")]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     public struct Color
     {
         // Red component of the color.

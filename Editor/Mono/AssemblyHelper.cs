@@ -17,11 +17,17 @@ namespace UnityEditor
 {
     internal partial class AssemblyHelper
     {
+        static readonly Type[] ExtendableScriptTypes = { typeof(MonoBehaviour), typeof(ScriptableObject), typeof(Experimental.AssetImporters.ScriptedImporter) };
+
         // Check if assmebly internal name doesn't match file name, and show the warning.
         static public void CheckForAssemblyFileNameMismatch(string assemblyPath)
         {
             string fileName = Path.GetFileNameWithoutExtension(assemblyPath);
             string assemblyName = ExtractInternalAssemblyName(assemblyPath);
+
+            if (string.IsNullOrEmpty(assemblyName))
+                return;
+
             if (fileName != assemblyName)
             {
                 Debug.LogWarning("Assembly '" + assemblyName + "' has non matching file name: '" + Path.GetFileName(assemblyPath) + "'. This can cause build issues on some platforms.");
@@ -46,28 +52,17 @@ namespace UnityEditor
             return locations.ToArray();
         }
 
-        public static Assembly FindLoadedAssemblyWithName(string s)
-        {
-            var assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            foreach (var a in assemblies)
-            {
-                try
-                {
-                    if (s == System.IO.Path.GetFileNameWithoutExtension(a.Location))
-                        return a;
-                }
-                catch (NotSupportedException)
-                {
-                    //we have some "dynamic" assmeblies that do not have a filename
-                }
-            }
-            return null;
-        }
-
         static public string ExtractInternalAssemblyName(string path)
         {
-            AssemblyDefinition definition = AssemblyDefinition.ReadAssembly(path);
-            return definition.Name.Name;
+            try
+            {
+                AssemblyDefinition definition = AssemblyDefinition.ReadAssembly(path);
+                return definition.Name.Name;
+            }
+            catch
+            {
+                return ""; // Possible on just deleted FacebookSDK
+            }
         }
 
         static AssemblyDefinition GetAssemblyDefinitionCached(string path, Dictionary<string, AssemblyDefinition> cache)
@@ -211,55 +206,29 @@ namespace UnityEditor
             return assembly.GetCustomAttributes(typeof(UnityEngineModuleAssembly), false).Length > 0;
         }
 
-        private static bool IsTypeAUserExtendedScript(AssemblyDefinition assembly, TypeReference type)
+        private static bool IsTypeAUserExtendedScript(TypeReference type)
         {
-            if (type == null)
+            if (type == null || type.FullName == "System.Object")
                 return false;
 
-            // Early out
-            if (type.FullName == "System.Object")
-                return false;
-
-            // Look up the type in UnityEngine.dll or UnityEditor.dll
-            Assembly builtinAssembly = null;
-            if (type.Scope.Name == "UnityEngine" || type.Scope.Name == "UnityEngine.CoreModule")
-                builtinAssembly = typeof(MonoBehaviour).Assembly;
-            else if (type.Scope.Name == "UnityEditor")
-                builtinAssembly = typeof(EditorWindow).Assembly;
-            else if (type.Scope.Name == "UnityEngine.UI")
-                builtinAssembly = FindLoadedAssemblyWithName("UnityEngine.UI");
-
-            if (builtinAssembly != null)
+            foreach (var extendableScriptType in ExtendableScriptTypes)
             {
-                // TypeReference.FullName is cached and is preferred to use, but in case of generic types it
-                // includes generic arguments we can't use to get type from assembly.
-                var typeName = type.IsGenericInstance ? (type.Namespace + "." + type.Name) : type.FullName;
-                var engineType = builtinAssembly.GetType(typeName);
-
-                // TODO: this "list of classes" should get dynamically filled by the classes them self, thus removing dependency of this class on those classes.
-                if (engineType != null)
-                {
-                    if (engineType == typeof(MonoBehaviour) || engineType.IsSubclassOf(typeof(MonoBehaviour)))
-                        return true;
-                    if (engineType == typeof(ScriptableObject) || engineType.IsSubclassOf(typeof(ScriptableObject)))
-                        return true;
-                    if (engineType == typeof(Experimental.AssetImporters.ScriptedImporter) || engineType.IsSubclassOf(typeof(Experimental.AssetImporters.ScriptedImporter)))
-                        return true;
-                }
+                if (type.Name == extendableScriptType.Name && type.Namespace == extendableScriptType.Namespace)
+                    return true;
             }
 
-            TypeDefinition typeDefinition = null;
             try
             {
-                typeDefinition = type.Resolve();
+                var typeDefinition = type.Resolve();
+
+                if (typeDefinition != null)
+                    return IsTypeAUserExtendedScript(typeDefinition.BaseType);
             }
             catch (AssemblyResolutionException)
             {
                 // just eat exception if we fail to load assembly here.
                 // failure should be handled better in other places.
             }
-            if (typeDefinition != null)
-                return IsTypeAUserExtendedScript(assembly, typeDefinition.BaseType);
 
             return false;
         }
@@ -297,7 +266,7 @@ namespace UnityEditor
 
                     try
                     {
-                        if (IsTypeAUserExtendedScript(assembly, baseType))
+                        if (IsTypeAUserExtendedScript(baseType))
                         {
                             classNames.Add(type.Name);
                             nameSpaces.Add(type.Namespace);

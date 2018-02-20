@@ -7,15 +7,14 @@ using System.Linq;
 using System;
 using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.Scripting;
+using UnityEngine.Internal;
 
 namespace UnityEditor
 {
-    // For bindings see: EditorWindow.bindings
-
-    [ExcludeFromObjectFactory]
+    [UsedByNativeCode, ExcludeFromObjectFactory]
     public partial class EditorWindow : ScriptableObject
     {
-        [SerializeField]
         [HideInInspector]
         bool m_AutoRepaintOnSceneChange;
 
@@ -587,6 +586,46 @@ namespace UnityEditor
             }
 
             return win;
+        }
+
+        public static EditorWindow GetWindow(System.Type t, [DefaultValue("false")] bool utility, [DefaultValue("null")] string title, [DefaultValue("true")] bool focus)
+        {
+            return GetWindowPrivate(t, utility, title, focus);
+        }
+
+        [ExcludeFromDocs]
+        public static EditorWindow GetWindow(System.Type t, bool utility, string title)
+        {
+            return GetWindowPrivate(t, utility, title, true);
+        }
+
+        [ExcludeFromDocs]
+        public static EditorWindow GetWindow(System.Type t, bool utility)
+        {
+            return GetWindowPrivate(t, utility, null, true);
+        }
+
+        [ExcludeFromDocs]
+        public static EditorWindow GetWindow(System.Type t)
+        {
+            return GetWindowPrivate(t, false, null, true);
+        }
+
+        public static EditorWindow GetWindowWithRect(System.Type t, Rect rect, [DefaultValue("false")] bool utility, [DefaultValue("null")] string title)
+        {
+            return GetWindowWithRectPrivate(t, rect, utility, title);
+        }
+
+        [ExcludeFromDocs]
+        public static EditorWindow GetWindowWithRect(System.Type t, Rect rect, bool utility)
+        {
+            return GetWindowWithRectPrivate(t, rect, utility, null);
+        }
+
+        [ExcludeFromDocs]
+        public static EditorWindow GetWindowWithRect(System.Type t, Rect rect)
+        {
+            return GetWindowWithRectPrivate(t, rect, false, null);
         }
 
         public static T GetWindow<T>() where T : EditorWindow

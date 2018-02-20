@@ -19,6 +19,7 @@ namespace UnityEditor
     {
         const string kEditorPrefsGBuffersLightmapsAlbedoEmissive = "LightingWindowGlobalMapsGLAE";
         const string kEditorPrefsTransmissionTextures = "LightingWindowGlobalMapsTT";
+        const string kEditorPrefsMaterialTextures = "LightingWindowGlobalMapsMT";
         const string kEditorPrefsGeometryData = "LightingWindowGlobalMapsGD";
         const string kEditorPrefsInFlight = "LightingWindowGlobalMapsIF";
 
@@ -360,7 +361,6 @@ namespace UnityEditor
 
             float totalGBuffersSize = 0.0f;
             float totalLightmapsSize = 0.0f;
-            float totalAlbedoEmissiveSize = 0.0f;
             foreach (var entry in gbufferHashToLightmapIndices)
             {
                 Hash128 gbufferHash = entry.Key;
@@ -373,10 +373,6 @@ namespace UnityEditor
                     LightmapMemory lightmapMemory = Lightmapping.GetLightmapMemory(i.Value);
                     totalLightmapsSize += lightmapMemory.lightmapDataSize;
                     totalLightmapsSize += lightmapMemory.lightmapTexturesSize;
-                    totalAlbedoEmissiveSize += lightmapMemory.albedoDataSize;
-                    totalAlbedoEmissiveSize += lightmapMemory.albedoTextureSize;
-                    totalAlbedoEmissiveSize += lightmapMemory.emissiveDataSize;
-                    totalAlbedoEmissiveSize += lightmapMemory.emissiveTextureSize;
                 }
             }
 
@@ -384,10 +380,9 @@ namespace UnityEditor
             {
                 const bool toggleOnLabelClick = true;
                 string foldoutNameFull = String.Format(
-                        "G-buffers ({0}) | Lightmaps ({1}) | Albedo/Emissive ({2})",
+                        "G-buffers ({0}) | Lightmaps ({1})",
                         SizeString(totalGBuffersSize),
-                        SizeString(totalLightmapsSize),
-                        SizeString(totalAlbedoEmissiveSize));
+                        SizeString(totalLightmapsSize));
                 bool showDetailsOld = EditorPrefs.GetBool(kEditorPrefsGBuffersLightmapsAlbedoEmissive, true);
 
                 bool showDetails = EditorGUILayout.Foldout(showDetailsOld, foldoutNameFull, toggleOnLabelClick, s_Styles.boldFoldout);
@@ -424,10 +419,13 @@ namespace UnityEditor
 
             System.UInt64[] dummyCounts = new System.UInt64[0];
             {
-                string[] objectNames;
-                float[] sizes;
-                Lightmapping.GetTransmissionTexturesMemLabels(out objectNames, out sizes);
-                ShowObjectNamesSizesAndCounts("Transmission textures", kEditorPrefsTransmissionTextures, objectNames, sizes, dummyCounts, Precision.Tenths);
+                MemLabels labels = Lightmapping.GetTransmissionTexturesMemLabels();
+                ShowObjectNamesSizesAndCounts("Transmission textures", kEditorPrefsTransmissionTextures, labels.labels, labels.sizes, dummyCounts, Precision.Tenths);
+            }
+
+            {
+                MemLabels labels = Lightmapping.GetMaterialTexturesMemLabels();
+                ShowObjectNamesSizesAndCounts("Albedo/emissive textures", kEditorPrefsMaterialTextures, labels.labels, labels.sizes, dummyCounts, Precision.Hundredths);
             }
 
             {
@@ -439,11 +437,9 @@ namespace UnityEditor
             }
 
             {
-                string[] objectNames;
-                float[] sizes;
-                Lightmapping.GetNotShownMemLabels(out objectNames, out sizes);
+                MemLabels labels = Lightmapping.GetNotShownMemLabels();
                 string remainingEntriesFoldoutName = Lightmapping.isProgressiveLightmapperDone ? "Leaks" : "In-flight";
-                ShowObjectNamesSizesAndCounts(remainingEntriesFoldoutName, kEditorPrefsInFlight, objectNames, sizes, dummyCounts, Precision.Tenths);
+                ShowObjectNamesSizesAndCounts(remainingEntriesFoldoutName, kEditorPrefsInFlight, labels.labels, labels.sizes, dummyCounts, Precision.Tenths);
             }
         }
 
@@ -557,10 +553,6 @@ namespace UnityEditor
             else
                 lightmapTexturesSizeContent = EditorGUIUtility.TrTextContent("Lightmap textures: N/A", "This lightmap has converged and is not owned by the Progressive Lightmapper anymore.");
             GUILayout.Label(lightmapTexturesSizeContent, EditorStyles.miniLabel);
-            GUILayout.Label("Albedo data: " + lightmapMemory.albedoDataSize.ToString("0.0") + " MB", EditorStyles.miniLabel);
-            GUILayout.Label("Albedo texture: " + lightmapMemory.albedoTextureSize.ToString("0.0") + " MB", EditorStyles.miniLabel);
-            GUILayout.Label("Emissive data: " + lightmapMemory.emissiveDataSize.ToString("0.0") + " MB", EditorStyles.miniLabel);
-            GUILayout.Label("Emissive texture: " + lightmapMemory.emissiveTextureSize.ToString("0.0") + " MB", EditorStyles.miniLabel);
 
             GUILayout.EndVertical();
         }

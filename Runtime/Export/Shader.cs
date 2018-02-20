@@ -6,36 +6,7 @@ using System;
 using System.Collections.Generic;
 using PassType = UnityEngine.Rendering.PassType;
 using SphericalHarmonicsL2 = UnityEngine.Rendering.SphericalHarmonicsL2;
-
-namespace UnityEngine
-{
-    public sealed partial class ShaderVariantCollection : Object
-    {
-        public partial struct ShaderVariant
-        {
-            public Shader shader;
-            public PassType passType;
-            public string[] keywords;
-
-            public ShaderVariant(Shader shader, PassType passType, params string[] keywords)
-            {
-                this.shader = shader; this.passType = passType; this.keywords = keywords;
-                string checkMessage = CheckShaderVariant(shader, passType, keywords);
-                if (!String.IsNullOrEmpty(checkMessage))
-                    throw new ArgumentException(checkMessage);
-            }
-        }
-    }
-
-    public sealed partial class ShaderVariantCollection : Object
-    {
-        public ShaderVariantCollection() { Internal_Create(this); }
-
-        public bool Add(ShaderVariant variant)      { return AddVariant(variant.shader, variant.passType, variant.keywords); }
-        public bool Remove(ShaderVariant variant)   { return RemoveVariant(variant.shader, variant.passType, variant.keywords); }
-        public bool Contains(ShaderVariant variant) { return ContainsVariant(variant.shader, variant.passType, variant.keywords); }
-    }
-}
+using uei = UnityEngine.Internal;
 
 //
 // MaterialPropertyBlock
@@ -136,57 +107,61 @@ namespace UnityEngine
         }
 
         public void SetFloat(string name, float value)          { SetFloatImpl(Shader.PropertyToID(name), value); }
-        public void SetFloat(int name, float value)             { SetFloatImpl(name, value); }
+        public void SetFloat(int nameID, float value)           { SetFloatImpl(nameID, value); }
+        public void SetInt(string name, int value)              { SetFloatImpl(Shader.PropertyToID(name), (float)value); }
+        public void SetInt(int nameID, int value)               { SetFloatImpl(nameID, (float)value); }
         public void SetVector(string name, Vector4 value)       { SetVectorImpl(Shader.PropertyToID(name), value); }
-        public void SetVector(int name, Vector4 value)          { SetVectorImpl(name, value); }
+        public void SetVector(int nameID, Vector4 value)        { SetVectorImpl(nameID, value); }
         public void SetColor(string name, Color value)          { SetColorImpl(Shader.PropertyToID(name), value); }
-        public void SetColor(int name, Color value)             { SetColorImpl(name, value); }
+        public void SetColor(int nameID, Color value)           { SetColorImpl(nameID, value); }
         public void SetMatrix(string name, Matrix4x4 value)     { SetMatrixImpl(Shader.PropertyToID(name), value); }
-        public void SetMatrix(int name, Matrix4x4 value)        { SetMatrixImpl(name, value); }
+        public void SetMatrix(int nameID, Matrix4x4 value)      { SetMatrixImpl(nameID, value); }
         public void SetBuffer(string name, ComputeBuffer value) { SetBufferImpl(Shader.PropertyToID(name), value); }
-        public void SetBuffer(int name, ComputeBuffer value)    { SetBufferImpl(name, value); }
+        public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
         public void SetTexture(string name, Texture value)      { SetTextureImpl(Shader.PropertyToID(name), value); }
-        public void SetTexture(int name, Texture value)         { SetTextureImpl(name, value); }
+        public void SetTexture(int nameID, Texture value)       { SetTextureImpl(nameID, value); }
 
         public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetFloatArray(int name,    List<float> values)  { SetFloatArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetFloatArray(int nameID,  List<float> values)  { SetFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetFloatArray(string name, float[] values)      { SetFloatArray(Shader.PropertyToID(name), values, values.Length); }
-        public void SetFloatArray(int name,    float[] values)      { SetFloatArray(name, values, values.Length); }
+        public void SetFloatArray(int nameID,  float[] values)      { SetFloatArray(nameID, values, values.Length); }
 
         public void SetVectorArray(string name, List<Vector4> values)   { SetVectorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetVectorArray(int name,    List<Vector4> values)   { SetVectorArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetVectorArray(int nameID,  List<Vector4> values)   { SetVectorArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetVectorArray(string name, Vector4[] values)       { SetVectorArray(Shader.PropertyToID(name), values, values.Length); }
-        public void SetVectorArray(int name,    Vector4[] values)       { SetVectorArray(name, values, values.Length); }
+        public void SetVectorArray(int nameID,  Vector4[] values)       { SetVectorArray(nameID, values, values.Length); }
 
         public void SetMatrixArray(string name, List<Matrix4x4> values) { SetMatrixArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetMatrixArray(int name,    List<Matrix4x4> values) { SetMatrixArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetMatrixArray(int nameID,  List<Matrix4x4> values) { SetMatrixArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values, values.Length); }
-        public void SetMatrixArray(int name,    Matrix4x4[] values)     { SetMatrixArray(name, values, values.Length); }
+        public void SetMatrixArray(int nameID,  Matrix4x4[] values)     { SetMatrixArray(nameID, values, values.Length); }
 
         public float     GetFloat(string name)      { return GetFloatImpl(Shader.PropertyToID(name)); }
-        public float     GetFloat(int name)         { return GetFloatImpl(name); }
+        public float     GetFloat(int nameID)       { return GetFloatImpl(nameID); }
+        public int       GetInt(string name)        { return (int)GetFloatImpl(Shader.PropertyToID(name)); }
+        public int       GetInt(int nameID)         { return (int)GetFloatImpl(nameID); }
         public Vector4   GetVector(string name)     { return GetVectorImpl(Shader.PropertyToID(name)); }
-        public Vector4   GetVector(int name)        { return GetVectorImpl(name); }
+        public Vector4   GetVector(int nameID)      { return GetVectorImpl(nameID); }
         public Color     GetColor(string name)      { return GetColorImpl(Shader.PropertyToID(name)); }
-        public Color     GetColor(int name)         { return GetColorImpl(name); }
+        public Color     GetColor(int nameID)       { return GetColorImpl(nameID); }
         public Matrix4x4 GetMatrix(string name)     { return GetMatrixImpl(Shader.PropertyToID(name)); }
-        public Matrix4x4 GetMatrix(int name)        { return GetMatrixImpl(name); }
+        public Matrix4x4 GetMatrix(int nameID)      { return GetMatrixImpl(nameID); }
         public Texture   GetTexture(string name)    { return GetTextureImpl(Shader.PropertyToID(name)); }
-        public Texture   GetTexture(int name)       { return GetTextureImpl(name); }
+        public Texture   GetTexture(int nameID)     { return GetTextureImpl(nameID); }
 
         public float[]      GetFloatArray(string name)  { return GetFloatArray(Shader.PropertyToID(name)); }
-        public float[]      GetFloatArray(int name)     { return GetFloatArrayCountImpl(name) != 0 ? GetFloatArrayImpl(name) : null; }
+        public float[]      GetFloatArray(int nameID)   { return GetFloatArrayCountImpl(nameID) != 0 ? GetFloatArrayImpl(nameID) : null; }
         public Vector4[]    GetVectorArray(string name) { return GetVectorArray(Shader.PropertyToID(name)); }
-        public Vector4[]    GetVectorArray(int name)    { return GetVectorArrayCountImpl(name) != 0 ? GetVectorArrayImpl(name) : null; }
+        public Vector4[]    GetVectorArray(int nameID)  { return GetVectorArrayCountImpl(nameID) != 0 ? GetVectorArrayImpl(nameID) : null; }
         public Matrix4x4[]  GetMatrixArray(string name) { return GetMatrixArray(Shader.PropertyToID(name)); }
-        public Matrix4x4[]  GetMatrixArray(int name)    { return GetMatrixArrayCountImpl(name) != 0 ? GetMatrixArrayImpl(name) : null; }
+        public Matrix4x4[]  GetMatrixArray(int nameID)  { return GetMatrixArrayCountImpl(nameID) != 0 ? GetMatrixArrayImpl(nameID) : null; }
 
         public void GetFloatArray(string name, List<float> values)      { ExtractFloatArray(Shader.PropertyToID(name), values); }
-        public void GetFloatArray(int name, List<float> values)         { ExtractFloatArray(name, values); }
+        public void GetFloatArray(int nameID, List<float> values)       { ExtractFloatArray(nameID, values); }
         public void GetVectorArray(string name, List<Vector4> values)   { ExtractVectorArray(Shader.PropertyToID(name), values); }
-        public void GetVectorArray(int name, List<Vector4> values)      { ExtractVectorArray(name, values); }
+        public void GetVectorArray(int nameID, List<Vector4> values)    { ExtractVectorArray(nameID, values); }
         public void GetMatrixArray(string name, List<Matrix4x4> values) { ExtractMatrixArray(Shader.PropertyToID(name), values); }
-        public void GetMatrixArray(int name, List<Matrix4x4> values)    { ExtractMatrixArray(name, values); }
+        public void GetMatrixArray(int nameID, List<Matrix4x4> values)  { ExtractMatrixArray(nameID, values); }
 
         public void CopySHCoefficientArraysFrom(List<SphericalHarmonicsL2> lightProbes)
         {
@@ -344,61 +319,61 @@ namespace UnityEngine
     public sealed partial class Shader
     {
         public static void SetGlobalFloat(string name, float value)             { SetGlobalFloatImpl(Shader.PropertyToID(name), value); }
-        public static void SetGlobalFloat(int name, float value)                { SetGlobalFloatImpl(name, value); }
-        public static void SetGlobalInt(string name, int value)                 { SetGlobalFloatImpl(Shader.PropertyToID(name), (int)value); }
-        public static void SetGlobalInt(int name, int value)                    { SetGlobalFloatImpl(name, (int)value); }
+        public static void SetGlobalFloat(int nameID, float value)              { SetGlobalFloatImpl(nameID, value); }
+        public static void SetGlobalInt(string name, int value)                 { SetGlobalFloatImpl(Shader.PropertyToID(name), (float)value); }
+        public static void SetGlobalInt(int nameID, int value)                  { SetGlobalFloatImpl(nameID, (float)value); }
         public static void SetGlobalVector(string name, Vector4 value)          { SetGlobalVectorImpl(Shader.PropertyToID(name), value); }
-        public static void SetGlobalVector(int name, Vector4 value)             { SetGlobalVectorImpl(name, value); }
+        public static void SetGlobalVector(int nameID, Vector4 value)           { SetGlobalVectorImpl(nameID, value); }
         public static void SetGlobalColor(string name, Color value)             { SetGlobalVectorImpl(Shader.PropertyToID(name), (Vector4)value); }
-        public static void SetGlobalColor(int name, Color value)                { SetGlobalVectorImpl(name, (Vector4)value); }
+        public static void SetGlobalColor(int nameID, Color value)              { SetGlobalVectorImpl(nameID, (Vector4)value); }
         public static void SetGlobalMatrix(string name, Matrix4x4 value)        { SetGlobalMatrixImpl(Shader.PropertyToID(name), value); }
-        public static void SetGlobalMatrix(int name, Matrix4x4 value)           { SetGlobalMatrixImpl(name, value); }
+        public static void SetGlobalMatrix(int nameID, Matrix4x4 value)         { SetGlobalMatrixImpl(nameID, value); }
         public static void SetGlobalTexture(string name, Texture value)         { SetGlobalTextureImpl(Shader.PropertyToID(name), value); }
-        public static void SetGlobalTexture(int name, Texture value)            { SetGlobalTextureImpl(name, value); }
+        public static void SetGlobalTexture(int nameID, Texture value)          { SetGlobalTextureImpl(nameID, value); }
         public static void SetGlobalBuffer(string name, ComputeBuffer value)    { SetGlobalBufferImpl(Shader.PropertyToID(name), value); }
-        public static void SetGlobalBuffer(int name, ComputeBuffer value)       { SetGlobalBufferImpl(name, value); }
+        public static void SetGlobalBuffer(int nameID, ComputeBuffer value)     { SetGlobalBufferImpl(nameID, value); }
 
         public static void SetGlobalFloatArray(string name, List<float> values) { SetGlobalFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public static void SetGlobalFloatArray(int name, List<float> values)    { SetGlobalFloatArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public static void SetGlobalFloatArray(int nameID, List<float> values)  { SetGlobalFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public static void SetGlobalFloatArray(string name, float[] values)     { SetGlobalFloatArray(Shader.PropertyToID(name), values, values.Length); }
-        public static void SetGlobalFloatArray(int name, float[] values)        { SetGlobalFloatArray(name, values, values.Length); }
+        public static void SetGlobalFloatArray(int nameID, float[] values)      { SetGlobalFloatArray(nameID, values, values.Length); }
 
         public static void SetGlobalVectorArray(string name, List<Vector4> values)  { SetGlobalVectorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public static void SetGlobalVectorArray(int name, List<Vector4> values)     { SetGlobalVectorArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public static void SetGlobalVectorArray(int nameID, List<Vector4> values)   { SetGlobalVectorArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public static void SetGlobalVectorArray(string name, Vector4[] values)      { SetGlobalVectorArray(Shader.PropertyToID(name), values, values.Length); }
-        public static void SetGlobalVectorArray(int name, Vector4[] values)         { SetGlobalVectorArray(name, values, values.Length); }
+        public static void SetGlobalVectorArray(int nameID, Vector4[] values)       { SetGlobalVectorArray(nameID, values, values.Length); }
 
         public static void SetGlobalMatrixArray(string name, List<Matrix4x4> values) { SetGlobalMatrixArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public static void SetGlobalMatrixArray(int name, List<Matrix4x4> values)   { SetGlobalMatrixArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public static void SetGlobalMatrixArray(int nameID, List<Matrix4x4> values) { SetGlobalMatrixArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public static void SetGlobalMatrixArray(string name, Matrix4x4[] values)    { SetGlobalMatrixArray(Shader.PropertyToID(name), values, values.Length); }
-        public static void SetGlobalMatrixArray(int name, Matrix4x4[] values)       { SetGlobalMatrixArray(name, values, values.Length); }
+        public static void SetGlobalMatrixArray(int nameID, Matrix4x4[] values)     { SetGlobalMatrixArray(nameID, values, values.Length); }
 
         public static float       GetGlobalFloat(string name)       { return GetGlobalFloatImpl(Shader.PropertyToID(name)); }
-        public static float       GetGlobalFloat(int name)          { return GetGlobalFloatImpl(name); }
+        public static float       GetGlobalFloat(int nameID)        { return GetGlobalFloatImpl(nameID); }
         public static int         GetGlobalInt(string name)         { return (int)GetGlobalFloatImpl(Shader.PropertyToID(name)); }
-        public static int         GetGlobalInt(int name)            { return (int)GetGlobalFloatImpl(name); }
+        public static int         GetGlobalInt(int nameID)          { return (int)GetGlobalFloatImpl(nameID); }
         public static Vector4     GetGlobalVector(string name)      { return GetGlobalVectorImpl(Shader.PropertyToID(name)); }
-        public static Vector4     GetGlobalVector(int name)         { return GetGlobalVectorImpl(name); }
+        public static Vector4     GetGlobalVector(int nameID)       { return GetGlobalVectorImpl(nameID); }
         public static Color       GetGlobalColor(string name)       { return (Color)GetGlobalVectorImpl(Shader.PropertyToID(name)); }
-        public static Color       GetGlobalColor(int name)          { return (Color)GetGlobalVectorImpl(name); }
+        public static Color       GetGlobalColor(int nameID)        { return (Color)GetGlobalVectorImpl(nameID); }
         public static Matrix4x4   GetGlobalMatrix(string name)      { return GetGlobalMatrixImpl(Shader.PropertyToID(name)); }
-        public static Matrix4x4   GetGlobalMatrix(int name)         { return GetGlobalMatrixImpl(name); }
+        public static Matrix4x4   GetGlobalMatrix(int nameID)       { return GetGlobalMatrixImpl(nameID); }
         public static Texture     GetGlobalTexture(string name)     { return GetGlobalTextureImpl(Shader.PropertyToID(name)); }
-        public static Texture     GetGlobalTexture(int name)        { return GetGlobalTextureImpl(name); }
+        public static Texture     GetGlobalTexture(int nameID)      { return GetGlobalTextureImpl(nameID); }
 
         public static float[]     GetGlobalFloatArray(string name)  { return GetGlobalFloatArray(Shader.PropertyToID(name)); }
-        public static float[]     GetGlobalFloatArray(int name)     { return GetGlobalFloatArrayCountImpl(name) != 0 ? GetGlobalFloatArrayImpl(name) : null; }
+        public static float[]     GetGlobalFloatArray(int nameID)   { return GetGlobalFloatArrayCountImpl(nameID) != 0 ? GetGlobalFloatArrayImpl(nameID) : null; }
         public static Vector4[]   GetGlobalVectorArray(string name) { return GetGlobalVectorArray(Shader.PropertyToID(name)); }
-        public static Vector4[]   GetGlobalVectorArray(int name)    { return GetGlobalVectorArrayCountImpl(name) != 0 ? GetGlobalVectorArrayImpl(name) : null; }
+        public static Vector4[]   GetGlobalVectorArray(int nameID)  { return GetGlobalVectorArrayCountImpl(nameID) != 0 ? GetGlobalVectorArrayImpl(nameID) : null; }
         public static Matrix4x4[] GetGlobalMatrixArray(string name) { return GetGlobalMatrixArray(Shader.PropertyToID(name)); }
-        public static Matrix4x4[] GetGlobalMatrixArray(int name)    { return GetGlobalMatrixArrayCountImpl(name) != 0 ? GetGlobalMatrixArrayImpl(name) : null; }
+        public static Matrix4x4[] GetGlobalMatrixArray(int nameID)  { return GetGlobalMatrixArrayCountImpl(nameID) != 0 ? GetGlobalMatrixArrayImpl(nameID) : null; }
 
         public static void GetGlobalFloatArray(string name, List<float> values)      { ExtractGlobalFloatArray(Shader.PropertyToID(name), values); }
-        public static void GetGlobalFloatArray(int name, List<float> values)         { ExtractGlobalFloatArray(name, values); }
+        public static void GetGlobalFloatArray(int nameID, List<float> values)       { ExtractGlobalFloatArray(nameID, values); }
         public static void GetGlobalVectorArray(string name, List<Vector4> values)   { ExtractGlobalVectorArray(Shader.PropertyToID(name), values); }
-        public static void GetGlobalVectorArray(int name, List<Vector4> values)      { ExtractGlobalVectorArray(name, values); }
+        public static void GetGlobalVectorArray(int nameID, List<Vector4> values)    { ExtractGlobalVectorArray(nameID, values); }
         public static void GetGlobalMatrixArray(string name, List<Matrix4x4> values) { ExtractGlobalMatrixArray(Shader.PropertyToID(name), values); }
-        public static void GetGlobalMatrixArray(int name, List<Matrix4x4> values)    { ExtractGlobalMatrixArray(name, values); }
+        public static void GetGlobalMatrixArray(int nameID, List<Matrix4x4> values)  { ExtractGlobalMatrixArray(nameID, values); }
 
         private Shader() {}
     }
@@ -510,79 +485,173 @@ namespace UnityEngine
     public partial class Material
     {
         public void SetFloat(string name, float value)          { SetFloatImpl(Shader.PropertyToID(name), value); }
-        public void SetFloat(int name, float value)             { SetFloatImpl(name, value); }
+        public void SetFloat(int nameID, float value)           { SetFloatImpl(nameID, value); }
         public void SetInt(string name, int value)              { SetFloatImpl(Shader.PropertyToID(name), (float)value); }
-        public void SetInt(int name, int value)                 { SetFloatImpl(name, (float)value); }
+        public void SetInt(int nameID, int value)               { SetFloatImpl(nameID, (float)value); }
         public void SetColor(string name, Color value)          { SetColorImpl(Shader.PropertyToID(name), value); }
-        public void SetColor(int name, Color value)             { SetColorImpl(name, value); }
+        public void SetColor(int nameID, Color value)           { SetColorImpl(nameID, value); }
         public void SetVector(string name, Vector4 value)       { SetColorImpl(Shader.PropertyToID(name), (Color)value); }
-        public void SetVector(int name, Vector4 value)          { SetColorImpl(name, (Color)value); }
+        public void SetVector(int nameID, Vector4 value)        { SetColorImpl(nameID, (Color)value); }
         public void SetMatrix(string name, Matrix4x4 value)     { SetMatrixImpl(Shader.PropertyToID(name), value); }
-        public void SetMatrix(int name, Matrix4x4 value)        { SetMatrixImpl(name, value); }
+        public void SetMatrix(int nameID, Matrix4x4 value)      { SetMatrixImpl(nameID, value); }
         public void SetTexture(string name, Texture value)      { SetTextureImpl(Shader.PropertyToID(name), value); }
-        public void SetTexture(int name, Texture value)         { SetTextureImpl(name, value); }
+        public void SetTexture(int nameID, Texture value)       { SetTextureImpl(nameID, value); }
         public void SetBuffer(string name, ComputeBuffer value) { SetBufferImpl(Shader.PropertyToID(name), value); }
-        public void SetBuffer(int name, ComputeBuffer value)    { SetBufferImpl(name, value); }
+        public void SetBuffer(int nameID, ComputeBuffer value)  { SetBufferImpl(nameID, value); }
 
         public void SetFloatArray(string name, List<float> values)  { SetFloatArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetFloatArray(int name,    List<float> values)  { SetFloatArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetFloatArray(int nameID,    List<float> values) { SetFloatArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetFloatArray(string name, float[] values)      { SetFloatArray(Shader.PropertyToID(name), values, values.Length); }
-        public void SetFloatArray(int name,    float[] values)      { SetFloatArray(name, values, values.Length); }
+        public void SetFloatArray(int nameID,    float[] values)    { SetFloatArray(nameID, values, values.Length); }
 
         public void SetColorArray(string name, List<Color> values)  { SetColorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetColorArray(int name,    List<Color> values)  { SetColorArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetColorArray(int nameID,    List<Color> values) { SetColorArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetColorArray(string name, Color[] values)      { SetColorArray(Shader.PropertyToID(name), values, values.Length); }
-        public void SetColorArray(int name,    Color[] values)      { SetColorArray(name, values, values.Length); }
+        public void SetColorArray(int nameID,    Color[] values)    { SetColorArray(nameID, values, values.Length); }
 
         public void SetVectorArray(string name, List<Vector4> values)   { SetVectorArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetVectorArray(int name,    List<Vector4> values)   { SetVectorArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetVectorArray(int nameID,    List<Vector4> values) { SetVectorArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
         public void SetVectorArray(string name, Vector4[] values)       { SetVectorArray(Shader.PropertyToID(name), values, values.Length); }
-        public void SetVectorArray(int name,    Vector4[] values)       { SetVectorArray(name, values, values.Length); }
+        public void SetVectorArray(int nameID,    Vector4[] values)     { SetVectorArray(nameID, values, values.Length); }
 
-        public void SetMatrixArray(string name, List<Matrix4x4> values) { SetMatrixArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetMatrixArray(int name,    List<Matrix4x4> values) { SetMatrixArray(name, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
-        public void SetMatrixArray(string name, Matrix4x4[] values)     { SetMatrixArray(Shader.PropertyToID(name), values, values.Length); }
-        public void SetMatrixArray(int name,    Matrix4x4[] values)     { SetMatrixArray(name, values, values.Length); }
+        public void SetMatrixArray(string name, List<Matrix4x4> values)   { SetMatrixArray(Shader.PropertyToID(name), NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetMatrixArray(int nameID,    List<Matrix4x4> values) { SetMatrixArray(nameID, NoAllocHelpers.ExtractArrayFromListT(values), values.Count); }
+        public void SetMatrixArray(string name, Matrix4x4[] values)       { SetMatrixArray(Shader.PropertyToID(name), values, values.Length); }
+        public void SetMatrixArray(int nameID,    Matrix4x4[] values)     { SetMatrixArray(nameID, values, values.Length); }
 
-        public float     GetFloat(string name)  { return GetFloatImpl(Shader.PropertyToID(name)); }
-        public float     GetFloat(int name)     { return GetFloatImpl(name); }
-        public int       GetInt(string name)    { return (int)GetFloatImpl(Shader.PropertyToID(name)); }
-        public int       GetInt(int name)       { return (int)GetFloatImpl(name); }
-        public Color     GetColor(string name)  { return GetColorImpl(Shader.PropertyToID(name)); }
-        public Color     GetColor(int name)     { return GetColorImpl(name); }
-        public Vector4   GetVector(string name) { return (Vector4)GetColorImpl(Shader.PropertyToID(name)); }
-        public Vector4   GetVector(int name)    { return (Vector4)GetColorImpl(name); }
-        public Matrix4x4 GetMatrix(string name) { return GetMatrixImpl(Shader.PropertyToID(name)); }
-        public Matrix4x4 GetMatrix(int name)    { return GetMatrixImpl(name); }
+        public float     GetFloat(string name)   { return GetFloatImpl(Shader.PropertyToID(name)); }
+        public float     GetFloat(int nameID)    { return GetFloatImpl(nameID); }
+        public int       GetInt(string name)     { return (int)GetFloatImpl(Shader.PropertyToID(name)); }
+        public int       GetInt(int nameID)      { return (int)GetFloatImpl(nameID); }
+        public Color     GetColor(string name)   { return GetColorImpl(Shader.PropertyToID(name)); }
+        public Color     GetColor(int nameID)    { return GetColorImpl(nameID); }
+        public Vector4   GetVector(string name)  { return (Vector4)GetColorImpl(Shader.PropertyToID(name)); }
+        public Vector4   GetVector(int nameID)   { return (Vector4)GetColorImpl(nameID); }
+        public Matrix4x4 GetMatrix(string name)  { return GetMatrixImpl(Shader.PropertyToID(name)); }
+        public Matrix4x4 GetMatrix(int nameID)   { return GetMatrixImpl(nameID); }
         public Texture   GetTexture(string name) { return GetTextureImpl(Shader.PropertyToID(name)); }
-        public Texture   GetTexture(int name)   { return GetTextureImpl(name); }
+        public Texture   GetTexture(int nameID)  { return GetTextureImpl(nameID); }
 
         public float[]      GetFloatArray(string name)  { return GetFloatArray(Shader.PropertyToID(name)); }
-        public float[]      GetFloatArray(int name)     { return GetFloatArrayCountImpl(name) != 0 ? GetFloatArrayImpl(name) : null; }
+        public float[]      GetFloatArray(int nameID)   { return GetFloatArrayCountImpl(nameID) != 0 ? GetFloatArrayImpl(nameID) : null; }
         public Color[]      GetColorArray(string name)  { return GetColorArray(Shader.PropertyToID(name)); }
-        public Color[]      GetColorArray(int name)     { return GetColorArrayCountImpl(name) != 0 ? GetColorArrayImpl(name) : null; }
+        public Color[]      GetColorArray(int nameID)   { return GetColorArrayCountImpl(nameID) != 0 ? GetColorArrayImpl(nameID) : null; }
         public Vector4[]    GetVectorArray(string name) { return GetVectorArray(Shader.PropertyToID(name)); }
-        public Vector4[]    GetVectorArray(int name)    { return GetVectorArrayCountImpl(name) != 0 ? GetVectorArrayImpl(name) : null; }
+        public Vector4[]    GetVectorArray(int nameID)  { return GetVectorArrayCountImpl(nameID) != 0 ? GetVectorArrayImpl(nameID) : null; }
         public Matrix4x4[]  GetMatrixArray(string name) { return GetMatrixArray(Shader.PropertyToID(name)); }
-        public Matrix4x4[]  GetMatrixArray(int name)    { return GetMatrixArrayCountImpl(name) != 0 ? GetMatrixArrayImpl(name) : null; }
+        public Matrix4x4[]  GetMatrixArray(int nameID)  { return GetMatrixArrayCountImpl(nameID) != 0 ? GetMatrixArrayImpl(nameID) : null; }
 
         public void GetFloatArray(string name, List<float> values)      { ExtractFloatArray(Shader.PropertyToID(name), values); }
-        public void GetFloatArray(int name, List<float> values)         { ExtractFloatArray(name, values); }
+        public void GetFloatArray(int nameID, List<float> values)       { ExtractFloatArray(nameID, values); }
         public void GetColorArray(string name, List<Color> values)      { ExtractColorArray(Shader.PropertyToID(name), values); }
-        public void GetColorArray(int name, List<Color> values)         { ExtractColorArray(name, values); }
+        public void GetColorArray(int nameID, List<Color> values)       { ExtractColorArray(nameID, values); }
         public void GetVectorArray(string name, List<Vector4> values)   { ExtractVectorArray(Shader.PropertyToID(name), values); }
-        public void GetVectorArray(int name, List<Vector4> values)      { ExtractVectorArray(name, values); }
+        public void GetVectorArray(int nameID, List<Vector4> values)    { ExtractVectorArray(nameID, values); }
         public void GetMatrixArray(string name, List<Matrix4x4> values) { ExtractMatrixArray(Shader.PropertyToID(name), values); }
-        public void GetMatrixArray(int name, List<Matrix4x4> values)    { ExtractMatrixArray(name, values); }
+        public void GetMatrixArray(int nameID, List<Matrix4x4> values)  { ExtractMatrixArray(nameID, values); }
 
         public void SetTextureOffset(string name, Vector2 value) { SetTextureOffsetImpl(Shader.PropertyToID(name), value); }
-        public void SetTextureOffset(int name, Vector2 value)    { SetTextureOffsetImpl(name, value); }
+        public void SetTextureOffset(int nameID, Vector2 value)  { SetTextureOffsetImpl(nameID, value); }
         public void SetTextureScale(string name, Vector2 value)  { SetTextureScaleImpl(Shader.PropertyToID(name), value); }
-        public void SetTextureScale(int name, Vector2 value)     { SetTextureScaleImpl(name, value); }
+        public void SetTextureScale(int nameID, Vector2 value)   { SetTextureScaleImpl(nameID, value); }
 
         public Vector2 GetTextureOffset(string name) { return GetTextureOffset(Shader.PropertyToID(name)); }
-        public Vector2 GetTextureOffset(int name)    { Vector4 st = GetTextureScaleAndOffsetImpl(name); return new Vector2(st.z, st.w); }
+        public Vector2 GetTextureOffset(int nameID)  { Vector4 st = GetTextureScaleAndOffsetImpl(nameID); return new Vector2(st.z, st.w); }
         public Vector2 GetTextureScale(string name)  { return GetTextureScale(Shader.PropertyToID(name)); }
-        public Vector2 GetTextureScale(int name)     { Vector4 st = GetTextureScaleAndOffsetImpl(name); return new Vector2(st.x, st.y); }
+        public Vector2 GetTextureScale(int nameID)   { Vector4 st = GetTextureScaleAndOffsetImpl(nameID); return new Vector2(st.x, st.y); }
+    }
+}
+
+
+//
+// ShaderVariantCollection
+//
+
+
+namespace UnityEngine
+{
+    public sealed partial class ShaderVariantCollection : Object
+    {
+        public partial struct ShaderVariant
+        {
+            public Shader shader;
+            public PassType passType;
+            public string[] keywords;
+
+            public ShaderVariant(Shader shader, PassType passType, params string[] keywords)
+            {
+                this.shader = shader; this.passType = passType; this.keywords = keywords;
+                string checkMessage = CheckShaderVariant(shader, passType, keywords);
+                if (!String.IsNullOrEmpty(checkMessage))
+                    throw new ArgumentException(checkMessage);
+            }
+        }
+    }
+
+    public sealed partial class ShaderVariantCollection : Object
+    {
+        public ShaderVariantCollection() { Internal_Create(this); }
+
+        public bool Add(ShaderVariant variant)      { return AddVariant(variant.shader, variant.passType, variant.keywords); }
+        public bool Remove(ShaderVariant variant)   { return RemoveVariant(variant.shader, variant.passType, variant.keywords); }
+        public bool Contains(ShaderVariant variant) { return ContainsVariant(variant.shader, variant.passType, variant.keywords); }
+    }
+}
+
+
+//
+// ComputeShader
+//
+
+namespace UnityEngine
+{
+    public sealed partial class ComputeShader : Object
+    {
+        private ComputeShader() {}
+
+        public void SetFloat(string name, float val)        { SetFloat(Shader.PropertyToID(name), val); }
+        public void SetInt(string name, int val)            { SetInt(Shader.PropertyToID(name), val); }
+        public void SetVector(string name, Vector4 val)     { SetVector(Shader.PropertyToID(name), val); }
+        public void SetMatrix(string name, Matrix4x4 val)   { SetMatrix(Shader.PropertyToID(name), val); }
+
+        public void SetVectorArray(string name, Vector4[] values)   { SetVectorArray(Shader.PropertyToID(name), values); }
+        public void SetMatrixArray(string name, Matrix4x4[] values) { SetMatrixArray(Shader.PropertyToID(name), values); }
+        public void SetFloats(string name, params float[] values)   { SetFloatArray(Shader.PropertyToID(name), values); }
+        public void SetFloats(int nameID, params float[] values)    { SetFloatArray(nameID, values); }
+        public void SetInts(string name, params int[] values)       { SetIntArray(Shader.PropertyToID(name), values); }
+        public void SetInts(int nameID, params int[] values)        { SetIntArray(nameID, values); }
+
+        public void SetBool(string name, bool val)          { SetInt(Shader.PropertyToID(name), val ? 1 : 0); }
+        public void SetBool(int nameID, bool val)           { SetInt(nameID, val ? 1 : 0); }
+
+
+        public void SetTexture(int kernelIndex, string name, Texture texture)
+        {
+            SetTexture(kernelIndex, Shader.PropertyToID(name), texture);
+        }
+
+        public void SetTextureFromGlobal(int kernelIndex, string name, string globalTextureName)
+        {
+            SetTextureFromGlobal(kernelIndex, Shader.PropertyToID(name), Shader.PropertyToID(globalTextureName));
+        }
+
+        public void SetBuffer(int kernelIndex, string name, ComputeBuffer buffer)
+        {
+            SetBuffer(kernelIndex, Shader.PropertyToID(name), buffer);
+        }
+
+        public void DispatchIndirect(int kernelIndex, ComputeBuffer argsBuffer, [uei.DefaultValue("0")] uint argsOffset)
+        {
+            if (argsBuffer == null) throw new ArgumentNullException("argsBuffer");
+            if (argsBuffer.m_Ptr == IntPtr.Zero) throw new System.ObjectDisposedException("argsBuffer");
+
+            Internal_DispatchIndirect(kernelIndex, argsBuffer, argsOffset);
+        }
+
+        [uei.ExcludeFromDocs]
+        public void DispatchIndirect(int kernelIndex, ComputeBuffer argsBuffer)
+        {
+            DispatchIndirect(kernelIndex, argsBuffer, 0);
+        }
     }
 }

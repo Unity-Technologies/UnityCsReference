@@ -8,12 +8,12 @@ using UnityEngine.Bindings;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-namespace UnityEngine
+namespace UnityEngine.Experimental.AssetBundlePatching
 {
     [NativeHeader("Modules/AssetBundle/Public/AssetBundlePatching.h")]
-    internal static class AssetBundleUtility
+    public static class AssetBundleUtility
     {
         [FreeFunction]
-        internal static extern void PatchAssetBundles(AssetBundle[] bundles, string[] filenames);
+        public static extern void PatchAssetBundles(AssetBundle[] bundles, string[] filenames);
     }
 }

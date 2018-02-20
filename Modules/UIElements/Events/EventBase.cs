@@ -41,6 +41,8 @@ namespace UnityEngine.Experimental.UIElements
 
         public IEventHandler target { get; internal set; }
 
+        protected internal IEventHandler skipElement { get; set; }
+
         public bool isPropagationStopped { get; private set; }
 
         public void StopPropagation()
@@ -127,12 +129,15 @@ namespace UnityEngine.Experimental.UIElements
 
             target = null;
 
+            skipElement = null;
+
             isPropagationStopped = false;
             isImmediatePropagationStopped = false;
             isDefaultPrevented = false;
 
             propagationPhase = PropagationPhase.None;
 
+            m_OriginalMousePosition = Vector2.zero;
             m_CurrentTarget = null;
 
             dispatch = false;
@@ -151,7 +156,7 @@ namespace UnityEngine.Experimental.UIElements
     public abstract class EventBase<T> : EventBase where T : EventBase<T>, new()
     {
         static readonly long s_TypeId = RegisterEventType();
-        static readonly EventPool<T> s_Pool = new EventPool<T>();
+        static readonly ObjectPool<T> s_Pool = new ObjectPool<T>();
 
         public static long TypeId()
         {
@@ -171,7 +176,11 @@ namespace UnityEngine.Experimental.UIElements
         {
             if ((evt.flags & EventFlags.Pooled) == EventFlags.Pooled)
             {
+                // Reset the event before pooling to avoid leaking VisualElement
+                evt.Init();
+
                 s_Pool.Release(evt);
+
                 // To avoid double release from pool
                 evt.flags &= ~EventFlags.Pooled;
             }

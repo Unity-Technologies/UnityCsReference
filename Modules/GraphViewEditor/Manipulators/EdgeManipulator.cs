@@ -68,7 +68,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            m_Edge = (evt.target as VisualElement).parent as Edge;
+            m_Edge = (evt.target as VisualElement).GetFirstOfType<Edge>();
 
             if (m_Edge != null)
             {
@@ -96,9 +96,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // If one end of the edge is not already detached then
             if (!alreadyDetached)
             {
-                float delta = (evt.mousePosition - m_PressPos).magnitude;
+                float delta = (evt.mousePosition - m_PressPos).sqrMagnitude;
 
-                if (delta < s_StartDragDistance)
+                if (delta < (s_StartDragDistance * s_StartDragDistance))
                 {
                     return;
                 }
@@ -107,8 +107,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 Vector2 outputPos = new Vector2(m_Edge.output.GetGlobalCenter().x, m_Edge.output.GetGlobalCenter().y);
                 Vector2 inputPos = new Vector2(m_Edge.input.GetGlobalCenter().x, m_Edge.input.GetGlobalCenter().y);
 
-                float distanceFromOutput = (m_PressPos - outputPos).magnitude;
-                float distanceFromInput = (m_PressPos - inputPos).magnitude;
+                float distanceFromOutput = (m_PressPos - outputPos).sqrMagnitude;
+                float distanceFromInput = (m_PressPos - inputPos).sqrMagnitude;
 
                 m_DetachedFromInputPort = distanceFromInput < distanceFromOutput;
 
@@ -170,6 +170,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (CanStopManipulation(evt))
             {
+                target.ReleaseMouseCapture();
                 if (m_Active)
                 {
                     GraphView graphView = m_Edge.GetFirstAncestorOfType<GraphView>();
@@ -188,10 +189,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     }
                 }
                 Reset();
-                if (target.HasMouseCapture())
-                {
-                    target.ReleaseMouseCapture();
-                }
                 evt.StopPropagation();
             }
         }

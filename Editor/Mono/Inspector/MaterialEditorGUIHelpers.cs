@@ -30,10 +30,10 @@ namespace UnityEditor
         // Do currently edited materials have different render queue values?
         private bool HasMultipleMixedQueueValues()
         {
-            int queue = ShaderUtil.GetMaterialRawRenderQueue(targets[0] as Material);
+            int queue = (targets[0] as Material).rawRenderQueue;
             for (int i = 1; i < targets.Length; ++i)
             {
-                if (queue != ShaderUtil.GetMaterialRawRenderQueue(targets[i] as Material))
+                if (queue != (targets[i] as Material).rawRenderQueue)
                 {
                     return true;
                 }
@@ -55,7 +55,7 @@ namespace UnityEditor
             EditorGUI.showMixedValue = mixedValue;
 
             var mat = targets[0] as Material;
-            int curRawQueue = ShaderUtil.GetMaterialRawRenderQueue(mat);
+            int curRawQueue = mat.rawRenderQueue;
             int curDisplayQueue = mat.renderQueue; // this gets final queue value used for rendering, taking shader's queue into account
 
             // Figure out if we're using one of common queues, or a custom one

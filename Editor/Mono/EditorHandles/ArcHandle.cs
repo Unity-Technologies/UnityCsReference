@@ -2,7 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace UnityEditor.IMGUI.Controls
@@ -14,27 +14,49 @@ namespace UnityEditor.IMGUI.Controls
 
         static readonly float s_DefaultRadiusHandleSize = 0.03f;
 
-        static float DefaultAngleHandleSizeFunction(Vector3 position)
+        static readonly Dictionary<int, Quaternion> s_MostRecentValidAngleHandleOrientations =
+            new Dictionary<int, Quaternion>();
+
+        // only used inside of DefaultAngleHandleDrawFunction to look up and store the most recent valid orientation per handle
+        // done so that DefaultAngleHandleDrawFunction can be a static method, which makes angleHandleDrawFunction more usable by sub-classes
+        static int s_CurrentlyDrawingAngleHandleHash;
+
+        public static void DefaultAngleHandleDrawFunction(
+            int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
+            )
+        {
+            Handles.DrawLine(Vector3.zero, position);
+
+            // draw a cylindrical "hammer head" to indicate the direction the handle will move
+            Vector3 worldPosition = Handles.matrix.MultiplyPoint3x4(position);
+            Vector3 normal = worldPosition - Handles.matrix.MultiplyPoint3x4(Vector3.zero);
+            Vector3 tangent = Handles.matrix.MultiplyVector(Quaternion.AngleAxis(90f, Vector3.up) * position);
+            Quaternion mostRecentValidOrientation;
+            if (!s_MostRecentValidAngleHandleOrientations.TryGetValue(s_CurrentlyDrawingAngleHandleHash, out mostRecentValidOrientation))
+                mostRecentValidOrientation = Quaternion.identity;
+            rotation = Mathf.Approximately(tangent.sqrMagnitude, 0f) ?
+                mostRecentValidOrientation : Quaternion.LookRotation(tangent, normal);
+            s_MostRecentValidAngleHandleOrientations[s_CurrentlyDrawingAngleHandleHash] = rotation;
+            Matrix4x4 matrix =
+                Matrix4x4.TRS(worldPosition, rotation, (Vector3.one + Vector3.forward * s_DefaultAngleHandleSizeRatio));
+            using (new Handles.DrawingScope(matrix))
+                Handles.CylinderHandleCap(controlID, Vector3.zero, Quaternion.identity, size, eventType);
+            s_CurrentlyDrawingAngleHandleHash = 0;
+        }
+
+        public static float DefaultAngleHandleSizeFunction(Vector3 position)
         {
             return HandleUtility.GetHandleSize(position) * s_DefaultAngleHandleSize;
         }
 
-        static float DefaultRadiusHandleSizeFunction(Vector3 position)
+        public static float DefaultRadiusHandleSizeFunction(Vector3 position)
         {
             return HandleUtility.GetHandleSize(position) * s_DefaultRadiusHandleSize;
-        }
-
-        static void DefaultRadiusHandleDrawFunction(
-            int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
-            )
-        {
-            Handles.DotHandleCap(controlID, position, rotation, size, eventType);
         }
 
         private bool m_ControlIDsReserved = false;
         private int m_AngleHandleControlID;
         private int[] m_RadiusHandleControlIDs = new int[4];
-        private Quaternion m_MostRecentValidAngleHandleOrientation = Quaternion.identity;
 
         public float angle { get; set; }
 
@@ -60,6 +82,15 @@ namespace UnityEditor.IMGUI.Controls
         {
             radius = 1f;
             SetColorWithoutRadiusHandle(Color.white, 0.1f);
+            angleHandleDrawFunction = DefaultAngleHandleDrawFunction;
+            angleHandleSizeFunction = DefaultAngleHandleSizeFunction;
+            radiusHandleDrawFunction = Handles.DotHandleCap;
+            radiusHandleSizeFunction = DefaultRadiusHandleSizeFunction;
+        }
+
+        ~ArcHandle()
+        {
+            s_MostRecentValidAngleHandleOrientations.Remove(GetHashCode());
         }
 
         public void SetColorWithoutRadiusHandle(Color color, float fillColorAlpha)
@@ -147,15 +178,13 @@ namespace UnityEditor.IMGUI.Controls
                             Vector3 newPosition;
                             EditorGUI.BeginChangeCheck();
                             {
-                                float size = radiusHandleSizeFunction == null ?
-                                    DefaultRadiusHandleSizeFunction(radiusHandlePosition) :
-                                    radiusHandleSizeFunction(radiusHandlePosition);
+                                var size = radiusHandleSizeFunction == null ? 0f : radiusHandleSizeFunction(radiusHandlePosition);
                                 newPosition = Handles.Slider(
                                         m_RadiusHandleControlIDs[i],
                                         radiusHandlePosition,
                                         Vector3.forward,
                                         size,
-                                        radiusHandleDrawFunction ?? DefaultRadiusHandleDrawFunction,
+                                        radiusHandleDrawFunction,
                                         SnapSettings.move.z
                                         );
                             }
@@ -171,13 +200,12 @@ namespace UnityEditor.IMGUI.Controls
             // draw angle handle last so it will always take precedence when overlapping a radius handle
             using (new Handles.DrawingScope(Handles.color * angleHandleColor))
             {
-                if (Handles.color.a > 0f)
+                if (Handles.color.a > 0f && angleHandleDrawFunction != null)
                 {
                     EditorGUI.BeginChangeCheck();
                     {
-                        float size = angleHandleSizeFunction == null ?
-                            DefaultAngleHandleSizeFunction(angleHandlePosition) :
-                            angleHandleSizeFunction(angleHandlePosition);
+                        var size = angleHandleSizeFunction == null ? 0f : angleHandleSizeFunction(angleHandlePosition);
+                        s_CurrentlyDrawingAngleHandleHash = GetHashCode();
                         angleHandlePosition = Handles.Slider2D(
                                 m_AngleHandleControlID,
                                 angleHandlePosition,
@@ -185,7 +213,7 @@ namespace UnityEditor.IMGUI.Controls
                                 Vector3.forward,
                                 Vector3.right,
                                 size,
-                                angleHandleDrawFunction ?? DefaultAngleHandleDrawFunction,
+                                angleHandleDrawFunction,
                                 Vector2.zero
                                 );
                     }
@@ -206,24 +234,6 @@ namespace UnityEditor.IMGUI.Controls
             for (int i = 0; i < m_RadiusHandleControlIDs.Length; ++i)
                 m_RadiusHandleControlIDs[i] = GUIUtility.GetControlID(GetHashCode(), FocusType.Passive);
             m_ControlIDsReserved = true;
-        }
-
-        private void DefaultAngleHandleDrawFunction(
-            int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
-            )
-        {
-            Handles.DrawLine(Vector3.zero, position);
-
-            // draw a cylindrical "hammer head" to indicate the direction the handle will move
-            Vector3 worldPosition = Handles.matrix.MultiplyPoint3x4(position);
-            Vector3 normal = worldPosition - Handles.matrix.MultiplyPoint3x4(Vector3.zero);
-            Vector3 tangent = Handles.matrix.MultiplyVector(Quaternion.AngleAxis(90f, Vector3.up) * position);
-            m_MostRecentValidAngleHandleOrientation = rotation = tangent.sqrMagnitude == 0f ?
-                    m_MostRecentValidAngleHandleOrientation : Quaternion.LookRotation(tangent, normal);
-            Matrix4x4 matrix =
-                Matrix4x4.TRS(worldPosition, rotation, (Vector3.one + Vector3.forward * s_DefaultAngleHandleSizeRatio));
-            using (new Handles.DrawingScope(matrix))
-                Handles.CylinderHandleCap(controlID, Vector3.zero, Quaternion.identity, size, eventType);
         }
     }
 }

@@ -7,11 +7,11 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class ColorField : VisualElement, INotifyValueChanged<Color>
+    public class ColorField : BaseControl<Color>
     {
         private Color m_Value;
 
-        public Color value
+        public override Color value
         {
             get { return m_Value; }
             set
@@ -26,17 +26,22 @@ namespace UnityEditor.Experimental.UIElements
         public bool hdr { get; set; }
 
         private bool m_SetKbControl;
+        private bool m_ResetKbControl;
+
+        private IMGUIContainer m_ColorField;
 
         public ColorField()
         {
             showEyeDropper = true;
             showAlpha = true;
 
-            var colorField = new IMGUIContainer(OnGUIHandler) { name = "InternalColorField" };
-            Add(colorField);
+            m_ColorField = new IMGUIContainer(OnGUIHandler) { name = "InternalColorField" };
+            // Disable focus on the IMGUIContainer, it's handled by the parent VisualElement
+            m_ColorField.focusIndex = -1;
+            Add(m_ColorField);
         }
 
-        public void SetValueAndNotify(Color newValue)
+        public override void SetValueAndNotify(Color newValue)
         {
             if (value != newValue)
             {
@@ -49,17 +54,20 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        public void OnValueChanged(EventCallback<ChangeEvent<Color>> callback)
-        {
-            RegisterCallback(callback);
-        }
-
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
             if (evt.GetEventTypeId() == FocusEvent.TypeId())
                 m_SetKbControl = true;
+            if (evt.GetEventTypeId() == BlurEvent.TypeId())
+                m_ResetKbControl = true;
+        }
+
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
+        {
+            if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
+                m_ColorField.HandleEvent(evt);
         }
 
         private void OnGUIHandler()
@@ -76,6 +84,11 @@ namespace UnityEditor.Experimental.UIElements
             {
                 GUIUtility.SetKeyboardControlToFirstControlId();
                 m_SetKbControl = false;
+            }
+            if (m_ResetKbControl)
+            {
+                GUIUtility.keyboardControl = 0;
+                m_ResetKbControl = false;
             }
         }
     }

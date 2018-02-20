@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
@@ -24,6 +25,7 @@ namespace UnityEditor.Experimental.UIElements
             Factories.RegisterFactory<CurveField>((bag, __) => new CurveField());
             Factories.RegisterFactory<ObjectField>((bag, __) => new ObjectField());
             Factories.RegisterFactory<ColorField>((bag, __) => new ColorField());
+            Factories.RegisterFactory<EnumField>((bag, __) => new EnumField());
 
             // Compounds
             Factories.RegisterFactory<RectField>((bag, __) => new RectField());

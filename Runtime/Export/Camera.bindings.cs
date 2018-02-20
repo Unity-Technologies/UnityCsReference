@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
+using uei = UnityEngine.Internal;
 
 using OpaqueSortMode = UnityEngine.Rendering.OpaqueSortMode;
 using CameraEvent = UnityEngine.Rendering.CameraEvent;
@@ -50,12 +51,29 @@ namespace UnityEngine
         extern public float aspect { get; set; }
         extern public void ResetAspect();
 
+        extern public float streamingMipmapBias { get; set; }
+        extern public bool streamingInfluence { get; set; }
+
         extern public Vector3 velocity { get; }
 
         extern public int cullingMask { get; set; }
         extern public int eventMask { get; set; }
         extern public bool layerCullSpherical { get; set; }
         extern public CameraType cameraType { get; set; }
+
+        [FreeFunction("CameraScripting::GetLayerCullDistances", HasExplicitThis = true)] extern private float[] GetLayerCullDistances();
+        [FreeFunction("CameraScripting::SetLayerCullDistances", HasExplicitThis = true)] extern private void SetLayerCullDistances([NotNull] float[] d);
+        public float[] layerCullDistances
+        {
+            get { return GetLayerCullDistances(); }
+            set
+            {
+                if (value.Length != 32)
+                    throw new UnityException("Array needs to contain exactly 32 floats for layerCullDistances.");
+                SetLayerCullDistances(value);
+            }
+        }
+        extern internal static int PreviewCullingLayer {[FreeFunction("CameraScripting::GetPreviewCullingLayer")] get; }
 
         extern public bool useOcclusionCulling { get; set; }
         extern public Matrix4x4 cullingMatrix { get; set; }
@@ -81,6 +99,16 @@ namespace UnityEngine
 
         extern public RenderTexture targetTexture { get; set; }
         extern public RenderTexture activeTexture {[NativeName("GetCurrentTargetTexture")] get; }
+        extern public int targetDisplay { get; set; }
+
+        [FreeFunction("CameraScripting::SetTargetBuffers",  HasExplicitThis = true)] extern private void SetTargetBuffersImpl(RenderBuffer color, RenderBuffer depth);
+        public void SetTargetBuffers(RenderBuffer colorBuffer, RenderBuffer depthBuffer) { SetTargetBuffersImpl(colorBuffer, depthBuffer); }
+
+        [FreeFunction("CameraScripting::SetTargetBuffers",  HasExplicitThis = true)] extern private void SetTargetBuffersMRTImpl(RenderBuffer[] color, RenderBuffer depth);
+        public void SetTargetBuffers(RenderBuffer[] colorBuffer, RenderBuffer depthBuffer) { SetTargetBuffersMRTImpl(colorBuffer, depthBuffer); }
+
+        extern internal string[] GetCameraBufferWarnings();
+
 
         extern public Matrix4x4 cameraToWorldMatrix { get; }
         extern public Matrix4x4 worldToCameraMatrix { get; set; }
@@ -93,18 +121,24 @@ namespace UnityEngine
 
         [FreeFunction("CameraScripting::CalculateObliqueMatrix", HasExplicitThis = true)] extern public Matrix4x4 CalculateObliqueMatrix(Vector4 clipPlane);
 
-        extern public Vector3 WorldToScreenPoint(Vector3 position);
-        extern public Vector3 WorldToViewportPoint(Vector3 position);
-        extern public Vector3 ViewportToWorldPoint(Vector3 position);
-        extern public Vector3 ScreenToWorldPoint(Vector3 position);
+        extern public Vector3 WorldToScreenPoint(Vector3 position, MonoOrStereoscopicEye eye);
+        extern public Vector3 WorldToViewportPoint(Vector3 position, MonoOrStereoscopicEye eye);
+        extern public Vector3 ViewportToWorldPoint(Vector3 position, MonoOrStereoscopicEye eye);
+        extern public Vector3 ScreenToWorldPoint(Vector3 position, MonoOrStereoscopicEye eye);
+        public Vector3 WorldToScreenPoint(Vector3 position) { return WorldToScreenPoint(position, MonoOrStereoscopicEye.Mono); }
+        public Vector3 WorldToViewportPoint(Vector3 position) { return WorldToViewportPoint(position, MonoOrStereoscopicEye.Mono); }
+        public Vector3 ViewportToWorldPoint(Vector3 position) { return ViewportToWorldPoint(position, MonoOrStereoscopicEye.Mono); }
+        public Vector3 ScreenToWorldPoint(Vector3 position) { return ScreenToWorldPoint(position, MonoOrStereoscopicEye.Mono); }
         extern public Vector3 ScreenToViewportPoint(Vector3 position);
         extern public Vector3 ViewportToScreenPoint(Vector3 position);
 
-        extern private Ray ViewportPointToRay(Vector2 pos);
-        public Ray ViewportPointToRay(Vector3 pos) { return ViewportPointToRay((Vector2)pos); }
+        extern private Ray ViewportPointToRay(Vector2 pos, MonoOrStereoscopicEye eye);
+        public Ray ViewportPointToRay(Vector3 pos, MonoOrStereoscopicEye eye) { return ViewportPointToRay((Vector2)pos, eye); }
+        public Ray ViewportPointToRay(Vector3 pos) { return ViewportPointToRay(pos, MonoOrStereoscopicEye.Mono); }
 
-        extern private Ray ScreenPointToRay(Vector2 pos);
-        public Ray ScreenPointToRay(Vector3 pos) { return ScreenPointToRay((Vector2)pos); }
+        extern private Ray ScreenPointToRay(Vector2 pos, MonoOrStereoscopicEye eye);
+        public Ray ScreenPointToRay(Vector3 pos, MonoOrStereoscopicEye eye) { return ScreenPointToRay((Vector2)pos, eye); }
+        public Ray ScreenPointToRay(Vector3 pos) { return ScreenPointToRay(pos, MonoOrStereoscopicEye.Mono); }
 
         [FreeFunction("CameraScripting::RaycastTry", HasExplicitThis = true)]   extern internal GameObject RaycastTry(Ray ray, float distance, int layerMask);
         [FreeFunction("CameraScripting::RaycastTry2D", HasExplicitThis = true)] extern internal GameObject RaycastTry2D(Ray ray, float distance, int layerMask);
@@ -122,6 +156,12 @@ namespace UnityEngine
         extern public static Camera main {[FreeFunction("FindMainCamera")] get; }
         extern public static Camera current {[FreeFunction("GetCurrentCameraPtr")] get; }
 
+        extern public UnityEngine.SceneManagement.Scene scene
+        {
+            [FreeFunction("CameraScripting::GetScene", HasExplicitThis = true)] get;
+            [FreeFunction("CameraScripting::SetScene", HasExplicitThis = true)] set;
+        }
+
 
         public enum StereoscopicEye { Left, Right };
         public enum MonoOrStereoscopicEye { Left, Right, Mono };
@@ -131,6 +171,7 @@ namespace UnityEngine
         extern public float stereoConvergence { get; set; }
         extern public bool  areVRStereoViewMatricesWithinSingleCullTolerance {[NativeName("AreVRStereoViewMatricesWithinSingleCullTolerance")] get; }
         extern public StereoTargetEyeMask stereoTargetEye { get; set; }
+        extern public MonoOrStereoscopicEye stereoActiveEye {[FreeFunction("CameraScripting::GetStereoActiveEye", HasExplicitThis = true)] get; }
 
         extern public Matrix4x4 GetStereoNonJitteredProjectionMatrix(StereoscopicEye eye);
         extern public Matrix4x4 GetStereoViewMatrix(StereoscopicEye eye);
@@ -144,16 +185,44 @@ namespace UnityEngine
         extern public void ResetStereoViewMatrices();
 
 
+        [FreeFunction("CameraScripting::GetAllCamerasCount")] extern private static int GetAllCamerasCount();
+        [FreeFunction("CameraScripting::GetAllCameras")] extern private static int GetAllCamerasImpl([Out][NotNull] Camera[] cam);
+
+        public static int allCamerasCount { get { return GetAllCamerasCount(); } }
+        public static Camera[] allCameras
+        {
+            get { Camera[] cam = new Camera[allCamerasCount]; GetAllCamerasImpl(cam); return cam; }
+        }
+        public static int GetAllCameras(Camera[] cameras)
+        {
+            if (cameras.Length < allCamerasCount)
+                throw new ArgumentException("Passed in array to fill with cameras is to small to hold the number of cameras. Use Camera.allCamerasCount to get the needed size.");
+            return GetAllCamerasImpl(cameras);
+        }
+
+        [FreeFunction("CameraScripting::RenderToCubemap", HasExplicitThis = true)] extern private bool RenderToCubemapImpl(Texture tex, [uei.DefaultValue("63")] int faceMask);
+        public bool RenderToCubemap(Cubemap cubemap, int faceMask)          { return RenderToCubemapImpl(cubemap, faceMask); }
+        public bool RenderToCubemap(Cubemap cubemap)                        { return RenderToCubemapImpl(cubemap, 63); }
+        public bool RenderToCubemap(RenderTexture cubemap, int faceMask)    { return RenderToCubemapImpl(cubemap, faceMask); }
+        public bool RenderToCubemap(RenderTexture cubemap)                  { return RenderToCubemapImpl(cubemap, 63); }
+
+        // TODO: it should be collapsed with others
+        [NativeName("RenderToCubemap")] extern private bool RenderToCubemapEyeImpl(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye);
+        public bool RenderToCubemap(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye)
+        {
+            return RenderToCubemapEyeImpl(cubemap, faceMask, stereoEye);
+        }
+
+        [FreeFunction("CameraScripting::Render", HasExplicitThis = true)]            extern public void Render();
+        [FreeFunction("CameraScripting::RenderWithShader", HasExplicitThis = true)]  extern public void RenderWithShader(Shader shader, string replacementTag);
+        [FreeFunction("CameraScripting::RenderDontRestore", HasExplicitThis = true)] extern public void RenderDontRestore();
+
+        [FreeFunction("CameraScripting::SetupCurrent")] extern public static void SetupCurrent(Camera cur);
+        [FreeFunction("CameraScripting::CopyFrom", HasExplicitThis = true)] extern public void CopyFrom(Camera other);
+
         extern public int  commandBufferCount { get; }
         extern public void RemoveCommandBuffers(CameraEvent evt);
         extern public void RemoveAllCommandBuffers();
-
-        [NativeName("RenderToCubemap")] extern private bool RenderToCubemapImpl(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye);
-
-        public bool RenderToCubemap(RenderTexture cubemap, int faceMask, MonoOrStereoscopicEye stereoEye)
-        {
-            return RenderToCubemapImpl(cubemap, faceMask, stereoEye);
-        }
 
         // in old bindings these functions code like this:
         //   self->AddCommandBuffer(evt, &*buffer);
@@ -162,9 +231,9 @@ namespace UnityEngine
 
         // extern public void AddCommandBuffer(CameraEvent evt, [NotNull] CommandBuffer buffer);
         // extern public void RemoveCommandBuffer(CameraEvent evt, [NotNull] CommandBuffer buffer);
-        [NativeName("AddCommandBuffer")]    extern private void AddCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
-        [NativeName("AddCommandBufferAsync")]    extern private void AddCommandBufferAsyncImpl(CameraEvent evt, [NotNull] CommandBuffer buffer, ComputeQueueType queueType);
-        [NativeName("RemoveCommandBuffer")] extern private void RemoveCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
+        [NativeName("AddCommandBuffer")]      extern private void AddCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
+        [NativeName("AddCommandBufferAsync")] extern private void AddCommandBufferAsyncImpl(CameraEvent evt, [NotNull] CommandBuffer buffer, ComputeQueueType queueType);
+        [NativeName("RemoveCommandBuffer")]   extern private void RemoveCommandBufferImpl(CameraEvent evt, [NotNull] CommandBuffer buffer);
 
         public void AddCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
@@ -189,14 +258,19 @@ namespace UnityEngine
     {
         // called before a camera culls the scene.
         // void OnPreCull();
+
         // called before a camera starts rendering the scene.
         // void OnPreRender();
+
         // called after a camera has finished rendering the scene.
         // void OnPostRender();
+
         // called after all rendering is complete to render image
         // void OnRenderImage(RenderTexture source, RenderTexture destination);
+
         // called after camera has rendered the scene.
         // void OnRenderObject();
+
         // called once for each camera if the object is visible.
         // void OnWillRenderObject();
 

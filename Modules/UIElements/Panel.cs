@@ -104,6 +104,9 @@ namespace UnityEngine.Experimental.UIElements
 
         public abstract bool keepPixelCacheOnWorldBoundChange { get; set; }
 
+        internal virtual bool hasDirtyTransform { get; set; }
+
+
         public BasePanelDebug panelDebug { get; set; }
     }
 
@@ -218,7 +221,7 @@ namespace UnityEngine.Experimental.UIElements
             m_RootContainer = new VisualElement();
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             m_RootContainer.persistenceKey = "PanelContainer"; // Required!
-            visualTree.ChangePanel(this);
+            visualTree.SetPanel(this);
             focusController = new FocusController(new VisualElementFocusRing(visualTree));
             m_StyleContext = new StyleSheets.StyleContext(m_RootContainer);
 
@@ -237,9 +240,22 @@ namespace UnityEngine.Experimental.UIElements
 
         VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
         {
+            Profiler.BeginSample("Panel.PickAll");
+            var result = PerformPick(root, point, picked);
+            Profiler.EndSample();
+            return result;
+        }
+
+        private VisualElement PerformPick(VisualElement root, Vector2 point, List<VisualElement> picked = null)
+        {
             // do not pick invisible
-            if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
+            if (root.visible == false)
                 return null;
+
+            if (root.pickingMode == PickingMode.Ignore && root.shadow.childCount == 0)
+            {
+                return null;
+            }
 
             Vector3 localPoint = root.WorldToLocal(point);
             bool containsPoint = root.ContainsPoint(localPoint);
@@ -250,20 +266,21 @@ namespace UnityEngine.Experimental.UIElements
                 return null;
             }
 
-            if (picked != null && root.enabledInHierarchy && root.pickingMode == PickingMode.Position)
-            {
-                picked.Add(root);
-            }
-
             VisualElement returnedChild = null;
             // Depth first in reverse order, do children
             for (int i = root.shadow.childCount - 1; i >= 0; i--)
             {
                 var child = root.shadow[i];
-                var result = PickAll(child, point, picked);
+                var result = PerformPick(child, point, picked);
                 if (returnedChild == null && result != null)
                     returnedChild = result;
             }
+
+            if (picked != null && root.enabledInHierarchy && root.pickingMode == PickingMode.Position && containsPoint)
+            {
+                picked.Add(root);
+            }
+
             if (returnedChild != null)
                 return returnedChild;
 
@@ -306,8 +323,6 @@ namespace UnityEngine.Experimental.UIElements
 
         public override VisualElement Pick(Vector2 point)
         {
-            ValidateLayout();
-
             return PickAll(visualTree, point);
         }
 
@@ -375,9 +390,9 @@ namespace UnityEngine.Experimental.UIElements
 
             // update flex once
             int validateLayoutCount = 0;
-            while (visualTree.cssNode.IsDirty)
+            while (visualTree.yogaNode.IsDirty)
             {
-                visualTree.cssNode.CalculateLayout();
+                visualTree.yogaNode.CalculateLayout();
                 ValidateSubTree(visualTree);
 
                 if (validateLayoutCount++ >= kMaxValidateLayoutCount)
@@ -386,20 +401,38 @@ namespace UnityEngine.Experimental.UIElements
                     break;
                 }
             }
+
+            if (hasDirtyTransform)
+            {
+                hasDirtyTransform = false;
+                EventDispatcher eventDispatcher = UIElementsUtility.eventDispatcher as EventDispatcher;
+                if (eventDispatcher != null)
+                {
+                    eventDispatcher.UpdateElementUnderMouse(this);
+                }
+            }
+
             Profiler.EndSample();
         }
 
-        bool ValidateSubTree(VisualElement root)
+        void ValidateSubTree(VisualElement root)
         {
-            // if the last layout is different than this one we must dirty transform on children
-            if (root.renderData.lastLayout != new Rect(root.cssNode.LayoutX, root.cssNode.LayoutY, root.cssNode.LayoutWidth, root.cssNode.LayoutHeight))
+            Rect yogaRect = new Rect(root.yogaNode.LayoutX, root.yogaNode.LayoutY, root.yogaNode.LayoutWidth, root.yogaNode.LayoutHeight);
+            Rect lastRect = root.renderData.lastLayout;
+            bool rectChanged = lastRect != yogaRect;
+
+            // if the last layout rect is different than the current one we must dirty transform on children
+            if (rectChanged)
             {
-                root.Dirty(ChangeType.Transform);
-                root.renderData.lastLayout = new Rect(root.cssNode.LayoutX, root.cssNode.LayoutY, root.cssNode.LayoutWidth, root.cssNode.LayoutHeight);
+                if (lastRect.position != yogaRect.position)
+                {
+                    root.Dirty(ChangeType.Transform);
+                }
+                root.renderData.lastLayout = yogaRect;
             }
 
             // ignore clean sub trees
-            bool hasNewLayout = root.cssNode.HasNewLayout;
+            bool hasNewLayout = root.yogaNode.HasNewLayout;
             if (hasNewLayout)
             {
                 for (int i = 0; i < root.shadow.childCount; ++i)
@@ -408,17 +441,21 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            using (var evt = PostLayoutEvent.GetPooled(hasNewLayout))
+            if (rectChanged)
             {
-                evt.target = root;
-                UIElementsUtility.eventDispatcher.DispatchEvent(evt, this);
+                using (var evt = GeometryChangedEvent.GetPooled(lastRect, yogaRect))
+                {
+                    evt.target = root;
+                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, this);
+                }
             }
 
             // reset both flags at the end
             root.ClearDirty(ChangeType.Layout);
-            root.cssNode.MarkLayoutSeen();
-
-            return hasNewLayout;
+            if (hasNewLayout)
+            {
+                root.yogaNode.MarkLayoutSeen();
+            }
         }
 
         // get the AA aligned bound
@@ -449,7 +486,7 @@ namespace UnityEngine.Experimental.UIElements
             if (root == null || root.panel != this)
                 return;
 
-            if ((root.pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible ||
+            if (root.visible == false ||
                 root.style.opacity.GetSpecifiedValueOrDefault(1.0f) < Mathf.Epsilon)
                 return;
 
@@ -484,12 +521,12 @@ namespace UnityEngine.Experimental.UIElements
                 // validate cache texture size first
                 var worldBound = root.worldBound;
 
-                int w = Mathf.RoundToInt(worldBound.xMax) - Mathf.RoundToInt(worldBound.xMin);
-                int h = Mathf.RoundToInt(worldBound.yMax) - Mathf.RoundToInt(worldBound.yMin);
+                int w = (int)GUIUtility.Internal_Roundf(worldBound.xMax) - (int)GUIUtility.Internal_Roundf(worldBound.xMin);
+                int h = (int)GUIUtility.Internal_Roundf(worldBound.yMax) - (int)GUIUtility.Internal_Roundf(worldBound.yMin);
 
                 // This needs to be consistent with RoundRect() in GUITexture.cpp. Otherwise, the texture may be stretched.
-                int textureWidth = Mathf.RoundToInt(w * GUIUtility.pixelsPerPoint);
-                int textureHeight = Mathf.RoundToInt(h * GUIUtility.pixelsPerPoint);
+                int textureWidth = (int)GUIUtility.Internal_Roundf(w * GUIUtility.pixelsPerPoint);
+                int textureHeight = (int)GUIUtility.Internal_Roundf(h * GUIUtility.pixelsPerPoint);
 
                 // Prevent the texture size from going empty, which may occur if the element has a sub-pixel size
                 textureWidth = Math.Max(textureWidth, 1);
@@ -546,7 +583,7 @@ namespace UnityEngine.Experimental.UIElements
 
                         // Calculate the offset required to translate the origin of the rect to the upper left corner
                         // of the pixel cache. We need to round because the rect will be rounded when rendered.
-                        var childrenOffset = Matrix4x4.Translate(new Vector3(-Mathf.RoundToInt(worldBound.x), -Mathf.RoundToInt(worldBound.y), 0));
+                        var childrenOffset = Matrix4x4.Translate(new Vector3(-GUIUtility.Internal_Roundf(worldBound.x), -GUIUtility.Internal_Roundf(worldBound.y), 0));
 
                         Matrix4x4 offsetWorldTransform = childrenOffset * root.worldTransform;
 
@@ -633,11 +670,11 @@ namespace UnityEngine.Experimental.UIElements
 
                 var painterParams = new TextureStylePainterParameters
                 {
-                    rect = root.rect,
+                    rect = root.alignedRect,
                     uv = new Rect(0, 0, 1, 1),
                     texture = root.renderData.pixelCache,
                     color = Color.white,
-                    scaleMode = ScaleMode.ScaleAndCrop,
+                    scaleMode = ScaleMode.StretchToFill,
                     usePremultiplyAlpha = true
                 };
 

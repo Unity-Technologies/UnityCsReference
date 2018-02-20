@@ -86,7 +86,7 @@ internal sealed partial class EditorConnectionInternal : IPlayerEditorConnection
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  int Connect (string IP, int port) ;
+    extern public static  int ConnectPlayerUsbmuxd (string IP, int port) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

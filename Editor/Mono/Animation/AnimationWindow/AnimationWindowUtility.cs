@@ -186,24 +186,38 @@ namespace UnityEditorInternal
             else if (type == typeof(bool) || type == typeof(float) || type == typeof(int))
             {
                 Keyframe tempKey = new Keyframe(time.time, (float)value);
-                if (type == typeof(bool) || type == typeof(int))
+                if (type == typeof(bool))
                 {
-                    if (type == typeof(int) && !curve.isDiscreteCurve)
+                    AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
+                    AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Constant);
+
+                    AnimationUtility.SetKeyBroken(ref tempKey, true);
+                }
+                else if (type == typeof(int))
+                {
+                    // Create temporary curve to get proper tangents
+                    AnimationCurve animationCurve = curve.ToAnimationCurve();
+                    if (animationCurve.length <= 1)
                     {
-                        AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Linear);
-                        AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Linear);
+                        TangentMode tangentMode = curve.isDiscreteCurve ? TangentMode.Constant : TangentMode.Linear;
+                        AnimationUtility.SetKeyLeftTangentMode(ref tempKey, tangentMode);
+                        AnimationUtility.SetKeyRightTangentMode(ref tempKey, tangentMode);
                     }
                     else
                     {
-                        AnimationUtility.SetKeyLeftTangentMode(ref tempKey, TangentMode.Constant);
-                        AnimationUtility.SetKeyRightTangentMode(ref tempKey, TangentMode.Constant);
+                        int keyIndex = animationCurve.AddKey(tempKey);
+                        if (keyIndex != -1)
+                        {
+                            CurveUtility.SetKeyModeFromContext(animationCurve, keyIndex);
+                            tempKey = animationCurve[keyIndex];
+                        }
                     }
 
                     AnimationUtility.SetKeyBroken(ref tempKey, true);
                 }
                 else
                 {
-                    // Create temporary curve for getting proper tangents
+                    // Create temporary curve to get proper tangents
                     AnimationCurve animationCurve = curve.ToAnimationCurve();
 
                     int keyIndex = animationCurve.AddKey(tempKey);

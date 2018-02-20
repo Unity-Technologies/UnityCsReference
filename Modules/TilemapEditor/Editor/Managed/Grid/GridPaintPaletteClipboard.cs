@@ -340,6 +340,7 @@ namespace UnityEditor
             {
                 m_CameraPosition = previewUtility.camera.transform.position;
                 m_CameraOrthographicSize = previewUtility.camera.orthographicSize;
+                previewUtility.Cleanup();
             }
             m_CameraPositionSaved = true;
             SavePaletteIfNecessary();
@@ -347,12 +348,6 @@ namespace UnityEditor
             Undo.undoRedoPerformed -= UndoRedoPerformed;
             EditorApplication.editorApplicationQuit -= EditorApplicationQuit;
             base.OnDisable();
-        }
-
-        private void OnDestroy()
-        {
-            if (m_Owner)
-                previewUtility.Cleanup();
         }
 
         public override void OnGUI()
@@ -380,28 +375,8 @@ namespace UnityEditor
 
             HandleMouseEnterLeave();
 
-            if (guiRect.Contains(Event.current.mousePosition))
-            {
-                if (m_PreviousMousePosition.HasValue && !guiRect.Contains(m_PreviousMousePosition.Value) || !m_PreviousMousePosition.HasValue)
-                {
-                    if (GridPaintingState.activeBrushEditor != null)
-                    {
-                        GridPaintingState.activeBrushEditor.OnMouseEnter();
-                    }
-                }
+            if (guiRect.Contains(Event.current.mousePosition) || Event.current.type != EventType.MouseDown)
                 base.OnGUI();
-            }
-            else
-            {
-                if (m_PreviousMousePosition.HasValue && guiRect.Contains(m_PreviousMousePosition.Value) && !guiRect.Contains(Event.current.mousePosition))
-                {
-                    if (GridPaintingState.activeBrushEditor != null)
-                    {
-                        GridPaintingState.activeBrushEditor.OnMouseLeave();
-                        Repaint();
-                    }
-                }
-            }
 
             if (Event.current.type == EventType.Repaint)
                 Render();
@@ -886,6 +861,11 @@ namespace UnityEditor
             m_ActivePick = new RectInt(position.min.x, position.min.y, position.size.x, position.size.y);
         }
 
+        protected override void OnBrushPickCancelled()
+        {
+            m_ActivePick = null;
+        }
+
         private void PingTileAsset(RectInt rect)
         {
             // Only able to ping asset if only one asset is selected
@@ -967,6 +947,28 @@ namespace UnityEditor
                     GridPaintingState.activeGrid = null;
                     Event.current.Use();
                     Repaint();
+                }
+            }
+
+            if (guiRect.Contains(Event.current.mousePosition))
+            {
+                if (m_PreviousMousePosition.HasValue && !guiRect.Contains(m_PreviousMousePosition.Value) || !m_PreviousMousePosition.HasValue)
+                {
+                    if (GridPaintingState.activeBrushEditor != null)
+                    {
+                        GridPaintingState.activeBrushEditor.OnMouseEnter();
+                    }
+                }
+            }
+            else
+            {
+                if (m_PreviousMousePosition.HasValue && guiRect.Contains(m_PreviousMousePosition.Value) && !guiRect.Contains(Event.current.mousePosition))
+                {
+                    if (GridPaintingState.activeBrushEditor != null)
+                    {
+                        GridPaintingState.activeBrushEditor.OnMouseLeave();
+                        Repaint();
+                    }
                 }
             }
         }

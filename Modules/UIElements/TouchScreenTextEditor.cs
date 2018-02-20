@@ -20,7 +20,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public TouchScreenTextEditorEventHandler(TextEditorEngine editorEngine, TextInputFieldBase textInputField)
+        public TouchScreenTextEditorEventHandler(TextEditorEngine editorEngine, ITextInputField textInputField)
             : base(editorEngine, textInputField)
         {
             secureText = string.Empty;

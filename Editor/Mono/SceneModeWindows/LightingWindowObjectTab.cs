@@ -181,6 +181,8 @@ namespace UnityEditor
                     if (Event.current.commandName == EventCommandNames.FrameSelected)
                     {
                         Vector4 lightmapTilingOffset = LightmapVisualizationUtility.GetLightmapTilingOffset(lightmapType);
+                        if ((textureType == GITextureType.BakedAlbedo || textureType == GITextureType.BakedEmissive) && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+                            lightmapTilingOffset = new Vector4(1f, 1f, 0f, 0f);
 
                         Vector2 min = new Vector2(lightmapTilingOffset.z, lightmapTilingOffset.w);
                         Vector2 max = min + new Vector2(lightmapTilingOffset.x, lightmapTilingOffset.y);

@@ -67,7 +67,7 @@ namespace UnityEngine.Experimental.UIElements
 
         new void OnMouseMove(MouseMoveEvent evt)
         {
-            if (target.HasMouseCapture())
+            if (m_Active)
             {
                 // Let base class Clickable handle the mouse event first
                 // (although nothing much happens in the base class on mouse drags)

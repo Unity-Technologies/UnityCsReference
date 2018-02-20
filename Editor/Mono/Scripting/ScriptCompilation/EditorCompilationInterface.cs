@@ -5,6 +5,7 @@
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using System;
 using UnityEditor.Compilation;
+using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
 using System.Collections.Generic;
 
@@ -110,6 +111,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void DirtyPredefinedAssemblyScripts(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
+        {
+            EmitExceptionAsError(() => Instance.DirtyPredefinedAssemblyScripts(options, platformGroup, platform));
+        }
+
+        [RequiredByNativeCode]
         public static void DirtyAllScripts()
         {
             Instance.DirtyAllScripts();
@@ -119,6 +126,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static void DirtyScript(string path)
         {
             Instance.DirtyScript(path);
+        }
+
+        [RequiredByNativeCode]
+        public static void ClearDirtyScripts()
+        {
+            Instance.ClearDirtyScripts();
         }
 
         [RequiredByNativeCode]
@@ -188,9 +201,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static bool CompileCustomScriptAssemblies(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform)
+        {
+            return EmitExceptionAsError(() => Instance.CompileCustomScriptAssemblies(definesOptions, platformGroup, platform), false);
+        }
+
+        [RequiredByNativeCode]
         public static bool DoesProjectFolderHaveAnyDirtyScripts()
         {
             return Instance.DoesProjectFolderHaveAnyDirtyScripts();
+        }
+
+        [RequiredByNativeCode]
+        public static bool AreAllScriptsDirty()
+        {
+            return Instance.AreAllScriptsDirty();
         }
 
         [RequiredByNativeCode]
@@ -230,6 +255,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static EditorCompilation.CompileStatus PollCompilation()
+        {
+            return EmitExceptionAsError(() => Instance.PollCompilation(), EditorCompilation.CompileStatus.Idle);
+        }
+
+        [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssemblies()
         {
             return Instance.GetTargetAssemblies();
@@ -244,7 +275,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static MonoIsland[] GetAllMonoIslands()
         {
-            return Instance.GetAllMonoIslands();
+            var options = GetAdditionalEditorScriptCompilationOptions();
+            return Instance.GetAllMonoIslands(options);
+        }
+
+        public static EditorScriptCompilationOptions GetAdditionalEditorScriptCompilationOptions()
+        {
+            var options = EditorScriptCompilationOptions.BuildingEmpty;
+
+            if (PlayerSettings.allowUnsafeCode)
+                options |= EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode;
+
+            return options;
+        }
+
+        public static ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>() where T : SupportedLanguage
+        {
+            var additionalOptions = GetAdditionalEditorScriptCompilationOptions();
+            return Instance.GetAllScriptAssembliesForLanguage<T>(additionalOptions);
+        }
+
+        public static ScriptAssembly GetScriptAssemblyForLanguage<T>(string assemblyNameOrPath) where T : SupportedLanguage
+        {
+            var additionalOptions = GetAdditionalEditorScriptCompilationOptions();
+
+            return Instance.GetScriptAssemblyForLanguage<T>(assemblyNameOrPath, additionalOptions);
         }
     }
 }

@@ -2,54 +2,54 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine.CSSLayout;
+using UnityEngine.Yoga;
 
 namespace UnityEngine.Experimental.UIElements.StyleEnums
 {
     public enum PositionType
     {
-        Relative = CSSPositionType.Relative,
-        Absolute = CSSPositionType.Absolute,
+        Relative = YogaPositionType.Relative,
+        Absolute = YogaPositionType.Absolute,
         Manual
     }
 
     public enum Overflow
     {
-        Visible = CSSOverflow.Visible,
-        Scroll = CSSOverflow.Scroll,
-        Hidden = CSSOverflow.Hidden
+        Visible = YogaOverflow.Visible,
+        Scroll = YogaOverflow.Scroll,
+        Hidden = YogaOverflow.Hidden
     }
 
     public enum FlexDirection
     {
-        Column = CSSFlexDirection.Column,
-        ColumnReverse = CSSFlexDirection.ColumnReverse,
-        Row = CSSFlexDirection.Row,
-        RowReverse = CSSFlexDirection.RowReverse
+        Column = YogaFlexDirection.Column,
+        ColumnReverse = YogaFlexDirection.ColumnReverse,
+        Row = YogaFlexDirection.Row,
+        RowReverse = YogaFlexDirection.RowReverse
     }
 
     public enum Wrap
     {
-        NoWrap = CSSWrap.NoWrap,
-        Wrap = CSSWrap.Wrap
+        NoWrap = YogaWrap.NoWrap,
+        Wrap = YogaWrap.Wrap
     }
 
     public enum Align
     {
-        Auto = CSSAlign.Auto,
-        FlexStart = CSSAlign.FlexStart,
-        Center = CSSAlign.Center,
-        FlexEnd = CSSAlign.FlexEnd,
-        Stretch = CSSAlign.Stretch
+        Auto = YogaAlign.Auto,
+        FlexStart = YogaAlign.FlexStart,
+        Center = YogaAlign.Center,
+        FlexEnd = YogaAlign.FlexEnd,
+        Stretch = YogaAlign.Stretch
     }
 
     public enum Justify
     {
-        FlexStart = CSSJustify.FlexStart,
-        Center = CSSJustify.Center,
-        FlexEnd = CSSJustify.FlexEnd,
-        SpaceBetween = CSSJustify.SpaceBetween,
-        SpaceAround = CSSJustify.SpaceAround
+        FlexStart = YogaJustify.FlexStart,
+        Center = YogaJustify.Center,
+        FlexEnd = YogaJustify.FlexEnd,
+        SpaceBetween = YogaJustify.SpaceBetween,
+        SpaceAround = YogaJustify.SpaceAround
     }
 
     public enum ImageScaleMode
@@ -57,5 +57,11 @@ namespace UnityEngine.Experimental.UIElements.StyleEnums
         StretchToFill = 0,
         ScaleAndCrop = 1,
         ScaleToFit = 2
+    }
+
+    public enum Visibility
+    {
+        Visible = 0,
+        Hidden = 1
     }
 }

@@ -9,9 +9,52 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class ContextualMenu
     {
+        public class EventInfo
+        {
+            public EventModifiers modifiers { get; }
+            public Vector2 mousePosition { get; }
+            public Vector2 localMousePosition { get; }
+            char character { get; }
+            KeyCode keyCode { get; }
+
+            public EventInfo(EventBase e)
+            {
+                IMouseEvent mouseEvent = e as IMouseEvent;
+
+                if (mouseEvent != null)
+                {
+                    mousePosition = mouseEvent.mousePosition;
+                    localMousePosition = mouseEvent.localMousePosition;
+                    modifiers = mouseEvent.modifiers;
+                    character = '\0';
+                    keyCode = KeyCode.None;
+                }
+                else
+                {
+                    IKeyboardEvent keyboardEvent = e as IKeyboardEvent;
+                    if (keyboardEvent != null)
+                    {
+                        character = keyboardEvent.character;
+                        keyCode = keyboardEvent.keyCode;
+                        modifiers = keyboardEvent.modifiers;
+                        mousePosition = Vector2.zero;
+                        localMousePosition = Vector2.zero;
+                    }
+                }
+            }
+        }
+
         public abstract class MenuItem {}
 
-        public class Separator : MenuItem {}
+        public class Separator : MenuItem
+        {
+            public string subMenuPath;
+
+            public Separator(string subMenuPath)
+            {
+                this.subMenuPath = subMenuPath;
+            }
+        }
 
         public class MenuAction : MenuItem
         {
@@ -27,81 +70,97 @@ namespace UnityEngine.Experimental.UIElements
             public string name;
             public StatusFlags status { get; private set; }
 
-            Action<EventBase> actionCallback;
-            Func<EventBase, StatusFlags> actionStatusCallback;
+            public EventInfo eventInfo { get; private set; }
+
+            public object userData { get; private set; }
+            Action<MenuAction> actionCallback;
+            Func<MenuAction, StatusFlags> actionStatusCallback;
 
             // ActionStatusCallback for action that are always enabled.
-            public static StatusFlags AlwaysEnabled(EventBase e) { return StatusFlags.Normal; }
+            public static StatusFlags AlwaysEnabled(MenuAction a) { return StatusFlags.Normal; }
 
             // ActionStatusCallback for action that are always disabled.
-            public static StatusFlags AlwaysDisabled(EventBase e) { return StatusFlags.Disabled; }
+            public static StatusFlags AlwaysDisabled(MenuAction a) { return StatusFlags.Disabled; }
 
-            public MenuAction(string actionName, Action<EventBase> actionCallback, Func<EventBase, StatusFlags> actionStatusCallback)
+            public MenuAction(string actionName, Action<MenuAction> actionCallback, Func<MenuAction, StatusFlags> actionStatusCallback, object userData = null)
             {
                 name = actionName;
                 this.actionCallback = actionCallback;
                 this.actionStatusCallback = actionStatusCallback;
+                this.userData = userData;
             }
 
-            public void UpdateActionStatus(EventBase e)
+            public void UpdateActionStatus(EventInfo eventInfo)
             {
-                status = (actionStatusCallback != null ? actionStatusCallback(e) : StatusFlags.Hidden);
+                this.eventInfo = eventInfo;
+                status = (actionStatusCallback != null ? actionStatusCallback(this) : StatusFlags.Hidden);
             }
 
-            public void Execute(EventBase e)
+            public void Execute()
             {
                 if (actionCallback != null)
                 {
-                    actionCallback(e);
+                    actionCallback(this);
                 }
             }
         }
 
         List<MenuItem> menuItems = new List<MenuItem>();
+        EventInfo m_EventInfo;
 
         public List<MenuItem> MenuItems()
         {
             return menuItems;
         }
 
-        public void AppendAction(string actionName, Action<EventBase> action, Func<EventBase, MenuAction.StatusFlags> actionStatusCallback)
+        public void AppendAction(string actionName, Action<MenuAction> action, Func<MenuAction, MenuAction.StatusFlags> actionStatusCallback, object userData = null)
         {
-            MenuAction menuAction = new MenuAction(actionName, action, actionStatusCallback);
+            MenuAction menuAction = new MenuAction(actionName, action, actionStatusCallback, userData);
             menuItems.Add(menuAction);
         }
 
-        public void InsertAction(string actionName, Action<EventBase> action, Func<EventBase, MenuAction.StatusFlags> actionStatusCallback, int atIndex)
+        public void InsertAction(int atIndex, string actionName, Action<MenuAction> action, Func<MenuAction, MenuAction.StatusFlags> actionStatusCallback, object userData = null)
         {
-            MenuAction menuAction = new MenuAction(actionName, action, actionStatusCallback);
+            MenuAction menuAction = new MenuAction(actionName, action, actionStatusCallback, userData);
             menuItems.Insert(atIndex, menuAction);
         }
 
-        public void AppendSeparator()
+        public void AppendSeparator(string subMenuPath = null)
         {
             if (menuItems.Count > 0 && !(menuItems[menuItems.Count - 1] is Separator))
             {
-                Separator separator = new Separator();
+                Separator separator = new Separator(subMenuPath == null ? String.Empty : subMenuPath);
                 menuItems.Add(separator);
             }
         }
 
-        public void InsertSeparator(int atIndex)
+        public void InsertSeparator(string subMenuPath, int atIndex)
         {
             if (atIndex > 0 && atIndex <= menuItems.Count && !(menuItems[atIndex - 1] is Separator))
             {
-                Separator separator = new Separator();
+                Separator separator = new Separator(subMenuPath == null ? String.Empty : subMenuPath);
                 menuItems.Insert(atIndex, separator);
             }
         }
 
+        public void RemoveItemAt(int index)
+        {
+            menuItems.RemoveAt(index);
+        }
+
         public void PrepareForDisplay(EventBase e)
         {
+            m_EventInfo = new EventInfo(e);
+
+            if (menuItems.Count == 0)
+                return;
+
             foreach (MenuItem item in menuItems)
             {
                 MenuAction action = item as MenuAction;
                 if (action != null)
                 {
-                    action.UpdateActionStatus(e);
+                    action.UpdateActionStatus(m_EventInfo);
                 }
             }
 

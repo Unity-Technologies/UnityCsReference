@@ -235,7 +235,15 @@ namespace UnityEditor
 
         public CameraMode cameraMode
         {
-            get { return m_CameraMode; }
+            get
+            {
+                // fix for case 969889 where the toolbar is empty when we havent fully initialized the value
+                if (string.IsNullOrEmpty(m_CameraMode.name))
+                {
+                    m_CameraMode = SceneRenderModeWindow.GetBuiltinCameraMode(m_CameraMode.drawMode);
+                }
+                return m_CameraMode;
+            }
             set
             {
                 m_CameraMode = value;
@@ -345,6 +353,7 @@ namespace UnityEditor
         static Material s_DeferredOverlayMaterial;
         static Shader s_ShowOverdrawShader;
         static Shader s_ShowMipsShader;
+        static Shader s_ShowTextureStreamingShader;
         static Shader s_AuraShader;
         static Texture2D s_MipColorsTexture;
 
@@ -1124,6 +1133,8 @@ namespace UnityEditor
             }
             else if (m_CameraMode.drawMode == DrawCameraMode.Mipmaps)
             {
+                Texture.SetStreamingTextureMaterialDebugProperties();
+
                 // show mip levels
                 if (!s_ShowMipsShader)
                     s_ShowMipsShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewShowMips.shader") as Shader;
@@ -1131,6 +1142,22 @@ namespace UnityEditor
                 {
                     CreateMipColorsTexture();
                     m_Camera.SetReplacementShader(s_ShowMipsShader, "RenderType");
+                }
+                else
+                {
+                    m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
+                }
+            }
+            else if (m_CameraMode.drawMode == DrawCameraMode.TextureStreaming)
+            {
+                Texture.SetStreamingTextureMaterialDebugProperties();
+
+                // show mip levels
+                if (!s_ShowTextureStreamingShader)
+                    s_ShowTextureStreamingShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewShowTextureStreaming.shader") as Shader;
+                if (s_ShowTextureStreamingShader != null && s_ShowTextureStreamingShader.isSupported)
+                {
+                    m_Camera.SetReplacementShader(s_ShowTextureStreamingShader, "RenderType");
                 }
                 else
                 {
@@ -1717,22 +1744,25 @@ namespace UnityEditor
             //Ensure that the target texture is clamped [0-1]
             //This is needed because otherwise gizmo rendering gets all
             //messed up (think HDR target with value of 50 + alpha blend gizmo... gonna be white!)
-            var ldrSceneTargetTexture = m_SceneTargetTexture;
             if (!UseSceneFiltering() && evt.type == EventType.Repaint && RenderTextureEditor.IsHDRFormat(m_SceneTargetTexture.format))
             {
+                var currentDepthBuffer = Graphics.activeDepthBuffer;
                 var rtDesc = m_SceneTargetTexture.descriptor;
                 rtDesc.colorFormat = RenderTextureFormat.ARGB32;
                 rtDesc.depthBufferBits = 0;
-                rtDesc.sRGB = false;
-                ldrSceneTargetTexture = RenderTexture.GetTemporary(rtDesc);
+                RenderTexture ldrSceneTargetTexture = RenderTexture.GetTemporary(rtDesc);
+                ldrSceneTargetTexture.name = "LDRSceneTarget";
                 Graphics.Blit(m_SceneTargetTexture, ldrSceneTargetTexture);
-                Graphics.SetRenderTarget(ldrSceneTargetTexture.colorBuffer, m_SceneTargetTexture.depthBuffer);
+                Graphics.Blit(ldrSceneTargetTexture, m_SceneTargetTexture);
+                Graphics.SetRenderTarget(m_SceneTargetTexture.colorBuffer, currentDepthBuffer);
+                RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
             }
 
             if (!UseSceneFiltering())
             {
                 // Blit to final target RT in deferred mode
-                Handles.DrawCameraStep2(m_Camera, m_CameraMode.drawMode);
+                if (m_Camera.gameObject.activeInHierarchy)
+                    Handles.DrawCameraStep2(m_Camera, m_CameraMode.drawMode);
 
                 // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
                 // view won't be able to properly render to the rendertexture as needed.
@@ -1771,9 +1801,7 @@ namespace UnityEditor
                     GUIClip.Pop();
                 if (evt.type == EventType.Repaint)
                 {
-                    Graphics.DrawTexture(guiRect, ldrSceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
-                    if (RenderTextureEditor.IsHDRFormat(m_SceneTargetTexture.format))
-                        RenderTexture.ReleaseTemporary(ldrSceneTargetTexture);
+                    Graphics.DrawTexture(guiRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
                     Profiler.EndSample();
                 }
             }
@@ -2600,6 +2628,7 @@ namespace UnityEditor
 
             if (onSceneGUIDelegate != null)
             {
+                ResetOnSceneGUIState();
                 onSceneGUIDelegate(this);
                 ResetOnSceneGUIState();
             }
@@ -2646,6 +2675,7 @@ namespace UnityEditor
 
             if (onPreSceneGUIDelegate != null)
             {
+                Handles.ClearHandles();
                 onPreSceneGUIDelegate(this);
             }
 

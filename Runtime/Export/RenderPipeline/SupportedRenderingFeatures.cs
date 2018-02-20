@@ -27,6 +27,7 @@ namespace UnityEngine.Experimental.Rendering
             Rotation = 1
         }
 
+        // this is done since the original enum doesn't allow flags due to it starting at 0, not 1
         [System.Flags]
         public enum LightmapMixedBakeMode
         {
@@ -57,7 +58,7 @@ namespace UnityEngine.Experimental.Rendering
         [RequiredByNativeCode]
         internal static MixedLightingMode FallbackMixedLightingMode()
         {
-            // the pipline has picked a default value that is supported
+            // if the pipeline has picked a default value that is supported
             if ((SupportedRenderingFeatures.active.defaultMixedLightingMode != LightmapMixedBakeMode.None)
                 && ((SupportedRenderingFeatures.active.supportedMixedLightingModes & SupportedRenderingFeatures.active.defaultMixedLightingMode) == SupportedRenderingFeatures.active.defaultMixedLightingMode))
             {
@@ -74,18 +75,24 @@ namespace UnityEngine.Experimental.Rendering
                 }
             }
 
+            // otherwise we try to find a value that is supported
             if (IsMixedLightingModeSupported(MixedLightingMode.Shadowmask))
                 return MixedLightingMode.Shadowmask;
 
             if (IsMixedLightingModeSupported(MixedLightingMode.Subtractive))
                 return MixedLightingMode.Subtractive;
 
+            // last restort. make sure Mixed mode is even supported, otherwise the baking pipeline will treat the Mixed lights it as Realtime
             return MixedLightingMode.IndirectOnly;
         }
 
         [RequiredByNativeCode]
         internal static bool IsMixedLightingModeSupported(MixedLightingMode mixedMode)
         {
+            // if Mixed mode hasn't been turned off completely and the Mixed lights will be treated as Realtime
+            if (!IsLightmapBakeTypeSupported(LightmapBakeType.Mixed))
+                return false;
+
             // this is done since the original enum doesn't allow flags due to it starting at 0, not 1
             return ((mixedMode == MixedLightingMode.IndirectOnly &&
                      ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
@@ -101,6 +108,17 @@ namespace UnityEngine.Experimental.Rendering
         [RequiredByNativeCode]
         internal static bool IsLightmapBakeTypeSupported(LightmapBakeType bakeType)
         {
+            if (bakeType == LightmapBakeType.Mixed)
+            {
+                // we can't have Mixed without Bake
+                if (!IsLightmapBakeTypeSupported(LightmapBakeType.Baked))
+                    return false;
+
+                // we can't support Mixed mode and then not support any of the different modes
+                if (SupportedRenderingFeatures.active.supportedMixedLightingModes == LightmapMixedBakeMode.None)
+                    return false;
+            }
+
             return ((SupportedRenderingFeatures.active.supportedLightmapBakeTypes & bakeType) == bakeType);
         }
 

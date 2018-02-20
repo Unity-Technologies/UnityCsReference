@@ -33,6 +33,12 @@ namespace UnityEditor
             menuItems.Add(new MenuItem(content, false, false, null));
         }
 
+        // Add a disabled item to the menu
+        public void AddDisabledItem(GUIContent content, bool on)
+        {
+            menuItems.Add(new MenuItem(content, false, on, null));
+        }
+
         // Add a seperator item to the menu
         public void AddSeparator(string path)
         {

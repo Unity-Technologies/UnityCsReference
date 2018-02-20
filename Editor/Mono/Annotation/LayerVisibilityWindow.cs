@@ -22,6 +22,7 @@ namespace UnityEditor
             public readonly GUIStyle listHeaderStyle;
             public readonly Texture2D visibleOn  = EditorGUIUtility.LoadIcon("animationvisibilitytoggleon");
             public readonly Texture2D visibleOff = EditorGUIUtility.LoadIcon("animationvisibilitytoggleoff");
+            public readonly GUIContent editLayers = EditorGUIUtility.TrTextContent("Edit Layers...");
             public Styles()
             {
                 listTextStyle = new GUIStyle(EditorStyles.label);
@@ -214,7 +215,7 @@ namespace UnityEditor
             // Edit Layers entry
             DrawSeparator(ref drawPos, even);
             DrawListBackground(drawPos, even);
-            if (GUI.Button(drawPos, EditorGUIUtility.TempContent("Edit Layers..."), s_Styles.menuItem))
+            if (GUI.Button(drawPos, s_Styles.editLayers, s_Styles.menuItem))
             {
                 Close();
                 Selection.activeObject = EditorApplication.tagManager;

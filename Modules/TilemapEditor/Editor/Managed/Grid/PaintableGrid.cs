@@ -38,6 +38,8 @@ namespace UnityEditor
         protected virtual void OnBrushPickStarted() {}
         protected virtual void OnBrushPickDragged(BoundsInt position) {}
 
+        protected virtual void OnBrushPickCancelled() {}
+
         internal static PaintableGrid s_LastActivePaintableGrid;
 
         private Vector2Int m_PreviousMouseGridPosition;
@@ -172,11 +174,12 @@ namespace UnityEditor
                 Event.current.Use();
                 GUI.changed = true;
             }
-            if (evt.type == EventType.MouseUp && m_MarqueeStart.HasValue && m_MarqueeType == MarqueeType.Pick && IsPickingEvent(evt))
+            if (evt.rawType == EventType.MouseUp && isHotControl && m_MarqueeStart.HasValue && m_MarqueeType == MarqueeType.Pick && IsPickingEvent(evt))
             {
-                RectInt rect = GridEditorUtility.GetMarqueeRect(m_MarqueeStart.Value, mouseGridPosition);
-                if (isHotControl)
+                // Check if event only occurred in the PaintableGrid window as evt.type will filter for this
+                if (evt.type == EventType.MouseUp && m_MarqueeType == MarqueeType.Pick)
                 {
+                    RectInt rect = GridEditorUtility.GetMarqueeRect(m_MarqueeStart.Value, mouseGridPosition);
                     Vector2Int pivot = GetMarqueePivot(m_MarqueeStart.Value, mouseGridPosition);
                     PickBrush(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, 0), new Vector3Int(rect.size.x, rect.size.y, 1)), new Vector3Int(pivot.x, pivot.y, 0));
 
@@ -187,13 +190,18 @@ namespace UnityEditor
 
                     GridPaletteBrushes.ActiveGridBrushAssetChanged();
                     s_LastActivePaintableGrid = this;
-                    InspectorWindow.RepaintAllInspectors();
                     Event.current.Use();
                     GUI.changed = true;
-                    GUIUtility.hotControl = 0;
+                }
+                else
+                // Event occurred outside of PaintableGrid window, cancel the pick event
+                {
+                    OnBrushPickCancelled();
                 }
                 m_MarqueeType = MarqueeType.None;
                 m_MarqueeStart = null;
+                GUIUtility.hotControl = 0;
+                InspectorWindow.RepaintAllInspectors();
             }
         }
 
@@ -223,21 +231,21 @@ namespace UnityEditor
                 GUIUtility.hotControl = m_PermanentControlID;
                 Event.current.Use();
             }
-            if (evt.type == EventType.MouseUp && evt.button == 0 && !evt.alt && m_MarqueeStart.HasValue && GUIUtility.hotControl == m_PermanentControlID && EditMode.editMode == EditMode.SceneViewEditMode.GridSelect)
+            if (evt.rawType == EventType.MouseUp && evt.button == 0 && !evt.alt && m_MarqueeStart.HasValue && isHotControl && EditMode.editMode == EditMode.SceneViewEditMode.GridSelect)
             {
-                if (m_MarqueeStart.HasValue && m_MarqueeType == MarqueeType.Select)
+                // Check if event only occurred in the PaintableGrid window as evt.type will filter for this
+                if (evt.type == EventType.MouseUp && m_MarqueeType == MarqueeType.Select)
                 {
                     RectInt rect = GridEditorUtility.GetMarqueeRect(m_MarqueeStart.Value, mouseGridPosition);
                     Select(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, 0), new Vector3Int(rect.size.x, rect.size.y, 1)));
-                    m_MarqueeStart = null;
-                    m_MarqueeType = MarqueeType.None;
-                    InspectorWindow.RepaintAllInspectors();
+                    Event.current.Use();
                 }
                 if (evt.control)
                     EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridMove, GridPaintingState.instance);
-
+                m_MarqueeStart = null;
+                m_MarqueeType = MarqueeType.None;
+                InspectorWindow.RepaintAllInspectors();
                 GUIUtility.hotControl = 0;
-                Event.current.Use();
             }
             if (evt.type == EventType.KeyDown && evt.keyCode == KeyCode.Escape && !m_MarqueeStart.HasValue && !m_PreviousMove.HasValue)
             {
@@ -266,7 +274,7 @@ namespace UnityEditor
                 }
                 Event.current.Use();
             }
-            if (evt.type == EventType.MouseDrag && evt.button == 0 && EditMode.editMode == EditMode.SceneViewEditMode.GridMove && GUIUtility.hotControl == m_PermanentControlID)
+            if (evt.type == EventType.MouseDrag && evt.button == 0 && EditMode.editMode == EditMode.SceneViewEditMode.GridMove && isHotControl)
             {
                 if (m_MouseGridPositionChanged && m_PreviousMove.HasValue)
                 {
@@ -283,7 +291,7 @@ namespace UnityEditor
                     Event.current.Use();
                 }
             }
-            if (evt.type == EventType.MouseUp && evt.button == 0 && m_PreviousMove.HasValue && EditMode.editMode == EditMode.SceneViewEditMode.GridMove && GUIUtility.hotControl == m_PermanentControlID)
+            if (evt.type == EventType.MouseUp && evt.button == 0 && m_PreviousMove.HasValue && EditMode.editMode == EditMode.SceneViewEditMode.GridMove && isHotControl)
             {
                 if (m_PreviousMove.HasValue)
                 {

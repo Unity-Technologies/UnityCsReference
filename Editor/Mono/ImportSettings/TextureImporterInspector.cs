@@ -55,6 +55,7 @@ namespace UnityEditor
             Cookie = 1 << 7,
             CubeMapConvolution = 1 << 8,
             CubeMapping = 1 << 9,
+            StreamingMipmaps = 1 << 10,
             SingleChannelComponent = 1 << 11,
         }
 
@@ -109,7 +110,7 @@ namespace UnityEditor
 
         internal static bool IsGLESMobileTargetPlatform(BuildTarget target)
         {
-            return target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.Android || target == BuildTarget.Tizen;
+            return target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.Android;
         }
 
         // Which platforms should we display?
@@ -152,9 +153,8 @@ namespace UnityEditor
                         case BuildTarget.tvOS:
                             requirePVRTC = true;
                             requireASTC = true;
-                            break;
-                        case BuildTarget.Tizen:
                             requireETC = true;
+                            requireETC2 = true;
                             break;
                     }
                 }
@@ -247,13 +247,15 @@ namespace UnityEditor
                             requireASTC = true;
                             break;
                         case BuildTarget.iOS:
-                        case BuildTarget.tvOS:
                             requirePVRTC = true;
                             requireETC = true;
                             requireETC2 = true;
                             break;
-                        case BuildTarget.Tizen:
+                        case BuildTarget.tvOS:
+                            requirePVRTC = true;
+                            requireASTC = true;
                             requireETC = true;
+                            requireETC2 = true;
                             break;
                     }
                 }
@@ -349,7 +351,6 @@ namespace UnityEditor
         internal static string[] s_TextureFormatStringsWebGL;
         internal static string[] s_TextureFormatStringsApplePVR;
         internal static string[] s_TextureFormatStringsAndroid;
-        internal static string[] s_TextureFormatStringsTizen;
         internal static string[] s_TextureFormatStringsSingleChannel;
         internal static string[] s_TextureFormatStringsDefault;
         internal static string[] s_NormalFormatStringsDefault;
@@ -468,6 +469,8 @@ namespace UnityEditor
             public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout Mip Maps");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
+            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mipmaps|Only load larger mip maps as needed to render the current game cameras.");
+            public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Streaming Mipmaps Priority|Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
 
             public readonly GUIContent alphaSource = EditorGUIUtility.TrTextContent("Alpha Source", "How is the alpha generated for the imported texture.");
             public readonly GUIContent[] alphaSourceOptions =
@@ -549,6 +552,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Bottom Right"),
                 EditorGUIUtility.TrTextContent("Custom"),
             };
+            public readonly GUIContent spriteGenerateFallbackPhysicsShape = EditorGUIUtility.TrTextContent("Generate Physics Shape", "Generates a default physics shape from the outline of the Sprite/s when a physics shape has not been set in the Sprite Editor.");
 
             public readonly GUIContent alphaIsTransparency = EditorGUIUtility.TrTextContent("Alpha Is Transparency", "If the provided alpha channel is transparency, enable this to pre-filter the color to avoid texture filtering artifacts. This is not supported for HDR textures.");
             public readonly GUIContent etc1Compression = EditorGUIUtility.TrTextContent("Compress using ETC1 (split alpha channel)", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
@@ -613,6 +617,8 @@ namespace UnityEditor
         SerializedProperty m_AlphaTestReferenceValue;
         SerializedProperty m_NPOTScale;
         SerializedProperty m_IsReadable;
+        SerializedProperty m_StreamingMipmaps;
+        SerializedProperty m_StreamingMipmapsPriority;
         SerializedProperty m_sRGBTexture;
         SerializedProperty m_EnableMipMap;
         SerializedProperty m_MipMapMode;
@@ -632,6 +638,7 @@ namespace UnityEditor
         SerializedProperty m_SpriteMeshType;
         SerializedProperty m_Alignment;
         SerializedProperty m_SpritePivot;
+        SerializedProperty m_SpriteGenerateFallbackPhysicsShape;
 
         SerializedProperty m_AlphaIsTransparency;
 
@@ -640,6 +647,7 @@ namespace UnityEditor
         SerializedProperty m_SpriteMode;
 
         SerializedProperty m_SingleChannelComponent;
+        List<SerializedProperty> m_TextureTypes;
         internal SpriteImportMode spriteImportMode
         {
             get
@@ -667,6 +675,8 @@ namespace UnityEditor
             m_AlphaTestReferenceValue = serializedObject.FindProperty("m_AlphaTestReferenceValue");
             m_NPOTScale = serializedObject.FindProperty("m_NPOTScale");
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
+            m_StreamingMipmaps = serializedObject.FindProperty("m_StreamingMipmaps");
+            m_StreamingMipmapsPriority = serializedObject.FindProperty("m_StreamingMipmapsPriority");
             m_sRGBTexture = serializedObject.FindProperty("m_sRGBTexture");
             m_EnableMipMap = serializedObject.FindProperty("m_EnableMipMap");
             m_MipMapMode = serializedObject.FindProperty("m_MipMapMode");
@@ -689,6 +699,7 @@ namespace UnityEditor
             m_SpriteMeshType = serializedObject.FindProperty("m_SpriteMeshType");
             m_Alignment = serializedObject.FindProperty("m_Alignment");
             m_SpritePivot = serializedObject.FindProperty("m_SpritePivot");
+            m_SpriteGenerateFallbackPhysicsShape = serializedObject.FindProperty("m_SpriteGenerateFallbackPhysicsShape");
 
             m_AlphaIsTransparency = serializedObject.FindProperty("m_AlphaIsTransparency");
 
@@ -696,6 +707,15 @@ namespace UnityEditor
             m_TextureShape = serializedObject.FindProperty("m_TextureShape");
 
             m_SingleChannelComponent = serializedObject.FindProperty("m_SingleChannelComponent");
+
+            Object[] allTargetObjects = m_TextureType.serializedObject.targetObjects;
+            m_TextureTypes = new List<SerializedProperty>();
+            foreach (var targetObject in allTargetObjects)
+            {
+                SerializedObject iteratedObject = new SerializedObject(targetObject);
+                SerializedProperty iteratedProperty = iteratedObject.FindProperty(m_TextureType.propertyPath);
+                m_TextureTypes.Add(iteratedProperty);
+            }
         }
 
         void InitializeGUI()
@@ -706,9 +726,11 @@ namespace UnityEditor
 
             m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                    | TextureInspectorGUIElement.StreamingMipmaps
                     , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.CubeMapping,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                    | TextureInspectorGUIElement.StreamingMipmaps
                     , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.Sprite]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Sprite,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
@@ -718,6 +740,7 @@ namespace UnityEditor
                     TextureImporterShape.Texture2D | TextureImporterShape.TextureCube);
             m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                    | TextureInspectorGUIElement.StreamingMipmaps
                     , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.GUI]          = new TextureInspectorTypeGUIProperties(0,
                     TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
@@ -727,11 +750,13 @@ namespace UnityEditor
                     TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Lightmap]     = new TextureInspectorTypeGUIProperties(0,
                     TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                    | TextureInspectorGUIElement.StreamingMipmaps
                     , TextureImporterShape.Texture2D);
 
             m_GUIElementMethods.Clear();
             m_GUIElementMethods.Add(TextureInspectorGUIElement.PowerOfTwo, this.POTScaleGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.Readable, this.ReadableGUI);
+            m_GUIElementMethods.Add(TextureInspectorGUIElement.StreamingMipmaps, this.StreamingMipmapsGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.ColorSpace, this.ColorSpaceGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.AlphaHandling, this.AlphaHandlingGUI);
             m_GUIElementMethods.Add(TextureInspectorGUIElement.MipMaps, this.MipMapGUI);
@@ -752,6 +777,7 @@ namespace UnityEditor
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Sprite);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.PowerOfTwo);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Readable);
+            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.StreamingMipmaps);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.MipMaps);
 
             UnityEngine.Debug.Assert(m_GUIElementsDisplayOrder.Count == (Enum.GetValues(typeof(TextureInspectorGUIElement)).Length - 1), "Some GUIElement are not present in the list."); // -1 because TextureInspectorGUIElement.None
@@ -802,6 +828,8 @@ namespace UnityEditor
             m_AlphaTestReferenceValue.floatValue = settings.alphaTestReferenceValue;
             m_NPOTScale.intValue = (int)settings.npotScale;
             m_IsReadable.intValue = settings.readable ? 1 : 0;
+            m_StreamingMipmaps.intValue = settings.streamingMipmaps ? 1 : 0;
+            m_StreamingMipmapsPriority.intValue = settings.streamingMipmapsPriority;
             m_EnableMipMap.intValue = settings.mipmapEnabled ? 1 : 0;
             m_sRGBTexture.intValue = settings.sRGBTexture ? 1 : 0;
             m_MipMapMode.intValue = (int)settings.mipmapFilter;
@@ -814,6 +842,7 @@ namespace UnityEditor
             m_SpriteExtrude.intValue = (int)settings.spriteExtrude;
             m_SpriteMeshType.intValue = (int)settings.spriteMeshType;
             m_Alignment.intValue = settings.spriteAlignment;
+            m_SpriteGenerateFallbackPhysicsShape.intValue = settings.spriteGenerateFallbackPhysicsShape ? 1 : 0;
 
             m_WrapU.intValue = (int)settings.wrapMode;
             m_WrapV.intValue = (int)settings.wrapMode;
@@ -871,6 +900,10 @@ namespace UnityEditor
             if (!m_IsReadable.hasMultipleDifferentValues)
                 settings.readable = m_IsReadable.intValue > 0;
 
+            if (!m_StreamingMipmaps.hasMultipleDifferentValues)
+                settings.streamingMipmaps = m_StreamingMipmaps.intValue > 0;
+            if (!m_StreamingMipmapsPriority.hasMultipleDifferentValues)
+                settings.streamingMipmapsPriority = m_StreamingMipmapsPriority.intValue;
 
             if (!m_sRGBTexture.hasMultipleDifferentValues)
                 settings.sRGBTexture = m_sRGBTexture.intValue > 0;
@@ -907,6 +940,9 @@ namespace UnityEditor
 
             if (!m_SpritePivot.hasMultipleDifferentValues)
                 settings.spritePivot = m_SpritePivot.vector2Value;
+
+            if (!m_SpriteGenerateFallbackPhysicsShape.hasMultipleDifferentValues)
+                settings.spriteGenerateFallbackPhysicsShape = m_SpriteGenerateFallbackPhysicsShape.intValue > 0;
 
             if (!m_WrapU.hasMultipleDifferentValues)
                 settings.wrapModeU = (TextureWrapMode)m_WrapU.intValue;
@@ -1019,6 +1055,16 @@ namespace UnityEditor
             ToggleFromInt(m_IsReadable, s_Styles.readWrite);
         }
 
+        void StreamingMipmapsGUI(TextureInspectorGUIElement guiElements)
+        {
+            ToggleFromInt(m_StreamingMipmaps, s_Styles.streamingMipmaps);
+
+            if (m_StreamingMipmaps.boolValue && !m_StreamingMipmaps.hasMultipleDifferentValues)
+            {
+                EditorGUILayout.PropertyField(m_StreamingMipmapsPriority, s_Styles.streamingMipmapsPriority);
+            }
+        }
+
 
         void AlphaHandlingGUI(TextureInspectorGUIElement guiElements)
         {
@@ -1100,7 +1146,7 @@ namespace UnityEditor
 
                 EditorGUILayout.IntSlider(m_SpriteExtrude, 0, 32, s_Styles.spriteExtrude);
 
-                if (m_SpriteMode.intValue == 1)
+                if (m_SpriteMode.intValue == (int)SpriteImportMode.Multiple)
                 {
                     EditorGUILayout.Popup(m_Alignment, s_Styles.spriteAlignmentOptions, s_Styles.spriteAlignment);
 
@@ -1111,6 +1157,9 @@ namespace UnityEditor
                         GUILayout.EndHorizontal();
                     }
                 }
+
+                if (m_SpriteMode.intValue != (int)SpriteImportMode.Polygon)
+                    ToggleFromInt(m_SpriteGenerateFallbackPhysicsShape, s_Styles.spriteGenerateFallbackPhysicsShape);
 
                 using (new EditorGUI.DisabledScope(targets.Length != 1))
                 {
@@ -1300,8 +1349,14 @@ namespace UnityEditor
             // Consequently the sprite will be reset to Single mode and looks very confusing to the user.
             if (EditorGUI.EndChangeCheck() && (m_TextureType.intValue != newTextureType))
             {
+                // please note that in GetSerializedPropertySettings() we will init TextureImporterSettings from current state
+                //   and at this point m_TextureType still has *old* value
+                // meaning that we still need to change TextureImporterSettings textureType manually
+                // NB we do these weird things partly because ApplyTextureType has early out
+                // NB hence we want settings to have *old* textureType when calling it
                 TextureImporterSettings settings = GetSerializedPropertySettings();
                 settings.ApplyTextureType((TextureImporterType)newTextureType);
+                settings.textureType = (TextureImporterType)newTextureType;
                 m_TextureType.intValue = newTextureType;
 
                 SetSerializedPropertySettings(settings);
@@ -1330,7 +1385,29 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            if (!m_TextureType.hasMultipleDifferentValues)
+            // Show advanced settings for texture types that have the same subset of advanced settings (rather than just those that are exactly the same type)
+            bool showAdvanced = false;
+            if (m_TextureType.hasMultipleDifferentValues)
+            {
+                showAdvanced = true;
+                int iteratedTextureType = m_TextureTypes[0].intValue;
+                TextureInspectorGUIElement firstAdvancedElements = m_TextureTypeGUIElements[iteratedTextureType].advancedElements;
+                for (int selectionIndex = 1; selectionIndex < m_TextureTypes.Count(); selectionIndex++)
+                {
+                    iteratedTextureType = m_TextureTypes[selectionIndex].intValue;
+                    if (firstAdvancedElements != m_TextureTypeGUIElements[iteratedTextureType].advancedElements)
+                    {
+                        showAdvanced = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                showAdvanced = true;
+            }
+
+            if (showAdvanced)
             {
                 DoGUIElements(m_TextureTypeGUIElements[newTextureType].commonElements, m_GUIElementsDisplayOrder);
                 if (m_TextureTypeGUIElements[newTextureType].advancedElements != 0)
@@ -1361,7 +1438,7 @@ namespace UnityEditor
 
             // screw this - after lots of retries i have no idea how to poll it only when we change related stuff
             UpdateImportWarning();
-            if (m_ImportWarning != null)
+            if (!string.IsNullOrEmpty(m_ImportWarning))
                 EditorGUILayout.HelpBox(m_ImportWarning, MessageType.Warning);
 
             GUI.enabled = wasEnabled;
@@ -1490,8 +1567,6 @@ namespace UnityEditor
                 s_TextureFormatStringsApplePVR = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueApplePVR);
             if (s_TextureFormatStringsAndroid == null)
                 s_TextureFormatStringsAndroid = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueAndroid);
-            if (s_TextureFormatStringsTizen == null)
-                s_TextureFormatStringsTizen = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueTizen);
             if (s_TextureFormatStringsWebGL == null)
                 s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
             if (s_TextureFormatStringsPSP2 == null)

@@ -26,6 +26,7 @@ namespace UnityEditor
         static int s_LastInstanceID = -1;
         static int s_HashIconSelector = "IconSelector".GetHashCode();
         static Styles m_Styles;
+        static GUIContent s_Other = EditorGUIUtility.TrTextContent("Other...");
 
         Object m_TargetObject;
         Texture2D m_StartIcon;
@@ -313,7 +314,7 @@ namespace UnityEditor
             GUI.backgroundColor = new Color(1, 1, 1, 0.7f);
             bool clicked = false;
             int id = GUIUtility.GetControlID(s_HashIconSelector, FocusType.Keyboard);
-            if (GUILayout.Button(EditorGUIUtility.TempContent("Other...")))
+            if (GUILayout.Button(s_Other))
             {
                 GUIUtility.keyboardControl = id;
                 clicked = true;

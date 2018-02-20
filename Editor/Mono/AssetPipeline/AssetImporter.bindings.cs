@@ -91,7 +91,7 @@ namespace UnityEditor
         [NativeName("SetAssetBundleName")]
         extern public void SetAssetBundleNameAndVariant(string assetBundleName, string assetBundleVariant);
 
-        [FreeFunction("FindAssetImporterAtAssetPath")]
+        [FreeFunction("FindAssetImporterInstanceAtAssetPath")]
         extern public static  AssetImporter GetAtPath(string path);
 
         public void SaveAndReimport()

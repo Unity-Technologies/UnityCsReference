@@ -15,10 +15,11 @@ using UnityEngine.Scripting;
 namespace UnityEngine
 {
 #pragma warning disable 414
+    [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Utilities/Hash128.h")]
-    public partial struct Hash128
+    public partial struct Hash128 : IComparable, IComparable<Hash128>
     {
         public Hash128(uint u32_0, uint u32_1, uint u32_2, uint u32_3)
         {
@@ -45,6 +46,14 @@ namespace UnityEngine
             }
         }
 
+        public int CompareTo(Hash128 rhs)
+        {
+            if (this < rhs)
+                return -1;
+            if (this > rhs)
+                return 1;
+            return 0;
+        }
 
         public override string ToString()
         {
@@ -67,6 +76,15 @@ namespace UnityEngine
             return m_u32_0.GetHashCode() ^ m_u32_1.GetHashCode() ^ m_u32_2.GetHashCode() ^ m_u32_3.GetHashCode();
         }
 
+        public int CompareTo(object obj)
+        {
+            if (obj == null || !(obj is Hash128))
+                return 1;
+
+            Hash128 rhs = (Hash128)obj;
+            return this.CompareTo(rhs);
+        }
+
         public static bool operator==(Hash128 hash1, Hash128 hash2)
         {
             return (hash1.m_u32_0 == hash2.m_u32_0 && hash1.m_u32_1 == hash2.m_u32_1 && hash1.m_u32_2 == hash2.m_u32_2 && hash1.m_u32_3 == hash2.m_u32_3);
@@ -75,6 +93,26 @@ namespace UnityEngine
         public static bool operator!=(Hash128 hash1, Hash128 hash2)
         {
             return !(hash1 == hash2);
+        }
+
+        public static bool operator<(Hash128 x, Hash128 y)
+        {
+            if (x.m_u32_0 != y.m_u32_0)
+                return x.m_u32_0 < y.m_u32_0;
+            if (x.m_u32_1 != y.m_u32_1)
+                return x.m_u32_1 < y.m_u32_1;
+            if (x.m_u32_2 != y.m_u32_2)
+                return x.m_u32_2 < y.m_u32_2;
+            return x.m_u32_3 < y.m_u32_3;
+        }
+
+        public static bool operator>(Hash128 x, Hash128 y)
+        {
+            if (x < y)
+                return false;
+            if (x == y)
+                return false;
+            return true;
         }
     }
 }

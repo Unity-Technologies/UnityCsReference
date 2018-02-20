@@ -262,6 +262,11 @@ namespace UnityEditor
             }
         }
 
+        void OnMixedModeSelected(object userData)
+        {
+            m_MixedBakeMode.intValue = (int)userData;
+        }
+
         void MixedLightingGUI()
         {
             if (!SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Baked))
@@ -284,19 +289,43 @@ namespace UnityEditor
                 {
                     bool mixedGISupported = SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Mixed);
 
-                    if (mixedGISupported)
+                    using (new EditorGUI.DisabledScope(!mixedGISupported))
                     {
-                        EditorGUILayout.IntPopup(m_MixedBakeMode, Styles.MixedModeStrings, Styles.MixedModeValues, Styles.MixedLightMode);
+                        var rect = EditorGUILayout.GetControlRect();
+                        EditorGUI.BeginProperty(rect, Styles.MixedLightMode, m_MixedBakeMode);
+                        rect = EditorGUI.PrefixLabel(rect, Styles.MixedLightMode);
 
-                        if (!SupportedRenderingFeatures.IsMixedLightingModeSupported((MixedLightingMode)m_MixedBakeMode.intValue))
+                        int index = Math.Max(0, Array.IndexOf(Styles.MixedModeValues, m_MixedBakeMode.intValue));
+
+                        if (EditorGUI.DropdownButton(rect, Styles.MixedModeStrings[index], FocusType.Passive))
                         {
-                            string fallbackMode = Styles.MixedModeStrings[(int)SupportedRenderingFeatures.FallbackMixedLightingMode()].text;
+                            var menu = new GenericMenu();
 
-                            EditorGUILayout.HelpBox("The Mixed Mode is not supported by the current render pipline. Fallback mode is " + fallbackMode, MessageType.Warning);
+                            for (int i = 0; i < Styles.MixedModeValues.Length; i++)
+                            {
+                                int value = Styles.MixedModeValues[i];
+                                bool selected = (value == m_MixedBakeMode.intValue);
+
+                                if (!SupportedRenderingFeatures.IsMixedLightingModeSupported((MixedLightingMode)value))
+                                    menu.AddDisabledItem(Styles.MixedModeStrings[i], selected);
+                                else
+                                    menu.AddItem(Styles.MixedModeStrings[i], selected, OnMixedModeSelected, value);
+                            }
+                            menu.DropDown(rect);
                         }
-                        else if (m_EnabledBakedGI.boolValue)
+                        EditorGUI.EndProperty();
+
+                        if (mixedGISupported)
                         {
-                            EditorGUILayout.HelpBox(Styles.HelpStringsMixed[m_MixedBakeMode.intValue].text, MessageType.Info);
+                            if (!SupportedRenderingFeatures.IsMixedLightingModeSupported((MixedLightingMode)m_MixedBakeMode.intValue))
+                            {
+                                string fallbackMode = Styles.MixedModeStrings[(int)SupportedRenderingFeatures.FallbackMixedLightingMode()].text;
+                                EditorGUILayout.HelpBox(Styles.MixedModeNotSupportedWarning.text + fallbackMode, MessageType.Warning);
+                            }
+                            else if (m_EnabledBakedGI.boolValue)
+                            {
+                                EditorGUILayout.HelpBox(Styles.HelpStringsMixed[m_MixedBakeMode.intValue].text, MessageType.Info);
+                            }
                         }
 
                         if (m_MixedBakeMode.intValue == (int)MixedLightingMode.Subtractive)
@@ -361,10 +390,20 @@ namespace UnityEditor
                         using (new EditorGUI.DisabledScope(!m_EnabledBakedGI.boolValue))
                         {
                             EditorGUI.BeginChangeCheck();
-                            EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
+
+                            //TODO(RadeonRays) Remove this when GPU lightmapper is public.
+
+                            if (Unsupported.IsDeveloperMode() && (Application.platform == RuntimePlatform.WindowsEditor))
+                            {
+                                var backendOptions = new[] { "Enlighten", "Progressive CPU", "Progressive GPU (Experimental)" };
+                                m_BakeBackend.intValue = EditorGUILayout.Popup(Styles.BakeBackend, m_BakeBackend.intValue, backendOptions);
+                            }
+                            else
+                                EditorGUILayout.PropertyField(m_BakeBackend, Styles.BakeBackend);
+
                             if (EditorGUI.EndChangeCheck())
                                 InspectorWindow.RepaintAllInspectors(); // We need to repaint other inspectors that might need to update based on the selected backend.
-                            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+                            if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
                             {
                                 EditorGUI.indentLevel++;
 
@@ -498,7 +537,7 @@ namespace UnityEditor
 
                         if (!directionalSupported)
                         {
-                            EditorGUILayout.HelpBox("Directional Mode is not supported. Fallback will be Non-Directional.", MessageType.Warning);
+                            EditorGUILayout.HelpBox(Styles.DirectionalNotSupportedWarning.text, MessageType.Warning);
                         }
                     }
                     else
@@ -587,20 +626,23 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Mixed lights provide realtime direct lighting. Indirect lighting gets baked into lightmaps and light probes. Shadowmasks and light probes occlusion get generated for baked shadows. The Shadowmask Mode used at run time can be set in the Quality Settings panel.")
             };
 
-            public static readonly GUIContent EnableBaked = EditorGUIUtility.TextContent("Baked Global Illumination|Controls whether Mixed and Baked lights will use baked Global Illumination. If enabled, Mixed lights are baked using the specified Lighting Mode and Baked lights will be completely baked and not adjustable at runtime.");
-            public static readonly GUIContent BounceScale = EditorGUIUtility.TextContent("Bounce Scale|Multiplier for indirect lighting. Use with care.");
-            public static readonly GUIContent UpdateThreshold = EditorGUIUtility.TextContent("Update Threshold|Threshold for updating realtime GI. A lower value causes more frequent updates (default 1.0).");
-            public static readonly GUIContent AlbedoBoost = EditorGUIUtility.TextContent("Albedo Boost|Controls the amount of light bounced between surfaces by intensifying the albedo of materials in the scene. Increasing this draws the albedo value towards white for indirect light computation. The default value is physically accurate.");
-            public static readonly GUIContent IndirectOutputScale = EditorGUIUtility.TextContent("Indirect Intensity|Controls the brightness of indirect light stored in realtime and baked lightmaps. A value above 1.0 will increase the intensity of indirect light while a value less than 1.0 will reduce indirect light intensity.");
-            public static readonly GUIContent LightmapDirectionalMode = EditorGUIUtility.TextContent("Directional Mode|Controls whether baked and realtime lightmaps will store directional lighting information from the lighting environment. Options are Directional and Non-Directional.");
-            public static readonly GUIContent DefaultLightmapParameters = EditorGUIUtility.TextContent("Lightmap Parameters|Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
-            public static readonly GUIContent RealtimeLightsLabel = EditorGUIUtility.TextContent("Realtime Lighting|Precompute Realtime indirect lighting for realtime lights and static objects. In this mode realtime lights, ambient lighting, materials of static objects (including emission) will generate indirect lighting at runtime. Only static objects are blocking and bouncing light, dynamic objects receive indirect lighting via light probes.");
-            public static readonly GUIContent MixedLightsLabel = EditorGUIUtility.TextContent("Mixed Lighting|Bake Global Illumination for mixed lights and static objects. May bake both direct and/or indirect lighting based on settings. Only static objects are blocking and bouncing light, dynamic objects receive baked lighting via light probes.");
-            public static readonly GUIContent GeneralLightmapLabel = EditorGUIUtility.TextContent("Lightmapping Settings|Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
-            public static readonly GUIContent NoRealtimeGIInSM2AndGLES2 = EditorGUIUtility.TextContent("Realtime Global Illumination is not supported on SM2.0 hardware nor when using GLES2.0.");
-            public static readonly GUIContent ConcurrentJobs = EditorGUIUtility.TextContent("Concurrent Jobs|The amount of simultaneously scheduled jobs.");
-            public static readonly GUIContent ForceWhiteAlbedo = EditorGUIUtility.TextContent("Force White Albedo|Force white albedo during lighting calculations.");
-            public static readonly GUIContent ForceUpdates = EditorGUIUtility.TextContent("Force Updates|Force continuous updates of runtime indirect lighting calculations.");
+            public static readonly GUIContent MixedModeNotSupportedWarning = EditorGUIUtility.TrTextContent("The Mixed mode is not supported by the current render pipeline. Fallback mode is ");
+            public static readonly GUIContent DirectionalNotSupportedWarning = EditorGUIUtility.TrTextContent("Directional Mode is not supported. Fallback will be Non-Directional.");
+
+            public static readonly GUIContent EnableBaked = EditorGUIUtility.TrTextContent("Baked Global Illumination", "Controls whether Mixed and Baked lights will use baked Global Illumination. If enabled, Mixed lights are baked using the specified Lighting Mode and Baked lights will be completely baked and not adjustable at runtime.");
+            public static readonly GUIContent BounceScale = EditorGUIUtility.TrTextContent("Bounce Scale", "Multiplier for indirect lighting. Use with care.");
+            public static readonly GUIContent UpdateThreshold = EditorGUIUtility.TrTextContent("Update Threshold", "Threshold for updating realtime GI. A lower value causes more frequent updates (default 1.0).");
+            public static readonly GUIContent AlbedoBoost = EditorGUIUtility.TrTextContent("Albedo Boost", "Controls the amount of light bounced between surfaces by intensifying the albedo of materials in the scene. Increasing this draws the albedo value towards white for indirect light computation. The default value is physically accurate.");
+            public static readonly GUIContent IndirectOutputScale = EditorGUIUtility.TrTextContent("Indirect Intensity", "Controls the brightness of indirect light stored in realtime and baked lightmaps. A value above 1.0 will increase the intensity of indirect light while a value less than 1.0 will reduce indirect light intensity.");
+            public static readonly GUIContent LightmapDirectionalMode = EditorGUIUtility.TrTextContent("Directional Mode", "Controls whether baked and realtime lightmaps will store directional lighting information from the lighting environment. Options are Directional and Non-Directional.");
+            public static readonly GUIContent DefaultLightmapParameters = EditorGUIUtility.TrTextContent("Lightmap Parameters", "Allows the adjustment of advanced parameters that affect the process of generating a lightmap for an object using global illumination.");
+            public static readonly GUIContent RealtimeLightsLabel = EditorGUIUtility.TrTextContent("Realtime Lighting", "Precompute Realtime indirect lighting for realtime lights and static objects. In this mode realtime lights, ambient lighting, materials of static objects (including emission) will generate indirect lighting at runtime. Only static objects are blocking and bouncing light, dynamic objects receive indirect lighting via light probes.");
+            public static readonly GUIContent MixedLightsLabel = EditorGUIUtility.TrTextContent("Mixed Lighting", "Bake Global Illumination for mixed lights and static objects. May bake both direct and/or indirect lighting based on settings. Only static objects are blocking and bouncing light, dynamic objects receive baked lighting via light probes.");
+            public static readonly GUIContent GeneralLightmapLabel = EditorGUIUtility.TrTextContent("Lightmapping Settings", "Settings that apply to both Global Illumination modes (Precomputed Realtime and Baked).");
+            public static readonly GUIContent NoRealtimeGIInSM2AndGLES2 = EditorGUIUtility.TrTextContent("Realtime Global Illumination is not supported on SM2.0 hardware nor when using GLES2.0.");
+            public static readonly GUIContent ConcurrentJobs = EditorGUIUtility.TrTextContent("Concurrent Jobs", "The amount of simultaneously scheduled jobs.");
+            public static readonly GUIContent ForceWhiteAlbedo = EditorGUIUtility.TrTextContent("Force White Albedo", "Force white albedo during lighting calculations.");
+            public static readonly GUIContent ForceUpdates = EditorGUIUtility.TrTextContent("Force Updates", "Force continuous updates of runtime indirect lighting calculations.");
             public static readonly GUIStyle   LabelStyle = EditorStyles.wordWrappedMiniLabel;
             public static readonly GUIContent IndirectResolution = EditorGUIUtility.TrTextContent("Indirect Resolution", "Sets the resolution in texels that are used per unit for objects being lit by indirect lighting. The larger the value, the more significant the impact will be on the time it takes to bake the lighting.");
             public static readonly GUIContent LightmapResolution = EditorGUIUtility.TrTextContent("Lightmap Resolution", "Sets the resolution in texels that are used per unit for objects being lit by baked global illumination. Larger values will result in increased time to calculate the baked lighting.");

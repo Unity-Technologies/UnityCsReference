@@ -24,9 +24,9 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent linearX = EditorGUIUtility.TextContent("Linear  X|Apply linear velocity to particles.");
-            public GUIContent orbitalX = EditorGUIUtility.TextContent("Orbital X|Apply orbital velocity to particles, which will rotate them around the center of the system.");
-            public GUIContent orbitalOffsetX = EditorGUIUtility.TextContent("Offset  X|Apply an offset to the center of rotation.");
+            public GUIContent linearX = EditorGUIUtility.TrTextContent("Linear  X", "Apply linear velocity to particles.");
+            public GUIContent orbitalX = EditorGUIUtility.TrTextContent("Orbital X", "Apply orbital velocity to particles, which will rotate them around the center of the system.");
+            public GUIContent orbitalOffsetX = EditorGUIUtility.TrTextContent("Offset  X", "Apply an offset to the center of rotation.");
             public GUIContent y = EditorGUIUtility.TextContent("Y");
             public GUIContent z = EditorGUIUtility.TextContent("Z");
             public GUIContent space = EditorGUIUtility.TrTextContent("Space", "Specifies if the velocity values are in local space (rotated with the transform) or world space.");

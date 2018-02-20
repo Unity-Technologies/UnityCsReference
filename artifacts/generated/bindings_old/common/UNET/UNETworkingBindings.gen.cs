@@ -108,6 +108,13 @@ internal sealed partial class ConnectionConfigInternal : IDisposable
             {
                 AddChannel(config.GetChannel(i));
             }
+            for (byte i = 0; i < config.SharedOrderChannelCount; ++i)
+            {
+                IList<byte> sharedOrderChannelsList = config.GetSharedOrderChannels(i);
+                byte[] sharedOrderChannelsArray = new byte[sharedOrderChannelsList.Count];
+                sharedOrderChannelsList.CopyTo(sharedOrderChannelsArray, 0);
+                MakeChannelsSharedOrder(sharedOrderChannelsArray);
+            }
         }
     
     

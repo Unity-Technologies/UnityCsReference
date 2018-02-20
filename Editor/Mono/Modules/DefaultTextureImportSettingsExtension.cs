@@ -265,8 +265,7 @@ namespace UnityEditor.Modules
             bool showAsEnum = !isCrunchedFormat && (
                     target == BuildTarget.iOS ||
                     target == BuildTarget.tvOS ||
-                    target == BuildTarget.Android ||
-                    target == BuildTarget.Tizen
+                    target == BuildTarget.Android
                     );
 
             if (showAsEnum)

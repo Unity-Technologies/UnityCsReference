@@ -145,7 +145,7 @@ namespace UnityEngine
             return gameObject.GetComponents(type);
         }
 
-        [FreeFunction(HasExplicitThis = true)]
+        [FreeFunction(HasExplicitThis = true, ThrowsException = true)]
         extern private void GetComponentsForListInternal(Type searchType, object resultList);
 
         public void GetComponents(Type type, List<Component> results)

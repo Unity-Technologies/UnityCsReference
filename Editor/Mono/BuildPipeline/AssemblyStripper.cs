@@ -83,6 +83,10 @@ namespace UnityEditorInternal
             args.AddRange(searchDirs.Select(d => "-d \"" + d + "\""));
             args.AddRange(assemblies.Select(assembly => "-a  \"" + Path.GetFullPath(assembly) + "\""));
 
+            var additionalArgs = System.Environment.GetEnvironmentVariable("UNITYLINKER_ADDITIONAL_ARGS");
+            if (!string.IsNullOrEmpty(additionalArgs))
+                args.Add(additionalArgs);
+
             return RunAssemblyLinker(args, out output, out error, linkerPath, workingDirectory);
         }
 

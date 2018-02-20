@@ -51,12 +51,10 @@ namespace UnityEngine.Experimental.UIElements
     {
         public void SetCursor(CursorStyle cursor)
         {
-            Debug.LogError("UIElements cursors are not yet supported outside of the editor.");
         }
 
         public void ResetCursor()
         {
-            Debug.LogError("UIElements cursors are not yet supported outside of the editor.");
         }
     }
 }

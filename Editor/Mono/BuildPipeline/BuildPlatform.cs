@@ -59,8 +59,6 @@ namespace UnityEditor.Build
                         return BuildTarget.N3DS;
                     case BuildTargetGroup.Switch:
                         return BuildTarget.Switch;
-                    case BuildTargetGroup.Tizen:
-                        return BuildTarget.Tizen;
                     case BuildTargetGroup.WebGL:
                         return BuildTarget.WebGL;
                     case BuildTargetGroup.WSA:
@@ -98,7 +96,6 @@ namespace UnityEditor.Build
             // TVOS TODO change the icon when it's ready
             buildPlatformsList.Add(new BuildPlatform("tvOS", "BuildSettings.tvOS", BuildTargetGroup.tvOS, true));
             buildPlatformsList.Add(new BuildPlatform("Android", "BuildSettings.Android", BuildTargetGroup.Android, true));
-            buildPlatformsList.Add(new BuildPlatform("Tizen", "BuildSettings.Tizen", BuildTargetGroup.Tizen, false));
             buildPlatformsList.Add(new BuildPlatform("Xbox One", "BuildSettings.XboxOne", BuildTargetGroup.XboxOne, true));
             buildPlatformsList.Add(new BuildPlatform("PS Vita", "BuildSettings.PSP2", BuildTargetGroup.PSP2, true));
             buildPlatformsList.Add(new BuildPlatform("PS4", "BuildSettings.PS4", BuildTargetGroup.PS4, true));

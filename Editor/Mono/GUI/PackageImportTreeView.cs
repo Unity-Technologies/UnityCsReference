@@ -10,6 +10,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEditor.Experimental;
 
 namespace UnityEditor
 {
@@ -293,7 +294,7 @@ namespace UnityEditor
         {
             internal static class Constants
             {
-                public static Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResourcesUtility.folderIconName);
+                public static Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
                 public static GUIContent badgeNew    = EditorGUIUtility.TrIconContent("PackageBadgeNew", "This is a new Asset");
                 public static GUIContent badgeDelete = EditorGUIUtility.TrIconContent("PackageBadgeDelete", "These files will be deleted!");
                 public static GUIContent badgeWarn   = EditorGUIUtility.TrIconContent("console.warnicon", "Warning: File exists in project, but with different GUID. Will override existing asset which may be undesired.");

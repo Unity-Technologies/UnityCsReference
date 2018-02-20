@@ -868,12 +868,14 @@ namespace UnityEditor
 
         public float PixelToTime(float pixelX, Rect rect)
         {
-            return ((pixelX - rect.x) * shownArea.width / rect.width + shownArea.x);
+            Rect area = shownArea;
+            return ((pixelX - rect.x) * area.width / rect.width + area.x);
         }
 
         public float TimeToPixel(float time, Rect rect)
         {
-            return (time - shownArea.x) / shownArea.width * rect.width + rect.x;
+            Rect area = shownArea;
+            return (time - area.x) / area.width * rect.width + rect.x;
         }
 
         public float PixelDeltaToTime(Rect rect)

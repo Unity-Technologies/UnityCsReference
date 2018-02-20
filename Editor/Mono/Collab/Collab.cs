@@ -17,6 +17,7 @@ using UnityEditor.SceneManagement;
 namespace UnityEditor.Collaboration
 {
     internal delegate void StateChangedDelegate(CollabInfo info);
+    internal delegate void ErrorDelegate();
 
     [Flags]
     internal enum CollabOperation : ulong
@@ -51,6 +52,8 @@ namespace UnityEditor.Collaboration
         public event StateChangedDelegate StateChanged;
         public event StateChangedDelegate RevisionUpdated;
         public event StateChangedDelegate JobsCompleted;
+        public event ErrorDelegate ErrorOccurred;
+        public event ErrorDelegate ErrorCleared;
 
         private static Collab s_Instance;
         private static bool s_IsFirstStateChange = true;
@@ -115,24 +118,6 @@ namespace UnityEditor.Collaboration
         {
             var cvalue = EditorUserSettings.GetConfigValue(editorPrefCollabClientType);
             return string.IsNullOrEmpty(cvalue) ? clientType[0] : cvalue;
-        }
-
-        [MenuItem("Window/Collab/Get Revisions", false, 1000, true)]
-        public static void TestGetRevisions()
-        {
-            Revision[] revisions = instance.GetRevisions();
-            if (revisions.Length == 0)
-            {
-                Debug.Log("No revisions");
-                return;
-            }
-
-            int num = revisions.Length;
-            foreach (Revision revision in revisions)
-            {
-                Debug.Log("Revision #" + num + ": " + revision.revisionID);
-                num--;
-            }
         }
 
         public static Collab instance
@@ -269,6 +254,7 @@ namespace UnityEditor.Collaboration
             }
         }
 
+        [RequiredByNativeCode]
         private static void OnRevisionUpdated()
         {
             var handler = instance.RevisionUpdated;
@@ -276,6 +262,22 @@ namespace UnityEditor.Collaboration
             {
                 handler(instance.collabInfo);
             }
+        }
+
+        [RequiredByNativeCode]
+        private static void SetCollabError()
+        {
+            var handler = instance.ErrorOccurred;
+            if (handler != null)
+                handler();
+        }
+
+        [RequiredByNativeCode]
+        private static void ClearCollabError()
+        {
+            var handler = instance.ErrorCleared;
+            if (handler != null)
+                handler();
         }
 
         private static void OnJobsCompleted()

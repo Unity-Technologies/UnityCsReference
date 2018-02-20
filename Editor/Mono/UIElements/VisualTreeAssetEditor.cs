@@ -20,7 +20,13 @@ namespace UnityEditor.Experimental.UIElements
 
         protected void OnEnable()
         {
-            m_FileTypeIcon = EditorGUIUtility.FindTexture("UxmlScript Icon");
+            m_FileTypeIcon = EditorGUIUtility.FindTexture(typeof(VisualTreeAsset));
+        }
+
+        protected void OnDestroy()
+        {
+            m_Panel = null;
+            UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
         }
 
         // hack to avoid null references when a scriptedImporter runs and replaces the current selection

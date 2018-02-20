@@ -263,6 +263,7 @@ namespace UnityEngine.Tilemaps
     [RequireComponent(typeof(Tilemap))]
     [NativeHeader("Modules/Grid/Public/GridMarshalling.h")]
     [NativeHeader("Modules/Tilemap/TilemapRendererJobs.h")]
+    [NativeHeader("Modules/Tilemap/Public/TilemapMarshalling.h")]
     [NativeType(Header = "Modules/Tilemap/Public/TilemapRenderer.h")]
     public sealed partial class TilemapRenderer : Renderer
     {
@@ -274,9 +275,23 @@ namespace UnityEngine.Tilemaps
             TopRight = 3,
         }
 
+        public enum DetectChunkCullingBounds
+        {
+            Auto = 0,
+            Manual = 1,
+        }
+
         public extern Vector3Int chunkSize
         {
             get;
+            set;
+        }
+
+        public extern Vector3 chunkCullingBounds
+        {
+            [FreeFunction("TilemapRendererBindings::GetChunkCullingBounds", HasExplicitThis = true)]
+            get;
+            [FreeFunction("TilemapRendererBindings::SetChunkCullingBounds", HasExplicitThis = true)]
             set;
         }
 
@@ -293,6 +308,12 @@ namespace UnityEngine.Tilemaps
         }
 
         public extern SortOrder sortOrder
+        {
+            get;
+            set;
+        }
+
+        public extern DetectChunkCullingBounds detectChunkCullingBounds
         {
             get;
             set;

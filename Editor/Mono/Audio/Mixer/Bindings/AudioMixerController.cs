@@ -622,6 +622,9 @@ namespace UnityEditor.Audio
                 AudioMixerGroupController parent = FindParentGroup(masterGroup, source);
                 if (parent != null && source != null)
                 {
+                    if (recordUndo)
+                        Undo.RecordObject(parent, "Reparent AudioMixerGroup");
+
                     AudioMixerGroupController copy = DuplicateGroupRecurse(source, recordUndo);
 
                     var modifiedChildList = new List<AudioMixerGroupController>(parent.children);

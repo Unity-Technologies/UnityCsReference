@@ -63,6 +63,12 @@ namespace UnityEditor
             }
 
             EditorPrefs.SetBool("AutoPlayAudio", m_bAutoPlay);
+
+            if (m_PreviewUtility != null)
+            {
+                m_PreviewUtility.Cleanup();
+                m_PreviewUtility = null;
+            }
         }
 
         public void OnEnable()
@@ -72,15 +78,6 @@ namespace UnityEditor
             m_PlayingInspector = this;
 
             m_bAutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
-        }
-
-        public void OnDestroy()
-        {
-            if (m_PreviewUtility != null)
-            {
-                m_PreviewUtility.Cleanup();
-                m_PreviewUtility = null;
-            }
         }
 
         public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)

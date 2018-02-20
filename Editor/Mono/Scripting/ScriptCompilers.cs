@@ -23,17 +23,19 @@ namespace UnityEditor.Scripting
         public readonly BuildTarget _target;
         public readonly bool _development_player;
         public readonly bool _editor;
+        public readonly bool _allowUnsafeCode;
         public readonly ApiCompatibilityLevel _api_compatibility_level;
         public readonly string[] _files;
         public readonly string[] _references;
         public readonly string[] _defines;
         public readonly string _output;
 
-        public MonoIsland(BuildTarget target, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output)
+        public MonoIsland(BuildTarget target, ApiCompatibilityLevel api_compatibility_level, bool allowUnsafeCode, string[] files, string[] references, string[] defines, string output)
         {
             _target = target;
             _development_player = false;
             _editor = false;
+            _allowUnsafeCode = allowUnsafeCode;
             _api_compatibility_level = api_compatibility_level;
             _files = files;
             _references = references;
@@ -41,11 +43,12 @@ namespace UnityEditor.Scripting
             _output = output;
         }
 
-        public MonoIsland(BuildTarget target, bool editor, bool development_player, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output)
+        public MonoIsland(BuildTarget target, bool editor, bool development_player, bool allowUnsafeCode, ApiCompatibilityLevel api_compatibility_level, string[] files, string[] references, string[] defines, string output)
         {
             _target = target;
             _development_player = development_player;
             _editor = editor;
+            _allowUnsafeCode = allowUnsafeCode;
             _api_compatibility_level = api_compatibility_level;
             _files = files;
             _references = references;

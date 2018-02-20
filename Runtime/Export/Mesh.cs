@@ -10,6 +10,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    [UsedByNativeCode]
     public sealed partial class Mesh : Object
     {
         // WARNING: this is used ONLY internally for setters/getters to avoid writing specialized code in bindings
@@ -40,7 +41,7 @@ namespace UnityEngine
 
         internal InternalShaderChannel GetUVChannel(int uvIndex)
         {
-            if (uvIndex < 0 || uvIndex > 3)
+            if (uvIndex < 0 || uvIndex > 7)
                 throw new ArgumentException("GetUVChannel called for bad uvIndex", "uvIndex");
 
             return (InternalShaderChannel)((int)InternalShaderChannel.TexCoord0 + uvIndex);
@@ -50,7 +51,7 @@ namespace UnityEngine
         {
             if (channel == InternalShaderChannel.Vertex || channel == InternalShaderChannel.Normal)
                 return 3;
-            else if (channel >= InternalShaderChannel.TexCoord0 && channel <= InternalShaderChannel.TexCoord3)
+            else if (channel >= InternalShaderChannel.TexCoord0 && channel <= InternalShaderChannel.TexCoord7)
                 return 2;
             else if (channel == InternalShaderChannel.Tangent || channel == InternalShaderChannel.Color)
                 return 4;
@@ -163,6 +164,26 @@ namespace UnityEngine
             get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord3); }
             set { SetArrayForChannel(InternalShaderChannel.TexCoord3, value); }
         }
+        public Vector2[] uv5
+        {
+            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord4); }
+            set { SetArrayForChannel(InternalShaderChannel.TexCoord4, value); }
+        }
+        public Vector2[] uv6
+        {
+            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord5); }
+            set { SetArrayForChannel(InternalShaderChannel.TexCoord5, value); }
+        }
+        public Vector2[] uv7
+        {
+            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord6); }
+            set { SetArrayForChannel(InternalShaderChannel.TexCoord6, value); }
+        }
+        public Vector2[] uv8
+        {
+            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord7); }
+            set { SetArrayForChannel(InternalShaderChannel.TexCoord7, value); }
+        }
         public Color[] colors
         {
             get { return GetAllocArrayFromChannel<Color>(InternalShaderChannel.Color); }
@@ -243,9 +264,9 @@ namespace UnityEngine
         {
             // before this resulted in error *printed* out deep inside c++ code (coming from assert - useless for end-user)
             // while excpetion would make sense we dont want to add exceptions to exisisting apis
-            if (uvIndex < 0 || uvIndex > 3)
+            if (uvIndex < 0 || uvIndex > 7)
             {
-                Debug.LogError("The uv index is invalid (must be in [0..3]");
+                Debug.LogError("The uv index is invalid. Must be in the range 0 to 7.");
                 return;
             }
             SetListForChannel(GetUVChannel(uvIndex), InternalVertexChannelType.Float, dim, uvs);
@@ -270,8 +291,8 @@ namespace UnityEngine
         {
             if (uvs == null)
                 throw new ArgumentNullException("The result uvs list cannot be null.", "uvs");
-            if (uvIndex < 0 || uvIndex > 3)
-                throw new IndexOutOfRangeException("Specified uv index is out of range. Must be in the range [0, 3].");
+            if (uvIndex < 0 || uvIndex > 7)
+                throw new IndexOutOfRangeException("The uv index is invalid. Must be in the range 0 to 7.");
 
             GetListForChannel(uvs, vertexCount, GetUVChannel(uvIndex), dim);
         }

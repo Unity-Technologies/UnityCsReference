@@ -134,9 +134,26 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         }
 
         private int m_Selected;
-        public void DoSelectDropDown()
+        private static int s_PopupHash = "EditorPopup".GetHashCode();
+
+        public void DoSelectDropDown(Action onSelect)
         {
-            m_Selected = EditorGUILayout.Popup(m_Selected, m_Labels, EditorStyles.popup);
+            var label = m_Selected >= 0 && m_Selected < m_Labels.Length ? m_Labels[m_Selected] : GUIContent.Temp("<NONE>");
+            if (GUILayout.Button(label, EditorStyles.popup))
+            {
+                Refresh();
+                Rect rect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+                var controlID = GUIUtility.GetControlID(s_PopupHash, FocusType.Keyboard, rect);
+                var position = EditorGUI.IndentedRect(rect);
+                position.y += EditorGUI.kSingleLineHeight;
+                EditorGUI.PopupCallbackInfo.instance = new EditorGUI.PopupCallbackInfo(controlID);
+                EditorUtility.DisplayCustomMenu(position, m_Labels, m_Selected, (data, options, selected) =>
+                    {
+                        m_Selected = selected;
+                        onSelect();
+                    }, null);
+                GUIUtility.keyboardControl = controlID;
+            }
         }
 
         internal UIElementsDebugger.ViewPanel? Selected
@@ -159,6 +176,25 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                     return true;
                 }
             }
+            return false;
+        }
+
+        public bool TrySelectWindow(EditorWindow searchedWindow)
+        {
+            if (searchedWindow.rootVisualContainer == null)
+                return false;
+
+            IPanel searchedPanel = searchedWindow.rootVisualContainer.panel;
+            for (int i = 0; i < m_Panels.Count; i++)
+            {
+                var p = m_Panels[i];
+                if (p.Panel == searchedPanel)
+                {
+                    m_Selected = i + 1;
+                    return true;
+                }
+            }
+
             return false;
         }
     }

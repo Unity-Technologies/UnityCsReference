@@ -6,7 +6,6 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using UnityScript.Scripting;
 
 namespace UnityEditor.Macros
 {
@@ -14,58 +13,63 @@ namespace UnityEditor.Macros
     {
         public static string Eval(string macro)
         {
-            if (macro.StartsWith("ExecuteMethod: "))
+            //TODO: Make sure we still need these 2 ways to run code. I can't find any reference to these names (ExecuteMethod, ExecuteMethod2)
+            if (macro.StartsWith("ExecuteMethod: ") || macro.StartsWith("ExecuteMethod2: "))
                 return ExecuteMethodThroughReflection(macro);
 
-
-            var value = Evaluator.Eval(EditorEvaluationContext, macro);
-            return value == null ? "Null" : value.ToString();
+            var ret = MethodEvaluator.ExecuteExternalCode(macro);
+            return ret == null ? "Null" : ret.ToString();
         }
 
         private static string ExecuteMethodThroughReflection(string macro)
         {
-            var regex = new Regex("ExecuteMethod: (?<type>.*)\\.(?<method>.*)");
-            var match = regex.Match(macro);
-            var typename = match.Groups["type"].ToString();
-            var methodname = match.Groups["method"].ToString();
-
-            var type = EditorAssemblies.loadedAssemblies.Select(a => a.GetType(typename, false)).Where(t => t != null).First();
-            var method = type.GetMethod(methodname, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
-            if (method == null)
-                throw new ArgumentException(String.Format("cannot find method {0} in type {1}", methodname, typename));
-            if (method.GetParameters().Length > 0)
-                throw new ArgumentException("You can only invoke static methods with no arguments");
-            var result = method.Invoke(null, new object[0]);
-            return result == null ? "Null" : result.ToString();
-        }
-
-        private static readonly EvaluationContext EditorEvaluationContext = new EvaluationContext(new EditorEvaluationDomainProvider());
-
-        private class EditorEvaluationDomainProvider : SimpleEvaluationDomainProvider
-        {
-            private static readonly string[] DefaultImports = new[] { "UnityEditor", "UnityEngine" };
-
-            public EditorEvaluationDomainProvider() : base(DefaultImports)
+            try
             {
-            }
+                var regex = new Regex("ExecuteMethod: (?<type>.*)\\.(?<method>.*)");
+                var match = regex.Match(macro);
+                var typename = match.Groups["type"].ToString();
+                var methodname = match.Groups["method"].ToString();
 
-            public override Assembly[] GetAssemblyReferences()
-            {
-                var editorAssemblies = EditorAssemblies.loadedAssemblies;
-                var referencedAssemblies = editorAssemblies.SelectMany(a => a.GetReferencedAssemblies()).Select(a => TryToLoad(a)).Where(a => a != null);
-                return editorAssemblies.Concat(referencedAssemblies).ToArray();
-            }
-
-            private static Assembly TryToLoad(AssemblyName a)
-            {
-                try
+                var type = EditorAssemblies.loadedAssemblies.SelectMany(a => a.GetTypes()).Where(t => t.FullName == typename).FirstOrDefault();
+                if (type == null)
                 {
-                    return Assembly.Load(a);
+                    var regex2 = new Regex(@"ExecuteMethod2: (?<assembly>[^,]+),(?<type>.*)\.(?<method>.*)");
+                    match = regex2.Match(macro);
+
+                    typename = match.Groups["type"].ToString();
+                    methodname = match.Groups["method"].ToString();
+                    var assembly = match.Groups["assembly"].ToString();
+
+                    var aa = Assembly.LoadFrom(assembly);
+                    type = aa.GetTypes().Where(t => t.FullName == typename).FirstOrDefault();
+                    if (type == null)
+                    {
+                        var sb = new System.Text.StringBuilder();
+                        foreach (var tt in aa.GetTypes())
+                        {
+                            sb.AppendFormat("\t{0}\r\n", tt.FullName);
+                        }
+
+                        throw new ArgumentException(String.Format("cannot find Type {0}. Looked int: \r\n{1}", typename, sb));
+                    }
                 }
-                catch (Exception)
+                var method = type.GetMethod(methodname, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
+                if (method == null)
+                    throw new ArgumentException(String.Format("cannot find method {0} in type {1}", methodname, typename));
+                if (method.GetParameters().Length > 0)
+                    throw new ArgumentException("You can only invoke static methods with no arguments");
+                var result = method.Invoke(null, new object[0]);
+                return result == null ? "Null" : result.ToString();
+            }
+            catch (Exception ex)
+            {
+                while (ex != null)
                 {
-                    return null;
+                    Console.WriteLine("{0}\r\n{1}", ex.Message, ex.StackTrace);
+                    ex = ex.InnerException;
                 }
+
+                throw;
             }
         }
     }

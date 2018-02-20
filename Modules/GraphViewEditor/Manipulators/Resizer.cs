@@ -53,6 +53,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             RegisterCallback<MouseDownEvent>(OnMouseDown);
             RegisterCallback<MouseUpEvent>(OnMouseUp);
             RegisterCallback<MouseMoveEvent>(OnMouseMove);
+
+            ClearClassList();
+            AddToClassList("resizer");
         }
 
         void OnMouseDown(MouseDownEvent e)
@@ -80,7 +83,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 // Warn user if target uses a relative CSS position type
                 if (parent.style.positionType != PositionType.Manual)
                 {
-                    Debug.LogWarning("Attempting to resize an object with a non manual position");
+                    if (parent.style.positionType == PositionType.Absolute)
+                    {
+                        if (!(parent.style.flexDirection == FlexDirection.Column || parent.style.flexDirection == FlexDirection.Row))
+                        {
+                            Debug.LogWarning("Attempting to resize an object with an absolute position but no layout direction (row or column)");
+                        }
+                    }
+                    else
+                    {
+                        Debug.LogWarning("Attempting to resize an object with a non manual position");
+                    }
                 }
 
                 m_Active = true;
@@ -118,26 +131,87 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (!ce.IsResizable())
                 return;
 
-            if (m_Active && parent.style.positionType == PositionType.Manual)
+            // Then can be resize in all direction
+            if (parent.style.positionType == PositionType.Manual)
+            {
+                if (ClassListContains("resizeAllDir") == false)
+                {
+                    AddToClassList("resizeAllDir");
+                    RemoveFromClassList("resizeHorizontalDir");
+                    RemoveFromClassList("resizeVerticalDir");
+                }
+            }
+            else if (parent.style.positionType == PositionType.Absolute)
+            {
+                if (parent.style.flexDirection == FlexDirection.Column)
+                {
+                    if (ClassListContains("resizeHorizontalDir") == false)
+                    {
+                        AddToClassList("resizeHorizontalDir");
+                        RemoveFromClassList("resizeAllDir");
+                        RemoveFromClassList("resizeVerticalDir");
+                    }
+                }
+                else if (parent.style.flexDirection == FlexDirection.Row)
+                {
+                    if (ClassListContains("resizeVerticalDir") == false)
+                    {
+                        AddToClassList("resizeVerticalDir");
+                        RemoveFromClassList("resizeAllDir");
+                        RemoveFromClassList("resizeHorizontalDir");
+                    }
+                }
+            }
+
+            if (m_Active)
             {
                 Vector2 diff = this.ChangeCoordinatesTo(parent, e.localMousePosition) - m_Start;
                 var newSize = new Vector2(m_StartPos.width + diff.x, m_StartPos.height + diff.y);
+                float minWidth = Math.Max(ce.style.minWidth.value, m_MinimumSize.x);
+                float minHeight = Math.Max(ce.style.minHeight.value, m_MinimumSize.y);
+                float maxWidth = ce.style.maxWidth.GetSpecifiedValueOrDefault(float.MaxValue);
+                float maxHeight = ce.style.maxHeight.GetSpecifiedValueOrDefault(float.MaxValue);
 
-                if (newSize.x < m_MinimumSize.x)
-                    newSize.x = m_MinimumSize.x;
-                if (newSize.y < m_MinimumSize.y)
-                    newSize.y = m_MinimumSize.y;
+                newSize.x = (newSize.x < minWidth) ? minWidth : ((newSize.x > maxWidth) ? maxWidth : newSize.x);
+                newSize.y = (newSize.y < minHeight) ? minHeight : ((newSize.y > maxHeight) ? maxHeight : newSize.y);
 
-                ce.SetPosition(new Rect(ce.layout.x, ce.layout.y, newSize.x, newSize.y));
-                ce.UpdatePresenterPosition();
+                bool resized = false;
 
-                GraphView graphView = ce.GetFirstAncestorOfType<GraphView>();
-                if (graphView != null && graphView.elementResized != null)
+                if (ce.GetPosition().size != newSize)
                 {
-                    graphView.elementResized(ce);
+                    if (parent.style.positionType == PositionType.Manual)
+                    {
+                        ce.SetPosition(new Rect(ce.layout.x, ce.layout.y, newSize.x, newSize.y));
+                        resized = true;
+                        m_LabelText.text = String.Format("{0:0}", parent.layout.width) + "x" + String.Format("{0:0}", parent.layout.height);
+                    }
+                    else if (parent.style.positionType == PositionType.Absolute)
+                    {
+                        if (parent.style.flexDirection == FlexDirection.Column)
+                        {
+                            ce.style.width = newSize.x;
+                            resized = true;
+                            m_LabelText.text = String.Format("{0:0}", parent.style.width) + "x" + String.Format("{0:0}", parent.style.height);
+                        }
+                        else if (parent.style.flexDirection == FlexDirection.Row)
+                        {
+                            ce.style.height = newSize.y;
+                            resized = true;
+                            m_LabelText.text = String.Format("{0:0}", parent.style.width) + "x" + String.Format("{0:0}", parent.style.height);
+                        }
+                    }
                 }
 
-                m_LabelText.text = String.Format("{0:0}", parent.layout.width) + "x" + String.Format("{0:0}", parent.layout.height);
+                if (resized)
+                {
+                    ce.UpdatePresenterPosition();
+
+                    GraphView graphView = ce.GetFirstAncestorOfType<GraphView>();
+                    if (graphView != null && graphView.elementResized != null)
+                    {
+                        graphView.elementResized(ce);
+                    }
+                }
 
                 e.StopPropagation();
             }

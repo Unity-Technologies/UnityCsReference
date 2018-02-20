@@ -8,6 +8,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Jobs
 {
+    [JobProducerType(typeof(IJobExtensions.JobStruct < >))]
     public interface IJob
     {
         void Execute();
@@ -15,14 +16,14 @@ namespace Unity.Jobs
 
     public static class IJobExtensions
     {
-        struct JobStruct<T> where T : struct, IJob
+        internal struct JobStruct<T> where T : struct, IJob
         {
             public static IntPtr                    jobReflectionData;
 
             public static IntPtr Initialize()
             {
                 if (jobReflectionData == IntPtr.Zero)
-                    jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), (ExecuteJobFunction)Execute);
+                    jobReflectionData = JobsUtility.CreateJobReflectionData(typeof(T), JobType.Single, (ExecuteJobFunction)Execute);
                 return jobReflectionData;
             }
 
@@ -33,13 +34,13 @@ namespace Unity.Jobs
             }
         }
 
-        public static JobHandle Schedule<T>(this T jobData, JobHandle dependsOn = new JobHandle()) where T : struct, IJob
+        unsafe public static JobHandle Schedule<T>(this T jobData, JobHandle dependsOn = new JobHandle()) where T : struct, IJob
         {
             var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), JobStruct<T>.Initialize(), dependsOn, ScheduleMode.Batched);
             return JobsUtility.Schedule(ref scheduleParams);
         }
 
-        public static void Run<T>(this T jobData) where T : struct, IJob
+        unsafe public static void Run<T>(this T jobData) where T : struct, IJob
         {
             var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), JobStruct<T>.Initialize(), new JobHandle(), ScheduleMode.Run);
             JobsUtility.Schedule(ref scheduleParams);

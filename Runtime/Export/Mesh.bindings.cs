@@ -144,6 +144,7 @@ namespace UnityEngine
         [FreeFunction(Name = "MeshScripting::GetPrimitiveType", HasExplicitThis = true)]
         extern private MeshTopology GetTopologyImpl(int submesh);
 
+        [NativeMethod("GetMeshMetric")] extern public float GetUVDistributionMetric(int uvSetIndex);
 
         [FreeFunction(Name = "MeshScripting::CombineMeshes", HasExplicitThis = true)]
         extern private void CombineMeshesImpl(CombineInstance[] combine, bool mergeSubMeshes, bool useMatrices, bool hasLightmapData);

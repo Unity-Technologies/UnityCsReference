@@ -64,7 +64,6 @@ namespace UnityEngine
     [NativeType(Header = "Runtime/Math/Vector3.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
     [ThreadAndSerializationSafe]
-    [UsedByNativeCode]
     public partial struct Vector3
     {
         [FreeFunction("VectorScripting::Slerp", IsThreadSafe = true)] extern public static Vector3 Slerp(Vector3 a, Vector3 b, float t);
@@ -106,7 +105,6 @@ namespace UnityEngine
     [NativeHeader("Runtime/Geometry/Ray.h")]
     [NativeHeader("Runtime/Geometry/Intersection.h")]
     [ThreadAndSerializationSafe]
-    [UsedByNativeCode]
     public partial struct Bounds
     {
         [NativeMethod("IsInside", IsThreadSafe = true)] extern public bool Contains(Vector3 point);

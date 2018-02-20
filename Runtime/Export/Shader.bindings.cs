@@ -20,7 +20,7 @@ namespace UnityEngine
         WhenLODFading
     }
 
-    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/Shader.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     [NativeHeader("Runtime/Shaders/ShaderNameRegistry.h")]
@@ -47,6 +47,10 @@ namespace UnityEngine
 
         [FreeFunction("ShaderScripting::TagToID")] extern internal static int TagToID(string name);
         [FreeFunction("ShaderScripting::IDToTag")] extern internal static string IDToTag(int name);
+
+        [FreeFunction(Name = "ShaderScripting::PropertyToID", IsThreadSafe = true)] extern public static int PropertyToID(string name);
+
+        [NativeProperty("CustomEditorName")] extern internal string customEditor { get; }
     }
 
     public sealed partial class Shader : Object
@@ -88,7 +92,7 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/Material.h")]
     public partial class Material : Object
     {
@@ -115,10 +119,11 @@ namespace UnityEngine
         public Vector2 mainTextureOffset { get { return GetTextureOffset("_MainTex"); } set { SetTextureOffset("_MainTex", value); } }
         public Vector2 mainTextureScale  { get { return GetTextureScale("_MainTex"); }  set { SetTextureScale("_MainTex", value); } }
 
-        [NativeName("HasPropertyFromScript")] extern public bool HasProperty(int name);
+        [NativeName("HasPropertyFromScript")] extern public bool HasProperty(int nameID);
         public bool HasProperty(string name) { return HasProperty(Shader.PropertyToID(name)); }
 
         extern public int renderQueue {[NativeName("GetActualRenderQueue")] get; [NativeName("SetCustomRenderQueue")] set; }
+        extern internal int rawRenderQueue {[NativeName("GetCustomRenderQueue")] get; }
 
         extern public void EnableKeyword(string keyword);
         extern public void DisableKeyword(string keyword);
@@ -138,6 +143,14 @@ namespace UnityEngine
         [NativeName("GetTag")] extern private string GetTagImpl(string tag, bool currentSubShaderOnly, string defaultValue);
         public string GetTag(string tag, bool searchFallbacks, string defaultValue) { return GetTagImpl(tag, !searchFallbacks, defaultValue); }
         public string GetTag(string tag, bool searchFallbacks) { return GetTagImpl(tag, !searchFallbacks, ""); }
+
+        [FreeFunction("MaterialScripting::Lerp", HasExplicitThis = true)] extern public void Lerp(Material start, Material end, float t);
+        [FreeFunction("MaterialScripting::SetPass", HasExplicitThis = true)] extern public bool SetPass(int pass);
+        [FreeFunction("MaterialScripting::CopyPropertiesFrom", HasExplicitThis = true)] extern public void CopyPropertiesFromMaterial(Material mat);
+
+        [FreeFunction("MaterialScripting::GetShaderKeywords", HasExplicitThis = true)] extern private string[] GetShaderKeywords();
+        [FreeFunction("MaterialScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);
+        public string[] shaderKeywords { get { return GetShaderKeywords(); } set { SetShaderKeywords(value); } }
     }
 
     public partial class Material : Object
@@ -187,14 +200,13 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
+    [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ShaderPropertySheet.h")]
-    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     [NativeHeader("Runtime/Math/SphericalHarmonicsL2.h")]
     public sealed partial class MaterialPropertyBlock
     {
-        // TODO: set int is missing
-        // TODO: get int/color/buffer is missing
+        // TODO: get buffer is missing
 
         [NativeName("GetFloatFromScript")]   extern private float     GetFloatImpl(int name);
         [NativeName("GetVectorFromScript")]  extern private Vector4   GetVectorImpl(int name);
@@ -275,5 +287,54 @@ namespace UnityEngine
         [NativeName("WarmupShaders")] extern public void WarmUp();
 
         [NativeName("CreateFromScript")] extern private static void Internal_Create([Writable] ShaderVariantCollection svc);
+    }
+}
+
+//
+// ComputeShader
+//
+
+namespace UnityEngine
+{
+    [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
+    public sealed partial class ComputeShader : Object
+    {
+        [NativeMethod(Name = "ComputeShaderScripting::FindKernel", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
+        extern public int  FindKernel(string name);
+        [FreeFunction(Name = "ComputeShaderScripting::HasKernel", HasExplicitThis = true)]
+        extern public bool HasKernel(string name);
+
+        [FreeFunction(Name = "ComputeShaderScripting::SetValue<float>",      HasExplicitThis = true)]
+        extern public void SetFloat(int nameID, float val);
+        [FreeFunction(Name = "ComputeShaderScripting::SetValue<int>",        HasExplicitThis = true)]
+        extern public void SetInt(int nameID, int val);
+        [FreeFunction(Name = "ComputeShaderScripting::SetValue<Vector4f>",   HasExplicitThis = true)]
+        extern public void SetVector(int nameID, Vector4 val);
+        [FreeFunction(Name = "ComputeShaderScripting::SetValue<Matrix4x4f>", HasExplicitThis = true)]
+        extern public void SetMatrix(int nameID, Matrix4x4 val);
+
+        [FreeFunction(Name = "ComputeShaderScripting::SetArray<float>",      HasExplicitThis = true)]
+        extern private void SetFloatArray(int nameID, float[] values);
+        [FreeFunction(Name = "ComputeShaderScripting::SetArray<int>",        HasExplicitThis = true)]
+        extern private void SetIntArray(int nameID, int[] values);
+        [FreeFunction(Name = "ComputeShaderScripting::SetArray<Vector4f>",   HasExplicitThis = true)]
+        extern public void SetVectorArray(int nameID, Vector4[] values);
+        [FreeFunction(Name = "ComputeShaderScripting::SetArray<Matrix4x4f>", HasExplicitThis = true)]
+        extern public void SetMatrixArray(int nameID, Matrix4x4[] values);
+
+        [NativeMethod(Name = "ComputeShaderScripting::SetTexture", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
+        extern public void SetTexture(int kernelIndex, int nameID, [NotNull] Texture texture);
+        [NativeMethod(Name = "ComputeShaderScripting::SetTextureFromGlobal", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
+        extern public void SetTextureFromGlobal(int kernelIndex, int nameID, int globalTextureNameID);
+
+        [FreeFunction(Name = "ComputeShaderScripting::SetBuffer", HasExplicitThis = true)]
+        extern public void SetBuffer(int kernelIndex, int nameID, [NotNull] ComputeBuffer buffer);
+
+        [NativeMethod(Name = "ComputeShaderScripting::GetKernelThreadGroupSizes", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
+        extern public void GetKernelThreadGroupSizes(int kernelIndex, out uint x, out uint y, out uint z);
+
+        [NativeName("DispatchComputeShader")] extern public void Dispatch(int kernelIndex, int threadGroupsX, int threadGroupsY, int threadGroupsZ);
+        [FreeFunction(Name = "ComputeShaderScripting::DispatchIndirect", HasExplicitThis = true)]
+        extern private void Internal_DispatchIndirect(int kernelIndex, [NotNull] ComputeBuffer argsBuffer, uint argsOffset);
     }
 }

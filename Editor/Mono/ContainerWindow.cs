@@ -3,41 +3,22 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
-using System.Linq;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using IntPtr = System.IntPtr;
-using System;
 
 namespace UnityEditor
 {
-    // See ContainerWindow.bindings for bindings
-
     [StructLayout(LayoutKind.Sequential)]
     internal partial class ContainerWindow : ScriptableObject
     {
-        [SerializeField]
-        MonoReloadableIntPtr   m_WindowPtr;
+        [SerializeField] MonoReloadableIntPtr m_WindowPtr;
+        [SerializeField] Rect m_PixelRect;
+        [SerializeField] int m_ShowMode;
+        [SerializeField] string m_Title = "";
 
-    #pragma warning disable 0414
-        [SerializeField]
-        Rect    m_PixelRect;
-        [SerializeField]
-        int m_ShowMode;
-        [SerializeField]
-        string m_Title = "";
-    #pragma warning restore 0414
-
-        [SerializeField]
-        [UnityEngine.Serialization.FormerlySerializedAs("m_MainView")]
-        View m_RootView;
-        [SerializeField]
-        Vector2 m_MinSize = new Vector2(120, 80);
-        [SerializeField]
-        Vector2 m_MaxSize = new Vector2(4000, 4000);
+        [SerializeField, UnityEngine.Serialization.FormerlySerializedAs("m_MainView")] View m_RootView;
+        [SerializeField] Vector2 m_MinSize = new Vector2(120, 80);
+        [SerializeField] Vector2 m_MaxSize = new Vector2(4000, 4000);
 
         internal bool m_DontSaveToLayout = false;
 
@@ -102,7 +83,7 @@ namespace UnityEditor
         }
 
         // Show the editor window.
-        public void Show(ShowMode  showMode, bool loadPosition, bool displayImmediately)
+        public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately)
         {
             if (showMode == ShowMode.AuxWindow)
                 showMode = ShowMode.Utility;
@@ -187,8 +168,7 @@ namespace UnityEditor
 
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
 
-                (rootView as SplitView != null &&
-                 rootView.children.Length == 1 &&
+                (rootView is SplitView &&
                  rootView.children.Length == 1 &&
                  rootView.children[0] is DockArea &&
                  ((DockArea)rootView.children[0]).m_Panes.Count == 1)
@@ -290,8 +270,7 @@ namespace UnityEditor
         // TODO: Handle title bar height and other things
         public Vector2 WindowToScreenPoint(Vector2 windowPoint)
         {
-            Vector2 hmm;
-            Internal_GetTopleftScreenPosition(out hmm);
+            Vector2 hmm = Internal_GetTopleftScreenPosition();
             return windowPoint + hmm;// + new Vector2 (position.x, position.y) + hmm;
         }
 
@@ -378,7 +357,10 @@ namespace UnityEditor
 
                 BeginTitleBarButtons(windowPosition);
                 if (TitleBarButton(close))
+                {
                     Close();
+                    GUIUtility.ExitGUI();
+                }
                 if (macEditor && TitleBarButton(min))
                 {
                     Minimize();

@@ -159,6 +159,25 @@ namespace UnityEditor.Modules
 
         // Scripting implementations exposed to the user.
         ScriptingImplementation[] Enabled();
+        bool AllowIL2CPPCompilerConfigurationSelection();
+    }
+
+    internal class DefaultScriptingImplementations : IScriptingImplementations
+    {
+        public virtual ScriptingImplementation[] Supported()
+        {
+            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
+        }
+
+        public virtual ScriptingImplementation[] Enabled()
+        {
+            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
+        }
+
+        public virtual bool AllowIL2CPPCompilerConfigurationSelection()
+        {
+            return true;
+        }
     }
 
     // Extension point to add/alter the SettingsEditorWindow class
@@ -256,6 +275,9 @@ namespace UnityEditor.Modules
         // Force full optimisations for script complilation in Development builds.
         // Useful for forcing optimized compiler for IL2CPP when profiling.
         bool ShouldDrawForceOptimizeScriptsCheckbox();
+
+        // Enables a dialog "Wait For Managed debugger", which halts program execution until managed debugger is connected
+        bool ShouldDrawWaitForManagedDebugger();
     }
 
     internal interface IBuildAnalyzer

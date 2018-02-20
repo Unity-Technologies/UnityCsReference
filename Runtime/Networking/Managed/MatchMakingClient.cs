@@ -30,7 +30,7 @@ namespace UnityEngine.Networking.Match
             address = matchResponse.address;
             port = matchResponse.port;
             domain = matchResponse.domain;
-            networkId = matchResponse.networkId;
+            networkId = (NetworkID)matchResponse.networkId;
             accessToken = new NetworkAccessToken(matchResponse.accessTokenString);
             nodeId = matchResponse.nodeId;
             usingRelay = matchResponse.usingRelay;
@@ -41,7 +41,7 @@ namespace UnityEngine.Networking.Match
             address = matchResponse.address;
             port = matchResponse.port;
             domain = matchResponse.domain;
-            networkId = matchResponse.networkId;
+            networkId = (NetworkID)matchResponse.networkId;
             accessToken = new NetworkAccessToken(matchResponse.accessTokenString);
             nodeId = matchResponse.nodeId;
             usingRelay = matchResponse.usingRelay;
@@ -91,7 +91,7 @@ namespace UnityEngine.Networking.Match
 
         internal MatchInfoSnapshot(MatchDesc matchDesc)
         {
-            networkId = matchDesc.networkId;
+            networkId = (NetworkID)matchDesc.networkId;
             hostNodeId = matchDesc.hostNodeId;
             name = matchDesc.name;
             averageEloScore = matchDesc.averageEloScore;
@@ -178,7 +178,7 @@ namespace UnityEngine.Networking.Match
         internal virtual void OnMatchCreate(CreateMatchResponse response, DataResponseDelegate<MatchInfo> userCallback)
         {
             if (response.success)
-                Utility.SetAccessTokenForNetwork(response.networkId, new NetworkAccessToken(response.accessTokenString));
+                Utility.SetAccessTokenForNetwork((NetworkID)response.networkId, new NetworkAccessToken(response.accessTokenString));
 
             userCallback(response.success, response.extendedInfo, new MatchInfo(response));
         }
@@ -223,7 +223,7 @@ namespace UnityEngine.Networking.Match
         internal void OnMatchJoined(JoinMatchResponse response, DataResponseDelegate<MatchInfo> userCallback)
         {
             if (response.success)
-                Utility.SetAccessTokenForNetwork(response.networkId, new NetworkAccessToken(response.accessTokenString));
+                Utility.SetAccessTokenForNetwork((NetworkID)response.networkId, new NetworkAccessToken(response.accessTokenString));
 
             userCallback(response.success, response.extendedInfo, new MatchInfo(response));
         }
@@ -411,23 +411,13 @@ namespace UnityEngine.Networking.Match
 
             if (!(client.isNetworkError || client.isHttpError))
             {
-                object o;
-                if (SimpleJson.SimpleJson.TryDeserializeObject(client.downloadHandler.text, out o))
+                try
                 {
-                    IDictionary<string, object> dictJsonObj = o as IDictionary<string, object>;
-                    if (null != dictJsonObj)
-                    {
-                        // Catch exception and error handling below will print out some debug info
-                        // Callback will be called properly with failure info
-                        try
-                        {
-                            jsonInterface.Parse(o);
-                        }
-                        catch (FormatException exception)
-                        {
-                            jsonInterface.SetFailure(UnityString.Format("FormatException:[{0}] ", exception.ToString()));
-                        }
-                    }
+                    JsonUtility.FromJsonOverwrite(client.downloadHandler.text, jsonInterface);
+                }
+                catch (ArgumentException exception)
+                {
+                    jsonInterface.SetFailure(UnityString.Format("ArgumentException:[{0}] ", exception.ToString()));
                 }
             }
             else

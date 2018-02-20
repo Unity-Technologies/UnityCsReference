@@ -24,7 +24,7 @@ namespace UnityEditor.Utils
 
         private static bool IsMobileBuildTarget(BuildTarget target)
         {
-            return target == BuildTarget.iOS || target == BuildTarget.Android || target == BuildTarget.Tizen;
+            return target == BuildTarget.iOS || target == BuildTarget.Android;
         }
 
         private static string FormattedTextContent(string localeString, params object[] args)

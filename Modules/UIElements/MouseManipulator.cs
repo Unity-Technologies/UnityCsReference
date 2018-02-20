@@ -18,9 +18,6 @@ namespace UnityEngine.Experimental.UIElements
 
         protected bool CanStartManipulation(IMouseEvent e)
         {
-            if (MouseCaptureController.IsMouseCaptureTaken())
-                return false;
-
             foreach (var activator in activators)
             {
                 if (activator.Matches(e))
@@ -35,7 +32,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected bool CanStopManipulation(IMouseEvent e)
         {
-            return ((MouseButton)e.button == m_currentActivator.button) && target.HasMouseCapture();
+            return ((MouseButton)e.button == m_currentActivator.button);
         }
     }
 }

@@ -196,7 +196,7 @@ namespace UnityEditor
 
             if (m_AvatarPreview != null)
             {
-                m_AvatarPreview.OnDestroy();
+                m_AvatarPreview.OnDisable();
                 m_AvatarPreview = null;
             }
 
@@ -711,11 +711,6 @@ namespace UnityEditor
         public void OnDisable()
         {
             ClearController();
-        }
-
-        public void OnDestroy()
-        {
-            ClearController();
 
             if (m_Timeline != null)
             {
@@ -724,7 +719,7 @@ namespace UnityEditor
 
             if (m_AvatarPreview != null)
             {
-                m_AvatarPreview.OnDestroy();
+                m_AvatarPreview.OnDisable();
                 m_AvatarPreview = null;
             }
         }

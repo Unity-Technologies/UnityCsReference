@@ -101,6 +101,9 @@ namespace UnityEngine.Experimental.UIElements
             Factories.RegisterFactory<VisualContainer>((_, __) => new VisualContainer());
             Factories.RegisterFactory<VisualElement>((_, __) => new VisualElement());
             Factories.RegisterFactory<TemplateContainer>(CreateTemplate);
+            Factories.RegisterFactory<Box>((_, __) => new Box());
+            Factories.RegisterFactory<PopupWindow>((_, __) => new PopupWindow());
+            Factories.RegisterFactory<ListView>(CreateListView);
         }
 
         private static VisualElement CreateButton(IUxmlAttributes bag, CreationContext ctx)
@@ -111,7 +114,7 @@ namespace UnityEngine.Experimental.UIElements
         private static VisualElement CreateTemplate(IUxmlAttributes bag, CreationContext ctx)
         {
             string alias = ((TemplateAsset)bag).templateAlias;
-            VisualTreeAsset vea = ctx.visualTreeAsset.ResolveUsing(alias);
+            VisualTreeAsset vea = ctx.visualTreeAsset.ResolveTemplate(alias);
 
             var tc = new TemplateContainer(alias);
 
@@ -164,6 +167,13 @@ namespace UnityEngine.Experimental.UIElements
         private static VisualElement CreateToggle(IUxmlAttributes bag, CreationContext ctx)
         {
             return new Toggle(null);
+        }
+
+        private static VisualElement CreateListView(IUxmlAttributes bag, CreationContext ctx)
+        {
+            var listView = new ListView();
+            listView.itemHeight = bag.GetPropertyInt("itemHeight", listView.itemHeight);
+            return listView;
         }
     }
 }

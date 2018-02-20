@@ -14,7 +14,7 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent kJobOptionsLabel = EditorGUIUtility.TextContent("Job Options (Experimental)|Allows the configuration of multi-threaded physics using the job system.");
+            public static readonly GUIContent kJobOptionsLabel = EditorGUIUtility.TrTextContent("Job Options (Experimental)", "Allows the configuration of multi-threaded physics using the job system.");
         }
 
         SerializedProperty m_JobOptions;

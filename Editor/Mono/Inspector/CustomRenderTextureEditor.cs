@@ -38,16 +38,16 @@ namespace UnityEditor
             public readonly GUIContent  wrapUpdateZones     = EditorGUIUtility.TrTextContent("Wrap Update Zones", "If ticked, Update zones will wrap around the border of the Custom Render Texture. If unticked, Update zones will be clamped at the border of the Custom Render Texture.");
             public readonly GUIContent  saveButton          = EditorGUIUtility.TrTextContent("Save Texture", "Save the content of the Custom Render Texture to an EXR or PNG file.");
 
-            public readonly GUIContent[] updateModeStrings = { EditorGUIUtility.TextContent("OnLoad"), EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("OnDemand") };
+            public readonly GUIContent[] updateModeStrings = { EditorGUIUtility.TextContent("OnLoad"), EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("OnDemand") };
             public readonly int[] updateModeValues = { (int)CustomRenderTextureUpdateMode.OnLoad, (int)CustomRenderTextureUpdateMode.Realtime, (int)CustomRenderTextureUpdateMode.OnDemand };
 
-            public readonly GUIContent[] initSourceStrings = { EditorGUIUtility.TextContent("Texture and Color"), EditorGUIUtility.TrTextContent("Material") };
+            public readonly GUIContent[] initSourceStrings = { EditorGUIUtility.TrTextContent("Texture and Color"), EditorGUIUtility.TrTextContent("Material") };
             public readonly int[] initSourceValues = { (int)CustomRenderTextureInitializationSource.TextureAndColor, (int)CustomRenderTextureInitializationSource.Material };
 
-            public readonly GUIContent[] updateZoneSpaceStrings = { EditorGUIUtility.TextContent("Normalized"), EditorGUIUtility.TrTextContent("Pixel") };
+            public readonly GUIContent[] updateZoneSpaceStrings = { EditorGUIUtility.TrTextContent("Normalized"), EditorGUIUtility.TrTextContent("Pixel") };
             public readonly int[] updateZoneSpaceValues = { (int)CustomRenderTextureUpdateZoneSpace.Normalized, (int)CustomRenderTextureUpdateZoneSpace.Pixel };
 
-            public readonly GUIContent[] cubemapFaces = { EditorGUIUtility.TextContent("+X"), EditorGUIUtility.TextContent("-X"), EditorGUIUtility.TextContent("+Y"), EditorGUIUtility.TextContent("-Y"), EditorGUIUtility.TextContent("+Z"), EditorGUIUtility.TrTextContent("-Z") };
+            public readonly GUIContent[] cubemapFaces = { EditorGUIUtility.TextContent("+X"), EditorGUIUtility.TextContent("-X"), EditorGUIUtility.TextContent("+Y"), EditorGUIUtility.TextContent("-Y"), EditorGUIUtility.TrTextContent("+Z"), EditorGUIUtility.TrTextContent("-Z") };
         }
 
         static Styles s_Styles = null;

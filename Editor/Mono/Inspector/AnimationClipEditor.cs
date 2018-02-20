@@ -404,7 +404,10 @@ namespace UnityEditor
         {
             DestroyController();
             if (m_AvatarPreview != null)
-                m_AvatarPreview.OnDestroy();
+            {
+                m_AvatarPreview.OnDisable();
+                m_AvatarPreview = null;
+            }
         }
 
         public override bool HasPreviewGUI()

@@ -2,14 +2,13 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.IO;
 using System.Collections.Generic;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEditor.Experimental;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
-
 
 namespace UnityEditor
 {
@@ -268,16 +267,23 @@ namespace UnityEditor
             int depth = 0;
             string displayName = "Assets"; //CreateDisplayName (assetsFolderInstanceID);
             TreeViewItem assetRootItem = new TreeViewItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
-            ReadAssetDatabase(HierarchyType.Assets, assetRootItem, depth + 1);
+            ReadAssetDatabase("Assets", assetRootItem, depth + 1);
 
-            // Fetch packages
             TreeViewItem packagesRootItem = null;
             if (Unsupported.IsDeveloperMode() && EditorPrefs.GetBool("ShowPackagesFolder"))
             {
-                var packagesFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(AssetDatabase.GetPackagesMountPoint());
-                string packagesDisplayName = AssetDatabase.GetPackagesMountPoint();
-                packagesRootItem = new TreeViewItem(packagesFolderInstanceID, depth, m_RootItem, packagesDisplayName);
-                ReadAssetDatabase(HierarchyType.Packages, packagesRootItem, depth + 1);
+                var packagesPaths = PackageManager.Folders.GetPackagesPaths();
+
+                packagesRootItem = new TreeViewItem(0, depth, m_RootItem, "Packages");
+                depth++;
+                foreach (var packagePath in packagesPaths)
+                {
+                    var packagesFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(packagePath);
+                    var packageDisplayName = Path.GetFileName(packagePath);
+                    TreeViewItem packageItem = new TreeViewItem(packagesFolderInstanceID, depth, null, packageDisplayName);
+                    packagesRootItem.AddChild(packageItem);
+                    ReadAssetDatabase(packagePath, packageItem, depth + 1);
+                }
             }
 
             // Fetch saved filters
@@ -303,14 +309,14 @@ namespace UnityEditor
             m_NeedRefreshRows = true;
         }
 
-        private void ReadAssetDatabase(HierarchyType htype, TreeViewItem parent, int baseDepth)
+        private void ReadAssetDatabase(string assetFolderRootPath, TreeViewItem parent, int baseDepth)
         {
             // Read from Assets directory
-            IHierarchyProperty property = new HierarchyProperty(htype, false);
+            IHierarchyProperty property = new HierarchyProperty(assetFolderRootPath);
             property.Reset();
 
-            Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResourcesUtility.folderIconName);
-            Texture2D emptyFolderIcon = EditorGUIUtility.FindTexture(EditorResourcesUtility.emptyFolderIconName);
+            Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
+            Texture2D emptyFolderIcon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
 
             List<TreeViewItem> allFolders = new List<TreeViewItem>();
             while (property.Next(null))

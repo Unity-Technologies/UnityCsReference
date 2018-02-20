@@ -10,6 +10,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
 using System.Collections;
+using UnityEditor.Experimental;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -128,7 +129,7 @@ namespace UnityEditor
             m_BrushProjector.transform.Rotate(90.0f, 0.0f, 0.0f);
 
             Material mat = EditorGUIUtility.LoadRequired("SceneView/TerrainBrushMaterial.mat") as Material;
-            mat.SetTexture("_CutoutTex", (Texture2D)EditorGUIUtility.Load(EditorResourcesUtility.brushesPath + "brush_cutout.png"));
+            mat.SetTexture("_CutoutTex", (Texture2D)EditorGUIUtility.Load(EditorResources.brushesPath + "brush_cutout.png"));
             m_BrushProjector.material = mat;
         }
     }

@@ -88,6 +88,7 @@ namespace UnityEditorInternal
             public GUIStyle elementBackground = new GUIStyle("RL Element");
             public const int padding = 6;
             public const int dragHandleWidth = 20;
+            private static GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");
 
             // draw the default footer
             public void DrawFooter(Rect rect, ReorderableList list)
@@ -226,7 +227,7 @@ namespace UnityEditorInternal
             // draw the default element
             public void DrawNoneElement(Rect rect, bool draggable)
             {
-                EditorGUI.LabelField(rect, EditorGUIUtility.TempContent("List is Empty"));
+                EditorGUI.LabelField(rect, Defaults.s_ListIsEmpty);
             }
         }
         static Defaults s_Defaults;

@@ -286,11 +286,11 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
-        internal VisualTreeAsset ResolveUsing(string templateAlias)
+        internal VisualTreeAsset ResolveTemplate(string templateName)
         {
             if (m_Usings == null || m_Usings.Count == 0)
                 return null;
-            int index = m_Usings.BinarySearch(new UsingEntry(templateAlias, null), UsingEntry.comparer);
+            int index = m_Usings.BinarySearch(new UsingEntry(templateName, null), UsingEntry.comparer);
             if (index < 0)
                 return null;
 
@@ -298,25 +298,25 @@ namespace UnityEngine.Experimental.UIElements
             return Panel.loadResourceFunc == null ? null : Panel.loadResourceFunc(path, typeof(VisualTreeAsset)) as VisualTreeAsset;
         }
 
-        internal bool AliasExists(string templateAlias)
+        internal bool TemplateExists(string templateName)
         {
             if (m_Usings == null || m_Usings.Count == 0)
                 return false;
-            var index = m_Usings.BinarySearch(new UsingEntry(templateAlias, null), UsingEntry.comparer);
+            var index = m_Usings.BinarySearch(new UsingEntry(templateName, null), UsingEntry.comparer);
             return index >= 0;
         }
 
-        internal void RegisterUsing(string alias, string path)
+        internal void RegisterTemplate(string templateName, string path)
         {
             if (m_Usings == null)
                 m_Usings = new List<UsingEntry>();
 
             // find insertion index so usings are sorted by alias
             int i = 0;
-            while (i < m_Usings.Count && alias.CompareTo(m_Usings[i].alias) != -1)
+            while (i < m_Usings.Count && templateName.CompareTo(m_Usings[i].alias) != -1)
                 i++;
 
-            m_Usings.Insert(i, new UsingEntry(alias, path));
+            m_Usings.Insert(i, new UsingEntry(templateName, path));
         }
 
     }

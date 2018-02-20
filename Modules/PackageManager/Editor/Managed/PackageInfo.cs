@@ -21,72 +21,53 @@ namespace UnityEditor.PackageManager
     {
         [SerializeField]
         [NativeName("packageId")]
-        private string m_PackageId;
+        private string m_PackageId = "";
+
         [SerializeField]
         [NativeName("version")]
-        private string m_Version;
+        private string m_Version = "";
+
         [SerializeField]
-        [NativeName("originType")]
-        private OriginType m_OriginType;
+        [NativeName("source")]
+        private PackageSource m_Source = PackageSource.Unknown;
+
         [SerializeField]
         [NativeName("resolvedPath")]
-        private string m_ResolvedPath;
+        private string m_ResolvedPath = "";
+
         [SerializeField]
         [NativeName("name")]
-        private string m_Name;
+        private string m_Name = "";
+
         [SerializeField]
         [NativeName("displayName")]
-        private string m_DisplayName;
+        private string m_DisplayName = "";
+
         [SerializeField]
         [NativeName("category")]
-        private string m_Category;
+        private string m_Category = "";
+
         [SerializeField]
         [NativeName("description")]
-        private string m_Description;
+        private string m_Description = "";
+
         [SerializeField]
         [NativeName("status")]
-        private PackageStatus m_Status;
+        private PackageStatus m_Status = PackageStatus.Unknown;
+
         [SerializeField]
         [NativeName("errors")]
-        private Error[] m_Errors;
+        private Error[] m_Errors = new Error[0];
+
         [SerializeField]
         [NativeName("versions")]
-        private VersionsInfo m_Versions;
+        private VersionsInfo m_Versions = new VersionsInfo(null, null, null);
 
         private PackageInfo() {}
 
-        internal PackageInfo(
-            string packageId,
-            string displayName = "",
-            string category = "",
-            string description = "",
-            string resolvedPath = "",
-            string tag = "",
-            PackageStatus status = PackageStatus.Unavailable,
-            IEnumerable<Error> errors = null,
-            VersionsInfo versions = null)
-        {
-            // Set the default values
-            m_OriginType = OriginType.Unknown;
-            m_PackageId = packageId;
-            m_DisplayName = displayName;
-            m_Category = category;
-            m_Description = description;
-            m_ResolvedPath = resolvedPath;
-            m_Status = status;
-            m_Errors = (errors ?? new Error[] {}).ToArray();
-            m_Versions = versions ?? new VersionsInfo(null, null, null);
-
-            // Populate name and version
-            var nameAndVersion = packageId.Split('@');
-            m_Name = nameAndVersion[0];
-            m_Version = nameAndVersion[1];
-        }
-
         public string packageId { get { return m_PackageId;  } }
         public string version { get { return m_Version;  } }
-        // Mocked for PAX uncomment when properly implemented
-        // public OriginType originType { get { return m_OriginType;  } }}
+        public PackageSource source { get { return m_Source;  } }
         public string resolvedPath { get { return m_ResolvedPath;  } }
         public string name { get { return m_Name;  } }
         public string displayName { get { return m_DisplayName;  } }
@@ -95,18 +76,6 @@ namespace UnityEditor.PackageManager
         public PackageStatus status { get { return m_Status;  } }
         public Error[] errors { get { return m_Errors;  } }
         public VersionsInfo versions { get { return m_Versions; } }
-
-        // Mock needed by PAX
-        public OriginType originType
-        {
-            get
-            {
-                if (m_Name.StartsWith("com.unity.modules."))
-                    return OriginType.Builtin;
-                else
-                    return OriginType.Registry;
-            }
-        }
     }
 }
 

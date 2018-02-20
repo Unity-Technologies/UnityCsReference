@@ -4,15 +4,17 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Rendering;
+using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
     internal sealed partial class NoAllocHelpers
     {
+
         public static void ResizeList<T>(List<T> list, int size)
         {
             if (list == null)
@@ -22,9 +24,6 @@ namespace UnityEngine
             if (size != list.Count)
                 Internal_ResizeList(list, size);
         }
-
-
-        public static T[] ExtractArrayFromListT<T>(List<T> list) { return (T[])ExtractArrayFromList(list); }
 
         public static void EnsureListElemCount<T>(List<T> list, int count)
         {
@@ -36,6 +35,11 @@ namespace UnityEngine
 
             ResizeList(list, count);
         }
+
+        // tiny helpers
+        public static int SafeLength(System.Array values)           { return values != null ? values.Length : 0; }
+        public static int SafeLength<T>(List<T> values)             { return values != null ? values.Count : 0; }
+        public static T[] ExtractArrayFromListT<T>(List<T> list)    { return (T[])ExtractArrayFromList(list); }
     }
 }
 
@@ -61,42 +65,13 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    [UsedByNativeCode]
-    public sealed partial class LightmapData
-    {
-        internal Texture2D m_Light;
-        internal Texture2D m_Dir;
-        internal Texture2D m_ShadowMask;
-
-        [System.Obsolete("Use lightmapColor property (UnityUpgradable) -> lightmapColor", false)]
-        public Texture2D lightmapLight { get { return m_Light; }        set { m_Light = value; } }
-
-        public Texture2D lightmapColor { get { return m_Light; }        set { m_Light = value; } }
-        public Texture2D lightmapDir   { get { return m_Dir; }          set { m_Dir = value; } }
-        public Texture2D shadowMask    { get { return m_ShadowMask; }   set { m_ShadowMask = value; } }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RenderBuffer
+    public partial struct RenderBuffer
     {
         internal int m_RenderTextureInstanceID;
         internal IntPtr m_BufferPtr;
 
-        internal void SetLoadAction(Rendering.RenderBufferLoadAction action)    { RenderBufferHelper.SetLoadAction(out this, (int)action); }
-        internal void SetStoreAction(Rendering.RenderBufferStoreAction action)  { RenderBufferHelper.SetStoreAction(out this, (int)action); }
-
-        internal Rendering.RenderBufferLoadAction loadAction
-        {
-            get { return (Rendering.RenderBufferLoadAction)RenderBufferHelper.GetLoadAction(out this); }
-            set { SetLoadAction(value); }
-        }
-        internal Rendering.RenderBufferStoreAction storeAction
-        {
-            get { return (Rendering.RenderBufferStoreAction)RenderBufferHelper.GetStoreAction(out this); }
-            set { SetStoreAction(value); }
-        }
-
-        public IntPtr GetNativeRenderBufferPtr()    { return RenderBufferHelper.GetNativeRenderBufferPtr(m_BufferPtr); }
+        internal RenderBufferLoadAction  loadAction  { get { return GetLoadAction();  } set { SetLoadAction(value); } }
+        internal RenderBufferStoreAction storeAction { get { return GetStoreAction(); } set { SetStoreAction(value); } }
     }
 
     public struct RenderTargetSetup
@@ -241,70 +216,34 @@ namespace UnityEngine
                 throw new ArgumentException("Bad CubemapFace provided");
 
             Internal_SetMRTFullSetup(
-                setup.color, out setup.depth, setup.mipLevel, setup.cubemapFace, setup.depthSlice,
+                setup.color, setup.depth, setup.mipLevel, setup.cubemapFace, setup.depthSlice,
                 setup.colorLoad, setup.colorStore, setup.depthLoad, setup.depthStore
                 );
         }
 
         internal static void SetRenderTargetImpl(RenderBuffer colorBuffer, RenderBuffer depthBuffer, int mipLevel, CubemapFace face, int depthSlice)
         {
-            RenderBuffer color = colorBuffer, depth = depthBuffer;
-            Internal_SetRTSimple(out color, out depth, mipLevel, face, depthSlice);
+            Internal_SetRTSimple(colorBuffer, depthBuffer, mipLevel, face, depthSlice);
         }
 
         internal static void SetRenderTargetImpl(RenderTexture rt, int mipLevel, CubemapFace face, int depthSlice)
         {
-            if (rt)  SetRenderTargetImpl(rt.colorBuffer, rt.depthBuffer, mipLevel, face, depthSlice);
+            if (rt) SetRenderTargetImpl(rt.colorBuffer, rt.depthBuffer, mipLevel, face, depthSlice);
             else    Internal_SetNullRT();
         }
 
         internal static void SetRenderTargetImpl(RenderBuffer[] colorBuffers, RenderBuffer depthBuffer, int mipLevel, CubemapFace face, int depthSlice)
         {
             RenderBuffer depth = depthBuffer;
-            Internal_SetMRTSimple(colorBuffers, out depth, mipLevel, face, depthSlice);
-        }
-    }
-
-    public partial class Graphics
-    {
-        // TODO: when we enable default arguments support these can be combined into one method
-        public static void SetRenderTarget(RenderTexture rt)
-        {
-            SetRenderTargetImpl(rt, 0, CubemapFace.Unknown, 0);
+            Internal_SetMRTSimple(colorBuffers, depth, mipLevel, face, depthSlice);
         }
 
-        public static void SetRenderTarget(RenderTexture rt, int mipLevel)
-        {
-            SetRenderTargetImpl(rt, mipLevel, CubemapFace.Unknown, 0);
-        }
-
-        public static void SetRenderTarget(RenderTexture rt, int mipLevel, CubemapFace face)
-        {
-            SetRenderTargetImpl(rt, mipLevel, face, 0);
-        }
-
-        public static void SetRenderTarget(RenderTexture rt, int mipLevel, CubemapFace face, int depthSlice)
+        public static void SetRenderTarget(RenderTexture rt, [uei.DefaultValue("0")] int mipLevel, [uei.DefaultValue("CubemapFace.Unknown")] CubemapFace face, [uei.DefaultValue("0")] int depthSlice)
         {
             SetRenderTargetImpl(rt, mipLevel, face, depthSlice);
         }
 
-        // TODO: when we enable default arguments support these can be combined into one method
-        public static void SetRenderTarget(RenderBuffer colorBuffer, RenderBuffer depthBuffer)
-        {
-            SetRenderTargetImpl(colorBuffer, depthBuffer, 0, CubemapFace.Unknown, 0);
-        }
-
-        public static void SetRenderTarget(RenderBuffer colorBuffer, RenderBuffer depthBuffer, int mipLevel)
-        {
-            SetRenderTargetImpl(colorBuffer, depthBuffer, mipLevel, CubemapFace.Unknown, 0);
-        }
-
-        public static void SetRenderTarget(RenderBuffer colorBuffer, RenderBuffer depthBuffer, int mipLevel, CubemapFace face)
-        {
-            SetRenderTargetImpl(colorBuffer, depthBuffer, mipLevel, face, 0);
-        }
-
-        public static void SetRenderTarget(RenderBuffer colorBuffer, RenderBuffer depthBuffer, int mipLevel, CubemapFace face, int depthSlice)
+        public static void SetRenderTarget(RenderBuffer colorBuffer, RenderBuffer depthBuffer, [uei.DefaultValue("0")] int mipLevel, [uei.DefaultValue("CubemapFace.Unknown")] CubemapFace face, [uei.DefaultValue("0")] int depthSlice)
         {
             SetRenderTargetImpl(colorBuffer, depthBuffer, mipLevel, face, depthSlice);
         }
@@ -318,8 +257,31 @@ namespace UnityEngine
         {
             SetRenderTargetImpl(setup);
         }
+    }
 
-        // TODO: when we enable default arguments support these can be combined into one method
+    public partial class Graphics
+    {
+        public static RenderBuffer activeColorBuffer { get { return GetActiveColorBuffer(); } }
+        public static RenderBuffer activeDepthBuffer { get { return GetActiveDepthBuffer(); } }
+
+        public static void SetRandomWriteTarget(int index, RenderTexture uav)
+        {
+            if (index < 0 || index >= SystemInfo.supportedRandomWriteTargetCount)
+                throw new ArgumentOutOfRangeException("index", string.Format("must be non-negative less than {0}.", SystemInfo.supportedRandomWriteTargetCount));
+
+            Internal_SetRandomWriteTargetRT(index, uav);
+        }
+
+        public static void SetRandomWriteTarget(int index, ComputeBuffer uav, [uei.DefaultValue("false")] bool preserveCounterValue)
+        {
+            if (uav == null) throw new ArgumentNullException("uav");
+            if (uav.m_Ptr == IntPtr.Zero) throw new System.ObjectDisposedException("uav");
+            if (index < 0 || index >= SystemInfo.supportedRandomWriteTargetCount)
+                throw new ArgumentOutOfRangeException("index", string.Format("must be non-negative less than {0}.", SystemInfo.supportedRandomWriteTargetCount));
+
+            Internal_SetRandomWriteTargetBuffer(index, uav, preserveCounterValue);
+        }
+
         public static void CopyTexture(Texture src, Texture dst)
         {
             CopyTexture_Full(src, dst);
@@ -340,7 +302,6 @@ namespace UnityEngine
             CopyTexture_Region(src, srcElement, srcMip, srcX, srcY, srcWidth, srcHeight, dst, dstElement, dstMip, dstX, dstY);
         }
 
-        // TODO: when we enable default arguments support these can be combined into one method
         public static bool ConvertTexture(Texture src, Texture dst)
         {
             return ConvertTexture_Full(src, dst);
@@ -350,6 +311,27 @@ namespace UnityEngine
         {
             return ConvertTexture_Slice(src, srcElement, dst, dstElement);
         }
+
+        public static GPUFence CreateGPUFence([uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStage stage)
+        {
+            GPUFence newFence = new GPUFence();
+            newFence.m_Ptr = CreateGPUFenceImpl(stage);
+            newFence.InitPostAllocation();
+            newFence.Validate();
+            return newFence;
+        }
+
+        public static void WaitOnGPUFence(GPUFence fence, [uei.DefaultValue("SynchronisationStage.VertexProcessing")] SynchronisationStage stage)
+        {
+            fence.Validate();
+
+            //Don't wait on a fence that's already known to have passed
+            if (fence.IsFencePending())
+                WaitOnGPUFenceImpl(fence.m_Ptr, stage);
+        }
+
+        [uei.ExcludeFromDocs] public static GPUFence CreateGPUFence() { return CreateGPUFence(SynchronisationStage.PixelProcessing); }
+        [uei.ExcludeFromDocs] public static void WaitOnGPUFence(GPUFence fence) { WaitOnGPUFence(fence, SynchronisationStage.VertexProcessing); }
     }
 }
 
@@ -366,7 +348,7 @@ namespace UnityEngine
     {
         public Rect screenRect, sourceRect;
         public int leftBorder, rightBorder, topBorder, bottomBorder;
-        public Color32 color;
+        public Color color;
         public Vector4 borderWidths;
         public Vector4 cornerRadiuses;
         public int pass;
@@ -377,8 +359,6 @@ namespace UnityEngine
 
     public partial class Graphics
     {
-        // NB: currently our c# toolchain do not accept default arguments (bindins generator will create actual functions that pass default values)
-        // when we start to accept default params we can move the rest of DrawMesh out of bindings to c#
         private static void DrawTextureImpl(Rect screenRect, Texture texture, Rect sourceRect, int leftBorder, int rightBorder, int topBorder, int bottomBorder, Color color, Material mat, int pass)
         {
             Internal_DrawTextureArguments args = new Internal_DrawTextureArguments();
@@ -392,9 +372,25 @@ namespace UnityEngine
             Internal_DrawTexture(ref args);
         }
 
-        public static void DrawMeshNow(Mesh mesh, Vector3 position, Quaternion rotation)
+        public static void DrawTexture(Rect screenRect, Texture texture, Rect sourceRect, int leftBorder, int rightBorder, int topBorder, int bottomBorder, Color color, [uei.DefaultValue("null")] Material mat, [uei.DefaultValue("-1")] int pass)
         {
-            DrawMeshNow(mesh, position, rotation, -1);
+            DrawTextureImpl(screenRect, texture, sourceRect, leftBorder, rightBorder, topBorder, bottomBorder, color, mat, pass);
+        }
+
+        public static void DrawTexture(Rect screenRect, Texture texture, Rect sourceRect, int leftBorder, int rightBorder, int topBorder, int bottomBorder, [uei.DefaultValue("null")] Material mat, [uei.DefaultValue("-1")] int pass)
+        {
+            Color32 color = new Color32(128, 128, 128, 128);
+            DrawTextureImpl(screenRect, texture, sourceRect, leftBorder, rightBorder, topBorder, bottomBorder, color, mat, pass);
+        }
+
+        public static void DrawTexture(Rect screenRect, Texture texture, int leftBorder, int rightBorder, int topBorder, int bottomBorder, [uei.DefaultValue("null")] Material mat, [uei.DefaultValue("-1")] int pass)
+        {
+            DrawTexture(screenRect, texture, new Rect(0, 0, 1, 1), leftBorder, rightBorder, topBorder, bottomBorder, mat, pass);
+        }
+
+        public static void DrawTexture(Rect screenRect, Texture texture, [uei.DefaultValue("null")] Material mat, [uei.DefaultValue("-1")] int pass)
+        {
+            DrawTexture(screenRect, texture, 0, 0, 0, 0, mat, pass);
         }
 
         public static void DrawMeshNow(Mesh mesh, Vector3 position, Quaternion rotation, int materialIndex)
@@ -404,16 +400,99 @@ namespace UnityEngine
             Internal_DrawMeshNow1(mesh, materialIndex, position, rotation);
         }
 
-        public static void DrawMeshNow(Mesh mesh, Matrix4x4 matrix)
-        {
-            DrawMeshNow(mesh, matrix, -1);
-        }
-
         public static void DrawMeshNow(Mesh mesh, Matrix4x4 matrix, int materialIndex)
         {
             if (mesh == null)
                 throw new ArgumentNullException("mesh");
             Internal_DrawMeshNow2(mesh, materialIndex, matrix);
+        }
+
+        public static void DrawMeshNow(Mesh mesh, Vector3 position, Quaternion rotation) { DrawMeshNow(mesh, position, rotation, -1); }
+        public static void DrawMeshNow(Mesh mesh, Matrix4x4 matrix) { DrawMeshNow(mesh, matrix, -1); }
+
+
+        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("0")] int submeshIndex, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("true")] bool castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("true")] bool useLightProbes)
+        {
+            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off, null);
+        }
+
+        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("null")] Transform probeAnchor, [uei.DefaultValue("true")] bool useLightProbes)
+        {
+            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off, null);
+        }
+
+        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("0")] int submeshIndex, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("true")] bool castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("true")] bool useLightProbes)
+        {
+            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off, null);
+        }
+
+        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
+        {
+            if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
+                throw new ArgumentException("lightProbeProxyVolume", "Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.");
+            Internal_DrawMesh(mesh, submeshIndex, matrix, material, layer, camera, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
+        }
+
+        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, [uei.DefaultValue("matrices.Length")] int count, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            else if (material == null)
+                throw new ArgumentNullException("material");
+            else if (!material.enableInstancing)
+                throw new InvalidOperationException("Material needs to enable instancing for use with DrawMeshInstanced.");
+            else if (matrices == null)
+                throw new ArgumentNullException("matrices");
+            else if (count < 0 || count > Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length))
+                throw new ArgumentOutOfRangeException("count", String.Format("Count must be in the range of 0 to {0}.", Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length)));
+            else if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
+                throw new ArgumentException("lightProbeProxyVolume", "Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.");
+
+            if (count > 0)
+                Internal_DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
+        }
+
+        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
+        {
+            if (matrices == null)
+                throw new ArgumentNullException("matrices");
+
+            DrawMeshInstanced(mesh, submeshIndex, material, NoAllocHelpers.ExtractArrayFromListT(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
+        }
+
+        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
+        {
+            if (!SystemInfo.supportsInstancing)
+                throw new InvalidOperationException("Instancing is not supported.");
+            else if (mesh == null)
+                throw new ArgumentNullException("mesh");
+            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
+                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
+            else if (material == null)
+                throw new ArgumentNullException("material");
+            else if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+            if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
+                throw new ArgumentException("lightProbeProxyVolume", "Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.");
+
+            Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
+        }
+
+        public static void DrawProcedural(MeshTopology topology, int vertexCount, [uei.DefaultValue("1")] int instanceCount)
+        {
+            Internal_DrawProcedural(topology, vertexCount, instanceCount);
+        }
+
+        public static void DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset)
+        {
+            if (bufferWithArgs == null)
+                throw new ArgumentNullException("bufferWithArgs");
+
+            Internal_DrawProceduralIndirect(topology, bufferWithArgs, argsOffset);
         }
     }
 }
@@ -492,9 +571,20 @@ namespace UnityEngine
 }
 
 //
-// Attributes
+// Extensions
 //
 
+namespace UnityEngine
+{
+    public static partial class RendererExtensions
+    {
+        static public void UpdateGIMaterials(this Renderer renderer) { UpdateGIMaterialsForRenderer(renderer); }
+    }
+}
+
+//
+// Attributes
+//
 
 namespace UnityEngine
 {

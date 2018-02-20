@@ -51,7 +51,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 var topmostContainer = s_ContainerStack.Peek();
 
-                if (topmostContainer.GUIDepth != GUIUtility.Internal_GetGUIDepth())
+                if (topmostContainer.GUIDepth != GUIUtility.guiDepth)
                     return;
 
                 if (MouseCaptureController.IsMouseCaptureTaken() && !topmostContainer.HasMouseCapture())
@@ -79,6 +79,11 @@ namespace UnityEngine.Experimental.UIElements
                 return DoDispatch(panel);
             }
             return false;
+        }
+
+        public static void RemoveCachedPanel(int instanceID)
+        {
+            s_UIElementsCache.Remove(instanceID);
         }
 
         private static void CleanupRoots()
@@ -161,7 +166,17 @@ namespace UnityEngine.Experimental.UIElements
 
         internal static EventBase CreateEvent(Event systemEvent)
         {
-            switch (systemEvent.type)
+            return CreateEvent(systemEvent, systemEvent.type);
+        }
+
+        // In order for tests to run without an EditorWindow but still be able to send
+        // events, we sometimes need to force the event type. IMGUI::GetEventType() (native) will
+        // return the event type as Ignore if the proper views haven't yet been
+        // initialized. This (falsely) breaks tests that rely on the event type. So for tests, we
+        // just ensure the event type is what we originally set it to when we sent it.
+        internal static EventBase CreateEvent(Event systemEvent, EventType eventType)
+        {
+            switch (eventType)
             {
                 case EventType.MouseMove:
                     return MouseMoveEvent.GetPooled(systemEvent);
@@ -171,17 +186,29 @@ namespace UnityEngine.Experimental.UIElements
                     return MouseDownEvent.GetPooled(systemEvent);
                 case EventType.MouseUp:
                     return MouseUpEvent.GetPooled(systemEvent);
+                case EventType.ContextClick:
+                    return ContextClickEvent.GetPooled(systemEvent);
+                case EventType.MouseEnterWindow:
+                    return MouseEnterWindowEvent.GetPooled(systemEvent);
+                case EventType.MouseLeaveWindow:
+                    return MouseLeaveWindowEvent.GetPooled(systemEvent);
                 case EventType.ScrollWheel:
                     return WheelEvent.GetPooled(systemEvent);
                 case EventType.KeyDown:
                     return KeyDownEvent.GetPooled(systemEvent);
                 case EventType.KeyUp:
                     return KeyUpEvent.GetPooled(systemEvent);
-                case EventType.MouseEnterWindow:
-                    return MouseEnterWindowEvent.GetPooled(systemEvent);
-                case EventType.MouseLeaveWindow:
-                    return MouseLeaveWindowEvent.GetPooled(systemEvent);
-                default:
+                case EventType.DragUpdated:
+                    return DragUpdatedEvent.GetPooled(systemEvent);
+                case EventType.DragPerform:
+                    return DragPerformEvent.GetPooled(systemEvent);
+                case EventType.DragExited:
+                    return DragExitedEvent.GetPooled(systemEvent);
+                case EventType.ValidateCommand:
+                    return ValidateCommandEvent.GetPooled(systemEvent);
+                case EventType.ExecuteCommand:
+                    return ExecuteCommandEvent.GetPooled(systemEvent);
+                default:// Layout, Ignore, Used
                     return IMGUIEvent.GetPooled(systemEvent);
             }
         }
@@ -211,10 +238,11 @@ namespace UnityEngine.Experimental.UIElements
 
                 using (EventBase evt = CreateEvent(s_EventInstance))
                 {
-                    // DispatchEvent changes mousePosition.
+                    // DispatchEvent changes s_EventInstance.mousePosition.
                     s_EventDispatcher.DispatchEvent(evt, panel);
                     s_EventInstance.mousePosition = evt.originalMousePosition;
 
+                    // FIXME: we dont always have to repaint if evt.isPropagationStopped.
                     if (evt.isPropagationStopped)
                     {
                         panel.visualTree.Dirty(ChangeType.Repaint);

@@ -30,6 +30,8 @@ internal enum CloudConfigUrl
     CloudIdentity = 6,
     CloudPortal = 7,
     CloudPerfEvents = 8,
+    CloudAdsDashboard = 9,
+    CloudServicesDashboard = 10
 }
 
 internal enum COPPACompliance

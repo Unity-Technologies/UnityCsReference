@@ -8,6 +8,11 @@ namespace UnityEngine.Experimental.UIElements
 {
     public abstract class BaseTextElement : VisualElement
     {
+        public BaseTextElement()
+        {
+            requireMeasureFunction = true;
+        }
+
         [SerializeField]
         private string m_Text;
         public virtual string text

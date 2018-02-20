@@ -41,7 +41,6 @@ namespace UnityEngine.Experimental.UIElements
 
         public static void ReleaseMouseCapture(this IEventHandler handler)
         {
-            Debug.Assert(handler == mouseCapture, "Element releasing capture does not have capture");
             if (handler == mouseCapture)
             {
                 ReleaseMouseCapture();

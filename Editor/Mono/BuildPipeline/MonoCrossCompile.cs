@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Scripting.ScriptCompilation;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -233,8 +234,7 @@ namespace UnityEditor
 
         static bool IsDebugableAssembly(string fname)
         {
-            fname = Path.GetFileName(fname);
-            return fname.StartsWith("Assembly", StringComparison.OrdinalIgnoreCase);
+            return EditorCompilationInterface.Instance.IsRuntimeScriptAssembly(fname);
         }
 
         static void CrossCompileAOT(BuildTarget target, string crossCompilerAbsolutePath, string assembliesAbsoluteDirectory, CrossCompileOptions crossCompileOptions, string input, string output, string additionalOptions)

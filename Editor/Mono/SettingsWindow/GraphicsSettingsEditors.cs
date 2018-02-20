@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEditor.Build;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using EditorGraphicsSettings = UnityEditor.Rendering.EditorGraphicsSettings;
 using TierSettings = UnityEditor.Rendering.TierSettings;
@@ -348,7 +349,9 @@ namespace UnityEditor
                     EditorGUILayout.LabelField(Styles.detailNormalMap);
                     EditorGUILayout.LabelField(Styles.semitransparentShadows);
                 }
-                EditorGUILayout.LabelField(Styles.enableLPPV);
+
+                if (SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
+                    EditorGUILayout.LabelField(Styles.enableLPPV);
 
                 if (!vertical)
                 {
@@ -361,10 +364,17 @@ namespace UnityEditor
                     EditorGUILayout.LabelField(Styles.cascadedShadowMaps);
                     EditorGUILayout.LabelField(Styles.prefer32BitShadowMaps);
                     EditorGUILayout.LabelField(Styles.useHDR);
-                    EditorGUILayout.LabelField(Styles.hdrMode);
+                }
+
+                EditorGUILayout.LabelField(Styles.hdrMode);
+
+                if (!usingSRP)
+                {
                     EditorGUILayout.LabelField(Styles.renderingPath);
                 }
-                EditorGUILayout.LabelField(Styles.realtimeGICPUUsage);
+
+                if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
+                    EditorGUILayout.LabelField(Styles.realtimeGICPUUsage);
             }
 
             // custom enum handling
@@ -430,7 +440,9 @@ namespace UnityEditor
                     ts.detailNormalMap = EditorGUILayout.Toggle(ts.detailNormalMap);
                     ts.semitransparentShadows = EditorGUILayout.Toggle(ts.semitransparentShadows);
                 }
-                ts.enableLPPV                   = EditorGUILayout.Toggle(ts.enableLPPV);
+
+                if (SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
+                    ts.enableLPPV = EditorGUILayout.Toggle(ts.enableLPPV);
 
                 if (!vertical)
                 {
@@ -443,15 +455,20 @@ namespace UnityEditor
                     ts.cascadedShadowMaps = EditorGUILayout.Toggle(ts.cascadedShadowMaps);
                     ts.prefer32BitShadowMaps = EditorGUILayout.Toggle(ts.prefer32BitShadowMaps);
                     ts.hdr = EditorGUILayout.Toggle(ts.hdr);
-                    ts.hdrMode = HDRModePopup(ts.hdrMode);
-                    ts.renderingPath = RenderingPathPopup(ts.renderingPath);
                 }
-                ts.realtimeGICPUUsage           = RealtimeGICPUUsagePopup(ts.realtimeGICPUUsage);
+
+                ts.hdrMode = HDRModePopup(ts.hdrMode);
+
+                if (!usingSRP)
+                    ts.renderingPath = RenderingPathPopup(ts.renderingPath);
+
+                if (SupportedRenderingFeatures.IsLightmapBakeTypeSupported(LightmapBakeType.Realtime))
+                    ts.realtimeGICPUUsage = RealtimeGICPUUsagePopup(ts.realtimeGICPUUsage);
 
                 if (EditorGUI.EndChangeCheck())
                 {
                     // TODO: it should be doable in c# now as we "expose" GraphicsSettings anyway
-                    EditorGraphicsSettings.RegisterUndoForGraphicsSettings();
+                    EditorGraphicsSettings.RegisterUndo();
                     EditorGraphicsSettings.SetTierSettings(platform, tier, ts);
                 }
             }
@@ -483,9 +500,9 @@ namespace UnityEditor
                     autoSettings = EditorGUILayout.Toggle(autoSettings);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        EditorGraphicsSettings.RegisterUndoForGraphicsSettings();
+                        EditorGraphicsSettings.RegisterUndo();
                         EditorGraphicsSettings.MakeTierSettingsAutomatic(platform, tier, autoSettings);
-                        EditorGraphicsSettings.OnUpdateTierSettingsImpl(platform, true);
+                        EditorGraphicsSettings.OnUpdateTierSettings(platform, true);
                     }
                     EditorGUILayout.EndVertical();
                 }
@@ -511,9 +528,9 @@ namespace UnityEditor
                     }
                     if (EditorGUI.EndChangeCheck())
                     {
-                        EditorGraphicsSettings.RegisterUndoForGraphicsSettings();
+                        EditorGraphicsSettings.RegisterUndo();
                         EditorGraphicsSettings.MakeTierSettingsAutomatic(platform, tier, autoSettings);
-                        EditorGraphicsSettings.OnUpdateTierSettingsImpl(platform, true);
+                        EditorGraphicsSettings.OnUpdateTierSettings(platform, true);
                     }
 
                     using (new EditorGUI.DisabledScope(autoSettings))

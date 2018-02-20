@@ -8,9 +8,9 @@ namespace UnityEngine.Experimental.UIElements
     {
         protected TextEditorEngine editorEngine { get; private set; }
 
-        protected TextInputFieldBase textInputField { get; private set; }
+        protected ITextInputField textInputField { get; private set; }
 
-        protected TextEditorEventHandler(TextEditorEngine editorEngine, TextInputFieldBase textInputField)
+        protected TextEditorEventHandler(TextEditorEngine editorEngine, ITextInputField textInputField)
         {
             this.editorEngine = editorEngine;
             this.textInputField = textInputField;
@@ -24,6 +24,10 @@ namespace UnityEngine.Experimental.UIElements
             if (evt.GetEventTypeId() == FocusEvent.TypeId())
             {
                 editorEngine.OnFocus();
+
+                // Make sure to select all text, OnFocus() does not call SelectAll for multiline text field.
+                // However, in IMGUI it will be call later by the OnMouseUp event.
+                editorEngine.SelectAll();
             }
             else if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {

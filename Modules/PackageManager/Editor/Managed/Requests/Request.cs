@@ -13,6 +13,10 @@ namespace UnityEditor.PackageManager.Requests
     /// </summary>
     public abstract class Request
     {
+        /// <summary>
+        /// Note: This property is there to workaround the serializer
+        /// that does not know how to handle null values
+        /// </summary>
         [SerializeField]
         private bool m_ErrorFetched;
 
@@ -25,11 +29,28 @@ namespace UnityEditor.PackageManager.Requests
         [SerializeField]
         private long m_Id;
 
-        private NativeStatusCode NativeStatus
+        private void AssertNativeRequestReleased()
+        {
+            Debug.AssertFormat(NativeClient.GetOperationStatus(Id) == NativeStatusCode.NotFound, "Packman operation [{0}] was not released by native code", m_Id);
+        }
+
+        private void ReleaseNativeRequest()
+        {
+            if (m_Id == 0)
+            {
+                return;
+            }
+
+            NativeClient.GetOperationError(Id);
+            AssertNativeRequestReleased();
+            m_Id = 0;
+        }
+
+        internal NativeStatusCode NativeStatus
         {
             get
             {
-                if (m_Status <= NativeStatusCode.InProgress)
+                if (!m_Status.IsCompleted())
                 {
                     m_Status = NativeClient.GetOperationStatus(Id);
                 }
@@ -38,7 +59,7 @@ namespace UnityEditor.PackageManager.Requests
             }
         }
 
-        protected long Id
+        internal long Id
         {
             get
             {
@@ -53,19 +74,8 @@ namespace UnityEditor.PackageManager.Requests
         {
             get
             {
-                switch (NativeStatus)
-                {
-                    case NativeStatusCode.InProgress:
-                    case NativeStatusCode.InQueue:
-                        return StatusCode.InProgress;
-                    case NativeStatusCode.Error:
-                    case NativeStatusCode.NotFound:
-                        return StatusCode.Failure;
-                    case NativeStatusCode.Done:
-                        return StatusCode.Success;
-                }
-
-                throw new NotSupportedException(String.Format("Unknown native status code {0}", NativeStatus));
+                FetchNativeData();
+                return NativeStatus.ConvertToManaged();
             }
         }
 
@@ -76,7 +86,8 @@ namespace UnityEditor.PackageManager.Requests
         {
             get
             {
-                return (Status > StatusCode.InProgress);
+                FetchNativeData();
+                return NativeStatus.IsCompleted();
             }
         }
 
@@ -87,26 +98,50 @@ namespace UnityEditor.PackageManager.Requests
         {
             get
             {
-                if (!m_ErrorFetched && Status == StatusCode.Failure)
-                {
-                    m_ErrorFetched = true;
-                    m_Error = NativeClient.GetOperationError(Id);
-
-                    if (m_Error == null)
-                    {
-                        if (NativeStatus == NativeStatusCode.NotFound)
-                        {
-                            m_Error = new Error(ErrorCode.NotFound, "Operation not found");
-                        }
-                        else
-                        {
-                            m_Error = new Error(ErrorCode.Unknown, "Unknown error");
-                        }
-                    }
-                }
-
-                return m_Error;
+                FetchNativeData();
+                return m_ErrorFetched ? m_Error : null;
             }
+        }
+
+        private void FetchError()
+        {
+            if (m_ErrorFetched || NativeStatus.ConvertToManaged() != StatusCode.Failure)
+            {
+                return;
+            }
+
+            m_ErrorFetched = true;
+            m_Error = NativeClient.GetOperationError(Id);
+
+            if (m_Error == null)
+            {
+                if (NativeStatus == NativeStatusCode.NotFound)
+                {
+                    m_Error = new Error(ErrorCode.NotFound, "Operation not found");
+                }
+                else
+                {
+                    m_Error = new Error(ErrorCode.Unknown, "Unknown error");
+                }
+            }
+        }
+
+        protected virtual void FetchNativeData()
+        {
+            FetchError();
+
+            if (NativeStatus.IsCompleted())
+            {
+                ReleaseNativeRequest();
+            }
+        }
+
+        ~Request()
+        {
+            // Do our best to release the native request if it has not been already.
+            // The only limitation left is an in-progress request that has not been
+            // serialized during domain unload.
+            FetchNativeData();
         }
 
         /// <summary>
@@ -121,6 +156,7 @@ namespace UnityEditor.PackageManager.Requests
         {
             m_Id = operationId;
             m_Status = initialStatus;
+            Debug.AssertFormat(m_Id > 0, "Expected operation id to be a positive integer but got [{0}]", m_Id);
         }
     }
 
@@ -129,6 +165,10 @@ namespace UnityEditor.PackageManager.Requests
     /// </summary>
     public abstract class Request<T> : Request
     {
+        /// <summary>
+        /// Note: This property is there to workaround the serializer
+        /// that does not know how to handle null values
+        /// </summary>
         [SerializeField]
         private bool m_ResultFetched = false;
 
@@ -137,6 +177,23 @@ namespace UnityEditor.PackageManager.Requests
 
         protected abstract T GetResult();
 
+        private void FetchResult()
+        {
+            if (m_ResultFetched || NativeStatus.ConvertToManaged() != StatusCode.Success)
+            {
+                return;
+            }
+
+            m_ResultFetched = true;
+            m_Result = GetResult();
+        }
+
+        protected sealed override void FetchNativeData()
+        {
+            FetchResult();
+            base.FetchNativeData();
+        }
+
         /// <summary>
         /// Gets the result of the operation
         /// </summary>
@@ -144,13 +201,8 @@ namespace UnityEditor.PackageManager.Requests
         {
             get
             {
-                if (!m_ResultFetched && Status == StatusCode.Success)
-                {
-                    m_ResultFetched = true;
-                    m_Result = GetResult();
-                }
-
-                return m_Result;
+                FetchNativeData();
+                return m_ResultFetched ? m_Result : default(T);
             }
         }
 

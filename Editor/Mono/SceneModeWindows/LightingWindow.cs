@@ -51,8 +51,6 @@ namespace UnityEditor
         public LightingWindowLightingTab    m_LightingTab;
         LightingWindowLightmapPreviewTab    m_LightmapPreviewTab;
 
-        Scene m_LastActiveScene;
-
         SerializedObject m_LightmapSettings;
         SerializedProperty m_WorkflowMode;
         SerializedProperty m_EnabledBakedGI;
@@ -172,12 +170,8 @@ namespace UnityEditor
 
         void InitLightmapSettings()
         {
-            //None of the events from EditorSceneManager worked here.
-            //The problems is that EditorSceneManager.NewScene will trigger a repaint of all windows, and this happens before the EditorSceneManager events gets called.
-            //So this window never gets a chance to rebuild its m_LightmapSettings.
-            //For now the workaround is to poll for active scene change during OnGUI.
-            var currentScene = EditorSceneManager.GetActiveScene();
-            if (m_LastActiveScene != currentScene)
+            // the target gets destroyed and recreated when we setup a new scene, or when hitting play
+            if (m_LightmapSettings == null || m_LightmapSettings.targetObject == null)
             {
                 if (m_LightmapSettings != null)
                 {
@@ -185,7 +179,7 @@ namespace UnityEditor
                     m_EnabledBakedGI.Dispose();
                     m_WorkflowMode.Dispose();
                 }
-                m_LastActiveScene = currentScene;
+
                 m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
                 m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
                 m_WorkflowMode = m_LightmapSettings.FindProperty("m_GIWorkflowMode");

@@ -4,11 +4,35 @@
 
 using System;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEngine.Experimental.UIElements
 {
     public class ScrollView : VisualElement
     {
+        bool m_StretchContentWidth = false;
+
+        public bool stretchContentWidth
+        {
+            get { return m_StretchContentWidth; }
+            set
+            {
+                if (m_StretchContentWidth == value)
+                {
+                    return;
+                }
+                m_StretchContentWidth = value;
+
+                if (m_StretchContentWidth)
+                {
+                    AddToClassList("stretchContentWidth");
+                }
+                else
+                {
+                    RemoveFromClassList("stretchContentWidth");
+                }
+            }
+        }
         public Vector2 horizontalScrollerValues { get; set; }
         public Vector2 verticalScrollerValues { get; set; }
 
@@ -73,10 +97,10 @@ namespace UnityEngine.Experimental.UIElements
 
             float childBoundaryMin = child.layout.yMin;
             float childBoundaryMax = child.layout.yMax;
-            if (childBoundaryMin >= viewMin && childBoundaryMax <= viewMax)
+            if (childBoundaryMin >= viewMin && childBoundaryMax <= viewMax || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
                 return;
 
-            var scrollUpward = false;
+            bool scrollUpward = false;
             float deltaDistance = childBoundaryMax - viewMax;
             if (deltaDistance < -1)
             {
@@ -86,8 +110,8 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             float deltaOffset = deltaDistance * verticalScroller.highValue / scrollableHeight;
-            scrollOffset.Set(scrollOffset.x, scrollOffset.y + (scrollUpward ? -deltaOffset : deltaOffset));
-            verticalScroller.value = scrollOffset.y;
+
+            verticalScroller.value = scrollOffset.y + (scrollUpward ? -deltaOffset : deltaOffset);
             UpdateContentViewTransform();
         }
 
@@ -124,6 +148,7 @@ namespace UnityEngine.Experimental.UIElements
                     (value) =>
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
+                    UpdateContentViewTransform();
                 }, Slider.Direction.Horizontal)
             {name = "HorizontalScroller", persistenceKey = "HorizontalScroller"};
             shadow.Add(horizontalScroller);
@@ -132,28 +157,32 @@ namespace UnityEngine.Experimental.UIElements
                     (value) =>
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
+                    UpdateContentViewTransform();
                 }, Slider.Direction.Vertical)
             {name = "VerticalScroller", persistenceKey = "VerticalScroller"};
             shadow.Add(verticalScroller);
 
             RegisterCallback<WheelEvent>(OnScrollWheel);
+            contentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == PostLayoutEvent.TypeId())
+            if (evt.GetEventTypeId() == GeometryChangedEvent.TypeId())
             {
-                var postLayoutEvt = (PostLayoutEvent)evt;
-                OnPostLayout(postLayoutEvt.hasNewLayout);
+                OnGeometryChanged((GeometryChangedEvent)evt);
             }
         }
 
-        private void OnPostLayout(bool hasNewLayout)
+        private void OnGeometryChanged(GeometryChangedEvent evt)
         {
-            if (!hasNewLayout)
+            // Only affected by dimension changes
+            if (evt.oldRect.size == evt.newRect.size)
+            {
                 return;
+            }
 
             if (contentContainer.layout.width > Mathf.Epsilon)
                 horizontalScroller.Adjust(contentViewport.layout.width / contentContainer.layout.width);
@@ -170,24 +199,24 @@ namespace UnityEngine.Experimental.UIElements
             contentViewport.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
             verticalScroller.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
 
-            if (needsHorizontal)
+            if (needsHorizontal && scrollableWidth > 0f)
             {
-                horizontalScroller.lowValue = 0.0f;
+                horizontalScroller.lowValue = 0f;
                 horizontalScroller.highValue = scrollableWidth;
             }
             else
             {
-                horizontalScroller.value = 0.0f;
+                horizontalScroller.value = 0f;
             }
 
-            if (needsVertical)
+            if (needsVertical && scrollableHeight > 0f)
             {
-                verticalScroller.lowValue = 0.0f;
+                verticalScroller.lowValue = 0f;
                 verticalScroller.highValue = scrollableHeight;
             }
             else
             {
-                verticalScroller.value = 0.0f;
+                verticalScroller.value = 0f;
             }
 
             // Set visibility and remove/add content viewport margin as necessary

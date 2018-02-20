@@ -12,7 +12,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIStyle menuItem = "MenuItem";
-            public GUIContent plusButtonText = new GUIContent("", "Add New Item");
+            public GUIContent plusButtonText = EditorGUIUtility.TrTextContent("", "Add New Item");
         }
         static Styles s_Styles;
 

@@ -59,6 +59,7 @@ namespace UnityEditor
         [Obsolete("BlackBerry has been removed as of 5.4")]
         BlackBerry = 16,
 
+        [System.Obsolete("Tizen has been removed in 2017.3")]
         Tizen = 17,
 
         /// Sony Playstation Vita target.
@@ -68,7 +69,7 @@ namespace UnityEditor
         PS4 = 19,
 
         /// Unity Playstation Mobile target.
-        [Obsolete("warning PSM has been removed in >= 5.3")]
+        [Obsolete("PSM has been removed in >= 5.3")]
         PSM = 20,
 
         /// Xbox One target.

@@ -852,6 +852,14 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
         }
     
     
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  UnityEngine.Object[] GetPreloadedAssets () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void SetPreloadedAssets (UnityEngine.Object[] assets) ;
+
     internal static string GetPlatformName(BuildTargetGroup targetGroup)
         {
             BuildPlatform platform = BuildPlatforms.instance.GetValidPlatforms().Find(p => p.targetGroup == targetGroup);
@@ -1029,6 +1037,16 @@ public static bool GetPropertyOptionalString(string name, ref string value, [uei
     extern public static  void SetAdditionalIl2CppArgs (string additionalArgs) ;
 
     public extern static ScriptingRuntimeVersion scriptingRuntimeVersion
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
+    public extern static bool allowUnsafeCode
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

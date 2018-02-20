@@ -10,6 +10,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditor.Utils;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEditor.Experimental;
 
 namespace UnityEditor
 {
@@ -222,7 +223,7 @@ namespace UnityEditor
         {
             internal static class Constants
             {
-                public static Texture2D folderIcon   = EditorGUIUtility.FindTexture(EditorResourcesUtility.folderIconName);
+                public static Texture2D folderIcon   = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
             }
 
             public Action<PackageExportTreeViewItem> itemWasToggled;

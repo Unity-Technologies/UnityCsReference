@@ -16,7 +16,14 @@ namespace UnityEditor.Experimental.U2D
             return new GUID(GetSpriteIDScripting(sprite));
         }
 
+        public static void SetSpriteID(this Sprite sprite, GUID guid)
+        {
+            SetSpriteIDScripting(sprite, guid.ToString());
+        }
+
         [FreeFunction("SpriteEditorExtension::GetSpriteIDScripting")]
-        private static extern string GetSpriteIDScripting(Sprite sprite);
+        private static extern string GetSpriteIDScripting([NotNull] Sprite sprite);
+        [FreeFunction("SpriteEditorExtension::SetSpriteIDScripting")]
+        private static extern void SetSpriteIDScripting([NotNull] Sprite sprite, string spriteID);
     }
 }

@@ -4,7 +4,6 @@
 
 using System;
 using System.Runtime.InteropServices;
-using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -12,15 +11,14 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public sealed partial class Event
     {
-        // *undocumented
         public Event()
         {
-            Init(0);
+            m_Ptr = Internal_Create(0);
         }
 
         public Event(int displayIndex)
         {
-            Init(displayIndex);
+            m_Ptr = Internal_Create(displayIndex);
         }
 
         // Copy an event
@@ -28,22 +26,19 @@ namespace UnityEngine
         {
             if (other == null)
                 throw new ArgumentException("Event to copy from is null.");
-            InitCopy(other);
+            m_Ptr = Internal_Copy(other.m_Ptr);
         }
 
-        // *undocumented
-        private Event(IntPtr ptr)
-        {
-            InitPtr(ptr);
-        }
-
-        // *undocumented
         ~Event()
         {
-            Cleanup();
+            if (m_Ptr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
         }
 
-        static internal void CleanupRoots()
+        internal static void CleanupRoots()
         {
             // Required for application quite, so we can force GC to collect root objects before Unity managers are destroyed
             s_Current = null;
@@ -52,20 +47,6 @@ namespace UnityEngine
 
         [NonSerialized]
         internal IntPtr m_Ptr;
-
-        // The mouse position.
-        public Vector2 mousePosition
-        {
-            get { Vector2 tmp; Internal_GetMousePosition(out tmp); return tmp; }
-            set { Internal_SetMousePosition(value); }
-        }
-
-        // The relative movement of the mouse compared to last event.
-        public Vector2 delta
-        {
-            get { Vector2 tmp; Internal_GetMouseDelta(out tmp); return tmp; }
-            set { Internal_SetMouseDelta(value); }
-        }
 
         [Obsolete("Use HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);", true)]
         public Ray mouseRay { get { return new Ray(Vector3.up, Vector3.up); } set {}}
@@ -113,7 +94,7 @@ namespace UnityEngine
         }
 
         // Is the current keypress a function key? (RO)
-        public bool functionKey { get { return (modifiers & EventModifiers.FunctionKey)  != 0; } }
+        public bool functionKey => (modifiers & EventModifiers.FunctionKey)  != 0;
 
         // The current event that's being processed right now.
         // TODO: set this to null outside the event loop.
@@ -123,33 +104,20 @@ namespace UnityEngine
             get
             {
                 // return null if Event.current is queried outside OnGUI
-                // Only in editor because of backwards compat.
-                if (GUIUtility.Internal_GetGUIDepth() > 0)
+                // Only in editor because of backwards compatible.
+                if (GUIUtility.guiDepth > 0)
                     return s_Current;
                 else
                     return null;
             }
             set
             {
-                if (value != null)
-                    s_Current = value;
-                else
-                    s_Current = s_MasterEvent;
+                s_Current = value ?? s_MasterEvent;
                 Internal_SetNativeEvent(s_Current.m_Ptr);
             }
         }
         static Event s_Current;
         static Event s_MasterEvent;
-
-        [RequiredByNativeCode]
-        static private void Internal_MakeMasterEventCurrent(int displayIndex)
-        {
-            if (s_MasterEvent == null)
-                s_MasterEvent = new Event(displayIndex);
-            s_MasterEvent.displayIndex = displayIndex;
-            s_Current = s_MasterEvent;
-            Internal_SetNativeEvent(s_MasterEvent.m_Ptr);
-        }
 
         // Is this event a keyboard event? (RO)
         public bool isKey
@@ -182,9 +150,7 @@ namespace UnityEngine
         // Create a keyboard event.
         public static Event KeyboardEvent(string key)
         {
-            Event evt = new Event(0);
-            evt.type = EventType.KeyDown;
-            // Can't use string.IsNullOrEmpty because it's not supported in NET 1.1
+            Event evt = new Event(0) {type = EventType.KeyDown};
             if (string.IsNullOrEmpty(key))
                 return evt;
             int startIdx = 0;
@@ -284,7 +250,7 @@ namespace UnityEngine
                     {
                         evt.character = subStr.ToLower()[0];
                         evt.keyCode = (KeyCode)evt.character;
-                        if ((int)evt.modifiers != 0)
+                        if (evt.modifiers != 0)
                             evt.character = (char)0;
                     }
                     break;
@@ -301,7 +267,6 @@ namespace UnityEngine
             if (isMouse)
                 hc = mousePosition.GetHashCode();
             hc = hc * 37 | (int)modifiers;
-            //      Debug.Log (hc + "  GetHashCode of " + ToString());
             return hc;
         }
 
@@ -329,7 +294,7 @@ namespace UnityEngine
         {
             if (isKey)
             {
-                if ((int)character == 0)
+                if (character == 0)
                     return UnityString.Format("Event:{0}   Character:\\0   Modifiers:{1}   KeyCode:{2}", type, modifiers, keyCode);
 
                 return "Event:" + type + "   Character:" + (int)(character) + "   Modifiers:" + modifiers + "   KeyCode:" + keyCode;
@@ -347,9 +312,7 @@ namespace UnityEngine
         public void Use()
         {
             if (type == EventType.Repaint || type == EventType.Layout)
-            {
                 Debug.LogWarning(UnityString.Format("Event.Use() should not be called for events of type {0}", type));
-            }
             Internal_Use();
         }
     }

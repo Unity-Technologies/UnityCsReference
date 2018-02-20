@@ -103,11 +103,6 @@ namespace UnityEditor
             GUI.color = new Color(1, 1, 1, .75f);
             float w = 300, h = 204;
 
-            // Increase windows size to make room for network data
-            int connectionCount = Network.connections.Length;
-            if (connectionCount != 0)
-                h += 220;
-
             GUILayout.BeginArea(new Rect(GUIView.current.position.width - w - 10, 27, w, h), "Statistics", GUI.skin.window);
 
             // Audio stats
@@ -148,21 +143,6 @@ namespace UnityEditor
             gfxStats.Append(String.Format("  Visible skinned meshes: {0}  Animations: {1}", UnityStats.visibleSkinnedMeshes, UnityStats.visibleAnimations));
             GUILayout.Label(gfxStats.ToString(), labelStyle);
 
-            // Networking stats
-            if (connectionCount != 0)
-            {
-                GUILayout.Label("Network:", sectionHeaderStyle);
-                GUILayout.BeginHorizontal();
-                for (int i = 0; i < connectionCount; i++)
-                {
-                    GUILayout.Label(UnityStats.GetNetworkStats(i));
-                }
-                GUILayout.EndHorizontal();
-            }
-            else
-            {
-                GUILayout.Label("Network: (no players connected)", sectionHeaderStyle);
-            }
             GUILayout.EndArea();
         }
     }

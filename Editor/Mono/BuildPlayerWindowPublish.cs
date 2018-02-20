@@ -2,14 +2,28 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.PackageManager;
+using UnityEditor.PackageManager.Requests;
 
 namespace UnityEditor
 {
     public partial class BuildPlayerWindow : EditorWindow
     {
+        private struct RequestQueueItem
+        {
+            public Request Request;
+            public PackmanOperationType OperationType;
+
+            public RequestQueueItem(Request r, PackmanOperationType type)
+            {
+                Request = r;
+                OperationType = type;
+            }
+        }
+
         enum PackmanOperationType : uint
         {
             None = 0,
@@ -20,21 +34,23 @@ namespace UnityEditor
             Outdated
         }
 
-        private long getCurrentVersionOperationId = -1;
-        private long getLatestVersionOperationId = -1;
-        bool isVersionInitialized = false;
+        private bool IsVersionInitialized
+        {
+            get { return currentVersionInitialized && latestVersionInitialized; }
+        }
 
-        private long packmanOperationId = -1;
-
-
-        private PackmanOperationType packmanOperationType = PackmanOperationType.None;
+        private bool currentVersionInitialized = false;
+        private bool latestVersionInitialized = false;
+        private bool xiaomiPackageInstalled = false;
         private bool packmanOperationRunning = false;
-
         private string xiaomiPackageName = "com.unity.xiaomi";
         private string currentXiaomiPackageVersion = "";
         private string latestXiaomiPackageVersion = "";
 
-        private bool xiaomiPackageInstalled = false;
+        private List<RequestQueueItem> requestList = new List<RequestQueueItem>();
+
+        private bool requestingCurrentPackage = false;
+        private bool requestingLatestPackage = false;
 
         string CurrentXiaomiPackageId
         {
@@ -57,8 +73,8 @@ namespace UnityEditor
             public const int kIconSize = 32;
             public const int kRowHeight = 36;
             public GUIContent xiaomiIcon = EditorGUIUtility.IconContent("BuildSettings.Xiaomi");
-            public GUIContent learnAboutXiaomiInstallation = EditorGUIUtility.TrTextContent("Installation and Setup");
-            public GUIContent publishTitle = EditorGUIUtility.TrTextContent("SDKs for App Stores", "Integrations with 3rd party app stores");
+            public GUIContent learnAboutXiaomiInstallation = EditorGUIUtility.TextContent("Installation and Setup");
+            public GUIContent publishTitle = EditorGUIUtility.TextContent("SDKs for App Stores|Integrations with 3rd party app stores");
         }
         private PublishStyles publishStyles = null;
 
@@ -111,7 +127,7 @@ namespace UnityEditor
 
         private void XiaomiPackageControlGUI()
         {
-            EditorGUI.BeginDisabledGroup(!isVersionInitialized || packmanOperationRunning);
+            EditorGUI.BeginDisabledGroup(!IsVersionInitialized || packmanOperationRunning);
 
             if (!xiaomiPackageInstalled)
             {
@@ -120,14 +136,9 @@ namespace UnityEditor
                     if (packmanOperationRunning)
                         return;
 
-                    NativeStatusCode code = NativeClient.Add(out packmanOperationId, LatestXiaomiPackageId);
-                    if (code == NativeStatusCode.Error)
-                    {
-                        Debug.LogError("Add " + LatestXiaomiPackageId + " error, please add it again.");
-                        return;
-                    }
-                    packmanOperationType = PackmanOperationType.Add;
-                    System.Console.WriteLine("Add: OperationID " + packmanOperationId + " for " + LatestXiaomiPackageId);
+                    AddRequest add = Client.Add(LatestXiaomiPackageId);
+                    requestList.Add(new RequestQueueItem(add, PackmanOperationType.Add));
+                    System.Console.WriteLine("Adding: " + LatestXiaomiPackageId);
                     packmanOperationRunning = true;
                 }
             }
@@ -143,14 +154,9 @@ namespace UnityEditor
 
                         if (EditorUtility.DisplayDialog("Update Xiaomi SDK", "Are you sure you want to update to " + latestXiaomiPackageVersion + " ?", "Yes", "No"))
                         {
-                            NativeStatusCode code = NativeClient.Add(out packmanOperationId, LatestXiaomiPackageId);
-                            if (code == NativeStatusCode.Error)
-                            {
-                                Debug.LogError("Update " + LatestXiaomiPackageId + " error, please update it again.");
-                                return;
-                            }
-                            packmanOperationType = PackmanOperationType.Add;
-                            System.Console.WriteLine("Update: OperationID " + packmanOperationId + " for " + LatestXiaomiPackageId);
+                            AddRequest add = Client.Add(LatestXiaomiPackageId);
+                            requestList.Add(new RequestQueueItem(add, PackmanOperationType.Add));
+                            System.Console.WriteLine("Updating to: " + LatestXiaomiPackageId);
                             packmanOperationRunning = true;
                         }
                     }
@@ -160,14 +166,9 @@ namespace UnityEditor
                     if (packmanOperationRunning)
                         return;
 
-                    NativeStatusCode code = NativeClient.Remove(out packmanOperationId, CurrentXiaomiPackageId);
-                    if (code == NativeStatusCode.Error)
-                    {
-                        Debug.LogError("Remove " + CurrentXiaomiPackageId + " error, please remove it again.");
-                        return;
-                    }
-                    packmanOperationType = PackmanOperationType.Remove;
-                    System.Console.WriteLine("Remove: OperationID " + packmanOperationId + " for " + CurrentXiaomiPackageId);
+                    RemoveRequest remove = Client.Remove(CurrentXiaomiPackageId);
+                    requestList.Add(new RequestQueueItem(remove, PackmanOperationType.Remove));
+                    System.Console.WriteLine("Removing Xiaomi Package: " + CurrentXiaomiPackageId);
                     packmanOperationRunning = true;
                 }
                 GUILayout.EndHorizontal();
@@ -176,133 +177,151 @@ namespace UnityEditor
             EditorGUI.EndDisabledGroup();
         }
 
-        bool CheckXiaomiPackageVersions()
+        void CheckXiaomiPackageVersions()
         {
-            if (isVersionInitialized)
-                return true;
+            if (IsVersionInitialized)
+                return;
 
-            NativeStatusCode getCurrentVersionOperationStatus;
-            if (getCurrentVersionOperationId < 0)
-                getCurrentVersionOperationStatus = NativeClient.List(out getCurrentVersionOperationId);
-            else
-                getCurrentVersionOperationStatus = NativeClient.GetOperationStatus(getCurrentVersionOperationId);
-
-            // Reset and return false if it fails with StatusCode.Error or Status.NotFound.
-            if (getCurrentVersionOperationStatus > NativeStatusCode.Done)
+            if (string.IsNullOrEmpty(currentXiaomiPackageVersion) && !requestingCurrentPackage)
             {
-                getCurrentVersionOperationId = -1;
-                return false;
+                requestList.Add(new RequestQueueItem(Client.List(), PackmanOperationType.List));
+                packmanOperationRunning = requestingCurrentPackage = true;
             }
 
-            NativeStatusCode getLatestVersionOperationStatus;
-            if (getLatestVersionOperationId < 0)
-                getLatestVersionOperationStatus = NativeClient.Search(out getLatestVersionOperationId, xiaomiPackageName);
-            else
-                getLatestVersionOperationStatus = NativeClient.GetOperationStatus(getLatestVersionOperationId);
-
-            // Reset and return false if it fails with StatusCode.Error or Status.NotFound.
-            if (getLatestVersionOperationStatus > NativeStatusCode.Done)
+            if (string.IsNullOrEmpty(latestXiaomiPackageVersion) && !requestingLatestPackage)
             {
-                getLatestVersionOperationId = -1;
-                return false;
+                requestList.Add(new RequestQueueItem(Client.Search(xiaomiPackageName), PackmanOperationType.Search));
+                packmanOperationRunning = requestingLatestPackage = true;
             }
-
-            // Get version info if both operations are done.
-            if (getCurrentVersionOperationStatus == NativeStatusCode.Done && getLatestVersionOperationStatus == NativeStatusCode.Done)
-            {
-                CheckPackmanOperation(getCurrentVersionOperationId, PackmanOperationType.List);
-                CheckPackmanOperation(getLatestVersionOperationId, PackmanOperationType.Search);
-
-                System.Console.WriteLine("Current xiaomi package version is " + (string.IsNullOrEmpty(currentXiaomiPackageVersion) ? "empty" : currentXiaomiPackageVersion));
-                System.Console.WriteLine("Latest xiaomi package version is " + (string.IsNullOrEmpty(latestXiaomiPackageVersion) ? "empty" : latestXiaomiPackageVersion));
-
-                isVersionInitialized = true;
-                return true;
-            }
-
-            return false;
         }
 
         void Update()
         {
-            // If initialization operations haven't been finished.
-            if (!CheckXiaomiPackageVersions())
-                return;
+            //Initialization
+            CheckXiaomiPackageVersions();
 
             if (!packmanOperationRunning)
                 return;
 
-            packmanOperationRunning = !CheckPackmanOperation(packmanOperationId, packmanOperationType);
+            packmanOperationRunning = !CheckPackmanOperation();
         }
 
-        bool CheckPackmanOperation(long operationId, PackmanOperationType operationType)
+        bool CheckPackmanOperation()
         {
-            NativeStatusCode statusCode = NativeClient.GetOperationStatus(operationId);
-            if (statusCode == NativeStatusCode.NotFound)
+            if (requestList.Count == 0)
+                return true;
+
+            RequestQueueItem requestItem = requestList[0];
+            StatusCode statusCode = requestItem.Request.Status;
+
+            if (statusCode == StatusCode.Failure)
             {
-                Debug.LogError("OperationID " + operationId + " Not Found");
+                Error error = requestItem.Request.Error;
+                Debug.LogError("Operation " + requestItem.Request + " failed with Error: " + error);
                 return true;
             }
-            else if (statusCode == NativeStatusCode.Error)
-            {
-                Error error = NativeClient.GetOperationError(operationId);
-                Debug.LogError("OperationID " + operationId + " failed with Error: " + error);
-                return true;
-            }
-            else if (statusCode == NativeStatusCode.InProgress || statusCode == NativeStatusCode.InQueue)
+            else if (statusCode == StatusCode.InProgress)
             {
                 return false;
             }
-            else if (statusCode == NativeStatusCode.Done)
+            else if (statusCode == StatusCode.Success)
             {
-                System.Console.WriteLine("OperationID " + operationId + " Done");
-                switch (operationType)
+                System.Console.WriteLine("Operation " + requestItem.Request + " Done");
+                switch (requestItem.OperationType)
                 {
                     case PackmanOperationType.List:
-                        ExtractCurrentXiaomiPackageInfo(operationId);
+                        ExtractCurrentXiaomiPackageInfo(requestItem);
                         break;
                     case PackmanOperationType.Add:
-                        currentXiaomiPackageVersion = latestXiaomiPackageVersion;
-                        xiaomiPackageInstalled = true;
+                        PerformAdd(requestItem);
                         break;
                     case PackmanOperationType.Remove:
-                        currentXiaomiPackageVersion = "";
-                        xiaomiPackageInstalled = false;
+                        PerformRemove(requestItem.Request.Status);
                         break;
                     case PackmanOperationType.Search:
-                        ExtractLatestXiaomiPackageInfo(operationId);
+                        ExtractLatestXiaomiPackageInfo(requestItem);
                         break;
                     default:
-                        System.Console.WriteLine("Type " + operationType + " Not Supported");
+                        System.Console.WriteLine("Type " + requestItem.OperationType + " Not Supported");
                         break;
                 }
-                return true;
+                requestList.RemoveAt(0);
+                if (requestList.Count > 0)
+                    return false;
+                else
+                    return true;
             }
-
-            return true;
+            return false;
         }
 
-        void ExtractCurrentXiaomiPackageInfo(long operationId)
+        void PerformAdd(RequestQueueItem request)
         {
-            // Get the package list to find if xiaomi package has been installed.
-            OperationStatus operationStatus = NativeClient.GetListOperationData(operationId);
-            foreach (var package in operationStatus.packageList)
+            currentXiaomiPackageVersion = latestXiaomiPackageVersion = ((AddRequest)request.Request).Result.version;
+            if (request.Request.Status == StatusCode.Failure)
             {
-                if (package.packageId.StartsWith(xiaomiPackageName))
+                Debug.LogError("Adding/Updating to " + latestXiaomiPackageVersion + " resulted in error, please add it again.");
+                return;
+            }
+            xiaomiPackageInstalled = true;
+        }
+
+        void PerformRemove(StatusCode status)
+        {
+            if (status == StatusCode.Failure)
+            {
+                Debug.LogError("Remove " + currentXiaomiPackageVersion + " error, please remove it again.");
+                return;
+            }
+            else if (status == StatusCode.Success)
+            {
+                currentXiaomiPackageVersion = null;
+                xiaomiPackageInstalled = false;
+            }
+        }
+
+        void ExtractCurrentXiaomiPackageInfo(RequestQueueItem request)
+        {
+            ListRequest currentPackageListRequest = (ListRequest)request.Request;
+            if (currentPackageListRequest.Status == StatusCode.Success)
+            {
+                System.Console.WriteLine("Current xiaomi package version is " +
+                    (string.IsNullOrEmpty(currentXiaomiPackageVersion)
+                     ? "empty"
+                     : currentXiaomiPackageVersion));
+
+                if (currentPackageListRequest.IsCompleted && string.IsNullOrEmpty(currentXiaomiPackageVersion))
                 {
-                    xiaomiPackageInstalled = true;
-                    currentXiaomiPackageVersion = package.version;
+                    PackageManager.PackageInfo info = currentPackageListRequest.Result.FirstOrDefault(p => p.name == xiaomiPackageName);
+                    if (info != null)
+                        currentXiaomiPackageVersion = info.version;
+                    if (!string.IsNullOrEmpty(currentXiaomiPackageVersion))
+                        xiaomiPackageInstalled = true;
                 }
+                currentVersionInitialized = true;
             }
+            else
+                System.Console.WriteLine(currentPackageListRequest + " failed with error: " +
+                    currentPackageListRequest.Error);
         }
 
-        void ExtractLatestXiaomiPackageInfo(long operationId)
+        void ExtractLatestXiaomiPackageInfo(RequestQueueItem request)
         {
-            var packageList = NativeClient.GetSearchOperationData(operationId);
-            foreach (var package in packageList)
+            SearchRequest latestPackageSearchRequest = (SearchRequest)request.Request;
+            if (latestPackageSearchRequest.Status == StatusCode.Success)
             {
-                latestXiaomiPackageVersion = package.version;
+                System.Console.WriteLine("Latest xiaomi package version is " +
+                    (string.IsNullOrEmpty(latestXiaomiPackageVersion)
+                     ? "empty"
+                     : latestXiaomiPackageVersion));
+
+                if (latestPackageSearchRequest.IsCompleted && latestPackageSearchRequest.Result.Length > 0 &&
+                    string.IsNullOrEmpty(latestXiaomiPackageVersion))
+                    latestXiaomiPackageVersion = latestPackageSearchRequest.Result[0].version;
+                latestVersionInitialized = true;
             }
+            else
+                System.Console.WriteLine(latestPackageSearchRequest + " failed with error: " +
+                    latestPackageSearchRequest.Error);
         }
     }
 }

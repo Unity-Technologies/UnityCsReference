@@ -3,15 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
-
-using System;
-using System.Threading;
-using System.Collections;
+using UnityEditor.Experimental;
 using System.Collections.Generic;
-using System.Security;
-using System.Security.Cryptography;
 
 namespace UnityEditor
 {
@@ -142,11 +135,11 @@ namespace UnityEditor
             It would probably make sense to rename the asset to something generic, such as "EditorFont" instead,
             though that might possibly break some things.
             */
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande.ttf"));
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Bold.ttf"));
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Small.ttf"));
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Small Bold.ttf"));
-            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResourcesUtility.fontsPath + "Lucida Grande Big.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande Bold.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande Small.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande Small Bold.ttf"));
+            ReplaceFontForLocalization(dict, (Font)EditorGUIUtility.LoadRequired(EditorResources.fontsPath + "Lucida Grande Big.ttf"));
         }
 
         static void ReplaceFontForLocalization(FontDictionary dict, Font font)

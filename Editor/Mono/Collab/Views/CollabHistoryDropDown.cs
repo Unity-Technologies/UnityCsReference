@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using System.Collections.Generic;
@@ -12,14 +11,16 @@ namespace UnityEditor.Collaboration
 {
     internal class CollabHistoryDropDown : VisualElement
     {
-        private readonly VisualElement m_FilesContainer;
-        private readonly Label m_ToggleLabel;
-        private int m_ChangesTotal;
+        readonly VisualElement m_FilesContainer;
+        readonly Label m_ToggleLabel;
+        int m_ChangesTotal;
+        string m_RevisionId;
 
-        public CollabHistoryDropDown(ICollection<ChangeData> changes, int changesTotal, bool changesTruncated)
+        public CollabHistoryDropDown(ICollection<ChangeData> changes, int changesTotal, bool changesTruncated, string revisionId)
         {
             m_FilesContainer = new VisualElement();
             m_ChangesTotal = changesTotal;
+            m_RevisionId = revisionId;
 
             m_ToggleLabel = new Label(ToggleText(false));
             m_ToggleLabel.AddManipulator(new Clickable(ToggleDropdown));
@@ -62,10 +63,10 @@ namespace UnityEditor.Collaboration
 
         private void ShowAllClick()
         {
-            var host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudCollab);
-            var org = UnityConnect.instance.GetOrganizationForeignKey();
+            var host = UnityConnect.instance.GetConfigurationURL(CloudConfigUrl.CloudServicesDashboard);
+            var org = UnityConnect.instance.GetOrganizationId();
             var proj = UnityConnect.instance.GetProjectGUID();
-            var url = string.Format("{0}/orgs/{1}/projects/{2}/assets", host, org, proj);
+            var url = string.Format("{0}/collab/orgs/{1}/projects/{2}/commits?commit={3}", host, org, proj, m_RevisionId);
             Application.OpenURL(url);
         }
     }

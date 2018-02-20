@@ -156,7 +156,7 @@ namespace UnityEditor
 
         private ModelImporter GetImporter()
         {
-            return AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(PrefabUtility.GetPrefabParent(target))) as ModelImporter;
+            return AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(PrefabUtility.GetCorrespondingObjectFromSource(target))) as ModelImporter;
         }
 
         private bool IsLODUsingCrossFadeWidth(int lod)

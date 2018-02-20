@@ -32,7 +32,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         internal readonly bool isShared;
 
-        Dictionary<string, CustomProperty> m_CustomProperties;
+        internal Dictionary<string, CustomProperty> m_CustomProperties;
 
         internal StyleValue<float> width;
         internal StyleValue<float> height;
@@ -93,6 +93,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         internal StyleValue<int> sliceBottom;
         internal StyleValue<float> opacity;
         internal StyleValue<CursorStyle> cursor;
+        internal StyleValue<int> visibility;
 
         public VisualElementStylesData(bool isShared)
         {
@@ -163,6 +164,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             sliceBottom.Apply(other.sliceBottom, mode);
             opacity.Apply(other.opacity, mode);
             cursor.Apply(other.cursor, mode);
+            visibility.Apply(other.visibility, mode);
         }
 
         public void WriteToGUIStyle(GUIStyle style)
@@ -469,6 +471,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         registry.Apply(handles, specificity, ref borderTopRightRadius, StyleSheetApplicator.ApplyFloat);
                         registry.Apply(handles, specificity, ref borderBottomLeftRadius, StyleSheetApplicator.ApplyFloat);
                         registry.Apply(handles, specificity, ref borderBottomRightRadius, StyleSheetApplicator.ApplyFloat);
+                        break;
+
+                    case StylePropertyID.Visibility:
+                        registry.Apply(handles, specificity, ref visibility, StyleSheetApplicator.ApplyEnum<Visibility>);
                         break;
 
                     case StylePropertyID.Custom:

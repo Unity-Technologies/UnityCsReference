@@ -204,9 +204,6 @@ namespace UnityEditor
                 case BuildTarget.Android:
                     testValues = kTextureFormatsValueAndroid;
                     break;
-                case BuildTarget.Tizen:
-                    testValues = kTextureFormatsValueTizen;
-                    break;
 
                 default:
                     testValues = settings.textureType == TextureImporterType.NormalMap ? kNormalFormatsValueDefault : kTextureFormatsValueDefault;
@@ -353,6 +350,8 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGBAHalf,
             (int)TextureImporterFormat.BC4,
             (int)TextureImporterFormat.BC5,
+            (int)TextureImporterFormat.BC6H,
+            (int)TextureImporterFormat.BC7,
 
             (int)TextureImporterFormat.ASTC_RGB_4x4,
             (int)TextureImporterFormat.ASTC_RGB_5x5,
@@ -447,17 +446,6 @@ namespace UnityEditor
             (int)TextureImporterFormat.RGBA16,
             (int)TextureImporterFormat.RGBA32,
             (int)TextureImporterFormat.RGBAHalf,
-        };
-
-        public static readonly int[] kTextureFormatsValueTizen =
-        {
-            (int)TextureImporterFormat.ETC_RGB4,
-
-            (int)TextureImporterFormat.RGB16,
-            (int)TextureImporterFormat.RGB24,
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32,
         };
 
         public static readonly int[] kTextureFormatsValueWebGL =

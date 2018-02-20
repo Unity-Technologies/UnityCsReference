@@ -76,35 +76,42 @@ namespace UnityEditor
             set { m_type = value; m_ClassID = 0; m_ScriptInstanceID = 0; }
         }
 
-        static public EditorCurveBinding FloatCurve(string inPath, System.Type inType, string inPropertyName)
+        static private void BaseCurve(string inPath, System.Type inType, string inPropertyName, out EditorCurveBinding binding)
         {
-            EditorCurveBinding binding = new EditorCurveBinding();
-
+            binding = new EditorCurveBinding();
             binding.path = inPath;
             binding.type = inType;
             binding.propertyName = inPropertyName;
+            binding.m_isPhantom = 0;
+        }
+
+        static public EditorCurveBinding FloatCurve(string inPath, System.Type inType, string inPropertyName)
+        {
+            EditorCurveBinding binding;
+            BaseCurve(inPath, inType, inPropertyName, out binding);
             binding.m_isPPtrCurve = 0;
             binding.m_isDiscreteCurve = 0;
-            binding.m_isPhantom = 0;
-
 
             return binding;
-            //TODO: We should generate classID & scriptInstanceID here???
         }
 
         static public EditorCurveBinding PPtrCurve(string inPath, System.Type inType, string inPropertyName)
         {
-            EditorCurveBinding binding = new EditorCurveBinding();
-
-            binding.path = inPath;
-            binding.type = inType;
-            binding.propertyName = inPropertyName;
+            EditorCurveBinding binding;
+            BaseCurve(inPath, inType, inPropertyName, out binding);
             binding.m_isPPtrCurve = 1;
             binding.m_isDiscreteCurve = 1;
-            binding.m_isPhantom = 0;
             return binding;
+        }
 
-            //TODO: We should generate classID & scriptInstanceID here???
+        static public EditorCurveBinding DiscreteCurve(string inPath, System.Type inType, string inPropertyName)
+        {
+            EditorCurveBinding binding;
+            BaseCurve(inPath, inType, inPropertyName, out binding);
+            binding.m_isPPtrCurve = 0;
+            binding.m_isDiscreteCurve = 1;
+
+            return binding;
         }
     }
 }

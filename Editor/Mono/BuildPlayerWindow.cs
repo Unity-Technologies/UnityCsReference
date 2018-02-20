@@ -62,23 +62,22 @@ namespace UnityEditor
             const string kShopURL = "https://store.unity3d.com/shop/";
             const string kDownloadURL = "http://unity3d.com/unity/download/";
             const string kMailURL = "http://unity3d.com/company/sales?type=sales";
-            const string kMultiPlatformURL = "https://unity3d.com/unity/features/multiplatform";
+            const string kPlatformInstallationURL = "https://unity3d.com/platform-installation";
             // ADD_NEW_PLATFORM_HERE
             public GUIContent[,] notLicensedMessages =
             {
                 { EditorGUIUtility.TextContent("Your license does not cover Standalone Publishing."), new GUIContent(""), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover iOS Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Apple TV Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Android Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Tizen Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Xbox One Publishing. For more information please see 'Unity for Console' on the multiplatform site."), EditorGUIUtility.TrTextContent("Unity Multiplatform"), new GUIContent(kMultiPlatformURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover PS Vita Publishing. For more information please see 'Unity for Console' on the multiplatform site."), EditorGUIUtility.TrTextContent("Unity Multiplatform"), new GUIContent(kMultiPlatformURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover PS4 Publishing. For more information please see 'Unity for Console' on the multiplatform site."), EditorGUIUtility.TrTextContent("Unity Multiplatform"), new GUIContent(kMultiPlatformURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Nintendo 3DS Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Facebook Publishing"), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TextContent("Your license does not cover Nintendo Switch Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover iOS Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Apple TV Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Android Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Xbox One Publishing. Please see the Xbox One section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover PS Vita Publishing. Please see the PS Vita section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover PS4 Publishing. Please see the PS4 section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Nintendo 3DS Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Facebook Publishing"), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Nintendo Switch Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
             };
 
             // ADD_NEW_PLATFORM_HERE
@@ -88,7 +87,6 @@ namespace UnityEditor
                 { EditorGUIUtility.TrTextContent("iOS Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Apple TV Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Android Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Tizen is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Xbox One Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("PS Vita Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("PS4 Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
@@ -112,9 +110,9 @@ namespace UnityEditor
             // string and matching enum values for standalone subtarget dropdowm
             public GUIContent debugBuild = EditorGUIUtility.TrTextContent("Development Build");
             public GUIContent profileBuild = EditorGUIUtility.TrTextContent("Autoconnect Profiler");
+            public GUIContent vrRemoteStremaing = EditorGUIUtility.TrTextContent("VR Remote Streaming");
             public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging");
             public GUIContent waitForManagedDebugger = EditorGUIUtility.TrTextContent("Wait For Managed Debugger", "Show a dialog where you can attach a managed debugger before any script execution.");
-            public GUIContent symlinkiOSLibraries = EditorGUIUtility.TrTextContent("Symlink Unity libraries");
             public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
             public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TrTextContent("Array Bounds Checks");
@@ -647,17 +645,6 @@ namespace UnityEditor
                 buildWindowExtension.ShowPlatformBuildOptions();
 
             GUI.changed = false;
-            switch (platform.targetGroup)
-            {
-                case BuildTargetGroup.iOS:
-                case BuildTargetGroup.tvOS:
-                {
-                    if (Application.platform == RuntimePlatform.OSXEditor)
-                        EditorUserBuildSettings.symlinkLibraries = EditorGUILayout.Toggle(styles.symlinkiOSLibraries, EditorUserBuildSettings.symlinkLibraries);
-                }
-                break;
-            }
-
             GUI.enabled = true;
 
             bool enableBuildButton = buildWindowExtension != null ? buildWindowExtension.EnabledBuildButton() : true;
@@ -705,7 +692,9 @@ namespace UnityEditor
 
                     // Not all platforms have native dialog implemented in Runtime\Misc\GiveDebuggerChanceToAttachIfRequired.cpp
                     // Display this option only for developer builds
-                    if (EditorUserBuildSettings.allowDebugging && Unsupported.IsSourceBuild())
+                    bool shouldDrawWaitForManagedDebugger = buildWindowExtension != null ? buildWindowExtension.ShouldDrawWaitForManagedDebugger() : false;
+
+                    if (EditorUserBuildSettings.allowDebugging && shouldDrawWaitForManagedDebugger)
                     {
                         var buildTargetName = BuildPipeline.GetBuildTargetName(buildTarget);
 

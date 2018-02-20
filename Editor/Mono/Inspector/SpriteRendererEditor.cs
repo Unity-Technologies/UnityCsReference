@@ -36,7 +36,7 @@ namespace UnityEditor
             public static readonly GUIContent materialLabel = EditorGUIUtility.TrTextContent("Material", "Material to be used by SpriteRenderer");
             public static readonly GUIContent spriteLabel = EditorGUIUtility.TrTextContent("Sprite", "The Sprite to render");
             public static readonly GUIContent colorLabel = EditorGUIUtility.TrTextContent("Color", "Rendering color for the Sprite graphic");
-            public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TextContent("Mask Interaction|SpriteRenderer's interaction with a Sprite Mask");
+            public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TrTextContent("Mask Interaction", "SpriteRenderer's interaction with a Sprite Mask");
             public static readonly Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
         }
 

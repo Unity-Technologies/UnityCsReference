@@ -58,6 +58,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     {
                         ge.Select(gv, e.shiftKey || e.ctrlKey);
                     }
+
+                    // Do not stop the propagation as it is common case for a parent start to move the selection on a mouse down.
                 }
             }
         }

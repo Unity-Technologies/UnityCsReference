@@ -17,8 +17,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         bool CanAcceptDrop(List<ISelectable> selection);
 
         // evt.mousePosition will be in global coordinates.
-        EventPropagation DragUpdated(IMGUIEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget);
-        EventPropagation DragPerform(IMGUIEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget);
-        EventPropagation DragExited();
+        bool DragUpdated(DragUpdatedEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget);
+        bool DragPerform(DragPerformEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget);
+        bool DragExited();
     }
 }

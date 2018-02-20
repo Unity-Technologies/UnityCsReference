@@ -3,15 +3,19 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
+using UnityEngine.Experimental.Rendering;
 
 using TextureDimension = UnityEngine.Rendering.TextureDimension;
 
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Graphics/Texture.h")]
+    [NativeHeader("Runtime/Streaming/TextureStreamingManager.h")]
+    [UsedByNativeCode]
     public partial class Texture : Object
     {
         protected Texture() {}
@@ -44,6 +48,69 @@ namespace UnityEngine
         extern public IntPtr GetNativeTexturePtr();
         [Obsolete("Use GetNativeTexturePtr instead.", false)]
         public int GetNativeTextureID() { return (int)GetNativeTexturePtr(); }
+
+        extern public uint updateCount { get; }
+        extern public void IncrementUpdateCount();
+
+        extern public Hash128 imageContentsHash { get; set; }
+
+        extern public static ulong totalTextureMemory
+        {
+            [FreeFunction("GetTextureStreamingManager().GetTotalTextureMemory")]
+            get;
+        }
+
+        extern public static ulong desiredTextureMemory
+        {
+            [FreeFunction("GetTextureStreamingManager().GetDesiredTextureMemory")]
+            get;
+        }
+
+        extern public static ulong currentTextureMemory
+        {
+            [FreeFunction("GetTextureStreamingManager().GetCurrentTextureMemory")]
+            get;
+        }
+
+        extern public static ulong nonStreamingTextureMemory
+        {
+            [FreeFunction("GetTextureStreamingManager().GetNonStreamingTextureMemory")]
+            get;
+        }
+
+        extern public static ulong streamingMipmapUploadCount
+        {
+            [FreeFunction("GetTextureStreamingManager().GetStreamingMipmapUploadCount")]
+            get;
+        }
+
+        extern public static ulong streamingRendererCount
+        {
+            [FreeFunction("GetTextureStreamingManager().GetStreamingRendererCount")]
+            get;
+        }
+
+        extern public static ulong streamingTextureCount
+        {
+            [FreeFunction("GetTextureStreamingManager().GetStreamingTextureCount")]
+            get;
+        }
+
+        extern public static ulong nonStreamingTextureCount
+        {
+            [FreeFunction("GetTextureStreamingManager().GetNonStreamingTextureCount")]
+            get;
+        }
+
+        extern public static ulong streamingTextureLoadingCount
+        {
+            [FreeFunction("GetTextureStreamingManager().GetStreamingTextureLoadingCount")]
+            get;
+        }
+
+        [FreeFunction("GetTextureStreamingManager().SetStreamingTextureMaterialDebugProperties")]
+        extern public static void SetStreamingTextureMaterialDebugProperties();
+
     }
 
     [NativeHeader("Runtime/Graphics/Texture2D.h")]
@@ -59,10 +126,10 @@ namespace UnityEngine
         extern public void Compress(bool highQuality);
 
         [FreeFunction("Texture2DScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, TextureFormat format, bool mipmap, bool linear, IntPtr nativeTex);
-        private static void Internal_Create([Writable] Texture2D mono, int w, int h, TextureFormat format, bool mipmap, bool linear, IntPtr nativeTex)
+        extern private static bool Internal_CreateImpl([Writable] Texture2D mono, int w, int h, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
+        private static void Internal_Create([Writable] Texture2D mono, int w, int h, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
         {
-            if (!Internal_CreateImpl(mono, w, h, format, mipmap, linear, nativeTex))
+            if (!Internal_CreateImpl(mono, w, h, format, flags, nativeTex))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -73,6 +140,13 @@ namespace UnityEngine
         [NativeName("GetPixel")]         extern private Color GetPixelImpl(int image, int x, int y);
         [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, float x, float y);
 
+        [FreeFunction(Name = "Texture2DScripting::ResizeWithFormat", HasExplicitThis = true)]
+        extern private bool ResizeWithFormatImpl(int width, int height, TextureFormat format, bool hasMipMap);
+
+        [FreeFunction(Name = "Texture2DScripting::ReadPixels", HasExplicitThis = true)]
+        extern private void ReadPixelsImpl(Rect source, int destX, int destY, bool recalculateMipMaps);
+
+
         [FreeFunction(Name = "Texture2DScripting::SetPixels", HasExplicitThis = true)]
         extern private void SetPixelsImpl(int x, int y, int w, int h, Color[] pixel, int miplevel, int frame);
 
@@ -81,6 +155,45 @@ namespace UnityEngine
 
         [FreeFunction(Name = "Texture2DScripting::LoadRawData", HasExplicitThis = true)]
         extern private bool LoadRawTextureDataImplArray(byte[] data);
+
+
+        [FreeFunction("Texture2DScripting::GenerateAtlas")]
+        extern private static void GenerateAtlasImpl(Vector2[] sizes, int padding, int atlasSize, [Out] Rect[] rect);
+
+
+        extern public bool streamingMipmaps { get; }
+        extern public int streamingMipmapsPriority { get; }
+
+        extern public int requestedMipmapLevel
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetRequestedMipmapLevel", HasExplicitThis = true)] get;
+            [FreeFunction(Name = "GetTextureStreamingManager().SetRequestedMipmapLevel", HasExplicitThis = true)] set;
+        }
+
+        extern public int desiredMipmapLevel
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetDesiredMipmapLevel", HasExplicitThis = true)]
+            get;
+        }
+
+        extern public int loadingMipmapLevel
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetLoadingMipmapLevel", HasExplicitThis = true)] get;
+        }
+
+        extern public int loadedMipmapLevel
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetLoadedMipmapLevel", HasExplicitThis = true)] get;
+        }
+
+        [FreeFunction(Name = "GetTextureStreamingManager().ClearRequestedMipmapLevel", HasExplicitThis = true)]
+        extern public void ClearRequestedMipmapLevel();
+
+        [FreeFunction(Name = "GetTextureStreamingManager().IsRequestedMipmapLevelLoaded", HasExplicitThis = true)]
+        extern public bool IsRequestedMipmapLevelLoaded();
+
+        [FreeFunction(Name = "GetTextureStreamingManager().WaitForMipmapLoading", HasExplicitThis = true)]
+        extern public void WaitForMipmapLoading();
     }
 
     [NativeHeader("Runtime/Graphics/CubemapTexture.h")]
@@ -90,10 +203,10 @@ namespace UnityEngine
         extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
 
         [FreeFunction("CubemapScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Cubemap mono, int ext, TextureFormat format, bool mipmap, IntPtr nativeTex);
-        private static void Internal_Create([Writable] Cubemap mono, int ext, TextureFormat format, bool mipmap, IntPtr nativeTex)
+        extern private static bool Internal_CreateImpl([Writable] Cubemap mono, int ext, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
+        private static void Internal_Create([Writable] Cubemap mono, int ext, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex)
         {
-            if (!Internal_CreateImpl(mono, ext, format, mipmap, nativeTex))
+            if (!Internal_CreateImpl(mono, ext, format, flags, nativeTex))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -104,7 +217,7 @@ namespace UnityEngine
         [NativeName("SetPixel")]      extern private void  SetPixelImpl(int image, int x, int y, Color color);
         [NativeName("GetPixel")]      extern private Color GetPixelImpl(int image, int x, int y);
 
-        [NativeName("FixupEdges")]    extern public   void  SmoothEdges([uei.DefaultValue("1")] int smoothRegionWidthInPixels);
+        [NativeName("FixupEdges")]    extern public  void  SmoothEdges([uei.DefaultValue("1")] int smoothRegionWidthInPixels);
         public void SmoothEdges() { SmoothEdges(1); }
     }
 
@@ -117,10 +230,10 @@ namespace UnityEngine
         [NativeName("GetIsReadable")] extern private bool  IsReadable();
 
         [FreeFunction("Texture3DScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, TextureFormat format, bool mipmap);
-        private static void Internal_Create([Writable] Texture3D mono, int w, int h, int d, TextureFormat format, bool mipmap)
+        extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags);
+        private static void Internal_Create([Writable] Texture3D mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags)
         {
-            if (!Internal_CreateImpl(mono, w, h, d, format, mipmap))
+            if (!Internal_CreateImpl(mono, w, h, d, format, flags))
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
@@ -137,10 +250,10 @@ namespace UnityEngine
         [NativeName("GetIsReadable")] extern private bool  IsReadable();
 
         [FreeFunction("Texture2DArrayScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, TextureFormat format, bool mipmap, bool linear);
-        private static void Internal_Create([Writable] Texture2DArray mono, int w, int h, int d, TextureFormat format, bool mipmap, bool linear)
+        extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags);
+        private static void Internal_Create([Writable] Texture2DArray mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags)
         {
-            if (!Internal_CreateImpl(mono, w, h, d, format, mipmap, linear))
+            if (!Internal_CreateImpl(mono, w, h, d, format, flags))
                 throw new UnityException("Failed to create 2D array texture because of invalid parameters.");
         }
 
@@ -157,10 +270,10 @@ namespace UnityEngine
         [NativeName("GetIsReadable")] extern private bool  IsReadable();
 
         [FreeFunction("CubemapArrayScripting::Create")]
-        extern private static bool Internal_CreateImpl([Writable] CubemapArray mono, int ext, int count, TextureFormat format, bool mipmap, bool linear);
-        private static void Internal_Create([Writable] CubemapArray mono, int ext, int count, TextureFormat format, bool mipmap, bool linear)
+        extern private static bool Internal_CreateImpl([Writable] CubemapArray mono, int ext, int count, GraphicsFormat format, TextureCreationFlags flags);
+        private static void Internal_Create([Writable] CubemapArray mono, int ext, int count, GraphicsFormat format, TextureCreationFlags flags)
         {
-            if (!Internal_CreateImpl(mono, ext, count, format, mipmap, linear))
+            if (!Internal_CreateImpl(mono, ext, count, format, flags))
                 throw new UnityException("Failed to create cubemap array texture because of invalid parameters.");
         }
 
@@ -195,6 +308,38 @@ namespace UnityEngine
         extern private bool GetIsPowerOfTwo();
         public bool isPowerOfTwo { get { return GetIsPowerOfTwo(); } set {} }
 
+
+        [FreeFunction("RenderTexture::GetActive")] extern private static RenderTexture GetActive();
+        [FreeFunction("RenderTextureScripting::SetActive")] extern private static void SetActive(RenderTexture rt);
+        public static RenderTexture active { get { return GetActive(); } set { SetActive(value); } }
+
+        [FreeFunction(Name = "RenderTextureScripting::GetColorBuffer", HasExplicitThis = true)]
+        extern private RenderBuffer GetColorBuffer();
+        [FreeFunction(Name = "RenderTextureScripting::GetDepthBuffer", HasExplicitThis = true)]
+        extern private RenderBuffer GetDepthBuffer();
+
+        public RenderBuffer colorBuffer { get { return GetColorBuffer(); } }
+        public RenderBuffer depthBuffer { get { return GetDepthBuffer(); } }
+
+        extern public IntPtr GetNativeDepthBufferPtr();
+
+
+        extern public void DiscardContents(bool discardColor, bool discardDepth);
+        extern public void MarkRestoreExpected();
+        public void DiscardContents() { DiscardContents(true, true); }
+
+
+        [NativeName("ResolveAntiAliasedSurface")] extern private void ResolveAA();
+        [NativeName("ResolveAntiAliasedSurface")] extern private void ResolveAATo(RenderTexture rt);
+
+        public void ResolveAntiAliasedSurface()                     { ResolveAA(); }
+        public void ResolveAntiAliasedSurface(RenderTexture target) { ResolveAATo(target); }
+
+
+        [FreeFunction(Name = "RenderTextureScripting::SetGlobalShaderProperty", HasExplicitThis = true)]
+        extern public void SetGlobalShaderProperty(string propertyName);
+
+
         extern public bool Create();
         extern public void Release();
         extern public bool IsCreated();
@@ -204,22 +349,7 @@ namespace UnityEngine
         extern internal void SetSRGBReadWrite(bool srgb);
 
         [FreeFunction("RenderTextureScripting::Create")] extern private static void Internal_Create([Writable] RenderTexture rt);
-    }
 
-    public partial class RenderTexture : Texture
-    {
-        [Obsolete("Use RenderTexture.dimension instead.", false)]
-        public bool isCubemap
-        {
-            get { return dimension == TextureDimension.Cube; }
-            set { dimension = value ? TextureDimension.Cube : TextureDimension.Tex2D; }
-        }
-
-        [Obsolete("Use RenderTexture.dimension instead.", false)]
-        public bool isVolume
-        {
-            get { return dimension == TextureDimension.Tex3D; }
-            set { dimension = value ? TextureDimension.Tex3D : TextureDimension.Tex2D; }
-        }
+        [FreeFunction("RenderTextureSupportsStencil")] extern public static bool SupportsStencil(RenderTexture rt);
     }
 }

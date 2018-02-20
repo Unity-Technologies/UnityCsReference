@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using UnityEngine.Bindings;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine
 {
@@ -52,6 +53,7 @@ namespace UnityEngine
     // Access system information.
     [NativeHeader("Runtime/Misc/SystemInfo.h")]
     [NativeHeader("Runtime/Shaders/GraphicsCapsScriptBindings.h")]
+    [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
     [NativeHeader("Runtime/Camera/RenderLoops/MotionVectorRenderLoop.h")]
     [NativeHeader("Runtime/Input/GetInput.h")]
     public sealed class SystemInfo
@@ -306,9 +308,19 @@ namespace UnityEngine
             get { return SupportedRenderTargetCount(); }
         }
 
+        internal static int supportedRandomWriteTargetCount
+        {
+            get { return SupportedRandomWriteTargetCount(); }
+        }
+
         public static int supportsMultisampledTextures
         {
             get { return SupportsMultisampledTextures(); }
+        }
+
+        public static bool supportsMultisampleAutoResolve
+        {
+            get { return SupportsMultisampleAutoResolve(); }
         }
 
         public static int supportsTextureWrapMirrorOnce
@@ -390,6 +402,11 @@ namespace UnityEngine
         public static bool supportsAsyncGPUReadback
         {
             get { return SupportsAsyncGPUReadback();  }
+        }
+
+        public static bool supportsMipStreaming
+        {
+            get { return SupportsMipStreaming(); }
         }
 
         [Obsolete("graphicsPixelFillrate is no longer supported in Unity 5.0+.")]
@@ -533,8 +550,14 @@ namespace UnityEngine
         [FreeFunction("ScriptingGraphicsCaps::SupportedRenderTargetCount")]
         static extern int SupportedRenderTargetCount();
 
+        [FreeFunction("ScriptingGraphicsCaps::SupportedRandomWriteTargetCount")]
+        static extern int SupportedRandomWriteTargetCount();
+
         [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampledTextures")]
         static extern int SupportsMultisampledTextures();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMultisampleAutoResolve")]
+        static extern bool SupportsMultisampleAutoResolve();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsTextureWrapMirrorOnce")]
         static extern int SupportsTextureWrapMirrorOnce();
@@ -571,5 +594,11 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsAsyncGPUReadback")]
         static extern bool SupportsAsyncGPUReadback();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsMipStreaming")]
+        static extern bool SupportsMipStreaming();
+
+        [FreeFunction("ScriptingGraphicsCaps::IsFormatSupported")]
+        extern public static bool IsFormatSupported(GraphicsFormat format, FormatUsage usage);
     }
 }

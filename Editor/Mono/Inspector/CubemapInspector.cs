@@ -106,6 +106,11 @@ namespace UnityEditor
             int mipMaps = TextureUtil.GetMipmapCount(c);
             bool useMipMap = EditorGUILayout.Toggle("MipMaps", mipMaps > 1);
 
+            bool streamingMipmaps = TextureUtil.GetCubemapStreamingMipmaps(c);
+            if (useMipMap)
+            {
+                streamingMipmaps = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("Streaming Mip Maps", "Don't load image data immediately, but wait till image data is requested from script."), streamingMipmaps);
+            }
 
             bool linear = TextureUtil.GetLinearSampled(c);
             linear = EditorGUILayout.Toggle("Linear", linear);
@@ -120,6 +125,7 @@ namespace UnityEditor
                     InitTexturesFromCubemap();
 
                 TextureUtil.MarkCubemapReadable(c, readable);
+                TextureUtil.SetCubemapStreamingMipmaps(c, streamingMipmaps);
                 c.Apply();
             }
         }

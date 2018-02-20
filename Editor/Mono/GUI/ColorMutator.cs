@@ -20,6 +20,32 @@ namespace UnityEditor
         // this is the value used by Photoshop
         private const byte k_MaxByteForOverexposedColor = 191;
 
+        internal static void DecomposeHdrColor(Color linearColorHdr, out Color32 baseLinearColor, out float exposure)
+        {
+            baseLinearColor = linearColorHdr;
+            var maxColorComponent = linearColorHdr.maxColorComponent;
+            // replicate Photoshops's decomposition behaviour
+            if (maxColorComponent == 0f || maxColorComponent <= 1f && maxColorComponent > 1 / 255f)
+            {
+                exposure = 0f;
+
+                baseLinearColor.r = (byte)Mathf.RoundToInt(linearColorHdr.r * 255f);
+                baseLinearColor.g = (byte)Mathf.RoundToInt(linearColorHdr.g * 255f);
+                baseLinearColor.b = (byte)Mathf.RoundToInt(linearColorHdr.b * 255f);
+            }
+            else
+            {
+                // calibrate exposure to the max float color component
+                var scaleFactor = k_MaxByteForOverexposedColor / maxColorComponent;
+                exposure = Mathf.Log(255f / scaleFactor) / Mathf.Log(2f);
+
+                // maintain maximal integrity of byte values to prevent off-by-one errors when scaling up a color one component at a time
+                baseLinearColor.r = Math.Min(k_MaxByteForOverexposedColor, (byte)Mathf.CeilToInt(scaleFactor * linearColorHdr.r));
+                baseLinearColor.g = Math.Min(k_MaxByteForOverexposedColor, (byte)Mathf.CeilToInt(scaleFactor * linearColorHdr.g));
+                baseLinearColor.b = Math.Min(k_MaxByteForOverexposedColor, (byte)Mathf.CeilToInt(scaleFactor * linearColorHdr.b));
+            }
+        }
+
         public Color originalColor
         {
             get { return m_OriginalColor; }
@@ -177,28 +203,11 @@ namespace UnityEditor
             if (channel == (int)RgbaChannel.A)
                 return;
 
-            var newColor = exposureAdjustedColor;
-            var maxColorComponent = newColor.maxColorComponent;
-            // replicate Photoshops's decomposition behaviour
-            if (maxColorComponent == 0f || maxColorComponent <= 1f && maxColorComponent > 1 / 255f)
-            {
-                m_ExposureValue = 0f;
-
-                m_Color[(int)RgbaChannel.R] = (byte)Mathf.RoundToInt(newColor.r * 255f);
-                m_Color[(int)RgbaChannel.G] = (byte)Mathf.RoundToInt(newColor.g * 255f);
-                m_Color[(int)RgbaChannel.B] = (byte)Mathf.RoundToInt(newColor.b * 255f);
-            }
-            else
-            {
-                // calibrate exposure to the max float color component
-                var scaleFactor = k_MaxByteForOverexposedColor / maxColorComponent;
-                m_ExposureValue = Mathf.Log(255f / scaleFactor) / Mathf.Log(2f);
-
-                // maintain maximal integrity of byte values to prevent off-by-one errors when scaling up a color one component at a time
-                m_Color[0] = Math.Min(k_MaxByteForOverexposedColor, (byte)Mathf.CeilToInt(scaleFactor * m_ColorHdr[0]));
-                m_Color[1] = Math.Min(k_MaxByteForOverexposedColor, (byte)Mathf.CeilToInt(scaleFactor * m_ColorHdr[1]));
-                m_Color[2] = Math.Min(k_MaxByteForOverexposedColor, (byte)Mathf.CeilToInt(scaleFactor * m_ColorHdr[2]));
-            }
+            Color32 baseColor;
+            DecomposeHdrColor(exposureAdjustedColor, out baseColor, out m_ExposureValue);
+            m_Color[(int)RgbaChannel.R] = baseColor.r;
+            m_Color[(int)RgbaChannel.G] = baseColor.g;
+            m_Color[(int)RgbaChannel.B] = baseColor.b;
             Color.RGBToHSV(
                 color,
                 out m_Hsv[(int)HsvChannel.H],

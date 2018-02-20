@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using UnityEngine.CSSLayout;
+using UnityEngine.Yoga;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 
@@ -26,8 +26,6 @@ namespace UnityEngine.Experimental.UIElements
         Selected  = 1 << 4,     // selected, used to denote the current selected state and associate a visual style from CSS
         Disabled  = 1 << 5,     // control will not respond to user input
         Focus     = 1 << 6,     // control has the keyboard focus. This is activated deactivated by the dispatcher automatically
-
-        Invisible = 1 << 31,    // special. not enabled via uss. activate to skip render
     }
 
     public enum PickingMode
@@ -36,6 +34,36 @@ namespace UnityEngine.Experimental.UIElements
         Ignore
     }
 
+    internal class VisualElementListPool
+    {
+        static ObjectPool<List<VisualElement>> pool = new ObjectPool<List<VisualElement>>(20);
+
+        public static List<VisualElement> Copy(List<VisualElement> elements)
+        {
+            var result = pool.Get();
+
+            result.AddRange(elements);
+
+            return result;
+        }
+
+        public static List<VisualElement> Get(int initialCapacity = 0)
+        {
+            List<VisualElement> result = pool.Get();
+
+            if (initialCapacity > 0 && result.Capacity < initialCapacity)
+            {
+                result.Capacity = initialCapacity;
+            }
+            return result;
+        }
+
+        public static void Release(List<VisualElement> elements)
+        {
+            elements.Clear();
+            pool.Release(elements);
+        }
+    }
     public partial class VisualElement : Focusable, ITransform
     {
         private static uint s_NextId;
@@ -73,7 +101,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public object userData { get; set; }
 
-        public override bool canGrabFocus { get { return enabledInHierarchy && base.canGrabFocus; } }
+        public override bool canGrabFocus { get { return visible && enabledInHierarchy && base.canGrabFocus; } }
 
         public override FocusController focusController
         {
@@ -154,20 +182,20 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var result = m_Layout;
-                if (cssNode != null && style.positionType.value != PositionType.Manual)
+                if (yogaNode != null && style.positionType.value != PositionType.Manual)
                 {
-                    result.x = cssNode.LayoutX;
-                    result.y = cssNode.LayoutY;
-                    result.width = cssNode.LayoutWidth;
-                    result.height = cssNode.LayoutHeight;
+                    result.x = yogaNode.LayoutX;
+                    result.y = yogaNode.LayoutY;
+                    result.width = yogaNode.LayoutWidth;
+                    result.height = yogaNode.LayoutHeight;
                 }
                 return result;
             }
             set
             {
-                if (cssNode == null)
+                if (yogaNode == null)
                 {
-                    cssNode = new CSSNode();
+                    yogaNode = new YogaNode();
                 }
 
                 // Same position value while type is already manual should not trigger any layout change, return early
@@ -221,25 +249,34 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        // get the AA aligned bound
+        /// <summary>
+        /// AABB after applying the world transform to <c>rect</c>.
+        /// </summary>
         public Rect worldBound
         {
             get
             {
                 var g = worldTransform;
-                var min = g.MultiplyPoint3x4(rect.min);
-                var max = g.MultiplyPoint3x4(rect.max);
+                var min = GUIUtility.Internal_MultiplyPoint(new Vector3(rect.min.x, rect.min.y, 1), g);
+                var max = GUIUtility.Internal_MultiplyPoint(new Vector3(rect.max.x, rect.max.y, 1), g);
+
+                // We assume that the transform performs translation/scaling without rotation.
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
             }
         }
 
+        /// <summary>
+        /// AABB after applying the transform to the rect, but before applying the layout translation.
+        /// </summary>
         public Rect localBound
         {
             get
             {
                 var g = transform.matrix;
-                var min = g.MultiplyPoint3x4(layout.min);
-                var max = g.MultiplyPoint3x4(layout.max);
+                var min = GUIUtility.Internal_MultiplyPoint(layout.min, g);
+                var max = GUIUtility.Internal_MultiplyPoint(layout.max, g);
+
+                // We assume that the transform performs translation/scaling without rotation.
                 return Rect.MinMaxRect(Math.Min(min.x, max.x), Math.Min(min.y, max.y), Math.Max(min.x, max.x), Math.Max(min.y, max.y));
             }
         }
@@ -249,6 +286,22 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 return new Rect(0.0f, 0.0f, layout.width, layout.height);
+            }
+        }
+
+        /// <summary>
+        /// <c>rect</c> converted to world space, aligned to the pixel-grid, and converted back to its original space.
+        /// </summary>
+        /// <remarks>
+        /// The offset used when rendering to a pixel cache can yield numerical errors that result in rounding
+        /// differences in GUITexture.cpp, causing blur. By specifying an already-aligned rect, the numerical
+        /// errors aren't sufficient to generate rounding differences.
+        /// </remarks>
+        internal Rect alignedRect
+        {
+            get
+            {
+                return GUIUtility.Internal_AlignRectToDevice(rect, worldTransform);
             }
         }
 
@@ -333,7 +386,7 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         // Set and pass in values to be used for layout
-        internal CSSNode cssNode { get; private set; }
+        internal YogaNode yogaNode { get; private set; }
 
         // shared style object, cannot be changed by the user
         internal VisualElementStylesData m_SharedStyle = VisualElementStylesData.none;
@@ -409,14 +462,12 @@ namespace UnityEngine.Experimental.UIElements
             m_FullTypeName = string.Empty;
             m_TypeName = string.Empty;
             SetEnabled(true);
-            visible = true;
 
             // Make element non focusable by default.
             focusIndex = -1;
 
             name = string.Empty;
-            cssNode = new CSSNode();
-            cssNode.SetMeasureFunction(Measure);
+            yogaNode = new YogaNode();
             changesNeeded = ChangeType.All;
             clippingOptions = ClippingOptions.ClipContents;
         }
@@ -459,11 +510,35 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        internal virtual void ChangePanel(BaseVisualElementPanel p)
+        internal void SetPanel(BaseVisualElementPanel p)
         {
             if (panel == p)
                 return;
 
+            //We now gather all Elements in order to dispatch events in an efficient manner
+            List<VisualElement> elements = VisualElementListPool.Get();
+            try
+            {
+                elements.Add(this);
+                GatherAllChildren(elements);
+
+                foreach (var e in elements)
+                {
+                    e.ChangePanel(p);
+                }
+            }
+            finally
+            {
+                VisualElementListPool.Release(elements);
+            }
+        }
+
+        // This should never be called directly
+        // This needs to be virtual for GraphView.cs
+        // We could avoid this by having a single PanelChangeEvent
+        // containing both the previous and the new panel values.
+        internal virtual void ChangePanel(BaseVisualElementPanel p)
+        {
             if (panel != null)
             {
                 using (var e = DetachFromPanelEvent.GetPooled())
@@ -485,15 +560,6 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             Dirty(ChangeType.Styles);
-
-            if (m_Children != null && m_Children.Count > 0)
-            {
-                for (var index = 0; index < m_Children.Count; index++)
-                {
-                    var child = m_Children[index];
-                    child.ChangePanel(p);
-                }
-            }
         }
 
         // in the case of a Topology change the target is the parent of the removed or added element
@@ -571,13 +637,18 @@ namespace UnityEngine.Experimental.UIElements
             if ((type & changesNeeded) == type)
                 return;
 
-            if ((type & ChangeType.Layout) > 0)
+            if ((type & ChangeType.Layout) == ChangeType.Layout)
             {
-                if (cssNode != null && cssNode.IsMeasureDefined)
+                if (yogaNode != null && yogaNode.IsMeasureDefined)
                 {
-                    cssNode.MarkDirty();
+                    yogaNode.MarkDirty();
                 }
                 type |= ChangeType.Repaint;
+            }
+
+            if (((type & ChangeType.Transform) == ChangeType.Transform) && (elementPanel != null))
+            {
+                elementPanel.hasDirtyTransform = true;
             }
 
             PropagateToChildren(type);
@@ -667,14 +738,14 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                return (pseudoStates & PseudoStates.Invisible) != PseudoStates.Invisible;
+                return style.visibility.GetSpecifiedValueOrDefault(Visibility.Visible) == Visibility.Visible;
             }
             set
             {
-                if (value)
-                    pseudoStates &= ~PseudoStates.Invisible;
-                else
-                    pseudoStates |= PseudoStates.Invisible;
+                // Note: this could causes an allocation because styles are copy-on-write
+                // we might want to remove this setter altogether
+                // so everything goes through style.visibility (and then it's documented in a single place)
+                style.visibility = value ? Visibility.Visible : Visibility.Hidden;
             }
         }
 
@@ -687,7 +758,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal virtual void DoRepaint(IStylePainter painter)
         {
-            if ((pseudoStates & PseudoStates.Invisible) == PseudoStates.Invisible)
+            if (visible == false)
             {
                 return;
             }
@@ -832,9 +903,27 @@ namespace UnityEngine.Experimental.UIElements
 
         public enum MeasureMode
         {
-            Undefined = CSSMeasureMode.Undefined,
-            Exactly = CSSMeasureMode.Exactly,
-            AtMost = CSSMeasureMode.AtMost
+            Undefined = YogaMeasureMode.Undefined,
+            Exactly = YogaMeasureMode.Exactly,
+            AtMost = YogaMeasureMode.AtMost
+        }
+
+        private bool m_RequireMeasureFunction = false;
+        internal bool requireMeasureFunction
+        {
+            get { return m_RequireMeasureFunction; }
+            set
+            {
+                m_RequireMeasureFunction = value;
+                if (m_RequireMeasureFunction && !yogaNode.IsMeasureDefined)
+                {
+                    yogaNode.SetMeasureFunction(Measure);
+                }
+                else if (!m_RequireMeasureFunction && yogaNode.IsMeasureDefined)
+                {
+                    yogaNode.SetMeasureFunction(null);
+                }
+            }
         }
 
         protected internal virtual Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
@@ -842,9 +931,9 @@ namespace UnityEngine.Experimental.UIElements
             return new Vector2(float.NaN, float.NaN);
         }
 
-        internal long Measure(CSSNode node, float width, CSSMeasureMode widthMode, float height, CSSMeasureMode heightMode)
+        internal YogaSize Measure(YogaNode node, float width, YogaMeasureMode widthMode, float height, YogaMeasureMode heightMode)
         {
-            Debug.Assert(node == cssNode, "CSSNode instance mismatch");
+            Debug.Assert(node == yogaNode, "YogaNode instance mismatch");
             Vector2 size = DoMeasure(width, (MeasureMode)widthMode, height, (MeasureMode)heightMode);
             return MeasureOutput.Make(Mathf.RoundToInt(size.x), Mathf.RoundToInt(size.y));
         }
@@ -862,55 +951,55 @@ namespace UnityEngine.Experimental.UIElements
 
         void FinalizeLayout()
         {
-            cssNode.Flex = style.flex.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.FlexBasis = style.flexBasis.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.FlexGrow = style.flexGrow.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.FlexShrink = style.flexShrink.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.SetPosition(CSSEdge.Left, style.positionLeft.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPosition(CSSEdge.Top, style.positionTop.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPosition(CSSEdge.Right, style.positionRight.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPosition(CSSEdge.Bottom, style.positionBottom.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetMargin(CSSEdge.Left, style.marginLeft.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetMargin(CSSEdge.Top, style.marginTop.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetMargin(CSSEdge.Right, style.marginRight.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetMargin(CSSEdge.Bottom, style.marginBottom.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPadding(CSSEdge.Left, style.paddingLeft.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPadding(CSSEdge.Top, style.paddingTop.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPadding(CSSEdge.Right, style.paddingRight.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetPadding(CSSEdge.Bottom, style.paddingBottom.GetSpecifiedValueOrDefault(float.NaN));
-            cssNode.SetBorder(CSSEdge.Left, style.borderLeft.GetSpecifiedValueOrDefault(style.borderLeftWidth.GetSpecifiedValueOrDefault(float.NaN)));
-            cssNode.SetBorder(CSSEdge.Top, style.borderTop.GetSpecifiedValueOrDefault(style.borderTopWidth.GetSpecifiedValueOrDefault(float.NaN)));
-            cssNode.SetBorder(CSSEdge.Right, style.borderRight.GetSpecifiedValueOrDefault(style.borderRightWidth.GetSpecifiedValueOrDefault(float.NaN)));
-            cssNode.SetBorder(CSSEdge.Bottom, style.borderBottom.GetSpecifiedValueOrDefault(style.borderBottomWidth.GetSpecifiedValueOrDefault(float.NaN)));
-            cssNode.Width = style.width.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.Height = style.height.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.Flex = style.flex.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.FlexBasis = style.flexBasis.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.FlexGrow = style.flexGrow.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.FlexShrink = style.flexShrink.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.Left = style.positionLeft.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.Top = style.positionTop.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.Right = style.positionRight.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.Bottom = style.positionBottom.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.MarginLeft = style.marginLeft.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.MarginTop = style.marginTop.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.MarginRight = style.marginRight.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.MarginBottom = style.marginBottom.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.PaddingLeft = style.paddingLeft.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.PaddingTop = style.paddingTop.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.PaddingRight = style.paddingRight.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.PaddingBottom = style.paddingBottom.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.BorderLeftWidth = style.borderLeft.GetSpecifiedValueOrDefault(style.borderLeftWidth.GetSpecifiedValueOrDefault(float.NaN));
+            yogaNode.BorderTopWidth = style.borderTop.GetSpecifiedValueOrDefault(style.borderTopWidth.GetSpecifiedValueOrDefault(float.NaN));
+            yogaNode.BorderRightWidth = style.borderRight.GetSpecifiedValueOrDefault(style.borderRightWidth.GetSpecifiedValueOrDefault(float.NaN));
+            yogaNode.BorderBottomWidth = style.borderBottom.GetSpecifiedValueOrDefault(style.borderBottomWidth.GetSpecifiedValueOrDefault(float.NaN));
+            yogaNode.Width = style.width.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.Height = style.height.GetSpecifiedValueOrDefault(float.NaN);
 
             PositionType posType = style.positionType;
             switch (posType)
             {
                 case PositionType.Absolute:
                 case PositionType.Manual:
-                    cssNode.PositionType = CSSPositionType.Absolute;
+                    yogaNode.PositionType = YogaPositionType.Absolute;
                     break;
                 case PositionType.Relative:
-                    cssNode.PositionType = CSSPositionType.Relative;
+                    yogaNode.PositionType = YogaPositionType.Relative;
                     break;
             }
 
-            cssNode.Overflow = (CSSOverflow)(style.overflow.value);
-            cssNode.AlignSelf = (CSSAlign)(style.alignSelf.value);
-            cssNode.MaxWidth = style.maxWidth.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.MaxHeight = style.maxHeight.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.MinWidth = style.minWidth.GetSpecifiedValueOrDefault(float.NaN);
-            cssNode.MinHeight = style.minHeight.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.Overflow = (YogaOverflow)(style.overflow.value);
+            yogaNode.AlignSelf = (YogaAlign)(style.alignSelf.value);
+            yogaNode.MaxWidth = style.maxWidth.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.MaxHeight = style.maxHeight.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.MinWidth = style.minWidth.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.MinHeight = style.minHeight.GetSpecifiedValueOrDefault(float.NaN);
 
             // Note: the following applies to VisualContainer only
             // but it won't cause any trouble and we avoid making this method virtual
-            cssNode.FlexDirection = (CSSFlexDirection)style.flexDirection.value;
-            cssNode.AlignContent = (CSSAlign)style.alignContent.GetSpecifiedValueOrDefault(DefaultAlignContent);
-            cssNode.AlignItems = (CSSAlign)style.alignItems.GetSpecifiedValueOrDefault(DefaultAlignItems);
-            cssNode.JustifyContent = (CSSJustify)style.justifyContent.value;
-            cssNode.Wrap = (CSSWrap)style.flexWrap.value;
+            yogaNode.FlexDirection = (YogaFlexDirection)style.flexDirection.value;
+            yogaNode.AlignContent = (YogaAlign)style.alignContent.GetSpecifiedValueOrDefault(DefaultAlignContent);
+            yogaNode.AlignItems = (YogaAlign)style.alignItems.GetSpecifiedValueOrDefault(DefaultAlignItems);
+            yogaNode.JustifyContent = (YogaJustify)style.justifyContent.value;
+            yogaNode.Wrap = (YogaWrap)style.flexWrap.value;
 
             Dirty(ChangeType.Layout);
             Dirty(ChangeType.Transform);
@@ -1020,6 +1109,22 @@ namespace UnityEngine.Experimental.UIElements
             {
                 Dirty(ChangeType.Styles);
             }
+        }
+
+        public void ToggleInClassList(string className)
+        {
+            if (ClassListContains(className))
+                RemoveFromClassList(className);
+            else
+                AddToClassList(className);
+        }
+
+        public void EnableInClassList(string className, bool enable)
+        {
+            if (enable)
+                AddToClassList(className);
+            else
+                RemoveFromClassList(className);
         }
 
         public bool ClassListContains(string cls)
@@ -1138,7 +1243,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new TextureStylePainterParameters
             {
-                rect = ve.rect,
+                rect = ve.alignedRect,
                 uv = new Rect(0, 0, 1, 1),
                 color = Color.white,
                 texture = style.backgroundImage,
@@ -1157,7 +1262,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new RectStylePainterParameters
             {
-                rect = ve.rect,
+                rect = ve.alignedRect,
                 color = style.backgroundColor,
             };
             painter.SetBorderFromStyle(ref painterParams.border, style);

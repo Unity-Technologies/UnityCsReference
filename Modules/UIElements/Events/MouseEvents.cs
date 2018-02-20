@@ -19,7 +19,12 @@ namespace UnityEngine.Experimental.UIElements
         bool altKey { get; }
     }
 
-    public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent where T : MouseEventBase<T>, new()
+    internal interface IMouseEventInternal
+    {
+        bool hasUnderlyingPhysicalEvent { get; set; }
+    }
+
+    public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent, IMouseEventInternal where T : MouseEventBase<T>, new()
     {
         public EventModifiers modifiers { get; protected set; }
         public Vector2 mousePosition { get; protected set; }
@@ -48,6 +53,8 @@ namespace UnityEngine.Experimental.UIElements
             get { return (modifiers & EventModifiers.Alt) != 0; }
         }
 
+        bool IMouseEventInternal.hasUnderlyingPhysicalEvent { get; set; }
+
         protected override void Init()
         {
             base.Init();
@@ -58,6 +65,7 @@ namespace UnityEngine.Experimental.UIElements
             mouseDelta = Vector2.zero;
             clickCount = 0;
             button = 0;
+            ((IMouseEventInternal)this).hasUnderlyingPhysicalEvent = false;
         }
 
         public override IEventHandler currentTarget
@@ -87,6 +95,7 @@ namespace UnityEngine.Experimental.UIElements
                 e.mouseDelta = systemEvent.delta;
                 e.button = systemEvent.button;
                 e.clickCount = systemEvent.clickCount;
+                ((IMouseEventInternal)e).hasUnderlyingPhysicalEvent = true;
             }
             return e;
         }
@@ -102,6 +111,12 @@ namespace UnityEngine.Experimental.UIElements
                 e.mouseDelta = triggerEvent.mouseDelta;
                 e.button = triggerEvent.button;
                 e.clickCount = triggerEvent.clickCount;
+
+                IMouseEventInternal mouseEventInternal = triggerEvent as IMouseEventInternal;
+                if (mouseEventInternal != null)
+                {
+                    ((IMouseEventInternal)e).hasUnderlyingPhysicalEvent = mouseEventInternal.hasUnderlyingPhysicalEvent;
+                }
             }
             return e;
         }
@@ -121,6 +136,10 @@ namespace UnityEngine.Experimental.UIElements
     }
 
     public class MouseMoveEvent : MouseEventBase<MouseMoveEvent>
+    {
+    }
+
+    public class ContextClickEvent : MouseEventBase<ContextClickEvent>
     {
     }
 
@@ -233,6 +252,12 @@ namespace UnityEngine.Experimental.UIElements
                     e.mouseDelta = mouseEvent.mouseDelta;
                     e.button = mouseEvent.button;
                     e.clickCount = mouseEvent.clickCount;
+                }
+
+                IMouseEventInternal mouseEventInternal = triggerEvent as IMouseEventInternal;
+                if (mouseEventInternal != null)
+                {
+                    ((IMouseEventInternal)e).hasUnderlyingPhysicalEvent = mouseEventInternal.hasUnderlyingPhysicalEvent;
                 }
 
                 e.target = target;

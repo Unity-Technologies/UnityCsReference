@@ -19,6 +19,14 @@ namespace UnityEditor.Rendering
         High,
     }
 
+    public struct AlbedoSwatchInfo
+    {
+        public string name;
+        public Color  color;
+        public float  minLuminance;
+        public float  maxLuminance;
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct TierSettings
     {
@@ -41,11 +49,6 @@ namespace UnityEditor.Rendering
 
     public sealed partial class EditorGraphicsSettings
     {
-        public static TierSettings GetTierSettings(BuildTargetGroup target, GraphicsTier tier)
-        {
-            return GetTierSettingsImpl(target, tier);
-        }
-
         public static void SetTierSettings(BuildTargetGroup target, GraphicsTier tier, TierSettings settings)
         {
             if (settings.renderingPath == RenderingPath.UsePlayerSettings)
@@ -53,12 +56,7 @@ namespace UnityEditor.Rendering
 
             SetTierSettingsImpl(target, tier, settings);
             MakeTierSettingsAutomatic(target, tier, false);
-            OnUpdateTierSettingsImpl(target, true);
-        }
-
-        internal static TierSettings GetCurrentTierSettings()
-        {
-            return GetCurrentTierSettingsImpl();
+            OnUpdateTierSettings(target, true);
         }
     }
 

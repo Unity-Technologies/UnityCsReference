@@ -312,8 +312,31 @@ namespace UnityEditor
                 // Invalidate default name, if extension mismatches the default file (for ex., when switching between folder type export to file type export, see Android)
                 if (extension != Path.GetExtension(defaultName).Replace(".", ""))
                     defaultName = string.Empty;
+
+                // Hack: For Windows Standalone, we want the BuildPanel to choose a folder,
+                // but we don't want BuildPlayer to take a folder path because historically it took an .exe path
+                // and we would be breaking tons of projects!
+                bool isWindowsStandalone = target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64;
+                string realExtension = extension;
+                if (isWindowsStandalone)
+                {
+                    extension = string.Empty;
+                    // Remove the filename.exe part from the path
+                    if (!string.IsNullOrEmpty(defaultName))
+                        defaultName = Path.GetDirectoryName(defaultName);
+                }
+
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
+
+                if (isWindowsStandalone)
+                {
+                    extension = realExtension;
+                    path = Path.Combine(path, Path.GetFileName(path) + '.' + extension);
+                }
+
+                if (!IsBuildPathValid(path))
+                    return false;
 
                 if (path == string.Empty)
                     return false;
@@ -344,6 +367,35 @@ namespace UnityEditor
                         return false;
 
                 EditorUserBuildSettings.SetBuildLocation(target, path);
+                return true;
+            }
+
+            private static string NormalizePath(string path)
+            {
+                var fullPath = Path.GetFullPath(path);
+                if (fullPath.EndsWith("/") || fullPath.EndsWith("\\"))
+                    fullPath = fullPath.Remove(fullPath.Length - 1);
+                fullPath = fullPath.ToLower();
+                if (Path.DirectorySeparatorChar == '/')
+                    return fullPath;
+                return fullPath.Replace(Path.DirectorySeparatorChar, '/');
+            }
+
+            internal static bool IsBuildPathValid(string path)
+            {
+                var cleanedPath = NormalizePath(path);
+                var basePath = NormalizePath(Application.dataPath + "/../");
+
+                var assetsPath = NormalizePath(basePath + "/Assets");
+                var settingsPath = NormalizePath(basePath + "/ProjectSettings");
+                var tempPath = NormalizePath(basePath + "/Temp");
+                var libraryPath = NormalizePath(basePath + "/Library");
+                if (basePath.Contains(cleanedPath) || cleanedPath == assetsPath || cleanedPath == settingsPath || cleanedPath == tempPath || cleanedPath == libraryPath)
+                {
+                    Debug.LogError("Invalid build path: " + cleanedPath);
+                    return false;
+                }
+
                 return true;
             }
 

@@ -35,7 +35,7 @@ namespace UnityEditor
             };
             public readonly int[] renderTextureAntiAliasingValues = { 1, 2, 4, 8 };
 
-            public readonly GUIContent[] dimensionStrings = { EditorGUIUtility.TextContent("2D"), EditorGUIUtility.TextContent("Cube"), EditorGUIUtility.TrTextContent("3D") };
+            public readonly GUIContent[] dimensionStrings = { EditorGUIUtility.TextContent("2D"), EditorGUIUtility.TrTextContent("Cube"), EditorGUIUtility.TrTextContent("3D") };
             public readonly int[] dimensionValues = { (int)UnityEngine.Rendering.TextureDimension.Tex2D, (int)UnityEngine.Rendering.TextureDimension.Cube, (int)UnityEngine.Rendering.TextureDimension.Tex3D };
         }
 

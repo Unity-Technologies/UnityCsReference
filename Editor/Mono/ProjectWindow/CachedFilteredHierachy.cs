@@ -3,11 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
-using System.IO;
 using System.Collections.Generic;
-using UnityEditorInternal;
+using UnityEditor.Experimental;
 using UnityEngine.Assertions;
 
 namespace UnityEditor
@@ -31,7 +28,7 @@ namespace UnityEditor
                 {
                     if (m_Icon == null)
                     {
-                        if (type == HierarchyType.Assets || type == HierarchyType.Packages)
+                        if (type == HierarchyType.Assets)
                         {
                             // Note: Do not set m_Icon as GetCachedIcon uses its own cache that is cleared on reaching a max limit.
                             // This is because when having e.g very large projects (1000s of textures with unique icons) we do not want all icons loaded
@@ -64,7 +61,7 @@ namespace UnityEditor
             {
                 get
                 {
-                    if (type == HierarchyType.Assets || type == HierarchyType.Packages)
+                    if (type == HierarchyType.Assets)
                     {
                         string path = AssetDatabase.GetAssetPath(instanceID);
                         if (path != null)
@@ -145,13 +142,16 @@ namespace UnityEditor
             if (!property.isMainRepresentation)
                 result.icon = property.icon;
             else if (property.isFolder && !property.hasChildren)
-                result.icon = EditorGUIUtility.FindTexture(EditorResourcesUtility.emptyFolderIconName);
+                result.icon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
             else
                 result.icon = null;
         }
 
-        void SearchAllAssets(HierarchyProperty property)
+        void SearchAllAssets()
         {
+            HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
+            property.SetSearchFilter(m_SearchFilter);
+
             const int k_MaxAddCount = 3000;
             int elements = property.CountRemaining(null);
             elements = Mathf.Min(elements, k_MaxAddCount);
@@ -166,7 +166,7 @@ namespace UnityEditor
             }
         }
 
-        void SearchInFolders(HierarchyProperty property)
+        void SearchInFolders()
         {
             List<FilterResult> list = new List<FilterResult>();
             string[] baseFolders = ProjectWindowUtil.GetBaseFolders(m_SearchFilter.folders);
@@ -174,27 +174,23 @@ namespace UnityEditor
             foreach (string folderPath in baseFolders)
             {
                 // Ensure we do not have a filter when finding folder
-                property.SetSearchFilter(new SearchFilter());
+                HierarchyProperty property = new HierarchyProperty(folderPath);
+                property.SetSearchFilter(m_SearchFilter);
 
-                int folderInstanceID = AssetDatabase.GetMainAssetInstanceID(folderPath);
-                if (property.Find(folderInstanceID, null))
+                // Set filter after we found the folder
+                int folderDepth = property.depth;
+                int[] expanded = null; // enter all children of folder
+                while (property.NextWithDepthCheck(expanded, folderDepth + 1))
                 {
-                    // Set filter after we found the folder
-                    property.SetSearchFilter(m_SearchFilter);
-                    int folderDepth = property.depth;
-                    int[] expanded = null; // enter all children of folder
-                    while (property.NextWithDepthCheck(expanded, folderDepth + 1))
-                    {
-                        FilterResult result = new FilterResult();
-                        CopyPropertyData(ref result, property);
-                        list.Add(result);
-                    }
+                    FilterResult result = new FilterResult();
+                    CopyPropertyData(ref result, property);
+                    list.Add(result);
                 }
             }
             m_Results = list.ToArray();
         }
 
-        void FolderBrowsing(HierarchyProperty property)
+        void FolderBrowsing()
         {
             // We are not concerned with assets being added multiple times as we only show the contents
             // of each selected folder. This is an issue when searching recursively into child folders.
@@ -202,38 +198,38 @@ namespace UnityEditor
             foreach (string folderPath in m_SearchFilter.folders)
             {
                 int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
-                if (property.Find(folderInstanceID, null))
+                HierarchyProperty property = new HierarchyProperty(folderPath);
+                property.SetSearchFilter(m_SearchFilter);
+
+                int folderDepth = property.depth;
+                int[] expanded = { folderInstanceID };
+                while (property.Next(expanded))
                 {
-                    int folderDepth = property.depth;
-                    int[] expanded = { folderInstanceID };
-                    while (property.Next(expanded))
+                    if (property.depth <= folderDepth)
+                        break; // current property is outside folder
+
+                    FilterResult result = new FilterResult();
+                    CopyPropertyData(ref result, property);
+                    list.Add(result);
+
+                    // Fetch sub assets by expanding the main asset (ignore folders)
+                    if (property.hasChildren && !property.isFolder)
                     {
-                        if (property.depth <= folderDepth)
-                            break; // current property is outside folder
-
-                        FilterResult result = new FilterResult();
-                        CopyPropertyData(ref result, property);
-                        list.Add(result);
-
-                        // Fetch sub assets by expanding the main asset (ignore folders)
-                        if (property.hasChildren && !property.isFolder)
-                        {
-                            System.Array.Resize(ref expanded, expanded.Length + 1);
-                            expanded[expanded.Length - 1] = property.instanceID;
-                        }
+                        System.Array.Resize(ref expanded, expanded.Length + 1);
+                        expanded[expanded.Length - 1] = property.instanceID;
                     }
                 }
             }
             m_Results = list.ToArray();
         }
 
-        void AddResults(HierarchyProperty property)
+        void AddResults()
         {
             switch (m_SearchFilter.GetState())
             {
-                case SearchFilter.State.FolderBrowsing:         FolderBrowsing(property);  break;
-                case SearchFilter.State.SearchingInAllAssets:   SearchAllAssets(property); break;
-                case SearchFilter.State.SearchingInFolders:     SearchInFolders(property); break;
+                case SearchFilter.State.FolderBrowsing:         FolderBrowsing();  break;
+                case SearchFilter.State.SearchingInAllAssets:   SearchAllAssets(); break;
+                case SearchFilter.State.SearchingInFolders:     SearchInFolders(); break;
                 case SearchFilter.State.SearchingInAssetStore: /*do nothing*/ break;
                 case SearchFilter.State.EmptySearchFilter: /*do nothing*/ break;
                 default: Debug.LogError("Unhandled enum!"); break;
@@ -245,9 +241,7 @@ namespace UnityEditor
             m_Results = new FilterResult[0];
             if (m_SearchFilter.GetState() != SearchFilter.State.EmptySearchFilter)
             {
-                HierarchyProperty hierarchyProperty = new HierarchyProperty(m_HierarchyType, false);
-                hierarchyProperty.SetSearchFilter(m_SearchFilter);
-                AddResults(hierarchyProperty);
+                AddResults();
 
                 // When filtering on folder we use the order we get from BaseHiearchyProperty.cpp (to keep indented children under parent) otherwise we sort
                 if (m_SearchFilter.IsSearching())

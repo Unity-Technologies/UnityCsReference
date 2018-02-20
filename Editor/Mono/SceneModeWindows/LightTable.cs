@@ -11,8 +11,8 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIContent[] ProjectionStrings = { EditorGUIUtility.TextContent("Infinite"), EditorGUIUtility.TrTextContent("Box") };
-            public static readonly GUIContent[] LightmapEmissiveStrings = { EditorGUIUtility.TextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked") };
+            public static readonly GUIContent[] ProjectionStrings = { EditorGUIUtility.TrTextContent("Infinite"), EditorGUIUtility.TrTextContent("Box") };
+            public static readonly GUIContent[] LightmapEmissiveStrings = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked") };
             public static readonly GUIContent Name = EditorGUIUtility.TrTextContent("Name");
             public static readonly GUIContent On = EditorGUIUtility.TrTextContent("On");
             public static readonly GUIContent Type = EditorGUIUtility.TrTextContent("Type");

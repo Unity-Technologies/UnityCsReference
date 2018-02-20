@@ -54,13 +54,17 @@ namespace UnityEditor.Experimental.UIElements
                     {
                         genericMenu.AddItem(new GUIContent(action.name), isChecked, () =>
                             {
-                                action.Execute(triggerEvent);
+                                action.Execute();
                             });
                     }
                 }
                 else
                 {
-                    genericMenu.AddSeparator(string.Empty);
+                    var separator = item as ContextualMenu.Separator;
+                    if (separator != null)
+                    {
+                        genericMenu.AddSeparator(separator.subMenuPath);
+                    }
                 }
             }
 

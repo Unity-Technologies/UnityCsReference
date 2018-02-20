@@ -21,10 +21,6 @@ namespace UnityEditor
 
 public sealed partial class UnityStats
 {
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  string GetNetworkStats (int i) ;
-
     public extern static int batches
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

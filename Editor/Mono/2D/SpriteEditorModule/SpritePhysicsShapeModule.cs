@@ -26,7 +26,7 @@ namespace UnityEditor.U2D
 
         public override string moduleName
         {
-            get { return "Edit Physics Shape"; }
+            get { return "Custom Physics Shape"; }
         }
 
         private ISpriteEditor spriteEditorWindow
@@ -71,14 +71,11 @@ namespace UnityEditor.U2D
         protected override void SetupShapeEditorOutline(SpriteRect spriteRect)
         {
             var physicsShape = m_Outline[spriteRect.spriteID];
-            if (physicsShape.spriteOutlines == null || physicsShape.spriteOutlines.Count == 0)
-            {
-                var physicsShapes = GenerateSpriteRectOutline(spriteRect.rect,
-                        Math.Abs(physicsShape.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : physicsShape.tessellationDetail,
-                        kDefaultPhysicsAlphaTolerance, m_TextureDataProvider);
-                spriteEditorWindow.SetDataModified();
-                m_Outline[spriteRect.spriteID].spriteOutlines = physicsShapes;
-            }
+            var physicsShapes = GenerateSpriteRectOutline(spriteRect.rect,
+                    Math.Abs(physicsShape.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : physicsShape.tessellationDetail,
+                    kDefaultPhysicsAlphaTolerance, m_TextureDataProvider);
+            m_Outline[spriteRect.spriteID].spriteOutlines = physicsShapes;
+            spriteEditorWindow.SetDataModified();
         }
     }
 }

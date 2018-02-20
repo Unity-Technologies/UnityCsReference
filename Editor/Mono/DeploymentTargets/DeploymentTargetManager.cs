@@ -4,84 +4,69 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEditor.Modules;
 using UnityEditor.Build.Reporting;
-using UnityEngine;
 
 namespace UnityEditor.DeploymentTargets
 {
-    internal class DeploymentTargetManager
+    class DeploymentTargetManager
     {
-        const string kExtensionErrorMessage = "Platform does not implement DeploymentTargetsExtension";
+        const string k_ExtensionErrorMessage = "Platform does not implement DeploymentTargetsExtension";
 
-        private static IDeploymentTargetsExtension GetExtension(BuildTargetGroup targetGroup, BuildTarget buildTarget)
+        readonly IDeploymentTargetsExtension m_Extension;
+        readonly IDeploymentTargetsMainThreadContext m_Context;
+
+        public static DeploymentTargetManager CreateInstance(BuildTargetGroup targetGroup, BuildTarget buildTarget, bool setup = true)
         {
-            IDeploymentTargetsExtension extension = ModuleManager.GetDeploymentTargetsExtension(targetGroup, buildTarget);
+            var extension = GetExtension(targetGroup, buildTarget);
+            var context = extension.GetMainThreadContext(setup);
+            return context != null ? new DeploymentTargetManager(extension, context) : null;
+        }
+
+        DeploymentTargetManager(IDeploymentTargetsExtension extension, IDeploymentTargetsMainThreadContext context)
+        {
+            m_Extension = extension;
+            m_Context = context;
+        }
+
+        static IDeploymentTargetsExtension GetExtension(BuildTargetGroup targetGroup, BuildTarget buildTarget)
+        {
+            var extension = ModuleManager.GetDeploymentTargetsExtension(targetGroup, buildTarget);
             if (extension == null)
-                throw new NotSupportedException(kExtensionErrorMessage);
+                throw new NotSupportedException(k_ExtensionErrorMessage);
             return extension;
         }
 
-        public static bool IsExtensionSupported(BuildTargetGroup targetGroup, BuildTarget buildTarget)
+        public IDeploymentTargetInfo GetTargetInfo(DeploymentTargetId targetId)
         {
-            return ModuleManager.GetDeploymentTargetsExtension(targetGroup, buildTarget) != null;
+            return m_Extension.GetTargetInfo(m_Context, targetId);
         }
 
-        public static IDeploymentTargetInfo GetTargetInfo(BuildTargetGroup targetGroup, BuildTarget buildTarget, DeploymentTargetId targetId)
+        public void LaunchBuildOnTarget(BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
         {
-            IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildTarget);
-            return extension.GetTargetInfo(targetId);
+            m_Extension.LaunchBuildOnTarget(m_Context, buildProperties, targetId, progressHandler);
         }
 
-        public static bool SupportsLaunchBuild(IDeploymentTargetInfo info, BuildProperties buildProperties)
+        public List<DeploymentTargetIdAndStatus> GetKnownTargets()
         {
-            return info.GetSupportFlags().HasFlags(DeploymentTargetSupportFlags.Launch) &&
-                info.CheckTarget(buildProperties.GetTargetRequirements()).Passed();
-        }
-
-        public static bool SupportsLaunchBuild(IDeploymentTargetInfo info, BuildReport buildReport)
-        {
-            return SupportsLaunchBuild(info, BuildProperties.GetFromBuildReport(buildReport));
-        }
-
-        public static void LaunchBuildOnTarget(BuildTargetGroup targetGroup, BuildTarget buildTarget, BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
-        {
-            IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildTarget);
-            extension.LaunchBuildOnTarget(buildProperties, targetId, progressHandler);
-        }
-
-        public static void LaunchBuildOnTarget(BuildTargetGroup targetGroup, BuildReport buildReport, DeploymentTargetId targetId, ProgressHandler progressHandler = null)
-        {
-            LaunchBuildOnTarget(targetGroup, buildReport.summary.platform, BuildProperties.GetFromBuildReport(buildReport), targetId, progressHandler);
-        }
-
-        public static List<DeploymentTargetIdAndStatus> GetKnownTargets(BuildTargetGroup targetGroup, BuildTarget buildTarget)
-        {
-            IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildTarget);
-            return extension.GetKnownTargets();
+            return m_Extension.GetKnownTargets(m_Context);
         }
 
         // Launch a build on any target on a platform
-        public static List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildTargetGroup targetGroup, BuildTarget buildTarget, BuildProperties buildProperties)
+        public List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildProperties buildProperties)
         {
-            IDeploymentTargetsExtension extension = GetExtension(targetGroup, buildTarget);
-            List<DeploymentTargetId> validTargetIds = new List<DeploymentTargetId>();
-            List<DeploymentTargetIdAndStatus> knownTargets = extension.GetKnownTargets();
+            var validTargetIds = new List<DeploymentTargetId>();
+            var knownTargets = m_Extension.GetKnownTargets(m_Context);
             foreach (var target in knownTargets)
             {
                 if (target.status == DeploymentTargetStatus.Ready)
                 {
-                    if (SupportsLaunchBuild(extension.GetTargetInfo(target.id), buildProperties))
+                    var targetInfo = m_Extension.GetTargetInfo(m_Context, target.id);
+                    if (targetInfo.SupportsLaunchBuild(buildProperties))
                         validTargetIds.Add(target.id);
                 }
             }
             return validTargetIds;
-        }
-
-        public static List<DeploymentTargetId> FindValidTargetsForLaunchBuild(BuildTargetGroup targetGroup, BuildReport buildReport)
-        {
-            return FindValidTargetsForLaunchBuild(targetGroup, buildReport.summary.platform, BuildProperties.GetFromBuildReport(buildReport));
         }
     }
 }

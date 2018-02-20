@@ -3,8 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.InteropServices;
-using scm = System.ComponentModel;
-using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
+using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -16,6 +16,7 @@ namespace UnityEngine
         // An rgba int has been unioned with the four r g b a bytes.
         // This ensures the struct is 4 byte aligned for webgl.
         [FieldOffset(0)]
+        [Ignore(DoesNotContributeToSize = true)]
         private int rgba;
         // Red component of the color.
         [FieldOffset(0)]

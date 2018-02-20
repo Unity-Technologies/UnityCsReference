@@ -3,13 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
-using System.Linq;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using IntPtr = System.IntPtr;
 using System;
 using UnityEditor.StyleSheets;
 using UnityEditor.Experimental.UIElements;
@@ -18,8 +12,6 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor
 {
-    // See GUIView.bindings for bindings
-
     // This is what we (not users) derive from to create various views. (Main Toolbar, etc.)
     [StructLayout(LayoutKind.Sequential)]
     internal partial class GUIView : View
@@ -27,7 +19,7 @@ namespace UnityEditor
         internal static event Action<GUIView> positionChanged = null;
 
         Panel m_Panel = null;
-        EditorCursorManager m_CursorManager = new EditorCursorManager();
+        readonly EditorCursorManager m_CursorManager = new EditorCursorManager();
         static EditorContextualMenuManager s_ContextualMenuManager = new EditorContextualMenuManager();
 
         static GUIView()
@@ -53,13 +45,7 @@ namespace UnityEditor
             }
         }
 
-        public VisualElement visualTree
-        {
-            get
-            {
-                return panel.visualTree;
-            }
-        }
+        public VisualElement visualTree => panel.visualTree;
 
         protected IMGUIContainer imguiContainer { get; private set; }
 
@@ -71,18 +57,15 @@ namespace UnityEditor
         internal bool SendEvent(Event e)
         {
             int depth = SavedGUIState.Internal_GetGUIDepth();
-            bool retval = false;
             if (depth > 0)
             {
                 SavedGUIState oldState = SavedGUIState.Create();
-                retval = Internal_SendEvent(e);
+                var retval = Internal_SendEvent(e);
                 oldState.ApplyAndForget();
+                return retval;
             }
-            else
-            {
-                retval = Internal_SendEvent(e);
-            }
-            return retval;
+
+            return Internal_SendEvent(e);
         }
 
         // Call into C++ here to move the underlying NSViews around
@@ -163,7 +146,7 @@ namespace UnityEditor
         public int antiAlias
         {
             get { return 1; }
-            set {}
+            set { throw new NotSupportedException("AA is not supported on GUIViews"); }
         }
 
         protected virtual void OnEnable()
@@ -179,6 +162,7 @@ namespace UnityEditor
             if (imguiContainer.HasMouseCapture())
                 MouseCaptureController.ReleaseMouseCapture();
             visualTree.Remove(imguiContainer);
+            imguiContainer = null;
         }
 
         protected virtual void OldOnGUI() {}
@@ -203,8 +187,7 @@ namespace UnityEditor
             m_BackgroundValid = false;
 
             panel.visualTree.SetSize(windowPosition.size);
-            if (positionChanged != null)
-                positionChanged(this);
+            positionChanged?.Invoke(this);
 
             Repaint();
         }
@@ -212,6 +195,9 @@ namespace UnityEditor
         protected override void OnDestroy()
         {
             Internal_Close();
+
+            UIElementsUtility.RemoveCachedPanel(this.GetInstanceID());
+
             base.OnDestroy();
         }
 

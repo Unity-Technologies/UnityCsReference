@@ -64,6 +64,8 @@ namespace UnityEngine.Experimental.UIElements
             m_OnGUIHandler = onGUIHandler;
             contextType = ContextType.Editor;
             focusIndex = 0;
+
+            requireMeasureFunction = true;
         }
 
         internal override void DoRepaint(IStylePainter painter)
@@ -72,21 +74,6 @@ namespace UnityEngine.Experimental.UIElements
 
             lastWorldClip = painter.currentWorldClip;
             HandleIMGUIEvent(painter.repaintEvent);
-        }
-
-        internal override void ChangePanel(BaseVisualElementPanel p)
-        {
-            if (elementPanel != null)
-            {
-                elementPanel.IMGUIContainersCount--;
-            }
-
-            base.ChangePanel(p);
-
-            if (elementPanel != null)
-            {
-                elementPanel.IMGUIContainersCount++;
-            }
         }
 
         // global GUI values.
@@ -112,7 +99,10 @@ namespace UnityEngine.Experimental.UIElements
             m_GUIGlobals.backgroundColor = GUI.backgroundColor;
             m_GUIGlobals.enabled = GUI.enabled;
             m_GUIGlobals.changed = GUI.changed;
-            m_GUIGlobals.displayIndex = Event.current.displayIndex;
+            if (Event.current != null)
+            {
+                m_GUIGlobals.displayIndex = Event.current.displayIndex;
+            }
         }
 
         private void RestoreGlobals()
@@ -123,7 +113,10 @@ namespace UnityEngine.Experimental.UIElements
             GUI.backgroundColor = m_GUIGlobals.backgroundColor;
             GUI.enabled = m_GUIGlobals.enabled;
             GUI.changed = m_GUIGlobals.changed;
-            Event.current.displayIndex = m_GUIGlobals.displayIndex;
+            if (Event.current != null)
+            {
+                Event.current.displayIndex = m_GUIGlobals.displayIndex;
+            }
         }
 
         private void DoOnGUI(Event evt)
@@ -190,7 +183,7 @@ namespace UnityEngine.Experimental.UIElements
                 // newKeyboardFocusControlID = GUIUtility.keyboardControl;
             }
 
-            GUIDepth = GUIUtility.Internal_GetGUIDepth();
+            GUIDepth = GUIUtility.guiDepth;
             EventType originalEventType = Event.current.type;
 
             bool isExitGUIException = false;
@@ -352,6 +345,11 @@ namespace UnityEngine.Experimental.UIElements
 
         internal bool HandleIMGUIEvent(Event e)
         {
+            if (e == null)
+            {
+                return false;
+            }
+
             EventType originalEventType = e.type;
             e.type = EventType.Layout;
 
@@ -426,6 +424,20 @@ namespace UnityEngine.Experimental.UIElements
                 FocusEvent fe = evt as FocusEvent;
                 receivedFocus = true;
                 focusChangeDirection = fe.direction;
+            }
+            else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            {
+                if (elementPanel != null)
+                {
+                    elementPanel.IMGUIContainersCount--;
+                }
+            }
+            else if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
+            {
+                if (elementPanel != null)
+                {
+                    elementPanel.IMGUIContainersCount++;
+                }
             }
         }
 

@@ -9,9 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
-using UnityEditor.Utils;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Experimental.UIElements;
+using UnityEngine.StyleSheets;
 
 namespace UnityEditorInternal
 {
@@ -44,8 +44,8 @@ namespace UnityEditorInternal
                 case "anim": return EditorGUIUtility.FindTexture(typeof(Animation));
                 case "meta": return EditorGUIUtility.FindTexture("MetaFile Icon");
                 case "mixer": return EditorGUIUtility.FindTexture(typeof(UnityEditor.Audio.AudioMixerController));
-                case "uxml": return EditorGUIUtility.FindTexture("UxmlScript Icon");
-                case "uss": return EditorGUIUtility.FindTexture("UssScript Icon");
+                case "uxml": return EditorGUIUtility.FindTexture(typeof(VisualTreeAsset));
+                case "uss": return EditorGUIUtility.FindTexture(typeof(StyleSheet));
 
                 case "ttf": case "otf": case "fon": case "fnt":
                     return EditorGUIUtility.FindTexture(typeof(Font));
@@ -380,7 +380,7 @@ namespace UnityEditorInternal
         internal static IEnumerable<string> GetAllScriptGUIDs()
         {
             return AssetDatabase.GetAllAssetPaths()
-                .Where(asset => (IsScriptOrAssembly(asset) && !AssetDatabase.IsPackagedAssetPath(asset)))
+                .Where(asset => (IsScriptOrAssembly(asset) && !UnityEditor.PackageManager.Folders.IsPackagedAssetPath(asset)))
                 .Select(asset => AssetDatabase.AssetPathToGUID(asset));
         }
 

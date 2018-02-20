@@ -76,14 +76,6 @@ namespace UnityEngine
             get;
         }
 
-        internal static bool HasCollider(Avatar avatar, int i)
-        {
-            return Internal_HasCollider(avatar, GetBoneIndexFromMono(i));
-        }
-
-        [NativeMethod("HasCollider")]
-        extern static bool Internal_HasCollider(Avatar avatar, int i);
-
         // Return default minimum values for muscle.
         extern public static float GetMuscleDefaultMin(int i);
 

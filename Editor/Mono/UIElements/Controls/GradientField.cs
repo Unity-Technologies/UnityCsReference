@@ -10,11 +10,11 @@ using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class GradientField : VisualElement, INotifyValueChanged<Gradient>
+    public class GradientField : BaseControl<Gradient>
     {
         private bool m_ValueNull;
         Gradient m_Value;
-        public Gradient value
+        public override Gradient value
         {
             get
             {
@@ -61,8 +61,8 @@ namespace UnityEditor.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
-                OnClick();
+            if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
+                ShowGradientPicker();
             else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
                 OnDetach();
             else if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
@@ -83,7 +83,7 @@ namespace UnityEditor.Experimental.UIElements
             UpdateGradientTexture();
         }
 
-        void OnClick()
+        void ShowGradientPicker()
         {
             GradientPicker.Show(m_Value, true, OnGradientChanged);
         }
@@ -116,7 +116,7 @@ namespace UnityEditor.Experimental.UIElements
             Dirty(ChangeType.Repaint);
         }
 
-        public void SetValueAndNotify(Gradient newValue)
+        public override void SetValueAndNotify(Gradient newValue)
         {
             using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(value, newValue))
             {
@@ -124,11 +124,6 @@ namespace UnityEditor.Experimental.UIElements
                 value = newValue;
                 UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
             }
-        }
-
-        public void OnValueChanged(EventCallback<ChangeEvent<Gradient>> callback)
-        {
-            RegisterCallback(callback);
         }
 
         public override void DoRepaint()

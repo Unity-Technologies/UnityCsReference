@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine
 {
     // Options for how to send a message.
@@ -98,7 +100,7 @@ namespace UnityEngine
         BB10Player = 22,
         [System.Obsolete("BlackBerryPlayer export is no longer supported in Unity 5.4+.")]
         BlackBerryPlayer = 22,
-        //*undocumented*
+        [System.Obsolete("TizenPlayer export is no longer supported in Unity 2017.3+.")]
         TizenPlayer = 23,
         // In the player on PS Vita
         PSP2 = 24,

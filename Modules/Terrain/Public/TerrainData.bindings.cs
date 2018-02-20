@@ -117,6 +117,17 @@ namespace UnityEngine
         internal float temporaryDistance;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    [UsedByNativeCode]
+    public struct PatchExtents
+    {
+        internal float m_min;
+        internal float m_max;
+
+        public float min { get { return m_min; } set { m_min = value; } }
+        public float max { get { return m_max; } set { m_max = value; } }
+    }
+
     [NativeHeader("TerrainScriptingClasses.h")]
     [NativeHeader("Modules/Terrain/Public/TerrainDataScriptingInterface.h")]
     public sealed partial class TerrainData : Object
@@ -269,6 +280,18 @@ namespace UnityEngine
 
         [FreeFunction(k_ScriptingInterfacePrefix + "SetHeights", HasExplicitThis = true)]
         extern private void Internal_SetHeights(int xBase, int yBase, int width, int height, float[,] heights);
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "GetPatchMinMaxHeights", HasExplicitThis = true)]
+        extern public PatchExtents[] GetPatchMinMaxHeights();
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "OverrideMinMaxPatchHeights", HasExplicitThis = true)]
+        extern public void OverrideMinMaxPatchHeights(PatchExtents[] minMaxHeights);
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "GetMaximumHeightError", HasExplicitThis = true)]
+        extern public float[] GetMaximumHeightError();
+
+        [FreeFunction(k_ScriptingInterfacePrefix + "OverrideMaximumHeightError", HasExplicitThis = true)]
+        extern public void OverrideMaximumHeightError(float[] maxError);
 
         public void SetHeightsDelayLOD(int xBase, int yBase, float[,] heights)
         {

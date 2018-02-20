@@ -38,7 +38,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             : base(state) {}
 
         public Panel panel;
-        public bool includeShadowHierarchy;
+        public bool includeShadowHierarchy = true;
 
         protected override TreeViewItem BuildRoot()
         {
@@ -64,6 +64,16 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         public VisualTreeItem GetNodeFor(int selectedId)
         {
             return FindRows(new List<int> { selectedId }).FirstOrDefault() as VisualTreeItem;
+        }
+
+        protected override void ContextClickedItem(int id)
+        {
+            GenericMenu pm = new GenericMenu();
+
+            pm.AddItem(EditorGUIUtility.TrTextContent("Expand hierarchy"), false, () => this.SetExpandedRecursive(id, true));
+            pm.AddItem(EditorGUIUtility.TrTextContent("Collapse hierarchy"), false, () => this.SetExpandedRecursive(id, false));
+
+            pm.ShowAsContext();
         }
     }
 }

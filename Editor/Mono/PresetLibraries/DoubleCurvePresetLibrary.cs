@@ -74,6 +74,15 @@ namespace UnityEditor
 
         readonly Rect kUnsignedRange = new Rect(0, 0, 1, 1); // Vertical range 0...1
         readonly Rect kSignedRange = new Rect(0, -1, 1, 2); // Vertical range -1...1
+        readonly Rect kDefaultRange = new Rect(0, 0, -1, -1); // Default range triggers a range to be calculated.
+
+        bool m_UseRanges = true;
+
+        public bool useRanges
+        {
+            get { return m_UseRanges; }
+            set { m_UseRanges = value; }
+        }
 
         public override int Count()
         {
@@ -134,7 +143,11 @@ namespace UnityEditor
                 Debug.Log("DoubleCurve is null");
                 return;
             }
-            EditorGUIUtility.DrawRegionSwatch(rect, doubleCurve.maxCurve, doubleCurve.minCurve, new Color(0.8f, 0.8f, 0.8f, 1.0f), EditorGUI.kCurveBGColor, doubleCurve.signedRange ? kSignedRange : kUnsignedRange);
+
+            if (m_UseRanges)
+                EditorGUIUtility.DrawRegionSwatch(rect, doubleCurve.maxCurve, doubleCurve.minCurve, new Color(0.8f, 0.8f, 0.8f, 1.0f), EditorGUI.kCurveBGColor, doubleCurve.signedRange ? kSignedRange : kUnsignedRange);
+            else
+                EditorGUIUtility.DrawRegionSwatch(rect, doubleCurve.maxCurve, doubleCurve.minCurve, new Color(0.8f, 0.8f, 0.8f, 1.0f), EditorGUI.kCurveBGColor, kDefaultRange);
         }
 
         public override string GetName(int index)

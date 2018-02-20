@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEditor.Experimental.UIElements;
+using UnityEditor.Experimental.UIElements.Debugger;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.Experimental.UIElements;
@@ -19,11 +20,10 @@ namespace UnityEditor
 
         internal static bool UxmlLiveReloadIsEnabled
         {
-            get { return EditorPrefs.GetBool(k_UielementsUxmllivereloadPrefsKey, true); }
+            get { return EditorPrefs.GetBool(k_UielementsUxmllivereloadPrefsKey, false); }
             set { EditorPrefs.SetBool(k_UielementsUxmllivereloadPrefsKey, value); }
         }
 
-        static HashSet<Object> s_TmpDirtySet = new HashSet<Object>();
         static bool s_FontInitialized = false;
         static RetainedMode()
         {
@@ -49,19 +49,6 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static void UpdateSchedulers()
         {
-            Debug.Assert(s_TmpDirtySet.Count == 0);
-            try
-            {
-                UpdateSchedulersInternal(s_TmpDirtySet);
-            }
-            finally
-            {
-                s_TmpDirtySet.Clear();
-            }
-        }
-
-        static void UpdateSchedulersInternal(HashSet<Object> tmpDirtySet)
-        {
             DataWatchService.sharedInstance.PollNativeData();
 
             var iterator = UIElementsUtility.GetPanelsIterator();
@@ -73,10 +60,22 @@ namespace UnityEditor
                 if (panel.contextType != ContextType.Editor)
                     continue;
 
-                var timerEventScheduler = panel.scheduler;
-
                 // Dispatch all timer update messages to each scheduled item
                 panel.timerEventScheduler.UpdateScheduledEvents();
+            }
+        }
+
+        [RequiredByNativeCode]
+        static void RequestRepaintForPanels()
+        {
+            var iterator = UIElementsUtility.GetPanelsIterator();
+            while (iterator.MoveNext())
+            {
+                var panel = iterator.Current.Value;
+
+                // Game panels' scheduler are ticked by the engine
+                if (panel.contextType != ContextType.Editor)
+                    continue;
 
                 // Dispatch might have triggered a repaint request.
                 if (panel.visualTree.IsDirty(ChangeType.Repaint))
@@ -113,7 +112,7 @@ namespace UnityEditor
                         // Usually called by the USS importer, which might not get called here
                         StyleSheetCache.ClearCaches();
 
-                        if (UxmlLiveReloadIsEnabled)
+                        if (UxmlLiveReloadIsEnabled && Unsupported.IsDeveloperMode())
                         {
                             // Delay the view reloading so we do not try to reload the view that
                             // is currently active in the current callstack (i.e. ProjectView).
@@ -136,7 +135,7 @@ namespace UnityEditor
                 while (it.MoveNext())
                 {
                     var view = it.Current.Value.ownerObject as HostView;
-                    if (view != null && view.actualView != null)
+                    if (view != null && view.actualView != null && !(view.actualView is UIElementsDebugger))
                     {
                         view.Reload(view.actualView);
                     }

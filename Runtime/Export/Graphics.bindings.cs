@@ -4,12 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using UnityEngine.Bindings;
-using uei = UnityEngine.Internal;
 using System.Runtime.InteropServices;
-using LightProbeUsage = UnityEngine.Rendering.LightProbeUsage;
-using ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode;
-using SphericalHarmonicsL2 = UnityEngine.Rendering.SphericalHarmonicsL2;
+using UnityEngine.Bindings;
+using UnityEngine.Rendering;
+using UnityEngine.Scripting;
+using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
@@ -118,11 +117,63 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
+    [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    public partial struct RenderBuffer
+    {
+        [FreeFunction(Name = "RenderBufferScripting::SetLoadAction", HasExplicitThis = true)]
+        extern internal void SetLoadAction(RenderBufferLoadAction action);
+        [FreeFunction(Name = "RenderBufferScripting::SetStoreAction", HasExplicitThis = true)]
+        extern internal void SetStoreAction(RenderBufferStoreAction action);
+
+        [FreeFunction(Name = "RenderBufferScripting::GetLoadAction", HasExplicitThis = true)]
+        extern internal RenderBufferLoadAction GetLoadAction();
+        [FreeFunction(Name = "RenderBufferScripting::GetStoreAction", HasExplicitThis = true)]
+        extern internal RenderBufferStoreAction GetStoreAction();
+
+        [FreeFunction(Name = "RenderBufferScripting::GetNativeRenderBufferPtr", HasExplicitThis = true)]
+        extern public IntPtr GetNativeRenderBufferPtr();
+    }
+}
+
+namespace UnityEngine
+{
+    [NativeHeader("Runtime/Camera/LightProbeProxyVolume.h")]
+    [NativeHeader("Runtime/Graphics/ColorGamut.h")]
     [NativeHeader("Runtime/Graphics/CopyTexture.h")]
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [NativeHeader("Runtime/Shaders/ComputeShader.h")]
     public partial class Graphics
     {
+        [FreeFunction("GraphicsScripting::GetMaxDrawMeshInstanceCount")] extern private static int Internal_GetMaxDrawMeshInstanceCount();
+        internal static readonly int kMaxDrawMeshInstanceCount = Internal_GetMaxDrawMeshInstanceCount();
+
+        [FreeFunction] extern private static ColorGamut GetActiveColorGamut();
+        public static ColorGamut activeColorGamut { get { return GetActiveColorGamut(); } }
+
+        [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)] extern public static UnityEngine.Rendering.GraphicsTier activeTier { get; set; }
+
+        [FreeFunction("GraphicsScripting::GetActiveColorBuffer")] extern private static RenderBuffer GetActiveColorBuffer();
+        [FreeFunction("GraphicsScripting::GetActiveDepthBuffer")] extern private static RenderBuffer GetActiveDepthBuffer();
+
+        [FreeFunction("GraphicsScripting::SetNullRT")] extern private static void Internal_SetNullRT();
+        [NativeMethod(Name = "GraphicsScripting::SetRTSimple", IsFreeFunction = true, ThrowsException = true)]
+        extern private static void Internal_SetRTSimple(RenderBuffer color, RenderBuffer depth, int mip, CubemapFace face, int depthSlice);
+        [NativeMethod(Name = "GraphicsScripting::SetMRTSimple", IsFreeFunction = true, ThrowsException = true)]
+        extern private static void Internal_SetMRTSimple([NotNull] RenderBuffer[] color, RenderBuffer depth, int mip, CubemapFace face, int depthSlice);
+        [NativeMethod(Name = "GraphicsScripting::SetMRTFull", IsFreeFunction = true, ThrowsException = true)]
+        extern private static void Internal_SetMRTFullSetup(
+            [NotNull] RenderBuffer[] color, RenderBuffer depth, int mip, CubemapFace face, int depthSlice,
+            [NotNull] RenderBufferLoadAction[] colorLA, [NotNull] RenderBufferStoreAction[] colorSA,
+            RenderBufferLoadAction depthLA, RenderBufferStoreAction depthSA
+            );
+
+        [NativeMethod(Name = "GraphicsScripting::SetRandomWriteTargetRT", IsFreeFunction = true, ThrowsException = true)]
+        extern private static void Internal_SetRandomWriteTargetRT(int index, RenderTexture uav);
+        [FreeFunction("GraphicsScripting::SetRandomWriteTargetBuffer")]
+        extern private static void Internal_SetRandomWriteTargetBuffer(int index, ComputeBuffer uav, bool preserveCounterValue);
+
+        [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)] extern public static void ClearRandomWriteTargets();
+
         [FreeFunction("CopyTexture")] extern private static void CopyTexture_Full(Texture src, Texture dst);
         [FreeFunction("CopyTexture")] extern private static void CopyTexture_Slice_AllMips(Texture src, int srcElement, Texture dst, int dstElement);
         [FreeFunction("CopyTexture")] extern private static void CopyTexture_Slice(Texture src, int srcElement, int srcMip, Texture dst, int dstElement, int dstMip);
@@ -130,341 +181,26 @@ namespace UnityEngine
         [FreeFunction("ConvertTexture")] extern private static bool ConvertTexture_Full(Texture src, Texture dst);
         [FreeFunction("ConvertTexture")] extern private static bool ConvertTexture_Slice(Texture src, int srcElement, Texture dst, int dstElement);
 
-        #region public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera = null, int submeshIndex = 0, MaterialPropertyBlock properties = null, bool castShadows = true, bool receiveShadows = true, bool useLightProbes = true)
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, null, 0, null, ShadowCastingMode.On, true, null, LightProbeUsage.BlendProbes);
-        }
+        [FreeFunction("GraphicsScripting::DrawMeshNow")] extern private static void Internal_DrawMeshNow1(Mesh mesh, int subsetIndex, Vector3 position, Quaternion rotation);
+        [FreeFunction("GraphicsScripting::DrawMeshNow")] extern private static void Internal_DrawMeshNow2(Mesh mesh, int subsetIndex, Matrix4x4 matrix);
 
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, 0, null, ShadowCastingMode.On, true, null, LightProbeUsage.BlendProbes);
-        }
+        [FreeFunction("GraphicsScripting::DrawTexture")][VisibleToOtherModules("UnityEngine.IMGUIModule")]
+        extern internal static void Internal_DrawTexture(ref Internal_DrawTextureArguments args);
 
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, null, ShadowCastingMode.On, true, null, LightProbeUsage.BlendProbes);
-        }
+        [FreeFunction("GraphicsScripting::DrawMesh")]
+        extern private static void Internal_DrawMesh(Mesh mesh, int submeshIndex, Matrix4x4 matrix, Material material, int layer, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
 
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, ShadowCastingMode.On, true, null, LightProbeUsage.BlendProbes);
-        }
+        [FreeFunction("GraphicsScripting::DrawMeshInstanced")]
+        extern private static void Internal_DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
 
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, bool castShadows)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, true, null, LightProbeUsage.BlendProbes);
-        }
+        [FreeFunction("GraphicsScripting::DrawMeshInstancedIndirect")]
+        extern private static void Internal_DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage, LightProbeProxyVolume lightProbeProxyVolume);
 
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, bool castShadows, bool receiveShadows)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, LightProbeUsage.BlendProbes);
-        }
+        [FreeFunction("GraphicsScripting::DrawProcedural")]
+        extern private static void Internal_DrawProcedural(MeshTopology topology, int vertexCount, int instanceCount);
 
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("0")] int submeshIndex, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("true")] bool castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("true")] bool useLightProbes)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off);
-        }
-
-        #endregion
-
-        #region public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows = true, Transform probeAnchor = null, bool useLightProbes = true)
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows, true, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, LightProbeUsage.BlendProbes);
-        }
-
-        public static void DrawMesh(Mesh mesh, Vector3 position, Quaternion rotation, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("null")] Transform probeAnchor, [uei.DefaultValue("true")] bool useLightProbes)
-        {
-            DrawMesh(mesh, Matrix4x4.TRS(position, rotation, Vector3.one), material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off);
-        }
-
-        #endregion
-
-        #region public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera = null, int submeshIndex = 0, MaterialPropertyBlock properties = null, bool castShadows = true, bool receiveShadows = true, bool useLightProbes = true)
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer)
-        {
-            DrawMesh(mesh, matrix, material, layer, null, 0, null, ShadowCastingMode.On, true, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, 0, null, ShadowCastingMode.On, true, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, null, ShadowCastingMode.On, true, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, ShadowCastingMode.On, true, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, bool castShadows)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, true, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, bool castShadows, bool receiveShadows)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, LightProbeUsage.BlendProbes);
-        }
-
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("0")] int submeshIndex, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("true")] bool castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("true")] bool useLightProbes)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off, receiveShadows, null, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off);
-        }
-
-        #endregion
-
-        #region public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows = true, Transform probeAnchor = null, bool useLightProbes = true)
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows, true, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, LightProbeUsage.BlendProbes);
-        }
-
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("null")] Transform probeAnchor, [uei.DefaultValue("true")] bool useLightProbes)
-        {
-            DrawMesh(mesh, matrix, material, layer, camera, submeshIndex, properties, castShadows, receiveShadows, probeAnchor, useLightProbes ? LightProbeUsage.BlendProbes : LightProbeUsage.Off);
-        }
-
-        public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage)
-        {
-            if (lightProbeUsage == LightProbeUsage.UseProxyVolume)
-                throw new ArgumentException("lightProbeUsage", String.Format("LightProbeUsage {0} cannot be specified for DrawMesh.", lightProbeUsage.ToString()));
-            Internal_DrawMesh(mesh, submeshIndex, matrix, material, layer, camera, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage);
-        }
-
-        #endregion
-
-        [FreeFunction("DrawMeshMatrixFromScript")]
-        extern internal static void Internal_DrawMesh(Mesh mesh, int submeshIndex, Matrix4x4 matrix, Material material, int layer, Camera camera, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage);
-
-        // TODO: Migrate these dreadful overloads to default arguments.
-        #region public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count = matrices.Length, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0, Camera camera = null, LightProbeUsage lightProbeUsage = LightProbeUsage.BlendProbes)
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, matrices.Length, null, ShadowCastingMode.On, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, null, ShadowCastingMode.On, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, ShadowCastingMode.On, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, layer, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, layer, camera, LightProbeUsage.BlendProbes);
-        }
-
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, [uei.DefaultValue("matrices.Length")] int count, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage)
-        {
-            if (!SystemInfo.supportsInstancing)
-                throw new InvalidOperationException("Instancing is not supported.");
-            else if (mesh == null)
-                throw new ArgumentNullException("mesh");
-            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
-                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
-            else if (material == null)
-                throw new ArgumentNullException("material");
-            else if (!material.enableInstancing)
-                throw new InvalidOperationException("Material needs to enable instancing for use with DrawMeshInstanced.");
-            else if (matrices == null)
-                throw new ArgumentNullException("matrices");
-            else if (count < 0 || count > Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length))
-                throw new ArgumentOutOfRangeException("count", String.Format("Count must be in the range of 0 to {0}.", Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length)));
-            else if (lightProbeUsage == LightProbeUsage.UseProxyVolume)
-                throw new ArgumentException("lightProbeUsage", String.Format("LightProbeUsage {0} cannot be specified for DrawMeshInstanced.", lightProbeUsage.ToString()));
-
-            if (count > 0)
-                Internal_DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage);
-        }
-
-        #endregion
-
-        // TODO: Migrate these dreadful overloads to default arguments.
-        #region public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0, Camera camera = null, LightProbeUsage lightProbeUsage = LightProbeUsage.BlendProbes)
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, null, ShadowCastingMode.On, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, MaterialPropertyBlock properties)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, properties, ShadowCastingMode.On, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, MaterialPropertyBlock properties, ShadowCastingMode castShadows)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, properties, castShadows, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, properties, castShadows, receiveShadows, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, properties, castShadows, receiveShadows, layer, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera)
-        {
-            DrawMeshInstanced(mesh, submeshIndex, material, matrices, properties, castShadows, receiveShadows, layer, camera, LightProbeUsage.BlendProbes);
-        }
-
-        public static void DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, List<Matrix4x4> matrices, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage)
-        {
-            if (matrices == null)
-                throw new ArgumentNullException("matrices");
-
-            DrawMeshInstanced(mesh, submeshIndex, material, NoAllocHelpers.ExtractArrayFromListT(matrices), matrices.Count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage);
-        }
-
-        #endregion
-
-        [FreeFunction("DrawMeshInstancedFromScript")]
-        extern internal static void Internal_DrawMeshInstanced(Mesh mesh, int submeshIndex, Material material, Matrix4x4[] matrices, int count, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage);
-
-        #region public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset = 0, MaterialPropertyBlock properties = null, ShadowCastingMode castShadows = ShadowCastingMode.On, bool receiveShadows = true, int layer = 0, Camera camera = null, LightProbeUsage lightProbeUsage = LightProbeUsage.BlendProbes)
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs)
-        {
-            DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, 0, null, ShadowCastingMode.On, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset)
-        {
-            DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, null, ShadowCastingMode.On, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties)
-        {
-            DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, ShadowCastingMode.On, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows)
-        {
-            DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, true, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows)
-        {
-            DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, 0, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer)
-        {
-            DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, null, LightProbeUsage.BlendProbes);
-        }
-
-        [uei.ExcludeFromDocs]
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera)
-        {
-            DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, LightProbeUsage.BlendProbes);
-        }
-
-        public static void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, [uei.DefaultValue("0")] int argsOffset, [uei.DefaultValue("null")] MaterialPropertyBlock properties, [uei.DefaultValue("ShadowCastingMode.On")] ShadowCastingMode castShadows, [uei.DefaultValue("true")] bool receiveShadows, [uei.DefaultValue("0")] int layer, [uei.DefaultValue("null")] Camera camera, [uei.DefaultValue("LightProbeUsage.BlendProbes")] LightProbeUsage lightProbeUsage)
-        {
-            if (!SystemInfo.supportsInstancing)
-                throw new InvalidOperationException("Instancing is not supported.");
-            else if (mesh == null)
-                throw new ArgumentNullException("mesh");
-            else if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
-                throw new ArgumentOutOfRangeException("submeshIndex", "submeshIndex out of range.");
-            else if (material == null)
-                throw new ArgumentNullException("material");
-            else if (bufferWithArgs == null)
-                throw new ArgumentNullException("bufferWithArgs");
-            else if (lightProbeUsage == LightProbeUsage.UseProxyVolume)
-                throw new ArgumentException("lightProbeUsage", String.Format("LightProbeUsage {0} cannot be specified for DrawMeshInstancedIndirect.", lightProbeUsage.ToString()));
-
-            Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage);
-        }
-
-        #endregion
-
-        [FreeFunction("DrawMeshInstancedIndirectFromScript")]
-        extern internal static void Internal_DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, Bounds bounds, ComputeBuffer bufferWithArgs, int argsOffset, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, int layer, Camera camera, LightProbeUsage lightProbeUsage);
+        [FreeFunction("GraphicsScripting::DrawProceduralIndirect")]
+        extern private static void Internal_DrawProceduralIndirect(MeshTopology topology, ComputeBuffer bufferWithArgs, int argsOffset);
 
         [FreeFunction("GraphicsScripting::BlitMaterial")]
         extern private static void Internal_BlitMaterial(Texture source, RenderTexture dest, [NotNull] Material mat, int pass, bool setRT);
@@ -477,6 +213,18 @@ namespace UnityEngine
 
         [FreeFunction("GraphicsScripting::Blit")]
         extern private static void Blit4(Texture source, RenderTexture dest, Vector2 scale, Vector2 offset);
+
+        [NativeMethod(Name = "GraphicsScripting::CreateGPUFence", IsFreeFunction = true, ThrowsException = true)]
+        extern private static IntPtr CreateGPUFenceImpl(SynchronisationStage stage);
+
+        [NativeMethod(Name = "GraphicsScripting::WaitOnGPUFence", IsFreeFunction = true, ThrowsException = true)]
+        extern private static void WaitOnGPUFenceImpl(IntPtr fencePtr, SynchronisationStage stage);
+
+        [NativeMethod(Name = "GraphicsScripting::ExecuteCommandBuffer", IsFreeFunction = true, ThrowsException = true)]
+        extern public static void ExecuteCommandBuffer([NotNull] CommandBuffer buffer);
+
+        [NativeMethod(Name = "GraphicsScripting::ExecuteCommandBufferAsync", IsFreeFunction = true, ThrowsException = true)]
+        extern public  static void ExecuteCommandBufferAsync([NotNull] CommandBuffer buffer, ComputeQueueType queueType);
     }
 }
 
@@ -627,14 +375,132 @@ namespace UnityEngine
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    [StaticAccessor("GeometryUtilityScripting", StaticAccessorType.DoubleColon)]
     public sealed partial class GeometryUtility
     {
-        [FreeFunction("GeometryUtilityScripting::ExtractPlanes")]
-        extern private static void Internal_ExtractPlanes([Out] Plane[] planes, Matrix4x4 worldToProjectionMatrix);
-        [FreeFunction("GeometryUtilityScripting::TestPlanesAABB")]
         extern public static bool TestPlanesAABB(Plane[] planes, Bounds bounds);
-        [FreeFunction("GeometryUtilityScripting::CalculateBounds")]
-        extern private static Bounds Internal_CalculateBounds(Vector3[] positions, Matrix4x4 transform);
+
+        [NativeName("ExtractPlanes")]   extern private static void Internal_ExtractPlanes([Out] Plane[] planes, Matrix4x4 worldToProjectionMatrix);
+        [NativeName("CalculateBounds")] extern private static Bounds Internal_CalculateBounds(Vector3[] positions, Matrix4x4 transform);
+    }
+}
+
+namespace UnityEngine
+{
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/Graphics/LightmapData.h")]
+    public sealed partial class LightmapData
+    {
+        internal Texture2D m_Light;
+        internal Texture2D m_Dir;
+        internal Texture2D m_ShadowMask;
+
+        [System.Obsolete("Use lightmapColor property (UnityUpgradable) -> lightmapColor", false)]
+        public Texture2D lightmapLight { get { return m_Light; }        set { m_Light = value; } }
+
+        public Texture2D lightmapColor { get { return m_Light; }        set { m_Light = value; } }
+        public Texture2D lightmapDir   { get { return m_Dir; }          set { m_Dir = value; } }
+        public Texture2D shadowMask    { get { return m_ShadowMask; }   set { m_ShadowMask = value; } }
+    }
+
+    // Stores lightmaps of the scene.
+    [NativeHeader("Runtime/Graphics/LightmapSettings.h")]
+    [StaticAccessor("GetLightmapSettings()")]
+    public sealed partial class LightmapSettings : Object
+    {
+        private LightmapSettings() {}
+
+        // Lightmap array.
+        public extern static LightmapData[] lightmaps {[FreeFunction] get; [FreeFunction] set; }
+
+        public extern static LightmapsMode lightmapsMode { get; [FreeFunction(ThrowsException = true)] set; }
+
+        // Holds all data needed by the light probes.
+        public extern static LightProbes lightProbes { get; set; }
+
+        [NativeName("ResetAndAwakeFromLoad")]
+        internal static extern void Reset();
+    }
+}
+
+namespace UnityEngine
+{
+    // Stores light probes for the scene.
+    [NativeAsStruct]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/Export/Graphics.bindings.h")]
+    public sealed partial class LightProbes : Object
+    {
+        private LightProbes() {}
+
+        [FreeFunction]
+        public extern static void GetInterpolatedProbe(Vector3 position, Renderer renderer, out UnityEngine.Rendering.SphericalHarmonicsL2 probe);
+
+        [FreeFunction]
+        internal static extern bool AreLightProbesAllowed(Renderer renderer);
+
+        public static void CalculateInterpolatedLightAndOcclusionProbes(Vector3[] positions, SphericalHarmonicsL2[] lightProbes, Vector4[] occlusionProbes)
+        {
+            if (positions == null)
+                throw new ArgumentNullException("positions");
+            else if (lightProbes == null && occlusionProbes == null)
+                throw new ArgumentException("Argument lightProbes and occlusionProbes cannot both be null.");
+            else if (lightProbes != null && lightProbes.Length < positions.Length)
+                throw new ArgumentException("lightProbes", "Argument lightProbes has less elements than positions");
+            else if (occlusionProbes != null && occlusionProbes.Length < positions.Length)
+                throw new ArgumentException("occlusionProbes", "Argument occlusionProbes has less elements than positions");
+
+            CalculateInterpolatedLightAndOcclusionProbes_Internal(positions, positions.Length, lightProbes, occlusionProbes);
+        }
+
+        public static void CalculateInterpolatedLightAndOcclusionProbes(List<Vector3> positions, List<SphericalHarmonicsL2> lightProbes, List<Vector4> occlusionProbes)
+        {
+            if (positions == null)
+                throw new ArgumentNullException("positions");
+            else if (lightProbes == null && occlusionProbes == null)
+                throw new ArgumentException("Argument lightProbes and occlusionProbes cannot both be null.");
+
+            if (lightProbes != null)
+            {
+                if (lightProbes.Capacity < positions.Count)
+                    lightProbes.Capacity = positions.Count;
+                if (lightProbes.Count < positions.Count)
+                    NoAllocHelpers.ResizeList(lightProbes, positions.Count);
+            }
+
+            if (occlusionProbes != null)
+            {
+                if (occlusionProbes.Capacity < positions.Count)
+                    occlusionProbes.Capacity = positions.Count;
+                if (occlusionProbes.Count < positions.Count)
+                    NoAllocHelpers.ResizeList(occlusionProbes, positions.Count);
+            }
+
+            CalculateInterpolatedLightAndOcclusionProbes_Internal(NoAllocHelpers.ExtractArrayFromListT(positions), positions.Count, NoAllocHelpers.ExtractArrayFromListT(lightProbes), NoAllocHelpers.ExtractArrayFromListT(occlusionProbes));
+        }
+
+        [FreeFunction]
+        [NativeName("CalculateInterpolatedLightAndOcclusionProbes")]
+        internal extern static void CalculateInterpolatedLightAndOcclusionProbes_Internal(Vector3[] positions, int positionsCount, SphericalHarmonicsL2[] lightProbes, Vector4[] occlusionProbes);
+
+        // Positions of the baked light probes.
+        public extern Vector3[] positions { get; }
+
+        public extern UnityEngine.Rendering.SphericalHarmonicsL2[] bakedProbes
+        {
+            [NativeName("GetBakedCoefficients")] get;
+            [NativeName("SetBakedCoefficients")] set;
+
+            // if (GetScriptingArraySize(value) != self->GetLightProbeData().GetNumProbes())
+            //     Scripting::RaiseArgumentException("Coefficients array must have the same amount of elements as the probe count.");
+        }
+
+        // The number of light probes.
+        public extern int count { get; }
+
+        // The number of cells (tetrahedra + outer cells) the space is divided to.
+        public extern int cellCount {[NativeName("GetTetrahedraSize")] get; }
     }
 }
 
@@ -642,7 +508,7 @@ namespace UnityEngine.Experimental.Rendering
 {
     public enum VertexAttribute
     {
-        Position = 0,   // Vertex (vector3)
+        Position = 0, // Vertex (vector3)
         Normal,       // Normal (vector3)
         Tangent,      // Tangent (vector4)
         Color,        // Vertex color

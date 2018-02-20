@@ -3,13 +3,18 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
     // Representation of 3D vectors and points.
+    [NativeHeader("Runtime/Math/Vector3.h")]
+    [NativeClass("Vector3f")]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
     public partial struct Vector3
     {

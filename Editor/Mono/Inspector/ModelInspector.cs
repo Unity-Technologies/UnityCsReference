@@ -189,7 +189,7 @@ namespace UnityEditor
             OnInspectorGUI();
         }
 
-        public void OnDestroy()
+        public void OnDisable()
         {
             if (m_PreviewUtility != null)
             {

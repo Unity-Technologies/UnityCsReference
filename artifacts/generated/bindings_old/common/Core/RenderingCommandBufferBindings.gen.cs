@@ -8,7 +8,6 @@ using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAt
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using UnityEngine;
-using UnityEngine.Profiling;
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;

@@ -70,5 +70,6 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<int> sliceBottom { get; set; }
         StyleValue<float> opacity { get; set; }
         StyleValue<CursorStyle> cursor { get; set; }
+        StyleValue<Visibility> visibility { get; set; }
     }
 }

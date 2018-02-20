@@ -81,25 +81,27 @@ namespace UnityEditor
         protected SerializedProperty m_CustomReflection;
         protected SerializedProperty m_ReflectionCompression;
 
+        protected SerializedObject m_RenderSettings;
         protected SerializedObject m_LightmapSettings;
 
         private bool m_bShowEnvironment;
         private const string kShowEnvironment = "ShowEnvironment";
 
-        public virtual void OnEnable()
+        private void InitSettings()
         {
-            m_Sun = serializedObject.FindProperty("m_Sun");
-            m_AmbientSource = serializedObject.FindProperty("m_AmbientMode");
-            m_AmbientSkyColor = serializedObject.FindProperty("m_AmbientSkyColor");
-            m_AmbientEquatorColor = serializedObject.FindProperty("m_AmbientEquatorColor");
-            m_AmbientGroundColor = serializedObject.FindProperty("m_AmbientGroundColor");
-            m_AmbientIntensity = serializedObject.FindProperty("m_AmbientIntensity");
-            m_ReflectionIntensity = serializedObject.FindProperty("m_ReflectionIntensity");
-            m_ReflectionBounces = serializedObject.FindProperty("m_ReflectionBounces");
-            m_SkyboxMaterial = serializedObject.FindProperty("m_SkyboxMaterial");
-            m_DefaultReflectionMode = serializedObject.FindProperty("m_DefaultReflectionMode");
-            m_DefaultReflectionResolution = serializedObject.FindProperty("m_DefaultReflectionResolution");
-            m_CustomReflection = serializedObject.FindProperty("m_CustomReflection");
+            m_RenderSettings = new SerializedObject(RenderSettings.GetRenderSettings());
+            m_Sun = m_RenderSettings.FindProperty("m_Sun");
+            m_AmbientSource = m_RenderSettings.FindProperty("m_AmbientMode");
+            m_AmbientSkyColor = m_RenderSettings.FindProperty("m_AmbientSkyColor");
+            m_AmbientEquatorColor = m_RenderSettings.FindProperty("m_AmbientEquatorColor");
+            m_AmbientGroundColor = m_RenderSettings.FindProperty("m_AmbientGroundColor");
+            m_AmbientIntensity = m_RenderSettings.FindProperty("m_AmbientIntensity");
+            m_ReflectionIntensity = m_RenderSettings.FindProperty("m_ReflectionIntensity");
+            m_ReflectionBounces = m_RenderSettings.FindProperty("m_ReflectionBounces");
+            m_SkyboxMaterial = m_RenderSettings.FindProperty("m_SkyboxMaterial");
+            m_DefaultReflectionMode = m_RenderSettings.FindProperty("m_DefaultReflectionMode");
+            m_DefaultReflectionResolution = m_RenderSettings.FindProperty("m_DefaultReflectionResolution");
+            m_CustomReflection = m_RenderSettings.FindProperty("m_CustomReflection");
 
             m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
             m_ReflectionCompression = m_LightmapSettings.FindProperty("m_LightmapEditorSettings.m_ReflectionCompression");
@@ -110,6 +112,11 @@ namespace UnityEditor
             m_bShowEnvironment = SessionState.GetBool(kShowEnvironment, true);
         }
 
+        public virtual void OnEnable()
+        {
+            InitSettings();
+        }
+
         public virtual void OnDisable()
         {
             SessionState.SetBool(kShowEnvironment, m_bShowEnvironment);
@@ -117,6 +124,11 @@ namespace UnityEditor
 
         private void DrawGUI()
         {
+            if (m_RenderSettings == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings())
+            {
+                InitSettings();
+            }
+
             Material skyboxMaterial = m_SkyboxMaterial.objectReferenceValue as Material;
 
             m_bShowEnvironment = EditorGUILayout.FoldoutTitlebar(m_bShowEnvironment, Styles.env_top, true);
@@ -250,12 +262,12 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
+            m_RenderSettings.Update();
             m_LightmapSettings.Update();
 
             DrawGUI();
 
-            serializedObject.ApplyModifiedProperties();
+            m_RenderSettings.ApplyModifiedProperties();
             m_LightmapSettings.ApplyModifiedProperties();
         }
     }

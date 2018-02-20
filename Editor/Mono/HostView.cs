@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 using System.Reflection;
+using UnityEditor.Experimental.UIElements.Debugger;
 using UnityEditorInternal;
 using UnityEngineInternal;
 
@@ -237,7 +238,10 @@ namespace UnityEditor
                 actualView != null &&
                 Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.F5)
             {
-                Reload(actualView);
+                if (Event.current.control)
+                    DebugWindow(actualView);
+                else
+                    Reload(actualView);
                 return;
             }
 
@@ -406,6 +410,15 @@ namespace UnityEditor
             Selection.activeObject = (UnityEngine.Object)userData;
         }
 
+        internal void DebugWindow(object userData)
+        {
+            EditorWindow window = userData as EditorWindow;
+            if (window == null)
+                return;
+
+            UIElementsDebugger.OpenAndInspectWindow(window);
+        }
+
         internal void Reload(object userData)
         {
             EditorWindow window = userData as EditorWindow;
@@ -456,6 +469,7 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Inspect Window"), false, Inspect, window);
                 menu.AddItem(EditorGUIUtility.TrTextContent("Inspect View"), false, Inspect, window.m_Parent);
                 menu.AddItem(EditorGUIUtility.TrTextContent("Reload Window _f5"), false, Reload, window);
+                menu.AddItem(EditorGUIUtility.TextContent("UIElements Debugger _%f5"), false, DebugWindow, window);
 
                 menu.AddSeparator("");
             }

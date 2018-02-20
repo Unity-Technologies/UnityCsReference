@@ -155,7 +155,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Skinned Mesh Renderer"),
                 EditorGUIUtility.TrTextContent("Circle"),
                 EditorGUIUtility.TrTextContent("Edge"),
-                EditorGUIUtility.TextContent("Rectangle")
+                EditorGUIUtility.TrTextContent("Rectangle")
             };
 
             public GUIContent[] boxTypes = new GUIContent[]
@@ -188,10 +188,10 @@ namespace UnityEditor
 
             public GUIContent[] textureClipChannels = new GUIContent[]
             {
-                EditorGUIUtility.TextContent("Red"),
-                EditorGUIUtility.TextContent("Green"),
-                EditorGUIUtility.TextContent("Blue"),
-                EditorGUIUtility.TextContent("Alpha")
+                EditorGUIUtility.TrTextContent("Red"),
+                EditorGUIUtility.TrTextContent("Green"),
+                EditorGUIUtility.TrTextContent("Blue"),
+                EditorGUIUtility.TrTextContent("Alpha")
             };
         }
 

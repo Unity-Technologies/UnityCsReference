@@ -14,7 +14,11 @@ namespace UnityEditor.Experimental.AssetImporters
         bool m_MightHaveModified = false;
 
         private Editor m_AssetEditor;
-        internal Editor assetEditor { private get { return m_AssetEditor; } set { m_AssetEditor = value; } }
+        // Called from ActiveEditorTracker.cpp to setup the target editor once created before Awake and OnEnable of the Editor.
+        internal void InternalSetAssetImporterTargetEditor(Object editor)
+        {
+            m_AssetEditor = editor as Editor;
+        }
 
         protected internal Object[] assetTargets { get { return m_AssetEditor != null ? m_AssetEditor.targets : null; } }
         protected internal Object assetTarget { get { return m_AssetEditor != null ? m_AssetEditor.target : null; } }
@@ -24,7 +28,7 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             get
             {
-                return string.Format(L10n.Tr("{0} Import Settings"), assetEditor == null ? string.Empty : assetEditor.targetTitle);
+                return string.Format(L10n.Tr("{0} Import Settings"), m_AssetEditor == null ? string.Empty : m_AssetEditor.targetTitle);
             }
         }
 
@@ -34,8 +38,8 @@ namespace UnityEditor.Experimental.AssetImporters
             set
             {
                 base.referenceTargetIndex = value;
-                if (assetEditor != null)
-                    assetEditor.referenceTargetIndex = value;
+                if (m_AssetEditor != null)
+                    m_AssetEditor.referenceTargetIndex = value;
             }
         }
 
@@ -43,8 +47,8 @@ namespace UnityEditor.Experimental.AssetImporters
         {
             get
             {
-                if (useAssetDrawPreview && assetEditor != null)
-                    return assetEditor;
+                if (useAssetDrawPreview && m_AssetEditor != null)
+                    return m_AssetEditor;
                 // Sometimes assetEditor has gone away because of "magical" workarounds and we need to fall back to base.Preview.
                 // See cases 597496 and 601174 for context.
                 return base.preview;
@@ -58,8 +62,8 @@ namespace UnityEditor.Experimental.AssetImporters
         // Make the Importer use the icon of the asset
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
-            if (assetEditor != null)
-                assetEditor.OnHeaderIconGUI(iconRect);
+            if (m_AssetEditor != null)
+                m_AssetEditor.OnHeaderIconGUI(iconRect);
         }
 
         // Let asset importers decide if the imported object should be shown as a separate editor or not
@@ -241,7 +245,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
         protected void ApplyRevertGUI()
         {
-            if (assetEditor == null || assetEditor.target == null)
+            if (m_AssetEditor == null || m_AssetEditor.target == null)
             {
                 // always apply changes when buttons are hidden
                 Apply();

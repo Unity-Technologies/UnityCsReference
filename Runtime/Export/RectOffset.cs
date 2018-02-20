@@ -19,13 +19,13 @@ namespace UnityEngine
         internal IntPtr m_Ptr;
 
         // Pointer to the source GUIStyle so it doesn't get garbage collected.
-        // If NULL, it means we own m_Ptr and need to delete it when this gets displosed
+        // If NULL, it means we own m_Ptr and need to delete it when this gets disposed
         readonly object m_SourceStyle;
 
         /// *listonly*
         public RectOffset()
         {
-            Init();
+            m_Ptr = InternalCreate();
         }
 
         [VisibleToOtherModules("UnityEngine.IMGUIModule")]
@@ -38,13 +38,13 @@ namespace UnityEngine
         ~RectOffset()
         {
             if (m_SourceStyle == null)
-                Cleanup();
+                Dispose();
         }
 
         // Creates a new rectangle with offsets.
         public RectOffset(int left, int right, int top, int bottom)
         {
-            Init();
+            m_Ptr = InternalCreate();
             this.left = left;
             this.right = right;
             this.top = top;
@@ -54,6 +54,17 @@ namespace UnityEngine
         public override string ToString()
         {
             return UnityString.Format("RectOffset (l:{0} r:{1} t:{2} b:{3})", left, right, top, bottom);
+        }
+
+        private void Dispose()
+        {
+            if (m_Ptr != IntPtr.Zero)
+            {
+                InternalDestroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
+
+            GC.SuppressFinalize(this);
         }
     }
 }

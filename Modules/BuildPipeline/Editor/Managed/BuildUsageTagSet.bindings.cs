@@ -33,6 +33,9 @@ namespace UnityEditor.Experimental.Build.AssetBundle
         [NativeMethod("GetObjectIdentifiers")]
         public extern ObjectIdentifier[] GetObjectIdentifiers();
 
+        [NativeMethod("UnionWith")]
+        public extern void UnionWith(BuildUsageTagSet other);
+
         private IntPtr m_Ptr;
 
         public BuildUsageTagSet()

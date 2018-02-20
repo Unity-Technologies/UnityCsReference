@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.Profiling;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
@@ -24,6 +25,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private Port m_InputPort;
 
         private Vector2 m_CandidatePosition;
+        private Vector2 m_GlobalCandidatePosition;
 
         public bool isGhostEdge { get; set; }
 
@@ -35,8 +37,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_OutputPort != null && value != m_OutputPort)
                 {
                     m_OutputPort.UpdateCapColor();
+                    UntrackGraphElement(m_OutputPort);
                 }
-                m_OutputPort = value;
+
+                if (value != m_OutputPort)
+                {
+                    m_OutputPort = value;
+                    if (m_OutputPort != null)
+                    {
+                        TrackGraphElement(m_OutputPort);
+                    }
+                }
+
+                edgeControl.drawFromCap = m_OutputPort == null;
+                m_EndPointsDirty = true;
                 OnPortChanged(false);
             }
         }
@@ -49,11 +63,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_InputPort != null && value != m_InputPort)
                 {
                     m_InputPort.UpdateCapColor();
+                    UntrackGraphElement(m_InputPort);
                 }
-                m_InputPort = value;
+
+                if (value != m_InputPort)
+                {
+                    m_InputPort = value;
+                    if (m_InputPort != null)
+                    {
+                        TrackGraphElement(m_InputPort);
+                    }
+                }
+                edgeControl.drawToCap = m_InputPort == null;
+                m_EndPointsDirty = true;
                 OnPortChanged(true);
             }
         }
+
 
         EdgeControl m_EdgeControl;
         public EdgeControl edgeControl
@@ -73,8 +99,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             get { return m_CandidatePosition; }
             set
             {
-                m_CandidatePosition = value;
-                UpdateEdgeControl();
+                if (!Approximately(m_CandidatePosition, value))
+                {
+                    m_CandidatePosition = value;
+
+                    m_GlobalCandidatePosition = this.WorldToLocal(m_CandidatePosition);
+
+                    if (m_InputPort == null)
+                    {
+                        edgeControl.to = m_GlobalCandidatePosition;
+                    }
+                    if (m_OutputPort == null)
+                    {
+                        edgeControl.from = m_GlobalCandidatePosition;
+                    }
+                    Dirty(ChangeType.Repaint | ChangeType.Layout);
+                    UpdateEdgeControl();
+                }
             }
         }
 
@@ -119,6 +160,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             get { return edgeControl.controlPoints; }
         }
 
+        private bool m_EndPointsDirty;
+
         public Edge()
         {
             clippingOptions = ClippingOptions.NoClipping;
@@ -129,10 +172,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Add(edgeControl);
 
-            this.AddManipulator(new EdgeManipulator());
             capabilities |= Capabilities.Selectable | Capabilities.Deletable;
 
+            this.AddManipulator(new EdgeManipulator());
             this.AddManipulator(new ContextualMenuManipulator(null));
+
+            RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
         }
 
         public override bool Overlaps(Rect rectangle)
@@ -145,14 +190,25 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public override bool ContainsPoint(Vector2 localPoint)
         {
+            Profiler.BeginSample("Edge.ContainsPoint");
+            m_EndPointsDirty = true;
             if (!UpdateEdgeControl())
+            {
+                Profiler.EndSample();
                 return false;
+            }
 
-            return edgeControl.ContainsPoint(this.ChangeCoordinatesTo(edgeControl, localPoint));
+            bool result =  edgeControl.ContainsPoint(this.ChangeCoordinatesTo(edgeControl, localPoint));
+
+            Profiler.EndSample();
+
+            return result;
         }
 
         public virtual void OnPortChanged(bool isInput)
         {
+            edgeControl.outputOrientation = m_OutputPort?.orientation ?? (m_InputPort?.orientation ?? Orientation.Horizontal);
+            edgeControl.inputOrientation = m_InputPort?.orientation ?? (m_OutputPort?.orientation ?? Orientation.Horizontal);
         }
 
         public bool UpdateEdgeControl()
@@ -168,16 +224,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_GraphView == null)
                 return false;
 
-            Vector2 from = Vector2.zero;
-            Vector2 to = Vector2.zero;
-            GetFromToPoints(ref from, ref to);
-
-            edgeControl.from = from;
-            edgeControl.to = to;
-
-            edgeControl.drawFromCap = m_OutputPort == null;
-            edgeControl.drawToCap = m_InputPort == null;
-
+            UpdateEndPoints();
             edgeControl.UpdateLayout();
 
             return true;
@@ -187,37 +234,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
             DrawEdge();
-        }
-
-        protected void GetFromToPoints(ref Vector2 from, ref Vector2 to)
-        {
-            if (m_OutputPort == null && m_InputPort == null)
-            {
-                return;
-            }
-
-            if (m_GraphView == null)
-                m_GraphView = GetFirstOfType<GraphView>();
-
-            if (m_OutputPort != null)
-            {
-                from = m_OutputPort.GetGlobalCenter();
-                from = this.WorldToLocal(from);
-            }
-            else
-            {
-                from = this.WorldToLocal(new Vector2(m_CandidatePosition.x, m_CandidatePosition.y));
-            }
-
-            if (m_InputPort != null)
-            {
-                to = m_InputPort.GetGlobalCenter();
-                to = this.WorldToLocal(to);
-            }
-            else
-            {
-                to = this.WorldToLocal(new Vector2(m_CandidatePosition.x, m_CandidatePosition.y));
-            }
         }
 
         protected override void OnStyleResolved(ICustomStyle styles)
@@ -255,8 +271,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     }
                 }
 
-                if (edgePresenter.output != null || edgePresenter.input != null)
-                    edgeControl.orientation = edgePresenter.output != null ? edgePresenter.output.orientation : edgePresenter.input.orientation;
+                if (edgePresenter.output != null)
+                    edgeControl.outputOrientation = edgePresenter.output.orientation;
+
+                if (edgePresenter.input != null)
+                    edgeControl.inputOrientation = edgePresenter.input.orientation;
             }
         }
 
@@ -319,6 +338,103 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 capRadius = k_EndPointRadius,
                 interceptWidth = k_InterceptWidth
             };
+        }
+
+        Vector2 GetPortPosition(Port p)
+        {
+            Vector2 pos = p.GetGlobalCenter();
+            pos = this.WorldToLocal(pos);
+            return pos;
+        }
+
+        void TrackGraphElement(VisualElement e)
+        {
+            while (e != null)
+            {
+                if (e is GraphView.Layer)
+                {
+                    return;
+                }
+
+                if (e is Port)
+                {
+                    e.RegisterCallback<GeometryChangedEvent>(OnPortGeometryChanged);
+                }
+                else
+                {
+                    e.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+                }
+
+
+                e = e.shadow.parent;
+            }
+        }
+
+        void UntrackGraphElement(VisualElement e)
+        {
+            while (e != null)
+            {
+                if (e is GraphView.Layer)
+                {
+                    return;
+                }
+
+                if (e is Port)
+                {
+                    e.UnregisterCallback<GeometryChangedEvent>(OnPortGeometryChanged);
+                }
+                else
+                {
+                    e.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+                }
+
+                e = e.shadow.parent;
+            }
+        }
+
+        private void OnPortGeometryChanged(GeometryChangedEvent evt)
+        {
+            Port p = evt.target as Port;
+
+            if (p != null)
+            {
+                if (p == m_InputPort)
+                {
+                    edgeControl.to = GetPortPosition(p);
+                }
+                else if (p == m_OutputPort)
+                {
+                    edgeControl.from = GetPortPosition(p);
+                }
+            }
+        }
+
+        private void OnGeometryChanged(GeometryChangedEvent evt)
+        {
+            m_EndPointsDirty = true;
+        }
+
+        private void UpdateEndPoints()
+        {
+            if (!m_EndPointsDirty)
+            {
+                return;
+            }
+            Profiler.BeginSample("Edge.UpdateEndPoints");
+
+            m_GlobalCandidatePosition = this.WorldToLocal(m_CandidatePosition);
+            if (m_OutputPort != null || m_InputPort != null)
+            {
+                edgeControl.to = (m_InputPort != null) ? GetPortPosition(m_InputPort) : m_GlobalCandidatePosition;
+                edgeControl.from = (m_OutputPort != null) ? GetPortPosition(m_OutputPort) : m_GlobalCandidatePosition;
+            }
+            m_EndPointsDirty = false;
+            Profiler.EndSample();
+        }
+
+        static bool Approximately(Vector2 v1, Vector2 v2)
+        {
+            return Mathf.Approximately(v1.x, v2.x) && Mathf.Approximately(v1.y, v2.y);
         }
     }
 }

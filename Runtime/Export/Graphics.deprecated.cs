@@ -252,6 +252,15 @@ namespace UnityEngine
             set { Graphics.activeTier = (UnityEngine.Rendering.GraphicsTier)value; }
         }
     }
+
+    partial class Material
+    {
+        [Obsolete("Creating materials from shader source string will be removed in the future. Use Shader assets instead.", false)]
+        public static Material Create(string scriptContents)
+        {
+            return new Material(scriptContents);
+        }
+    }
 }
 
 namespace UnityEngine.Rendering

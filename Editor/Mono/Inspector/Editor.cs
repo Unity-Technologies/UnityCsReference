@@ -3,10 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
-
+using UnityEngine.Internal;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
@@ -311,14 +312,47 @@ namespace UnityEditor
         }
     }
 
+    public sealed partial class CanEditMultipleObjects : System.Attribute {}
+
+    // Base class to derive custom Editors from. Use this to create your own custom inspectors and editors for your objects.
     [ExcludeFromObjectFactory]
     public partial class Editor : ScriptableObject, IPreviewable, IToolModeOwner
     {
         static Styles s_Styles;
 
-        private const float kImageSectionWidth = 44;
+
+        //If you modify the members of the Editor class, please keep in mind
+        //that you need to keep the c++ struct MonoInspectorData in sync.
+        //Last time this struct could be found at: Editor\src\Utility\CreateEditor.cpp
+
+        // The object currently inspected by this editor.
+        UnityObject[] m_Targets;
+        // The context object with which this Editor was created
+        UnityObject m_Context;
+        // Note that m_Dirty is not only set through 'isInspectorDirty' but also from C++ in 'SetCustomEditorIsDirty (MonoBehaviour* inspector, bool dirty)'
+        int m_IsDirty;
+        int m_ReferenceTargetIndex = 0;
+        PropertyHandlerCache m_PropertyHandlerCache = new PropertyHandlerCache();
+        IPreviewable m_DummyPreview;
+
+        internal SerializedObject m_SerializedObject = null;
+        OptimizedGUIBlock m_OptimizedBlock;
+        internal InspectorMode m_InspectorMode = InspectorMode.Normal;
+        internal const float kLineHeight = 16;
+
+        internal bool hideInspector = false;
+
+        const float kImageSectionWidth = 44;
         internal delegate void OnEditorGUIDelegate(Editor editor, Rect drawRect);
         internal static OnEditorGUIDelegate OnPostIconGUI = null;
+
+        internal static bool m_AllowMultiObjectAccess = true;
+
+
+        internal bool canEditMultipleObjects
+        {
+            get { return GetType().GetCustomAttributes(typeof(CanEditMultipleObjects), false).Length > 0; }
+        }
 
         internal virtual IPreviewable preview
         {
@@ -361,6 +395,144 @@ namespace UnityEditor
             }
         }
 
+        // The object being inspected.
+        public UnityObject target { get { return m_Targets[referenceTargetIndex]; } set { throw new InvalidOperationException("You can't set the target on an editor."); } }
+
+        // An array of all the object being inspected.
+        public UnityObject[] targets
+        {
+            get
+            {
+                if (!m_AllowMultiObjectAccess)
+                    Debug.LogError("The targets array should not be used inside OnSceneGUI or OnPreviewGUI. Use the single target property instead.");
+                return m_Targets;
+            }
+        }
+
+        internal virtual int referenceTargetIndex
+        {
+            get { return Mathf.Clamp(m_ReferenceTargetIndex, 0, m_Targets.Length - 1); }
+            // Modulus that works for negative numbers as well
+            set { m_ReferenceTargetIndex = (Math.Abs(value * m_Targets.Length) + value) % m_Targets.Length; }
+        }
+
+        internal virtual string targetTitle
+        {
+            get
+            {
+                if (m_Targets.Length == 1 || !m_AllowMultiObjectAccess)
+                    return target.name;
+                else
+                    return m_Targets.Length + " " + ObjectNames.NicifyVariableName(ObjectNames.GetTypeName(target)) + "s";
+            }
+        }
+
+        // A [[SerializedObject]] representing the object or objects being inspected.
+        public SerializedObject serializedObject
+        {
+            get
+            {
+                if (!m_AllowMultiObjectAccess)
+                    Debug.LogError("The serializedObject should not be used inside OnSceneGUI or OnPreviewGUI. Use the target property directly instead.");
+                return GetSerializedObjectInternal();
+            }
+        }
+
+        internal bool isInspectorDirty
+        {
+            get { return m_IsDirty != 0; }
+            set { m_IsDirty = value ? 1 : 0; }
+        }
+
+
+        [ExcludeFromDocs]
+        public static Editor CreateEditorWithContext(UnityObject[] targetObjects, UnityObject context)
+        {
+            Type editorType = null;
+            return CreateEditorWithContext(targetObjects, context, editorType);
+        }
+
+        public static void CreateCachedEditorWithContext(UnityObject targetObject, UnityObject context, Type editorType, ref Editor previousEditor)
+        {
+            CreateCachedEditorWithContext(new[] {targetObject}, context, editorType, ref previousEditor);
+        }
+
+        public static void CreateCachedEditorWithContext(UnityObject[] targetObjects, UnityObject context, Type editorType, ref Editor previousEditor)
+        {
+            if (previousEditor != null && ArrayUtility.ArrayEquals(previousEditor.m_Targets, targetObjects) && previousEditor.m_Context == context)
+                return;
+
+            if (previousEditor != null)
+                DestroyImmediate(previousEditor);
+            previousEditor = CreateEditorWithContext(targetObjects, context, editorType);
+        }
+
+        public static void CreateCachedEditor(UnityObject targetObject, Type editorType, ref Editor previousEditor)
+        {
+            CreateCachedEditorWithContext(new[] {targetObject}, null, editorType, ref previousEditor);
+        }
+
+        public static void CreateCachedEditor(UnityObject[] targetObjects, Type editorType, ref Editor previousEditor)
+        {
+            CreateCachedEditorWithContext(targetObjects, null, editorType, ref previousEditor);
+        }
+
+        [ExcludeFromDocs]
+        public static Editor CreateEditor(UnityObject targetObject)
+        {
+            Type editorType = null;
+            return CreateEditor(targetObject, editorType);
+        }
+
+        public static Editor CreateEditor(UnityObject targetObject, [DefaultValue("null")]  Type editorType)
+        {
+            return CreateEditorWithContext(new[] {targetObject}, null, editorType);
+        }
+
+        [ExcludeFromDocs]
+        public static Editor CreateEditor(UnityObject[] targetObjects)
+        {
+            Type editorType = null;
+            return CreateEditor(targetObjects, editorType);
+        }
+
+        public static Editor CreateEditor(UnityObject[] targetObjects, [DefaultValue("null")]  Type editorType)
+        {
+            return CreateEditorWithContext(targetObjects, null, editorType);
+        }
+
+        private void CleanupPropertyEditor()
+        {
+            if (m_OptimizedBlock != null)
+            {
+                m_OptimizedBlock.Dispose();
+                m_OptimizedBlock = null;
+            }
+            if (m_SerializedObject != null)
+            {
+                m_SerializedObject.Dispose();
+                m_SerializedObject = null;
+            }
+        }
+
+        private void OnDisableINTERNAL()
+        {
+            CleanupPropertyEditor();
+        }
+
+        internal virtual SerializedObject GetSerializedObjectInternal()
+        {
+            if (m_SerializedObject == null)
+                m_SerializedObject = new SerializedObject(targets, m_Context);
+
+            return m_SerializedObject;
+        }
+
+        internal void InternalSetTargets(UnityObject[] t) { m_Targets = t; }
+        internal void InternalSetHidden(bool hidden) { hideInspector = hidden; }
+        internal void InternalSetContextObject(UnityObject context) { m_Context = context; }
+
+
         Bounds IToolModeOwner.GetWorldBoundsOfTargets()
         {
             var result = new Bounds();
@@ -393,6 +565,136 @@ namespace UnityEditor
             return false;
         }
 
+        // Reload SerializedObject because flags etc might have changed.
+        internal virtual void OnForceReloadInspector()
+        {
+            if (m_SerializedObject != null)
+            {
+                m_SerializedObject.SetIsDifferentCacheDirty();
+                // Need to make sure internal target list PPtr have been updated from a native memory
+                // When assets are reloaded they are destroyed and recreated and the managed list does not get updated
+                // The m_SerializedObject is a native object thus its targetObjects is a native memory PPtr list which have the new PPtr ids.
+                InternalSetTargets(m_SerializedObject.targetObjects);
+            }
+        }
+
+        internal bool GetOptimizedGUIBlockImplementation(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)
+        {
+            if (isDirty && m_OptimizedBlock != null)
+            {
+                m_OptimizedBlock.Dispose();
+                m_OptimizedBlock = null;
+            }
+
+            if (!isVisible)
+            {
+                if (m_OptimizedBlock == null)
+                    m_OptimizedBlock = new OptimizedGUIBlock();
+                block = m_OptimizedBlock;
+                height = 0;
+                return true;
+            }
+
+            // Update serialized object representation
+            if (m_SerializedObject == null)
+                m_SerializedObject = new SerializedObject(targets, m_Context);
+            else
+                m_SerializedObject.Update();
+            m_SerializedObject.inspectorMode = m_InspectorMode;
+
+            SerializedProperty property = m_SerializedObject.GetIterator();
+            // Allocate height for spacing above first control
+            height = EditorGUI.kControlVerticalSpacing;
+            bool expand = true;
+            while (property.NextVisible(expand))
+            {
+                if (!EditorGUI.CanCacheInspectorGUI(property))
+                {
+                    if (m_OptimizedBlock != null)
+                        m_OptimizedBlock.Dispose();
+                    block = m_OptimizedBlock = null;
+                    return false;
+                }
+
+                // Allocate height for control plus spacing below it
+                height += EditorGUI.GetPropertyHeight(property, null, true) + EditorGUI.kControlVerticalSpacing;
+                expand = false;
+            }
+
+            // If no controls are shown, undo the spacing we started with.
+            if (height == EditorGUI.kControlVerticalSpacing)
+                height = 0;
+
+            if (m_OptimizedBlock == null)
+                m_OptimizedBlock = new OptimizedGUIBlock();
+            block = m_OptimizedBlock;
+            return true;
+        }
+
+        internal bool OptimizedInspectorGUIImplementation(Rect contentRect)
+        {
+            SerializedProperty property = m_SerializedObject.GetIterator();
+
+            // Iterate over all properties
+            bool childrenAreExpanded = true;
+
+            bool wasEnabled = GUI.enabled;
+            contentRect.xMin += InspectorWindow.kInspectorPaddingLeft;
+            contentRect.xMax -= InspectorWindow.kInspectorPaddingRight;
+            contentRect.y += EditorGUI.kControlVerticalSpacing;
+
+            while (property.NextVisible(childrenAreExpanded))
+            {
+                contentRect.height = EditorGUI.GetPropertyHeight(property, null, false);
+                EditorGUI.indentLevel = property.depth;
+                using (new EditorGUI.DisabledScope(m_InspectorMode == InspectorMode.Normal && "m_Script" == property.propertyPath))
+                {
+                    childrenAreExpanded = EditorGUI.PropertyField(contentRect, property);
+                }
+                contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
+            }
+            GUI.enabled = wasEnabled;
+
+            bool valuesChanged = m_SerializedObject.ApplyModifiedProperties();
+
+            return valuesChanged;
+        }
+
+        internal virtual bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)
+        {
+            block = null;
+            height = -1;
+            return false;
+        }
+
+        internal virtual bool OnOptimizedInspectorGUI(Rect contentRect)
+        {
+            Debug.LogError("Not supported");
+            return false;
+        }
+
+        protected internal static void DrawPropertiesExcluding(SerializedObject obj, params string[] propertyToExclude)
+        {
+            // Loop through properties and create one field (including children) for each top level property.
+            SerializedProperty property = obj.GetIterator();
+            bool expanded = true;
+            while (property.NextVisible(expanded))
+            {
+                expanded = false;
+
+                if (propertyToExclude.Contains(property.name))
+                    continue;
+
+                EditorGUILayout.PropertyField(property, true);
+            }
+        }
+
+        // Draw the built-in inspector.
+        public bool DrawDefaultInspector()
+        {
+            return DoDrawDefaultInspector();
+        }
+
         internal static bool DoDrawDefaultInspector(SerializedObject obj)
         {
             EditorGUI.BeginChangeCheck();
@@ -417,6 +719,21 @@ namespace UnityEditor
         internal bool DoDrawDefaultInspector()
         {
             return DoDrawDefaultInspector(serializedObject);
+        }
+
+        // Repaint any inspectors that shows this editor.
+        public void Repaint() { InspectorWindow.RepaintAllInspectors(); }
+
+        // Implement this function to make a custom inspector.
+        public virtual void OnInspectorGUI()
+        {
+            DrawDefaultInspector();
+        }
+
+        // Implement this function if you want your editor constantly repaint (every 33ms)
+        public virtual bool RequiresConstantRepaint()
+        {
+            return false;
         }
 
         // This is the method that should be called from externally e.g. myEditor.DrawHeader ();
@@ -630,9 +947,56 @@ namespace UnityEditor
             }
         }
 
+        // Override this method in subclasses if you implement OnPreviewGUI.
+        public virtual bool HasPreviewGUI()
+        {
+            return preview.HasPreviewGUI();
+        }
+
+        // Override this method if you want to change the label of the Preview area.
+        public virtual GUIContent GetPreviewTitle()
+        {
+            return preview.GetPreviewTitle();
+        }
+
+        // Override this method if you want to render a static preview that shows.
+        public virtual Texture2D RenderStaticPreview(string assetPath, UnityObject[] subAssets, int width, int height)
+        {
+            return null;
+        }
+
+        // Implement to create your own custom preview. Custom previews are used in the preview area of the inspector, primary editor headers, and the object selector.
+        public virtual void OnPreviewGUI(Rect r, GUIStyle background)
+        {
+            preview.OnPreviewGUI(r, background);
+        }
+
+        // Implement to create your own interactive custom preview. Interactive custom previews are used in the preview area of the inspector and the object selector.
+        public virtual void OnInteractivePreviewGUI(Rect r, GUIStyle background)
+        {
+            OnPreviewGUI(r, background);
+        }
+
+        // Override this method if you want to show custom controls in the preview header.
+        public virtual void OnPreviewSettings()
+        {
+            preview.OnPreviewSettings();
+        }
+
+        // Implement this method to show asset information on top of the asset preview.
+        public virtual string GetInfoString()
+        {
+            return preview.GetInfoString();
+        }
+
         public virtual void DrawPreview(Rect previewArea)
         {
             ObjectPreview.DrawPreview(this, previewArea, targets);
+        }
+
+        public virtual void ReloadPreviewInstances()
+        {
+            preview.ReloadPreviewInstances();
         }
 
         // Auxiliary method that determines whether this editor has a set of public properties and, as thus,
@@ -672,20 +1036,25 @@ namespace UnityEditor
         {
             message = string.Empty;
 
-            // Need to check for null early to avoid an exception being thrown in
-            // AssetDatabase.IsNativeAsset(). One of these exceptions, unhandled,
-            // caused case 930291 and case 930931. For both cases, the UI broke because
-            // it was exiting early due to the exception.
-            if (assetObject == null)
+            // The native object for a ScriptableObject with an invalid script will be considered not alive.
+            // In order to allow editing of the m_Script property of a ScriptableObject with an invalid script
+            // we use the instance ID instead of the UnityEngine.Object reference to check if the asset is open for edit.
+
+            if ((object)assetObject == null)
+                return false;
+
+            var instanceID = assetObject.GetInstanceID();
+            if (instanceID == 0)
                 return false;
 
             StatusQueryOptions opts = EditorUserSettings.allowAsyncStatusUpdate ? StatusQueryOptions.UseCachedAsync : StatusQueryOptions.UseCachedIfPossible;
-            if (AssetDatabase.IsNativeAsset(assetObject))
+            if (AssetDatabase.IsNativeAsset(instanceID))
             {
-                if (!AssetDatabase.IsOpenForEdit(assetObject, out message, opts))
+                var assetPath = AssetDatabase.GetAssetPath(instanceID);
+                if (!AssetDatabase.IsOpenForEdit(assetPath, out message, opts))
                     return false;
             }
-            else if (AssetDatabase.IsForeignAsset(assetObject))
+            else if (AssetDatabase.IsForeignAsset(instanceID))
             {
                 if (!AssetDatabase.IsMetaFileOpenForEdit(assetObject, out message, opts))
                     return false;
@@ -747,6 +1116,11 @@ namespace UnityEditor
         public void ResetTarget()
         {
             referenceTargetIndex = 0;
+        }
+
+        // Implement this method to show a limited inspector for showing tweakable parameters in an Asset Store preview.
+        internal virtual void OnAssetStoreInspectorGUI()
+        {
         }
     }
 }

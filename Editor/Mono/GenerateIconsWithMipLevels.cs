@@ -34,7 +34,7 @@ using Object = UnityEngine.Object;
 
     Icon loading in other projects
     - When reimport of asset (cpp): AssetDatabase::ImportAsset -> MonoImporter::GenerateAssetData -> ImageForMonoScript -> GetImageNames -> ObjectImages::Texture2DNamed
-    - IconContent -> LoadIconRequired -> LoadIcon -> LoadIconForSkin -> Load (EditorResourcesUtility.iconsPath + name) as Texture2D;
+    - IconContent -> LoadIconRequired -> LoadIcon -> LoadIconForSkin -> Load (EditorResources.iconsPath + name) as Texture2D;
     - AssetDatabase.GetCachedIcon (assetpath) -> CPP -> AssetDatabaseProperty::GetCachedAssetDatabaseIcon
     - InternalEditorUtility.GetIconForFile (filename) -> EditorGUIUtility.FindTexture("boo Script Icon") -> CPP -> ObjectImages::Texture2DNamed(cpp)
 

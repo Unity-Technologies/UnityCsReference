@@ -21,7 +21,7 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent lockParticleSystem = new GUIContent("", "Lock the current selected Particle System");
+            public GUIContent lockParticleSystem = EditorGUIUtility.TrTextContent("", "Lock the current selected Particle System");
             public GUIContent previewAll = EditorGUIUtility.TrTextContent("Simulate All", "Simulate all particle systems that have Play On Awake set");
         }
         static Texts s_Texts;

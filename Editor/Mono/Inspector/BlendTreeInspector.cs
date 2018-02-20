@@ -954,7 +954,7 @@ namespace UnityEditor
                     GUI.DrawTexture(area, EditorGUIUtility.whiteTexture);
 
                     // Draw weight texture
-                    if (m_ReorderableList.index < 0)
+                    if (m_ReorderableList.index < 0 || m_ReorderableList.index >= presences.Length)
                     {
                         Color col = styles.visWeightColor;
                         col.a *= 0.75f;
@@ -1090,7 +1090,7 @@ namespace UnityEditor
             }
 
             // Draw message
-            if (m_ReorderableList.index >= 0 && presences[m_ReorderableList.index] < 0)
+            if (m_ReorderableList.index >= 0 && m_ReorderableList.index < presences.Length && presences[m_ReorderableList.index] < 0)
                 ShowHelp(area, EditorGUIUtility.TempContent("The selected child has no Motion assigned."));
             else if (m_WarningMessage != null)
                 ShowHelp(area, EditorGUIUtility.TempContent(m_WarningMessage));
@@ -1305,6 +1305,11 @@ namespace UnityEditor
                 if (list.index >= m_Childs.arraySize)
                     list.index = m_Childs.arraySize - 1;
                 SetMinMaxThresholds();
+
+                serializedObject.ApplyModifiedProperties();
+
+                //  Layout has changed, bail out now.
+                EditorGUIUtility.ExitGUI();
             }
         }
 
@@ -1865,8 +1870,6 @@ namespace UnityEditor
 
         public void OnDestroy()
         {
-            if (m_PreviewBlendTree != null)
-                m_PreviewBlendTree.OnDestroy();
             if (m_VisBlendTree != null)
                 m_VisBlendTree.Destroy();
             if (m_VisInstance != null)
@@ -2091,15 +2094,9 @@ namespace UnityEditor
         public void OnDisable()
         {
             ClearStateMachine();
-            m_AvatarPreview.OnDestroy();
-        }
-
-        public void OnDestroy()
-        {
-            ClearStateMachine();
             if (m_AvatarPreview != null)
             {
-                m_AvatarPreview.OnDestroy();
+                m_AvatarPreview.OnDisable();
                 m_AvatarPreview = null;
             }
         }

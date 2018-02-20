@@ -114,7 +114,7 @@ namespace UnityEditor
             float dtDenum = fromTime - pivotTime;
 
             // Scale handle overlaps pivot, discard operation.
-            if ((Mathf.Abs(dtNum) - offsetTime) < 0f)
+            if ((Mathf.Abs(dtNum) - Mathf.Abs(offsetTime)) < 0f)
                 return false;
 
             dtNum = (Mathf.Sign(dtNum) == Mathf.Sign(dtDenum)) ? dtNum - offsetTime : dtNum + offsetTime;
@@ -152,7 +152,7 @@ namespace UnityEditor
             float dvDenum = fromValue - pivotValue;
 
             // Scale handle overlaps pivot, discard operation.
-            if ((Mathf.Abs(dvNum) - offsetValue) < 0f)
+            if ((Mathf.Abs(dvNum) - Mathf.Abs(offsetValue)) < 0f)
                 return false;
 
             dvNum = (Mathf.Sign(dvNum) == Mathf.Sign(dvDenum)) ? dvNum - offsetValue : dvNum + offsetValue;

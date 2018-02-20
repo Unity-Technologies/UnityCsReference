@@ -134,8 +134,7 @@ namespace UnityEditor.U2D.Common
                 bool showAsEnum =
                     buildTarget == BuildTarget.iOS ||
                     buildTarget == BuildTarget.tvOS ||
-                    buildTarget == BuildTarget.Android ||
-                    buildTarget == BuildTarget.Tizen
+                    buildTarget == BuildTarget.Android
                 ;
 
                 if (showAsEnum)

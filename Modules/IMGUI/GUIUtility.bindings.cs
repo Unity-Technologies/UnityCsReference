@@ -6,18 +6,92 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
-    // this class is only partially migrated to the new binding system
-    // see GUIUtility.bindings
-    [NativeHeader("Modules/IMGUI/GUIUtility.h")]
-    [NativeHeader("Runtime/Mono/MonoBehaviour.h")]
+    // Utility class for making new GUI controls.
+    [NativeHeader("Modules/IMGUI/GUIUtility.h"),
+     NativeHeader("Runtime/Input/InputManager.h"),
+     NativeHeader("Runtime/Utilities/CopyPaste.h"),
+     NativeHeader("Runtime/Camera/RenderLayers/GUITexture.h")]
     public partial class GUIUtility
     {
+        // Check to see if there's a modal IMGUI window that's currently open
+        public static extern bool hasModalWindow { get; }
+
+        [NativeProperty("GetGUIState().m_PixelsPerPoint", true, TargetType.Field)]
+        internal static extern float pixelsPerPoint {[VisibleToOtherModules("UnityEngine.UIElementsModule")] get; }
+
+        [NativeProperty("GetGUIState().m_OnGUIDepth", true, TargetType.Field)]
+        internal static extern int guiDepth {[VisibleToOtherModules("UnityEngine.UIElementsModule")] get; }
+
+        [NativeProperty("GetGUIState().m_CanvasGUIState.m_IsMouseUsed", true, TargetType.Field)]
+        internal static extern bool mouseUsed { get; set; }
+
+        [StaticAccessor("GetInputManager()", StaticAccessorType.Dot)]
+        internal static extern bool textFieldInput { get; set; }
+
+        internal static extern bool manualTex2SRGBEnabled
+        {
+            [FreeFunction("GUITexture::IsManualTex2SRGBEnabled")] get;
+            [FreeFunction("GUITexture::SetManualTex2SRGBEnabled")] set;
+        }
+
+        // Get access to the system-wide pasteboard.
+        public static extern string systemCopyBuffer
+        {
+            [FreeFunction("GetCopyBuffer")] get;
+            [FreeFunction("SetCopyBuffer")] set;
+        }
+
+        [StaticAccessor("GetGUIState()", StaticAccessorType.Dot)]
+        public static extern int GetControlID(int hint, FocusType focusType, Rect rect);
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        extern internal static void BeginContainerFromOwner(ScriptableObject owner);
+        internal static extern void BeginContainerFromOwner(ScriptableObject owner);
+
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        extern internal static void BeginContainer(ObjectGUIState objectGUIState);
+        internal static extern void BeginContainer(ObjectGUIState objectGUIState);
 
         [NativeMethod("EndContainer")]
-        extern internal static void Internal_EndContainer();
+        internal static extern void Internal_EndContainer();
+
+        [FreeFunction("GetSpecificGUIState(0).m_EternalGUIState->GetNextUniqueID")]
+        internal static extern int GetPermanentControlID();
+
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        internal static extern void UpdateUndoName();
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern int CheckForTabEvent(Event evt);
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern void SetKeyboardControlToFirstControlId();
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern void SetKeyboardControlToLastControlId();
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern bool HasFocusableControls();
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern Rect Internal_AlignRectToDevice(Rect rect, Matrix4x4 transform);
+
+        // This is used in sensitive alignment-related operations. Avoid calling this method if you can.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern Vector3 Internal_MultiplyPoint(Vector3 point, Matrix4x4 transform);
+
+        // This is used in sensitive alignment-related operations. Avoid calling this method if you can.
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static extern float Internal_Roundf(float f);
+
+        internal static extern bool GetChanged();
+        internal static extern void SetChanged(bool changed);
+        internal static extern void SetDidGUIWindowsEatLastEvent(bool value);
+
+        private static extern int Internal_GetHotControl();
+        private static extern int Internal_GetKeyboardControl();
+        private static extern void Internal_SetHotControl(int value);
+        private static extern void Internal_SetKeyboardControl(int value);
+        private static extern System.Object Internal_GetDefaultSkin(int skinMode);
+        private static extern Object Internal_GetBuiltinSkin(int skin);
+        private static extern void Internal_ExitGUI();
     }
 }

@@ -32,6 +32,26 @@ namespace UnityEditor.Macros
                 var assemblyFile = Path.Combine(m_AssemblyDirectory, simpleName + ".dll");
                 if (File.Exists(assemblyFile))
                     return Assembly.LoadFrom(assemblyFile);
+
+                return null;
+            }
+
+            public Assembly TypeResolve(object sender, ResolveEventArgs args)
+            {
+                //This removes (or at least aleviates) the requirement to qualify the type with the assembly name in tests.
+                var dlls = Directory.GetFiles(Path.Combine(Directory.GetCurrentDirectory(), "Library/ScriptAssemblies/"), "*.dll");
+                foreach (var dllPath in dlls)
+                {
+                    try
+                    {
+                        var assembly = Assembly.LoadFrom(dllPath);
+                        if (assembly != null && assembly.GetTypes().Any(t => t.Name == args.Name))
+                            return assembly;
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
                 return null;
             }
         }
@@ -70,23 +90,29 @@ namespace UnityEditor.Macros
                     throw new Exception("Invalid parcel for external code execution.");
                 var assemblyPath = (string)s_Formatter.Deserialize(stream);
                 var resolver = new AssemblyResolver(Path.GetDirectoryName(assemblyPath));
+
                 AppDomain.CurrentDomain.AssemblyResolve += resolver.AssemblyResolve;
+                AppDomain.CurrentDomain.TypeResolve += resolver.TypeResolve;
+
                 var assembly = Assembly.LoadFrom(assemblyPath);
                 try
                 {
                     var type = (Type)s_Formatter.Deserialize(stream);
+
                     var methodName = (string)s_Formatter.Deserialize(stream);
-                    const BindingFlags methodVisibility = BindingFlags.Public |
-                        BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
+
+                    const BindingFlags methodVisibility = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static;
                     var methodParametersTypes = (Type[])s_Formatter.Deserialize(stream);
-                    var method = type.GetMethod(methodName, methodVisibility, null,
-                            methodParametersTypes, null);
+
+                    var method = type.GetMethod(methodName, methodVisibility, null, methodParametersTypes, null);
                     if (method == null)
                         throw new Exception(string.Format(
                                 "Could not find method {0}.{1} in assembly {2} located in {3}.",
                                 type.FullName, methodName, assembly.GetName().Name, assemblyPath));
+
                     var arguments = (object[])s_Formatter.Deserialize(stream);
-                    return ExecuteCode(type, method, arguments);
+                    var returnValue = ExecuteCode(type, method, arguments);
+                    return returnValue;
                 }
                 finally
                 {

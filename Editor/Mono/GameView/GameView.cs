@@ -75,9 +75,9 @@ namespace UnityEditor
         [SerializeField] bool m_ClearInEditMode = true;
         [SerializeField] bool m_NoCameraWarning = true;
         [SerializeField] bool[] m_LowResolutionForAspectRatios = new bool[0];
+        [SerializeField] int m_XRRenderMode = 0;
 
         int m_SizeChangeID = int.MinValue;
-
 
         internal static class Styles
         {
@@ -94,6 +94,9 @@ namespace UnityEditor
             public static GUIContent renderdocContent;
             public static GUIStyle gizmoButtonStyle;
             public static GUIStyle gameViewBackgroundStyle;
+
+            // The ordering here must correspond with ordering in UnityEngine.XR.GameViewRenderMode
+            public static GUIContent[] xrRenderingModes = { EditorGUIUtility.TextContent("Left Eye|Left eye is displayed in play mode."), EditorGUIUtility.TextContent("Right Eye|Right eye is displayed in play mode."), EditorGUIUtility.TextContent("Both Eyes|Both eyes are displayed in play mode."), EditorGUIUtility.TextContent("Occlusion Mesh|Both eyes are displayed in play mode along with the occlusion mesh.") };
 
             static Styles()
             {
@@ -551,6 +554,13 @@ namespace UnityEditor
                     }
                 }
 
+                // Allow the user to select how the XR device will be rendered during "Play In Editor"
+                if (PlayerSettings.virtualRealitySupported)
+                {
+                    int selectedRenderMode = EditorGUILayout.Popup(m_XRRenderMode, Styles.xrRenderingModes, EditorStyles.toolbarPopup, GUILayout.Width(80));
+                    SetXRRenderMode(selectedRenderMode);
+                }
+
                 m_MaximizeOnPlay = GUILayout.Toggle(m_MaximizeOnPlay, Styles.maximizeOnPlayContent, EditorStyles.toolbarButton);
                 EditorUtility.audioMasterMute = GUILayout.Toggle(EditorUtility.audioMasterMute, Styles.muteContent, EditorStyles.toolbarButton);
                 m_Stats = GUILayout.Toggle(m_Stats, Styles.statsContent, EditorStyles.toolbarButton);
@@ -568,6 +578,31 @@ namespace UnityEditor
                 m_Gizmos = GUI.Toggle(r, m_Gizmos, Styles.gizmosContent, Styles.gizmoButtonStyle);
             }
             GUILayout.EndHorizontal();
+        }
+
+        private void SetXRRenderMode(int mode)
+        {
+            switch (mode)
+            {
+                case 0:
+                default:
+                    UnityEngine.XR.XRSettings.gameViewRenderMode = UnityEngine.XR.GameViewRenderMode.LeftEye;
+                    break;
+                case 1:
+                    UnityEngine.XR.XRSettings.gameViewRenderMode = UnityEngine.XR.GameViewRenderMode.RightEye;
+                    break;
+                case 2:
+                    UnityEngine.XR.XRSettings.gameViewRenderMode = UnityEngine.XR.GameViewRenderMode.BothEyes;
+                    break;
+                case 3:
+                    UnityEngine.XR.XRSettings.gameViewRenderMode = UnityEngine.XR.GameViewRenderMode.OcclusionMesh;
+                    break;
+            }
+
+            if (mode != m_XRRenderMode)
+                ClearTargetTexture();
+
+            m_XRRenderMode = mode;
         }
 
         private void ClearTargetTexture()

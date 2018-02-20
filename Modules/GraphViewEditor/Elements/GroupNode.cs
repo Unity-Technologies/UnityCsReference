@@ -34,14 +34,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
-        public EventPropagation DragExited()
+        public bool DragExited()
         {
             RemoveFromClassList("dragEntered");
 
-            return EventPropagation.Continue;
+            return false;
         }
 
-        public EventPropagation DragPerform(IMGUIEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget)
+        public bool DragPerform(DragPerformEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget)
         {
             GroupNode group = parent.GetFirstAncestorOfType<GroupNode>();
 
@@ -60,10 +60,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             RemoveFromClassList("dragEntered");
 
-            return EventPropagation.Stop;
+            return true;
         }
 
-        public EventPropagation DragUpdated(IMGUIEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget)
+        public bool DragUpdated(DragUpdatedEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget)
         {
             GroupNode group = parent.GetFirstAncestorOfType<GroupNode>();
             bool canDrop = false;
@@ -74,9 +74,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     continue;
 
                 var selectedGraphElement = selectedElement as GraphElement;
-                Event e = evt.imguiEvent;
 
-                if (e.shift)
+                if (evt.shiftKey)
                 {
                     if (group.ContainsElement(selectedGraphElement))
                     {
@@ -101,7 +100,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 RemoveFromClassList("dragEntered");
             }
 
-            return EventPropagation.Stop;
+            return true;
         }
     }
 
@@ -118,7 +117,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private Rect m_ContainedElementsRect;
         private bool m_IsUpdatingGeometryFromContent = false;
         private bool m_IsMovingElements = false;
-        bool m_Initialized = false;
         bool m_HeaderSizeIsValid = false;
         bool m_EditTitleCancelled = false;
         Vector2 mPreviousPosInCanvasSpace = new Vector2();
@@ -184,12 +182,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             clippingOptions = ClippingOptions.ClipAndCacheContents;
             capabilities |= Capabilities.Selectable | Capabilities.Movable | Capabilities.Deletable;
 
-            m_HeaderItem.RegisterCallback<PostLayoutEvent>(OnHeaderSizeChanged);
-            RegisterCallback<PostLayoutEvent>(e => { MoveElements(); });
+            m_HeaderItem.RegisterCallback<GeometryChangedEvent>(OnHeaderSizeChanged);
+            RegisterCallback<GeometryChangedEvent>(e => { MoveElements(); });
             RegisterCallback<MouseDownEvent>(OnMouseUpEvent);
         }
 
-        void OnSubElementPostLayout(PostLayoutEvent e)
+        void OnSubElementGeometryChanged(GeometryChangedEvent e)
         {
             if (this.IsSelected(GetFirstAncestorOfType<GraphView>()) == false)
             {
@@ -218,7 +216,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return !Single.IsNaN(rect.x)  && !Single.IsNaN(rect.y)  && rect.width > 0 && !Single.IsNaN(rect.width) && rect.height > 0 && !Single.IsNaN(rect.height);
         }
 
-        private void OnHeaderSizeChanged(PostLayoutEvent e)
+        private void OnHeaderSizeChanged(GeometryChangedEvent e)
         {
             if (!m_HeaderSizeIsValid && (IsValidRect(m_HeaderItem.layout)))
             {
@@ -226,7 +224,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 m_HeaderSizeIsValid = true;
 
-                m_HeaderItem.UnregisterCallback<PostLayoutEvent>(OnHeaderSizeChanged);
+                m_HeaderItem.UnregisterCallback<GeometryChangedEvent>(OnHeaderSizeChanged);
             }
         }
 
@@ -269,7 +267,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (HitTest(e.localMousePosition))
                 {
-                    m_TitleEditor.text = title;
+                    m_TitleEditor.value = title;
                     m_TitleEditor.visible = true;
                     m_TitleItem.visible = false;
                     // Workaround: Wait for a delay before giving focus to the newly shown title editor
@@ -331,7 +329,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_ContainedElements.Add(element);
 
             // To update the group geometry whenever the added element's geometry changes
-            element.RegisterCallback<PostLayoutEvent>(OnSubElementPostLayout);
+            element.RegisterCallback<GeometryChangedEvent>(OnSubElementGeometryChanged);
             element.RegisterCallback<DetachFromPanelEvent>(OnSubElementDetachedFromPanel);
 
             UpdateGeometryFromContent();
@@ -356,7 +354,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 throw new ArgumentException("This element is not contained in this group");
 
             m_ContainedElements.Remove(element);
-            element.UnregisterCallback<PostLayoutEvent>(OnSubElementPostLayout);
+            element.UnregisterCallback<GeometryChangedEvent>(OnSubElementGeometryChanged);
             element.UnregisterCallback<DetachFromPanelEvent>(OnSubElementDetachedFromPanel);
             UpdateGeometryFromContent();
 
@@ -370,7 +368,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void MoveElements()
         {
-            if (panel == null || !m_Initialized)
+            if (panel == null)
                 return;
 
             GraphView graphView = GetFirstAncestorOfType<GraphView>();
@@ -424,20 +422,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public override void DoRepaint()
-        {
-            if (m_Initialized == false)
-            {
-                m_Initialized = true;
-
-                UpdateGeometryFromContent();
-            }
-            base.DoRepaint();
-        }
-
         public void UpdateGeometryFromContent()
         {
-            if (panel == null || !m_Initialized || m_IsUpdatingGeometryFromContent || m_IsMovingElements)
+            if (panel == null || m_IsUpdatingGeometryFromContent || m_IsMovingElements || !IsValidRect(m_HeaderItem.layout) || m_HeaderItem == null)
             {
                 return;
             }
@@ -492,15 +479,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             float titleItemImplicitWidth = k_TitleItemMinWidth;
 
-            if (m_HeaderItem != null)
-            {
-                Vector2 implicitSize = m_TitleItem.DoMeasure(100, MeasureMode.Undefined, 100, MeasureMode.Undefined);
+            Vector2 implicitSize = m_TitleItem.DoMeasure(100, MeasureMode.Undefined, 100, MeasureMode.Undefined);
 
-                if (IsValidSize(implicitSize))
-                {
-                    titleItemImplicitWidth = implicitSize.x + m_TitleItem.style.marginLeft.value + m_TitleItem.style.paddingLeft.value
-                        + m_TitleItem.style.paddingRight.value + m_TitleItem.style.marginRight.value;
-                }
+            if (IsValidSize(implicitSize))
+            {
+                titleItemImplicitWidth = implicitSize.x + m_TitleItem.style.marginLeft.value + m_TitleItem.style.paddingLeft.value
+                    + m_TitleItem.style.paddingRight.value + m_TitleItem.style.marginRight.value;
             }
 
             float headerItemImplicitWidth = titleItemImplicitWidth  + m_HeaderItem.style.paddingLeft.value + m_HeaderItem.style.paddingRight.value;

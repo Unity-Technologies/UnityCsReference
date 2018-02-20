@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEngine;
 using UnityEngine.Bindings;
@@ -35,11 +36,15 @@ namespace UnityEditor.Experimental.AssetImporters
 
         [NativeThrows]
         public extern void SetMainObject(Object obj);
+        public extern Object mainObject { get; }
 
         public void AddObjectToAsset(string identifier, Object obj)
         {
             AddObjectToAsset(identifier, obj, null);
         }
+
+        [FreeFunction("AssetImportContextBindings::GetObjects", HasExplicitThis = true)]
+        public extern void GetObjects([NotNull] List<Object> objects);
 
         [NativeThrows]
         public extern void AddObjectToAsset(string identifier, Object obj, Texture2D thumbnail);

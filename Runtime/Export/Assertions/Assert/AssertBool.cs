@@ -13,7 +13,8 @@ namespace UnityEngine.Assertions
         [Conditional(UNITY_ASSERTIONS)]
         public static void IsTrue(bool condition)
         {
-            IsTrue(condition, null);
+            if (!condition)
+                IsTrue(condition, null);
         }
 
         [Conditional(UNITY_ASSERTIONS)]
@@ -26,7 +27,8 @@ namespace UnityEngine.Assertions
         [Conditional(UNITY_ASSERTIONS)]
         public static void IsFalse(bool condition)
         {
-            IsFalse(condition, null);
+            if (condition)
+                IsFalse(condition, null);
         }
 
         [Conditional(UNITY_ASSERTIONS)]

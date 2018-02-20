@@ -23,7 +23,7 @@ namespace UnityEditor
         }
 
         // Cache to prevent constructing string on every event
-        static GUIContent m_ButtonContent = new GUIContent("", "Audio Mixer parameters can be exposed to scripting. Select an Audio Mixer Group, right click one of its properties in the Inspector and select 'Expose ..'.");
+        static GUIContent m_ButtonContent = EditorGUIUtility.TrTextContent("", "Audio Mixer parameters can be exposed to scripting. Select an Audio Mixer Group, right click one of its properties in the Inspector and select 'Expose ..'.");
         static int m_LastNumExposedParams = -1;
         static GUIContent GetButtonContent(AudioMixerController controller)
         {

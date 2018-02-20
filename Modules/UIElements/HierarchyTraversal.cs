@@ -142,10 +142,17 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         protected virtual void Recurse(VisualElement element, int depth, List<RuleMatcher> ruleMatchers)
         {
-            for (int i = 0; i < element.shadow.childCount; i++)
+            int i = 0;
+
+            while (i < element.shadow.childCount)
             {
                 var child = element.shadow[i];
                 TraverseRecursive(child, depth + 1, ruleMatchers);
+
+                // if the child has been moved to another parent, which happens when its parent has changed, then do not increment the iterator
+                if (child.shadow.parent != element)
+                    continue;
+                i++;
             }
         }
 

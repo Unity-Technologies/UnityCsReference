@@ -60,6 +60,8 @@ namespace UnityEngine.Experimental.UIElements
         {
             this.scaleMode = ScaleMode.ScaleAndCrop;
             m_UV = new Rect(0, 0, 1, 1);
+
+            requireMeasureFunction = true;
         }
 
         protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)

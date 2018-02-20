@@ -76,8 +76,8 @@ namespace UnityEditor
             public GUIStyle innerShadowBg = GetStyle("InnerShadowBg");
             public GUIStyle optionsButton = GetStyle("PaneOptions");
             public GUIStyle newPresetStyle = new GUIStyle(EditorStyles.boldLabel);
-            public GUIContent plusButtonText = new GUIContent("", "Add new preset");
-            public GUIContent plusButtonTextNotCheckedOut = new GUIContent("", "To add presets you need to press the 'Check out' button below");
+            public GUIContent plusButtonText = EditorGUIUtility.TrTextContent("", "Add new preset");
+            public GUIContent plusButtonTextNotCheckedOut = EditorGUIUtility.TrTextContent("", "To add presets you need to press the 'Check out' button below");
             public GUIContent header = EditorGUIUtility.TrTextContent("Presets");
             public GUIContent newPreset = EditorGUIUtility.TrTextContent("New");
 

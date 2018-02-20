@@ -231,7 +231,7 @@ namespace UnityEditor
             EditorGUILayout.IntPopup(m_TextureCase, kCharacterStrings, kCharacterValues, EditorGUIUtility.TrTextContent("Character"));
             EditorGUILayout.IntPopup(m_AscentCalculationMode, kAscentCalculationModeStrings, kAscentCalculationModeValues, EditorGUIUtility.TrTextContent("Ascent Calculation Mode"));
             EditorGUILayout.PropertyField(m_UseLegacyBoundsCalculation, EditorGUIUtility.TrTextContent("Use Legacy Bounds"));
-            EditorGUILayout.PropertyField(m_ShouldRoundAdvanceValue, new GUIContent("Should Round Advance Value"));
+            EditorGUILayout.PropertyField(m_ShouldRoundAdvanceValue, EditorGUIUtility.TrTextContent("Should Round Advance Value"));
 
             if (!m_TextureCase.hasMultipleDifferentValues)
             {

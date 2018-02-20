@@ -217,7 +217,7 @@ namespace UnityEditor
                 if (EditorGUI.EndChangeCheck() && !Mathf.Approximately(scale.x, 0))
                 {
                     var dif = s / scale.x;
-                    scale.x = s;
+                    scale.x *= dif;
                     scale.y *= dif;
                     scale.z *= dif;
                 }

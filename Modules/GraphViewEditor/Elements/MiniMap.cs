@@ -74,6 +74,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Add(m_Label);
 
             RegisterCallback<MouseDownEvent>(OnMouseDown);
+            m_Label.RegisterCallback<MouseDownEvent>(EatMouseDown);
 
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
         }
@@ -88,7 +89,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        void ToggleAnchorState(EventBase e)
+        void ToggleAnchorState(ContextualMenu.MenuAction a)
         {
             // TODO: Remove when removing presenters.
             if (dependsOnPresenter)
@@ -387,6 +388,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Handles.color = currentColor;
         }
 
+        private void EatMouseDown(MouseDownEvent e)
+        {
+            // The minimap should not let any left mouse down go through when it's not movable.
+            if (e.button == (int)MouseButton.LeftMouse &&
+                (capabilities & Capabilities.Movable) == 0)
+            {
+                e.StopPropagation();
+            }
+        }
+
         private void OnMouseDown(MouseDownEvent e)
         {
             var gView = graphView;
@@ -412,6 +423,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         e.StopPropagation();
                     }
                 });
+
+            EatMouseDown(e);
         }
     }
 }

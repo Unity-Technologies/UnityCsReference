@@ -124,7 +124,12 @@ namespace UnityEditor
                 InternalDispose();
 
                 if (m_Texture != null)
-                    UnityEngine.Object.Destroy(m_Texture);
+                {
+                    if (Application.isPlaying)
+                        UnityEngine.Object.Destroy(m_Texture);
+                    else
+                        UnityEngine.Object.DestroyImmediate(m_Texture);
+                }
 
                 m_Texture = null;
             }

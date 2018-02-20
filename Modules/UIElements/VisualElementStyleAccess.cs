@@ -5,8 +5,8 @@
 using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.CSSLayout;
 using UnityEngine.StyleSheets;
+using UnityEngine.Yoga;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -28,7 +28,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.width, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.Width = value.value;
+                    yogaNode.Width = value.value;
                 }
             }
         }
@@ -41,7 +41,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.height, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.Height = value.value;
+                    yogaNode.Height = value.value;
                 }
             }
         }
@@ -54,7 +54,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.maxWidth, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.MaxWidth = value.value;
+                    yogaNode.MaxWidth = value.value;
                 }
             }
         }
@@ -67,7 +67,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.maxHeight, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.MaxHeight = value.value;
+                    yogaNode.MaxHeight = value.value;
                 }
             }
         }
@@ -80,7 +80,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.minWidth, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.MinWidth = value.value;
+                    yogaNode.MinWidth = value.value;
                 }
             }
         }
@@ -93,7 +93,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.minHeight, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.MinHeight = value.value;
+                    yogaNode.MinHeight = value.value;
                 }
             }
         }
@@ -106,7 +106,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flex, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.Flex = value.value;
+                    yogaNode.Flex = value.value;
                 }
             }
         }
@@ -120,7 +120,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexBasis, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.FlexBasis = value.value;
+                    yogaNode.FlexBasis = value.value;
                 }
             }
         }
@@ -133,7 +133,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexGrow, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.FlexGrow = value.value;
+                    yogaNode.FlexGrow = value.value;
                 }
             }
         }
@@ -146,7 +146,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexShrink, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.FlexShrink = value.value;
+                    yogaNode.FlexShrink = value.value;
                 }
             }
         }
@@ -162,7 +162,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.overflow, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.Overflow = (CSSOverflow)value.value;
+                    yogaNode.Overflow = (YogaOverflow)value.value;
                 }
             }
         }
@@ -181,7 +181,7 @@ namespace UnityEngine.Experimental.UIElements
                     if ((saveChangedNeeded & ChangeType.Repaint) == 0)
                         ClearDirty(ChangeType.Repaint);
 
-                    cssNode.SetPosition(CSSEdge.Left, value.value);
+                    yogaNode.Left = value.value;
                 }
             }
         }
@@ -200,7 +200,7 @@ namespace UnityEngine.Experimental.UIElements
                     if ((saveChangedNeeded & ChangeType.Repaint) == 0)
                         ClearDirty(ChangeType.Repaint);
 
-                    cssNode.SetPosition(CSSEdge.Top, value.value);
+                    yogaNode.Top = value.value;
                 }
             }
         }
@@ -213,7 +213,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.positionRight, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetPosition(CSSEdge.Right, value.value);
+                    yogaNode.Right = value.value;
                 }
             }
         }
@@ -226,7 +226,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.positionBottom, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetPosition(CSSEdge.Bottom, value.value);
+                    yogaNode.Bottom = value.value;
                 }
             }
         }
@@ -239,7 +239,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.marginLeft, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetMargin(CSSEdge.Left, value.value);
+                    yogaNode.MarginLeft = value.value;
                 }
             }
         }
@@ -252,7 +252,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.marginTop, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetMargin(CSSEdge.Top, value.value);
+                    yogaNode.MarginTop = value.value;
                 }
             }
         }
@@ -265,7 +265,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.marginRight, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetMargin(CSSEdge.Right, value.value);
+                    yogaNode.MarginRight = value.value;
                 }
             }
         }
@@ -278,7 +278,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.marginBottom, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetMargin(CSSEdge.Bottom, value.value);
+                    yogaNode.MarginBottom = value.value;
                 }
             }
         }
@@ -291,7 +291,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderLeft, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetBorder(CSSEdge.Left, value.value);
+                    yogaNode.BorderLeftWidth = value.value;
                 }
             }
         }
@@ -304,7 +304,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderTop, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetBorder(CSSEdge.Top, value.value);
+                    yogaNode.BorderTopWidth = value.value;
                 }
             }
         }
@@ -317,7 +317,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderRight, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetBorder(CSSEdge.Right, value.value);
+                    yogaNode.BorderRightWidth = value.value;
                 }
             }
         }
@@ -330,7 +330,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderBottom, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetBorder(CSSEdge.Bottom, value.value);
+                    yogaNode.BorderBottomWidth = value.value;
                 }
             }
         }
@@ -343,7 +343,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderLeftWidth, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetBorder(CSSEdge.Left, value.value);
+                    yogaNode.BorderLeftWidth = value.value;
                 }
             }
         }
@@ -356,7 +356,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderTopWidth, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetBorder(CSSEdge.Top, value.value);
+                    yogaNode.BorderTopWidth = value.value;
                 }
             }
         }
@@ -369,7 +369,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderRightWidth, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetBorder(CSSEdge.Right, value.value);
+                    yogaNode.BorderRightWidth = value.value;
                 }
             }
         }
@@ -382,7 +382,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderBottomWidth, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetBorder(CSSEdge.Bottom, value.value);
+                    yogaNode.BorderBottomWidth = value.value;
                 }
             }
         }
@@ -455,7 +455,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.paddingLeft, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetPadding(CSSEdge.Left, value.value);
+                    yogaNode.PaddingLeft = value.value;
                 }
             }
         }
@@ -468,7 +468,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.paddingTop, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetPadding(CSSEdge.Top, value.value);
+                    yogaNode.PaddingTop = value.value;
                 }
             }
         }
@@ -481,7 +481,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.paddingRight, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetPadding(CSSEdge.Right, value.value);
+                    yogaNode.PaddingRight = value.value;
                 }
             }
         }
@@ -494,7 +494,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.paddingBottom, value))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.SetPadding(CSSEdge.Bottom, value.value);
+                    yogaNode.PaddingBottom = value.value;
                 }
             }
         }
@@ -515,10 +515,10 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         case PositionType.Absolute:
                         case PositionType.Manual:
-                            cssNode.PositionType = CSSPositionType.Absolute;
+                            yogaNode.PositionType = YogaPositionType.Absolute;
                             break;
                         case PositionType.Relative:
-                            cssNode.PositionType = CSSPositionType.Relative;
+                            yogaNode.PositionType = YogaPositionType.Relative;
                             break;
                     }
                 }
@@ -533,7 +533,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.alignSelf, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.AlignSelf = (CSSAlign)value.value;
+                    yogaNode.AlignSelf = (YogaAlign)value.value;
                 }
             }
         }
@@ -630,7 +630,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexDirection, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Repaint);
-                    cssNode.FlexDirection = (CSSFlexDirection)value.value;
+                    yogaNode.FlexDirection = (YogaFlexDirection)value.value;
                 }
             }
         }
@@ -696,7 +696,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.alignItems, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.AlignItems = (CSSAlign)value.value;
+                    yogaNode.AlignItems = (YogaAlign)value.value;
                 }
             }
         }
@@ -709,7 +709,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.alignContent, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.AlignContent = (CSSAlign)value.value;
+                    yogaNode.AlignContent = (YogaAlign)value.value;
                 }
             }
         }
@@ -722,7 +722,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.justifyContent, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.JustifyContent = (CSSJustify)value.value;
+                    yogaNode.JustifyContent = (YogaJustify)value.value;
                 }
             }
         }
@@ -735,7 +735,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.flexWrap, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     Dirty(ChangeType.Layout);
-                    cssNode.Wrap = (CSSWrap)value.value;
+                    yogaNode.Wrap = (YogaWrap)value.value;
                 }
             }
         }
@@ -806,6 +806,18 @@ namespace UnityEngine.Experimental.UIElements
             set
             {
                 StyleValueUtils.ApplyAndCompare(ref inlineStyle.cursor, value);
+            }
+        }
+
+        StyleValue<Visibility> IStyle.visibility
+        {
+            get { return new StyleValue<Visibility>((Visibility)effectiveStyle.visibility.value, effectiveStyle.visibility.specificity); }
+            set
+            {
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.visibility, new StyleValue<int>((int)value.value, value.specificity)))
+                {
+                    Dirty(ChangeType.Repaint);
+                }
             }
         }
 

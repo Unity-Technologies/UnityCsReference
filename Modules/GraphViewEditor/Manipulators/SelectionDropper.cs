@@ -9,8 +9,6 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    public delegate void DropEvent(IMGUIEvent evt, List<ISelectable> selection, IDropTarget dropTarget);
-
     // TODO: Should stay internal when GraphView becomes public
     internal class DragAndDropDelay
     {
@@ -35,9 +33,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     {
         readonly DragAndDropDelay m_DragAndDropDelay;
 
-        // FIXME: remove this
-        public event DropEvent OnDrop;
-
         bool m_Active;
 
         public Vector2 panSpeed { get; set; }
@@ -51,11 +46,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         GraphElement selectedElement { get; set; }
         ISelection selectionContainer { get; set; }
 
-        public SelectionDropper(DropEvent handler)
+        public SelectionDropper()
         {
-            m_Active = true;
-
-            OnDrop += handler;
+            m_Active = false;
 
             m_DragAndDropDelay = new DragAndDropDelay();
 
@@ -68,7 +61,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
-            target.RegisterCallback<IMGUIEvent>(OnIMGUIEvent);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -76,11 +69,26 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
-            target.UnregisterCallback<IMGUIEvent>(OnIMGUIEvent);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
         }
 
         bool m_AddedByMouseDown;
         bool m_Dragging;
+
+        void Reset()
+        {
+            m_Active = false;
+            m_AddedByMouseDown = false;
+            m_Dragging = false;
+        }
+
+        void OnMouseCaptureOutEvent(MouseCaptureOutEvent e)
+        {
+            if (m_Active)
+            {
+                Reset();
+            }
+        }
 
         protected void OnMouseDown(MouseDownEvent e)
         {
@@ -89,9 +97,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 e.StopImmediatePropagation();
                 return;
             }
-
-            if (MouseCaptureController.IsMouseCaptureTaken())
-                return;
 
             m_Active = false;
             m_Dragging = false;
@@ -150,12 +155,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (canStartDrag && m_DragAndDropDelay.CanStartDrag(e.localMousePosition))
                     {
                         DragAndDrop.PrepareStartDrag();
-                        DragAndDrop.objectReferences = new UnityEngine.Object[] {};  // this IS required for dragging to work
+                        DragAndDrop.objectReferences = new UnityEngine.Object[] {};   // this IS required for dragging to work
                         DragAndDrop.SetGenericData("DragSelection", selection);
                         m_Dragging = true;
 
                         DragAndDrop.StartDrag("");
                         DragAndDrop.visualMode = e.ctrlKey ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Move;
+                        target.ReleaseMouseCapture();
                     }
 
                     e.StopPropagation();
@@ -166,7 +172,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected void OnMouseUp(MouseUpEvent e)
         {
             if (!m_Active || selectionContainer == null)
+            {
+                Reset();
                 return;
+            }
+
             if (e.button == (int)activateButton)
             {
                 // Since we didn't drag after all, update selection with current element only
@@ -182,95 +192,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 target.ReleaseMouseCapture();
                 e.StopPropagation();
-            }
-
-            m_Active = false;
-            m_AddedByMouseDown = false;
-            m_Dragging = false;
-        }
-
-        public IDropTarget prevDropTarget;
-        protected void OnIMGUIEvent(IMGUIEvent e)
-        {
-            if (!m_Active || selectionContainer == null)
-                return;
-
-            // Keep a copy of the selection
-            var selection = selectionContainer.selection.ToList();
-
-            Event evt = e.imguiEvent;
-            switch (evt.type)
-            {
-                case EventType.DragUpdated:
-                {
-                    if (target.HasMouseCapture() && evt.button == (int)activateButton && selection.Count > 0)
-                    {
-                        selectedElement = null;
-
-                        // TODO: Replace with a temp drawing or something...maybe manipulator could fake position
-                        // all this to let operation know which element sits under cursor...or is there another way to draw stuff that is being dragged?
-
-                        if (OnDrop != null)
-                        {
-                            var pickElem = target.panel.Pick(target.LocalToWorld(evt.mousePosition));
-                            IDropTarget dropTarget = pickElem != null ? pickElem.GetFirstAncestorOfType<IDropTarget>() : null;
-                            if (prevDropTarget != dropTarget && prevDropTarget != null)
-                            {
-                                using (IMGUIEvent eexit = IMGUIEvent.GetPooled(e.imguiEvent))
-                                {
-                                    eexit.imguiEvent.type = EventType.DragExited;
-                                    OnDrop(eexit, selection, prevDropTarget);
-                                }
-                            }
-                            OnDrop(e, selection, dropTarget);
-                            prevDropTarget = dropTarget;
-                        }
-
-                        DragAndDrop.visualMode = evt.control ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Move;
-                    }
-
-                    break;
-                }
-
-                case EventType.DragExited:
-                {
-                    if (OnDrop != null && prevDropTarget != null)
-                    {
-                        OnDrop(e, selection, prevDropTarget);
-                    }
-
-                    DragAndDrop.visualMode = DragAndDropVisualMode.None;
-                    DragAndDrop.SetGenericData("DragSelection", null);
-
-                    prevDropTarget = null;
-                    m_Active = false;
-                    target.ReleaseMouseCapture();
-                    break;
-                }
-
-                case EventType.DragPerform:
-                {
-                    if (m_Active && evt.button == (int)activateButton && selection.Count > 0)
-                    {
-                        if (selection.Count > 0)
-                        {
-                            if (OnDrop != null)
-                            {
-                                var pickElem = target.panel.Pick(target.LocalToWorld(evt.mousePosition));
-                                IDropTarget dropTarget = pickElem != null ? pickElem.GetFirstAncestorOfType<IDropTarget>() : null;
-                                OnDrop(e, selection, dropTarget);
-                            }
-
-                            DragAndDrop.visualMode = DragAndDropVisualMode.None;
-                            DragAndDrop.SetGenericData("DragSelection", null);
-                        }
-                    }
-
-                    prevDropTarget = null;
-                    m_Active = false;
-                    target.ReleaseMouseCapture();
-                    break;
-                }
+                Reset();
             }
         }
     }

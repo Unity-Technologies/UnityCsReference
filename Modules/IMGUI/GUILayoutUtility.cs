@@ -19,15 +19,12 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal sealed class LayoutCache
         {
-            //*undocumented*
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             internal GUILayoutGroup topLevel = new GUILayoutGroup();
-            //*undocumented*
+
             internal GenericStack layoutGroups = new GenericStack();
-            //*undocumented*
             internal GUILayoutGroup windows = new GUILayoutGroup();
 
-            //*undocumented*
             [VisibleToOtherModules("UnityEngine.UIElementsModule")]
             internal LayoutCache()
             {
@@ -43,14 +40,14 @@ namespace UnityEngine
         }
 
         // TODO: Clean these up after a while
-        static Dictionary<int, LayoutCache> s_StoredLayouts = new Dictionary<int, LayoutCache>();
-        static Dictionary<int, LayoutCache> s_StoredWindows = new Dictionary<int, LayoutCache>();
+        static readonly Dictionary<int, LayoutCache> s_StoredLayouts = new Dictionary<int, LayoutCache>();
+        static readonly Dictionary<int, LayoutCache> s_StoredWindows = new Dictionary<int, LayoutCache>();
 
         internal static LayoutCache current = new LayoutCache();
 
         internal static readonly Rect kDummyRect = new Rect(0, 0, 1, 1);
 
-        static internal void CleanupRoots()
+        internal static void CleanupRoots()
         {
             // See GUI.CleanupRoots
             s_SpaceStyle = null;
@@ -60,7 +57,7 @@ namespace UnityEngine
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        static internal LayoutCache SelectIDList(int instanceID, bool isWindow)
+        internal static LayoutCache SelectIDList(int instanceID, bool isWindow)
         {
             Dictionary<int, LayoutCache> store = isWindow ? s_StoredWindows : s_StoredLayouts;
             LayoutCache cache;
@@ -82,7 +79,7 @@ namespace UnityEngine
 
         // Set up the internal GUILayouting
         // Called by the main GUI class automatically (from GUI.Begin)
-        static internal void Begin(int instanceID)
+        internal static void Begin(int instanceID)
         {
             LayoutCache cache = SelectIDList(instanceID, false);
             // Make a vertical group to encompass the whole thing
@@ -102,7 +99,7 @@ namespace UnityEngine
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        static internal void BeginContainer(LayoutCache cache)
+        internal static void BeginContainer(LayoutCache cache)
         {
             // Make a vertical group to encompass the whole thing
             if (Event.current.type == EventType.Layout)
@@ -120,7 +117,7 @@ namespace UnityEngine
             }
         }
 
-        static internal void BeginWindow(int windowID, GUIStyle style, GUILayoutOption[] options)
+        internal static void BeginWindow(int windowID, GUIStyle style, GUILayoutOption[] options)
         {
             LayoutCache cache = SelectIDList(windowID, true);
             // Make a vertical group to encompass the whole thing
@@ -144,15 +141,13 @@ namespace UnityEngine
         }
 
         // TODO: actually make these check...
-        // *undocumented*
         [Obsolete("BeginGroup has no effect and will be removed", false)]
-        static public void BeginGroup(string GroupName) {}
-        // *undocumented*
+        public static void BeginGroup(string GroupName) {}
+
         [Obsolete("EndGroup has no effect and will be removed", false)]
-        static public void EndGroup(string groupName) {}
+        public static void EndGroup(string groupName) {}
 
-
-        static internal void Layout()
+        internal static void Layout()
         {
             if (current.topLevel.windowID == -1)
             {
@@ -172,9 +167,8 @@ namespace UnityEngine
             }
         }
 
-        // Global fayout function. Called from EditorWindows (differs from game view in that they use the full window size and try to stretch GUI
-        // *undocumented*
-        static internal void LayoutFromEditorWindow()
+        // Global layout function. Called from EditorWindows (differs from game view in that they use the full window size and try to stretch GUI
+        internal static void LayoutFromEditorWindow()
         {
             if (current.topLevel != null)
             {
@@ -195,7 +189,7 @@ namespace UnityEngine
         }
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        static internal void LayoutFromContainer(float w, float h)
+        internal static void LayoutFromContainer(float w, float h)
         {
             if (current.topLevel != null)
             {
@@ -219,8 +213,7 @@ namespace UnityEngine
         // After this call everything has a properly calculated size
         // Called by Unity automatically.
         // Is public so we can access it from editor inspectors, but not supported by public stuff
-        // *undocumented*
-        static internal float LayoutFromInspector(float width)
+        internal static float LayoutFromInspector(float width)
         {
             if (current.topLevel != null && current.topLevel.windowID == -1)
             {
@@ -237,15 +230,12 @@ namespace UnityEngine
                 LayoutFreeGroup(current.windows);
                 return height;
             }
-            else
-            {
-                if (current.topLevel != null)
-                    LayoutSingleGroup(current.topLevel);
-                return 0;
-            }
+            if (current.topLevel != null)
+                LayoutSingleGroup(current.topLevel);
+            return 0;
         }
 
-        static internal void LayoutFreeGroup(GUILayoutGroup toplevel)
+        internal static void LayoutFreeGroup(GUILayoutGroup toplevel)
         {
             foreach (GUILayoutGroup i in toplevel.entries)
             {
@@ -346,18 +336,15 @@ namespace UnityEngine
             }
             if (Event.current.type != EventType.Layout && Event.current.type != EventType.Used)
                 GUIDebugger.LogLayoutEndGroup();
-            switch (Event.current.type)
-            {
-                default:
-                    current.layoutGroups.Pop();
-                    current.topLevel = (0 < current.layoutGroups.Count) ?
-                        (GUILayoutGroup)current.layoutGroups.Peek() :
-                        null;
-                    return;
-            }
+
+            current.layoutGroups.Pop();
+            if (0 < current.layoutGroups.Count)
+                current.topLevel = (GUILayoutGroup)current.layoutGroups.Peek();
+            else
+                current.topLevel = new GUILayoutGroup();
         }
 
-        // Generic helper - use this when creating a layoutgroup. It will make sure everything is wired up correctly.
+        // Generic helper - use this when creating a layout group. It will make sure everything is wired up correctly.
         internal static GUILayoutGroup BeginLayoutArea(GUIStyle style, Type layoutType)
         {
             GUILayoutGroup g;
@@ -383,18 +370,13 @@ namespace UnityEngine
         }
 
         // Trampoline for Editor stuff
-        //*undocumented*
         internal static GUILayoutGroup DoBeginLayoutArea(GUIStyle style, Type layoutType)
         {
             return BeginLayoutArea(style, layoutType);
         }
 
-        internal static GUILayoutGroup topLevel
-        {
-            get { return current.topLevel; }
-        }
+        internal static GUILayoutGroup topLevel => current.topLevel;
 
-        /// *listonly*
         public static Rect GetRect(GUIContent content, GUIStyle style)                                 { return DoGetRect(content, style, null); }
         // Reserve layout space for a rectangle for displaying some contents with a specific style.
         public static Rect GetRect(GUIContent content, GUIStyle style, params GUILayoutOption[] options)       { return DoGetRect(content, style, options); }
@@ -443,24 +425,19 @@ namespace UnityEngine
             }
         }
 
-        /// *listonly*
         public static Rect GetRect(float width, float height)                                      { return DoGetRect(width, width, height, height, GUIStyle.none, null); }
-        /// *listonly*
         public static Rect GetRect(float width, float height, GUIStyle style)                      {return DoGetRect(width, width, height, height, style, null); }
-        /// *listonly*
         public static Rect GetRect(float width, float height, params GUILayoutOption[] options)    {return DoGetRect(width, width, height, height, GUIStyle.none, options); }
         // Reserve layout space for a rectangle with a fixed content area.
         public static Rect GetRect(float width, float height, GUIStyle style, params GUILayoutOption[] options)
         {return DoGetRect(width, width, height, height, style, options); }
 
-
-        /// *listonly*
         public static Rect GetRect(float minWidth, float maxWidth, float minHeight, float maxHeight)
         { return DoGetRect(minWidth, maxWidth, minHeight, maxHeight, GUIStyle.none, null); }
-        /// *listonly*
+
         public static Rect GetRect(float minWidth, float maxWidth, float minHeight, float maxHeight, GUIStyle style)
         { return DoGetRect(minWidth, maxWidth, minHeight, maxHeight, style, null); }
-        /// *listonly*
+
         public static Rect GetRect(float minWidth, float maxWidth, float minHeight, float maxHeight, params GUILayoutOption[] options)
         { return DoGetRect(minWidth, maxWidth, minHeight, maxHeight, GUIStyle.none, options); }
         // Reserve layout space for a flexible rect.
@@ -493,15 +470,12 @@ namespace UnityEngine
             }
         }
 
-        /// *listonly*
-        public static Rect GetAspectRect(float aspect)                                         { return DoGetAspectRect(aspect, GUIStyle.none, null); }
-        /// *listonly*
-        public static Rect GetAspectRect(float aspect, GUIStyle style)                             { return DoGetAspectRect(aspect, style, null); }
-        /// *listonly*
-        public static Rect GetAspectRect(float aspect, params GUILayoutOption[] options)               {  return DoGetAspectRect(aspect, GUIStyle.none, options); }
+        public static Rect GetAspectRect(float aspect) { return DoGetAspectRect(aspect, null); }
+        public static Rect GetAspectRect(float aspect, GUIStyle style) { return DoGetAspectRect(aspect, null); }
+        public static Rect GetAspectRect(float aspect, params GUILayoutOption[] options) {  return DoGetAspectRect(aspect, options); }
         // Reserve layout space for a rectangle with a specific aspect ratio.
-        public static Rect GetAspectRect(float aspect, GUIStyle style, params GUILayoutOption[] options)   {  return DoGetAspectRect(aspect, GUIStyle.none, options); }
-        static Rect DoGetAspectRect(float aspect, GUIStyle style, GUILayoutOption[] options)
+        public static Rect GetAspectRect(float aspect, GUIStyle style, params GUILayoutOption[] options)   {  return DoGetAspectRect(aspect, options); }
+        private static Rect DoGetAspectRect(float aspect, GUILayoutOption[] options)
         {
             switch (Event.current.type)
             {

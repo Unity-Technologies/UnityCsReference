@@ -70,6 +70,7 @@ namespace UnityEngine.Bindings
     class NativeConditionalAttribute : Attribute, IBindingsAttribute
     {
         public string Condition { get; set; }
+        public string StubReturnStatement { get; set; }
         public bool Enabled { get; set; }
 
         public NativeConditionalAttribute()
@@ -90,6 +91,16 @@ namespace UnityEngine.Bindings
         public NativeConditionalAttribute(string condition, bool enabled) : this(condition)
         {
             Enabled = enabled;
+        }
+
+        public NativeConditionalAttribute(string condition, string stubReturnStatement, bool enabled) : this(condition, stubReturnStatement)
+        {
+            Enabled = enabled;
+        }
+
+        public NativeConditionalAttribute(string condition, string stubReturnStatement) : this(condition)
+        {
+            StubReturnStatement = stubReturnStatement;
         }
     }
 
@@ -383,5 +394,6 @@ namespace UnityEngine.Bindings
     [VisibleToOtherModules]
     class IgnoreAttribute : Attribute, IBindingsAttribute
     {
+        public bool DoesNotContributeToSize { get; set; }
     }
 }

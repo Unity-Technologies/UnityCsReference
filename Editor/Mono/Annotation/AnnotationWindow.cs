@@ -59,9 +59,9 @@ namespace UnityEditor
         List<MonoScript> m_MonoScriptIconsChanged;
 
         const int maxShowRecent = 5;
-        const string textGizmoVisible = "Show/Hide Gizmo";
-        GUIContent iconToggleContent = new GUIContent("", "Show/Hide Icon");
-        GUIContent iconSelectContent = new GUIContent("", "Select Icon");
+        readonly string textGizmoVisible = L10n.Tr("Show/Hide Gizmo");
+        GUIContent iconToggleContent = EditorGUIUtility.TrTextContent("", "Show/Hide Icon");
+        GUIContent iconSelectContent = EditorGUIUtility.TrTextContent("", "Select Icon");
 
         GUIContent icon3dGizmoContent = EditorGUIUtility.TrTextContent("3D Icons");
         GUIContent showGridContent = EditorGUIUtility.TrTextContent("Show Grid");

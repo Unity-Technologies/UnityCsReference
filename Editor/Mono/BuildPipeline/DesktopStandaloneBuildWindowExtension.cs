@@ -199,4 +199,9 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
     {
         return true;
     }
+
+    public override bool ShouldDrawWaitForManagedDebugger()
+    {
+        return true;
+    }
 }

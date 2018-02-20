@@ -46,7 +46,7 @@ namespace UnityEditor
             public static readonly GUIContent recordingInfo = EditorGUIUtility.TrTextContent("Reordering the list will switch editor to the first available platform");
             public static readonly GUIContent notApplicableInfo = EditorGUIUtility.TrTextContent("Not applicable for this platform.");
             public static readonly GUIContent sharedBetweenPlatformsInfo = EditorGUIUtility.TrTextContent("* Shared setting between multiple platforms.");
-            public static readonly GUIContent VRSupportOverridenInfo = EditorGUIUtility.TrTextContent("This setting is overridden by Virtual Reality Support.");
+            public static readonly GUIContent vrOrientationInfo = EditorGUIUtility.TrTextContent("Virtual Reality Support is enabled. Upon entering VR mode, landscape left orientation will be the default orientation unless only landscape right is available.");
             public static readonly GUIContent IL2CPPAndroidExperimentalInfo = EditorGUIUtility.TrTextContent("IL2CPP on Android is experimental and unsupported");
 
             public static readonly GUIContent cursorHotspot = EditorGUIUtility.TrTextContent("Cursor Hotspot");
@@ -67,6 +67,7 @@ namespace UnityEditor
             public static readonly GUIContent crashReportingTitle = EditorGUIUtility.TrTextContent("Crash Reporting");
             public static readonly GUIContent otherSettingsTitle = EditorGUIUtility.TrTextContent("Other Settings");
             public static readonly GUIContent renderingTitle = EditorGUIUtility.TrTextContent("Rendering");
+            public static readonly GUIContent vulkanSettingsTitle = EditorGUIUtility.TrTextContent("Vulkan Settings");
             public static readonly GUIContent identificationTitle = EditorGUIUtility.TrTextContent("Identification");
             public static readonly GUIContent macAppStoreTitle = EditorGUIUtility.TrTextContent("Mac App Store Options");
             public static readonly GUIContent configurationTitle = EditorGUIUtility.TrTextContent("Configuration");
@@ -118,9 +119,12 @@ namespace UnityEditor
             public static readonly GUIContent colorGamut = EditorGUIUtility.TrTextContent("Color Gamut*");
             public static readonly GUIContent colorGamutForMac = EditorGUIUtility.TrTextContent("Color Gamut For Mac*");
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
-            public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TextContent("Metal Editor Support*");
+            public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TrTextContent("Metal Editor Support*");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*");
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Restricted Backbuffer Use", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
+            public static readonly GUIContent vulkanEditorSupport = EditorGUIUtility.TextContent("Vulkan Editor Support (Experimental)*");
+            public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("Enable SetSRGBWrite()*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
+            public static readonly GUIContent vulkanUseSWCommandBuffers = EditorGUIUtility.TrTextContent("Use SW Commandbuffers*", "If set, builds the command buffers in the task executor thread instead of building secondary command buffers for rendering API calls.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
@@ -149,7 +153,7 @@ namespace UnityEditor
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols*");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
             public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent("Stable (.NET 3.5 Equivalent)");
-            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent("Experimental (.NET 4.6 Equivalent)");
+            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent("Experimental (.NET 4.x Equivalent)");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
@@ -159,8 +163,9 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TrTextContent("Api Compatibility Level*");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TrTextContent(".NET 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
-            public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.6");
+            public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.x");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
+            public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager"), EditorGUIUtility.TrTextContent("Input System (Preview)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TrTextContent("Virtual Reality moved to XR Settings");
@@ -234,7 +239,6 @@ namespace UnityEditor
         SerializedProperty m_DisableDepthAndStencilBuffers;
         SerializedProperty m_iosShowActivityIndicatorOnLoading;
         SerializedProperty m_androidShowActivityIndicatorOnLoading;
-        SerializedProperty m_tizenShowActivityIndicatorOnLoading;
 
         SerializedProperty m_AndroidProfiler;
 
@@ -262,6 +266,8 @@ namespace UnityEditor
         SerializedProperty m_EnableInputSystem;
         SerializedProperty m_DisableInputManager;
 
+        SerializedProperty m_AllowUnsafeCode;
+
         // vita
         SerializedProperty m_VideoMemoryForVertexBuffers;
 
@@ -284,6 +290,8 @@ namespace UnityEditor
         SerializedProperty m_MetalAPIValidation;
         SerializedProperty m_MetalFramebufferOnly;
         SerializedProperty m_MetalForceHardShadows;
+
+        SerializedProperty m_VulkanEditorSupport;
 
         SerializedProperty m_DisplayResolutionDialog;
         SerializedProperty m_DefaultIsNativeResolution;
@@ -350,8 +358,19 @@ namespace UnityEditor
         {
             return targetGroup == BuildTargetGroup.iOS
                 ||  targetGroup == BuildTargetGroup.tvOS
-                ||  targetGroup == BuildTargetGroup.Android
-                ||  targetGroup == BuildTargetGroup.Tizen;
+                ||  targetGroup == BuildTargetGroup.Android;
+        }
+
+        private bool ShouldShowVulkanSettings(BuildTargetGroup targetGroup)
+        {
+            // Always show settings on Windows and Linux editors, as the editor may be running on it
+            if (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.LinuxEditor)
+                return true;
+
+            if (targetGroup == BuildTargetGroup.Android || targetGroup == BuildTargetGroup.Standalone)
+                return true;
+
+            return false;
         }
 
         public SerializedProperty FindPropertyAssert(string name)
@@ -392,6 +411,7 @@ namespace UnityEditor
             m_MetalFramebufferOnly          = FindPropertyAssert("metalFramebufferOnly");
             m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
 
+            m_VulkanEditorSupport           = FindPropertyAssert("vulkanEditorSupport");
             m_ApplicationBundleVersion      = serializedObject.FindProperty("bundleVersion");
             if (m_ApplicationBundleVersion == null)
                 m_ApplicationBundleVersion  = FindPropertyAssert("iPhoneBundleVersion");
@@ -421,6 +441,8 @@ namespace UnityEditor
             m_EnableInputSystem             = FindPropertyAssert("enableNativePlatformBackendsForNewInputSystem");
             m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
 
+            m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
+
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
             m_RunInBackground               = FindPropertyAssert("runInBackground");
@@ -435,7 +457,6 @@ namespace UnityEditor
             m_DisableDepthAndStencilBuffers         = FindPropertyAssert("disableDepthAndStencilBuffers");
             m_iosShowActivityIndicatorOnLoading     = FindPropertyAssert("iosShowActivityIndicatorOnLoading");
             m_androidShowActivityIndicatorOnLoading = FindPropertyAssert("androidShowActivityIndicatorOnLoading");
-            m_tizenShowActivityIndicatorOnLoading   = FindPropertyAssert("tizenShowActivityIndicatorOnLoading");
 
             m_DefaultIsNativeResolution     = FindPropertyAssert("defaultIsNativeResolution");
             m_MacRetinaSupport              = FindPropertyAssert("macRetinaSupport");
@@ -847,42 +868,39 @@ namespace UnityEditor
                     {
                         GUILayout.Label(Styles.orientationTitle, EditorStyles.boldLabel);
 
-                        using (new EditorGUI.DisabledScope(PlayerSettings.virtualRealitySupported))
+                        EditorGUILayout.PropertyField(m_DefaultScreenOrientation, Styles.defaultScreenOrientation);
+
+                        if (PlayerSettings.virtualRealitySupported)
                         {
-                            EditorGUILayout.PropertyField(m_DefaultScreenOrientation, Styles.defaultScreenOrientation);
+                            EditorGUILayout.HelpBox(Styles.vrOrientationInfo.text, MessageType.Warning);
+                        }
 
-                            if (PlayerSettings.virtualRealitySupported)
+                        if (m_DefaultScreenOrientation.enumValueIndex == (int)UIOrientation.AutoRotation)
+                        {
+                            if (targetGroup == BuildTargetGroup.iOS)
+                                EditorGUILayout.PropertyField(m_UseOSAutoRotation, Styles.useOSAutoRotation);
+
+                            EditorGUI.indentLevel++;
+
+                            GUILayout.Label(Styles.allowedOrientationTitle, EditorStyles.boldLabel);
+
+                            bool somethingAllowed =     m_AllowedAutoRotateToPortrait.boolValue
+                                ||  m_AllowedAutoRotateToPortraitUpsideDown.boolValue
+                                ||  m_AllowedAutoRotateToLandscapeRight.boolValue
+                                ||  m_AllowedAutoRotateToLandscapeLeft.boolValue;
+
+                            if (!somethingAllowed)
                             {
-                                EditorGUILayout.HelpBox(Styles.VRSupportOverridenInfo.text, MessageType.Info);
+                                m_AllowedAutoRotateToPortrait.boolValue = true;
+                                Debug.LogError("All orientations are disabled. Allowing portrait");
                             }
 
-                            if (m_DefaultScreenOrientation.enumValueIndex == 4)
-                            {
-                                if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.Tizen)
-                                    EditorGUILayout.PropertyField(m_UseOSAutoRotation, Styles.useOSAutoRotation);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            Styles.allowedAutoRotateToPortrait);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  Styles.allowedAutoRotateToPortraitUpsideDown);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          Styles.allowedAutoRotateToLandscapeRight);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           Styles.allowedAutoRotateToLandscapeLeft);
 
-                                EditorGUI.indentLevel++;
-
-                                GUILayout.Label(Styles.allowedOrientationTitle, EditorStyles.boldLabel);
-
-                                bool somethingAllowed =     m_AllowedAutoRotateToPortrait.boolValue
-                                    ||  m_AllowedAutoRotateToPortraitUpsideDown.boolValue
-                                    ||  m_AllowedAutoRotateToLandscapeRight.boolValue
-                                    ||  m_AllowedAutoRotateToLandscapeLeft.boolValue;
-
-                                if (!somethingAllowed)
-                                {
-                                    m_AllowedAutoRotateToPortrait.boolValue = true;
-                                    Debug.LogError("All orientations are disabled. Allowing portrait");
-                                }
-
-                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            Styles.allowedAutoRotateToPortrait);
-                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  Styles.allowedAutoRotateToPortraitUpsideDown);
-                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          Styles.allowedAutoRotateToLandscapeRight);
-                                EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           Styles.allowedAutoRotateToLandscapeLeft);
-
-                                EditorGUI.indentLevel--;
-                            }
+                            EditorGUI.indentLevel--;
                         }
                     }
 
@@ -922,10 +940,8 @@ namespace UnityEditor
                     // mobiles color/depth bits setup
                     if (IsMobileTarget(targetGroup))
                     {
-                        // Tizen only supports 32 bit display buffers.
                         // iOS, while supports 16bit FB through GL interface, use 32bit in hardware, so there is no need in 16bit
-                        if (targetGroup != BuildTargetGroup.Tizen &&
-                            targetGroup != BuildTargetGroup.iOS &&
+                        if (targetGroup != BuildTargetGroup.iOS &&
                             targetGroup != BuildTargetGroup.tvOS)
                         {
                             EditorGUILayout.PropertyField(m_Use32BitDisplayBuffer, Styles.use32BitDisplayBuffer);
@@ -942,11 +958,7 @@ namespace UnityEditor
                     {
                         EditorGUILayout.PropertyField(m_androidShowActivityIndicatorOnLoading, Styles.androidShowActivityIndicatorOnLoading);
                     }
-                    if (targetGroup == BuildTargetGroup.Tizen)
-                    {
-                        EditorGUILayout.PropertyField(m_tizenShowActivityIndicatorOnLoading, EditorGUIUtility.TrTextContent("Show Loading Indicator"));
-                    }
-                    if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.Android || targetGroup == BuildTargetGroup.Tizen)
+                    if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.Android)
                     {
                         EditorGUILayout.Space();
                     }
@@ -1074,9 +1086,6 @@ namespace UnityEditor
             if (name == "Direct3D12")
                 name = "Direct3D12 (Experimental)";
 
-            if (name == "Vulkan" && target != BuildTarget.Android)
-                name = "Vulkan (Experimental)";
-
             if (name == "XboxOneD3D12")
                 name = "XboxOneD3D12 (Experimental)";
 
@@ -1096,6 +1105,7 @@ namespace UnityEditor
         {
             return
                 Application.platform == RuntimePlatform.WindowsEditor && targetPlatform == BuildTarget.StandaloneWindows ||
+                Application.platform == RuntimePlatform.LinuxEditor && targetPlatform == BuildTarget.StandaloneLinux ||
                 Application.platform == RuntimePlatform.OSXEditor && targetPlatform == BuildTarget.StandaloneOSX;
         }
 
@@ -1409,6 +1419,7 @@ namespace UnityEditor
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
                 OtherSectionRenderingGUI(platform, targetGroup, settingsExtension);
+                OtherSectionVulkanSettingsGUI(targetGroup);
                 OtherSectionIdentificationGUI(targetGroup, settingsExtension);
                 OtherSectionConfigurationGUI(targetGroup, settingsExtension);
                 OtherSectionOptimizationGUI(targetGroup);
@@ -1740,6 +1751,66 @@ namespace UnityEditor
             }
         }
 
+        private void OtherSectionVulkanSettingsGUI(BuildTargetGroup targetGroup)
+        {
+            if (!ShouldShowVulkanSettings(targetGroup))
+                return;
+
+            GUILayout.Label(Styles.vulkanSettingsTitle, EditorStyles.boldLabel);
+
+            // Vulkan
+            if (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.LinuxEditor)
+            {
+                bool curVulkanSupport = m_VulkanEditorSupport.boolValue || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan;
+                bool newVulkanSupport = EditorGUILayout.Toggle(Styles.vulkanEditorSupport, curVulkanSupport);
+
+                if (newVulkanSupport != curVulkanSupport)
+                {
+                    BuildTarget tgt;
+                    if (Application.platform == RuntimePlatform.WindowsEditor)
+                        tgt = BuildTarget.StandaloneWindows;
+                    else
+                        tgt = BuildTarget.StandaloneLinux;
+
+                    m_VulkanEditorSupport.boolValue = newVulkanSupport;
+                    serializedObject.ApplyModifiedProperties();
+
+                    GraphicsDeviceType[] api = PlayerSettings.GetGraphicsAPIs(tgt);
+
+                    bool updateCurrentAPI = api[0] != SystemInfo.graphicsDeviceType;
+                    if (!newVulkanSupport && SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan)
+                        updateCurrentAPI = true; // running on vulkan and disabled it
+                    if (newVulkanSupport && api[0] == GraphicsDeviceType.Vulkan)
+                        updateCurrentAPI = true; // just enabled vulkan so want to switch to it
+
+                    ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(tgt, updateCurrentAPI);
+                    if (action.changeList)
+                    {
+                        // HACK: we pretended to change first api in list to trigger possible gfx device recreation
+                        // HACK: but we dont really change api list (as we will simply set bool checked from native code)
+                        action = new ChangeGraphicsApiAction(false, action.reloadGfx);
+                    }
+                    ApplyChangeGraphicsApiAction(tgt, api, action);
+                }
+            }
+
+            PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(Styles.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
+
+            bool newUseSWCmdBuf = EditorGUILayout.Toggle(Styles.vulkanUseSWCommandBuffers, PlayerSettings.vulkanUseSWCommandBuffers);
+            if (newUseSWCmdBuf != PlayerSettings.vulkanUseSWCommandBuffers)
+            {
+                // Changing this value requires reloading the gfxdevice
+                PlayerSettings.vulkanUseSWCommandBuffers = newUseSWCmdBuf;
+                if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan)
+                {
+                    ShaderUtil.RecreateGfxDevice();
+                    GUIUtility.ExitGUI();
+                }
+            }
+
+            EditorGUILayout.Space();
+        }
+
         internal static void ShowPlatformIconsByKind(PlatformIconFieldGroup iconFieldGroup, bool foldByKind = true, bool foldBySubkind = true)
         {
             int labelHeight = 20;
@@ -1916,7 +1987,7 @@ namespace UnityEditor
 
             if (targetGroupSupportsIl2Cpp)
             {
-                using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp))
+                using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp || !scripting.AllowIL2CPPCompilerConfigurationSelection()))
                 {
                     var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
                     var configurations = GetIl2CppCompilerConfigurations();
@@ -2001,6 +2072,15 @@ namespace UnityEditor
                     PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefines);
             }
 
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_AllowUnsafeCode, Styles.allowUnsafeCode);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.allowUnsafeCode = m_AllowUnsafeCode.boolValue;
+                }
+            }
+
             // Active input handling
             int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
             int oldInputOption = inputOption;
@@ -2044,7 +2124,6 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.iOS ||
                 targetGroup == BuildTargetGroup.tvOS ||
                 targetGroup == BuildTargetGroup.Android ||
-                targetGroup == BuildTargetGroup.Tizen ||
                 targetGroup == BuildTargetGroup.WebGL ||
                 targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
@@ -2106,15 +2185,15 @@ namespace UnityEditor
 
         static ApiCompatibilityLevel[] only_4_x_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
         static ApiCompatibilityLevel[] only_2_0_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset };
-        static ApiCompatibilityLevel[] allProfiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset, ApiCompatibilityLevel.NET_4_6, ApiCompatibilityLevel.NET_Standard_2_0 };
+        static ApiCompatibilityLevel[] wsa_profiles = new ApiCompatibilityLevel[] { ApiCompatibilityLevel.NET_2_0, ApiCompatibilityLevel.NET_2_0_Subset, ApiCompatibilityLevel.NET_4_6 };
 
         private ApiCompatibilityLevel[] GetAvailableApiCompatibilityLevels(BuildTargetGroup activeBuildTargetGroup)
         {
             if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
                 return only_4_x_profiles;
 
-            if (activeBuildTargetGroup == BuildTargetGroup.WSA || activeBuildTargetGroup == BuildTargetGroup.XboxOne)
-                return allProfiles;
+            if (activeBuildTargetGroup == BuildTargetGroup.WSA)
+                return wsa_profiles;
 
             return only_2_0_profiles;
         }

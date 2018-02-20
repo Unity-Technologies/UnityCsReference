@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -20,26 +21,33 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private GraphViewChange m_GraphViewChange;
         private List<GraphElement> m_MovedElements;
-
-        IDropTarget GetDropTargetAt(Vector2 mousePosition)
+        private List<VisualElement> m_DropTargetPickList = new List<VisualElement>();
+        IDropTarget GetDropTargetAt(Vector2 mousePosition, IEnumerable<VisualElement> exclusionList)
         {
-            Vector2 pickPoint = target.LocalToWorld(mousePosition);
-            var pickList = new List<VisualElement>();
+            Vector2 pickPoint = mousePosition;
+            var pickList = m_DropTargetPickList;
+            pickList.Clear();
             target.panel.PickAll(pickPoint, pickList);
 
-            // We know that the pickList is filled in a bottom-to-top hierarchy
             IDropTarget dropTarget = null;
 
-            for (int i = pickList.Count - 1; i >= 0; i--)
+            for (int i = 0; i < pickList.Count; i++)
             {
                 if (pickList[i] == target)
                     continue;
 
-                dropTarget = pickList[i] as IDropTarget;
+                var picked = pickList[i];
+
+                dropTarget = picked as IDropTarget;
 
                 if (dropTarget != null && dropTarget != target)
                 {
-                    break;
+                    if (exclusionList.Contains(picked))
+                    {
+                        dropTarget = null;
+                    }
+                    else
+                        break;
                 }
             }
 
@@ -71,6 +79,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
 
             target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -80,6 +89,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
 
             target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            target.UnregisterCallback<MouseCaptureOutEvent>(OnMouseCaptureOutEvent);
         }
 
         private GraphView m_GraphView;
@@ -87,23 +97,33 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private Dictionary<GraphElement, Rect> m_OriginalPos;
         private Vector2 m_originalMouse;
 
-        void SendDragAndDropEvent(IMGUIEvent evt, List<ISelectable> selection, IDropTarget dropTarget)
+        static void SendDragAndDropEvent(IDragAndDropEvent evt, List<ISelectable> selection, IDropTarget dropTarget)
         {
             if (dropTarget ==  null || !dropTarget.CanAcceptDrop(selection))
                 return;
-            switch (evt.imguiEvent.type)
+            EventBase e = evt as EventBase;
+            if (e.GetEventTypeId() == DragPerformEvent.TypeId())
             {
-                case EventType.DragPerform:
-                    dropTarget.DragPerform(evt, selection, dropTarget);
-                    break;
-                case EventType.DragUpdated:
-                    dropTarget.DragUpdated(evt, selection, dropTarget);
-                    break;
-                case EventType.DragExited:
-                    dropTarget.DragExited();
-                    break;
-                default:
-                    break;
+                dropTarget.DragPerform(evt as DragPerformEvent, selection, dropTarget);
+            }
+            else if (e.GetEventTypeId() == DragUpdatedEvent.TypeId())
+            {
+                dropTarget.DragUpdated(evt as DragUpdatedEvent, selection, dropTarget);
+            }
+            else if (e.GetEventTypeId() == DragExitedEvent.TypeId())
+            {
+                dropTarget.DragExited();
+            }
+        }
+
+        private void OnMouseCaptureOutEvent(MouseCaptureOutEvent e)
+        {
+            if (m_Active)
+            {
+                // Stop processing the event sequence if the target has lost focus, then.
+                selectedElement = null;
+                m_PrevDropTarget = null;
+                m_Active = false;
             }
         }
 
@@ -162,7 +182,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 m_Active = true;
                 target.TakeMouseCapture(); // We want to receive events even when mouse is not over ourself.
-                e.StopPropagation();
+                e.StopImmediatePropagation();
             }
         }
 
@@ -199,17 +219,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected new void OnMouseMove(MouseMoveEvent e)
         {
-            if (!target.HasMouseCapture())
-            {
-                // We lost the capture. Since we still receive mouse events,
-                // the MouseDown target must have taken it in its ExecuteDefaultAction().
-                // Stop processing the event sequence, then.
-                // FIXME: replace this by a handler on the upcoming LostCaptureEvent.
-
-                m_PrevDropTarget = null;
-                m_Active = false;
-            }
-
             if (!m_Active)
                 return;
 
@@ -253,20 +262,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // TODO: Replace with a temp drawing or something...maybe manipulator could fake position
             // all this to let operation know which element sits under cursor...or is there another way to draw stuff that is being dragged?
 
-            IDropTarget dropTarget = GetDropTargetAt(e.localMousePosition);
+            IDropTarget dropTarget = GetDropTargetAt(e.mousePosition, selection.OfType<VisualElement>());
 
             if (m_PrevDropTarget != dropTarget && m_PrevDropTarget != null)
             {
-                using (IMGUIEvent eexit = IMGUIEvent.GetPooled(e.imguiEvent))
+                using (DragExitedEvent eexit = DragExitedEvent.GetPooled(e))
                 {
-                    eexit.imguiEvent.type = EventType.DragExited;
                     SendDragAndDropEvent(eexit, selection, m_PrevDropTarget);
                 }
             }
 
-            using (IMGUIEvent eupdated = IMGUIEvent.GetPooled(e.imguiEvent))
+            using (DragUpdatedEvent eupdated = DragUpdatedEvent.GetPooled(e))
             {
-                eupdated.imguiEvent.type = EventType.DragUpdated;
                 SendDragAndDropEvent(eupdated, selection, dropTarget);
             }
 
@@ -301,7 +308,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (m_GraphView == null)
             {
-                if (m_Active && target.HasMouseCapture())
+                if (m_Active)
                 {
                     target.ReleaseMouseCapture();
                     selectedElement = null;
@@ -316,7 +323,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (CanStopManipulation(evt))
             {
-                if (m_Active && target.HasMouseCapture())
+                if (m_Active)
                 {
                     if (selectedElement == null)
                     {
@@ -346,9 +353,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                     if (selection.Count > 0 && m_PrevDropTarget != null)
                     {
-                        using (IMGUIEvent drop = IMGUIEvent.GetPooled(evt.imguiEvent))
+                        using (DragPerformEvent drop = DragPerformEvent.GetPooled(evt))
                         {
-                            drop.imguiEvent.type = EventType.DragPerform;
                             SendDragAndDropEvent(drop, selection, m_PrevDropTarget);
                         }
                     }

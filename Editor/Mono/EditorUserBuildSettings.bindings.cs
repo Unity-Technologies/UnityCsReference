@@ -243,7 +243,8 @@ namespace UnityEditor
     {
         private EditorUserBuildSettings() {}
 
-        internal static AppleBuildAndRunType appleBuildAndRunType = AppleBuildAndRunType.Xcode;
+        internal static extern AppleBuildAndRunType appleBuildAndRunType { get; set; }
+        internal static extern string appleDeviceId { get; set; }
 
         // The currently selected build target group.
         public static extern BuildTargetGroup selectedBuildTargetGroup { get; set; }
@@ -476,15 +477,6 @@ namespace UnityEditor
 
         public static extern bool GetWSADotNetNative(WSABuildType config);
 
-        // Tizen platform options.
-        public static extern MobileTextureSubtarget tizenBuildSubtarget
-        {
-            [NativeMethod("GetSelectedTizenBuildSubtarget")]
-            get;
-            [NativeMethod("SetSelectedTizenBuildSubtarget")]
-            set;
-        }
-
         // The currently active build target.
         public static extern BuildTarget activeBuildTarget { get; }
 
@@ -534,6 +526,9 @@ namespace UnityEditor
 
         // Start the player with a connection to the profiler.
         public static extern bool connectProfiler { get; set; }
+
+        // Start the player with Emulation mode enabled and set to RemoteDevice
+        public static extern bool wsaHolographicRemoting { get; set; }
 
         // Enable source-level debuggers to connect.
         public static extern bool allowDebugging { get; set; }

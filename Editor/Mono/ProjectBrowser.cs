@@ -570,7 +570,7 @@ namespace UnityEditor
                 {
                     if (i > 0)
                         folderText += ", ";
-                    string folderName = Path.GetFileNameWithoutExtension(baseFolders[i]);
+                    string folderName = Path.GetFileName(baseFolders[i]);
                     folderText += "'" + folderName + "'";
 
                     if (i == 0 && folderName != "Assets") // We dont show tooltip for the root folder: Assets
@@ -1335,8 +1335,6 @@ namespace UnityEditor
             ShowAndHideFolderTreeSelectionAsNeeded();
 
             var hierarchyType = HierarchyType.Assets;
-            if (m_SearchFilter.folders.Any(AssetDatabase.IsPackagedAssetPath))
-                hierarchyType = HierarchyType.Packages;
             m_ListArea.Init(m_ListAreaRect, hierarchyType, m_SearchFilter, false);
             m_ListArea.InitSelection(Selection.instanceIDs);
         }
@@ -1477,7 +1475,6 @@ namespace UnityEditor
         }
 
         public const string FocusProjectWindowCommand = "FocusProjectWindow";
-
         // Returns true if we should early out of OnGUI
         bool HandleCommandEvents()
         {
@@ -2285,11 +2282,11 @@ namespace UnityEditor
                 string path = m_SearchFilter.folders[0];
 
                 string[] folderNames = path.Split('/');
-                var packagesRoot = AssetDatabase.GetPackagesMountPoint();
+                var packagesRoot = UnityEditor.PackageManager.Folders.GetPackagesMountPoint();
                 if (path.StartsWith(packagesRoot))
                 {
                     // Translate the packages root mount point
-                    folderNames = Regex.Replace(path, "^" + packagesRoot, AssetDatabase.GetPackagesMountPoint()).Split('/');
+                    folderNames = Regex.Replace(path, "^" + packagesRoot, PackageManager.Folders.GetPackagesMountPoint()).Split('/');
                 }
                 string folderPath = "";
 

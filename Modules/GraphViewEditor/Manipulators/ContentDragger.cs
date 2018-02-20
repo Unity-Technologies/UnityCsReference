@@ -91,12 +91,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             m_Active = true;
             target.TakeMouseCapture();
-            e.StopPropagation();
+            e.StopImmediatePropagation();
         }
 
         protected void OnMouseMove(MouseMoveEvent e)
         {
-            if (!m_Active || !target.HasMouseCapture())
+            if (!m_Active)
                 return;
 
             var graphView = target as GraphView;

@@ -318,12 +318,6 @@ namespace UnityEditor
             }
         }
 
-        public void OnDestroy()
-        {
-            SaveLookDevConfig();
-            Cleanup();
-        }
-
         private void UpdateRenderTexture(Rect rect)
         {
             int rtWidth = (int)rect.width;
@@ -1181,6 +1175,7 @@ namespace UnityEditor
         public void OnDisable()
         {
             SaveLookDevConfig();
+            Cleanup();
 
             Undo.undoRedoPerformed -= OnUndoRedo;
             EditorApplication.editorApplicationQuit -= OnQuit;

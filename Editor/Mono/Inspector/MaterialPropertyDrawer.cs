@@ -251,41 +251,24 @@ namespace UnityEditor
     // syntax in shaders, e.g. [Toggle] in front of a shader property will
     // end up using MaterialToggleDrawer to display it as a toggle.
 
-
-    internal class MaterialToggleDrawer : MaterialPropertyDrawer
+    // Variant of the ToggleDrawer that defines no keyword (just UI)
+    internal class MaterialToggleUIDrawer : MaterialPropertyDrawer
     {
-        protected readonly string keyword;
-        public MaterialToggleDrawer()
+        public MaterialToggleUIDrawer()
         {
         }
 
-        public MaterialToggleDrawer(string keyword)
+        public MaterialToggleUIDrawer(string keyword)
         {
-            this.keyword = keyword;
+        }
+
+        protected virtual void SetKeyword(MaterialProperty prop, bool on)
+        {
         }
 
         static bool IsPropertyTypeSuitable(MaterialProperty prop)
         {
             return prop.type == MaterialProperty.PropType.Float || prop.type == MaterialProperty.PropType.Range;
-        }
-
-        protected virtual void SetKeyword(MaterialProperty prop, bool on)
-        {
-            SetKeywordInternal(prop, on, "_ON");
-        }
-
-        protected void SetKeywordInternal(MaterialProperty prop, bool on, string defaultKeywordSuffix)
-        {
-            // if no keyword is provided, use <uppercase property name> + defaultKeywordSuffix
-            string kw = string.IsNullOrEmpty(keyword) ? prop.name.ToUpperInvariant() + defaultKeywordSuffix : keyword;
-            // set or clear the keyword
-            foreach (Material material in prop.targets)
-            {
-                if (on)
-                    material.EnableKeyword(kw);
-                else
-                    material.DisableKeyword(kw);
-            }
         }
 
         public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
@@ -330,6 +313,39 @@ namespace UnityEditor
                 return;
 
             SetKeyword(prop, (Math.Abs(prop.floatValue) > 0.001f));
+        }
+    }
+
+
+    internal class MaterialToggleDrawer : MaterialToggleUIDrawer
+    {
+        protected readonly string keyword;
+        public MaterialToggleDrawer()
+        {
+        }
+
+        public MaterialToggleDrawer(string keyword)
+        {
+            this.keyword = keyword;
+        }
+
+        protected override void SetKeyword(MaterialProperty prop, bool on)
+        {
+            SetKeywordInternal(prop, on, "_ON");
+        }
+
+        protected void SetKeywordInternal(MaterialProperty prop, bool on, string defaultKeywordSuffix)
+        {
+            // if no keyword is provided, use <uppercase property name> + defaultKeywordSuffix
+            string kw = string.IsNullOrEmpty(keyword) ? prop.name.ToUpperInvariant() + defaultKeywordSuffix : keyword;
+            // set or clear the keyword
+            foreach (Material material in prop.targets)
+            {
+                if (on)
+                    material.EnableKeyword(kw);
+                else
+                    material.DisableKeyword(kw);
+            }
         }
     }
 

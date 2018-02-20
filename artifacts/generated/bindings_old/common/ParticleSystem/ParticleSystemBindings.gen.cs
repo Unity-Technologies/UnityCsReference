@@ -17,166 +17,6 @@ namespace UnityEngine
 public sealed partial class ParticleSystem : Component
 {
     [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Burst
-    {
-        
-                    private float m_Time;
-                    private MinMaxCurve m_Count;
-                    private int m_RepeatCount; 
-                    private float m_RepeatInterval;
-        
-                    public Burst(float _time, short _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
-        
-                    public Burst(float _time, short _minCount, short _maxCount) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
-        
-                    public Burst(float _time, short _minCount, short _maxCount, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; }
-        
-                    public Burst(float _time, MinMaxCurve _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
-        
-                    public Burst(float _time, MinMaxCurve _count, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = _count; m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; }
-        
-                    public float time { get { return m_Time; } set { m_Time = value; } }
-        
-                    public MinMaxCurve count { get { return m_Count; } set { m_Count = value; } }
-        
-                    public short minCount { get { return (short)m_Count.constantMin; } set { m_Count.constantMin = (short)value; } }
-        
-                    public short maxCount { get { return (short)m_Count.constantMax; } set { m_Count.constantMax = (short)value; } }
-        
-                    public int cycleCount { get { return m_RepeatCount + 1; } set { m_RepeatCount = value - 1; } }
-        
-                    public float repeatInterval { get { return m_RepeatInterval; } set { m_RepeatInterval = value; } }
-        
-        
-    }
-
-    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MinMaxCurve
-    {
-        
-                    private ParticleSystemCurveMode m_Mode;
-                    private float m_CurveMultiplier;
-                    private AnimationCurve m_CurveMin;
-                    private AnimationCurve m_CurveMax;
-                    private float m_ConstantMin;
-                    private float m_ConstantMax;
-        
-                    public MinMaxCurve(float constant) { m_Mode = ParticleSystemCurveMode.Constant; m_CurveMultiplier = 0.0f; m_CurveMin = null; m_CurveMax = null; m_ConstantMin = 0.0f; m_ConstantMax = constant; }
-        
-                    public MinMaxCurve(float multiplier, AnimationCurve curve) { m_Mode = ParticleSystemCurveMode.Curve; m_CurveMultiplier = multiplier; m_CurveMin = null; m_CurveMax = curve; m_ConstantMin = 0.0f; m_ConstantMax = 0.0f; }
-        
-                    public MinMaxCurve(float multiplier, AnimationCurve min, AnimationCurve max) { m_Mode = ParticleSystemCurveMode.TwoCurves; m_CurveMultiplier = multiplier; m_CurveMin = min; m_CurveMax = max; m_ConstantMin = 0.0f; m_ConstantMax = 0.0f; }
-        
-                    public MinMaxCurve(float min, float max) { m_Mode = ParticleSystemCurveMode.TwoConstants; m_CurveMultiplier = 0.0f; m_CurveMin = null; m_CurveMax = null; m_ConstantMin = min; m_ConstantMax = max; }
-        
-                    public ParticleSystemCurveMode mode { get { return m_Mode; } set { m_Mode = value; } }
-        
-                    public float curveMultiplier { get { return m_CurveMultiplier; } set { m_CurveMultiplier = value; } }
-        
-                    public AnimationCurve curveMax { get { return m_CurveMax; } set { m_CurveMax = value; } }
-        
-                    public AnimationCurve curveMin { get { return m_CurveMin; } set { m_CurveMin = value; } }
-        
-                    public float constantMax { get { return m_ConstantMax; } set { m_ConstantMax = value; } }
-        
-                    public float constantMin { get { return m_ConstantMin; } set { m_ConstantMin = value; } }
-        
-                    public float constant { get { return m_ConstantMax; } set { m_ConstantMax = value; } }
-        
-                    public AnimationCurve curve { get { return m_CurveMax; } set { m_CurveMax = value; } }
-        
-        public float Evaluate(float time) { return Evaluate(time, 1.0f); }
-        public float Evaluate(float time, float lerpFactor)
-            {
-                time = Mathf.Clamp(time, 0.0f, 1.0f);
-                lerpFactor = Mathf.Clamp(lerpFactor, 0.0f, 1.0f);
-
-                if (m_Mode == ParticleSystemCurveMode.Constant)
-                    return m_ConstantMax;
-
-                if (m_Mode == ParticleSystemCurveMode.TwoConstants)
-                    return Mathf.Lerp(m_ConstantMin, m_ConstantMax, lerpFactor);
-
-                float maxCurve = m_CurveMax.Evaluate(time) * m_CurveMultiplier;
-                if (m_Mode == ParticleSystemCurveMode.TwoCurves)
-                    return Mathf.Lerp(m_CurveMin.Evaluate(time) * m_CurveMultiplier, maxCurve, lerpFactor);
-                else
-                    return maxCurve;
-            }
-        
-                    static public implicit operator MinMaxCurve(float constant)
-            {
-                return new MinMaxCurve(constant);
-            }
-        
-        
-    }
-
-    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct MinMaxGradient
-    {
-        
-                    private ParticleSystemGradientMode m_Mode;
-                    private Gradient m_GradientMin;
-                    private Gradient m_GradientMax;
-                    private Color m_ColorMin;
-                    private Color m_ColorMax;
-        
-                    public MinMaxGradient(Color color) { m_Mode = ParticleSystemGradientMode.Color; m_GradientMin = null; m_GradientMax = null; m_ColorMin = Color.black; m_ColorMax = color; }
-        
-                    public MinMaxGradient(Gradient gradient) { m_Mode = ParticleSystemGradientMode.Gradient; m_GradientMin = null; m_GradientMax = gradient; m_ColorMin = Color.black; m_ColorMax = Color.black; }
-        
-                    public MinMaxGradient(Color min, Color max) { m_Mode = ParticleSystemGradientMode.TwoColors; m_GradientMin = null; m_GradientMax = null; m_ColorMin = min; m_ColorMax = max; }
-        
-                    public MinMaxGradient(Gradient min, Gradient max) { m_Mode = ParticleSystemGradientMode.TwoGradients; m_GradientMin = min; m_GradientMax = max; m_ColorMin = Color.black; m_ColorMax = Color.black; }
-        
-                    public ParticleSystemGradientMode mode { get { return m_Mode; } set { m_Mode = value; } }
-        
-                    public Gradient gradientMax { get { return m_GradientMax; } set { m_GradientMax = value; } }
-        
-                    public Gradient gradientMin { get { return m_GradientMin; } set { m_GradientMin = value; } }
-        
-                    public Color colorMax { get { return m_ColorMax; } set { m_ColorMax = value; } }
-        
-                    public Color colorMin { get { return m_ColorMin; } set { m_ColorMin = value; } }
-        
-                    public Color color { get { return m_ColorMax; } set { m_ColorMax = value; } }
-        
-                    public Gradient gradient { get { return m_GradientMax; } set { m_GradientMax = value; } }
-        
-        public Color Evaluate(float time) { return Evaluate(time, 1.0f); }
-        public Color Evaluate(float time, float lerpFactor)
-            {
-                time = Mathf.Clamp(time, 0.0f, 1.0f);
-                lerpFactor = Mathf.Clamp(lerpFactor, 0.0f, 1.0f);
-
-                if (m_Mode == ParticleSystemGradientMode.Color)
-                    return m_ColorMax;
-
-                if (m_Mode == ParticleSystemGradientMode.TwoColors)
-                    return Color.Lerp(m_ColorMin, m_ColorMax, lerpFactor);
-
-                Color maxGradient = m_GradientMax.Evaluate(time);
-                if (m_Mode == ParticleSystemGradientMode.TwoGradients)
-                    return Color.Lerp(m_GradientMin.Evaluate(time), maxGradient, lerpFactor);
-                else
-                    return maxGradient;
-            }
-        
-                    static public implicit operator MinMaxGradient(Color color)
-            {
-                return new MinMaxGradient(color);
-            }
-        
-                    static public implicit operator MinMaxGradient(Gradient gradient)
-            {
-                return new MinMaxGradient(gradient);
-            }
-        
-        
-    }
-
-    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct MainModule
     {
         
@@ -3203,170 +3043,28 @@ public sealed partial class ParticleSystem : Component
 
     }
 
-    [RequiredByNativeCode("particleSystemParticle", Optional = true)]
-    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct Particle
-    {
-        
-                    private Vector3 m_Position;
-                    private Vector3 m_Velocity;
-                    private Vector3 m_AnimatedVelocity;
-                    private Vector3 m_InitialVelocity;
-                    private Vector3 m_AxisOfRotation;
-                    private Vector3 m_Rotation;
-                    private Vector3 m_AngularVelocity;
-                    private Vector3 m_StartSize;
-                    private Color32 m_StartColor;
-                    private UInt32 m_RandomSeed;
-                    private float m_Lifetime;
-                    private float m_StartLifetime;
-                    private float m_EmitAccumulator0;
-                    private float m_EmitAccumulator1;
-        
-        
-        public Vector3 position { get { return m_Position; } set { m_Position = value; } }
-        
-        
-        public Vector3 velocity { get { return m_Velocity; } set { m_Velocity = value; } }
-        
-        
-        public Vector3 animatedVelocity { get { return m_AnimatedVelocity; } }
-        
-        
-        public Vector3 totalVelocity { get { return m_Velocity + m_AnimatedVelocity; } }
-        
-        
-        public float remainingLifetime { get { return m_Lifetime; } set { m_Lifetime = value; } }
-        
-        
-        public float startLifetime { get { return m_StartLifetime; } set { m_StartLifetime = value; } }
-        
-        
-        public float startSize { get { return m_StartSize.x; } set { m_StartSize = new Vector3(value, value, value); } }
-        public Vector3 startSize3D { get { return m_StartSize; } set { m_StartSize = value; } }
-        
-        
-        public Vector3 axisOfRotation { get { return m_AxisOfRotation; } set { m_AxisOfRotation = value; } }
-        
-        
-        public float rotation { get { return m_Rotation.z * Mathf.Rad2Deg; } set { m_Rotation = new Vector3(0.0f, 0.0f, value * Mathf.Deg2Rad); } }
-        public Vector3 rotation3D { get { return m_Rotation * Mathf.Rad2Deg; } set { m_Rotation = value * Mathf.Deg2Rad; } }
-        
-        
-        public float angularVelocity { get { return m_AngularVelocity.z * Mathf.Rad2Deg; } set { m_AngularVelocity.z = value * Mathf.Deg2Rad; } }
-        public Vector3 angularVelocity3D { get { return m_AngularVelocity * Mathf.Rad2Deg; } set { m_AngularVelocity = value * Mathf.Deg2Rad; } }
-        
-        
-        public Color32 startColor { get { return m_StartColor; } set { m_StartColor = value; } }
-        
-        
-        public UInt32 randomSeed { get { return m_RandomSeed; } set { m_RandomSeed = value; } }
-        
-        public float GetCurrentSize(ParticleSystem system) { return GetCurrentSize(system, ref this); }
-        public Vector3 GetCurrentSize3D(ParticleSystem system) { return GetCurrentSize3D(system, ref this); }
-        
-        public Color32 GetCurrentColor(ParticleSystem system) { return GetCurrentColor(system, ref this); }
-        
-        
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  float GetCurrentSize (ParticleSystem system, ref ParticleSystem.Particle particle) ;
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern internal float GetParticleCurrentSize (ref ParticleSystem.Particle particle) ;
 
-        private static Vector3 GetCurrentSize3D (ParticleSystem system, ref ParticleSystem.Particle particle) {
-            Vector3 result;
-            INTERNAL_CALL_GetCurrentSize3D ( system, ref particle, out result );
-            return result;
-        }
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        private extern static void INTERNAL_CALL_GetCurrentSize3D (ParticleSystem system, ref ParticleSystem.Particle particle, out Vector3 value);
-        private static Color32 GetCurrentColor (ParticleSystem system, ref ParticleSystem.Particle particle) {
-            Color32 result;
-            INTERNAL_CALL_GetCurrentColor ( system, ref particle, out result );
-            return result;
-        }
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        private extern static void INTERNAL_CALL_GetCurrentColor (ParticleSystem system, ref ParticleSystem.Particle particle, out Color32 value);
+    internal Vector3 GetParticleCurrentSize3D (ref ParticleSystem.Particle particle) {
+        Vector3 result;
+        INTERNAL_CALL_GetParticleCurrentSize3D ( this, ref particle, out result );
+        return result;
     }
 
-    [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public partial struct EmitParams
-    {
-        
-                    internal Particle m_Particle;
-                    internal bool m_PositionSet;
-                    internal bool m_VelocitySet;
-                    internal bool m_AxisOfRotationSet;
-                    internal bool m_RotationSet;
-                    internal bool m_AngularVelocitySet;
-                    internal bool m_StartSizeSet;
-                    internal bool m_StartColorSet;
-                    internal bool m_RandomSeedSet;
-                    internal bool m_StartLifetimeSet;
-                    internal bool m_ApplyShapeToPosition;
-        
-        
-        public Vector3 position { get { return m_Particle.position; } set { m_Particle.position = value; m_PositionSet = true; } }
-        public bool applyShapeToPosition { get { return m_ApplyShapeToPosition; } set { m_ApplyShapeToPosition = value; } }
-        
-        
-        public Vector3 velocity { get { return m_Particle.velocity; } set { m_Particle.velocity = value; m_VelocitySet = true; } }
-        
-        
-        public float startLifetime { get { return m_Particle.startLifetime; } set { m_Particle.startLifetime = value; m_StartLifetimeSet = true; } }
-        
-        
-        public float startSize { get { return m_Particle.startSize; } set { m_Particle.startSize = value; m_StartSizeSet = true; } }
-        public Vector3 startSize3D { get { return m_Particle.startSize3D; } set { m_Particle.startSize3D = value; m_StartSizeSet = true; } }
-        
-        
-        public Vector3 axisOfRotation { get { return m_Particle.axisOfRotation; } set { m_Particle.axisOfRotation = value; m_AxisOfRotationSet = true; } }
-        
-        
-        public float rotation { get { return m_Particle.rotation; } set { m_Particle.rotation = value; m_RotationSet = true; } }
-        public Vector3 rotation3D { get { return m_Particle.rotation3D; } set { m_Particle.rotation3D = value; m_RotationSet = true; } }
-        
-        
-        public float angularVelocity { get { return m_Particle.angularVelocity; } set { m_Particle.angularVelocity = value; m_AngularVelocitySet = true; } }
-        public Vector3 angularVelocity3D { get { return m_Particle.angularVelocity3D; } set { m_Particle.angularVelocity3D = value; m_AngularVelocitySet = true; } }
-        
-        
-        public Color32 startColor { get { return m_Particle.startColor; } set { m_Particle.startColor = value; m_StartColorSet = true; } }
-        
-        
-        public UInt32 randomSeed { get { return m_Particle.randomSeed; } set { m_Particle.randomSeed = value; m_RandomSeedSet = true; } }
-        
-        
-        public void ResetPosition() { m_PositionSet = false; }
-        
-        
-        public void ResetVelocity() { m_VelocitySet = false; }
-        
-        
-        public void ResetAxisOfRotation() { m_AxisOfRotationSet = false; }
-        
-        
-        public void ResetRotation() { m_RotationSet = false; }
-        
-        
-        public void ResetAngularVelocity() { m_AngularVelocitySet = false; }
-        
-        
-        public void ResetStartSize() { m_StartSizeSet = false; }
-        
-        
-        public void ResetStartColor() { m_StartColorSet = false; }
-        
-        
-        public void ResetRandomSeed() { m_RandomSeedSet = false; }
-        
-        
-        public void ResetStartLifetime() { m_StartLifetimeSet = false; }
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetParticleCurrentSize3D (ParticleSystem self, ref ParticleSystem.Particle particle, out Vector3 value);
+    internal Color32 GetParticleCurrentColor (ref ParticleSystem.Particle particle) {
+        Color32 result;
+        INTERNAL_CALL_GetParticleCurrentColor ( this, ref particle, out result );
+        return result;
     }
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    private extern static void INTERNAL_CALL_GetParticleCurrentColor (ParticleSystem self, ref ParticleSystem.Particle particle, out Color32 value);
     public extern bool isPlaying
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -3430,6 +3128,13 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         set;
+    }
+
+    public extern bool automaticCullingEnabled
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
     }
 
     public MainModule main { get { return new MainModule(this); } }

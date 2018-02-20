@@ -195,6 +195,7 @@ namespace UnityEditor
             var assetPath = GetSelectionAssetPath();
             var ai = AssetImporter.GetAtPath(assetPath);
             var dataProvider = ai as ISpriteEditorDataProvider;
+            bool updateModules = false;
 
             if (dataProvider == null || selectedProviderChanged)
             {
@@ -203,6 +204,7 @@ namespace UnityEditor
                 ResetWindow();
                 RefreshPropertiesCache();
                 RefreshRects();
+                updateModules = true;
             }
 
             if (m_RectsCache != null)
@@ -216,7 +218,9 @@ namespace UnityEditor
                 }
             }
 
-            UpdateAvailableModules();
+            // We only update modules when data provider changed
+            if (updateModules)
+                UpdateAvailableModules();
             Repaint();
         }
 
@@ -321,13 +325,13 @@ namespace UnityEditor
 
             if (m_ResetOnNextRepaint || selectedProviderChanged || m_RectsCache == null)
             {
+                m_ResetOnNextRepaint = false;
                 HandleApplyRevertDialog(SpriteEditorWindowStyles.applyRevertDialogTitle.text, SpriteEditorWindowStyles.pendingChangesDialogContent.text);
                 ResetWindow();
                 RefreshPropertiesCache();
                 RefreshRects();
                 UpdateAvailableModules();
                 SetupModule(m_CurrentModuleIndex);
-                m_ResetOnNextRepaint = false;
             }
             Matrix4x4 oldHandlesMatrix = Handles.matrix;
 
@@ -625,15 +629,16 @@ namespace UnityEditor
             if (s_Instance == null)
                 return;
 
-            if (m_CurrentModule != null)
-                m_CurrentModule.OnModuleDeactivate();
-
-            m_CurrentModule = null;
             if (m_RegisteredModules.Count > newModuleIndex)
             {
+                m_CurrentModuleIndex = newModuleIndex;
+                if (m_CurrentModule != null)
+                    m_CurrentModule.OnModuleDeactivate();
+
+                m_CurrentModule = null;
+
                 m_CurrentModule = m_RegisteredModules[newModuleIndex];
                 m_CurrentModule.OnModuleActivate();
-                m_CurrentModuleIndex = newModuleIndex;
             }
         }
 

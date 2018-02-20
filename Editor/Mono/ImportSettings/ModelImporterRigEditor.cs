@@ -671,6 +671,21 @@ With this option, this model will not create any avatar but only import animatio
                 if (!m_CopyAvatar.hasMultipleDifferentValues)
                     newModelSettings[i].copyAvatar = m_CopyAvatar.boolValue;
             }
+
+            for (int i = 0; i < targets.Length; i++)
+            {
+                if (!m_CopyAvatar.boolValue && !newModelSettings[i].humanoid && rootIndex > 0)
+                {
+                    ModelImporter importer = targets[i] as ModelImporter;
+                    GameObject go = AssetDatabase.LoadMainAssetAtPath(importer.assetPath) as GameObject;
+                    Transform rootMotionTransform = go.transform.Find(m_RootMotionBoneList[rootIndex].text);
+
+                    if (rootMotionTransform != null)
+                    {
+                        m_RootMotionBoneRotation.quaternionValue = rootMotionTransform.rotation;
+                    }
+                }
+            }
         }
 
         internal override void PostApply()
@@ -704,13 +719,6 @@ With this option, this model will not create any avatar but only import animatio
                     {
                         go = Instantiate(go) as GameObject;
                         AnimatorUtility.DeoptimizeTransformHierarchy(go);
-                    }
-
-                    Transform rootMotionTransform = go.transform.Find(m_RootMotionBoneList[rootIndex].text);
-
-                    if (rootMotionTransform != null)
-                    {
-                        m_RootMotionBoneRotation.quaternionValue = rootMotionTransform.rotation;
                     }
 
                     SerializedObject so = new SerializedObject(targets[i]);

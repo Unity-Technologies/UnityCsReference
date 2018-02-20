@@ -76,6 +76,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Orientation orientation { get; private set; }
 
+        public enum Capacity
+        {
+            Single,
+            Multi
+        }
+
+        public Capacity capacity { get; private set; }
+
         private string m_VisualClass;
         public string visualClass
         {
@@ -231,6 +239,30 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         internal Action<Port> OnConnect;
         internal Action<Port> OnDisconnect;
 
+        public Edge ConnectTo(Port other)
+        {
+            return ConnectTo<Edge>(other);
+        }
+
+        public T ConnectTo<T>(Port other) where T : Edge, new()
+        {
+            if (other == null)
+                throw new ArgumentNullException("Port.ConnectTo<T>() other argument is null");
+
+            if (other.direction == this.direction)
+                throw new ArgumentException("Cannot connect two ports with the same direction");
+
+            var edge = new T();
+
+            edge.output = direction == Direction.Output ? this : other;
+            edge.input = direction == Direction.Input ? this : other;
+
+            this.Connect(edge);
+            other.Connect(edge);
+
+            return edge;
+        }
+
         public virtual void Connect(Edge edge)
         {
             if (edge == null)
@@ -301,10 +333,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             private GraphViewChange m_GraphViewChange;
             private List<Edge> m_EdgesToCreate;
+            private List<GraphElement> m_EdgesToDelete;
 
             public DefaultEdgeConnectorListener()
             {
                 m_EdgesToCreate = new List<Edge>();
+                m_EdgesToDelete = new List<GraphElement>();
+
                 m_GraphViewChange.edgesToCreate = m_EdgesToCreate;
             }
 
@@ -313,6 +348,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 m_EdgesToCreate.Clear();
                 m_EdgesToCreate.Add(edge);
+
+                // We can't just add these edges to delete to the m_GraphViewChange
+                // because we want the proper deletion code in GraphView to also
+                // be called. Of course, that code (in DeleteElements) also
+                // sends a GraphViewChange.
+                m_EdgesToDelete.Clear();
+                if (edge.input.capacity == Capacity.Single)
+                    foreach (Edge edgeToDelete in edge.input.connections)
+                        if (edgeToDelete != edge)
+                            m_EdgesToDelete.Add(edgeToDelete);
+                if (edge.output.capacity == Capacity.Single)
+                    foreach (Edge edgeToDelete in edge.output.connections)
+                        if (edgeToDelete != edge)
+                            m_EdgesToDelete.Add(edgeToDelete);
+                if (m_EdgesToDelete.Count > 0)
+                    graphView.DeleteElements(m_EdgesToDelete);
 
                 var edgesToCreate = m_EdgesToCreate;
                 if (graphView.graphViewChanged != null)
@@ -360,10 +411,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         // TODO This is a workaround to avoid having a generic type for the port as generic types mess with USS.
-        public static Port Create<TEdge>(Orientation orientation, Direction direction, Type type) where TEdge : Edge, new()
+        public static Port Create<TEdge>(Orientation orientation, Direction direction, Capacity capacity, Type type) where TEdge : Edge, new()
         {
             var connectorListener = new DefaultEdgeConnectorListener();
-            var port = new Port(orientation, direction, type)
+            var port = new Port(orientation, direction, capacity, type)
             {
                 m_EdgeConnector = new EdgeConnector<TEdge>(connectorListener),
             };
@@ -377,7 +428,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             where TEdge : Edge, new()
         {
             var connectorListener = new DefaultEdgePresenterConnectorListener<TEdgePresenter>();
-            var port = new Port(Orientation.Horizontal, Direction.Input, typeof(object))
+            var port = new Port(Orientation.Horizontal, Direction.Input, Capacity.Multi, typeof(object))
             {
                 m_EdgeConnector = new EdgeConnector<TEdge>(connectorListener),
                 presenter = presenter
@@ -393,7 +444,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return new VisualElement();
         }
 
-        protected Port(Orientation portOrientation, Direction portDirection, Type type)
+        protected Port(Orientation portOrientation, Direction portDirection, Capacity portCapacity, Type type)
         {
             // currently we don't want to be styled as .graphElement since we're contained in a Node
             ClearClassList();
@@ -411,10 +462,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             orientation = portOrientation;
             direction = portDirection;
             portType = type;
+            capacity = portCapacity;
 
             AddToClassList(portDirection.ToString().ToLower());
         }
 
+        // TODO: Remove when removing presenters.
         private void UpdateConnector()
         {
             if (m_EdgeConnector == null)

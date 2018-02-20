@@ -10,7 +10,6 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor.Experimental.Build.AssetBundle
 {
-    [NativeType(CodegenOptions.Custom, "SInt32")]
     public enum FileType
     {
         NonAssetType = 0,
@@ -42,7 +41,7 @@ namespace UnityEditor.Experimental.Build.AssetBundle
 
         public override string ToString()
         {
-            return UnityString.Format("{{guid: {0}, fileID: {1}, type: {2}, path: {3}}}", m_GUID, m_LocalIdentifierInFile, m_FileType, m_FilePath);
+            return UnityString.Format("{{ guid: {0}, fileID: {1}, type: {2}, path: {3}}}", m_GUID, m_LocalIdentifierInFile, m_FileType, m_FilePath);
         }
 
         public static bool operator==(ObjectIdentifier a, ObjectIdentifier b)

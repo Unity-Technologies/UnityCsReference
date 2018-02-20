@@ -4,7 +4,7 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    internal abstract class ContextualMenuManager
+    public abstract class ContextualMenuManager
     {
         public abstract void DisplayMenuIfEventMatches(EventBase evt, IEventHandler eventHandler);
 

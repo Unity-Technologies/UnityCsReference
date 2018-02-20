@@ -4,10 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
+using Debug = UnityEngine.Debug;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -21,6 +23,9 @@ namespace UnityEditor
         public PreviewScene(string sceneName)
         {
             m_Scene = EditorSceneManager.NewPreviewScene();
+            if (!m_Scene.IsValid())
+                throw new InvalidOperationException("Preview scene could not be created");
+
             m_Scene.name = sceneName;
 
             var camGO = EditorUtility.CreateGameObjectWithHideFlags("Preview Scene Camera", HideFlags.HideAndDontSave, typeof(Camera));
@@ -86,6 +91,8 @@ namespace UnityEditor
         private bool m_PixelPerfect;
         private Material m_InvisibleMaterial;
 
+        private string m_Type;
+
         public PreviewRenderUtility(bool renderFullScene) : this()
         {}
 
@@ -111,6 +118,34 @@ namespace UnityEditor
             Light1.color = new Color(.4f, .4f, .45f, 0f) * .7f;
 
             m_PixelPerfect = false;
+
+            if (Unsupported.IsDeveloperMode())
+            {
+                var stackTrace = new StackTrace();
+                for (int i = 0; i < stackTrace.FrameCount; i++)
+                {
+                    var frame = stackTrace.GetFrame(i);
+                    var type = frame.GetMethod().DeclaringType;
+                    if (type != null && (type.IsSubclassOf(typeof(Editor)) || type.IsSubclassOf(typeof(EditorWindow))))
+                    {
+                        m_Type = type.Name;
+                        break;
+                    }
+                }
+            }
+        }
+
+        ~PreviewRenderUtility()
+        {
+            if (m_Type != null)
+            {
+                Debug.LogErrorFormat("{0} created a PreviewRenderUtility but didn't call its Cleanup() during OnDisable. This is leaking the Preview scene in the Editor and should be fixed.", m_Type);
+            }
+            else
+            {
+                Debug.LogError("A PreviewRenderUtility was not clean up properly before assembly reloading which lead to leaking this scene in the Editor. " +
+                    "This can be caused by not calling Cleanup() during the OnDisable of an Editor or an EditorWindow.");
+            }
         }
 
         internal static void SetEnabledRecursive(GameObject go, bool enabled)
@@ -178,6 +213,7 @@ namespace UnityEditor
             }
 
             previewScene.Dispose();
+            GC.SuppressFinalize(this);
         }
 
         public void BeginPreview(Rect r, GUIStyle previewBackground)

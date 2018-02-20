@@ -147,7 +147,16 @@ namespace UnityEngine
 
         public StylePainter()
         {
-            Init();
+            m_Ptr = Internal_Create();
+        }
+
+        ~StylePainter()
+        {
+            if (m_Ptr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
         }
 
         public StylePainter(Vector2 pos)
@@ -164,7 +173,7 @@ namespace UnityEngine
             var borderWidths = painterParams.border.GetWidths();
             var borderRadiuses = painterParams.border.GetRadiuses();
 
-            DrawRect_Internal(screenRect, color * m_OpacityColor, borderWidths, borderRadiuses);
+            DrawRect(screenRect, color * m_OpacityColor, borderWidths, borderRadiuses);
         }
 
         public void DrawTexture(TextureStylePainterParameters painterParams)
@@ -181,6 +190,9 @@ namespace UnityEngine
             bool usePremultiplyAlpha = painterParams.usePremultiplyAlpha;
 
             Rect textureRect = screenRect;
+
+            /// Comparing aspects ratio is error-prone because the <c>screenRect</c> may end up being scaled by the
+            /// transform and the corners will end up being pixel aligned, possibly resulting in blurriness.
             float srcAspect = (texture.width * sourceRect.width) / (texture.height * sourceRect.height);
             float destAspect = screenRect.width / screenRect.height;
             switch (scaleMode)
@@ -220,7 +232,7 @@ namespace UnityEngine
             var borderWidths = painterParams.border.GetWidths();
             var borderRadiuses = painterParams.border.GetRadiuses();
 
-            DrawTexture_Internal(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidths, borderRadiuses, sliceLeft, sliceTop, sliceRight, sliceBottom, usePremultiplyAlpha);
+            DrawTexture(textureRect, texture, sourceRect, color * m_OpacityColor, borderWidths, borderRadiuses, sliceLeft, sliceTop, sliceRight, sliceBottom, usePremultiplyAlpha);
         }
 
         public void DrawText(TextStylePainterParameters painterParams)
@@ -237,7 +249,7 @@ namespace UnityEngine
             bool richText = painterParams.richText;
             TextClipping clipping = painterParams.clipping;
 
-            DrawText_Internal(screenRect, text, font, fontSize, fontStyle, fontColor * m_OpacityColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
+            DrawText(screenRect, text, font, fontSize, fontStyle, fontColor * m_OpacityColor, anchor, wordWrap, wordWrapWidth, richText, clipping);
         }
 
         public Vector2 GetCursorPosition(CursorPositionStylePainterParameters painterParams)
@@ -258,7 +270,7 @@ namespace UnityEngine
             Rect rect = painterParams.rect;
             int cursorIndex = painterParams.cursorIndex;
 
-            return GetCursorPosition_Internal(text, font, fontSize, fontStyle, anchor, wordWrapWidth, richText, rect, cursorIndex);
+            return GetCursorPosition(text, font, fontSize, fontStyle, anchor, wordWrapWidth, richText, rect, cursorIndex);
         }
 
         public float ComputeTextWidth(TextStylePainterParameters painterParams)
@@ -272,7 +284,7 @@ namespace UnityEngine
             TextAnchor anchor = painterParams.anchor;
             bool richText = painterParams.richText;
 
-            return ComputeTextWidth_Internal(text, wordWrapWidth, wordWrap, font, fontSize, fontStyle, anchor, richText);
+            return ComputeTextWidth(text, wordWrapWidth, wordWrap, font, fontSize, fontStyle, anchor, richText);
         }
 
         public float ComputeTextHeight(TextStylePainterParameters painterParams)
@@ -286,7 +298,7 @@ namespace UnityEngine
             TextAnchor anchor = painterParams.anchor;
             bool richText = painterParams.richText;
 
-            return ComputeTextHeight_Internal(text, wordWrapWidth, wordWrap, font, fontSize, fontStyle, anchor, richText);
+            return ComputeTextHeight(text, wordWrapWidth, wordWrap, font, fontSize, fontStyle, anchor, richText);
         }
 
         public Matrix4x4 currentTransform { get; set; }

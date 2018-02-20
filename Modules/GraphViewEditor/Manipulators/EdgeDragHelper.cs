@@ -110,7 +110,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return false;
             }
 
+            if (edgeCandidate.parent == null)
+            {
+                m_GraphView.AddElement(edgeCandidate);
+            }
+
             bool startFromOutput = (draggedPort.direction == Direction.Output);
+
+            edgeCandidate.candidatePosition = mousePosition;
 
             if (startFromOutput)
             {
@@ -125,19 +132,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             draggedPort.portCapLit = true;
 
-            if (edgeCandidate.parent == null)
-            {
-                m_GraphView.AddElement(edgeCandidate);
-            }
-            edgeCandidate.candidatePosition = mousePosition;
 
             m_CompatiblePorts = m_GraphView.GetCompatiblePorts(draggedPort, s_nodeAdapter);
 
             // Only light compatible anchors when dragging an edge.
-            foreach (Port port in m_GraphView.ports.ToList())
-            {
-                port.highlight = false;
-            }
+            m_GraphView.ports.ForEach((p) => p.highlight = false);
 
             foreach (Port compatiblePort in m_CompatiblePorts)
             {
@@ -257,10 +256,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Vector2 mousePosition = evt.mousePosition;
 
             // Reset the highlights.
-            foreach (Port port in m_GraphView.ports.ToList())
-            {
-                port.highlight = true;
-            }
+            m_GraphView.ports.ForEach((p) => p.highlight = true);
 
             // Clean up ghost edges.
             if (m_GhostEdge != null)

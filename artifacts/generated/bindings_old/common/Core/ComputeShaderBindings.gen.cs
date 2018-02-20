@@ -13,194 +13,11 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Collections;
 using System.Collections.Generic;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
-
-
-public sealed partial class ComputeShader : Object
-{
-    private ComputeShader() {}
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public int FindKernel (string name) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public bool HasKernel (string name) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void GetKernelThreadGroupSizes (int kernelIndex, out uint x, out uint y, out uint z) ;
-
-    public void SetFloat(string name, float val)
-        {
-            SetFloat(Shader.PropertyToID(name), val);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetFloat (int nameID, float val) ;
-
-    public void SetInt(string name, int val)
-        {
-            SetInt(Shader.PropertyToID(name), val);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetInt (int nameID, int val) ;
-
-    public void SetBool(string name, bool val)
-        {
-            SetInt(name, val ? 1 : 0);
-        }
-    
-    
-    public void SetBool(int nameID, bool val)
-        {
-            SetInt(nameID, val ? 1 : 0);
-        }
-    
-    
-    public void SetVector(string name, Vector4 val)
-        {
-            SetVector(Shader.PropertyToID(name), val);
-        }
-    
-    
-    public void SetVector (int nameID, Vector4 val) {
-        INTERNAL_CALL_SetVector ( this, nameID, ref val );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetVector (ComputeShader self, int nameID, ref Vector4 val);
-    public void SetVectorArray(string name, Vector4[] values)
-        {
-            SetVectorArray(Shader.PropertyToID(name), values);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetVectorArray (int nameID, Vector4[] values) ;
-
-    public void SetMatrix(string name, Matrix4x4 val)
-        {
-            SetMatrix(Shader.PropertyToID(name), val);
-        }
-    
-    
-    public void SetMatrix (int nameID, Matrix4x4 val) {
-        INTERNAL_CALL_SetMatrix ( this, nameID, ref val );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_SetMatrix (ComputeShader self, int nameID, ref Matrix4x4 val);
-    public void SetMatrixArray(string name, Matrix4x4[] values)
-        {
-            SetMatrixArray(Shader.PropertyToID(name), values);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetMatrixArray (int nameID, Matrix4x4[] values) ;
-
-    public void SetFloats(string name, params float[] values)
-        {
-            Internal_SetFloats(Shader.PropertyToID(name), values);
-        }
-    
-    
-    public void SetFloats(int nameID, params float[] values)
-        {
-            Internal_SetFloats(nameID, values);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Internal_SetFloats (int nameID, float[] values) ;
-
-    public void SetInts(string name, params int[] values)
-        {
-            Internal_SetInts(Shader.PropertyToID(name), values);
-        }
-    
-    
-    public void SetInts(int nameID, params int[] values)
-        {
-            Internal_SetInts(nameID, values);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Internal_SetInts (int nameID, int[] values) ;
-
-    public void SetTexture(int kernelIndex, string name, Texture texture)
-        {
-            SetTexture(kernelIndex, Shader.PropertyToID(name), texture);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetTexture (int kernelIndex, int nameID, Texture texture) ;
-
-    public void SetTextureFromGlobal(int kernelIndex, string name, string globalTextureName)
-        {
-            SetTextureFromGlobal(kernelIndex, Shader.PropertyToID(name), Shader.PropertyToID(globalTextureName));
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetTextureFromGlobal (int kernelIndex, int nameID, int globalTextureNameID) ;
-
-    public void SetBuffer(int kernelIndex, string name, ComputeBuffer buffer)
-        {
-            SetBuffer(kernelIndex, Shader.PropertyToID(name), buffer);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetBuffer (int kernelIndex, int nameID, ComputeBuffer buffer) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void Dispatch (int kernelIndex, int threadGroupsX, int threadGroupsY, int threadGroupsZ) ;
-
-    [uei.ExcludeFromDocs]
-public void DispatchIndirect (int kernelIndex, ComputeBuffer argsBuffer) {
-    uint argsOffset = 0;
-    DispatchIndirect ( kernelIndex, argsBuffer, argsOffset );
-}
-
-public void DispatchIndirect(int kernelIndex, ComputeBuffer argsBuffer, [uei.DefaultValue("0")]  uint argsOffset )
-        {
-            if (argsBuffer == null) throw new ArgumentNullException("argsBuffer");
-            if (argsBuffer.m_Ptr == IntPtr.Zero) throw new System.ObjectDisposedException("argsBuffer");
-
-            Internal_DispatchIndirect(kernelIndex, argsBuffer, argsOffset);
-        }
-
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Internal_DispatchIndirect (int kernelIndex, ComputeBuffer argsBuffer, uint argsOffset) ;
-
-}
-
 [UsedByNativeCode]
 public sealed partial class ComputeBuffer : IDisposable
 {
@@ -261,9 +78,9 @@ public sealed partial class ComputeBuffer : IDisposable
                 throw new ArgumentException("Attempting to create a zero length compute buffer", "count");
             }
 
-            if (stride < 0)
+            if (stride <= 0)
             {
-                throw new ArgumentException("Attempting to create a compute buffer with a negative stride", "stride");
+                throw new ArgumentException("Attempting to create a compute buffer with a negative or null stride", "stride");
             }
 
             m_Ptr = IntPtr.Zero;
@@ -306,7 +123,10 @@ public sealed partial class ComputeBuffer : IDisposable
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            InternalSetData(data, 0, 0, data.Length, Marshal.SizeOf(data.GetType().GetElementType()));
+            if (!UnsafeUtility.IsBlittable(data.GetType().GetElementType()))
+                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(array) must be blittable", data.GetType().GetElementType()));
+
+            InternalSetData(data, 0, 0, data.Length, UnsafeUtility.SizeOf(data.GetType().GetElementType()));
         }
     
     
@@ -317,7 +137,18 @@ public sealed partial class ComputeBuffer : IDisposable
             if (data == null)
                 throw new ArgumentNullException("data");
 
+            if (!UnsafeUtility.IsBlittable(typeof(T)))
+                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(List<>)) must be blittable", typeof(T)));
+
             InternalSetData(NoAllocHelpers.ExtractArrayFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
+        }
+    
+    
+    
+            [System.Security.SecuritySafeCritical] 
+    unsafe public void SetData<T>(NativeArray<T> data) where T : struct
+        {
+            InternalSetNativeData((IntPtr)data.GetUnsafeReadOnlyPtr(), 0, 0, data.Length, UnsafeUtility.SizeOf<T>());
         }
     
     
@@ -327,6 +158,9 @@ public sealed partial class ComputeBuffer : IDisposable
         {
             if (data == null)
                 throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsBlittable(data.GetType().GetElementType()))
+                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(array) must be blittable", data.GetType().GetElementType()));
 
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
@@ -342,6 +176,9 @@ public sealed partial class ComputeBuffer : IDisposable
             if (data == null)
                 throw new ArgumentNullException("data");
 
+            if (!UnsafeUtility.IsBlittable(typeof(T)))
+                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(List<>)) must be blittable", typeof(T)));
+
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
 
@@ -349,6 +186,22 @@ public sealed partial class ComputeBuffer : IDisposable
         }
     
     
+    
+            [System.Security.SecuritySafeCritical] 
+    public unsafe void SetData<T>(NativeArray<T> data, int nativeBufferStartIndex, int computeBufferStartIndex, int count) where T : struct
+        {
+            if (nativeBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || nativeBufferStartIndex + count > data.Length)
+                throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (nativeBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", nativeBufferStartIndex, computeBufferStartIndex, count));
+
+            InternalSetNativeData((IntPtr)data.GetUnsafeReadOnlyPtr(), nativeBufferStartIndex, computeBufferStartIndex, count, UnsafeUtility.SizeOf<T>());
+        }
+    
+    
+    [System.Security.SecurityCritical] 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void InternalSetNativeData (IntPtr data, int nativeBufferStartIndex, int computeBufferStartIndex, int count, int elemSize) ;
+
     [System.Security.SecurityCritical] 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -361,6 +214,9 @@ public sealed partial class ComputeBuffer : IDisposable
             if (data == null)
                 throw new ArgumentNullException("data");
 
+            if (!UnsafeUtility.IsBlittable(data.GetType().GetElementType()))
+                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.GetData(array) must be blittable", data.GetType().GetElementType()));
+
             InternalGetData(data, 0, 0, data.Length, Marshal.SizeOf(data.GetType().GetElementType()));
         }
     
@@ -371,6 +227,9 @@ public sealed partial class ComputeBuffer : IDisposable
         {
             if (data == null)
                 throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsBlittable(data.GetType().GetElementType()))
+                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.GetData(array) must be blittable", data.GetType().GetElementType()));
 
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count argument (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
