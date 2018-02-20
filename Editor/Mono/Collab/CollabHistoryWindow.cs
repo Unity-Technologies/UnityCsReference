@@ -137,7 +137,7 @@ namespace UnityEditor
 
             var waitingView = new StatusView()
             {
-                message = "Connecting...",
+                message = "Updating...",
             };
 
             var historyView = new ScrollView() { name = "HistoryContainer", showHorizontal = false};
@@ -182,38 +182,41 @@ namespace UnityEditor
             var isFullDateObtained = false; // Has everything from this date been obtained?
             m_HistoryItems.Clear();
 
-            DateTime currentDate = DateTime.MinValue;
-            foreach (var data in datas)
+            if (datas != null)
             {
-                if (data.timeStamp.Date != currentDate.Date)
+                DateTime currentDate = DateTime.MinValue;
+                foreach (var data in datas)
                 {
-                    elements.Add(new CollabHistoryRevisionLine(data.timeStamp, isFullDateObtained));
-                    currentDate = data.timeStamp;
-                }
+                    if (data.timeStamp.Date != currentDate.Date)
+                    {
+                        elements.Add(new CollabHistoryRevisionLine(data.timeStamp, isFullDateObtained));
+                        currentDate = data.timeStamp;
+                    }
 
-                var item = new CollabHistoryItem(data);
-                m_HistoryItems.Add(item);
+                    var item = new CollabHistoryItem(data);
+                    m_HistoryItems.Add(item);
 
-                var container = new VisualContainer();
-                container.style.flexDirection = FlexDirection.Row;
-                if (data.current)
-                {
-                    isFullDateObtained = true;
-                    container.AddToClassList("currentRevision");
-                    container.AddToClassList("obtainedRevision");
+                    var container = new VisualContainer();
+                    container.style.flexDirection = FlexDirection.Row;
+                    if (data.current)
+                    {
+                        isFullDateObtained = true;
+                        container.AddToClassList("currentRevision");
+                        container.AddToClassList("obtainedRevision");
+                    }
+                    else if (data.obtained)
+                    {
+                        container.AddToClassList("obtainedRevision");
+                    }
+                    else
+                    {
+                        container.AddToClassList("absentRevision");
+                    }
+                    // If we use the index as-is, the latest commit will become #1, but we want it to be last
+                    container.Add(new CollabHistoryRevisionLine(data.index));
+                    container.Add(item);
+                    elements.Add(container);
                 }
-                else if (data.obtained)
-                {
-                    container.AddToClassList("obtainedRevision");
-                }
-                else
-                {
-                    container.AddToClassList("absentRevision");
-                }
-                // If we use the index as-is, the latest commit will become #1, but we want it to be last
-                container.Add(new CollabHistoryRevisionLine(data.index));
-                container.Add(item);
-                elements.Add(container);
             }
 
             m_Pager.totalItems = totalRevisions;

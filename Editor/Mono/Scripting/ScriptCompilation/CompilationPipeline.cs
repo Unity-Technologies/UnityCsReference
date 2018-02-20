@@ -17,6 +17,16 @@ namespace UnityEditor.Compilation
         EditorAssembly = (1 << 0)
     }
 
+    public class ScriptCompilerOptions
+    {
+        public bool AllowUnsafeCode { get; set; }
+
+        public ScriptCompilerOptions()
+        {
+            AllowUnsafeCode = false;
+        }
+    }
+
     public class Assembly
     {
         public string name { get; private set; }
@@ -26,10 +36,36 @@ namespace UnityEditor.Compilation
         public Assembly[] assemblyReferences { get; private set; }
         public string[] compiledAssemblyReferences { get; private set; }
         public AssemblyFlags flags { get; private set; }
+        public ScriptCompilerOptions compilerOptions { get; private set; }
 
         public string[] allReferences { get { return assemblyReferences.Select(a => a.outputPath).Concat(compiledAssemblyReferences).ToArray(); } }
 
-        public Assembly(string name, string outputPath, string[] sourceFiles, string[] defines, Assembly[] assemblyReferences, string[] compiledAssemblyReferences, AssemblyFlags flags)
+        public Assembly(string name,
+                        string outputPath,
+                        string[] sourceFiles,
+                        string[] defines,
+                        Assembly[] assemblyReferences,
+                        string[] compiledAssemblyReferences,
+                        AssemblyFlags flags)
+            : this(name,
+                   outputPath,
+                   sourceFiles,
+                   defines,
+                   assemblyReferences,
+                   compiledAssemblyReferences,
+                   flags,
+                   new ScriptCompilerOptions())
+        {
+        }
+
+        public Assembly(string name,
+                        string outputPath,
+                        string[] sourceFiles,
+                        string[] defines,
+                        Assembly[] assemblyReferences,
+                        string[] compiledAssemblyReferences,
+                        AssemblyFlags flags,
+                        ScriptCompilerOptions compilerOptions)
         {
             this.name = name;
             this.outputPath = outputPath;
@@ -38,6 +74,7 @@ namespace UnityEditor.Compilation
             this.assemblyReferences = assemblyReferences;
             this.compiledAssemblyReferences = compiledAssemblyReferences;
             this.flags = flags;
+            this.compilerOptions = compilerOptions;
         }
     }
 
@@ -98,7 +135,8 @@ namespace UnityEditor.Compilation
 
         public static Assembly[] GetAssemblies()
         {
-            return GetAssemblies(EditorCompilationInterface.Instance);
+            var options = EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions();
+            return GetAssemblies(EditorCompilationInterface.Instance, options);
         }
 
         public static string GetAssemblyNameFromScriptPath(string sourceFilePath)
@@ -127,9 +165,9 @@ namespace UnityEditor.Compilation
             return assemblyDefinitionPlatforms;
         }
 
-        internal static Assembly[] GetAssemblies(EditorCompilation editorCompilation)
+        internal static Assembly[] GetAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions)
         {
-            var scriptAssemblies = editorCompilation.GetAllEditorScriptAssemblies();
+            var scriptAssemblies = editorCompilation.GetAllEditorScriptAssemblies(additionalOptions);
             var assemblies = new Assembly[scriptAssemblies.Length];
 
             var scriptAssemblyToAssembly = new Dictionary<ScriptAssembly, Assembly>();
@@ -153,7 +191,16 @@ namespace UnityEditor.Compilation
                 if ((scriptAssembly.Flags & sc.AssemblyFlags.EditorOnly) == sc.AssemblyFlags.EditorOnly)
                     flags |= AssemblyFlags.EditorAssembly;
 
-                assemblies[i] = new Assembly(name, outputPath, sourceFiles, defines, assemblyReferences, compiledAssemblyReferences, flags);
+                var compilerOptions = scriptAssembly.CompilerOptions;
+
+                assemblies[i] = new Assembly(name,
+                        outputPath,
+                        sourceFiles,
+                        defines,
+                        assemblyReferences,
+                        compiledAssemblyReferences,
+                        flags,
+                        compilerOptions);
             }
 
             return assemblies;

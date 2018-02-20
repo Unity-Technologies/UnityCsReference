@@ -549,6 +549,7 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Bottom Right"),
                 EditorGUIUtility.TrTextContent("Custom"),
             };
+            public readonly GUIContent spriteGenerateFallbackPhysicsShape = EditorGUIUtility.TrTextContent("Generate Physics Shape", "Generates a default physics shape from the outline of the Sprite/s when a physics shape has not been set in the Sprite Editor.");
 
             public readonly GUIContent alphaIsTransparency = EditorGUIUtility.TrTextContent("Alpha Is Transparency", "If the provided alpha channel is transparency, enable this to pre-filter the color to avoid texture filtering artifacts. This is not supported for HDR textures.");
             public readonly GUIContent etc1Compression = EditorGUIUtility.TrTextContent("Compress using ETC1 (split alpha channel)", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
@@ -632,6 +633,7 @@ namespace UnityEditor
         SerializedProperty m_SpriteMeshType;
         SerializedProperty m_Alignment;
         SerializedProperty m_SpritePivot;
+        SerializedProperty m_SpriteGenerateFallbackPhysicsShape;
 
         SerializedProperty m_AlphaIsTransparency;
 
@@ -689,6 +691,7 @@ namespace UnityEditor
             m_SpriteMeshType = serializedObject.FindProperty("m_SpriteMeshType");
             m_Alignment = serializedObject.FindProperty("m_Alignment");
             m_SpritePivot = serializedObject.FindProperty("m_SpritePivot");
+            m_SpriteGenerateFallbackPhysicsShape = serializedObject.FindProperty("m_SpriteGenerateFallbackPhysicsShape");
 
             m_AlphaIsTransparency = serializedObject.FindProperty("m_AlphaIsTransparency");
 
@@ -814,6 +817,7 @@ namespace UnityEditor
             m_SpriteExtrude.intValue = (int)settings.spriteExtrude;
             m_SpriteMeshType.intValue = (int)settings.spriteMeshType;
             m_Alignment.intValue = settings.spriteAlignment;
+            m_SpriteGenerateFallbackPhysicsShape.intValue = settings.spriteGenerateFallbackPhysicsShape ? 1 : 0;
 
             m_WrapU.intValue = (int)settings.wrapMode;
             m_WrapV.intValue = (int)settings.wrapMode;
@@ -907,6 +911,9 @@ namespace UnityEditor
 
             if (!m_SpritePivot.hasMultipleDifferentValues)
                 settings.spritePivot = m_SpritePivot.vector2Value;
+
+            if (!m_SpriteGenerateFallbackPhysicsShape.hasMultipleDifferentValues)
+                settings.spriteGenerateFallbackPhysicsShape = m_SpriteGenerateFallbackPhysicsShape.intValue > 0;
 
             if (!m_WrapU.hasMultipleDifferentValues)
                 settings.wrapModeU = (TextureWrapMode)m_WrapU.intValue;
@@ -1100,7 +1107,7 @@ namespace UnityEditor
 
                 EditorGUILayout.IntSlider(m_SpriteExtrude, 0, 32, s_Styles.spriteExtrude);
 
-                if (m_SpriteMode.intValue == 1)
+                if (m_SpriteMode.intValue == (int)SpriteImportMode.Multiple)
                 {
                     EditorGUILayout.Popup(m_Alignment, s_Styles.spriteAlignmentOptions, s_Styles.spriteAlignment);
 
@@ -1111,6 +1118,9 @@ namespace UnityEditor
                         GUILayout.EndHorizontal();
                     }
                 }
+
+                if (m_SpriteMode.intValue != (int)SpriteImportMode.Polygon)
+                    ToggleFromInt(m_SpriteGenerateFallbackPhysicsShape, s_Styles.spriteGenerateFallbackPhysicsShape);
 
                 using (new EditorGUI.DisabledScope(targets.Length != 1))
                 {

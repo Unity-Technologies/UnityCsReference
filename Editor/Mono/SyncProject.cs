@@ -77,7 +77,7 @@ namespace UnityEditor
         private static readonly SolutionSynchronizer Synchronizer;
         internal static Dictionary<VisualStudioVersion, VisualStudioPath[]> InstalledVisualStudios { get; private set; }
 
-        class SolutionSynchronizationSettings : DefaultSolutionSynchronizationSettings
+        internal class SolutionSynchronizationSettings : DefaultSolutionSynchronizationSettings
         {
             public override int VisualStudioVersion
             {

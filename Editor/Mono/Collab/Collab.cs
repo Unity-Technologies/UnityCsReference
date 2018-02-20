@@ -120,24 +120,6 @@ namespace UnityEditor.Collaboration
             return string.IsNullOrEmpty(cvalue) ? clientType[0] : cvalue;
         }
 
-        [MenuItem("Window/Collab/Get Revisions", false, 1000, true)]
-        public static void TestGetRevisions()
-        {
-            Revision[] revisions = instance.GetRevisions();
-            if (revisions.Length == 0)
-            {
-                Debug.Log("No revisions");
-                return;
-            }
-
-            int num = revisions.Length;
-            foreach (Revision revision in revisions)
-            {
-                Debug.Log("Revision #" + num + ": " + revision.revisionID);
-                num--;
-            }
-        }
-
         public static Collab instance
         {
             get

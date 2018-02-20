@@ -64,15 +64,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private bool isAttached
         {
-            get { return target != null && element != null && m_CommonAncestor != null; }
+            get { return target != null && element != null && m_WatchedObjects != null && m_WatchedObjects.Count > 0; }
         }
 
         private Rect m_LastTargetWorldBounds = Rect.zero;
         private Rect m_ElementSize = Rect.zero;
+        private List<VisualElement> m_WatchedObjects;
         private Vector2 m_Offset;
         private SpriteAlignment m_Alignment;
         private float m_Distance;
-        private VisualElement m_CommonAncestor;
 
         public Attacher(VisualElement anchored, VisualElement target, SpriteAlignment alignment)
         {
@@ -99,39 +99,60 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void RegisterCallbacks()
         {
-            if (m_CommonAncestor != null)
+            if (m_WatchedObjects != null && m_WatchedObjects.Count > 0)
             {
                 UnregisterCallbacks();
             }
 
-            m_CommonAncestor = target.FindCommonAncestor(element);
+            VisualElement commonAncestor = target.FindCommonAncestor(element);
 
-            if (m_CommonAncestor == target)
+            if (commonAncestor == target)
             {
                 Debug.Log("Attacher: Target is already parent of anchored element.");
-                m_CommonAncestor = null;
             }
-            else if (m_CommonAncestor == element)
+            else if (commonAncestor == element)
             {
                 Debug.Log("Attacher: An element can't be anchored to one of its descendants");
-                m_CommonAncestor = null;
             }
-            else if (m_CommonAncestor == null)
+            else if (commonAncestor == null)
             {
                 Debug.Log("Attacher: The element and its target must be in the same visual tree hierarchy");
             }
             else
             {
-                m_CommonAncestor.RegisterCallback<PostLayoutEvent>(OnTargetLayout);
+                if (m_WatchedObjects == null)
+                    m_WatchedObjects = new List<VisualElement>();
+
+                VisualElement v = target;
+
+                while (v != commonAncestor)
+                {
+                    m_WatchedObjects.Add(v);
+                    v.RegisterCallback<PostLayoutEvent>(OnTargetLayout);
+                    v = v.shadow.parent;
+                }
+
+                v = element;
+
+                while (v != commonAncestor)
+                {
+                    m_WatchedObjects.Add(v);
+                    v.RegisterCallback<PostLayoutEvent>(OnTargetLayout);
+                    v = v.shadow.parent;
+                }
             }
         }
 
         private void UnregisterCallbacks()
         {
-            if (m_CommonAncestor != null)
+            foreach (VisualElement v in m_WatchedObjects)
             {
-                m_CommonAncestor.UnregisterCallback<PostLayoutEvent>(OnTargetLayout);
+                {
+                    v.UnregisterCallback<PostLayoutEvent>(OnTargetLayout);
+                }
             }
+
+            m_WatchedObjects.Clear();
         }
 
         private void OnTargetLayout(PostLayoutEvent evt)

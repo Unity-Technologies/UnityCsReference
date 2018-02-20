@@ -6,10 +6,12 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class PostLayoutEvent : EventBase<PostLayoutEvent>, IPropagatableEvent
     {
-        public static PostLayoutEvent GetPooled(bool hasNewLayout)
+        public static PostLayoutEvent GetPooled(bool hasNewLayout, Rect oldRect, Rect newRect)
         {
             PostLayoutEvent e = GetPooled();
             e.hasNewLayout = hasNewLayout;
+            e.oldRect = oldRect;
+            e.newRect = newRect;
             return e;
         }
 
@@ -20,6 +22,8 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public bool hasNewLayout { get; private set; }
+        public Rect oldRect { get; private set; }
+        public Rect newRect { get; private set; }
 
         public PostLayoutEvent()
         {

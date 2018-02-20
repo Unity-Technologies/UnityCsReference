@@ -362,8 +362,8 @@ namespace UnityEngine.Experimental.UIElements
                 else if (evt is IPropagatableEvent ||
                          evt is IFocusEvent ||
                          evt is IChangeEvent ||
-                         evt.GetEventTypeId() == PostLayoutEvent.TypeId() ||
-                         evt.GetEventTypeId() == InputEvent.TypeId())
+                         evt.GetEventTypeId() == InputEvent.TypeId() ||
+                         evt.GetEventTypeId() == PostLayoutEvent.TypeId())
                 {
                     Debug.Assert(evt.target != null);
                     invokedHandleEvent = true;
@@ -426,11 +426,14 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            using (var paths = BuildPropagationPath(evt.target as VisualElement))
+            PropagationPaths.Type pathTypesRequested = (evt.capturable ? PropagationPaths.Type.Capture : PropagationPaths.Type.None);
+            pathTypesRequested |= (evt.bubbles ? PropagationPaths.Type.BubbleUp : PropagationPaths.Type.None);
+
+            using (var paths = BuildPropagationPath(evt.target as VisualElement, pathTypesRequested))
             {
                 evt.dispatch = true;
 
-                if (evt.capturable && paths.capturePath.Count > 0)
+                if (evt.capturable && paths != null && paths.capturePath.Count > 0)
                 {
                     // Phase 1: Capture phase
                     // Propagate event from root to target.parent
@@ -454,7 +457,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 // Phase 3: bubble Up phase
                 // Propagate event from target parent up to root
-                if (evt.bubbles && paths.bubblePath.Count > 0)
+                if (evt.bubbles && paths != null && paths.bubblePath.Count > 0)
                 {
                     evt.propagationPhase = PropagationPhase.BubbleUp;
 
@@ -491,10 +494,17 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         private const int k_DefaultPropagationDepth = 16;
-        private static readonly PropagationPaths k_EmptyPropagationPaths = new PropagationPaths(0);
 
-        struct PropagationPaths : IDisposable
+        class PropagationPaths : IDisposable
         {
+            [Flags]
+            public enum Type
+            {
+                None = 0,
+                Capture = 1,
+                BubbleUp = 2
+            }
+
             public readonly List<VisualElement> capturePath;
             public readonly List<VisualElement> bubblePath;
 
@@ -542,18 +552,18 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private static PropagationPaths BuildPropagationPath(VisualElement elem)
+        private static PropagationPaths BuildPropagationPath(VisualElement elem, PropagationPaths.Type pathTypesRequested)
         {
-            if (elem == null)
-                return k_EmptyPropagationPaths;
+            if (elem == null || pathTypesRequested == PropagationPaths.Type.None)
+                return null;
             var ret = PropagationPathsPool.Acquire();
             while (elem.shadow.parent != null)
             {
                 if (elem.shadow.parent.enabledInHierarchy)
                 {
-                    if (elem.shadow.parent.HasCaptureHandlers())
+                    if ((pathTypesRequested & PropagationPaths.Type.Capture) == PropagationPaths.Type.Capture && elem.shadow.parent.HasCaptureHandlers())
                         ret.capturePath.Add(elem.shadow.parent);
-                    if (elem.shadow.parent.HasBubbleHandlers())
+                    if ((pathTypesRequested & PropagationPaths.Type.BubbleUp) == PropagationPaths.Type.BubbleUp && elem.shadow.parent.HasBubbleHandlers())
                         ret.bubblePath.Add(elem.shadow.parent);
                 }
                 elem = elem.shadow.parent;

@@ -161,6 +161,7 @@ namespace UnityEditor
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
             public static readonly GUIContent apiCompatibilityLevel_NET_4_6 = EditorGUIUtility.TrTextContent(".NET 4.x");
             public static readonly GUIContent apiCompatibilityLevel_NET_Standard_2_0 = EditorGUIUtility.TrTextContent(".NET Standard 2.0");
+            public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager"), EditorGUIUtility.TrTextContent("Input System (Preview)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TrTextContent("Virtual Reality moved to XR Settings");
@@ -261,6 +262,8 @@ namespace UnityEditor
         SerializedProperty m_EnableCrashReportAPI;
         SerializedProperty m_EnableInputSystem;
         SerializedProperty m_DisableInputManager;
+
+        SerializedProperty m_AllowUnsafeCode;
 
         // vita
         SerializedProperty m_VideoMemoryForVertexBuffers;
@@ -420,6 +423,8 @@ namespace UnityEditor
             m_EnableCrashReportAPI          = FindPropertyAssert("enableCrashReportAPI");
             m_EnableInputSystem             = FindPropertyAssert("enableNativePlatformBackendsForNewInputSystem");
             m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
+
+            m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -1996,6 +2001,15 @@ namespace UnityEditor
                 scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
                 if (EditorGUI.EndChangeCheck())
                     PlayerSettings.SetScriptingDefineSymbolsForGroup(targetGroup, scriptDefines);
+            }
+
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_AllowUnsafeCode, Styles.allowUnsafeCode);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.allowUnsafeCode = m_AllowUnsafeCode.boolValue;
+                }
             }
 
             // Active input handling

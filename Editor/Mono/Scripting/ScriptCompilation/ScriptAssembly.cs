@@ -4,7 +4,7 @@
 
 using System.Linq;
 using UnityEditor.Scripting.Compilers;
-
+using UnityEditor.Compilation;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -17,6 +17,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] Defines { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public EditorScriptCompilationOptions CompilationOptions { get; set; }
+        public ScriptCompilerOptions PredefinedAssembliesCompilerOptions { get; set; }
+
         public OptionalUnityReferences OptionalUnityReferences { get; set; }
         public string FilenameSuffix { get; set; }
 
@@ -24,6 +26,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             BuildTarget = BuildTarget.NoTarget;
             BuildTargetGroup = BuildTargetGroup.Unknown;
+            PredefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
         }
 
         public bool BuildingForEditor
@@ -51,6 +54,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] Defines { get; set; }
         public string[] Files { get; set; }
         public bool RunUpdater { get; set; }
+        public ScriptCompilerOptions CompilerOptions { get; set; }
 
         public string FullPath { get { return AssetPath.Combine(OutputDirectory, Filename); } }
 
@@ -70,7 +74,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             var outputPath = AssetPath.Combine(buildOutputDirectory, Filename);
 
-            return new MonoIsland(BuildTarget, buildingForEditor, developmentBuild, ApiCompatibilityLevel, Files, referencesArray, Defines, outputPath);
+            return new MonoIsland(BuildTarget,
+                buildingForEditor,
+                developmentBuild,
+                CompilerOptions.AllowUnsafeCode,
+                ApiCompatibilityLevel,
+                Files,
+                referencesArray,
+                Defines,
+                outputPath);
         }
     }
 }

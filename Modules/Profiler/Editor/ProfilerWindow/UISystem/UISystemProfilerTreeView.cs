@@ -19,12 +19,14 @@ namespace UnityEditor
         public ProfilerProperty property;
 
         private RootTreeViewItem m_AllCanvasesItem;
+        private GUIStyle lineStyle;
 
         public UISystemProfilerTreeView(State state, MultiColumnHeader multiColumnHeader) : base(state, multiColumnHeader)
         {
             m_Comparer = new CanvasBatchComparer();
             showBorder = false;
             showAlternatingRowBackgrounds = true;
+            lineStyle = null;
         }
 
         public State profilerState
@@ -108,7 +110,8 @@ namespace UnityEditor
                 Rect rect = args.GetCellRect(i);
                 if (column == (int)Column.Element)
                 {
-                    GUIStyle lineStyle = DefaultStyles.label;
+                    if (lineStyle == null)
+                        lineStyle = new GUIStyle(DefaultStyles.label);
                     rect.xMin += lineStyle.margin.left + GetContentIndent(args.item);
 
                     int iconRectWidth = 16;

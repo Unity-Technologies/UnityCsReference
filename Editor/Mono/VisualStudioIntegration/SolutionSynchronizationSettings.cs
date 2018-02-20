@@ -87,7 +87,7 @@ namespace UnityEditor.VisualStudioIntegration
 
         public virtual string GetProjectHeaderTemplate(ScriptingLanguage language)
         {
-            return string.Join("\r\n", new[] {
+            var header = new[] {
                 @"<?xml version=""1.0"" encoding=""utf-8""?>",
                 @"<Project ToolsVersion=""{0}"" DefaultTargets=""Build"" xmlns=""{6}"">",
                 @"  <PropertyGroup>",
@@ -116,7 +116,7 @@ namespace UnityEditor.VisualStudioIntegration
                 @"    <ErrorReport>prompt</ErrorReport>",
                 @"    <WarningLevel>4</WarningLevel>",
                 @"    <NoWarn>0169</NoWarn>",
-                @"    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>",
+                @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>",
                 @"  <PropertyGroup Condition="" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "">",
                 @"    <DebugType>pdbonly</DebugType>",
@@ -125,14 +125,20 @@ namespace UnityEditor.VisualStudioIntegration
                 @"    <ErrorReport>prompt</ErrorReport>",
                 @"    <WarningLevel>4</WarningLevel>",
                 @"    <NoWarn>0169</NoWarn>",
-                @"    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>",
+                @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>",
                 @"  <ItemGroup>",
+            };
+
+            var systemReferences = new string[] {
                 @"    <Reference Include=""System"" />",
                 @"    <Reference Include=""System.Xml"" />",
                 @"    <Reference Include=""System.Core"" />",
                 @"    <Reference Include=""System.Runtime.Serialization"" />",
                 @"    <Reference Include=""System.Xml.Linq"" />",
+            };
+
+            var footer = new string[] {
                 @"    <Reference Include=""UnityEngine"">",
                 @"      <HintPath>{3}</HintPath>",
                 @"    </Reference>",
@@ -142,7 +148,16 @@ namespace UnityEditor.VisualStudioIntegration
                 @"  </ItemGroup>",
                 @"  <ItemGroup>",
                 @""
-            });
+            };
+
+            string[] text;
+
+            if (language == ScriptingLanguage.CSharp)
+                text = header.Concat(footer).ToArray();
+            else
+                text = header.Concat(systemReferences).Concat(footer).ToArray();
+
+            return string.Join("\r\n", text);
         }
 
         public virtual string GetProjectFooterTemplate(ScriptingLanguage language)

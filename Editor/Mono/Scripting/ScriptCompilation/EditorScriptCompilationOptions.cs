@@ -6,6 +6,7 @@ using System;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    // Keep in sync with EditorScriptCompilationOptions in native
     [Flags]
     enum EditorScriptCompilationOptions
     {
@@ -16,5 +17,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         BuildingForIl2Cpp = 1 << 3,
         BuildingWithAsserts = 1 << 4,
         BuildingIncludingTestAssemblies = 1 << 5,
+        BuildingPredefinedAssembliesAllowUnsafeCode = (1 << 6)
     };
 }
