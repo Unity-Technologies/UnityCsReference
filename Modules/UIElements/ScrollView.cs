@@ -124,6 +124,7 @@ namespace UnityEngine.Experimental.UIElements
                     (value) =>
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
+                    UpdateContentViewTransform();
                 }, Slider.Direction.Horizontal)
             {name = "HorizontalScroller", persistenceKey = "HorizontalScroller"};
             shadow.Add(horizontalScroller);
@@ -132,11 +133,13 @@ namespace UnityEngine.Experimental.UIElements
                     (value) =>
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
+                    UpdateContentViewTransform();
                 }, Slider.Direction.Vertical)
             {name = "VerticalScroller", persistenceKey = "VerticalScroller"};
             shadow.Add(verticalScroller);
 
             RegisterCallback<WheelEvent>(OnScrollWheel);
+            contentContainer.RegisterCallback<PostLayoutEvent>(OnGeometryChanged);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -145,15 +148,17 @@ namespace UnityEngine.Experimental.UIElements
 
             if (evt.GetEventTypeId() == PostLayoutEvent.TypeId())
             {
-                var postLayoutEvt = (PostLayoutEvent)evt;
-                OnPostLayout(postLayoutEvt.hasNewLayout);
+                OnGeometryChanged((PostLayoutEvent)evt);
             }
         }
 
-        private void OnPostLayout(bool hasNewLayout)
+        private void OnGeometryChanged(PostLayoutEvent evt)
         {
-            if (!hasNewLayout)
+            // Only affected by dimension changes
+            if (evt.oldRect.size == evt.newRect.size)
+            {
                 return;
+            }
 
             if (contentContainer.layout.width > Mathf.Epsilon)
                 horizontalScroller.Adjust(contentViewport.layout.width / contentContainer.layout.width);

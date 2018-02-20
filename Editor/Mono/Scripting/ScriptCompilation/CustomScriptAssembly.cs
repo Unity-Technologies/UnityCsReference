@@ -18,6 +18,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] optionalUnityReferences;
         public string[] includePlatforms;
         public string[] excludePlatforms;
+        public bool allowUnsafeCode;
 
         public static CustomScriptAssemblyData FromJson(string json)
         {
@@ -86,6 +87,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public CustomScriptAssemblyPlatform[] ExcludePlatforms { get; set;  }
 
         public EditorCompilation.PackageAssembly? PackageAssembly { get; set; }
+        public ScriptCompilerOptions CompilerOptions { get; set; }
 
         public AssemblyFlags AssemblyFlags
         {
@@ -199,6 +201,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.FilePath = modifiedDirectory;
             customScriptAssembly.PathPrefix = modifiedDirectory;
             customScriptAssembly.References = new string[0];
+            customScriptAssembly.CompilerOptions = new ScriptCompilerOptions();
 
             return customScriptAssembly;
         }
@@ -229,6 +232,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (customScriptAssemblyData.excludePlatforms != null && customScriptAssemblyData.excludePlatforms.Length > 0)
                 customScriptAssembly.ExcludePlatforms = GetPlatformsFromNames(customScriptAssemblyData.excludePlatforms);
+
+            var compilerOptions = new ScriptCompilerOptions();
+
+            compilerOptions.AllowUnsafeCode = customScriptAssemblyData.allowUnsafeCode;
+
+            customScriptAssembly.CompilerOptions = compilerOptions;
 
             return customScriptAssembly;
         }

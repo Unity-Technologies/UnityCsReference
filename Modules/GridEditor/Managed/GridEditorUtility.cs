@@ -314,12 +314,12 @@ namespace UnityEditorInternal
 
                 vertices[vertex + 0] = gridLayout.CellToLocal(minPosition);
                 vertices[vertex + 1] = gridLayout.CellToLocal(maxPosition);
+                uvs2[vertex + 0] = Vector2.zero;
+                uvs2[vertex + 1] = new Vector2(0f, cellStride.y * bounds.size.y);
                 if (topology == MeshTopology.Quads)
                 {
                     vertices[vertex + 2] = gridLayout.CellToLocal(maxPosition) + horizontalPixelOffset;
                     vertices[vertex + 3] = gridLayout.CellToLocal(minPosition) + horizontalPixelOffset;
-                    uvs2[vertex + 0] = Vector2.zero;
-                    uvs2[vertex + 1] = new Vector2(0f, cellStride.y * bounds.size.y);
                     uvs2[vertex + 2] = new Vector2(0f, cellStride.y * bounds.size.y);
                     uvs2[vertex + 3] = Vector2.zero;
                 }
@@ -327,12 +327,12 @@ namespace UnityEditorInternal
 
                 vertices[vertex + 0] = gridLayout.CellToLocalInterpolated(minPosition + cellGap);
                 vertices[vertex + 1] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap);
+                uvs2[vertex + 0] = Vector2.zero;
+                uvs2[vertex + 1] = new Vector2(0f, cellStride.y * bounds.size.y);
                 if (topology == MeshTopology.Quads)
                 {
                     vertices[vertex + 2] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap) + horizontalPixelOffset;
                     vertices[vertex + 3] = gridLayout.CellToLocalInterpolated(minPosition + cellGap) + horizontalPixelOffset;
-                    uvs2[vertex + 0] = Vector2.zero;
-                    uvs2[vertex + 1] = new Vector2(0f, cellStride.y * bounds.size.y);
                     uvs2[vertex + 2] = new Vector2(0f, cellStride.y * bounds.size.y);
                     uvs2[vertex + 3] = Vector2.zero;
                 }
@@ -354,12 +354,12 @@ namespace UnityEditorInternal
 
                 vertices[vertex + 0] = gridLayout.CellToLocal(minPosition);
                 vertices[vertex + 1] = gridLayout.CellToLocal(maxPosition);
+                uvs2[vertex + 0] = Vector2.zero;
+                uvs2[vertex + 1] = new Vector2(cellStride.x * bounds.size.x, 0f);
                 if (topology == MeshTopology.Quads)
                 {
                     vertices[vertex + 2] = gridLayout.CellToLocal(maxPosition) + verticalPixelOffset;
                     vertices[vertex + 3] = gridLayout.CellToLocal(minPosition) + verticalPixelOffset;
-                    uvs2[vertex + 0] = Vector2.zero;
-                    uvs2[vertex + 1] = new Vector2(cellStride.x * bounds.size.x, 0f);
                     uvs2[vertex + 2] = new Vector2(cellStride.x * bounds.size.x, 0f);
                     uvs2[vertex + 3] = Vector2.zero;
                 }
@@ -367,12 +367,12 @@ namespace UnityEditorInternal
 
                 vertices[vertex + 0] = gridLayout.CellToLocalInterpolated(minPosition + cellGap);
                 vertices[vertex + 1] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap);
+                uvs2[vertex + 0] = Vector2.zero;
+                uvs2[vertex + 1] = new Vector2(cellStride.x * bounds.size.x, 0f);
                 if (topology == MeshTopology.Quads)
                 {
                     vertices[vertex + 2] = gridLayout.CellToLocalInterpolated(maxPosition + cellGap) + verticalPixelOffset;
                     vertices[vertex + 3] = gridLayout.CellToLocalInterpolated(minPosition + cellGap) + verticalPixelOffset;
-                    uvs2[vertex + 0] = Vector2.zero;
-                    uvs2[vertex + 1] = new Vector2(cellStride.x * bounds.size.x, 0f);
                     uvs2[vertex + 2] = new Vector2(cellStride.x * bounds.size.x, 0f);
                     uvs2[vertex + 3] = Vector2.zero;
                 }
@@ -392,8 +392,7 @@ namespace UnityEditorInternal
 
             mesh.vertices = vertices;
             mesh.uv = uvs;
-            if (topology == MeshTopology.Quads)
-                mesh.uv2 = uvs2;
+            mesh.uv2 = uvs2;
             mesh.colors = colors;
             mesh.SetIndices(indices, topology, 0);
 

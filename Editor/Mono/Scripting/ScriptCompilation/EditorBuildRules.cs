@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
 using File = System.IO.File;
 
@@ -37,19 +38,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public List<TargetAssembly> References { get; private set; }
             public TargetAssemblyType Type { get; private set; }
             public OptionalUnityReferences OptionalUnityReferences { get; set; }
+            public ScriptCompilerOptions CompilerOptions { get; set; }
 
             public TargetAssembly()
             {
                 References = new List<TargetAssembly>();
             }
 
-            public TargetAssembly(string name, SupportedLanguage language, AssemblyFlags flags, TargetAssemblyType type)
-                : this(name, language, flags, type, null, null)
-            {
-            }
-
-            public TargetAssembly(string name, SupportedLanguage language, AssemblyFlags flags, TargetAssemblyType type,
-                                  Func<string, int> pathFilter, Func<BuildTarget, EditorScriptCompilationOptions, bool> compatFunc) : this()
+            public TargetAssembly(string name,
+                                  SupportedLanguage language,
+                                  AssemblyFlags flags,
+                                  TargetAssemblyType type,
+                                  Func<string, int> pathFilter,
+                                  Func<BuildTarget, EditorScriptCompilationOptions, bool> compatFunc,
+                                  ScriptCompilerOptions compilerOptions) : this()
             {
                 Language = language;
                 Filename = name;
@@ -57,6 +59,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 PathFilter = pathFilter;
                 IsCompatibleFunc = compatFunc;
                 Type = type;
+                CompilerOptions = compilerOptions;
             }
 
             public string FilenameWithSuffix(string filenameSuffix)
@@ -169,9 +172,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 var pathPrefixLowerCase = customAssembly.PathPrefix.ToLower();
 
-                var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll", null, customAssembly.AssemblyFlags,
-                        TargetAssemblyType.Custom, path => path.StartsWith(pathPrefixLowerCase) ? pathPrefixLowerCase.Length : -1,
-                        (BuildTarget target, EditorScriptCompilationOptions options) => customAssembly.IsCompatibleWith(target, options))
+                var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll",
+                        null,
+                        customAssembly.AssemblyFlags,
+                        TargetAssemblyType.Custom,
+                        path => path.StartsWith(pathPrefixLowerCase) ? pathPrefixLowerCase.Length : -1,
+                        (BuildTarget target, EditorScriptCompilationOptions options) => customAssembly.IsCompatibleWith(target, options),
+                        customAssembly.CompilerOptions)
                 {
                     OptionalUnityReferences = customAssembly.OptionalUnityReferences,
                 };
@@ -417,6 +424,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.Defines = settings.Defines;
                 scriptAssembly.Files = sourceFiles.ToArray();
 
+                if (targetAssembly.Type == TargetAssemblyType.Predefined)
+                    scriptAssembly.CompilerOptions = settings.PredefinedAssembliesCompilerOptions;
+                else
+                    scriptAssembly.CompilerOptions = targetAssembly.CompilerOptions;
+
                 // Script files must always be passed in the same order to the compiler.
                 // Otherwise player builds might fail for partial classes.
                 Array.Sort(scriptAssembly.Files);
@@ -617,25 +629,47 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var supportedLanguages = ScriptCompilers.SupportedLanguages;
             var assemblies = new List<TargetAssembly>();
 
+            var scriptCompilerOptions = new ScriptCompilerOptions();
+
             // Initialize predefined assembly targets
             foreach (var language in supportedLanguages)
             {
                 var languageName = language.GetLanguageName();
 
-                var runtimeFirstPass = new TargetAssembly("Assembly-" + languageName + "-firstpass" + ".dll", language,
-                        AssemblyFlags.FirstPass, TargetAssemblyType.Predefined, FilterAssemblyInFirstpassFolder, null);
+                var runtimeFirstPass = new TargetAssembly("Assembly-" + languageName + "-firstpass" + ".dll",
+                        language,
+                        AssemblyFlags.FirstPass,
+                        TargetAssemblyType.Predefined,
+                        FilterAssemblyInFirstpassFolder,
+                        null,
+                        scriptCompilerOptions);
 
-                var runtime = new TargetAssembly("Assembly-" + languageName + ".dll", language, AssemblyFlags.None, TargetAssemblyType.Predefined);
+                var runtime = new TargetAssembly("Assembly-" + languageName + ".dll",
+                        language,
+                        AssemblyFlags.None,
+                        TargetAssemblyType.Predefined,
+                        null,
+                        null,
+                        scriptCompilerOptions);
 
-                var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll", language,
-                        AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass, TargetAssemblyType.Predefined, FilterAssemblyInFirstpassEditorFolder,
-                        IsCompatibleWithEditor)
+                var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll",
+                        language,
+                        AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass,
+                        TargetAssemblyType.Predefined,
+                        FilterAssemblyInFirstpassEditorFolder,
+                        IsCompatibleWithEditor,
+                        scriptCompilerOptions)
                 {
                     OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
                 };
 
-                var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll", language,
-                        AssemblyFlags.EditorOnly, TargetAssemblyType.Predefined, FilterAssemblyInEditorFolder, IsCompatibleWithEditor)
+                var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll",
+                        language,
+                        AssemblyFlags.EditorOnly,
+                        TargetAssemblyType.Predefined,
+                        FilterAssemblyInEditorFolder,
+                        IsCompatibleWithEditor,
+                        scriptCompilerOptions)
                 {
                     OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
                 };

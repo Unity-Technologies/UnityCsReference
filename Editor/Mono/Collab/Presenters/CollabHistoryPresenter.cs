@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEditor.Connect;
 using UnityEditor.Web;
 
@@ -18,6 +19,8 @@ namespace UnityEditor.Collaboration
         bool m_IsCollabError;
         int m_TotalRevisions;
         int m_CurrentPage;
+        bool m_FetchInProgress;
+
         BuildAccess m_BuildAccess;
         string m_ProgressRevision;
         public bool BuildServiceEnabled {get; set; }
@@ -40,12 +43,15 @@ namespace UnityEditor.Collaboration
             Collab.instance.ErrorOccurred += OnCollabError;
             Collab.instance.ErrorCleared += OnCollabErrorCleared;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
+            m_Service.FetchRevisionsCallback += OnFetchRevisions;
 
             if (Collab.instance.IsConnected())
             {
                 m_ConnectState = UnityConnect.instance.GetConnectInfo();
-                m_CollabState = Collab.instance.GetCollabInfo();
+                // Copy the initialized fields of the collab info, even if the instance hasn't connected yet.
             }
+            // Copy the initialized fields of the collab info, even if the instance hasn't connected yet.
+            m_CollabState = Collab.instance.GetCollabInfo();
 
             m_Window.revisionActionsEnabled = !EditorApplication.isPlayingOrWillChangePlaymode;
 
@@ -176,7 +182,7 @@ namespace UnityEditor.Collaboration
                 return HistoryState.NoSeat;
             if (!Collab.instance.IsCollabEnabledForCurrentProject())
                 return HistoryState.Disabled;
-            if (!Collab.instance.IsConnected() || !m_CollabState.ready)
+            if (!Collab.instance.IsConnected() || !m_CollabState.ready || m_FetchInProgress)
                 return HistoryState.Waiting;
             if (m_ConnectState.error || m_IsCollabError)
                 return HistoryState.Error;
@@ -222,10 +228,24 @@ namespace UnityEditor.Collaboration
 
         public void OnUpdatePage(int page)
         {
-            var revs = m_Service.GetRevisions(page * k_ItemsPerPage, k_ItemsPerPage);
-            m_TotalRevisions = revs.RevisionsInRepo;
-            var items = m_Factory.GenerateElements(revs.Revisions, m_TotalRevisions, page * k_ItemsPerPage, m_Service.tipRevision, m_Window.inProgressRevision,
-                    m_Window.revisionActionsEnabled, BuildServiceEnabled, m_Service.currentUser);
+            m_FetchInProgress = true;
+            m_Service.GetRevisions(page * k_ItemsPerPage, k_ItemsPerPage);
+            m_Window.UpdateState(RecalculateState(), false);
+            m_CurrentPage = page;
+        }
+
+        private void OnFetchRevisions(RevisionsResult data)
+        {
+            m_FetchInProgress = false;
+            IEnumerable<RevisionData> items = null;
+            if (data != null)
+            {
+                m_TotalRevisions = data.RevisionsInRepo;
+                items = m_Factory.GenerateElements(data.Revisions, m_TotalRevisions, m_CurrentPage * k_ItemsPerPage, m_Service.tipRevision, m_Window.inProgressRevision, m_Window.revisionActionsEnabled, BuildServiceEnabled, m_Service.currentUser);
+            }
+
+            // State must be recalculated prior to inserting items
+            m_Window.UpdateState(RecalculateState(), false);
             m_Window.UpdateRevisions(items, m_Service.tipRevision, m_TotalRevisions);
         }
 

@@ -33,6 +33,7 @@ namespace UnityEditor.Compilation
         public string[] additionalDefines { get; set; }
         public string[] additionalReferences { get; set; }
         public string[] excludeReferences { get; set; }
+        public ScriptCompilerOptions compilerOptions { get; set; }
 
         public AssemblyBuilderFlags flags { get; set; }
         public BuildTargetGroup buildTargetGroup { get; set; }
@@ -51,6 +52,7 @@ namespace UnityEditor.Compilation
             this.scriptPaths = scriptPaths;
             this.assemblyPath = assemblyPath;
 
+            compilerOptions = new ScriptCompilerOptions();
             flags = AssemblyBuilderFlags.None;
             buildTargetGroup = EditorUserBuildSettings.activeBuildTargetGroup;
             buildTarget = EditorUserBuildSettings.activeBuildTarget;

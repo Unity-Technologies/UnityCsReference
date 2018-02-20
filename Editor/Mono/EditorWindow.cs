@@ -15,7 +15,6 @@ namespace UnityEditor
     [ExcludeFromObjectFactory]
     public partial class EditorWindow : ScriptableObject
     {
-        [SerializeField]
         [HideInInspector]
         bool m_AutoRepaintOnSceneChange;
 

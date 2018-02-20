@@ -23,6 +23,8 @@ namespace UnityEditor
             public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name");
             public static readonly GUIContent unityReferences = EditorGUIUtility.TrTextContent("Unity References");
             public static readonly GUIContent references = EditorGUIUtility.TrTextContent("References");
+            public static readonly GUIContent options = EditorGUIUtility.TrTextContent("Options");
+            public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code");
             public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms");
             public static readonly GUIContent anyPlatform = EditorGUIUtility.TrTextContent("Any Platform");
             public static readonly GUIContent includePlatforms = EditorGUIUtility.TrTextContent("Include Platforms");
@@ -64,6 +66,7 @@ namespace UnityEditor
             public string name;
             public List<AssemblyDefinitionReference> references;
             public MixedBool[] optionalUnityReferences;
+            public MixedBool allowUnsafeCode;
             public MixedBool compatibleWithAnyPlatform;
             public MixedBool[] platformCompatibility;
             public bool modified;
@@ -126,6 +129,12 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox(optionalUnityReferences[i].AdditinalInformationWhenEnabled, MessageType.Info);
                     }
                 }
+                EditorGUILayout.EndVertical();
+                GUILayout.Space(10f);
+
+                GUILayout.Label(Styles.options, EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical(GUI.skin.box);
+                m_State.allowUnsafeCode = ToggleWithMixedValue(Styles.allowUnsafeCode, m_State.allowUnsafeCode);
                 EditorGUILayout.EndVertical();
                 GUILayout.Space(10f);
 
@@ -240,6 +249,19 @@ namespace UnityEditor
             }
         }
 
+        static MixedBool ToMixedBool(bool value)
+        {
+            return value ? MixedBool.True : MixedBool.False;
+        }
+
+        static bool ToBool(MixedBool value)
+        {
+            if (value == MixedBool.Mixed)
+                throw new System.ArgumentException("Cannot convert MixedBool.Mixed to bool");
+
+            return value == MixedBool.True;
+        }
+
         static MixedBool ToggleWithMixedValue(GUIContent title, MixedBool value)
         {
             EditorGUI.showMixedValue = value == MixedBool.Mixed;
@@ -312,6 +334,7 @@ namespace UnityEditor
             m_State.name = m_TargetStates[0].name;
             m_State.references = new List<AssemblyDefinitionReference>();
             m_State.modified = m_TargetStates[0].modified;
+            m_State.allowUnsafeCode = m_TargetStates[0].allowUnsafeCode;
 
             for (int i = 0; i < minReferencesCount; ++i)
                 m_State.references.Add(m_TargetStates[0].references[i]);
@@ -329,6 +352,12 @@ namespace UnityEditor
                     // If different from existing value, set to mixed.
                     if (m_State.references[r].path != targetState.references[r].path)
                         m_State.references[r].displayValue = MixedBool.Mixed;
+                }
+
+                if (m_State.allowUnsafeCode != MixedBool.Mixed)
+                {
+                    if (m_State.allowUnsafeCode != targetState.allowUnsafeCode)
+                        m_State.allowUnsafeCode = MixedBool.Mixed;
                 }
 
                 m_State.modified |= targetState.modified;
@@ -409,6 +438,7 @@ namespace UnityEditor
             state.asset = asset;
             state.name = data.name;
             state.references = new List<AssemblyDefinitionReference>();
+            state.allowUnsafeCode = ToMixedBool(data.allowUnsafeCode);
 
             if (data.references != null)
             {
@@ -511,6 +541,9 @@ namespace UnityEditor
 
             foreach (var state in states)
             {
+                if (combinedState.allowUnsafeCode != MixedBool.Mixed)
+                    state.allowUnsafeCode = combinedState.allowUnsafeCode;
+
                 for (int i = 0; i < combinedReferenceCount; ++i)
                 {
                     if (combinedState.references[i].displayValue != MixedBool.Mixed)
@@ -558,6 +591,8 @@ namespace UnityEditor
                     optionalUnityReferences.Add(OptinalUnityAssemblies[i].OptionalUnityReferences.ToString());
             }
             data.optionalUnityReferences = optionalUnityReferences.ToArray();
+
+            data.allowUnsafeCode = ToBool(state.allowUnsafeCode);
 
             List<string> dataPlatforms = new List<string>();
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using UnityEditor.Modules;
+using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
 using CompilerMessage = UnityEditor.Scripting.Compilers.CompilerMessage;
@@ -747,6 +748,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     if (messages.Any(m => m.type == CompilerMessageType.Error))
                     {
+                        var errorMessages = messages.Where(m => m.type == CompilerMessageType.Error);
+
+                        // error CS0227: Unsafe code requires the `unsafe' command line option to be specified
+                        if (errorMessages.Any(em => em.message.Contains("CS0227")))
+                        {
+                            messages.Add(new CompilerMessage { message = "You can allow 'unsafe' code for Assembly Definition Files in the inspector and for predefined assemblies in player settings.", type = CompilerMessageType.Warning, file = assembly.FullPath, line = -1, column = -1 });
+                        }
+
                         InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
                     }
@@ -813,6 +822,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var defines = InternalEditorUtility.GetCompilationDefines(options, buildTargetGroup, buildTarget);
 
+            var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
+
+            if ((options & EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode) == EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode)
+                predefinedAssembliesCompilerOptions.AllowUnsafeCode = true;
+
             var settings = new ScriptAssemblySettings
             {
                 BuildTarget = buildTarget,
@@ -821,6 +835,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Defines = defines,
                 ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup),
                 CompilationOptions = options,
+                PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
                 FilenameSuffix = assemblySuffix,
                 OptionalUnityReferences = ToOptionalUnityReferences(options),
             };
@@ -995,16 +1010,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return targetAssemblyInfo;
         }
 
-        public ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>() where T : SupportedLanguage
+        public ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>(EditorScriptCompilationOptions additionalOptions) where T : SupportedLanguage
         {
             var assemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor).Where(a => a.Language.GetType() == typeof(T)).ToArray();
             return assemblies;
         }
 
-        public ScriptAssembly GetScriptAssemblyForLanguage<T>(string assemblyNameOrPath) where T : SupportedLanguage
+        public ScriptAssembly GetScriptAssemblyForLanguage<T>(string assemblyNameOrPath, EditorScriptCompilationOptions additionalOptions) where T : SupportedLanguage
         {
             var assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assemblyNameOrPath);
-            var scriptAssemblies = GetAllScriptAssembliesForLanguage<T>();
+            var scriptAssemblies = GetAllScriptAssembliesForLanguage<T>(additionalOptions);
             return scriptAssemblies.SingleOrDefault(a => String.Compare(assemblyName, AssetPath.GetAssemblyNameWithoutExtension(a.Filename), StringComparison.OrdinalIgnoreCase) == 0);
         }
 
@@ -1030,9 +1045,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return EditorBuildRules.GetTargetAssembly(scriptPath, projectDirectory, customTargetAssemblies);
         }
 
-        public ScriptAssembly[] GetAllEditorScriptAssemblies()
+        public ScriptAssembly[] GetAllEditorScriptAssemblies(EditorScriptCompilationOptions additionalOptions)
         {
-            return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies);
+            return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions);
         }
 
         ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options)
@@ -1070,9 +1085,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, type);
         }
 
-        public MonoIsland[] GetAllMonoIslands()
+        public MonoIsland[] GetAllMonoIslands(EditorScriptCompilationOptions additionalOptions)
         {
-            return GetAllMonoIslands(unityAssemblies, precompiledAssemblies, EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies);
+            return GetAllMonoIslands(unityAssemblies, precompiledAssemblies, EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions);
         }
 
         public MonoIsland[] GetAllMonoIslands(PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg, EditorScriptCompilationOptions options)
@@ -1147,6 +1162,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             scriptAssembly.Filename = AssetPath.GetFileName(assemblyPath);
             scriptAssembly.OutputDirectory = AssetPath.GetDirectoryName(assemblyPath);
             scriptAssembly.Defines = defines;
+            scriptAssembly.CompilerOptions = assemblyBuilder.compilerOptions;
             scriptAssembly.ScriptAssemblyReferences = new ScriptAssembly[0];
 
             var unityReferences = EditorBuildRules.GetUnityReferences(scriptAssembly, unityAssemblies, options);

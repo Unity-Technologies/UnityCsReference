@@ -55,6 +55,36 @@ namespace UnityEditor
             }
         }
 
+        //This callback is used by C# code editors to modify the .sln file.
+        static internal string CallOnGeneratedSlnSolution(string path, string content)
+        {
+            foreach (var method in AllPostProcessorMethodsNamed("OnGeneratedSlnSolution"))
+            {
+                object[] args = { path, content };
+                object returnValue = method.Invoke(null, args);
+
+                if (method.ReturnType == typeof(string))
+                    content = (string)returnValue;
+            }
+
+            return content;
+        }
+
+        // This callback is used by C# code editors to modify the .csproj files.
+        static internal string CallOnGeneratedCSProject(string path, string content)
+        {
+            foreach (var method in AllPostProcessorMethodsNamed("OnGeneratedCSProject"))
+            {
+                object[] args = { path, content };
+                object returnValue = method.Invoke(null, args);
+
+                if (method.ReturnType == typeof(string))
+                    content = (string)returnValue;
+            }
+
+            return content;
+        }
+
         //This callback is used by UnityVS to take over project generation from unity
         static internal bool OnPreGeneratingCSProjectFiles()
         {

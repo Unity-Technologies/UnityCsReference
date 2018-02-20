@@ -609,7 +609,7 @@ public static void SetSelectedWireframeHidden(Renderer renderer, bool enabled)
 
     public static string[] CompileCSharp(string[] sources, string[] references, string[] defines, string outputFile)
         {
-            return UnityEditor.Scripting.Compilers.MonoCSharpCompiler.Compile(sources, references, defines, outputFile);
+            return UnityEditor.Scripting.Compilers.MonoCSharpCompiler.Compile(sources, references, defines, outputFile, PlayerSettings.allowUnsafeCode);
         }
     
     

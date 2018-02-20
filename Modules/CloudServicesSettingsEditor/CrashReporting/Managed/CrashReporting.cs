@@ -168,9 +168,9 @@ namespace UnityEditor.CrashReporting
                 UseShellExecute = false
             };
 
-            psi.EnvironmentVariables.Add("USYM_UPLOAD_AUTH_TOKEN", authToken);
-            psi.EnvironmentVariables.Add("USYM_UPLOAD_URL_SOURCE", SignedUrlSourceUrl);
-            psi.EnvironmentVariables.Add("LZMA_PATH", platformConfig.LzmaPath);
+            psi.EnvironmentVariables["USYM_UPLOAD_AUTH_TOKEN"] = authToken;
+            psi.EnvironmentVariables["USYM_UPLOAD_URL_SOURCE"] = SignedUrlSourceUrl;
+            psi.EnvironmentVariables["LZMA_PATH"] = platformConfig.LzmaPath;
 
             System.Diagnostics.Process nativeProgram = new System.Diagnostics.Process();
             nativeProgram.StartInfo = psi;

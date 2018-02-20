@@ -118,6 +118,7 @@ namespace UnityEngine.Experimental.UIElements
             Add(new VisualElement() { name = "TrackElement" });
 
             dragElement = new VisualElement() { name = "DragElement" };
+            dragElement.RegisterCallback<PostLayoutEvent>(UpdateDragElementPosition);
 
             Add(dragElement);
 
@@ -129,6 +130,17 @@ namespace UnityEngine.Experimental.UIElements
         {
             //the property setter takes care of this
             value = value;
+        }
+
+        void UpdateDragElementPosition(PostLayoutEvent evt)
+        {
+            // Only affected by dimension changes
+            if (evt.oldRect.size == evt.newRect.size)
+            {
+                return;
+            }
+
+            UpdateDragElementPosition();
         }
 
         public override void OnPersistentDataReady()
@@ -277,17 +289,8 @@ namespace UnityEngine.Experimental.UIElements
 
             if (evt.GetEventTypeId() == PostLayoutEvent.TypeId())
             {
-                var postLayoutEvt = (PostLayoutEvent)evt;
-                OnPostLayout(postLayoutEvt.hasNewLayout);
+                UpdateDragElementPosition((PostLayoutEvent)evt);
             }
-        }
-
-        private void OnPostLayout(bool hasNewLayout)
-        {
-            if (!hasNewLayout)
-                return;
-
-            UpdateDragElementPosition();
         }
     }
 }

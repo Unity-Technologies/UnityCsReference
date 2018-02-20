@@ -386,16 +386,25 @@ namespace UnityEngine.Experimental.UIElements
                     break;
                 }
             }
+
             Profiler.EndSample();
         }
 
-        bool ValidateSubTree(VisualElement root)
+        void ValidateSubTree(VisualElement root)
         {
-            // if the last layout is different than this one we must dirty transform on children
-            if (root.renderData.lastLayout != new Rect(root.cssNode.LayoutX, root.cssNode.LayoutY, root.cssNode.LayoutWidth, root.cssNode.LayoutHeight))
+            Rect cssRect = new Rect(root.cssNode.LayoutX, root.cssNode.LayoutY, root.cssNode.LayoutWidth, root.cssNode.LayoutHeight);
+            Rect lastRect = root.renderData.lastLayout;
+
+            bool rectChanged = lastRect != cssRect;
+
+            // if the last layout rect is different than the current one we must dirty transform on children
+            if (rectChanged)
             {
-                root.Dirty(ChangeType.Transform);
-                root.renderData.lastLayout = new Rect(root.cssNode.LayoutX, root.cssNode.LayoutY, root.cssNode.LayoutWidth, root.cssNode.LayoutHeight);
+                if (lastRect.position != cssRect.position)
+                {
+                    root.Dirty(ChangeType.Transform);
+                }
+                root.renderData.lastLayout = cssRect;
             }
 
             // ignore clean sub trees
@@ -408,17 +417,21 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            using (var evt = PostLayoutEvent.GetPooled(hasNewLayout))
+            if (rectChanged)
             {
-                evt.target = root;
-                UIElementsUtility.eventDispatcher.DispatchEvent(evt, this);
+                using (var evt = PostLayoutEvent.GetPooled(hasNewLayout, lastRect, cssRect))
+                {
+                    evt.target = root;
+                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, this);
+                }
             }
 
             // reset both flags at the end
             root.ClearDirty(ChangeType.Layout);
-            root.cssNode.MarkLayoutSeen();
-
-            return hasNewLayout;
+            if (hasNewLayout)
+            {
+                root.cssNode.MarkLayoutSeen();
+            }
         }
 
         // get the AA aligned bound

@@ -5,6 +5,7 @@
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using System;
 using UnityEditor.Compilation;
+using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
 using System.Collections.Generic;
 
@@ -274,7 +275,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static MonoIsland[] GetAllMonoIslands()
         {
-            return Instance.GetAllMonoIslands();
+            var options = GetAdditionalEditorScriptCompilationOptions();
+            return Instance.GetAllMonoIslands(options);
+        }
+
+        public static EditorScriptCompilationOptions GetAdditionalEditorScriptCompilationOptions()
+        {
+            var options = EditorScriptCompilationOptions.BuildingEmpty;
+
+            if (PlayerSettings.allowUnsafeCode)
+                options |= EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode;
+
+            return options;
+        }
+
+        public static ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>() where T : SupportedLanguage
+        {
+            var additionalOptions = GetAdditionalEditorScriptCompilationOptions();
+            return Instance.GetAllScriptAssembliesForLanguage<T>(additionalOptions);
+        }
+
+        public static ScriptAssembly GetScriptAssemblyForLanguage<T>(string assemblyNameOrPath) where T : SupportedLanguage
+        {
+            var additionalOptions = GetAdditionalEditorScriptCompilationOptions();
+
+            return Instance.GetScriptAssemblyForLanguage<T>(assemblyNameOrPath, additionalOptions);
         }
     }
 }

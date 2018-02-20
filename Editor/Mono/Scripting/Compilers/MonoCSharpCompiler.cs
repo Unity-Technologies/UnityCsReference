@@ -31,8 +31,10 @@ namespace UnityEditor.Scripting.Compilers
                 "-langversion:" + ((EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest) ? "6" : "4"),
                 "-out:" + PrepareFileName(_island._output),
                 "-nostdlib",
-                "-unsafe"
             };
+
+            if (_island._allowUnsafeCode)
+                arguments.Add("-unsafe");
 
             if (!_island._development_player && !_island._editor)
                 arguments.Add("-optimize");
@@ -75,9 +77,9 @@ namespace UnityEditor.Scripting.Compilers
             return new MonoCSharpCompilerOutputParser();
         }
 
-        public static string[] Compile(string[] sources, string[] references, string[] defines, string outputFile)
+        public static string[] Compile(string[] sources, string[] references, string[] defines, string outputFile, bool allowUnsafeCode)
         {
-            var island = new MonoIsland(BuildTarget.StandaloneWindows, ApiCompatibilityLevel.NET_2_0_Subset, sources, references, defines, outputFile);
+            var island = new MonoIsland(BuildTarget.StandaloneWindows, ApiCompatibilityLevel.NET_2_0_Subset, allowUnsafeCode, sources, references, defines, outputFile);
             using (var c = new MonoCSharpCompiler(island, false))
             {
                 c.BeginCompiling();
