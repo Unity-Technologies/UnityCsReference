@@ -17,6 +17,12 @@ namespace UnityEditor.Experimental.UIElements
         private VisualElement m_Tree;
         private VisualTreeAsset m_LastTree;
 
+        protected void OnDestroy()
+        {
+            m_Panel = null;
+            UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
+        }
+
         // hack to avoid null references when a scriptedImporter runs and replaces the current selection
         internal override string targetTitle
         {

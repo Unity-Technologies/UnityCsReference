@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.IO;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.PackageManager;
@@ -35,6 +36,38 @@ namespace UnityEditor
         private string latestXiaomiPackageVersion = "";
 
         private bool xiaomiPackageInstalled = false;
+
+        /* The GUIDs are from a unitypackage (UnityChannel.unitypackage - several versions of it, factually).
+         *
+         * 8be17ad05558e40a9bb709807433a2b4: Assets/Plugins/UnityChannel/ChannelPurchase.dll.meta
+         * b4a9e40b1d1574159814dede56a53cb3: Assets/Plugins/UnityChannel/UnityStore.dll.meta
+         * 7f9b343cc0cc840ac9096a4e0c9e620a: Assets/Plugins/UnityChannel/Android/UnityChannel.aar.meta
+         * ee71d6ce2ccbe44be9906cf88b06dd3c: Assets/Plugins/UnityChannel/Android.meta
+         * cfd375853ab09456aaf09e607610061a: Assets/Plugins/UnityChannel/XiaomiSupport/AppStoreSettings.cs.meta
+         * eca06513904414b078a830503af689fe: Assets/Plugins/UnityChannel/XiaomiSupport/Editor/XiaomiPackageNameExtension.cs.meta
+         * 0668a01a6fc274116958b6c9a8326652: Assets/Plugins/UnityChannel/XiaomiSupport/Editor/AppStoreOnboardApi.cs.meta
+         * ad6a04a95a0e44de5840a9487311e96b: Assets/Plugins/UnityChannel/XiaomiSupport/Editor/AppStoreSettingsEditor.cs.meta
+         * 1727faade967f43b6a6dba36609f4bdb: Assets/Plugins/UnityChannel/XiaomiSupport/Editor/AppStoreModel.cs.meta
+         * fcb4b3fa8d4f74acca2ce443650b2790: Assets/Plugins/UnityChannel/XiaomiSupport/Editor.meta
+         * a095042fdce9f439e89ed68ae87f0035: Assets/Plugins/UnityChannel/XiaomiSupport.meta
+         * 965c7e6a0de3a40e4a2ccd705b0305d0: Assets/Plugins/UnityChannel.meta
+         */
+
+        string[] guidsToDelete = new string[]
+        {
+            "965c7e6a0de3a40e4a2ccd705b0305d0",
+            "8be17ad05558e40a9bb709807433a2b4",
+            "a095042fdce9f439e89ed68ae87f0035",
+            "7f9b343cc0cc840ac9096a4e0c9e620a",
+            "b4a9e40b1d1574159814dede56a53cb3",
+            "ee71d6ce2ccbe44be9906cf88b06dd3c",
+            "cfd375853ab09456aaf09e607610061a",
+            "fcb4b3fa8d4f74acca2ce443650b2790",
+            "eca06513904414b078a830503af689fe",
+            "0668a01a6fc274116958b6c9a8326652",
+            "ad6a04a95a0e44de5840a9487311e96b",
+            "1727faade967f43b6a6dba36609f4bdb"
+        };
 
         string CurrentXiaomiPackageId
         {
@@ -119,6 +152,8 @@ namespace UnityEditor
                 {
                     if (packmanOperationRunning)
                         return;
+
+                    DeleteUnityChannelObjectsIfInProject();
 
                     NativeClient.StatusCode code = NativeClient.Add(out packmanOperationId, LatestXiaomiPackageId);
                     if (code == NativeClient.StatusCode.Error)
@@ -303,6 +338,19 @@ namespace UnityEditor
             {
                 latestXiaomiPackageVersion = package.version;
             }
+        }
+
+        void DeleteUnityChannelObjectsIfInProject()
+        {
+            foreach (string g in guidsToDelete)
+            {
+                string assetPath = AssetDatabase.GUIDToAssetPath(g);
+                if (string.IsNullOrEmpty(assetPath))
+                    continue;
+                AssetDatabase.DeleteAsset(assetPath);
+            }
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
         }
     }
 }

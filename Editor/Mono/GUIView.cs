@@ -182,6 +182,7 @@ namespace UnityEditor
             if (imguiContainer.HasCapture())
                 imguiContainer.RemoveCapture();
             visualTree.Remove(imguiContainer);
+            imguiContainer = null;
         }
 
         protected virtual void OldOnGUI() {}
@@ -213,6 +214,9 @@ namespace UnityEditor
         protected override void OnDestroy()
         {
             Internal_Close();
+
+            UIElementsUtility.RemoveCachedPanel(this.GetInstanceID());
+
             base.OnDestroy();
         }
 

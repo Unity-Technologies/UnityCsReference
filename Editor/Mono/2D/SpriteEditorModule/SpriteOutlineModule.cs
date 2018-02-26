@@ -59,7 +59,7 @@ namespace UnityEditor.U2D
 
         public virtual string moduleName
         {
-            get { return "Edit Outline"; }
+            get { return "Custom Outline"; }
         }
 
         private Styles styles
@@ -397,7 +397,8 @@ namespace UnityEditor.U2D
 
                 if (m_Selected != null)
                 {
-                    SetupShapeEditorOutline(m_Selected);
+                    if (!HasShapeOutline(m_Selected))
+                        SetupShapeEditorOutline(m_Selected);
                     m_ShapeEditors = new ShapeEditor[selectedShapeOutline.Count];
 
                     for (int i = 0; i < selectedShapeOutline.Count; ++i)
@@ -437,31 +438,28 @@ namespace UnityEditor.U2D
 
         protected virtual bool HasShapeOutline(SpriteRect spriteRect)
         {
-            return ((spriteRect.outline != null) && (spriteRect.outline.Count > 0));
+            return (spriteRect.outline != null);
         }
 
         protected virtual void SetupShapeEditorOutline(SpriteRect spriteRect)
         {
-            if (spriteRect.outline == null || spriteRect.outline.Count == 0)
+            spriteRect.outline = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture, spriteRect.tessellationDetail, 0, spriteEditorWindow.spriteEditorDataProvider);
+            if (spriteRect.outline.Count == 0)
             {
-                spriteRect.outline = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture, spriteRect.tessellationDetail, 0, spriteEditorWindow.spriteEditorDataProvider);
-                if (spriteRect.outline.Count == 0)
+                Vector2 halfSize = spriteRect.rect.size * 0.5f;
+                spriteRect.outline = new List<SpriteOutline>()
                 {
-                    Vector2 halfSize = spriteRect.rect.size * 0.5f;
-                    spriteRect.outline = new List<SpriteOutline>()
+                    new SpriteOutline()
                     {
-                        new SpriteOutline()
+                        m_Path = new List<Vector2>()
                         {
-                            m_Path = new List<Vector2>()
-                            {
-                                new Vector2(-halfSize.x, -halfSize.y),
-                                new Vector2(-halfSize.x, halfSize.y),
-                                new Vector2(halfSize.x, halfSize.y),
-                                new Vector2(halfSize.x, -halfSize.y),
-                            }
+                            new Vector2(-halfSize.x, -halfSize.y),
+                            new Vector2(-halfSize.x, halfSize.y),
+                            new Vector2(halfSize.x, halfSize.y),
+                            new Vector2(halfSize.x, -halfSize.y),
                         }
-                    };
-                }
+                    }
+                };
             }
         }
 
