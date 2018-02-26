@@ -139,6 +139,8 @@ namespace UnityEngine.Experimental.UIElements
         public static void ReleasePooled(T evt)
         {
             s_Pool.Release(evt);
+            // Set target to null before pooling to avoid leaking VisualElement
+            evt.target = null;
         }
 
         public override long GetEventTypeId()

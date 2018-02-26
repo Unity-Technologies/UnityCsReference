@@ -46,7 +46,7 @@ namespace UnityEditorInternal
                 return ScriptEditor.VisualStudioCode;
 
             if (filename == "rider.exe" || filename == "rider64.exe" || filename == "rider32.exe"
-                || filename == "ridereap.app" || filename == "rider.app" || filename == "rider.sh")
+                || (filename.StartsWith("rider") && filename.EndsWith(".app")) || filename == "rider.sh")
                 return ScriptEditor.Rider;
 
             return ScriptEditor.Other;

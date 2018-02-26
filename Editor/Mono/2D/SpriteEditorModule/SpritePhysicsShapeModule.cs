@@ -24,7 +24,7 @@ namespace UnityEditor.U2D
 
         public override string moduleName
         {
-            get { return "Edit Physics Shape"; }
+            get { return "Custom Physics Shape"; }
         }
 
         private ISpriteEditor spriteEditorWindow
@@ -40,18 +40,15 @@ namespace UnityEditor.U2D
 
         protected override bool HasShapeOutline(SpriteRect spriteRect)
         {
-            return ((spriteRect.physicsShape != null) && (spriteRect.physicsShape.Count > 0));
+            return (spriteRect.physicsShape != null);
         }
 
         protected override void SetupShapeEditorOutline(SpriteRect spriteRect)
         {
-            if (spriteRect.physicsShape == null || spriteRect.physicsShape.Count == 0)
-            {
-                spriteRect.physicsShape = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture,
-                        Math.Abs(spriteRect.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : spriteRect.tessellationDetail,
-                        kDefaultPhysicsAlphaTolerance, spriteEditorWindow.spriteEditorDataProvider);
-                spriteEditorWindow.SetDataModified();
-            }
+            spriteRect.physicsShape = GenerateSpriteRectOutline(spriteRect.rect, spriteEditorWindow.selectedTexture,
+                    Math.Abs(spriteRect.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : spriteRect.tessellationDetail,
+                    kDefaultPhysicsAlphaTolerance, spriteEditorWindow.spriteEditorDataProvider);
+            spriteEditorWindow.SetDataModified();
         }
     }
 }

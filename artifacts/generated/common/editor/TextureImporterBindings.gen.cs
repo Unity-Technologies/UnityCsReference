@@ -1151,6 +1151,8 @@ public sealed partial class TextureImporterSettings
             float  m_SpritePixelsToUnits;
     [SerializeField]
             Vector4    m_SpriteBorder;
+    [SerializeField]
+            int  m_SpriteGenerateFallbackPhysicsShape;
     
     
     [SerializeField]
@@ -1420,6 +1422,12 @@ public sealed partial class TextureImporterSettings
         {
             get { return m_SpriteBorder; }
             set { m_SpriteBorder = value; }
+        }
+    
+            public bool spriteGenerateFallbackPhysicsShape
+        {
+            get {return m_SpriteGenerateFallbackPhysicsShape != 0; }
+            set { m_SpriteGenerateFallbackPhysicsShape = value ? 1 : 0; }
         }
     
     
