@@ -344,9 +344,9 @@ namespace UnityEditor
                 return;
 
             // Undo may have deleted one of the selected groups
+            m_Controller.OnSubAssetChanged();
             m_Controller.SanitizeGroupViews();
             m_Controller.OnUnitySelectionChanged();
-            m_Controller.OnSubAssetChanged();
 
             if (m_GroupTree != null)
                 m_GroupTree.OnUndoRedoPerformed();

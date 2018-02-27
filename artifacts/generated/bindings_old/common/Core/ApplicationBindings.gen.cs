@@ -152,10 +152,11 @@ public sealed partial class Application
                 case RuntimePlatform.IPhonePlayer:
                 case RuntimePlatform.Android:
                 case RuntimePlatform.TizenPlayer:
+                    return true;
                 case RuntimePlatform.WSAPlayerX86:
                 case RuntimePlatform.WSAPlayerX64:
                 case RuntimePlatform.WSAPlayerARM:
-                    return true;
+                    return SystemInfo.deviceType == DeviceType.Handheld;
                 default:
                     return false;
             }

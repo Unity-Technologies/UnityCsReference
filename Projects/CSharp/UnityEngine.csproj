@@ -568,6 +568,9 @@
 <Compile Include="..\..\Runtime\Export\Director\TexturePlayableOutput.bindings.cs" >
 <Link>Runtime\Export\Director\TexturePlayableOutput.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Internal\InternalInterfaces.cs" >
+<Link>Runtime\Export\Internal\InternalInterfaces.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Internal\ExcludeFromDocs.cs" >
 <Link>Runtime\Export\Internal\ExcludeFromDocs.cs</Link>
 </Compile>

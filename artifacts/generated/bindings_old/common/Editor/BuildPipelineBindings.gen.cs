@@ -59,9 +59,8 @@ public enum BuildOptions
     EnableHeadlessMode = 1 << 14,
     
     BuildScriptsOnly = 1 << 15,
-    
-    
-    Il2CPP = 1 << 16,
+    [Obsolete("BuildOptions.IL2CPP is deprecated and has no effect. Use PlayerSettings.SetScriptingBackend() instead.", true)]
+    Il2CPP = 0,
     
     ForceEnableAssertions = 1 << 17,
     

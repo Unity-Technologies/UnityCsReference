@@ -26,8 +26,8 @@ namespace UnityEditor.PackageManager
         [NativeName("version")]
         private string m_Version;
         [SerializeField]
-        [NativeName("originType")]
-        private OriginType m_OriginType;
+        [NativeName("source")]
+        private PackageSource m_Source;
         [SerializeField]
         [NativeName("resolvedPath")]
         private string m_ResolvedPath;
@@ -65,10 +65,11 @@ namespace UnityEditor.PackageManager
             PackageStatus status = PackageStatus.Unavailable,
             IEnumerable<Error> errors = null,
             VersionsInfo versions = null,
+            PackageSource source = PackageSource.Registry,
             string version = "")
         {
             // Set the default values
-            m_OriginType = OriginType.Unknown;
+            m_Source = source;
             m_PackageId = packageId;
             m_DisplayName = displayName;
             m_Category = category;
@@ -86,8 +87,7 @@ namespace UnityEditor.PackageManager
 
         public string packageId { get { return m_PackageId;  } }
         public string version { get { return m_Version;  } }
-        // Mocked for PAX uncomment when properly implemented
-        // public OriginType originType { get { return m_OriginType;  } }}
+        public PackageSource source { get { return m_Source;  } }
         public string resolvedPath { get { return m_ResolvedPath;  } }
         public string name { get { return m_Name;  } }
         public string displayName { get { return m_DisplayName;  } }
@@ -96,18 +96,6 @@ namespace UnityEditor.PackageManager
         public PackageStatus status { get { return m_Status;  } }
         public Error[] errors { get { return m_Errors;  } }
         public VersionsInfo versions { get { return m_Versions; } }
-
-        // Mock needed by PAX
-        public OriginType originType
-        {
-            get
-            {
-                if (m_Name.StartsWith("com.unity.modules."))
-                    return OriginType.Builtin;
-                else
-                    return OriginType.Registry;
-            }
-        }
     }
 }
 

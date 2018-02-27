@@ -296,6 +296,9 @@
 <Compile Include="..\..\Editor\Mono\ShaderUtil.bindings.cs" >
 <Link>Editor\Mono\ShaderUtil.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\PlayerSettingsXboxOne.bindings.cs" >
+<Link>Editor\Mono\PlayerSettingsXboxOne.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\ExportPackageOptions.cs" >
 <Link>Editor\Mono\ExportPackageOptions.cs</Link>
 </Compile>
@@ -3888,9 +3891,6 @@
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\OperationStatus.cs" >
 <Link>Modules\PackageManager\Editor\Managed\OperationStatus.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\PackageManager\Editor\Managed\OriginType.cs" >
-<Link>Modules\PackageManager\Editor\Managed\OriginType.cs</Link>
-</Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageCollection.cs" >
 <Link>Modules\PackageManager\Editor\Managed\PackageCollection.cs</Link>
 </Compile>
@@ -3902,6 +3902,9 @@
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs" >
 <Link>Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageSource.cs" >
+<Link>Modules\PackageManager\Editor\Managed\PackageSource.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageStatus.cs" >
 <Link>Modules\PackageManager\Editor\Managed\PackageStatus.cs</Link>

@@ -8,12 +8,13 @@ using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAt
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using UnityEngine;
+using UnityEngine.Internal;
 
 namespace UnityEngine.Audio
 {
 
 
-public partial class AudioMixerGroup : Object
+public partial class AudioMixerGroup : Object, ISubAssetNotDuplicatable
 {
             internal AudioMixerGroup() {}
     

@@ -31,7 +31,7 @@ namespace UnityEditorInternal.VR
                 EditorGUIUtility.TrTextContent("Single Pass Instanced (Preview)")
             };
 
-            public static readonly GUIContent[] kAndroidStereoRenderingPaths =
+            public static readonly GUIContent[] kMultiviewStereoRenderingPaths =
             {
                 EditorGUIUtility.TrTextContent("Multi Pass"),
                 EditorGUIUtility.TrTextContent("Single Pass (Preview)"),
@@ -159,7 +159,7 @@ namespace UnityEditorInternal.VR
 
                     VuforiaGUI(targetGroup);
 
-                    Stereo360CaptureGUI();
+                    Stereo360CaptureGUI(targetGroup);
 
                     ErrorOnARDeviceIncompatibility(targetGroup);
                 }
@@ -234,13 +234,28 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        private static bool TargetSupportsSinglePassStereoRendering(BuildTargetGroup targetGroup)
+        // Keep these in sync with BuildTargetPlatformSpecific.cpp
+        private static bool DoesBuildTargetSupportSinglePassStereoRendering(BuildTargetGroup targetGroup)
         {
             switch (targetGroup)
             {
                 case BuildTargetGroup.Standalone:
                 case BuildTargetGroup.PS4:
+                case BuildTargetGroup.WSA:
                 case BuildTargetGroup.Android:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // Keep these in sync with BuildTargetPlatformSpecific.cpp
+        private static bool DoesBuildTargetSupportStereoInstancingRendering(BuildTargetGroup targetGroup)
+        {
+            switch (targetGroup)
+            {
+                case BuildTargetGroup.Standalone:
+                case BuildTargetGroup.PS4:
                 case BuildTargetGroup.WSA:
                     return true;
                 default:
@@ -248,13 +263,24 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        private static bool TargetSupportsStereoInstancingRendering(BuildTargetGroup targetGroup)
+        // Keep these in sync with BuildTargetPlatformSpecific.cpp
+        private static bool DoesBuildTargetSupportStereoMultiviewRendering(BuildTargetGroup targetGroup)
         {
             switch (targetGroup)
             {
-                case BuildTargetGroup.WSA:
+                case BuildTargetGroup.Android:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        // Keep these in sync with BuildTargetPlatformSpecific.cpp
+        private static bool DoesBuildTargetSupportStereo360Capture(BuildTargetGroup targetGroup)
+        {
+            switch (targetGroup)
+            {
                 case BuildTargetGroup.Standalone:
-                case BuildTargetGroup.PS4:
                     return true;
                 default:
                     return false;
@@ -263,7 +289,7 @@ namespace UnityEditorInternal.VR
 
         private static GUIContent[] GetStereoRenderingPaths(BuildTargetGroup targetGroup)
         {
-            return (targetGroup == BuildTargetGroup.Android) ? Styles.kAndroidStereoRenderingPaths : Styles.kDefaultStereoRenderingPaths;
+            return DoesBuildTargetSupportStereoMultiviewRendering(targetGroup) ? Styles.kMultiviewStereoRenderingPaths : Styles.kDefaultStereoRenderingPaths;
         }
 
         private void SinglePassStereoGUI(BuildTargetGroup targetGroup, SerializedProperty stereoRenderingPath)
@@ -271,8 +297,8 @@ namespace UnityEditorInternal.VR
             if (!PlayerSettings.virtualRealitySupported)
                 return;
 
-            bool supportsSinglePass = TargetSupportsSinglePassStereoRendering(targetGroup);
-            bool supportsSinglePassInstanced = TargetSupportsStereoInstancingRendering(targetGroup);
+            bool supportsSinglePass = DoesBuildTargetSupportSinglePassStereoRendering(targetGroup);
+            bool supportsSinglePassInstanced = DoesBuildTargetSupportStereoInstancingRendering(targetGroup);
 
             // populate the dropdown with the valid options based on target platform.
             int validStereoRenderingOptionsCount = 1 + (supportsSinglePass ? 1 : 0) + (supportsSinglePassInstanced ? 1 : 0);
@@ -324,9 +350,10 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        private void Stereo360CaptureGUI()
+        private void Stereo360CaptureGUI(BuildTargetGroup targetGroup)
         {
-            EditorGUILayout.PropertyField(m_Enable360StereoCapture, Styles.stereo360CaptureCheckbox);
+            if (DoesBuildTargetSupportStereo360Capture(targetGroup))
+                EditorGUILayout.PropertyField(m_Enable360StereoCapture, Styles.stereo360CaptureCheckbox);
         }
 
         private void AddVRDeviceMenuSelected(object userData, string[] options, int selected)

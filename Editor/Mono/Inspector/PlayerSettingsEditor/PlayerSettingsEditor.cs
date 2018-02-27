@@ -148,8 +148,8 @@ namespace UnityEditor
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics (Pro Only)");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols*");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
-            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent("Stable (.NET 3.5 Equivalent)");
-            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent("Experimental (.NET 4.x Equivalent)");
+            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent("Legacy (.NET 3.5 Equivalent)");
+            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent("Stable (.NET 4.x Equivalent)");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
@@ -1918,7 +1918,7 @@ namespace UnityEditor
 
             if (targetGroupSupportsIl2Cpp)
             {
-                using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp))
+                using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp || !scripting.AllowIL2CPPCompilerConfigurationSelection()))
                 {
                     var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
                     var configurations = GetIl2CppCompilerConfigurations();

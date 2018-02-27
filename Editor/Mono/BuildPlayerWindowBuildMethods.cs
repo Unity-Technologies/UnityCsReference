@@ -312,8 +312,28 @@ namespace UnityEditor
                 // Invalidate default name, if extension mismatches the default file (for ex., when switching between folder type export to file type export, see Android)
                 if (extension != Path.GetExtension(defaultName).Replace(".", ""))
                     defaultName = string.Empty;
+
+                // Hack: For Windows Standalone, we want the BuildPanel to choose a folder,
+                // but we don't want BuildPlayer to take a folder path because historically it took an .exe path
+                // and we would be breaking tons of projects!
+                bool isWindowsStandalone = target == BuildTarget.StandaloneWindows || target == BuildTarget.StandaloneWindows64;
+                string realExtension = extension;
+                if (isWindowsStandalone)
+                {
+                    extension = string.Empty;
+                    // Remove the filename.exe part from the path
+                    if (!string.IsNullOrEmpty(defaultName))
+                        defaultName = Path.GetDirectoryName(defaultName);
+                }
+
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
+
+                if (isWindowsStandalone)
+                {
+                    extension = realExtension;
+                    path = Path.Combine(path, Path.GetFileName(path) + '.' + extension);
+                }
 
                 if (path == string.Empty)
                     return false;
