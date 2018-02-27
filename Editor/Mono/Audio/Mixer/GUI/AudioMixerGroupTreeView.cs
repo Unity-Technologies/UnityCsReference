@@ -336,6 +336,7 @@ namespace UnityEditor
             if (m_Controller != null)
             {
                 m_Controller.SanitizeGroupViews();
+                m_Controller.OnSubAssetChanged();
             }
         }
 

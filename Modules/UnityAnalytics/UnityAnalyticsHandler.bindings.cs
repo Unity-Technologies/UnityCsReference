@@ -76,7 +76,7 @@ namespace UnityEngine.Analytics
 
         public extern AnalyticsResult SendCustomEvent(CustomEventData eventData);
 
-        public extern AnalyticsResult RegisterEvent(string eventName, int maxEventPerHour, int maxItems, string vendorKey, string prefix);
+        public extern AnalyticsResult RegisterEvent(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo);
 
         public extern AnalyticsResult SendEvent(string eventName, object parameters, int ver, string prefix);
     }

@@ -102,6 +102,7 @@ namespace UnityEditor
                     return;
                 renderUtility.Cleanup();
                 UnityObject.DestroyImmediate(gameObject);
+                m_GameObject = null;
                 m_Disposed = true;
             }
         }
@@ -509,7 +510,8 @@ namespace UnityEditor
                 previewData = new PreviewData(target);
                 m_PreviewInstances.Add(referenceTargetIndex, previewData);
             }
-
+            if (!previewData.gameObject)
+                ReloadPreviewInstances();
             return previewData;
         }
 

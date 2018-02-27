@@ -159,6 +159,25 @@ namespace UnityEditor.Modules
 
         // Scripting implementations exposed to the user.
         ScriptingImplementation[] Enabled();
+        bool AllowIL2CPPCompilerConfigurationSelection();
+    }
+
+    internal class DefaultScriptingImplementations : IScriptingImplementations
+    {
+        public virtual ScriptingImplementation[] Supported()
+        {
+            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
+        }
+
+        public virtual ScriptingImplementation[] Enabled()
+        {
+            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
+        }
+
+        public virtual bool AllowIL2CPPCompilerConfigurationSelection()
+        {
+            return true;
+        }
     }
 
     // Extension point to add/alter the SettingsEditorWindow class

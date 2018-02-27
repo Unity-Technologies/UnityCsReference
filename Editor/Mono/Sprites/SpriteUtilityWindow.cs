@@ -222,8 +222,7 @@ namespace UnityEditor
 
         protected void DrawTexture()
         {
-            int texWidth = Mathf.Max(m_Texture.width, 1);
-            float mipLevel = Mathf.Min(m_MipLevel, TextureUtil.GetMipmapCount(m_Texture) - 1)  - Log2(texWidth / m_TextureRect.width);
+            float mipLevel = Mathf.Min(m_MipLevel, TextureUtil.GetMipmapCount(m_Texture) - 1);
 
             FilterMode oldFilter = m_Texture.filterMode;
             TextureUtil.SetFilterModeNoDirty(m_Texture, FilterMode.Point);

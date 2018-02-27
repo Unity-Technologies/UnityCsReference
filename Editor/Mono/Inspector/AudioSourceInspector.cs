@@ -59,7 +59,6 @@ namespace UnityEditor
         }
         private AudioCurveWrapper[] m_AudioCurves;
 
-        bool m_RefreshCurveEditor = false;
         CurveEditor m_CurveEditor = null;
         Vector3 m_LastSourcePosition;
         Vector3 m_LastListenerPosition;
@@ -417,8 +416,6 @@ namespace UnityEditor
 
         private void UndoRedoPerformed()
         {
-            m_RefreshCurveEditor = true;
-
             DestroyExtensionEditors();
 
             UpdateSpatializerExtensionMixedValues();
@@ -461,35 +458,13 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             InitStyles();
-
             serializedObject.Update();
+
             if (m_LowpassObject != null)
                 m_LowpassObject.Update();
 
             HandleLowPassFilter();
 
-            // Check if curves changed outside of the control of this editor
-            foreach (AudioCurveWrapper audioCurve in m_AudioCurves)
-            {
-                CurveWrapper cw = m_CurveEditor.GetCurveWrapperFromID(audioCurve.id);
-                if (audioCurve.curveProp != null)
-                {
-                    AnimationCurve propCurve = audioCurve.curveProp.animationCurveValue;
-                    if ((cw == null) != audioCurve.curveProp.hasMultipleDifferentValues)
-                    {
-                        m_RefreshCurveEditor = true;
-                    }
-                    else if (cw != null)
-                    {
-                        if (cw.curve.length == 0)
-                            m_RefreshCurveEditor = true;
-                        else if (propCurve.length >= 1 && propCurve.keys[0].value != cw.curve.keys[0].value)
-                            m_RefreshCurveEditor = true;
-                    }
-                }
-                else if (cw != null)
-                    m_RefreshCurveEditor = true;
-            }
             UpdateWrappersAndLegend();
 
             EditorGUILayout.PropertyField(m_AudioClip, ms_Styles.audioClipLabel);
@@ -656,9 +631,6 @@ namespace UnityEditor
         {
             EditorGUILayout.Slider(m_DopplerLevel, 0.0f, 5.0f, ms_Styles.dopplerLevelLabel);
 
-            // If anything inside this block changes, we need to update the wrappers
-            EditorGUI.BeginChangeCheck();
-
             // Spread control
             AnimProp(ms_Styles.spreadLabel, m_AudioCurves[kSpreadCurveID].curveProp, 0.0f, 360.0f, true);
 
@@ -697,10 +669,6 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
                 m_MaxDistance.floatValue = Mathf.Min(Mathf.Max(Mathf.Max(m_MaxDistance.floatValue, 0.01f), m_MinDistance.floatValue * 1.01f), 1000000.0f);
 
-            // If anything changed, update the wrappers
-            if (EditorGUI.EndChangeCheck())
-                m_RefreshCurveEditor = true;
-
             Rect r = GUILayoutUtility.GetAspectRect(1.333f, GUI.skin.textField);
             r.xMin += EditorGUI.indent;
             if (Event.current.type != EventType.Layout && Event.current.type != EventType.Used)
@@ -728,7 +696,6 @@ namespace UnityEditor
                     DrawLabel("Listener", distToListener, r);
                 }
             }
-
 
             // Draw legend
             DrawLegend();
@@ -762,12 +729,8 @@ namespace UnityEditor
             if (m_CurveEditor.InLiveEdit())
                 return;
 
-            if (m_RefreshCurveEditor)
-            {
-                m_CurveEditor.animationCurves = GetCurveWrapperArray();
-                SyncShownCurvesToLegend(GetShownAudioCurves());
-                m_RefreshCurveEditor = false;
-            }
+            m_CurveEditor.animationCurves = GetCurveWrapperArray();
+            SyncShownCurvesToLegend(GetShownAudioCurves());
         }
 
         void DrawLegend()
@@ -926,7 +889,6 @@ namespace UnityEditor
                 Undo.RecordObject(source, "AudioSource Distance");
                 source.minDistance = minDistance;
                 source.maxDistance = maxDistance;
-                m_RefreshCurveEditor = true;
             }
 
             Handles.color = tempColor;

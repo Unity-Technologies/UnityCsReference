@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Modules;
@@ -40,7 +42,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.Set("mono-codegen", "il2cpp");
     }
 
-    private void CopyNativePlugins(BuildPostProcessArgs args)
+    private void CopyNativePlugins(BuildPostProcessArgs args, out List<string> cppPlugins)
     {
         string buildTargetName = BuildPipeline.GetBuildTargetName(args.target);
         IPluginImporterExtension pluginImpExtension = new DesktopPluginImporterExtension();
@@ -52,10 +54,18 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         bool haveCreatedPluginsFolder = false;
         bool haveCreatedSubDir32Bit = false;
         bool haveCreatedSubDir64Bit = false;
+        cppPlugins = new List<string>();
 
         foreach (PluginImporter imp in PluginImporter.GetImporters(args.target))
         {
             BuildTarget t = args.target;
+
+            // Skip .cpp files. They get copied to il2cpp output folder just before code compilation
+            if (DesktopPluginImporterExtension.IsCppPluginFile(imp.assetPath))
+            {
+                cppPlugins.Add(imp.assetPath);
+                continue;
+            }
 
             // Skip managed DLLs.
             if (!imp.isNativePlugin)
@@ -151,6 +161,14 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
     }
 
+    private void CopyCppPlugins(string cppOutputDir, IEnumerable<string> cppPlugins)
+    {
+        foreach (var plugin in cppPlugins)
+        {
+            FileUtil.CopyFileOrDirectory(plugin, Path.Combine(cppOutputDir, Path.GetFileName(plugin)));
+        }
+    }
+
     private void SetupStagingArea(BuildPostProcessArgs args)
     {
         if (UseIl2Cpp && GetCreateSolution())
@@ -160,7 +178,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         Directory.CreateDirectory(args.stagingAreaData);
 
-        CopyNativePlugins(args);
+        List<string> cppPlugins;
+        CopyNativePlugins(args, out cppPlugins);
 
         if (args.target == BuildTarget.StandaloneWindows ||
             args.target == BuildTarget.StandaloneWindows64)
@@ -173,7 +192,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         if (UseIl2Cpp)
         {
             CopyVariationFolderIntoStagingArea(args);
-            IL2CPPUtils.RunIl2Cpp(args.stagingAreaData, GetPlatformProvider(args), null, args.usedClassRegistry);
+            IL2CPPUtils.RunIl2Cpp(args.stagingAreaData, GetPlatformProvider(args), (cppOutputDir) => CopyCppPlugins(cppOutputDir, cppPlugins), args.usedClassRegistry);
 
             // Move GameAssembly next to game executable
             var il2cppOutputNativeDirectory = Path.Combine(args.stagingAreaData, "Native");
@@ -427,16 +446,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return true;
     }
 
-    internal class ScriptingImplementations : IScriptingImplementations
+    internal class ScriptingImplementations : DefaultScriptingImplementations
     {
-        public ScriptingImplementation[] Supported()
-        {
-            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
-        }
-
-        public ScriptingImplementation[] Enabled()
-        {
-            return new[] { ScriptingImplementation.Mono2x, ScriptingImplementation.IL2CPP };
-        }
     }
 }

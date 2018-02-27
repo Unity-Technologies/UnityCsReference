@@ -22,6 +22,9 @@ namespace UnityEditor
         [HideInInspector]
         private Vector3Int m_Pivot;
 
+        private static readonly Matrix4x4 s_Clockwise = new Matrix4x4(new Vector4(0f, 1f, 0f, 0f), new Vector4(-1f, 0f, 0f, 0f), new Vector4(0f, 0f, 1f, 0f), new Vector4(0f, 0f, 0f, 1f));
+        private static readonly Matrix4x4 s_CounterClockwise = new Matrix4x4(new Vector4(0f, -1f, 0f, 0f), new Vector4(1f, 0f, 0f, 0f), new Vector4(0f, 0f, 1f, 0f), new Vector4(0f, 0f, 0f, 1f));
+
         public Vector3Int size { get { return m_Size; } set { m_Size = value; SizeUpdated(); } }
         public Vector3Int pivot { get { return m_Pivot; } set { m_Pivot = value; } }
         public BrushCell[] cells { get { return m_Cells; } }
@@ -134,7 +137,7 @@ namespace UnityEditor
             int newPivotY = direction == RotationDirection.Clockwise ? pivot.x : oldSize.x - pivot.x - 1;
             pivot = new Vector3Int(newPivotX, newPivotY, pivot.z);
 
-            Matrix4x4 rotation = Matrix4x4.TRS(Vector3.zero, Quaternion.Euler(0f, 0f, direction == RotationDirection.Clockwise ? 90f : -90f), Vector3.one);
+            Matrix4x4 rotation = direction == RotationDirection.Clockwise ? s_Clockwise : s_CounterClockwise;
             foreach (BrushCell cell in m_Cells)
             {
                 Matrix4x4 oldMatrix = cell.matrix;

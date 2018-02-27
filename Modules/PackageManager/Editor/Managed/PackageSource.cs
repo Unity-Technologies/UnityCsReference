@@ -5,14 +5,14 @@
 
 namespace UnityEditor.PackageManager
 {
-    public enum OriginType
+    public enum PackageSource
     {
         Unknown,
-        Builtin,
         Registry,
+        BuiltIn,
         Embedded,
         Local,
-        Git
+        Git,
     }
 }
 

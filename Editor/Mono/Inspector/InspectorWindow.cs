@@ -202,7 +202,8 @@ namespace UnityEditor
             m_Previews = null;
             m_SelectedPreview = null;
             m_TypeSelectionList = null;
-            m_Parent.ClearKeyboardControl();
+            if (m_Parent != null) // parent may be null in some situations (case 970700, 851988)
+                m_Parent.ClearKeyboardControl();
             ScriptAttributeUtility.ClearGlobalCache();
             Repaint();
         }

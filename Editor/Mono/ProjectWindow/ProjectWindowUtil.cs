@@ -12,6 +12,7 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Internal;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -734,6 +735,7 @@ namespace UnityEditor
             AssetDatabase.Refresh();
 
             var copiedPaths = new List<string>();
+            Object firstDuplicatedObjectToFail = null;
 
             foreach (var asset in assets)
             {
@@ -742,6 +744,12 @@ namespace UnityEditor
                 // if duplicating a sub-asset, then create a copy next to the main asset file
                 if (AssetDatabase.IsSubAsset(asset))
                 {
+                    if (asset is ISubAssetNotDuplicatable)
+                    {
+                        firstDuplicatedObjectToFail = firstDuplicatedObjectToFail ? firstDuplicatedObjectToFail : asset;
+                        continue;
+                    }
+
                     var extension = NativeFormatImporterUtility.GetExtensionForAsset(asset);
                     var newPath = AssetDatabase.GenerateUniqueAssetPath(
                             Path.Combine(Path.GetDirectoryName(assetPath), string.Format("{0}.{1}", asset.name, extension))
@@ -757,6 +765,9 @@ namespace UnityEditor
                         copiedPaths.Add(newPath);
                 }
             }
+
+            if (firstDuplicatedObjectToFail != null)
+                Debug.LogError("Duplication error: One or more sub assets could not be duplicated directly, use the appropriate editor instead", firstDuplicatedObjectToFail);
 
             AssetDatabase.Refresh();
 

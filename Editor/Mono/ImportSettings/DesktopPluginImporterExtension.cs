@@ -3,13 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Collections.Generic;
-using UnityEngine;
-using UnityEditor;
+using System.IO;
 using UnityEditor.Modules;
+using UnityEngine;
 
 namespace UnityEditor
 {
@@ -113,9 +110,7 @@ namespace UnityEditor
                 return true;
 
             string ext = Path.GetExtension(imp.assetPath).ToLower();
-            if (ext == ".dll")
-                return true;
-            return false;
+            return ext == ".dll" || IsCppPluginFile(imp.assetPath);
         }
 
         private bool IsUsableOnOSX(PluginImporter imp)
@@ -124,10 +119,7 @@ namespace UnityEditor
                 return true;
 
             string ext = Path.GetExtension(imp.assetPath).ToLower();
-            if (ext == ".so" ||
-                ext == ".bundle")
-                return true;
-            return false;
+            return ext == ".so" || ext == ".bundle" || IsCppPluginFile(imp.assetPath);
         }
 
         private bool IsUsableOnLinux(PluginImporter imp)
@@ -136,9 +128,7 @@ namespace UnityEditor
                 return true;
 
             string ext = Path.GetExtension(imp.assetPath).ToLower();
-            if (ext == ".so")
-                return true;
-            return false;
+            return ext == ".so" || IsCppPluginFile(imp.assetPath);
         }
 
         public override void OnPlatformSettingsGUI(PluginImporterInspector inspector)
@@ -247,6 +237,12 @@ namespace UnityEditor
 
             // For files this will return filename, for directories, this will return last path component
             return Path.GetFileName(imp.assetPath);
+        }
+
+        internal static bool IsCppPluginFile(string assetPath)
+        {
+            var extension = Path.GetExtension(assetPath).ToLower();
+            return extension == ".cpp" || extension == ".c" || extension == ".h";
         }
     }
 }

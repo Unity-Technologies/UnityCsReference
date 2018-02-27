@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Analytics;
 
 namespace UnityEditor
 {
@@ -41,6 +44,32 @@ namespace UnityEditor
         {
             get;
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey)
+        {
+            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, 1, "", Assembly.GetCallingAssembly().FullName);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver)
+        {
+            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, "", Assembly.GetCallingAssembly().FullName);
+        }
+
+        public static AnalyticsResult SendEventWithLimit(string eventName, object parameters)
+        {
+            return SendEventWithLimit(eventName, parameters, 1, "");
+        }
+
+        public static AnalyticsResult SendEventWithLimit(string eventName, object parameters, int ver)
+        {
+            return SendEventWithLimit(eventName, parameters, ver, "");
+        }
+
+        private extern static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo);
+
+        private extern static AnalyticsResult SendEventWithLimit(string eventName, object parameters, int ver, string prefix);
 
         extern private static bool SendEvent(string eventName, object parameters);
     }

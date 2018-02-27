@@ -369,18 +369,7 @@ namespace UnityEngine.Networking
             {
                 if (!value.IsAbsoluteUri)
                     throw new ArgumentException("URI must be absolute");
-                // For file:// URIs, pass in unescaped URL
-                // For jar:file:// URI expect original string to be well formed (Android specific)
-                // blob:http(s)  URI is received on WebGL for something in memory, use original string
-                string url;
-                if (value.IsFile)
-                    url = WWWTranscoder.URLDecode(value.AbsoluteUri, System.Text.Encoding.UTF8);
-                string scheme = value.Scheme;
-                if (scheme == "jar" || scheme == "blob")
-                    url = value.OriginalString;
-                else
-                    url = value.AbsoluteUri;
-                InternalSetUrl(url);
+                InternalSetUrl(WebRequestUtils.MakeUriString(value, value.OriginalString, false));
                 m_Uri = value;
             }
         }
