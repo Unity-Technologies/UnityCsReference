@@ -971,7 +971,6 @@ namespace UnityEditor
                                     editor.ReplaceSelection("");
                                     mayHaveChanged = true;
                                 }
-                                evt.Use();
                             }
                         }
                     }

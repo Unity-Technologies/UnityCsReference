@@ -40,6 +40,11 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("sceneViewInfo", parameters);
         }
 
+        internal static bool SendCollabUserAction(object parameters)
+        {
+            return EditorAnalytics.SendEvent("collabUserAction", parameters);
+        }
+
         public extern static bool enabled
         {
             get;

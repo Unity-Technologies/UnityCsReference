@@ -863,6 +863,12 @@
   <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs">
     <Link>Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
     <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
   </Compile>
@@ -1000,9 +1006,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SpriteAtlasBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\SpriteAtlasBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SpritesBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\SpritesBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\TextAssetBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\TextAssetBindings.gen.cs</Link>
@@ -1955,20 +1958,14 @@
   <Compile Include="..\..\Runtime\UI\ScriptBindings\RectTransformUtility.cs">
     <Link>Runtime\UI\ScriptBindings\RectTransformUtility.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\UI\ScriptBindings\UICanvas.bindings.cs">
+    <Link>Runtime\UI\ScriptBindings\UICanvas.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\VR\HoloLens\HolographicEmulation\HolographicRemoting.cs">
     <Link>Runtime\VR\HoloLens\HolographicEmulation\HolographicRemoting.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.cs">
-    <Link>Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.deprecated.cs">
-    <Link>Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.deprecated.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureSource.cs">
-    <Link>Runtime\VR\HoloLens\ScriptBindings\GestureSource.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureSource.deprecated.cs">
-    <Link>Runtime\VR\HoloLens\ScriptBindings\GestureSource.deprecated.cs</Link>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\GestureRecognizer.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\HolographicEmulation.cs">
     <Link>Runtime\VR\HoloLens\ScriptBindings\HolographicEmulation.cs</Link>
@@ -1979,17 +1976,35 @@
   <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\HolographicSettings.deprecated.cs">
     <Link>Runtime\VR\HoloLens\ScriptBindings\HolographicSettings.deprecated.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.cs">
-    <Link>Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.cs</Link>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\InteractionManager.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\InteractionManager.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\TransformLock.cs">
-    <Link>Runtime\VR\HoloLens\ScriptBindings\TransformLock.cs</Link>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\InteractionManager.deprecated.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\InteractionManager.deprecated.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WebCam.cs">
-    <Link>Runtime\VR\HoloLens\ScriptBindings\WebCam.cs</Link>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\PhotoCapture.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\PhotoCapture.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WorldManager.deprecated.cs">
-    <Link>Runtime\VR\HoloLens\ScriptBindings\WorldManager.deprecated.cs</Link>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\SpatialMapping.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\VideoCapture.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\VideoCapture.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WebCam.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\WebCam.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WorldAnchor.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\WorldAnchor.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WorldAnchorStore.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\WorldAnchorStore.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WorldAnchorStoreBatch.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\WorldAnchorStoreBatch.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WorldManager.bindings.cs">
+    <Link>Runtime\VR\HoloLens\ScriptBindings\WorldManager.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\VR\ScriptBindings\InputTracking.cs">
     <Link>Runtime\VR\ScriptBindings\InputTracking.cs</Link>
@@ -2078,41 +2093,17 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\UI\CanvasRendererBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\UI\CanvasRendererBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\UI\UICanvasBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\UI\UICanvasBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\GestureBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\VR\GestureBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\GestureSourceBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\VR\GestureSourceBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\HolographicEmulationBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\VR\HolographicEmulationBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\HolographicSettingsBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\VR\HolographicSettingsBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\SpatialMappingBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\VR\SpatialMappingBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\TransformLockBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\VR\TransformLockBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\VR\VRBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\WebCamBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\VR\WebCamBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\WorldManagerBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\VR\WorldManagerBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Video\VideoClipBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Video\VideoClipBindings.gen.cs</Link>

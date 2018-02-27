@@ -328,7 +328,7 @@ namespace UnityEditor
         // The object currently inspected by this editor.
         UnityObject[] m_Targets;
         // The context object with which this Editor was created
-        UnityObject m_Context;
+        internal UnityObject m_Context;
         // Note that m_Dirty is not only set through 'isInspectorDirty' but also from C++ in 'SetCustomEditorIsDirty (MonoBehaviour* inspector, bool dirty)'
         int m_IsDirty;
         int m_ReferenceTargetIndex = 0;
@@ -336,7 +336,6 @@ namespace UnityEditor
         IPreviewable m_DummyPreview;
 
         internal SerializedObject m_SerializedObject = null;
-        OptimizedGUIBlock m_OptimizedBlock;
         internal InspectorMode m_InspectorMode = InspectorMode.Normal;
         internal const float kLineHeight = 16;
 
@@ -444,7 +443,6 @@ namespace UnityEditor
             set { m_IsDirty = value ? 1 : 0; }
         }
 
-
         [ExcludeFromDocs]
         public static Editor CreateEditorWithContext(UnityObject[] targetObjects, UnityObject context)
         {
@@ -501,13 +499,8 @@ namespace UnityEditor
             return CreateEditorWithContext(targetObjects, null, editorType);
         }
 
-        private void CleanupPropertyEditor()
+        internal void CleanupPropertyEditor()
         {
-            if (m_OptimizedBlock != null)
-            {
-                m_OptimizedBlock.Dispose();
-                m_OptimizedBlock = null;
-            }
             if (m_SerializedObject != null)
             {
                 m_SerializedObject.Dispose();
@@ -531,7 +524,6 @@ namespace UnityEditor
         internal void InternalSetTargets(UnityObject[] t) { m_Targets = t; }
         internal void InternalSetHidden(bool hidden) { hideInspector = hidden; }
         internal void InternalSetContextObject(UnityObject context) { m_Context = context; }
-
 
         Bounds IToolModeOwner.GetWorldBoundsOfTargets()
         {
@@ -576,88 +568,6 @@ namespace UnityEditor
                 // The m_SerializedObject is a native object thus its targetObjects is a native memory PPtr list which have the new PPtr ids.
                 InternalSetTargets(m_SerializedObject.targetObjects);
             }
-        }
-
-        internal bool GetOptimizedGUIBlockImplementation(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)
-        {
-            if (isDirty && m_OptimizedBlock != null)
-            {
-                m_OptimizedBlock.Dispose();
-                m_OptimizedBlock = null;
-            }
-
-            if (!isVisible)
-            {
-                if (m_OptimizedBlock == null)
-                    m_OptimizedBlock = new OptimizedGUIBlock();
-                block = m_OptimizedBlock;
-                height = 0;
-                return true;
-            }
-
-            // Update serialized object representation
-            if (m_SerializedObject == null)
-                m_SerializedObject = new SerializedObject(targets, m_Context);
-            else
-                m_SerializedObject.Update();
-            m_SerializedObject.inspectorMode = m_InspectorMode;
-
-            SerializedProperty property = m_SerializedObject.GetIterator();
-            // Allocate height for spacing above first control
-            height = EditorGUI.kControlVerticalSpacing;
-            bool expand = true;
-            while (property.NextVisible(expand))
-            {
-                if (!EditorGUI.CanCacheInspectorGUI(property))
-                {
-                    if (m_OptimizedBlock != null)
-                        m_OptimizedBlock.Dispose();
-                    block = m_OptimizedBlock = null;
-                    return false;
-                }
-
-                // Allocate height for control plus spacing below it
-                height += EditorGUI.GetPropertyHeight(property, null, true) + EditorGUI.kControlVerticalSpacing;
-                expand = false;
-            }
-
-            // If no controls are shown, undo the spacing we started with.
-            if (height == EditorGUI.kControlVerticalSpacing)
-                height = 0;
-
-            if (m_OptimizedBlock == null)
-                m_OptimizedBlock = new OptimizedGUIBlock();
-            block = m_OptimizedBlock;
-            return true;
-        }
-
-        internal bool OptimizedInspectorGUIImplementation(Rect contentRect)
-        {
-            SerializedProperty property = m_SerializedObject.GetIterator();
-
-            // Iterate over all properties
-            bool childrenAreExpanded = true;
-
-            bool wasEnabled = GUI.enabled;
-            contentRect.xMin += InspectorWindow.kInspectorPaddingLeft;
-            contentRect.xMax -= InspectorWindow.kInspectorPaddingRight;
-            contentRect.y += EditorGUI.kControlVerticalSpacing;
-
-            while (property.NextVisible(childrenAreExpanded))
-            {
-                contentRect.height = EditorGUI.GetPropertyHeight(property, null, false);
-                EditorGUI.indentLevel = property.depth;
-                using (new EditorGUI.DisabledScope(m_InspectorMode == InspectorMode.Normal && "m_Script" == property.propertyPath))
-                {
-                    childrenAreExpanded = EditorGUI.PropertyField(contentRect, property);
-                }
-                contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
-            }
-            GUI.enabled = wasEnabled;
-
-            bool valuesChanged = m_SerializedObject.ApplyModifiedProperties();
-
-            return valuesChanged;
         }
 
         internal virtual bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)

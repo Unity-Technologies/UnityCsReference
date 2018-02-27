@@ -79,6 +79,12 @@ namespace UnityEditor
         AnimBool m_ShowWidePreview = new AnimBool();
         AnimBool m_ShowOverlapPreview = new AnimBool();
 
+        static HashSet<Event> s_GridAreaPriorityKeyboardEvents = new HashSet<Event>
+        {
+            Event.KeyboardEvent("up"),
+            Event.KeyboardEvent("down"),
+        };
+
         Rect listPosition
         {
             get
@@ -791,13 +797,15 @@ namespace UnityEditor
 
             GUI.BeginGroup(new Rect(0, 0, position.width, position.height), GUIContent.none);
 
-            // We want to check for arrow key presses first of all to allow arrow navigation
-            // of grid/list even when search field has focus (which it has when the window opens).
-            // That means arrows won't affect the cursor position in the text field
-            // but that's by design (was the same in 3.4).
-            m_ListArea.HandleKeyboard(false);
+            // Let grid/list area take priority over search area on up/down arrow keys
+            if (s_GridAreaPriorityKeyboardEvents.Contains(Event.current))
+                m_ListArea.HandleKeyboard(false);
 
             SearchArea();
+
+            // Let grid/list area handle any keyboard events not used by search area
+            m_ListArea.HandleKeyboard(false);
+
             GridListArea();
             PreviewArea();
 

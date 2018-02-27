@@ -186,16 +186,10 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
-        public extern static string commandLineArgsFile
-        {
-            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-            get;
-            [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-            [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-            set;
-        }
-
+        [System.Obsolete ("PlayerSettings.WSA.commandLineArgsFile is deprecated", true)]
+        public static string commandLineArgsFile { get { return string.Empty; } set {} }
+        
+        
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern public static  bool SetCertificate (string path, string password) ;

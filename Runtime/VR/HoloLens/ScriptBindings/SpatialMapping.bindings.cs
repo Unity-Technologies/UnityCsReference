@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
-using UnityEngine.XR.WSA;
 
 
 namespace UnityEngine.XR.WSA
@@ -59,8 +59,15 @@ namespace UnityEngine.XR.WSA
     // volume.  This volume can be changed at runtime.
     //
     [MovedFrom("UnityEngine.VR.WSA")]
-    sealed public partial class SurfaceObserver : IDisposable
+    [UsedByNativeCode]
+    [StaticAccessor("SurfaceObserver", StaticAccessorType.DoubleColon)]
+    [NativeHeader("Runtime/VR/HoloLens/SpatialMapping/SurfaceObserver.h")]
+    [NativeHeader("VRScriptingClasses.h")]
+    [StructLayout(LayoutKind.Sequential)]   // needed for IntPtr binding classes
+    sealed public class SurfaceObserver : IDisposable
     {
+        internal IntPtr m_Observer;  // Native object
+
         public delegate void SurfaceChangedDelegate(SurfaceId surfaceId, SurfaceChange changeType, Bounds bounds, DateTime updateTime);
         public delegate void SurfaceDataReadyDelegate(SurfaceData bakedData, bool outputWritten, float elapsedBakeTimeSeconds);
 
@@ -93,52 +100,66 @@ namespace UnityEngine.XR.WSA
 
         public SurfaceObserver()
         {
-            m_Observer = Internal_Create();
+            m_Observer = Internal_Create(this);
         }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("Create")]
+        private extern IntPtr Internal_Create(SurfaceObserver surfaceObserver);
 
         ~SurfaceObserver()
         {
             if (m_Observer != IntPtr.Zero)
             {
-                DestroyThreaded(m_Observer);
+                DestroyThreaded();
                 m_Observer = IntPtr.Zero;
                 GC.SuppressFinalize(this);
             }
         }
 
-        public void SetVolumeAsAxisAlignedBox(Vector3 origin, Vector3 extents)
+        [ThreadAndSerializationSafe]
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        private extern void DestroyThreaded();
+
+        public void Dispose()
         {
-            Internal_SetVolumeAsAxisAlignedBox(m_Observer, origin, extents);
+            if (m_Observer != IntPtr.Zero)
+            {
+                Destroy();
+                m_Observer = IntPtr.Zero;
+            }
+            GC.SuppressFinalize(this);
         }
 
-        public void SetVolumeAsSphere(Vector3 origin, float radiusMeters)
-        {
-            Internal_SetVolumeAsSphere(m_Observer, origin, radiusMeters);
-        }
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        private extern void Destroy();
 
-        public void SetVolumeAsOrientedBox(Vector3 origin, Vector3 extents, Quaternion orientation)
-        {
-            Internal_SetVolumeAsOrientedBox(m_Observer, origin, extents, orientation);
-        }
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern void SetVolumeAsAxisAlignedBox(Vector3 origin, Vector3 extents);
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern void SetVolumeAsSphere(Vector3 origin, float radiusMeters);
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern void SetVolumeAsOrientedBox(Vector3 origin, Vector3 extents, Quaternion orientation);
 
         public void SetVolumeAsFrustum(Plane[] planes)
         {
             if (planes == null)
                 throw new ArgumentNullException("planes");
+
             if (planes.Length != 6)
                 throw new ArgumentException("Planes array must be 6 items long", "planes");
 
-            Internal_SetVolumeAsFrustum(m_Observer, planes);
+            SetVolumeAsFrustum_Internal(planes);
         }
 
-        public void Update(SurfaceChangedDelegate onSurfaceChanged)
-        {
-            if (onSurfaceChanged == null)
-            {
-                throw new ArgumentNullException("onSurfaceChanged");
-            }
-            Internal_Update(m_Observer, onSurfaceChanged);
-        }
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("SetVolumeAsFrustum")]
+        private extern void SetVolumeAsFrustum_Internal([NotNull] Plane[] planes);
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern void Update([NotNull] SurfaceChangedDelegate onSurfaceChanged);
 
         public bool RequestMeshAsync(SurfaceData dataRequest, SurfaceDataReadyDelegate onDataReady)
         {
@@ -178,7 +199,10 @@ namespace UnityEngine.XR.WSA
             }
             return ret;
         }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("AddToWorkQueue")]
+        private static extern bool Internal_AddToWorkQueue(IntPtr observer, SurfaceDataReadyDelegate onDataReady, int surfaceId, MeshFilter filter, WorldAnchor wa, MeshCollider mc, float trisPerCubicMeter, bool createColliderData);
     }
 }
-
 

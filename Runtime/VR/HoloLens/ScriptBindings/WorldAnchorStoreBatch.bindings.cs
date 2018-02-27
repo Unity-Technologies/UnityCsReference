@@ -2,102 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
-using UnityEngine;
+using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
-using UnityEngine.XR.WSA;
 
-
-namespace UnityEngine.XR.WSA.Persistence
-{
-    [MovedFrom("UnityEngine.VR.WSA.Persistence")]
-    public partial class WorldAnchorStore
-    {
-        public delegate void GetAsyncDelegate(WorldAnchorStore store);
-
-        public static void GetAsync(GetAsyncDelegate onCompleted)
-        {
-        }
-
-        public bool Save(string id, WorldAnchor anchor)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentException("id must not be null or empty", "id");
-            }
-
-            if (anchor == null)
-            {
-                throw new ArgumentNullException("anchor");
-            }
-            return false;
-        }
-
-        public WorldAnchor Load(string id, GameObject go)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentException("id must not be null or empty", "id");
-            }
-
-            if (go == null)
-            {
-                throw new ArgumentNullException("anchor");
-            }
-            return null;
-        }
-
-        public bool Delete(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                throw new ArgumentException("id must not be null or empty", "id");
-            }
-            return false;
-        }
-
-        public void Clear()
-        {
-        }
-
-        public int anchorCount
-        {
-            get
-            {
-                return 0;
-            }
-        }
-
-        public int GetAllIds(string[] ids)
-        {
-            if (ids == null)
-                throw new ArgumentNullException("ids");
-
-            return 0;
-        }
-
-        public string[] GetAllIds()
-        {
-            return new string[0];
-        }
-
-        private WorldAnchorStore(IntPtr nativePtr)
-        {
-        }
-
-        [RequiredByNativeCode]
-        private static void InvokeGetAsyncDelegate(GetAsyncDelegate handler, IntPtr nativePtr)
-        {
-            s_Instance = new WorldAnchorStore(nativePtr);
-            handler(s_Instance);
-        }
-
-        private static WorldAnchorStore s_Instance = null;
-
-    }
-}
 
 namespace UnityEngine.XR.WSA.Sharing
 {
@@ -110,12 +20,23 @@ namespace UnityEngine.XR.WSA.Sharing
         UnknownError = 3
     }
 
+    [NativeHeader("Runtime/VR/HoloLens/WorldAnchor/WorldAnchorTransferBatch.h")]
+    [NativeHeader("VRScriptingClasses.h")]
     [MovedFrom("UnityEngine.VR.WSA.Sharing")]
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]   // needed for IntPtr binding classes
     public partial class WorldAnchorTransferBatch : IDisposable
     {
+        internal IntPtr m_NativePtr = IntPtr.Zero;
+
         public delegate void SerializationDataAvailableDelegate(byte[] data);
         public delegate void SerializationCompleteDelegate(SerializationCompletionReason completionReason);
         public delegate void DeserializationCompleteDelegate(SerializationCompletionReason completionReason, WorldAnchorTransferBatch deserializedTransferBatch);
+
+        private WorldAnchorTransferBatch(IntPtr nativePtr)
+        {
+            m_NativePtr = nativePtr;
+        }
 
         public static void ExportAsync(WorldAnchorTransferBatch transferBatch, SerializationDataAvailableDelegate onDataAvailable, SerializationCompleteDelegate onCompleted)
         {
@@ -134,6 +55,7 @@ namespace UnityEngine.XR.WSA.Sharing
 
             onCompleted(SerializationCompletionReason.NotSupported);
         }
+
 
         public static void ImportAsync(byte[] serializedData, DeserializationCompleteDelegate onComplete)
         {
@@ -162,6 +84,7 @@ namespace UnityEngine.XR.WSA.Sharing
             onComplete(SerializationCompletionReason.NotSupported, new WorldAnchorTransferBatch());
         }
 
+
         public bool AddWorldAnchor(string id, WorldAnchor anchor)
         {
             if (string.IsNullOrEmpty(id))
@@ -175,13 +98,9 @@ namespace UnityEngine.XR.WSA.Sharing
             return false;
         }
 
-        public int anchorCount
-        {
-            get
-            {
-                return 0;
-            }
-        }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern int anchorCount { get; }
 
         public int GetAllIds(string[] ids)
         {
@@ -196,26 +115,53 @@ namespace UnityEngine.XR.WSA.Sharing
             return new string[0];
         }
 
+
         public WorldAnchor LockObject(string id, GameObject go)
         {
             return null;
         }
 
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("LoadAnchor")]
+        private extern bool LoadAnchor_Internal(string id, WorldAnchor anchor);
+
         public WorldAnchorTransferBatch()
         {
+            m_NativePtr = Create_Internal();
         }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("Create")]
+        private extern static IntPtr Create_Internal();
 
         ~WorldAnchorTransferBatch()
         {
+            if (m_NativePtr != IntPtr.Zero)
+            {
+                DisposeThreaded_Internal();
+                m_NativePtr = IntPtr.Zero;
+            }
         }
+
+        [ThreadAndSerializationSafe()]
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("DisposeThreaded")]
+        private extern void DisposeThreaded_Internal();
 
         public void Dispose()
         {
+            if (m_NativePtr != IntPtr.Zero)
+            {
+                Dispose_Internal();
+                m_NativePtr = IntPtr.Zero;
+            }
+
+            GC.SuppressFinalize(this);
         }
 
-        private WorldAnchorTransferBatch(IntPtr nativePtr)
-        {
-        }
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("Dispose")]
+        private extern void Dispose_Internal();
 
         [RequiredByNativeCode]
         private static void InvokeWorldAnchorSerializationDataAvailableDelegate(SerializationDataAvailableDelegate onSerializationDataAvailable, byte[] data)
@@ -235,7 +181,6 @@ namespace UnityEngine.XR.WSA.Sharing
             WorldAnchorTransferBatch watb = new WorldAnchorTransferBatch(nativePtr);
             onDeserializationComplete(completionReason, watb);
         }
-
     }
 }
 

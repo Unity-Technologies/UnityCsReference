@@ -41,7 +41,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             var tpl = EditorGUIUtility.Load("UXML/GraphView/BlackboardField.uxml") as VisualTreeAsset;
             VisualElement mainContainer = tpl.CloneTree(null);
-
+            AddStyleSheetPath(Blackboard.StyleSheetPath);
             mainContainer.AddToClassList("mainContainer");
             mainContainer.pickingMode = PickingMode.Ignore;
 

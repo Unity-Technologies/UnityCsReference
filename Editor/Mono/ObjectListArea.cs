@@ -924,6 +924,12 @@ namespace UnityEditor
                             if (AllowLeftRightArrowNavigation())
                                 offset = 1;
                             break;
+                        case KeyCode.Home:
+                            offset = kHome;
+                            break;
+                        case KeyCode.End:
+                            offset = kEnd;
+                            break;
                         case KeyCode.PageUp:
                             offset = kPageUp;
                             break;
@@ -945,6 +951,8 @@ namespace UnityEditor
 
                         case KeyCode.UpArrow:
                         case KeyCode.DownArrow:
+                        case KeyCode.Home:
+                        case KeyCode.End:
                         case KeyCode.PageUp:
                         case KeyCode.PageDown:
                             validNavigationKey = true;

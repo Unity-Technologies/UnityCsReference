@@ -121,7 +121,7 @@ namespace UnityEditor
             public static readonly GUIContent metalForceHardShadows = EditorGUIUtility.TrTextContent("Force hard shadows on Metal*");
             public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TrTextContent("Metal Editor Support*");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*");
-            public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Restricted Backbuffer Use", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
+            public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
             public static readonly GUIContent vulkanEditorSupport = EditorGUIUtility.TextContent("Vulkan Editor Support (Experimental)*");
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("Enable SetSRGBWrite()*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent vulkanUseSWCommandBuffers = EditorGUIUtility.TrTextContent("Use SW Commandbuffers*", "If set, builds the command buffers in the task executor thread instead of building secondary command buffers for rendering API calls.");

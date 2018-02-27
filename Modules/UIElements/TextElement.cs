@@ -8,9 +8,11 @@ namespace UnityEngine.Experimental.UIElements
 {
     public abstract class BaseTextElement : VisualElement
     {
+        internal const string k_TextElementClass = "textElement";
         public BaseTextElement()
         {
             requireMeasureFunction = true;
+            AddToClassList(k_TextElementClass);
         }
 
         [SerializeField]

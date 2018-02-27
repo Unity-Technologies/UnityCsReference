@@ -96,6 +96,7 @@ namespace UnityEngine
 
 
     // A texture image used in a 2D GUI.
+    [NativeHeader("Runtime/Camera/RenderLayers/GUITexture.h")]
     [System.Obsolete("This component is part of the legacy UI system and will be removed in a future release.")]
     public class GUITexture : GUIElement
     {

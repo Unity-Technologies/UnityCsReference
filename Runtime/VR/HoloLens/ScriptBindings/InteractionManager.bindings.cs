@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 
 namespace UnityEngine.XR.WSA.Input
@@ -23,15 +23,16 @@ namespace UnityEngine.XR.WSA.Input
     internal enum InteractionSourceFlags
     {
         None = 0,
-        SupportsGrasp = 1 << 0,
-        SupportsMenu = 1 << 1,
+        SupportsTouchpad =  1 << 0,
+        SupportsThumbstick = 1 << 1,
         SupportsPointing = 1 << 2,
-        SupportsTouchpad = 1 << 3,
-        SupportsThumbstick = 1 << 4,
+        SupportsGrasp = 1 << 3,
+        SupportsMenu = 1 << 4
     }
 
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
+    [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureCommon.h")]
     public struct InteractionSource
     {
         public override bool Equals(object obj)
@@ -143,6 +144,7 @@ namespace UnityEngine.XR.WSA.Input
     }
 
     [RequiredByNativeCode]
+    [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureCommon.h")]
     public partial struct InteractionSourcePose
     {
         public bool TryGetPosition(out Vector3 position)
@@ -235,6 +237,7 @@ namespace UnityEngine.XR.WSA.Input
     }
 
     [RequiredByNativeCode]
+    [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureCommon.h")]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public partial struct InteractionSourceProperties
     {
@@ -247,6 +250,8 @@ namespace UnityEngine.XR.WSA.Input
     }
 
     [RequiredByNativeCode]
+    [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureSource.h")]
+    [NativeHeader("VRScriptingClasses.h")]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     public partial struct InteractionSourceState
     {
@@ -367,8 +372,22 @@ namespace UnityEngine.XR.WSA.Input
         }
     }
 
+    [StaticAccessor("SpatialInput", StaticAccessorType.DoubleColon)]
+    [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureSource.h")]
     public partial class InteractionManager
     {
+        private delegate void InternalSourceEventHandler(EventType eventType, InteractionSourceState state, InteractionSourcePressType pressType);
+        private static InternalSourceEventHandler m_OnSourceEventHandler;
+
+        static InteractionManager()
+        {
+            m_OnSourceEventHandler = OnSourceEvent;
+            SetEventHandler(Marshal.GetFunctionPointerForDelegate(m_OnSourceEventHandler));
+        }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        private extern static void SetEventHandler(IntPtr internalSourceEventHandler);
+
         public static event Action<InteractionSourceDetectedEventArgs> InteractionSourceDetected;
         public static event Action<InteractionSourceLostEventArgs> InteractionSourceLost;
         public static event Action<InteractionSourcePressedEventArgs> InteractionSourcePressed;
@@ -377,22 +396,19 @@ namespace UnityEngine.XR.WSA.Input
 
         public static int GetCurrentReading(InteractionSourceState[] sourceStates)
         {
-            if (sourceStates == null)
-                throw new ArgumentNullException("sourceStates");
-
-            if (sourceStates.Length > 0)
-                return GetCurrentReading_Internal(sourceStates);
-            else
-                return 0;
+            return GetCurrentReading_Internal(sourceStates);
         }
 
         public static InteractionSourceState[] GetCurrentReading()
         {
             InteractionSourceState[] sourceStates = new InteractionSourceState[numSourceStates];
-            if (sourceStates.Length > 0)
-                GetCurrentReading_Internal(sourceStates);
+            GetCurrentReading_Internal(sourceStates);
             return sourceStates;
         }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("GetCurrentReading")]
+        private extern static int GetCurrentReading_Internal([NotNull] InteractionSourceState[] sourceStates);
 
         // In sync with Runtime/HoloLens/Gestures/GestureSource.h
         private enum EventType
@@ -404,13 +420,11 @@ namespace UnityEngine.XR.WSA.Input
             SourceReleased
         }
 
-        private delegate void InternalSourceEventHandler(EventType eventType, InteractionSourceState state, InteractionSourcePressType pressType);
-        private static InternalSourceEventHandler m_OnSourceEventHandler;
-
-        static InteractionManager()
+        public extern static int numSourceStates
         {
-            m_OnSourceEventHandler = OnSourceEvent;
-            Initialize(Marshal.GetFunctionPointerForDelegate(m_OnSourceEventHandler));
+            [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+            [NativeName("GetNumSourceStates")]
+            get;
         }
 
 #pragma warning disable 0618

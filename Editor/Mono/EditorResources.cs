@@ -6,8 +6,6 @@ using System;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Internal;
-using System.Collections.Generic;
-using UnityEditor;
 using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Experimental
@@ -35,7 +33,7 @@ namespace UnityEditor.Experimental
         }
 
         // Returns the editor resources absolute file system path.
-        public static string DataPath
+        public static string dataPath
         {
             get
             {
@@ -76,6 +74,40 @@ namespace UnityEditor.Experimental
             if (!obj && isRequired)
                 throw new FileNotFoundException("Could not find editor resource " + assetPath);
             return obj as T;
+        }
+
+        // Mount the editor resources folder as a package.
+        private static bool LoadEditorResourcesPackage(string editorResourcesPath)
+        {
+            // Make sure the folder contains a package.
+            if (!File.Exists(Path.Combine(editorResourcesPath, "package.json")))
+            {
+                Debug.LogError(editorResourcesPath + "does not contain a package descriptor.");
+                return false;
+            }
+
+            // We need editor resources meta files to be visible to prevent build issues.
+            EditorSettings.Internal_UserGeneratedProjectSuffix = "-testable";
+            EditorSettings.externalVersionControl = ExternalVersionControl.Generic;
+
+            PackageManager.Client.Add($"{packageName}@file:{editorResourcesPath}");
+            return true;
+        }
+
+        [MenuItem("Tools/Load Editor Resources", false, 5000, true)]
+        internal static void LoadEditorResourcesIntoProject()
+        {
+            // Set default editor resources project.
+            var editorResourcesPath = Path.Combine(Unsupported.GetBaseUnityDeveloperFolder(), "External/Resources/editor_resources");
+            if (!Directory.Exists(editorResourcesPath))
+                editorResourcesPath = Directory.GetCurrentDirectory();
+
+            // Ask the user to select the editor resources package folder.
+            editorResourcesPath = EditorUtility.OpenFolderPanel("Select editor resources folder", editorResourcesPath, "");
+            if (String.IsNullOrEmpty(editorResourcesPath))
+                return;
+            if (LoadEditorResourcesPackage(editorResourcesPath))
+                EditorApplication.OpenProject(Path.Combine(Application.dataPath, ".."), Environment.GetCommandLineArgs());
         }
     }
 }

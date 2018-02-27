@@ -94,7 +94,7 @@ namespace UnityEditor
                 if (!this.isValidDisplayNameCache)
                 {
                     this.isValidDisplayNameCache = true;
-                    m_CachedLocalizedDisplayName = isUnityAssembly ? L10n.Tr(displayName) : displayName;
+                    m_CachedLocalizedDisplayName = L10n.Tr(displayName);
                 }
                 return m_CachedLocalizedDisplayName;
             }

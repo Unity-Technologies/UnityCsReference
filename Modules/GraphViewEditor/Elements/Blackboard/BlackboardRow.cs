@@ -46,7 +46,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public BlackboardRow(VisualElement item, VisualElement propertyView)
         {
             var tpl = EditorGUIUtility.Load("UXML/GraphView/BlackboardRow.uxml") as VisualTreeAsset;
+            AddStyleSheetPath(Blackboard.StyleSheetPath);
+
             VisualElement mainContainer = tpl.CloneTree(null);
+
             mainContainer.AddToClassList("mainContainer");
 
             m_Root = mainContainer.Q<VisualElement>("root");

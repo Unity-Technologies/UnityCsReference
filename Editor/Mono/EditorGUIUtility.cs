@@ -668,13 +668,17 @@ namespace UnityEditor
 
         internal static GUIContent TempContent(string t)
         {
+            s_Text.image = null;
             s_Text.text = t;
+            s_Text.tooltip = null;
             return s_Text;
         }
 
         internal static GUIContent TempContent(Texture i)
         {
             s_Image.image = i;
+            s_Image.text = null;
+            s_Image.tooltip = null;
             return s_Image;
         }
 
@@ -682,6 +686,7 @@ namespace UnityEditor
         {
             s_TextImage.image = i;
             s_TextImage.text = t;
+            s_TextImage.tooltip = null;
             return s_TextImage;
         }
 

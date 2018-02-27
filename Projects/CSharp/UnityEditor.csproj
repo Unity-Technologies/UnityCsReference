@@ -398,9 +398,6 @@
   <Compile Include="..\..\Editor\Mono\ArrayUtility.cs">
     <Link>Editor\Mono\ArrayUtility.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\AssembleEditorSkin.cs">
-    <Link>Editor\Mono\AssembleEditorSkin.cs</Link>
-  </Compile>
   <Compile Include="..\..\Editor\Mono\AssemblyHelper.cs">
     <Link>Editor\Mono\AssemblyHelper.cs</Link>
   </Compile>
@@ -776,6 +773,9 @@
   <Compile Include="..\..\Editor\Mono\Collab\Collab.cs">
     <Link>Editor\Mono\Collab\Collab.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Collab\CollabAnalytics.cs">
+    <Link>Editor\Mono\Collab\CollabAnalytics.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Collab\CollabChange.cs">
     <Link>Editor\Mono\Collab\CollabChange.cs</Link>
   </Compile>
@@ -952,9 +952,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\EditorGraphicsSettings.cs">
     <Link>Editor\Mono\EditorGraphicsSettings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\EditorHandles.cs">
-    <Link>Editor\Mono\EditorHandles.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\EditorHandles\ArcHandle.cs">
     <Link>Editor\Mono\EditorHandles\ArcHandle.cs</Link>
@@ -1531,6 +1528,12 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\HandleUtility.cs">
     <Link>Editor\Mono\HandleUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Handles.bindings.cs">
+    <Link>Editor\Mono\Handles.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Handles.cs">
+    <Link>Editor\Mono\Handles.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Help.bindings.cs">
     <Link>Editor\Mono\Help.bindings.cs</Link>
@@ -3509,9 +3512,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorHandlesBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\EditorHandlesBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorSceneManagerBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\EditorSceneManagerBindings.gen.cs</Link>
   </Compile>
@@ -4127,6 +4127,9 @@
   <Compile Include="..\..\Modules\RestService\RestServiceExtension.cs">
     <Link>Modules\RestService\RestServiceExtension.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\RestService\ScriptBindings\RestService.bindings.cs">
+    <Link>Modules\RestService\ScriptBindings\RestService.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\RestService\ScriptEditorSettings.cs">
     <Link>Modules\RestService\ScriptEditorSettings.cs</Link>
   </Compile>
@@ -4217,6 +4220,27 @@
   <Compile Include="..\..\Modules\TilemapEditor\Editor\ScriptBindings\TilemapEditor.bindings.cs">
     <Link>Modules\TilemapEditor\Editor\ScriptBindings\TilemapEditor.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIAutomationEditor\AutomatedWindow.cs">
+    <Link>Modules\UIAutomationEditor\AutomatedWindow.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIAutomationEditor\ClickOverTime.cs">
+    <Link>Modules\UIAutomationEditor\ClickOverTime.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIAutomationEditor\DragOverTime.cs">
+    <Link>Modules\UIAutomationEditor\DragOverTime.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIAutomationEditor\EventUtility.cs">
+    <Link>Modules\UIAutomationEditor\EventUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIAutomationEditor\FakeCursor.cs">
+    <Link>Modules\UIAutomationEditor\FakeCursor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIAutomationEditor\KeyInputOverTime.cs">
+    <Link>Modules\UIAutomationEditor\KeyInputOverTime.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIAutomationEditor\TestEditorWindow.cs">
+    <Link>Modules\UIAutomationEditor\TestEditorWindow.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElementsDebuggerEditor\PanelDebug.cs">
     <Link>Modules\UIElementsDebuggerEditor\PanelDebug.cs</Link>
   </Compile>
@@ -4255,9 +4279,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\RestService\RestServiceRequestBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\RestService\RestServiceRequestBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\TextRenderingEditor\TrueTypeFontImporterBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\TextRenderingEditor\TrueTypeFontImporterBindings.gen.cs</Link>

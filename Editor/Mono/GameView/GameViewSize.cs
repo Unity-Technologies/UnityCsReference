@@ -31,10 +31,12 @@ namespace UnityEditor
             get {return m_BaseText; }
             set
             {
+                var oldBaseText = m_BaseText;
                 m_BaseText = value;
                 if (m_BaseText.Length > kMaxBaseTextLength)
                     m_BaseText = m_BaseText.Substring(0, kMaxBaseTextLength);
-                Changed();
+                if (m_BaseText != oldBaseText)
+                    Changed();
             }
         }
         public GameViewSizeType sizeType
@@ -42,25 +44,40 @@ namespace UnityEditor
             get { return m_SizeType; }
             set
             {
-                m_SizeType = value; Clamp(); Changed();
+                var oldSizeType = m_SizeType;
+                m_SizeType = value;
+                Clamp();
+                if (m_SizeType != oldSizeType)
+                    Changed();
             }
         }
         public int width
         {
             get { return m_Width; }
-            set { m_Width = value; Clamp(); Changed(); }
+            set
+            {
+                var oldWidth = m_Width;
+                m_Width = value;
+                Clamp();
+                if (m_Width != oldWidth)
+                    Changed();
+            }
         }
         public int height
         {
             get { return m_Height; }
-            set { m_Height = value; Clamp(); Changed(); }
+            set
+            {
+                var oldHeight = m_Height;
+                m_Height = value;
+                Clamp();
+                if (m_Height != oldHeight)
+                    Changed();
+            }
         }
 
         void Clamp()
         {
-            int orgWidth = m_Width;
-            int orgHeight = m_Height;
-
             int minValue = 0;
             switch (sizeType)
             {
@@ -77,9 +94,6 @@ namespace UnityEditor
 
             m_Width = Mathf.Clamp(m_Width, minValue, kMaxResolutionOrAspect);
             m_Height = Mathf.Clamp(m_Height, minValue, kMaxResolutionOrAspect);
-
-            if (m_Width != orgWidth || m_Height != orgHeight)
-                Changed();
         }
 
         public GameViewSize(GameViewSizeType type, int width, int height, string baseText)
@@ -101,7 +115,6 @@ namespace UnityEditor
             width = other.width;
             height = other.height;
             baseText = other.baseText;
-            Changed();
         }
 
         public bool isFreeAspectRatio

@@ -26,7 +26,7 @@ namespace UnityEditor.Experimental
         [NativeProperty("k_PackageName", true, TargetType.Field)] public static extern string packageName { get; }
         [NativeProperty("k_LibraryBundlePath", true, TargetType.Field)] public static extern string libraryBundlePath { get; }
 
-        public static extern Object Load(string assetPath, System.Type type);
+        public static extern Object Load(string assetPath, Type type);
         public static extern string GetAssetPath(Object obj);
     }
 

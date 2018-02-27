@@ -152,6 +152,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_ContentItem.AddToClassList("content");
 
             var visualTree = EditorGUIUtility.Load("UXML/GraphView/GroupNode.uxml") as VisualTreeAsset;
+            AddStyleSheetPath("StyleSheets/GraphView/GroupNode.uss");
+
 
             m_MainContainer = visualTree.CloneTree(null);
             m_MainContainer.AddToClassList("mainContainer");

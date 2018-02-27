@@ -15,7 +15,7 @@ namespace UnityEditor
         Ask = 2,
     }
 
-    [NativeHeader("Editor/Src/EditorUserSettings.bindings.h")]
+    [NativeHeader("Editor/Src/EditorUserSettings.h")]
     [StaticAccessor("GetEditorUserSettings()", StaticAccessorType.Dot)]
     public sealed class EditorUserSettings : UnityObject
     {
@@ -23,8 +23,15 @@ namespace UnityEditor
         {
         }
 
-        [FreeFunction("Internal_GetConfigValue")]
-        public static extern string GetConfigValue(string name);
+        static extern bool HasConfigValue(string name);
+
+        [NativeMethod("GetConfigValue")]
+        static extern string Internal_GetConfigValue(string name);
+
+        public static string GetConfigValue(string name)
+        {
+            return HasConfigValue(name) ? Internal_GetConfigValue(name) : null;
+        }
 
         public static extern void SetConfigValue(string name, string value);
 

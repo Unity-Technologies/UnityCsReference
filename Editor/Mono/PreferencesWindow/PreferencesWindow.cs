@@ -1043,7 +1043,7 @@ namespace UnityEditor
             EditorPrefs.SetString("Editor.kEditorLocale", m_SelectedLanguage.ToString());
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
-            EditorPrefs.SetString("GpuDevice", m_GpuDevice);
+            EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
 
             EditorPrefs.SetBool("GICacheEnableCustomPath", m_GICacheSettings.m_EnableCustomPath);
             EditorPrefs.SetInt("GICacheMaximumSizeGB", m_GICacheSettings.m_MaximumSize);
@@ -1151,7 +1151,7 @@ namespace UnityEditor
             m_AllowAlphaNumericHierarchy = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false);
 
             m_CompressAssetsOnImport = Unsupported.GetApplicationSettingCompressAssetsOnImport();
-            m_GpuDevice = EditorPrefs.GetString("GpuDevice");
+            m_GpuDevice = EditorPrefs.GetString("GpuDeviceName");
 
             foreach (IPreferenceWindowExtension extension in prefWinExtensions)
             {

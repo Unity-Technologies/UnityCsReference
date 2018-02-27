@@ -37,6 +37,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public TokenNode(Port input, Port output) : base("UXML/GraphView/TokenNode.uxml")
         {
+            AddStyleSheetPath("StyleSheets/GraphView/TokenNode.uss");
+
             m_Pill = this.Q<Pill>(name: "pill");
 
             if (input != null)

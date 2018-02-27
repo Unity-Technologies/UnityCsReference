@@ -83,7 +83,7 @@ namespace UnityEditorInternal
     [NativeHeader("Runtime/Serialize/PersistentManager.h")]
     [NativeHeader("Runtime/Shaders/ShaderImpl/FastPropertyName.h")]
     [NativeHeader("Runtime/Serialize/PersistentManager.h")]
-    [NativeHeader("Runtime/Threads/Thread.h")]
+    [NativeHeader("Runtime/Threads/ThreadChecks.h")]
     [NativeHeader("Runtime/Utilities/Word.h")]
     [NativeHeader("Editor/Src/BuildPipeline/BuildPlayer.h")]
     [NativeHeader("Editor/Src/BuildPipeline/BuildTargetPlatformSpecific.h")]
@@ -727,8 +727,7 @@ namespace UnityEditorInternal
         [FreeFunction("GetAllEditorModuleNames")]
         extern internal static string[] GetEditorModuleDllNames();
 
-        [ThreadSafe]
-        [StaticAccessor("Thread", StaticAccessorType.DoubleColon)]
+        [FreeFunction(IsThreadSafe = true)]
         extern public static bool CurrentThreadIsMainThread();
 
         // Internal property to check if the currently selected Assets can be renamed, used to unify rename logic between native and c#

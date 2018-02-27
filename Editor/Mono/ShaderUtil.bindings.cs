@@ -44,24 +44,24 @@ namespace UnityEditor
 
         internal enum ShaderCompilerPlatformType
         {
-            OpenGL = 0,
-            D3D9,
-            Xbox360,
-            PS3,
+            OpenGL = 0, // removed
+            D3D9, // removed
+            Xbox360, // removed
+            PS3, // removed
             D3D11,
             OpenGLES20,
-            OpenGLES20Desktop,
-            Flash,
-            D3D11_9x,
+            OpenGLES20Desktop, // removed
+            Flash, // removed
+            D3D11_9x, // removed
             OpenGLES30,
             PSVita,
             PS4,
             XboxOne,
-            PSM,
+            PSM, // removed
             Metal,
             OpenGLCore,
             N3DS,
-            WiiU,
+            WiiU, // removed
             Vulkan,
             Switch,
             Count

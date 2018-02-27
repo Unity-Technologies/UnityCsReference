@@ -142,6 +142,7 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
+            EditorGUI.BeginChangeCheck();
             DoWrapModePopup();
             DoFilterModePopup();
 
@@ -157,6 +158,9 @@ namespace UnityEditor
                 m_Aniso.intValue = 0;
                 EditorGUILayout.HelpBox("RenderTextures with depth must have an Aniso Level of 0.", MessageType.Info);
             }
+
+            if (EditorGUI.EndChangeCheck())
+                ApplySettingsToTextures();
         }
 
         public override void OnInspectorGUI()

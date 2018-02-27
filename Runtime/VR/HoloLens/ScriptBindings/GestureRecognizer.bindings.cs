@@ -3,11 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
-using UnityEngine.XR.WSA.Input;
 
 
 namespace UnityEngine.XR.WSA.Input
@@ -28,7 +27,7 @@ namespace UnityEngine.XR.WSA.Input
         NavigationRailsX = 128,
         NavigationRailsY = 256,
         NavigationRailsZ = 512
-    }
+    };
 
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
@@ -316,8 +315,14 @@ namespace UnityEngine.XR.WSA.Input
     }
 
     [MovedFrom("UnityEngine.VR.WSA.Input")]
-    sealed public partial class GestureRecognizer : IDisposable
+    [UsedByNativeCode]
+    [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureRecognizer.h")]
+    [NativeHeader("VRScriptingClasses.h")]
+    [StructLayout(LayoutKind.Sequential)]   // needed for IntPtr binding classes
+    sealed public class GestureRecognizer : IDisposable
     {
+        internal IntPtr m_Recognizer; // pointer to native object
+
         public event Action<HoldCanceledEventArgs> HoldCanceled;
         public event Action<HoldCompletedEventArgs> HoldCompleted;
         public event Action<HoldStartedEventArgs> HoldStarted;
@@ -339,72 +344,89 @@ namespace UnityEngine.XR.WSA.Input
         //
         public GestureRecognizer()
         {
-            m_Recognizer = Internal_Create();
+            m_Recognizer = Internal_Create(this);
         }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("Create")]
+        private extern static IntPtr Internal_Create(GestureRecognizer gestureRecognizer);
 
         ~GestureRecognizer()
         {
             if (m_Recognizer != IntPtr.Zero)
             {
-                DestroyThreaded(m_Recognizer);
+                DestroyThreaded();
                 m_Recognizer = IntPtr.Zero;
                 GC.SuppressFinalize(this);
             }
         }
 
+        [ThreadAndSerializationSafe()]
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        private extern void DestroyThreaded();
+
+
         public void Dispose()
         {
             if (m_Recognizer != IntPtr.Zero)
             {
-                Destroy(m_Recognizer);
+                Destroy();
                 m_Recognizer = IntPtr.Zero;
             }
             GC.SuppressFinalize(this);
         }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        private extern void Destroy();
+
 
         /// <summary>
         /// Sets the current recognizable gestures to the specified set.  Returns
         /// the previous value.
         public GestureSettings SetRecognizableGestures(GestureSettings newMaskValue)
         {
-            return GestureSettings.None;
+            return (GestureSettings)SetRecognizableGestures_Internal((int)newMaskValue);
         }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("SetRecognizableGestures")]
+        private extern int SetRecognizableGestures_Internal(int newMaskValue);
 
         /// <summary>
         /// Retrieves the current recognizable gestures.
         /// </summary>
         public GestureSettings GetRecognizableGestures()
         {
-            return GestureSettings.None;
+            return (GestureSettings)GetRecognizableGestures_Internal();
         }
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeName("GetRecognizableGestures")]
+        private extern int GetRecognizableGestures_Internal();
 
         /// <summary>
         /// Enables this recognizer to start receiving interaction events
         /// </summary>
-        public void StartCapturingGestures()
-        {
-        }
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern void StartCapturingGestures();
 
         /// <summary>
         /// Disabled this recognizer to stop receiving interaction events
         /// </summary>
-        public void StopCapturingGestures()
-        {
-        }
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern void StopCapturingGestures();
 
         /// <summary>
         /// Returns the enabled state of the gesture recognizer.
         /// </summary>
-        public bool IsCapturingGestures()
-        {
-            return false;
-        }
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern bool IsCapturingGestures();
 
-        public void CancelGestures()
-        {
-        }
+        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        public extern void CancelGestures();
 
 #pragma warning disable 0618
+
         [RequiredByNativeCode]
         private void InvokeHoldCanceled(InteractionSource source, InteractionSourcePose sourcePose, Pose headPose)
         {
@@ -675,6 +697,70 @@ namespace UnityEngine.XR.WSA.Input
         }
 
 #pragma warning restore 0618
+
+        //
+        // These deprecated APIs must be declared in this file (instead of a separate .deprecated.cs file) because
+        // they add data members, and partial class field ordering is non-deterministic
+        //
+        public delegate void HoldCanceledEventDelegate(InteractionSourceKind source, Ray headRay);
+        public delegate void HoldCompletedEventDelegate(InteractionSourceKind source, Ray headRay);
+        public delegate void HoldStartedEventDelegate(InteractionSourceKind source, Ray headRay);
+        public delegate void TappedEventDelegate(InteractionSourceKind source, int tapCount, Ray headRay);
+        public delegate void ManipulationCanceledEventDelegate(InteractionSourceKind source, Vector3 cumulativeDelta, Ray headRay);
+        public delegate void ManipulationCompletedEventDelegate(InteractionSourceKind source, Vector3 cumulativeDelta, Ray headRay);
+        public delegate void ManipulationStartedEventDelegate(InteractionSourceKind source, Vector3 cumulativeDelta, Ray headRay);
+        public delegate void ManipulationUpdatedEventDelegate(InteractionSourceKind source, Vector3 cumulativeDelta, Ray headRay);
+        public delegate void NavigationCanceledEventDelegate(InteractionSourceKind source, Vector3 normalizedOffset, Ray headRay);
+        public delegate void NavigationCompletedEventDelegate(InteractionSourceKind source, Vector3 normalizedOffset, Ray headRay);
+        public delegate void NavigationStartedEventDelegate(InteractionSourceKind source, Vector3 normalizedOffset, Ray headRay);
+        public delegate void NavigationUpdatedEventDelegate(InteractionSourceKind source, Vector3 normalizedOffset, Ray headRay);
+        public delegate void RecognitionEndedEventDelegate(InteractionSourceKind source, Ray headRay);
+        public delegate void RecognitionStartedEventDelegate(InteractionSourceKind source, Ray headRay);
+        public delegate void GestureErrorDelegate([MarshalAs(UnmanagedType.LPStr)] string error, int hresult);
+
+        [Obsolete("HoldCanceledEvent is deprecated, and will be removed in a future release. Use OnHoldCanceledEvent instead.", false)]
+        public event HoldCanceledEventDelegate HoldCanceledEvent;
+
+        [Obsolete("HoldCompletedEvent is deprecated, and will be removed in a future release. Use OnHoldCompletedEvent instead.", false)]
+        public event HoldCompletedEventDelegate HoldCompletedEvent;
+
+        [Obsolete("HoldStartedEvent is deprecated, and will be removed in a future release. Use OnHoldStartedEvent instead.", false)]
+        public event HoldStartedEventDelegate HoldStartedEvent;
+
+        [Obsolete("TappedEvent is deprecated, and will be removed in a future release. Use Tapped instead.", false)]
+        public event TappedEventDelegate TappedEvent;
+
+        [Obsolete("ManipulationCanceledEvent is deprecated, and will be removed in a future release. Use OnManipulationCanceledEvent instead.", false)]
+        public event ManipulationCanceledEventDelegate ManipulationCanceledEvent;
+
+        [Obsolete("ManipulationCompletedEvent is deprecated, and will be removed in a future release. Use OnManipulationCompletedEvent instead.", false)]
+        public event ManipulationCompletedEventDelegate ManipulationCompletedEvent;
+
+        [Obsolete("ManipulationStartedEvent is deprecated, and will be removed in a future release. Use OnManipulationStartedEvent instead.", false)]
+        public event ManipulationStartedEventDelegate ManipulationStartedEvent;
+
+        [Obsolete("ManipulationUpdatedEvent is deprecated, and will be removed in a future release. Use OnManipulationUpdatedEvent instead.", false)]
+        public event ManipulationUpdatedEventDelegate ManipulationUpdatedEvent;
+
+        [Obsolete("NavigationCanceledEvent is deprecated, and will be removed in a future release. Use OnNavigationCanceledEvent instead.", false)]
+        public event NavigationCanceledEventDelegate NavigationCanceledEvent;
+
+        [Obsolete("NavigationCompletedEvent is deprecated, and will be removed in a future release. Use OnNavigationCompletedEvent instead.", false)]
+        public event NavigationCompletedEventDelegate NavigationCompletedEvent;
+
+        [Obsolete("NavigationStartedEvent is deprecated, and will be removed in a future release. Use OnNavigationStartedEvent instead.", false)]
+        public event NavigationStartedEventDelegate NavigationStartedEvent;
+
+        [Obsolete("NavigationUpdatedEvent is deprecated, and will be removed in a future release. Use OnNavigationUpdatedEvent instead.", false)]
+        public event NavigationUpdatedEventDelegate NavigationUpdatedEvent;
+
+        [Obsolete("RecognitionEndedEvent is deprecated, and will be removed in a future release. Use OnRecognitionEndedEvent instead.", false)]
+        public event RecognitionEndedEventDelegate RecognitionEndedEvent;
+
+        [Obsolete("RecognitionStartedEvent is deprecated, and will be removed in a future release. Use OnRecognitionStartedEvent instead.", false)]
+        public event RecognitionStartedEventDelegate RecognitionStartedEvent;
+
+        [Obsolete("GestureErrorEvent is deprecated, and will be removed in a future release. Use OnGestureErrorEvent instead.", false)]
+        public event GestureErrorDelegate GestureErrorEvent;
     }
 }
-

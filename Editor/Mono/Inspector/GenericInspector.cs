@@ -3,38 +3,125 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
 
 namespace UnityEditor
 {
     internal class GenericInspector : Editor
     {
-        private AudioFilterGUI m_AudioFilterGUI = null;
+        private enum OptimizedBlockState
+        {
+            CheckOptimizedBlock,
+            HasOptimizedBlock,
+            NoOptimizedBlock
+        }
+
+        private AudioFilterGUI m_AudioFilterGUI;
+        private OptimizedGUIBlock m_OptimizedBlock;
+
+        private float m_LastHeight;
+        private OptimizedGUIBlock m_LastOptimizedBlock;
+        private OptimizedBlockState m_OptimizedBlockState = OptimizedBlockState.CheckOptimizedBlock;
 
         internal override bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)
         {
-            bool result = GetOptimizedGUIBlockImplementation(isDirty, isVisible, out block, out height);
+            block = null; height = -1;
 
             // Don't use optimizedGUI for audio filters
-            if (target is MonoBehaviour)
-            {
-                if (AudioUtil.HasAudioCallback(target as MonoBehaviour) && AudioUtil.GetCustomFilterChannelCount(target as MonoBehaviour) > 0)
-                {
-                    return false;
-                }
-            }
+            var behaviour = target as MonoBehaviour;
+            if (behaviour != null && AudioUtil.HasAudioCallback(behaviour) && AudioUtil.GetCustomFilterChannelCount(behaviour) > 0)
+                return false;
 
             if (IsMissingMonoBehaviourTarget())
                 return false;
 
-            return result;
+            if (isDirty && m_OptimizedBlock != null)
+                ResetOptimizedBlock();
+
+            if (!isVisible)
+            {
+                if (m_OptimizedBlock == null)
+                    m_OptimizedBlock = new OptimizedGUIBlock();
+
+                height = 0;
+                block = m_OptimizedBlock;
+                return true;
+            }
+
+            // Return cached result if any.
+            if (m_OptimizedBlockState != OptimizedBlockState.CheckOptimizedBlock)
+            {
+                if (m_OptimizedBlockState == OptimizedBlockState.NoOptimizedBlock)
+                    return false;
+                height = m_LastHeight;
+                block = m_LastOptimizedBlock;
+                return true;
+            }
+
+            // Update serialized object representation
+            if (m_SerializedObject == null)
+                m_SerializedObject = new SerializedObject(targets, m_Context) {inspectorMode = m_InspectorMode};
+            else
+                m_SerializedObject.Update();
+
+            SerializedProperty property = m_SerializedObject.GetIterator();
+            while (property.NextVisible(height <= 0))
+            {
+                var handler = ScriptAttributeUtility.GetHandler(property);
+                if (!handler.CanCacheInspectorGUI(property))
+                    return ResetOptimizedBlock(OptimizedBlockState.NoOptimizedBlock);
+
+                // Allocate height for control plus spacing below it
+                height += handler.GetHeight(property, null, true) + EditorGUI.kControlVerticalSpacing;
+            }
+
+            // Allocate height for spacing above first control
+            if (height > 0)
+                height += EditorGUI.kControlVerticalSpacing;
+            else
+                height = 0;
+
+            if (m_OptimizedBlock == null)
+                m_OptimizedBlock = new OptimizedGUIBlock();
+
+            m_LastHeight = height;
+            m_LastOptimizedBlock = block = m_OptimizedBlock;
+            m_OptimizedBlockState = OptimizedBlockState.HasOptimizedBlock;
+            return true;
         }
 
         internal override bool OnOptimizedInspectorGUI(Rect contentRect)
         {
-            bool result = OptimizedInspectorGUIImplementation(contentRect);
-            return result;
+            bool childrenAreExpanded = true;
+            bool wasEnabled = GUI.enabled;
+            var visibleRect = GUIClip.visibleRect;
+            var contentOffset = contentRect.y;
+
+            contentRect.xMin += InspectorWindow.kInspectorPaddingLeft;
+            contentRect.xMax -= InspectorWindow.kInspectorPaddingRight;
+            contentRect.y += EditorGUI.kControlVerticalSpacing;
+
+            var property = m_SerializedObject.GetIterator();
+            var isInspectorModeNormal = m_InspectorMode == InspectorMode.Normal;
+            while (property.NextVisible(childrenAreExpanded))
+            {
+                var handler = ScriptAttributeUtility.GetHandler(property);
+                contentRect.height = handler.GetHeight(property, null, false);
+
+                if (contentRect.Overlaps(visibleRect))
+                {
+                    EditorGUI.indentLevel = property.depth;
+                    using (new EditorGUI.DisabledScope(isInspectorModeNormal && "m_Script" == property.propertyPath))
+                        childrenAreExpanded = handler.OnGUI(contentRect, property, null, false, visibleRect);
+                }
+                else
+                    childrenAreExpanded = property.isExpanded;
+
+                m_LastHeight = contentRect.yMax - contentOffset;
+                contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
+            }
+
+            GUI.enabled = wasEnabled;
+            return m_SerializedObject.ApplyModifiedProperties();
         }
 
         public bool MissingMonoBehaviourGUI()
@@ -47,25 +134,40 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(scriptProperty);
 
             MonoScript targetScript = scriptProperty.objectReferenceValue as MonoScript;
-            bool showScriptWarning = true;
-            if (targetScript != null && targetScript.GetScriptTypeWasJustCreatedFromComponentMenu())
-                showScriptWarning = false;
-
+            bool showScriptWarning = targetScript == null || !targetScript.GetScriptTypeWasJustCreatedFromComponentMenu();
             if (showScriptWarning)
             {
-                GUIContent c = EditorGUIUtility.TrTextContent("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
-                EditorGUILayout.HelpBox(c.text, MessageType.Warning, true);
+                var text = L10n.Tr("The associated script can not be loaded.\nPlease fix any compile errors\nand assign a valid script.");
+                EditorGUILayout.HelpBox(text, MessageType.Warning, true);
             }
 
             if (serializedObject.ApplyModifiedProperties())
-            {
                 EditorUtility.ForceRebuildInspectors();
-            }
 
             return true;
         }
 
-        bool IsMissingMonoBehaviourTarget()
+        private bool ResetOptimizedBlock(OptimizedBlockState resetState = OptimizedBlockState.CheckOptimizedBlock)
+        {
+            if (m_OptimizedBlock != null)
+            {
+                m_OptimizedBlock.Dispose();
+                m_OptimizedBlock = null;
+            }
+
+            m_LastHeight = -1;
+            m_LastOptimizedBlock = null;
+            m_OptimizedBlockState = resetState;
+            return m_OptimizedBlockState == OptimizedBlockState.HasOptimizedBlock;
+        }
+
+        internal void OnDisableINTERNAL()
+        {
+            ResetOptimizedBlock();
+            CleanupPropertyEditor();
+        }
+
+        internal bool IsMissingMonoBehaviourTarget()
         {
             return target.GetType() == typeof(MonoBehaviour) || target.GetType() == typeof(ScriptableObject);
         }
@@ -77,16 +179,17 @@ namespace UnityEditor
 
             base.OnInspectorGUI();
 
-            if (target is MonoBehaviour)
+            var behaviour = target as MonoBehaviour;
+            if (behaviour != null)
             {
                 // Does this have a AudioRead callback?
-                if (AudioUtil.HasAudioCallback(target as MonoBehaviour) && AudioUtil.GetCustomFilterChannelCount(target as MonoBehaviour) > 0)
+                if (AudioUtil.HasAudioCallback(behaviour) && AudioUtil.GetCustomFilterChannelCount(behaviour) > 0)
                 {
                     if (m_AudioFilterGUI == null)
                         m_AudioFilterGUI = new AudioFilterGUI();
-                    m_AudioFilterGUI.DrawAudioFilterGUI(target as MonoBehaviour);
+                    m_AudioFilterGUI.DrawAudioFilterGUI(behaviour);
                 }
             }
         }
     }
-} //namespace
+}

@@ -60,6 +60,15 @@ namespace UnityEngine.StyleSheets
             };
         }
 
+        public static StyleSelectorPart CreatePseudoClass(string className)
+        {
+            return new StyleSelectorPart()
+            {
+                m_Type = StyleSelectorType.PseudoClass,
+                m_Value = className
+            };
+        }
+
         public static StyleSelectorPart CreateId(string Id)
         {
             return new StyleSelectorPart()
@@ -75,6 +84,15 @@ namespace UnityEngine.StyleSheets
             {
                 m_Type = StyleSelectorType.Type,
                 m_Value = t.Name
+            };
+        }
+
+        public static StyleSelectorPart CreateType(string typeName)
+        {
+            return new StyleSelectorPart()
+            {
+                m_Type = StyleSelectorType.Type,
+                m_Value = typeName
             };
         }
 

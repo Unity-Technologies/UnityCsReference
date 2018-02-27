@@ -9,12 +9,12 @@ namespace UnityEditor.StyleSheets
 {
     internal class StyleSheetResourceUtil
     {
-        internal static Object LoadResource(string pathName, System.Type type)
+        public static Object LoadResource(string pathName, System.Type type)
         {
             return LoadResource(pathName, type, GUIUtility.pixelsPerPoint > 1.0f);
         }
 
-        internal static Object LoadResource(string pathName, System.Type type, bool lookForRetinaAssets)
+        public static Object LoadResource(string pathName, System.Type type, bool lookForRetinaAssets)
         {
             Object resource = null;
             string hiResPath = string.Empty;

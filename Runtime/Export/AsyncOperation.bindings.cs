@@ -13,6 +13,7 @@ namespace UnityEngine
     [RequiredByNativeCode]
     [ThreadAndSerializationSafe]
     [NativeHeader("Runtime/Export/AsyncOperation.bindings.h")]
+    [NativeHeader("Runtime/Misc/AsyncOperation.h")]
     public partial class AsyncOperation : YieldInstruction
     {
         [NativeMethod(IsThreadSafe = true)]

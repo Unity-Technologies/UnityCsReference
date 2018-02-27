@@ -12,6 +12,7 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [NativeHeader("Editor/Mono/EditorUtility.bindings.h")]
+    [NativeHeader("Runtime/Shaders/ShaderImpl/ShaderUtilities.h")]
     partial class EditorUtility
     {
         public static extern string OpenFilePanel(string title, string directory, string extension);

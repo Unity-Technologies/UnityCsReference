@@ -9,7 +9,7 @@ using UnityEngine.StyleSheets;
 
 namespace UnityEditor.StyleSheets
 {
-    class StyleSheetBuilder
+    internal class StyleSheetBuilder
     {
         public struct ComplexSelectorScope : System.IDisposable
         {
@@ -45,16 +45,18 @@ namespace UnityEditor.StyleSheets
         List<StyleValueHandle> m_CurrentValues = new List<StyleValueHandle>();
         StyleComplexSelector m_CurrentComplexSelector;
         List<StyleSelector> m_CurrentSelectors = new List<StyleSelector>();
-        string m_CurrentPropertyName;
+        StyleProperty m_CurrentProperty;
         StyleRule m_CurrentRule;
 
-        public void BeginRule(int ruleLine)
+        public StyleRule BeginRule(int ruleLine)
         {
             Log("Beginning rule");
             Debug.Assert(m_BuilderState == BuilderState.Init);
             m_BuilderState = BuilderState.Rule;
 
             m_CurrentRule = new StyleRule { line = ruleLine };
+
+            return m_CurrentRule;
         }
 
         public ComplexSelectorScope BeginComplexSelector(int specificity)
@@ -98,14 +100,18 @@ namespace UnityEditor.StyleSheets
             m_CurrentComplexSelector = null;
         }
 
-        public void BeginProperty(string name)
+        public StyleProperty BeginProperty(string name)
         {
             Log("Begin property named " + name);
 
             Debug.Assert(m_BuilderState == BuilderState.Rule);
             m_BuilderState = BuilderState.Property;
-
-            m_CurrentPropertyName = name;
+            m_CurrentProperty = new StyleProperty
+            {
+                name = name
+            };
+            m_CurrentProperties.Add(m_CurrentProperty);
+            return m_CurrentProperty;
         }
 
         public void AddValue(float value)
@@ -136,10 +142,8 @@ namespace UnityEditor.StyleSheets
             Debug.Assert(m_BuilderState == BuilderState.Property);
             m_BuilderState = BuilderState.Rule;
 
-            StyleProperty property = new StyleProperty();
-            property.name = m_CurrentPropertyName;
-            property.values = m_CurrentValues.ToArray();
-            m_CurrentProperties.Add(property);
+            m_CurrentProperty.values = m_CurrentValues.ToArray();
+            m_CurrentProperty = null;
             m_CurrentValues.Clear();
         }
 

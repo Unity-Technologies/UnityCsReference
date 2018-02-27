@@ -178,6 +178,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             this.AddManipulator(new ContextualMenuManipulator(null));
 
             RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            AddStyleSheetPath("StyleSheets/GraphView/Edge.uss");
         }
 
         public override bool Overlaps(Rect rectangle)

@@ -140,6 +140,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Pill()
         {
+            AddStyleSheetPath("StyleSheets/GraphView/Pill.uss");
+
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Pill.uxml") as VisualTreeAsset;
             VisualElement mainContainer = tpl.CloneTree(null);
 

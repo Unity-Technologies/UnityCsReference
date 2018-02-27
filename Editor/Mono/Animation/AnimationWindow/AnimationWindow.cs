@@ -85,11 +85,17 @@ namespace UnityEditor
 
         public void Update()
         {
+            if (m_AnimEditor == null)
+                return;
+
             m_AnimEditor.Update();
         }
 
         public void OnGUI()
         {
+            if (m_AnimEditor == null)
+                return;
+
             Profiler.BeginSample("AnimationWindow.OnGUI");
             titleContent = m_AnimEditor.state.recording ? m_RecordTitleContent : m_DefaultTitleContent;
             m_AnimEditor.OnAnimEditorGUI(this, position);

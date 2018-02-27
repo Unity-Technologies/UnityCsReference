@@ -163,12 +163,42 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
+            EditorGUI.BeginChangeCheck();
 
             DoWrapModePopup();
             DoFilterModePopup();
             DoAnisoLevelSlider();
 
+            if (EditorGUI.EndChangeCheck())
+                ApplySettingsToTextures();
             serializedObject.ApplyModifiedProperties();
+        }
+
+        // wrap/filter/aniso editors will change serialized object
+        // but in case of textures we need an extra step to ApplySettings (so rendering uses new values)
+        // alas we cant have good things: it will be PITA to make sure we always call that after applying changes to serialized object
+        // meaning that we need to work without relying on it, hence we do similar to TextureImporter:
+        //   use TextureUtil methods to update texture settings from current values of serialized property
+        // another possibility would be to do it separately for wrap/filter/aniso
+        //   alas for wrapmode i dont see how it can be done clearly and leaving it out seems a bit weird
+
+        protected void ApplySettingsToTextures()
+        {
+            bool anisoDiffer = m_Aniso.hasMultipleDifferentValues, filterDiffer = m_FilterMode.hasMultipleDifferentValues;
+            bool wrapDiffer = m_WrapU.hasMultipleDifferentValues || m_WrapV.hasMultipleDifferentValues || m_WrapW.hasMultipleDifferentValues;
+
+            foreach (Texture tex in targets)
+            {
+                if (m_Aniso.intValue != -1 && !anisoDiffer)
+                    TextureUtil.SetAnisoLevelNoDirty(tex, m_Aniso.intValue);
+                if (m_FilterMode.intValue != -1 && !filterDiffer)
+                    TextureUtil.SetFilterModeNoDirty(tex, (FilterMode)m_FilterMode.intValue);
+
+                // NB i am not sure if it is *possible* to have -1 in there and if it make sense to pass -1 to SetWrapModeNoDirty
+                // NB but this is how TextureImporter checks things and who am i to argue
+                if ((m_WrapU.intValue != -1 || m_WrapV.intValue != -1 || m_WrapW.intValue != -1) && !wrapDiffer)
+                    TextureUtil.SetWrapModeNoDirty(tex, (TextureWrapMode)m_WrapU.intValue, (TextureWrapMode)m_WrapV.intValue, (TextureWrapMode)m_WrapW.intValue);
+            }
         }
 
         static void WrapModeAxisPopup(GUIContent label, SerializedProperty wrapProperty)

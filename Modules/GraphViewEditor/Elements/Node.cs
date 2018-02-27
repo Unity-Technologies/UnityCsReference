@@ -299,7 +299,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (outputContainer.shadow.parent != m_OutputContainerParent)
                 {
-                    m_OutputContainerParent.Add(outputContainer);
+                    m_OutputContainerParent.shadow.Add(outputContainer);
                     outputContainer.BringToFront();
                 }
             }
@@ -315,7 +315,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (inputContainer.shadow.parent != m_InputContainerParent)
                 {
-                    m_InputContainerParent.Add(inputContainer);
+                    m_InputContainerParent.shadow.Add(inputContainer);
                     inputContainer.SendToBack();
                 }
             }
@@ -406,13 +406,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             expanded = !expanded;
         }
 
+        internal void UseDefaultStyling()
+        {
+            AddStyleSheetPath("StyleSheets/GraphView/Node.uss");
+        }
+
         public Node() : this("UXML/GraphView/Node.uxml")
         {
+            UseDefaultStyling();
         }
 
         public Node(string uiFile)
         {
             clippingOptions = ClippingOptions.NoClipping;
+
             var tpl = EditorGUIUtility.Load(uiFile) as VisualTreeAsset;
 
             tpl.CloneTree(this, new Dictionary<string, VisualElement>());

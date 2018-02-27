@@ -12,8 +12,6 @@ namespace UnityEditor
 {
     internal class PropertyHandler
     {
-        //private int m_Hash = 0;
-
         private PropertyDrawer m_PropertyDrawer = null;
 
         private List<DecoratorDrawer> m_DecoratorDrawers = null;
@@ -108,13 +106,12 @@ namespace UnityEditor
         // returns true if children needs to be drawn separately
         public bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren)
         {
-            // We can consider making controlIDs robust to support culling optimizations.
-            // Works well - downside is that you can't use PrefixLabel before a PropertyField,
-            // but PropertyField has build-in label argument anyway.
-            //if (m_Hash == 0)
-            //  m_Hash = property.serializedObject.targetObject.GetInstanceID () ^ property.propertyPath.GetHashCode ();
-            //EditorGUIUtility.GetControlID (m_Hash, FocusType.Passive);
+            Rect visibleArea = new Rect(0, 0, position.width, float.MaxValue);
+            return OnGUI(position, property, label, includeChildren, visibleArea);
+        }
 
+        internal bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren, Rect visibleArea)
+        {
             float oldLabelWidth, oldFieldWidth;
 
             float propHeight = position.height;
@@ -163,7 +160,6 @@ namespace UnityEditor
                 int relIndent = origIndent - property.depth;
 
                 SerializedProperty prop = property.Copy();
-                SerializedProperty endProperty = prop.GetEndProperty();
 
                 position.height = EditorGUI.GetSinglePropertyHeight(prop, label);
 
@@ -173,18 +169,27 @@ namespace UnityEditor
                 position.y += position.height + EditorGUI.kControlVerticalSpacing;
 
                 // Loop through all child properties
-                while (prop.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(prop, endProperty))
+                if (childrenAreExpanded)
                 {
-                    EditorGUI.indentLevel = prop.depth + relIndent;
-                    position.height = EditorGUI.GetPropertyHeight(prop, null, false);
-                    EditorGUI.BeginChangeCheck();
-                    childrenAreExpanded = ScriptAttributeUtility.GetHandler(prop).OnGUI(position, prop, null, false) && EditorGUI.HasVisibleChildFields(prop);
-                    // Changing child properties (like array size) may invalidate the iterator,
-                    // so stop now, or we may get errors.
-                    if (EditorGUI.EndChangeCheck())
-                        break;
+                    SerializedProperty endProperty = prop.GetEndProperty();
+                    while (prop.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(prop, endProperty))
+                    {
+                        var handler = ScriptAttributeUtility.GetHandler(prop);
+                        EditorGUI.indentLevel = prop.depth + relIndent;
+                        position.height = handler.GetHeight(prop, null, false);
 
-                    position.y += position.height + EditorGUI.kControlVerticalSpacing;
+                        if (position.Overlaps(visibleArea))
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            childrenAreExpanded = handler.OnGUI(position, prop, null, false) && EditorGUI.HasVisibleChildFields(prop);
+                            // Changing child properties (like array size) may invalidate the iterator,
+                            // so stop now, or we may get errors.
+                            if (EditorGUI.EndChangeCheck())
+                                break;
+                        }
+
+                        position.y += position.height + EditorGUI.kControlVerticalSpacing;
+                    }
                 }
 
                 // Restore state
@@ -226,18 +231,22 @@ namespace UnityEditor
             else
             {
                 property = property.Copy();
-                SerializedProperty endProperty = property.GetEndProperty();
 
                 // First property with custom label
                 height += EditorGUI.GetSinglePropertyHeight(property, label);
                 bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
                 // Loop through all child properties
-                while (property.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(property, endProperty))
+                var tc = EditorGUIUtility.TempContent(property.displayName);
+                if (childrenAreExpanded)
                 {
-                    height += ScriptAttributeUtility.GetHandler(property).GetHeight(property, EditorGUIUtility.TempContent(property.displayName), true);
-                    childrenAreExpanded = false;
-                    height += EditorGUI.kControlVerticalSpacing;
+                    SerializedProperty endProperty = property.GetEndProperty();
+                    while (property.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(property, endProperty))
+                    {
+                        height += ScriptAttributeUtility.GetHandler(property).GetHeight(property, tc, true);
+                        childrenAreExpanded = false;
+                        height += EditorGUI.kControlVerticalSpacing;
+                    }
                 }
             }
 
@@ -255,15 +264,22 @@ namespace UnityEditor
                 return propertyDrawer.CanCacheInspectorGUISafe(property.Copy());
 
             property = property.Copy();
-            SerializedProperty endProperty = property.GetEndProperty();
+
             bool childrenAreExpanded = property.isExpanded && EditorGUI.HasVisibleChildFields(property);
 
             // Loop through all child properties
-            while (property.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(property, endProperty))
+            if (childrenAreExpanded)
             {
-                if (!ScriptAttributeUtility.GetHandler(property).CanCacheInspectorGUI(property))
-                    return false;
-                childrenAreExpanded = false;
+                PropertyHandler handler = null;
+                SerializedProperty endProperty = property.GetEndProperty();
+                while (property.NextVisible(childrenAreExpanded) && !SerializedProperty.EqualContents(property, endProperty))
+                {
+                    if (handler == null)
+                        handler = ScriptAttributeUtility.GetHandler(property);
+                    if (!handler.CanCacheInspectorGUI(property))
+                        return false;
+                    childrenAreExpanded = false;
+                }
             }
 
             return true;

@@ -77,6 +77,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_Label.RegisterCallback<MouseDownEvent>(EatMouseDown);
 
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+            AddStyleSheetPath("StyleSheets/GraphView/Minimap.uss");
         }
 
         private GraphView m_GraphView;

@@ -44,11 +44,13 @@ namespace UnityEditor.Collaboration
         {
             if (Contains(m_FilesContainer))
             {
+                CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "CollapseAssets");
                 Remove(m_FilesContainer);
                 m_ToggleLabel.text = ToggleText(false);
             }
             else
             {
+                CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "ExpandAssets");
                 Add(m_FilesContainer);
                 m_ToggleLabel.text = ToggleText(true);
             }
@@ -67,6 +69,7 @@ namespace UnityEditor.Collaboration
             var org = UnityConnect.instance.GetOrganizationId();
             var proj = UnityConnect.instance.GetProjectGUID();
             var url = string.Format("{0}/collab/orgs/{1}/projects/{2}/commits?commit={3}", host, org, proj, m_RevisionId);
+            CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "ShowAllOnDashboard");
             Application.OpenURL(url);
         }
     }

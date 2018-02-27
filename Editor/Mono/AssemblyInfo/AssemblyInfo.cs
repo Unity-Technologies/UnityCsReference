@@ -7,7 +7,6 @@ using UnityEngine;
 
 // ADD_NEW_PLATFORM_HERE
 [assembly: InternalsVisibleTo("UnityEditor.Advertisements")]
-[assembly: InternalsVisibleTo("UnityEditor.UIAutomation")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.PackageManager")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerStandalone")]
@@ -84,6 +83,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.003")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.004")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.005")]
-
+[assembly: InternalsVisibleTo("com.unity.editor.resources-testable")]
 
 [assembly: AssemblyIsEditorAssembly]

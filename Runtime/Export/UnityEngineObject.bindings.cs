@@ -46,6 +46,7 @@ namespace UnityEngine
     [RequiredByNativeCode(GenerateProxy = true)]
     [NativeHeader("Runtime/Export/UnityEngineObject.bindings.h")]
     [NativeHeader("Runtime/GameCode/CloneObject.h")]
+    [NativeHeader("Runtime/SceneManager/SceneManager.h")]
     public partial class Object
     {
         // This has to be public on .NET scripting backend
@@ -331,7 +332,7 @@ namespace UnityEngine
         [NativeMethod(Name = "Object::GetOffsetOfInstanceIdMember", IsFreeFunction = true, IsThreadSafe = true)]
         extern static int GetOffsetOfInstanceIDInCPlusPlusObject();
 
-        [NativeMethod(Name = "Thread::CurrentThreadIsMainThread", IsFreeFunction = true, IsThreadSafe = true)]
+        [NativeMethod(Name = "CurrentThreadIsMainThread", IsFreeFunction = true, IsThreadSafe = true)]
         extern static bool CurrentThreadIsMainThread();
 
         [FreeFunction("CloneObject")]

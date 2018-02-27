@@ -23,6 +23,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private VisualElement m_HeaderItem;
         private Button m_AddButton;
         private bool m_Scrollable = true;
+        internal static readonly string StyleSheetPath = "StyleSheets/GraphView/Blackboard.uss";
 
         public Action<Blackboard> addItemRequested { get; set; }
         public Action<Blackboard, int, VisualElement> moveItemRequested { get; set; }
@@ -96,6 +97,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Blackboard()
         {
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Blackboard.uxml") as VisualTreeAsset;
+            AddStyleSheetPath(StyleSheetPath);
 
             m_MainContainer = tpl.CloneTree(null);
             m_MainContainer.AddToClassList("mainContainer");

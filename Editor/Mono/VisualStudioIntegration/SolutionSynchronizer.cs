@@ -111,8 +111,9 @@ namespace UnityEditor.VisualStudioIntegration
             // Exclude files coming from packages except if they are internalized.
             if (UnityEditor.PackageManager.Folders.IsPackagedAssetPath(file))
             {
-                var absolutePath = Path.GetFullPath(file).ConvertSeparatorsToUnity();
-                if (!absolutePath.StartsWith(_projectDirectory))
+                bool rootFolder, readOnly;
+                bool validPath = AssetDatabase.GetAssetFolderInfo(file, out rootFolder, out readOnly);
+                if (!validPath || readOnly)
                     return false;
             }
 
@@ -583,7 +584,9 @@ namespace UnityEditor.VisualStudioIntegration
             var path = Paths.SkipPathPrefix(file, projectDir);
             if (PackageManager.Folders.IsPackagedAssetPath(path.ConvertSeparatorsToUnity()))
             {
-                var absolutePath = Path.GetFullPath(path).ConvertSeparatorsToWindows();
+                // We have to normalize the path, because the PackageManagerRemapper assumes
+                // dir seperators will be os specific.
+                var absolutePath = Path.GetFullPath(path.NormalizePath()).ConvertSeparatorsToWindows();
                 path = Paths.SkipPathPrefix(absolutePath, projectDir);
             }
             return SecurityElement.Escape(path);

@@ -5,10 +5,9 @@
 using System;
 using UnityEngine;
 using UnityEditor;
-using UnityEditorInternal;
+using UnityEditor.Experimental;
 using System.IO;
 using System.Collections.Generic;
-using Object = UnityEngine.Object;
 
 /* Some notes on icon caches and loading
  *
@@ -29,7 +28,7 @@ using Object = UnityEngine.Object;
  *
  *
  *
-    Icon loading in Editor Default Resources project:
+    Icon loading in editor_resources project:
     - Texture2DNamed handles reading local files instead of editor resources bundle
 
     Icon loading in other projects
@@ -44,9 +43,9 @@ namespace UnityEditorInternal
 {
     public class GenerateIconsWithMipLevels
     {
-        static string k_IconSourceFolder = "Assets/MipLevels For Icons/";
-        static string k_IconTargetFolder = "Assets/Editor Default Resources/Icons/Processed";
-        static string k_IconMipIdentifier = "@";
+        private const string k_IconSourceFolder = "Assets/MipLevels For Icons/";
+        private const string k_IconTargetFolder = "Assets/Editor Default Resources/Icons/Processed";
+        private const string k_IconMipIdentifier = "@";
 
         class InputData
         {
@@ -54,22 +53,18 @@ namespace UnityEditorInternal
             public string targetFolder;
             public string mipIdentifier;
             public string mipFileExtension;
-            public List<string> generatedFileNames = new List<string>(); // for internal use
-
-            public string GetMipFileName(string baseName, int mipResolution)
-            {
-                return sourceFolder + baseName + mipIdentifier + mipResolution + "." + mipFileExtension;
-            }
+            public readonly List<string> generatedFileNames = new List<string>(); // for internal use
         }
 
         private static InputData GetInputData()
         {
-            InputData data = new InputData();
-            data.sourceFolder = k_IconSourceFolder;
-            data.targetFolder = k_IconTargetFolder;
-            data.mipIdentifier = k_IconMipIdentifier;
-            data.mipFileExtension = "png";
-            return data;
+            return new InputData
+            {
+                sourceFolder = EditorResources.ExpandPath(k_IconSourceFolder),
+                targetFolder = EditorResources.ExpandPath(k_IconTargetFolder),
+                mipIdentifier = k_IconMipIdentifier,
+                mipFileExtension = "png"
+            };
         }
 
         // Called from BuildEditorAssetBundles
@@ -94,13 +89,13 @@ namespace UnityEditorInternal
             {
                 return false;
             }
-            else if (assetPath.IndexOf(k_IconSourceFolder) < 0)
+            else if (assetPath.IndexOf(k_IconSourceFolder, StringComparison.Ordinal) < 0)
             {
                 if (logError)
                     Debug.Log("Selection is not a valid mip texture, it should be located in: " + k_IconSourceFolder);
                 return false;
             }
-            else if (assetPath.IndexOf(k_IconMipIdentifier) < 0)
+            else if (assetPath.IndexOf(k_IconMipIdentifier, StringComparison.Ordinal) < 0)
             {
                 if (logError)
                     Debug.Log("Selection does not have a valid mip identifier " + assetPath + "  " + k_IconMipIdentifier);
@@ -119,22 +114,19 @@ namespace UnityEditorInternal
                 return;
             }
 
-            var data = GetInputData();
-
             int instanceID = Selection.activeInstanceID;
             string assetPath = AssetDatabase.GetAssetPath(instanceID);
 
             if (!VerifyIconPath(assetPath, true))
-            {
                 return;
-            }
 
             float startTime = Time.realtimeSinceStartup;
-
+            var data = GetInputData();
             string baseName = assetPath.Replace(data.sourceFolder, "");
-            baseName = baseName.Substring(0, baseName.LastIndexOf(data.mipIdentifier));
+            baseName = baseName.Substring(0, baseName.LastIndexOf(data.mipIdentifier, StringComparison.Ordinal));
 
-            List<string> assetPaths = GetIconAssetPaths(data.sourceFolder, data.mipIdentifier, data.mipFileExtension);
+            string cwd = new DirectoryInfo(data.sourceFolder).FullName;
+            List<string> assetPaths = GetIconAssetPaths(cwd, data.sourceFolder, data.mipIdentifier, data.mipFileExtension);
 
             EnsureFolderIsCreated(data.targetFolder);
             GenerateIcon(data, baseName, assetPaths, null, null);
@@ -146,24 +138,19 @@ namespace UnityEditorInternal
         public static void GenerateIconWithMipLevels(string assetPath, Dictionary<int, Texture2D> mipTextures, FileInfo fileInfo)
         {
             if (!VerifyIconPath(assetPath, true))
-            {
                 return;
-            }
-
-            var data = GetInputData();
 
             float startTime = Time.realtimeSinceStartup;
-
+            var data = GetInputData();
             string baseName = assetPath.Replace(data.sourceFolder, "");
-            baseName = baseName.Substring(0, baseName.LastIndexOf(data.mipIdentifier));
+            baseName = baseName.Substring(0, baseName.LastIndexOf(data.mipIdentifier, StringComparison.Ordinal));
 
-            List<string> assetPaths = GetIconAssetPaths(data.sourceFolder, data.mipIdentifier, data.mipFileExtension);
+            string cwd = new DirectoryInfo(data.sourceFolder).FullName;
+            List<string> assetPaths = GetIconAssetPaths(cwd, data.sourceFolder, data.mipIdentifier, data.mipFileExtension);
 
             EnsureFolderIsCreated(data.targetFolder);
             if (GenerateIcon(data, baseName, assetPaths, mipTextures, fileInfo))
-            {
                 Debug.Log(string.Format("Generated {0} icon with mip levels in {1} seconds", baseName, Time.realtimeSinceStartup - startTime));
-            }
             InternalEditorUtility.RepaintAllViews();
         }
 
@@ -173,7 +160,7 @@ namespace UnityEditorInternal
             if (string.IsNullOrEmpty(assetPath) || string.IsNullOrEmpty(separator))
                 return -1;
 
-            int separatorIndex = assetPath.IndexOf(separator);
+            int separatorIndex = assetPath.IndexOf(separator, StringComparison.Ordinal);
             if (separatorIndex == -1)
             {
                 Debug.LogError("\"" + separator + "\" could not be found in asset path: " + assetPath);
@@ -181,7 +168,7 @@ namespace UnityEditorInternal
             }
 
             int startIndex = separatorIndex + separator.Length;
-            int endIndex = assetPath.IndexOf(".", startIndex);
+            int endIndex = assetPath.IndexOf(".", startIndex, StringComparison.Ordinal);
             if (endIndex == -1)
             {
                 Debug.LogError("Could not find path extension in asset path: " + assetPath);
@@ -195,7 +182,8 @@ namespace UnityEditorInternal
         //----------------
         private static void GenerateIconsWithMips(InputData inputData)
         {
-            List<string> files = GetIconAssetPaths(inputData.sourceFolder, inputData.mipIdentifier, inputData.mipFileExtension);
+            string cwd = new DirectoryInfo(inputData.sourceFolder).FullName;
+            List<string> files = GetIconAssetPaths(cwd, inputData.sourceFolder, inputData.mipIdentifier, inputData.mipFileExtension);
 
             if (files.Count == 0)
             {
@@ -248,13 +236,13 @@ namespace UnityEditorInternal
 
         private static Texture2D CreateIconWithMipLevels(InputData inputData, string baseName, List<string> assetPathsOfAllIcons, Dictionary<int, Texture2D> mipTextures)
         {
-            List<string> allMipPaths = assetPathsOfAllIcons.FindAll(delegate(string o) { return o.IndexOf('/' + baseName + inputData.mipIdentifier) >= 0; });
+            List<string> allMipPaths = assetPathsOfAllIcons.FindAll(o => o.IndexOf('/' + baseName + inputData.mipIdentifier, StringComparison.Ordinal) >= 0);
             List<Texture2D> allMips = new List<Texture2D>();
             foreach (string path in allMipPaths)
             {
                 int mipLevel = MipLevelForAssetPath(path, inputData.mipIdentifier);
 
-                Texture2D mip = null;
+                Texture2D mip;
                 if (mipTextures != null && mipTextures.ContainsKey(mipLevel))
                     mip = mipTextures[mipLevel];
                 else
@@ -347,18 +335,16 @@ namespace UnityEditorInternal
             return AssetDatabase.LoadAssetAtPath(path, typeof(Texture2D)) as Texture2D;
         }
 
-        static List<string> GetIconAssetPaths(string folderPath, string mustHaveIdentifier, string extension)
+        static List<string> GetIconAssetPaths(string absolute, string folderPath, string mustHaveIdentifier, string extension)
         {
-            string curDirectory = Directory.GetCurrentDirectory();
-            string absolute = Path.Combine(curDirectory, folderPath);
             Uri absoluteUri = new Uri(absolute);
             List<string> files =  new List<string>(Directory.GetFiles(absolute, "*." + extension, SearchOption.AllDirectories));
-            files.RemoveAll(delegate(string o) {return o.IndexOf(mustHaveIdentifier) < 0; }); // // Remove all files that do not have the 'mustHaveIdentifier'
+            files.RemoveAll(o => o.IndexOf(mustHaveIdentifier, StringComparison.Ordinal) < 0); // // Remove all files that do not have the 'mustHaveIdentifier'
             for (int i = 0; i < files.Count; ++i)
             {
                 Uri fileUri = new Uri(files[i]);
                 Uri relativeUri = absoluteUri.MakeRelativeUri(fileUri);
-                files[i] = folderPath + relativeUri.ToString();
+                files[i] = folderPath + relativeUri;
             }
             return files;
         }
@@ -407,9 +393,9 @@ namespace UnityEditorInternal
         // Get rid of old icons in the Icons folder (with same filename as a generated icon)
         static void RemoveUnusedFiles(List<string> generatedFiles)
         {
-            for (int i = 0; i < generatedFiles.Count; ++i)
+            foreach (string file in generatedFiles)
             {
-                string deleteFile = generatedFiles[i].Replace("Icons/Processed", "Icons");
+                string deleteFile = file.Replace("Icons/Processed", "Icons");
                 deleteFile = deleteFile.Replace(".asset", ".png");
                 DeleteFile(deleteFile);
 
@@ -430,7 +416,7 @@ namespace UnityEditorInternal
             int startPos = inputData.sourceFolder.Length;
             for (int i = 0; i < files.Count; ++i)
             {
-                baseNames[i] = files[i].Substring(startPos, files[i].IndexOf(inputData.mipIdentifier) - startPos);
+                baseNames[i] = files[i].Substring(startPos, files[i].IndexOf(inputData.mipIdentifier, StringComparison.Ordinal) - startPos);
             }
             HashSet<string> hashset = new HashSet<string>(baseNames);
             baseNames = new string[hashset.Count];

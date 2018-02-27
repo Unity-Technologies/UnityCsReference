@@ -450,6 +450,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             ClearClassList();
 
             var tpl = EditorGUIUtility.Load("UXML/GraphView/Port.uxml") as VisualTreeAsset;
+
             tpl.CloneTree(this, null);
             m_ConnectorBox = this.Q(name: "connector");
             m_ConnectorText = this.Q<Label>(name: "type");
@@ -465,6 +466,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             capacity = portCapacity;
 
             AddToClassList(portDirection.ToString().ToLower());
+            AddStyleSheetPath("StyleSheets/GraphView/Port.uss");
         }
 
         // TODO: Remove when removing presenters.

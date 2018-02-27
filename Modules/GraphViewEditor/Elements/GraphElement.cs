@@ -100,13 +100,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 m_Selected = value;
 
+
                 if (m_Selected)
                 {
-                    AddToClassList("selected");
+                    pseudoStates |= PseudoStates.Selected;
                 }
                 else
                 {
-                    RemoveFromClassList("selected");
+                    pseudoStates &= ~PseudoStates.Selected;
                 }
             }
         }
