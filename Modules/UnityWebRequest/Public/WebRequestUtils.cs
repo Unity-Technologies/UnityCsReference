@@ -496,15 +496,7 @@ namespace UnityEngineInternal
 
         internal static string MakeInitialUrl(string targetUrl, string localUrl)
         {
-            // Uri class leaves only one slash for protocol for this case, prevent that
-            // i.e. we report streaming assets folder on Android as jar:file:///blabla, keep it that way
-            if (targetUrl.StartsWith("jar:file://"))
-                return targetUrl;
-
-            // Prevent blob url slashes from being stripped (to blob:http:/... or blob:https:/...)
-            if (targetUrl.StartsWith("blob:http"))
-                return targetUrl;
-
+            bool prependingProtocol = false;
             var localUri = new System.Uri(localUrl);
             Uri targetUri = null;
 
@@ -512,11 +504,13 @@ namespace UnityEngineInternal
             {
                 // Prepend scheme and (if needed) host
                 targetUri = new Uri(localUri, targetUrl);
+                prependingProtocol = true;
             }
 
             if (targetUri == null && domainRegex.IsMatch(targetUrl))
             {
                 targetUrl = localUri.Scheme + "://" + targetUrl;
+                prependingProtocol = true;
             }
 
             FormatException ex = null;
@@ -538,12 +532,18 @@ namespace UnityEngineInternal
                 try
                 {
                     targetUri = new System.Uri(localUri, targetUrl);
+                    prependingProtocol = true;
                 }
                 catch (FormatException)
                 {
                     throw ex;
                 }
 
+            return MakeUriString(targetUri, targetUrl, prependingProtocol);
+        }
+
+        internal static string MakeUriString(Uri targetUri, string targetUrl, bool prependingProtocol)
+        {
             // for file://protocol pass in unescaped string so we can pass it to VFS
             if (targetUrl.StartsWith("file://", StringComparison.OrdinalIgnoreCase))
             {
@@ -559,7 +559,24 @@ namespace UnityEngineInternal
 
             // if URL contains '%', assume it is properly escaped, otherwise '%2f' gets unescaped as '/' (which may not be correct)
             // otherwise escape it, i.e. replaces spaces by '%20'
-            return targetUrl.Contains("%") ? targetUri.OriginalString : targetUri.AbsoluteUri;
+            if (targetUrl.Contains("%"))
+                return targetUri.OriginalString;
+
+            // Special handling for URIs like jar:file (Android), blob:http (WebGL and similar
+            // Uri.AbsoluteUri class in those cases results in jar:file/path, which is incorrect because of only one slash
+            // Uri.Scheme also returns scheme part before the colon (jar, blob)
+            // so if we didn't prepend the scheme and scheme has colon it it, construct the URI from it's parts
+            var scheme = targetUri.Scheme;
+            if (!prependingProtocol && (targetUrl.Length >= scheme.Length + 2) && targetUrl[scheme.Length + 1] != '/')
+            {
+                StringBuilder sb = new StringBuilder(scheme, targetUrl.Length);
+                sb.Append(':');
+                sb.Append(targetUri.PathAndQuery);  // for these spec URIs path also has the part of URI to right of colon
+                sb.Append(targetUri.Fragment);
+                return sb.ToString();
+            }
+
+            return targetUri.AbsoluteUri;
         }
     }
 }
