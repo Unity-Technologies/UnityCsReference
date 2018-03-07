@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
 
@@ -35,6 +36,12 @@ namespace UnityEditorInternal.Profiling
         SelfGPUPercent,
         WarningCount,
         ObjectName
+    }
+
+    [Flags]
+    public enum FrameViewFilteringModes
+    {
+        CollapseEditorBoundarySamples = 1 << 0
     }
 
     [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/FrameDataView.h")]
@@ -85,9 +92,9 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        public FrameDataView(ProfilerViewType viewType, int frameIndex, int threadIndex, ProfilerColumn profilerSortColumn, bool sortAscending)
+        public FrameDataView(ProfilerViewType viewType, int frameIndex, int threadIndex, ProfilerColumn profilerSortColumn, bool sortAscending, FrameViewFilteringModes collapseEditorSamples)
         {
-            m_Ptr = Internal_Create(viewType, frameIndex, threadIndex, profilerSortColumn, sortAscending);
+            m_Ptr = Internal_Create(viewType, frameIndex, threadIndex, profilerSortColumn, sortAscending, collapseEditorSamples);
         }
 
         ~FrameDataView()
@@ -112,7 +119,7 @@ namespace UnityEditorInternal.Profiling
         }
 
         [ThreadSafe]
-        private static extern IntPtr Internal_Create(ProfilerViewType viewType, int frameIndex, int threadIndex, ProfilerColumn profilerSortColumn, bool sortAscending);
+        private static extern IntPtr Internal_Create(ProfilerViewType viewType, int frameIndex, int threadIndex, ProfilerColumn profilerSortColumn, bool sortAscending, FrameViewFilteringModes collapseEditorSamples);
 
         [ThreadSafe]
         private static extern void Internal_Destroy(IntPtr ptr);
@@ -185,6 +192,19 @@ namespace UnityEditorInternal.Profiling
             markerIds.Add(GetItemMarkerID(id));
 
             return new MarkerPath(markerIds);
+        }
+
+        public string GetItemPath(int id)
+        {
+            var ancestors = GetItemAncestors(id);
+            var propertyPathBuilder = new StringBuilder();
+            for (int i = ancestors.Length - 1; i >= 0; i--)
+            {
+                propertyPathBuilder.Append(GetItemFunctionName(ancestors[i]));
+                propertyPathBuilder.Append('/');
+            }
+            propertyPathBuilder.Append(GetItemFunctionName(id));
+            return propertyPathBuilder.ToString();
         }
 
         public static extern UnityEngine.Color32 GetMarkerCategoryColor(int category);

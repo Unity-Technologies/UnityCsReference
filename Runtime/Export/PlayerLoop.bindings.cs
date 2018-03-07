@@ -42,6 +42,8 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct UnityWebRequestUpdate {}
         [RequiredByNativeCode]
+        public struct UpdateStreamingManager {}
+        [RequiredByNativeCode]
         public struct ExecuteMainThreadJobs {}
         [RequiredByNativeCode]
         public struct ProcessMouseInWindow {}
@@ -88,8 +90,6 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct PhysicsResetInterpolatedTransformPosition {}
         [RequiredByNativeCode]
-        public struct NewInputBeginFrame {}
-        [RequiredByNativeCode]
         public struct SpriteAtlasManagerUpdate {}
         [RequiredByNativeCode]
         public struct TangoUpdate {}
@@ -124,9 +124,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct ScriptRunDelayedTasks {}
         [RequiredByNativeCode]
-        public struct NewInputBeginFixedUpdate {}
-        [RequiredByNativeCode]
-        public struct NewInputEndFixedUpdate {}
+        public struct NewInputFixedUpdate {}
     }
     [RequiredByNativeCode]
     public struct PreUpdate

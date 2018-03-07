@@ -264,7 +264,7 @@ namespace UnityEditor
         static void CreateCamera(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(CreateGameObject(parent, "Camera", typeof(Camera), typeof(FlareLayer), typeof(AudioListener)), parent);
+            Place(CreateGameObject(parent, "Camera", typeof(Camera), typeof(AudioListener)), parent);
         }
     }
 }

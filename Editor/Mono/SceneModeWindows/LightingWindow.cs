@@ -20,7 +20,7 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Lighting", icon = "Lighting")]
     internal class LightingWindow : EditorWindow
     {
-        public const float kButtonWidth = 150;
+        public const float kButtonWidth = 90;
 
         enum Mode
         {
@@ -88,6 +88,7 @@ namespace UnityEditor
             autoRepaintOnSceneChange = false;
             m_PreviewResizer.Init("LightmappingPreview");
             EditorApplication.searchChanged += Repaint;
+            Undo.undoRedoPerformed += Repaint;
             Repaint();
         }
 
@@ -96,6 +97,7 @@ namespace UnityEditor
             m_LightingTab.OnDisable();
             m_ObjectTab.OnDisable();
             EditorApplication.searchChanged -= Repaint;
+            Undo.undoRedoPerformed -= Repaint;
         }
 
         void OnBecameVisible()
@@ -210,9 +212,9 @@ namespace UnityEditor
 
         void ResetSettings(object userData, string[] options, int selected)
         {
-            RenderSettings.Reset();
-            LightmapEditorSettings.Reset();
-            LightmapSettings.Reset();
+            Undo.RecordObjects(new[] {RenderSettings.GetRenderSettings(), LightmapEditorSettings.GetLightmapSettings()}, "Reset Lighting Settings");
+            Unsupported.SmartReset(RenderSettings.GetRenderSettings());
+            Unsupported.SmartReset(LightmapEditorSettings.GetLightmapSettings());
         }
 
         void PreviewSection()
@@ -323,11 +325,11 @@ namespace UnityEditor
                     // Only show Force Stop when using the PathTracer backend
                     if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU &&
                         m_EnabledBakedGI.boolValue &&
-                        GUILayout.Button("Force Stop", GUILayout.Width(kButtonWidth)))
+                        GUILayout.Button(Styles.ForceStop, GUILayout.Width(kButtonWidth)))
                     {
                         Lightmapping.ForceStop();
                     }
-                    if (GUILayout.Button("Cancel", GUILayout.Width(kButtonWidth)))
+                    if (GUILayout.Button(Styles.Cancel, GUILayout.Width(kButtonWidth)))
                     {
                         Lightmapping.Cancel();
                         UsabilityAnalytics.Track("/LightMapper/Cancel");
@@ -536,7 +538,7 @@ namespace UnityEditor
         static void CreateLightingWindow()
         {
             LightingWindow window = EditorWindow.GetWindow<LightingWindow>();
-            window.minSize = new Vector2(360, 390);
+            window.minSize = new Vector2(370, 390);
             window.Show();
         }
 
@@ -551,6 +553,8 @@ namespace UnityEditor
 
             public static readonly GUIContent ContinuousBakeLabel = EditorGUIUtility.TrTextContent("Auto Generate", "Automatically generates lighting data in the Scene when any changes are made to the lighting systems.");
             public static readonly GUIContent BuildLabel = EditorGUIUtility.TrTextContent("Generate Lighting", "Generates the lightmap data for the current master scene.  This lightmap data (for realtime and baked global illumination) is stored in the GI Cache. For GI Cache settings see the Preferences panel.");
+            public static readonly GUIContent ForceStop = EditorGUIUtility.TrTextContent("Force Stop");
+            public static readonly GUIContent Cancel = EditorGUIUtility.TrTextContent("Cancel");
 
             public static readonly GUIStyle LabelStyle = EditorStyles.wordWrappedMiniLabel;
             public static readonly GUIStyle ToolbarStyle = "preToolbar";

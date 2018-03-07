@@ -91,7 +91,11 @@ namespace UnityEditor
         IncludeTestAssemblies = 1 << 22,
 
         // Will forces the buildGUID to all zeros
-        NoUniqueIdentifier = 1 << 23
+        NoUniqueIdentifier = 1 << 23,
+
+        // Don't add assets to the build. Assets will be downloaded on-demand from the editor.
+        // Reserve this flag as it's used in the experimental namespace
+        Reserved1 = 1 << 24, // DatalessPlayer
     }
 
     // Asset Bundle building options.
@@ -468,6 +472,9 @@ namespace UnityEditor
 
         [NativeThrows]
         private static extern AssetBundleManifest BuildAssetBundlesWithInfoInternal(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform);
+
+        [FreeFunction("GetPlayerDataSessionId")]
+        internal static extern string GetSessionIdForBuildTarget(BuildTarget target);
 
         [FreeFunction("ExtractCRCFromAssetBundleManifestFile")]
         public static extern bool GetCRCForAssetBundle(string targetPath, out uint crc);

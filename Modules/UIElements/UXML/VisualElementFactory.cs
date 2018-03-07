@@ -172,7 +172,11 @@ namespace UnityEngine.Experimental.UIElements
         private static VisualElement CreateListView(IUxmlAttributes bag, CreationContext ctx)
         {
             var listView = new ListView();
-            listView.itemHeight = bag.GetPropertyInt("itemHeight", listView.itemHeight);
+
+            string property = bag.GetPropertyString("itemHeight");
+            if (!string.IsNullOrEmpty(property))
+                listView.itemHeight = bag.GetPropertyInt("itemHeight", listView.itemHeight);
+
             return listView;
         }
     }

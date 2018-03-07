@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Unity.Burst;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Internal;
 
 namespace Unity.Collections
 {
@@ -148,7 +149,12 @@ namespace Unity.Collections
         }
 
 
-        public IEnumerator<T> GetEnumerator()
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(ref this);
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             return new Enumerator(ref this);
         }
@@ -158,7 +164,8 @@ namespace Unity.Collections
             return GetEnumerator();
         }
 
-        internal struct Enumerator : IEnumerator<T>
+        [ExcludeFromDocs]
+        public struct Enumerator : IEnumerator<T>
         {
             private NativeArray<T> m_Array;
             private int m_Index;
@@ -249,7 +256,7 @@ namespace Unity.Collections.LowLevel.Unsafe
             return nativeArray.m_Buffer;
         }
 
-        unsafe public static void* GetUnsafeBufferPointerWithoutChecks<T>(this NativeArray<T> nativeArray) where T : struct
+        unsafe public static void* GetUnsafeBufferPointerWithoutChecks<T>(NativeArray<T> nativeArray) where T : struct
         {
             return nativeArray.m_Buffer;
         }

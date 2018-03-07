@@ -139,7 +139,13 @@ namespace UnityEditor.Animations
             parameters = parameterVector;
         }
 
+        // We cannot call AddMotion from native code, because there are multiple signatures of that method, creating ambiguity.
         [RequiredByNativeCode]
+        private AnimatorState AddMotionInternal(Motion motion)
+        {
+            return AddMotion(motion);
+        }
+
         public AnimatorState AddMotion(Motion motion)
         {
             return AddMotion(motion, 0);

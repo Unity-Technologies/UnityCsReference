@@ -20,8 +20,10 @@ namespace UnityEditor.Experimental.UIElements
             s_Registered = true;
 
             // Primitives
+            Factories.RegisterFactory<FloatField>((bag, __) => new FloatField());
             Factories.RegisterFactory<DoubleField>((bag, __) => new DoubleField());
             Factories.RegisterFactory<IntegerField>((bag, __) => new IntegerField());
+            Factories.RegisterFactory<LongField>((bag, __) => new LongField());
             Factories.RegisterFactory<CurveField>((bag, __) => new CurveField());
             Factories.RegisterFactory<ObjectField>((bag, __) => new ObjectField());
             Factories.RegisterFactory<ColorField>((bag, __) => new ColorField());

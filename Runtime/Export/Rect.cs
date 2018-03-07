@@ -3,16 +3,26 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using scm = System.ComponentModel;
 
 namespace UnityEngine
 {
-    [UsedByNativeCode]
+    [NativeHeader("Runtime/Math/Rect.h")]
+    [NativeClass("Rectf", "template<typename T> class RectT; typedef RectT<float> Rectf;")]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
     public partial struct Rect
     {
-        private float m_XMin, m_YMin, m_Width, m_Height;
+        [NativeName("x")]
+        private float m_XMin;
+        [NativeName("y")]
+        private float m_YMin;
+        [NativeName("width")]
+        private float m_Width;
+        [NativeName("height")]
+        private float m_Height;
 
         public Rect(float x, float y, float width, float height)
         {

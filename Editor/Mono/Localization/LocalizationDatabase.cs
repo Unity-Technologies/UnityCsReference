@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEditorInternal;
+using UnityEngine.Internal;
 
 using System;
 using System.Threading;
@@ -15,8 +16,8 @@ using System.Security.Cryptography;
 
 namespace UnityEditor
 {
-    /// *undocumented*
-    internal class L10n
+    [ExcludeFromDocs]
+    public class L10n
     {
         private L10n() {}
 

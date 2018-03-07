@@ -72,10 +72,45 @@ namespace UnityEditor
         [NativeName("BakeBackend")]
         public extern static Lightmapper lightmapper { get; set; }
 
+        // Which lightmap mode is used.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("LightmapsBakeMode")]
+        public extern static LightmapsMode lightmapsMode { get; set; }
+
+        // Which mixed mode is used.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("MixedBakeMode")]
+        public extern static MixedLightingMode mixedBakeMode { get; set; }
+
         // Which path tracer sampling scheme is used.
         [StaticAccessor("GetLightmapEditorSettings()")]
         [NativeName("PVRSampling")]
         public extern static Sampling sampling { get; set; }
+
+        // Amount of direct sample used for the path tracer.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRDirectSampleCount")]
+        public extern static int directSampleCount { get; set; }
+
+        // Amount of indirect sample used for the path tracer.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRSampleCount")]
+        public extern static int indirectSampleCount { get; set; }
+
+        // Amount of light bounce used for the path tracer.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRBounces")]
+        public extern static int bounces { get; set; }
+
+        // Is view prioritization enabled?
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRCulling")]
+        public extern static bool prioritizeView { get; set; }
+
+        // Which path tracer filtering mode is used.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRFilteringMode")]
+        public extern static FilterMode filteringMode { get; set; }
 
         // Which path tracer filter is used for the direct light.
         [StaticAccessor("GetLightmapEditorSettings()")]
@@ -91,6 +126,36 @@ namespace UnityEditor
         [StaticAccessor("GetLightmapEditorSettings()")]
         [NativeName("PVRFilterTypeAO")]
         public extern static FilterType filterTypeAO { get; set; }
+
+        // Which radius is used for the direct light path tracer filter if gauss is chosen.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRFilteringGaussRadiusDirect")]
+        public extern static int filteringGaussRadiusDirect { get; set; }
+
+        // Which radius is used for the indirect light path tracer filter if gauss is chosen.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRFilteringGaussRadiusIndirect")]
+        public extern static int filteringGaussRadiusIndirect { get; set; }
+
+        // Which radius is used for AO path tracer filter if gauss is chosen.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRFilteringGaussRadiusAO")]
+        public extern static int filteringGaussRadiusAO { get; set; }
+
+        // Which position sigma is used for the direct light path tracer filter if Atrous is chosen.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRFilteringAtrousPositionSigmaDirect")]
+        public extern static float filteringAtrousPositionSigmaDirect { get; set; }
+
+        // Which position sigma is used for the indirect light path tracer filter if Atrous is chosen.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRFilteringAtrousPositionSigmaIndirect")]
+        public extern static float filteringAtrousPositionSigmaIndirect { get; set; }
+
+        // Which position sigma is used for AO path tracer filter if Atrous is chosen.
+        [StaticAccessor("GetLightmapEditorSettings()")]
+        [NativeName("PVRFilteringAtrousPositionSigmaAO")]
+        public extern static float filteringAtrousPositionSigmaAO { get; set; }
 
         // Reset lightmapping settings
         [StaticAccessor("GetLightmapEditorSettings()")]

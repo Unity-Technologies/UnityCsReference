@@ -17,6 +17,17 @@ namespace UnityEditor
             public static readonly GUIContent header = EditorGUIUtility.TrTextContent("Create New Palette");
             public static readonly GUIContent gridLabel = EditorGUIUtility.TrTextContent("Grid");
             public static readonly GUIContent sizeLabel = EditorGUIUtility.TrTextContent("Cell Size");
+            public static readonly GUIContent hexagonLabel = EditorGUIUtility.TrTextContent("Hexagon Type");
+            public static readonly GUIContent[] hexagonSwizzleTypeLabel =
+            {
+                EditorGUIUtility.TrTextContent("Point Top"),
+                EditorGUIUtility.TrTextContent("Flat Top"),
+            };
+            public static readonly Grid.CellSwizzle[] hexagonSwizzleTypeValue =
+            {
+                Grid.CellSwizzle.XYZ,
+                Grid.CellSwizzle.YXZ,
+            };
         }
 
 #pragma warning disable 649
@@ -25,6 +36,7 @@ namespace UnityEditor
         private static GridPaletteAddPopup s_Instance;
         private GridPaintPaletteWindow m_Owner;
         private Grid.CellLayout m_Layout;
+        private int m_HexagonLayout;
         private GridPalette.CellSizing m_CellSizing;
         private Vector3 m_CellSize;
 
@@ -33,7 +45,7 @@ namespace UnityEditor
             m_Owner = owner;
             m_CellSize = new Vector3(1, 1, 0);
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
-            ShowAsDropDown(buttonRect, new Vector2(312, 140), null, ShowMode.PopupMenuWithKeyboardFocus);
+            ShowAsDropDown(buttonRect, new Vector2(312, 150), null, ShowMode.PopupMenuWithKeyboardFocus);
         }
 
         internal void OnGUI()
@@ -55,6 +67,16 @@ namespace UnityEditor
             m_Layout = (Grid.CellLayout)EditorGUILayout.EnumPopup(m_Layout);
             GUILayout.EndHorizontal();
 
+            if (m_Layout == GridLayout.CellLayout.Hexagon)
+            {
+                GUILayout.BeginHorizontal();
+                float oldLabelWidth = UnityEditor.EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = 94;
+                m_HexagonLayout = EditorGUILayout.Popup(Styles.hexagonLabel, m_HexagonLayout, Styles.hexagonSwizzleTypeLabel);
+                EditorGUIUtility.labelWidth = oldLabelWidth;
+                GUILayout.EndHorizontal();
+            }
+
             GUILayout.BeginHorizontal();
             GUILayout.Label(Styles.sizeLabel, GUILayout.Width(90f));
             m_CellSizing = (GridPalette.CellSizing)EditorGUILayout.EnumPopup(m_CellSizing);
@@ -68,7 +90,7 @@ namespace UnityEditor
                 GUILayout.EndHorizontal();
             }
 
-            GUILayout.Space(5f);
+            GUILayout.FlexibleSpace();
 
             // Cancel, Ok
             GUILayout.BeginHorizontal();
@@ -82,7 +104,11 @@ namespace UnityEditor
             {
                 if (GUILayout.Button(Styles.ok))
                 {
-                    GameObject go = GridPaletteUtility.CreateNewPaletteNamed(m_Name, m_Layout, m_CellSizing, m_CellSize);
+                    var swizzle = Grid.CellSwizzle.XYZ;
+                    if (m_Layout == GridLayout.CellLayout.Hexagon)
+                        swizzle = Styles.hexagonSwizzleTypeValue[m_HexagonLayout];
+
+                    GameObject go = GridPaletteUtility.CreateNewPaletteNamed(m_Name, m_Layout, m_CellSizing, m_CellSize, swizzle);
                     if (go != null)
                     {
                         m_Owner.palette = go;

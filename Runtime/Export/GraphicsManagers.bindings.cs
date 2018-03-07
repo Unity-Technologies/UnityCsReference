@@ -90,10 +90,11 @@ namespace UnityEngine
 
         extern public static BlendWeights blendWeights   { get; set; }
 
-        extern public static bool streamingMipmapsFeatureEnabled { get; set; }
         extern public static bool streamingMipmapsActive { get; set; }
-        extern public static float textureStreamingBudget { get; set; }
-        extern public static int   minStreamingMipLevel { get; set; }
+        extern public static float streamingMipmapsMemoryBudget { get; set; }
+        extern public static int streamingMipmapsRenderersPerFrame { get; set; }
+        extern public static int streamingMipmapsMaxLevelReduction { get; set; }
+        extern public static bool streamingMipmapsAddAllCameras { get; set; }
 
         [StaticAccessor("QualitySettingsScripting", StaticAccessorType.DoubleColon)] extern public static int maxQueuedFrames { get; set; }
 

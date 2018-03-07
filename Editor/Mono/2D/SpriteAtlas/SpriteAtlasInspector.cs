@@ -97,14 +97,8 @@ namespace UnityEditor.U2D
 
         private static Styles s_Styles;
 
-        private readonly string kDefaultPlatformName = "default";
-
         private enum AtlasType { Undefined = -1, Master = 0, Variant = 1 }
 
-        private SerializedProperty m_MaxTextureSize;
-        private SerializedProperty m_TextureCompression;
-        private SerializedProperty m_UseCrunchedCompression;
-        private SerializedProperty m_CompressionQuality;
         private SerializedProperty m_FilterMode;
         private SerializedProperty m_AnisoLevel;
         private SerializedProperty m_GenerateMipMaps;
@@ -117,7 +111,7 @@ namespace UnityEditor.U2D
         private SerializedProperty m_Packables;
 
         private SerializedProperty m_MasterAtlas;
-        private SerializedProperty m_VariantMultiplier;
+        private SerializedProperty m_VariantScale;
 
         private string m_Hash;
         private int m_PreviewPage = 0;
@@ -176,23 +170,19 @@ namespace UnityEditor.U2D
 
         void OnEnable()
         {
-            m_MaxTextureSize = serializedObject.FindProperty("m_EditorData.textureSettings.maxTextureSize");
-            m_TextureCompression = serializedObject.FindProperty("m_EditorData.textureSettings.textureCompression");
-            m_UseCrunchedCompression = serializedObject.FindProperty("m_EditorData.textureSettings.crunchedCompression");
-            m_CompressionQuality = serializedObject.FindProperty("m_EditorData.textureSettings.compressionQuality");
             m_FilterMode = serializedObject.FindProperty("m_EditorData.textureSettings.filterMode");
             m_AnisoLevel = serializedObject.FindProperty("m_EditorData.textureSettings.anisoLevel");
             m_GenerateMipMaps = serializedObject.FindProperty("m_EditorData.textureSettings.generateMipMaps");
             m_Readable = serializedObject.FindProperty("m_EditorData.textureSettings.readable");
             m_UseSRGB = serializedObject.FindProperty("m_EditorData.textureSettings.sRGB");
 
-            m_EnableTightPacking = serializedObject.FindProperty("m_EditorData.packingParameters.enableTightPacking");
-            m_EnableRotation = serializedObject.FindProperty("m_EditorData.packingParameters.enableRotation");
-            m_Padding = serializedObject.FindProperty("m_EditorData.packingParameters.padding");
+            m_EnableTightPacking = serializedObject.FindProperty("m_EditorData.packingSettings.enableTightPacking");
+            m_EnableRotation = serializedObject.FindProperty("m_EditorData.packingSettings.enableRotation");
+            m_Padding = serializedObject.FindProperty("m_EditorData.packingSettings.padding");
 
             m_MasterAtlas = serializedObject.FindProperty("m_MasterAtlas");
             m_BindAsDefault = serializedObject.FindProperty("m_EditorData.bindAsDefault");
-            m_VariantMultiplier = serializedObject.FindProperty("m_EditorData.variantMultiplier");
+            m_VariantScale = serializedObject.FindProperty("m_EditorData.variantMultiplier");
 
             m_Packables = serializedObject.FindProperty("m_EditorData.packables");
             m_PackableList = new ReorderableList(serializedObject, m_Packables, true, true, true, true);
@@ -218,18 +208,10 @@ namespace UnityEditor.U2D
 
             // Default platform
             var defaultSettings = new List<TextureImporterPlatformSettings>();
-            m_TempPlatformSettings.Add(kDefaultPlatformName, defaultSettings);
-            foreach (var t in targets)
+            m_TempPlatformSettings.Add(TextureImporterInspector.s_DefaultPlatformName, defaultSettings);
+            foreach (SpriteAtlas sa in targets)
             {
-                TextureImporterPlatformSettings settings = new TextureImporterPlatformSettings();
-                settings.name = kDefaultPlatformName;
-
-                SerializedObject targetSerializedObject = new SerializedObject(t);
-                settings.maxTextureSize = targetSerializedObject.FindProperty("m_EditorData.textureSettings.maxTextureSize").intValue;
-                settings.textureCompression = (TextureImporterCompression)targetSerializedObject.FindProperty("m_EditorData.textureSettings.textureCompression").enumValueIndex;
-                settings.crunchedCompression = targetSerializedObject.FindProperty("m_EditorData.textureSettings.crunchedCompression").boolValue;
-                settings.compressionQuality = targetSerializedObject.FindProperty("m_EditorData.textureSettings.compressionQuality").intValue;
-
+                var settings = sa.GetPlatformSettings(TextureImporterInspector.s_DefaultPlatformName);
                 defaultSettings.Add(settings);
             }
 
@@ -240,9 +222,7 @@ namespace UnityEditor.U2D
                 m_TempPlatformSettings.Add(platform.name, platformSettings);
                 foreach (SpriteAtlas sa in targets)
                 {
-                    TextureImporterPlatformSettings settings = new TextureImporterPlatformSettings();
-                    settings.name = platform.name;
-                    sa.CopyPlatformSettingsIfAvailable(platform.name, settings);
+                    var settings = sa.GetPlatformSettings(platform.name);
 
                     // setting will be in default state if copy failed
                     platformSettings.Add(settings);
@@ -383,10 +363,10 @@ namespace UnityEditor.U2D
         private void HandleVariantSettingUI()
         {
             EditorGUILayout.LabelField(s_Styles.variantSettingLabel, EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(m_VariantMultiplier, s_Styles.variantMultiplierLabel);
+            EditorGUILayout.PropertyField(m_VariantScale, s_Styles.variantMultiplierLabel);
 
             // Test if the multiplier scale a power of two size (1024) into another power of 2 size.
-            if (!Mathf.IsPowerOfTwo((int)(m_VariantMultiplier.floatValue * 1024)))
+            if (!Mathf.IsPowerOfTwo((int)(m_VariantScale.floatValue * 1024)))
                 EditorGUILayout.HelpBox(s_Styles.notPowerOfTwoWarning.text, MessageType.Warning, true);
         }
 
@@ -436,36 +416,21 @@ namespace UnityEditor.U2D
             int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms.ToArray(), s_Styles.defaultPlatformLabel);
             if (shownTextureFormatPage == -1)
             {
-                List<TextureImporterPlatformSettings> platformSettings = m_TempPlatformSettings[kDefaultPlatformName];
-                List<TextureImporterPlatformSettings> newSettings = new List<TextureImporterPlatformSettings>(platformSettings.Count);
-                for (var i = 0; i < platformSettings.Count; ++i)
+                var platformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
+                if (m_TexturePlatformSettingsController.HandleDefaultSettings(platformSettings, m_TexturePlatformSettingsView))
                 {
-                    TextureImporterPlatformSettings settings = new TextureImporterPlatformSettings();
-                    platformSettings[i].CopyTo(settings);
-                    newSettings.Add(settings);
-                }
-
-                if (m_TexturePlatformSettingsController.HandleDefaultSettings(newSettings, m_TexturePlatformSettingsView))
-                {
-                    for (var i = 0; i < newSettings.Count; ++i)
+                    for (var i = 0; i < platformSettings.Count; ++i)
                     {
-                        if (platformSettings[i].maxTextureSize != newSettings[i].maxTextureSize)
-                            m_MaxTextureSize.intValue = newSettings[i].maxTextureSize;
-                        if (platformSettings[i].textureCompression != newSettings[i].textureCompression)
-                            m_TextureCompression.enumValueIndex = (int)newSettings[i].textureCompression;
-                        if (platformSettings[i].crunchedCompression != newSettings[i].crunchedCompression)
-                            m_UseCrunchedCompression.boolValue = newSettings[i].crunchedCompression;
-                        if (platformSettings[i].compressionQuality != newSettings[i].compressionQuality)
-                            m_CompressionQuality.intValue = newSettings[i].compressionQuality;
-
-                        newSettings[i].CopyTo(platformSettings[i]);
+                        SpriteAtlas sa = (SpriteAtlas)targets[i];
+                        sa.SetPlatformSettings(platformSettings[i]);
                     }
                 }
             }
             else
             {
-                BuildPlatform buildPlatform = m_ValidPlatforms[shownTextureFormatPage];
-                List<TextureImporterPlatformSettings> platformSettings = m_TempPlatformSettings[buildPlatform.name];
+                var buildPlatform = m_ValidPlatforms[shownTextureFormatPage];
+                var platformSettings = m_TempPlatformSettings[buildPlatform.name];
+
 
                 // Predetermine format if overridden is unchecked
                 for (var i = 0; i < platformSettings.Count; ++i)
@@ -474,7 +439,7 @@ namespace UnityEditor.U2D
                     if (!settings.overridden)
                     {
                         SpriteAtlas sa = (SpriteAtlas)targets[i];
-                        settings.format = sa.FormatDetermineByAtlasSettings(buildPlatform.defaultTarget);
+                        settings.format = (TextureImporterFormat)sa.GetTextureFormat(buildPlatform.defaultTarget);
                     }
                 }
 
@@ -572,10 +537,10 @@ namespace UnityEditor.U2D
 
         void CachePreviewTexture()
         {
-            if (m_PreviewTextures == null || m_Hash != spriteAtlas.GetHashString())
+            if (m_PreviewTextures == null || m_Hash != spriteAtlas.GetHash())
             {
                 m_PreviewTextures = spriteAtlas.GetPreviewTextures();
-                m_Hash = spriteAtlas.GetHashString();
+                m_Hash = spriteAtlas.GetHash();
 
                 if (m_PreviewTextures != null
                     && m_PreviewTextures.Length > 0

@@ -109,12 +109,9 @@ namespace UnityEditor.VisualStudioIntegration
             string extension = Path.GetExtension(file);
 
             // Exclude files coming from packages except if they are internalized.
-            if (UnityEditor.PackageManager.Folders.IsPackagedAssetPath(file))
+            if (IsNonInternalizedPackagePath(file))
             {
-                bool rootFolder, readOnly;
-                bool validPath = AssetDatabase.GetAssetFolderInfo(file, out rootFolder, out readOnly);
-                if (!validPath || readOnly)
-                    return false;
+                return false;
             }
 
             // Dll's are not scripts but still need to be included..
@@ -249,11 +246,9 @@ namespace UnityEditor.VisualStudioIntegration
             foreach (string asset in AssetDatabase.GetAllAssetPaths())
             {
                 // Exclude files coming from packages except if they are internalized.
-                if (PackageManager.Folders.IsPackagedAssetPath(asset))
+                if (IsNonInternalizedPackagePath(asset))
                 {
-                    var absolutePath = Path.GetFullPath(asset).ConvertSeparatorsToUnity();
-                    if (!absolutePath.StartsWith(_projectDirectory))
-                        continue;
+                    continue;
                 }
                 string extension = Path.GetExtension(asset);
                 if (IsSupportedExtension(extension) && ScriptingLanguage.None == ScriptingLanguageFor(extension))
@@ -284,6 +279,18 @@ namespace UnityEditor.VisualStudioIntegration
 
             return result;
         }
+
+        bool IsNonInternalizedPackagePath(string file)
+        {
+            if (UnityEditor.PackageManager.Folders.IsPackagedAssetPath(file))
+            {
+                bool rootFolder, readOnly;
+                bool validPath = AssetDatabase.GetAssetFolderInfo(file, out rootFolder, out readOnly);
+                return (!validPath || readOnly);
+            }
+            return false;
+        }
+
 
         void SyncProject(MonoIsland island,
             Dictionary<string, string> allAssetsProjectParts,
@@ -350,12 +357,10 @@ namespace UnityEditor.VisualStudioIntegration
             ScriptCompilerBase.ResponseFileData responseFileData,
             List<MonoIsland> allProjectIslands)
         {
-            var projectBuilder = new StringBuilder(ProjectHeader(island, responseFileData.Defines));
+            var projectBuilder = new StringBuilder(ProjectHeader(island, responseFileData));
             var references = new List<string>();
             var projectReferences = new List<Match>();
             Match match;
-            string extension;
-            string fullFile;
             bool isBuildingEditorProject = island._output.EndsWith("-Editor.dll");
 
             foreach (string file in island._files)
@@ -363,13 +368,12 @@ namespace UnityEditor.VisualStudioIntegration
                 if (!ShouldFileBePartOfSolution(file))
                     continue;
 
-                extension = Path.GetExtension(file).ToLower();
-                fullFile = Path.IsPathRooted(file) ?  file :  Path.Combine(_projectDirectory, file);
-
+                var extension = Path.GetExtension(file).ToLower();
+                var fullFile = EscapedRelativePathFor(file);
                 if (".dll" != extension)
                 {
                     var tagName = "Compile";
-                    projectBuilder.AppendFormat("     <{0} Include=\"{1}\" />{2}", tagName, EscapedRelativePathFor(fullFile), WindowsNewline);
+                    projectBuilder.AppendFormat("     <{0} Include=\"{1}\" />{2}", tagName, fullFile, WindowsNewline);
                 }
                 else
                 {
@@ -466,7 +470,8 @@ namespace UnityEditor.VisualStudioIntegration
             return Path.Combine(_projectDirectory, string.Format("{0}.sln", _projectName));
         }
 
-        private string ProjectHeader(MonoIsland island, string[] additionalDefines)
+        private string ProjectHeader(MonoIsland island,
+            ScriptCompilerBase.ResponseFileData responseFileData)
         {
             string targetframeworkversion = "v3.5";
             string targetLanguageVersion = "4";
@@ -495,14 +500,14 @@ namespace UnityEditor.VisualStudioIntegration
                 toolsversion, productversion, ProjectGuid(island._output),
                 _settings.EngineAssemblyPath,
                 _settings.EditorAssemblyPath,
-                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(_settings.Defines).Concat(island._defines).Concat(additionalDefines).Distinct().ToArray()),
+                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(_settings.Defines).Concat(island._defines).Concat(responseFileData.Defines).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 Path.GetFileNameWithoutExtension(island._output),
                 EditorSettings.projectGenerationRootNamespace,
                 targetframeworkversion,
                 targetLanguageVersion,
                 baseDirectory,
-                island._allowUnsafeCode
+                island._allowUnsafeCode | responseFileData.Unsafe
             };
 
             try

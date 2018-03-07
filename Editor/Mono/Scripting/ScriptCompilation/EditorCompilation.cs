@@ -469,6 +469,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
             UpdateCustomTargetAssemblies();
         }
 
+        public bool IsPathInPackageDirectory(string path)
+        {
+            if (m_PackageAssemblies == null)
+                return false;
+            return m_PackageAssemblies.Any(p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
+        }
+
         public void SetAllPackageAssemblies(PackageAssembly[] packageAssemblies)
         {
             m_PackageAssemblies = packageAssemblies;

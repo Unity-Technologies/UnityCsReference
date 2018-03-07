@@ -49,12 +49,18 @@ namespace UnityEngine
         [FreeFunction("!GetAnimationModeSnapshot().IsInAnimationMode")]
         internal static extern bool CanRecordModifications();
 
+        private static bool s_BlockUndo;
+
+        public static void StopRecordingUndo() { s_BlockUndo = true; }
+
+        public static void StartRecordingUndo() { s_BlockUndo = false; }
+
         public void Add(Object driver, RectTransform rectTransform, DrivenTransformProperties drivenProperties)
         {
             if (m_Tracked == null)
                 m_Tracked = new List<RectTransform>();
 
-            if (!Application.isPlaying && CanRecordModifications())
+            if (!Application.isPlaying && CanRecordModifications() && !s_BlockUndo)
                 RuntimeUndo.RecordObject(rectTransform, "Driving RectTransform");
 
             rectTransform.drivenByObject = driver;
@@ -77,7 +83,7 @@ namespace UnityEngine
                 {
                     if (m_Tracked[i] != null)
                     {
-                        if (!Application.isPlaying && CanRecordModifications())
+                        if (!Application.isPlaying && CanRecordModifications() && !s_BlockUndo)
                             RuntimeUndo.RecordObject(m_Tracked[i], "Driving RectTransform");
 
                         m_Tracked[i].drivenByObject = null;

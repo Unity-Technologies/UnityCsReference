@@ -91,15 +91,18 @@ public sealed partial class Profiler
     
     
     [System.Diagnostics.ConditionalAttribute("ENABLE_PROFILER")]
+    [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void BeginSample (string name, Object targetObject) ;
 
+    [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  void BeginSampleOnly (string name) ;
 
     [System.Diagnostics.ConditionalAttribute("ENABLE_PROFILER")]
+    [ThreadAndSerializationSafe ()]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void EndSample () ;

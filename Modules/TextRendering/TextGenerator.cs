@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
@@ -88,7 +87,7 @@ namespace UnityEngine
         }
     }
 
-    public partial class TextGenerator
+    public partial class TextGenerator : IDisposable
     {
         // WARNING: Because this is a partial class, do not add any data members here; there is no defined ordering between fields
         // in multiple declarations of partial class. All instance fields must be in the same declaration (for this class, they
@@ -100,10 +99,10 @@ namespace UnityEngine
 
         public TextGenerator(int initialCapacity)
         {
+            m_Ptr = Internal_Create();
             m_Verts = new List<UIVertex>((initialCapacity + 1) * 4);
             m_Characters = new List<UICharInfo>(initialCapacity + 1);
             m_Lines = new List<UILineInfo>(20);
-            Init();
             lock (s_Instances)
             {
                 m_Id = s_NextId++;
@@ -122,8 +121,15 @@ namespace UnityEngine
             {
                 s_Instances.Remove(m_Id);
             }
-            Dispose_cpp();
+
+            if (m_Ptr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
         }
+
+        public int characterCountVisible => characterCount - 1;
 
         [RequiredByNativeCode]
         internal static void InvalidateAll()

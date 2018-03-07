@@ -162,7 +162,7 @@ namespace UnityEditorInternal
             if (m_ModifyOutputBeforeCompile != null)
                 m_ModifyOutputBeforeCompile(outputDirectory);
 
-            ConvertPlayerDlltoCpp(GetUserAssembliesToConvert(managedDir), outputDirectory, managedDir);
+            ConvertPlayerDlltoCpp(GetUserAssembliesToConvert(managedDir), outputDirectory, managedDir, m_PlatformProvider.supportsManagedDebugging);
 
             var compiler = m_PlatformProvider.CreateNativeCompiler();
             if (compiler != null && m_PlatformProvider.CreateIl2CppNativeCodeBuilder() == null)
@@ -254,7 +254,7 @@ namespace UnityEditorInternal
                     Application.platform == RuntimePlatform.WindowsEditor ? @"Tools\MapFileParser\MapFileParser.exe" : @"Tools/MapFileParser/MapFileParser"));
         }
 
-        private void ConvertPlayerDlltoCpp(ICollection<string> userAssemblies, string outputDirectory, string workingDirectory)
+        private void ConvertPlayerDlltoCpp(ICollection<string> userAssemblies, string outputDirectory, string workingDirectory, bool platformSupportsManagedDebugging)
         {
             if (userAssemblies.Count == 0)
                 return;
@@ -292,9 +292,8 @@ namespace UnityEditorInternal
                     break;
             }
 
-            //Currently In Development, Not yet ready to enable
-            //if (useDebugBuild)
-            //    arguments.Add("--enable-debugger");
+            if (useDebugBuild && platformSupportsManagedDebugging && EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+                arguments.Add("--enable-debugger");
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
@@ -408,6 +407,7 @@ namespace UnityEditorInternal
         string il2CppFolder { get; }
         string moduleStrippingInformationFolder { get; }
         bool supportsEngineStripping { get; }
+        bool supportsManagedDebugging { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -452,6 +452,11 @@ namespace UnityEditorInternal
         }
 
         public virtual bool supportsEngineStripping
+        {
+            get { return false; }
+        }
+
+        public virtual bool supportsManagedDebugging
         {
             get { return false; }
         }

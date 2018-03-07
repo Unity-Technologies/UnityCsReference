@@ -14,22 +14,6 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class ListView : VisualElement
     {
-        public class ItemChosenEvent : EventBase<ItemChosenEvent>
-        {
-            public object item;
-        }
-
-        public class SelectionChangedEvent : EventBase<SelectionChangedEvent>
-        {
-            public List<object> items;
-
-            protected override void Init()
-            {
-                if (items == null)
-                    items = new List<object>();
-            }
-        }
-
         private class RecycledItem
         {
             public readonly VisualElement element;
@@ -49,8 +33,8 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public event Action<ItemChosenEvent> onItemChosenEvent;
-        public event Action<SelectionChangedEvent> onSelectionChangedEvent;
+        public event Action<object> onItemChosen;
+        public event Action<List<object>> onSelectionChanged;
 
         private IList m_ItemsSource;
         public IList itemsSource
@@ -126,7 +110,7 @@ namespace UnityEngine.Experimental.UIElements
         public SelectionType selectionType { get; set; }
 
         private const int k_DefaultItemHeight = 30;
-        private const string k_ItemHeightProperty = "unity-item-height";
+        private const string k_ItemHeightProperty = "-unity-item-height";
 
         private int m_FirstVisibleIndex;
         private Rect m_LastSize;
@@ -167,7 +151,7 @@ namespace UnityEngine.Experimental.UIElements
             m_BindItem = bindItem;
         }
 
-        internal void OnKeyDown(KeyDownEvent evt)
+        public void OnKeyDown(KeyDownEvent evt)
         {
             if (!HasValidDataAndBindings())
                 return;
@@ -242,14 +226,10 @@ namespace UnityEngine.Experimental.UIElements
                         SetSelection(clickedIndex);
                     break;
                 case 2:
-                    if (onItemChosenEvent == null)
+                    if (onItemChosen == null)
                         return;
 
-                    using (var pooled = ItemChosenEvent.GetPooled())
-                    {
-                        pooled.item = itemsSource[clickedIndex];
-                        onItemChosenEvent.Invoke(pooled);
-                    }
+                    onItemChosen.Invoke(itemsSource[clickedIndex]);
                     break;
             }
         }
@@ -266,7 +246,7 @@ namespace UnityEngine.Experimental.UIElements
             if (!m_SelectedIndices.Contains(index))
                 m_SelectedIndices.Add(index);
 
-            FireSelectionChangedEvent();
+            SelectionChanged();
 
             SavePersistentData();
         }
@@ -283,7 +263,7 @@ namespace UnityEngine.Experimental.UIElements
             if (m_SelectedIndices.Contains(index))
                 m_SelectedIndices.Remove(index);
 
-            FireSelectionChangedEvent();
+            SelectionChanged();
 
             SavePersistentData();
         }
@@ -299,28 +279,24 @@ namespace UnityEngine.Experimental.UIElements
             if (index >= 0)
                 m_SelectedIndices.Add(index);
 
-            FireSelectionChangedEvent();
+            SelectionChanged();
 
             SavePersistentData();
         }
 
-        private void FireSelectionChangedEvent()
+        private void SelectionChanged()
         {
             if (!HasValidDataAndBindings())
                 return;
 
-            if (onSelectionChangedEvent == null)
+            if (onSelectionChanged == null)
                 return;
 
-            using (var e = SelectionChangedEvent.GetPooled())
-            {
-                e.items.Clear();
+            var selectedItems = new List<object>();
+            foreach (var i in m_SelectedIndices)
+                selectedItems.Add(itemsSource[i]);
 
-                foreach (var i in m_SelectedIndices)
-                    e.items.Add(itemsSource[i]);
-
-                onSelectionChangedEvent.Invoke(e);
-            }
+            onSelectionChanged.Invoke(selectedItems);
         }
 
         protected void ClearSelection()
@@ -332,7 +308,7 @@ namespace UnityEngine.Experimental.UIElements
                 recycledItem.SetSelected(false);
             m_SelectedIndices.Clear();
 
-            FireSelectionChangedEvent();
+            SelectionChanged();
         }
 
         public void ScrollTo(VisualElement visualElement)
@@ -410,7 +386,14 @@ namespace UnityEngine.Experimental.UIElements
                 item.style.positionRight = 0;
                 item.style.height = itemHeight;
                 if (i < itemsSource.Count)
+                {
+                    item.style.visibility = Visibility.Visible;
                     Setup(recycledItem, i);
+                }
+                else
+                {
+                    item.style.visibility = Visibility.Hidden;
+                }
 
                 m_ScrollView.Add(item);
             }

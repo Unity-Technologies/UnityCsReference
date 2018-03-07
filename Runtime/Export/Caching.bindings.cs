@@ -75,6 +75,8 @@ namespace UnityEngine
 
         extern internal static bool ClearCachedVersions(string assetBundleName, Hash128 hash, bool keepInputVersion);
 
+        extern internal static Hash128[] GetCachedVersions(string assetBundleName);
+
         public static void GetCachedVersions(string assetBundleName, List<Hash128> outCachedVersions)
         {
             if (string.IsNullOrEmpty(assetBundleName))
@@ -82,7 +84,7 @@ namespace UnityEngine
             if (outCachedVersions == null)
                 throw new ArgumentNullException("Input outCachedVersions cannot be null.");
 
-            GetCachedVersionsInternal(assetBundleName, outCachedVersions);
+            outCachedVersions.AddRange(GetCachedVersions(assetBundleName));
         }
 
         // Checks if an AssetBundle is cached.

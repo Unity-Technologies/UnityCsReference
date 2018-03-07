@@ -7,45 +7,41 @@ using UnityEngine;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class IntegerField : TextValueField<long>
+    public class IntegerField : TextValueField<int>
     {
-        internal static string allowedCharacters
-        {
-            get { return EditorGUI.s_AllowedCharactersForInt; }
-        }
-
         public IntegerField()
             : this(kMaxLengthNone) {}
 
         public IntegerField(int maxLength)
             : base(maxLength)
         {
+            formatString = EditorGUI.kIntFieldFormatString;
         }
 
-        internal override bool AcceptCharacter(char c)
+        protected override string allowedCharacters
         {
-            return c != 0 && allowedCharacters.IndexOf(c) != -1;
+            get { return EditorGUI.s_AllowedCharactersForInt; }
         }
 
-        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, long startValue)
+        public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, int startValue)
         {
             double sensitivity = NumericFieldDraggerUtility.CalculateIntDragSensitivity(startValue);
             float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
             long v = value;
             v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
-            SetValueAndNotify(v);
+            SetValueAndNotify(MathUtils.ClampToInt(v));
         }
 
-        protected override string ValueToString(long v)
+        protected override string ValueToString(int v)
         {
             return v.ToString(formatString);
         }
 
-        protected override long StringToValue(string str)
+        protected override int StringToValue(string str)
         {
             long v;
             EditorGUI.StringToLong(text, out v);
-            return v;
+            return MathUtils.ClampToInt(v);
         }
     }
 }

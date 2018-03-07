@@ -119,6 +119,9 @@
   <Compile Include="..\..\Editor\Mono\2D\Interface\IUndoSystem.cs">
     <Link>Editor\Mono\2D\Interface\IUndoSystem.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\EditorSpriteAtlas.bindings.cs">
+    <Link>Editor\Mono\2D\SpriteAtlas\EditorSpriteAtlas.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\2D\SpriteAtlas\SpriteAtlasInspector.cs">
     <Link>Editor\Mono\2D\SpriteAtlas\SpriteAtlasInspector.cs</Link>
   </Compile>
@@ -467,6 +470,9 @@
   <Compile Include="..\..\Editor\Mono\AssetPipeline\ScriptedImporter.cs">
     <Link>Editor\Mono\AssetPipeline\ScriptedImporter.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\AssetPipeline\ShaderImporter.bindings.cs">
+    <Link>Editor\Mono\AssetPipeline\ShaderImporter.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\AssetPipeline\SpeedTreeImporter.bindings.cs">
     <Link>Editor\Mono\AssetPipeline\SpeedTreeImporter.bindings.cs</Link>
   </Compile>
@@ -643,6 +649,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\BuildPipeline.bindings.cs">
     <Link>Editor\Mono\BuildPipeline.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\BuildPipelineExperimental.cs">
+    <Link>Editor\Mono\BuildPipelineExperimental.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\BuildPipeline\AssemblyStripper.cs">
     <Link>Editor\Mono\BuildPipeline\AssemblyStripper.cs</Link>
@@ -920,6 +929,9 @@
   <Compile Include="..\..\Editor\Mono\DropInfo.cs">
     <Link>Editor\Mono\DropInfo.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorApplication.bindings.cs">
+    <Link>Editor\Mono\EditorApplication.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\EditorApplication.cs">
     <Link>Editor\Mono\EditorApplication.cs</Link>
   </Compile>
@@ -1045,6 +1057,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\EditorUserBuildSettings.deprecated.cs">
     <Link>Editor\Mono\EditorUserBuildSettings.deprecated.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsExperimental.cs">
+    <Link>Editor\Mono\EditorUserBuildSettingsExperimental.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\EditorUserBuildSettingsUtils.cs">
     <Link>Editor\Mono\EditorUserBuildSettingsUtils.cs</Link>
@@ -2177,6 +2192,9 @@
   <Compile Include="..\..\Editor\Mono\Inspector\StandardShaderGUI.cs">
     <Link>Editor\Mono\Inspector\StandardShaderGUI.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\StreamingControllerInspector.cs">
+    <Link>Editor\Mono\Inspector\StreamingControllerInspector.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\SurfaceEffector2DEditor.cs">
     <Link>Editor\Mono\Inspector\SurfaceEffector2DEditor.cs</Link>
   </Compile>
@@ -2227,12 +2245,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\UnityEventDrawer.cs">
     <Link>Editor\Mono\Inspector\UnityEventDrawer.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\VideoClipInspector.cs">
-    <Link>Editor\Mono\Inspector\VideoClipInspector.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\VideoPlayerEditor.cs">
-    <Link>Editor\Mono\Inspector\VideoPlayerEditor.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\WebCamTextureInspector.cs">
     <Link>Editor\Mono\Inspector\WebCamTextureInspector.cs</Link>
@@ -2552,6 +2564,12 @@
   <Compile Include="..\..\Editor\Mono\PlatformSupport\PlayerSettingsPlatformIcons.bindings.cs">
     <Link>Editor\Mono\PlatformSupport\PlayerSettingsPlatformIcons.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\PlatformSupport\ProvisioningProfile.cs">
+    <Link>Editor\Mono\PlatformSupport\ProvisioningProfile.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\PlatformSupport\ProvisioningProfileGUI.cs">
+    <Link>Editor\Mono\PlatformSupport\ProvisioningProfileGUI.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\PlatformSupport\ReorderableTextureList.cs">
     <Link>Editor\Mono\PlatformSupport\ReorderableTextureList.cs</Link>
   </Compile>
@@ -2695,12 +2713,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\ProjectWindow\SearchableEditorWindow.cs">
     <Link>Editor\Mono\ProjectWindow\SearchableEditorWindow.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\ProvisioningProfile.cs">
-    <Link>Editor\Mono\ProvisioningProfile.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\ProvisioningProfileGUI.cs">
-    <Link>Editor\Mono\ProvisioningProfileGUI.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\RagdollBuilder.cs">
     <Link>Editor\Mono\RagdollBuilder.cs</Link>
@@ -3170,11 +3182,17 @@
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\EnumField.cs">
     <Link>Editor\Mono\UIElements\Controls\EnumField.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\FloatField.cs">
+    <Link>Editor\Mono\UIElements\Controls\FloatField.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\GradientField.cs">
     <Link>Editor\Mono\UIElements\Controls\GradientField.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\IntegerField.cs">
     <Link>Editor\Mono\UIElements\Controls\IntegerField.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\LongField.cs">
+    <Link>Editor\Mono\UIElements\Controls\LongField.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\ObjectField.cs">
     <Link>Editor\Mono\UIElements\Controls\ObjectField.cs</Link>
@@ -3425,9 +3443,6 @@
   <Compile Include="..\..\Editor\Mono\VertexChannelCompressionFlags.cs">
     <Link>Editor\Mono\VertexChannelCompressionFlags.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\VideoUtil.bindings.cs">
-    <Link>Editor\Mono\VideoUtil.bindings.cs</Link>
-  </Compile>
   <Compile Include="..\..\Editor\Mono\View.cs">
     <Link>Editor\Mono\View.cs</Link>
   </Compile>
@@ -3506,26 +3521,17 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\ComponentUtilityBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\ComponentUtilityBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorApplicationBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\EditorApplicationBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorSceneManagerBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\EditorSceneManagerBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorSpriteAtlasBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\EditorSpriteAtlasBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\FrameDebuggerBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\FrameDebuggerBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\HardwareBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\HardwareBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\InternalEditorUtilityBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\InternalEditorUtilityBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\InternalUtilityBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\InternalUtilityBindings.gen.cs</Link>
@@ -3545,9 +3551,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsFacebookBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsFacebookBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsIOSBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsIOSBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsN3DSBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsN3DSBindings.gen.cs</Link>
   </Compile>
@@ -3563,17 +3566,11 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsWebGLBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsWebGLBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsXboxOneBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsXboxOneBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PolygonEditorBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\PolygonEditorBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\SerializedPropertyBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\SerializedPropertyBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\ShaderImporterBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\ShaderImporterBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\ShaderUtilBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\ShaderUtilBindings.gen.cs</Link>
@@ -3622,6 +3619,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Src\TextRendering\TextRenderingCommands.cs">
     <Link>Editor\Src\TextRendering\TextRenderingCommands.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Src\TextRendering\TrueTypeFontImporter.bindings.cs">
+    <Link>Editor\Src\TextRendering\TrueTypeFontImporter.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Src\VR\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs">
     <Link>Editor\Src\VR\Mono\GoogleVR\VRCustomOptionsGoogleVR.cs</Link>
@@ -3752,14 +3752,8 @@
   <Compile Include="..\..\Modules\CloudServicesSettingsEditor\Purchasing\ScriptBindings\PurchasingSettings.bindings.cs">
     <Link>Modules\CloudServicesSettingsEditor\Purchasing\ScriptBindings\PurchasingSettings.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\BaseTypeFactory.cs">
-    <Link>Modules\GraphViewEditor\BaseTypeFactory.cs</Link>
-  </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Capabilities.cs">
     <Link>Modules\GraphViewEditor\Capabilities.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\DataWatchContainer.cs">
-    <Link>Modules\GraphViewEditor\DataWatchContainer.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Decorators\GridBackground.cs">
     <Link>Modules\GraphViewEditor\Decorators\GridBackground.cs</Link>
@@ -3785,9 +3779,6 @@
   <Compile Include="..\..\Modules\GraphViewEditor\Elements\Edge.cs">
     <Link>Modules\GraphViewEditor\Elements\Edge.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\FallbackGraphElement.cs">
-    <Link>Modules\GraphViewEditor\Elements\FallbackGraphElement.cs</Link>
-  </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Elements\GraphElement.cs">
     <Link>Modules\GraphViewEditor\Elements\GraphElement.cs</Link>
   </Compile>
@@ -3809,41 +3800,8 @@
   <Compile Include="..\..\Modules\GraphViewEditor\Elements\Port.cs">
     <Link>Modules\GraphViewEditor\Elements\Port.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\EdgePresenter.cs">
-    <Link>Modules\GraphViewEditor\Elements\Presenters\EdgePresenter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\GraphElementPresenter.cs">
-    <Link>Modules\GraphViewEditor\Elements\Presenters\GraphElementPresenter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\InputPortPresenter.cs">
-    <Link>Modules\GraphViewEditor\Elements\Presenters\InputPortPresenter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\MiniMapPresenter.cs">
-    <Link>Modules\GraphViewEditor\Elements\Presenters\MiniMapPresenter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\NodePresenter.cs">
-    <Link>Modules\GraphViewEditor\Elements\Presenters\NodePresenter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\OutputPortPresenter.cs">
-    <Link>Modules\GraphViewEditor\Elements\Presenters\OutputPortPresenter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\PortPresenter.cs">
-    <Link>Modules\GraphViewEditor\Elements\Presenters\PortPresenter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Presenters\SimpleElementPresenter.cs">
-    <Link>Modules\GraphViewEditor\Elements\Presenters\SimpleElementPresenter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\SimpleElement.cs">
-    <Link>Modules\GraphViewEditor\Elements\SimpleElement.cs</Link>
-  </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Elements\TokenNode.cs">
     <Link>Modules\GraphViewEditor\Elements\TokenNode.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\GraphViewEditorWindow.cs">
-    <Link>Modules\GraphViewEditor\GraphViewEditorWindow.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\GraphViewTypeFactory.cs">
-    <Link>Modules\GraphViewEditor\GraphViewTypeFactory.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\IDroppable.cs">
     <Link>Modules\GraphViewEditor\IDroppable.cs</Link>
@@ -3916,9 +3874,6 @@
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Views\GraphView.cs">
     <Link>Modules\GraphViewEditor\Views\GraphView.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs">
-    <Link>Modules\GraphViewEditor\Views\Presenters\GraphViewPresenter.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\GridEditor\Managed\GridEditor.cs">
     <Link>Modules\GridEditor\Managed\GridEditor.cs</Link>
@@ -4115,6 +4070,9 @@
   <Compile Include="..\..\Modules\RestService\PlayModeRestHandler.cs">
     <Link>Modules\RestService\PlayModeRestHandler.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\RestService\PlayerDataFileLocator.cs">
+    <Link>Modules\RestService\PlayerDataFileLocator.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\RestService\ProjectStateRestHandler.cs">
     <Link>Modules\RestService\ProjectStateRestHandler.cs</Link>
   </Compile>
@@ -4268,6 +4226,15 @@
   <Compile Include="..\..\Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs">
     <Link>Modules\UnityEditorAnalyticsEditor\UsabilityAnalytics.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\VideoEditor\Editor\VideoClipInspector.cs">
+    <Link>Modules\VideoEditor\Editor\VideoClipInspector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\VideoEditor\Editor\VideoPlayerEditor.cs">
+    <Link>Modules\VideoEditor\Editor\VideoPlayerEditor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\VideoEditor\Editor\VideoUtil.bindings.cs">
+    <Link>Modules\VideoEditor\Editor\VideoUtil.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\AIEditor\NavMeshBuilderBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\AIEditor\NavMeshBuilderBindings.gen.cs</Link>
   </Compile>
@@ -4279,9 +4246,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\TextRenderingEditor\TrueTypeFontImporterBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\TextRenderingEditor\TrueTypeFontImporterBindings.gen.cs</Link>
   </Compile>
 
   </ItemGroup>
@@ -4309,6 +4273,7 @@
 
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
   <PropertyGroup>
   </PropertyGroup>
 </Project>

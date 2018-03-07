@@ -111,6 +111,11 @@ namespace UnityEngine
         [FreeFunction("GetTextureStreamingManager().SetStreamingTextureMaterialDebugProperties")]
         extern public static void SetStreamingTextureMaterialDebugProperties();
 
+        extern public static bool streamingTextureForceLoadAll
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetForceLoadAll")] get;
+            [FreeFunction(Name = "GetTextureStreamingManager().SetForceLoadAll")] set;
+        }
     }
 
     [NativeHeader("Runtime/Graphics/Texture2D.h")]

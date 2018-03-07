@@ -638,11 +638,15 @@ namespace UnityEditor
                 s_HandleWireMaterial2D = (Material)EditorGUIUtility.LoadRequired("SceneView/2DHandleLines.mat");
                 s_HandleWireTextureIndex = ShaderUtil.GetTextureBindingIndex(s_HandleWireMaterial.shader, Shader.PropertyToID("_MainTex"));
                 s_HandleWireTextureIndex2D = ShaderUtil.GetTextureBindingIndex(s_HandleWireMaterial2D.shader, Shader.PropertyToID("_MainTex"));
+                s_HandleWireTextureSamplerIndex = ShaderUtil.GetTextureSamplerBindingIndex(s_HandleWireMaterial.shader, Shader.PropertyToID("_MainTex"));
+                s_HandleWireTextureSamplerIndex2D = ShaderUtil.GetTextureSamplerBindingIndex(s_HandleWireMaterial2D.shader, Shader.PropertyToID("_MainTex"));
 
                 s_HandleDottedWireMaterial = (Material)EditorGUIUtility.LoadRequired("SceneView/HandleDottedLines.mat");
                 s_HandleDottedWireMaterial2D = (Material)EditorGUIUtility.LoadRequired("SceneView/2DHandleDottedLines.mat");
                 s_HandleDottedWireTextureIndex = ShaderUtil.GetTextureBindingIndex(s_HandleDottedWireMaterial.shader, Shader.PropertyToID("_MainTex"));
                 s_HandleDottedWireTextureIndex2D = ShaderUtil.GetTextureBindingIndex(s_HandleDottedWireMaterial2D.shader, Shader.PropertyToID("_MainTex"));
+                s_HandleDottedWireTextureSamplerIndex = ShaderUtil.GetTextureSamplerBindingIndex(s_HandleDottedWireMaterial.shader, Shader.PropertyToID("_MainTex"));
+                s_HandleDottedWireTextureSamplerIndex2D = ShaderUtil.GetTextureSamplerBindingIndex(s_HandleDottedWireMaterial2D.shader, Shader.PropertyToID("_MainTex"));
             }
         }
 
@@ -672,12 +676,16 @@ namespace UnityEditor
         static Material s_HandleWireMaterial;
         static Material s_HandleWireMaterial2D;
         static int s_HandleWireTextureIndex;
+        static int s_HandleWireTextureSamplerIndex;
         static int s_HandleWireTextureIndex2D;
+        static int s_HandleWireTextureSamplerIndex2D;
 
         static Material s_HandleDottedWireMaterial;
         static Material s_HandleDottedWireMaterial2D;
         static int s_HandleDottedWireTextureIndex;
+        static int s_HandleDottedWireTextureSamplerIndex;
         static int s_HandleDottedWireTextureIndex2D;
+        static int s_HandleDottedWireTextureSamplerIndex2D;
 
         // Setup shader for later drawing of lines / anti-aliased lines.
         internal static void ApplyWireMaterial([DefaultValue("UnityEngine.Rendering.CompareFunction.Always")] CompareFunction zTest)
@@ -688,7 +696,8 @@ namespace UnityEditor
             mat.SetInt("_HandleZTest", (int)zTest);
             mat.SetPass(0);
             int textureIndex = Camera.current ? s_HandleWireTextureIndex : s_HandleWireTextureIndex2D;
-            Internal_SetHandleWireTextureIndex(textureIndex);
+            int samplerIndex = Camera.current ? s_HandleWireTextureSamplerIndex : s_HandleWireTextureSamplerIndex2D;
+            Internal_SetHandleWireTextureIndex(textureIndex, samplerIndex);
         }
 
         [ExcludeFromDocs]
@@ -706,7 +715,8 @@ namespace UnityEditor
             mat.SetInt("_HandleZTest", (int)zTest);
             mat.SetPass(0);
             int textureIndex = Camera.current ? s_HandleDottedWireTextureIndex : s_HandleDottedWireTextureIndex2D;
-            Internal_SetHandleWireTextureIndex(textureIndex);
+            int samplerIndex = Camera.current ? s_HandleDottedWireTextureSamplerIndex : s_HandleDottedWireTextureSamplerIndex2D;
+            Internal_SetHandleWireTextureIndex(textureIndex, samplerIndex);
         }
 
         [ExcludeFromDocs]

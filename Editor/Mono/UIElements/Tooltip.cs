@@ -60,7 +60,8 @@ namespace UnityEditor.Experimental.UIElements
 
             tooltipElement.tooltip = tooltip;
 
-            e.Add(tooltipElement);
+            if (e.childCount < 1 || e.ElementAt(0) != tooltipElement)
+                e.Insert(0, tooltipElement);
         }
 
         internal static void RemoveTooltip(this VisualElement e)

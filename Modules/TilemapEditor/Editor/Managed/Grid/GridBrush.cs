@@ -119,30 +119,108 @@ namespace UnityEditor
 
         public override void Rotate(RotationDirection direction, Grid.CellLayout layout)
         {
-            Vector3Int oldSize = m_Size;
-            BrushCell[] oldCells = m_Cells.Clone() as BrushCell[];
-            size = new Vector3Int(oldSize.y, oldSize.x, oldSize.z);
-            BoundsInt oldBounds = new BoundsInt(Vector3Int.zero, oldSize);
+            switch (layout)
+            {
+                case GridLayout.CellLayout.Hexagon:
+                    RotateHexagon(direction);
+                    break;
+                case GridLayout.CellLayout.Rectangle:
+                {
+                    Vector3Int oldSize = m_Size;
+                    BrushCell[] oldCells = m_Cells.Clone() as BrushCell[];
+                    size = new Vector3Int(oldSize.y, oldSize.x, oldSize.z);
+                    BoundsInt oldBounds = new BoundsInt(Vector3Int.zero, oldSize);
 
+                    foreach (Vector3Int oldPos in oldBounds.allPositionsWithin)
+                    {
+                        int newX = direction == RotationDirection.Clockwise ? oldSize.y - oldPos.y - 1 : oldPos.y;
+                        int newY = direction == RotationDirection.Clockwise ? oldPos.x : oldSize.x - oldPos.x - 1;
+                        int toIndex = GetCellIndex(newX, newY, oldPos.z);
+                        int fromIndex = GetCellIndex(oldPos.x, oldPos.y, oldPos.z, oldSize.x, oldSize.y, oldSize.z);
+                        m_Cells[toIndex] = oldCells[fromIndex];
+                    }
+
+                    int newPivotX = direction == RotationDirection.Clockwise ? oldSize.y - pivot.y - 1 : pivot.y;
+                    int newPivotY = direction == RotationDirection.Clockwise ? pivot.x : oldSize.x - pivot.x - 1;
+                    pivot = new Vector3Int(newPivotX, newPivotY, pivot.z);
+
+                    Matrix4x4 rotation = direction == RotationDirection.Clockwise ? s_Clockwise : s_CounterClockwise;
+                    foreach (BrushCell cell in m_Cells)
+                    {
+                        Matrix4x4 oldMatrix = cell.matrix;
+                        cell.matrix = oldMatrix * rotation;
+                    }
+                }
+                break;
+            }
+        }
+
+        private static Vector3Int RotateHexagonPosition(RotationDirection direction, Vector3Int position)
+        {
+            var cube = HexagonToCube(position);
+            Vector3Int rotatedCube = Vector3Int.zero;
+            if (RotationDirection.Clockwise == direction)
+            {
+                rotatedCube.x = -cube.z;
+                rotatedCube.y = -cube.x;
+                rotatedCube.z = -cube.y;
+            }
+            else
+            {
+                rotatedCube.x = -cube.y;
+                rotatedCube.y = -cube.z;
+                rotatedCube.z = -cube.x;
+            }
+            return CubeToHexagon(rotatedCube);
+        }
+
+        private void RotateHexagon(RotationDirection direction)
+        {
+            BrushCell[] oldCells = m_Cells.Clone() as BrushCell[];
+            Vector3Int oldPivot = new Vector3Int(pivot.x, pivot.y, pivot.z);
+            Vector3Int oldSize = new Vector3Int(size.x, size.y, size.z);
+            Vector3Int minSize = Vector3Int.zero;
+            Vector3Int maxSize = Vector3Int.zero;
+            BoundsInt oldBounds = new BoundsInt(Vector3Int.zero, oldSize);
             foreach (Vector3Int oldPos in oldBounds.allPositionsWithin)
             {
-                int newX = direction == RotationDirection.Clockwise ? oldSize.y - oldPos.y - 1 : oldPos.y;
-                int newY = direction == RotationDirection.Clockwise ? oldPos.x : oldSize.x - oldPos.x - 1;
-                int toIndex = GetCellIndex(newX, newY, oldPos.z);
-                int fromIndex = GetCellIndex(oldPos.x, oldPos.y, oldPos.z, oldSize.x, oldSize.y, oldSize.z);
-                m_Cells[toIndex] = oldCells[fromIndex];
+                if (oldCells[GetCellIndex(oldPos.x, oldPos.y, oldPos.z, oldSize.x, oldSize.y, oldSize.z)].tile == null)
+                    continue;
+                var pos = RotateHexagonPosition(direction, oldPos - oldPivot);
+                minSize.x = Mathf.Min(minSize.x, pos.x);
+                minSize.y = Mathf.Min(minSize.y, pos.y);
+                maxSize.x = Mathf.Max(maxSize.x, pos.x);
+                maxSize.y = Mathf.Max(maxSize.y, pos.y);
             }
-
-            int newPivotX = direction == RotationDirection.Clockwise ? oldSize.y - pivot.y - 1 : pivot.y;
-            int newPivotY = direction == RotationDirection.Clockwise ? pivot.x : oldSize.x - pivot.x - 1;
-            pivot = new Vector3Int(newPivotX, newPivotY, pivot.z);
-
-            Matrix4x4 rotation = direction == RotationDirection.Clockwise ? s_Clockwise : s_CounterClockwise;
-            foreach (BrushCell cell in m_Cells)
+            Vector3Int newSize = new Vector3Int(1 + maxSize.x - minSize.x, 1 + maxSize.y - minSize.y, oldSize.z);
+            Vector3Int newPivot = new Vector3Int(-minSize.x, -minSize.y, oldPivot.z);
+            UpdateSizeAndPivot(newSize, new Vector3Int(newPivot.x, newPivot.y, newPivot.z));
+            foreach (Vector3Int oldPos in oldBounds.allPositionsWithin)
             {
-                Matrix4x4 oldMatrix = cell.matrix;
-                cell.matrix = oldMatrix * rotation;
+                if (oldCells[GetCellIndex(oldPos.x, oldPos.y, oldPos.z, oldSize.x, oldSize.y, oldSize.z)].tile == null)
+                    continue;
+                Vector3Int newPos = RotateHexagonPosition(direction, new Vector3Int(oldPos.x, oldPos.y, oldPos.z) - oldPivot) + newPivot;
+                m_Cells[GetCellIndex(newPos.x, newPos.y, newPos.z)] = oldCells[GetCellIndex(oldPos.x, oldPos.y, oldPos.z, oldSize.x, oldSize.y, oldSize.z)];
             }
+            // Do not rotate hexagon cell matrix, as hexagon cells are not perfect hexagons
+        }
+
+        private static Vector3Int HexagonToCube(Vector3Int position)
+        {
+            Vector3Int cube = Vector3Int.zero;
+            cube.x = position.x - (position.y - (position.y & 1)) / 2;
+            cube.z = position.y;
+            cube.y = -cube.x - cube.z;
+            return cube;
+        }
+
+        private static Vector3Int CubeToHexagon(Vector3Int position)
+        {
+            Vector3Int hexagon = Vector3Int.zero;
+            hexagon.x = position.x + (position.z - (position.z & 1)) / 2;
+            hexagon.y = position.z;
+            hexagon.z = 0;
+            return hexagon;
         }
 
         public override void Flip(FlipAxis flip, Grid.CellLayout layout)

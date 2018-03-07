@@ -155,6 +155,7 @@ namespace UnityEditor
         extern internal static string GetDependency(Shader s, string name);
 
         extern internal static int GetTextureBindingIndex(Shader s, int texturePropertyID);
+        extern internal static int GetTextureSamplerBindingIndex(Shader s, int texturePropertyID);
         extern internal static int GetLOD(Shader s);
 
         extern internal static ulong            GetVariantCount(Shader s, bool usedBySceneOnly);

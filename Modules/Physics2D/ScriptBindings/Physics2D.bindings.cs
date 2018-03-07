@@ -1939,9 +1939,11 @@ namespace UnityEngine
         internal int m_OtherCollider;
         internal int m_Rigidbody;
         internal int m_OtherRigidbody;
-        internal ContactPoint2D[] m_Contacts;
         internal Vector2 m_RelativeVelocity;
         internal int m_Enabled;
+        internal int m_ContactCount;
+        internal IntPtr m_Contacts;
+        internal ContactPoint2D[] m_LegacyContactArray;
 
         // The first collider involved in the collision.
         public Collider2D collider { get { return Object.FindObjectFromInstanceID(m_Collider) as Collider2D; } }
@@ -1961,33 +1963,85 @@ namespace UnityEngine
         // The game object of the rigid-body or if no rigid-body is available, the collider transform.
         public GameObject gameObject { get { return rigidbody != null ? rigidbody.gameObject : collider.gameObject; } }
 
-        // The contact points.
-        public ContactPoint2D[] contacts
-        {
-            get
-            {
-                if (m_Contacts == null)
-                    m_Contacts = CreateCollisionContacts_Internal(collider, otherCollider, rigidbody, otherRigidbody, enabled);
-
-                return m_Contacts;
-            }
-        }
-
-        [StaticAccessor("GetPhysicsManager2D()", StaticAccessorType.Arrow)]
-        [NativeMethod("CreateCollision2DContactsArray_Binding")]
-        extern private static ContactPoint2D[] CreateCollisionContacts_Internal(Collider2D collider, Collider2D otherCollider, Rigidbody2D rigidbody, Rigidbody2D otherRigidbody, bool enabled);
-
-        // Get contacts for this collision.
-        public int GetContacts(ContactPoint2D[] contacts)
-        {
-            return Physics2D.GetContacts(collider, otherCollider, new ContactFilter2D().NoFilter(), contacts);
-        }
-
         // The relative velocity between the two bodies.
         public Vector2 relativeVelocity { get { return m_RelativeVelocity; } }
 
         // Whether the collision is enabled or not.  Effectors can temporarily disable a collision but all collisions are reported.
         public bool enabled { get { return m_Enabled == 1; } }
+
+        // The contact points.
+        public unsafe ContactPoint2D[] contacts
+        {
+            get
+            {
+                if (m_LegacyContactArray == null)
+                {
+                    m_LegacyContactArray = new ContactPoint2D[m_ContactCount];
+                    if (m_ContactCount > 0)
+                    {
+                        ContactPoint2D* contactPoint = (ContactPoint2D*)m_Contacts.ToPointer();
+                        for (var i = 0; i < m_ContactCount; ++i)
+                        {
+                            m_LegacyContactArray[i] = *contactPoint++;
+                        }
+                    }
+                }
+
+                return m_LegacyContactArray;
+            }
+        }
+
+        // Returns the number of contacts.
+        public int contactCount { get { return m_ContactCount; } }
+
+        // Get contact at specific index.
+        public unsafe ContactPoint2D GetContact(int index)
+        {
+            if (index < 0 || index >= m_ContactCount)
+                throw new ArgumentOutOfRangeException(String.Format("Cannot get contact at index {0}. There are {1} contact(s).", index, m_ContactCount));
+
+            return *((ContactPoint2D*)m_Contacts.ToPointer() + index);
+        }
+
+        // Get contacts for this collision.
+        public unsafe int GetContacts(ContactPoint2D[] contacts)
+        {
+            if (contacts == null)
+                throw new ArgumentNullException("Cannot get contacts into a NULL array.");
+
+            var contactCount = Mathf.Min(contacts.Length, m_ContactCount);
+            if (contactCount == 0)
+                return 0;
+
+            // If we have an existing contact array then use that and copy it.
+            if (m_LegacyContactArray != null)
+            {
+                Array.Copy(m_LegacyContactArray, contacts, contactCount);
+                return contactCount;
+            }
+
+            // Copy the cached contact points instead.
+            if (m_ContactCount > 0)
+            {
+                ContactPoint2D* contactPoint = (ContactPoint2D*)m_Contacts.ToPointer();
+                for (var i = 0; i < contactCount; ++i)
+                {
+                    contacts[i] = *contactPoint++;
+                }
+            }
+            return contactCount;
+        }
+
+        ~Collision2D()
+        {
+            // Free any contacts.
+            if (m_ContactCount > 0)
+                FreeContacts(m_Contacts);
+        }
+
+        [StaticAccessor("GetPhysicsManager2D()", StaticAccessorType.Arrow)]
+        [NativeMethod("FreeCachedContactPoints_Binding", IsThreadSafe = true)]
+        extern private static void FreeContacts(IntPtr contacts);
     };
 
     // Describes a contact point where the collision occurs.

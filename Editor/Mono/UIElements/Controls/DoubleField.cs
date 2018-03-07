@@ -8,20 +8,18 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class DoubleField : TextValueField<double>
     {
-        internal static string allowedCharacters
-        {
-            get { return EditorGUI.s_AllowedCharactersForFloat; }
-        }
-
         public DoubleField()
             : this(kMaxLengthNone) {}
 
         public DoubleField(int maxLength)
-            : base(maxLength) {}
-
-        internal override bool AcceptCharacter(char c)
+            : base(maxLength)
         {
-            return c != 0 && allowedCharacters.IndexOf(c) != -1;
+            formatString = EditorGUI.kDoubleFieldFormatString;
+        }
+
+        protected override string allowedCharacters
+        {
+            get { return EditorGUI.s_AllowedCharactersForFloat; }
         }
 
         public override void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, double startValue)

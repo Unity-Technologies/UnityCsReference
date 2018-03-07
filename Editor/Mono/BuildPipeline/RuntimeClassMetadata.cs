@@ -6,7 +6,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using System;
-
+using UnityEditor.Compilation;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor
 {
@@ -57,8 +58,15 @@ namespace UnityEditor
         {
             if (m_UsedTypesPerUserAssembly == null)
                 return true;
+
             if (Array.IndexOf(CodeStrippingUtils.UserAssemblies, dll) != -1)
-                return true;
+            {
+                // Don't treat code in packages as used automatically (case 1003047).
+                var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(dll);
+                if (asmdefPath == null || !EditorCompilationInterface.Instance.IsPathInPackageDirectory(asmdefPath))
+                    return true;
+            }
+
             return m_UsedTypesPerUserAssembly.ContainsKey(dll);
         }
 

@@ -72,6 +72,13 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        internal override bool AcceptCharacter(char c)
+        {
+            return c != 0 && allowedCharacters.IndexOf(c) != -1;
+        }
+
+        protected abstract string allowedCharacters { get; }
+
         public string formatString { get; set; }
 
         public abstract void ApplyInputDeviceDelta(Vector3 delta, DeltaSpeed speed, T startValue);

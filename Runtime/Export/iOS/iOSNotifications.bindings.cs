@@ -92,6 +92,7 @@ namespace UnityEngine.iOS
         }
 
         extern public string alertBody                  { get; set; }
+        extern public string alertTitle                 { get; set; }
         extern public string alertAction                { get; set; }
         extern public string alertLaunchImage           { get; set; }
         extern public string soundName                  { get; set; }
@@ -122,6 +123,7 @@ namespace UnityEngine.iOS
         ~RemoteNotification() { NotificationHelper.DestroyRemote(m_Ptr); }
 
         extern public string alertBody                  { get; }
+        extern public string alertTitle                 { get; }
         extern public string soundName                  { get; }
         extern public int    applicationIconBadgeNumber { get; }
         extern public IDictionary userInfo              { get; }

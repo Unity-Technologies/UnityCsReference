@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEditorInternal;
+using UnityEditor.PlatformSupport;
 using UnityEngine.Bindings;
 
 using UnityEngine;
@@ -124,6 +125,13 @@ namespace UnityEditor
         AutomaticallySignValueFalse = 2
     }
 
+    public enum ProvisioningProfileType
+    {
+        Automatic,
+        Development,
+        Distribution
+    }
+
     public class iOSDeviceRequirement
     {
         SortedDictionary<string, string> m_Values = new SortedDictionary<string, string>();
@@ -151,6 +159,20 @@ namespace UnityEditor
         internal iOSDeviceRequirementGroup(string variantName)
         {
             m_VariantName = variantName;
+        }
+
+        [FreeFunction("PlayerSettingsIOSBindings::GetDeviceRequirementForVariantNameImpl")]
+        extern private static void GetDeviceRequirementForVariantNameImplInternal(string name, int index, [Out] string[] keys, [Out] string[] values);
+
+        [FreeFunction("PlayerSettingsIOSBindings::GetDeviceRequirementForVariantCount")]
+        extern private static int GetDeviceRequirementForVariantCount(string name, int index);
+
+        private static void GetDeviceRequirementForVariantNameImpl(string name, int index, out string[] keys, out string[] values)
+        {
+            int requirementCount = GetDeviceRequirementForVariantCount(name, index);
+            keys = new string[requirementCount];
+            values = new string[requirementCount];
+            GetDeviceRequirementForVariantNameImplInternal(name, index, keys, values);
         }
 
         public int count { get { return GetCountForVariantImpl(m_VariantName); } }
@@ -396,7 +418,10 @@ namespace UnityEditor
                     return String.IsNullOrEmpty(iOSManualProvisioningProfileIDInternal) ?
                         EditorPrefs.GetString("DefaultiOSProvisioningProfileUUID") : iOSManualProvisioningProfileIDInternal;
                 }
-                set { iOSManualProvisioningProfileIDInternal = value; }
+                set
+                {
+                    iOSManualProvisioningProfileIDInternal = value;
+                }
             }
 
 
@@ -416,9 +441,30 @@ namespace UnityEditor
                     return String.IsNullOrEmpty(tvOSManualProvisioningProfileIDInternal) ?
                         EditorPrefs.GetString("DefaulttvOSProvisioningProfileUUID") : tvOSManualProvisioningProfileIDInternal;
                 }
-                set { tvOSManualProvisioningProfileIDInternal = value; }
+                set
+                {
+                    tvOSManualProvisioningProfileIDInternal = value;
+                }
             }
 
+
+            [NativeProperty("tvOSManualProvisioningProfileType")]
+            public static extern ProvisioningProfileType tvOSManualProvisioningProfileType
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
+            [NativeProperty("iOSManualProvisioningProfileType")]
+            public static extern ProvisioningProfileType iOSManualProvisioningProfileType
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
 
             [NativeProperty("AppleEnableAutomaticSigning")]
             private extern static int appleEnableAutomaticSigningInternal

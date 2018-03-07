@@ -35,7 +35,7 @@ namespace UnityEngine
             var jobData = new BatchQueryJob<RaycastCommand, RaycastHit>(commands, results);
             var scheduleParams = new JobsUtility.JobScheduleParameters(UnsafeUtility.AddressOf(ref jobData), BatchQueryJobStruct<BatchQueryJob<RaycastCommand, RaycastHit>>.Initialize(), dependsOn, ScheduleMode.Batched);
 
-            return ScheduleRaycastBatch(ref scheduleParams, commands.GetUnsafePtr(), commands.Length, results.GetUnsafePtr(), results.Length, minCommandsPerJob);
+            return ScheduleRaycastBatch(ref scheduleParams, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(commands), commands.Length, NativeArrayUnsafeUtility.GetUnsafeBufferPointerWithoutChecks(results), results.Length, minCommandsPerJob);
         }
 
         [FreeFunction("ScheduleRaycastCommandBatch")]

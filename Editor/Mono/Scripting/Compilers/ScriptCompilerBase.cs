@@ -141,28 +141,91 @@ namespace UnityEditor.Scripting.Compilers
             return ParseResponseFileText(responseFileText);
         }
 
+        // From:
+        // https://github.com/mono/mono/blob/c106cdc775792ceedda6da58de7471f9f5c0b86c/mcs/mcs/settings.cs
+        //
+        // settings.cs: All compiler settings
+        //
+        // Author: Miguel de Icaza (miguel@ximian.com)
+        //            Ravi Pratap  (ravi@ximian.com)
+        //            Marek Safar  (marek.safar@gmail.com)
+        //
+        //
+        // Dual licensed under the terms of the MIT X11 or GNU GPL
+        //
+        // Copyright 2001 Ximian, Inc (http://www.ximian.com)
+        // Copyright 2004-2008 Novell, Inc
+        // Copyright 2011 Xamarin, Inc (http://www.xamarin.com)
+        static string[] ResponseFileTextToStrings(string responseFileText)
+        {
+            var args = new List<string>();
+
+            var sb = new System.Text.StringBuilder();
+
+            var textLines = responseFileText.Split('\n', '\r');
+
+            foreach (var line in textLines)
+            {
+                int t = line.Length;
+
+                for (int i = 0; i < t; i++)
+                {
+                    char c = line[i];
+
+                    if (c == '"' || c == '\'')
+                    {
+                        char end = c;
+
+                        for (i++; i < t; i++)
+                        {
+                            c = line[i];
+
+                            if (c == end)
+                                break;
+                            sb.Append(c);
+                        }
+                    }
+                    else if (c == ' ')
+                    {
+                        if (sb.Length > 0)
+                        {
+                            args.Add(sb.ToString());
+                            sb.Length = 0;
+                        }
+                    }
+                    else
+                        sb.Append(c);
+                }
+                if (sb.Length > 0)
+                {
+                    args.Add(sb.ToString());
+                    sb.Length = 0;
+                }
+            }
+
+            return args.ToArray();
+        }
+
         public static ResponseFileData ParseResponseFileText(string responseFileText)
         {
             var compilerOptions = new List<CompilerOption>();
 
-            var textLines = responseFileText.Split(' ', '\n');
+            var responseFileStrings = ResponseFileTextToStrings(responseFileText);
 
-            foreach (var line in textLines)
+            foreach (var line in responseFileStrings)
             {
-                var trimmedLine = line.Trim();
-
-                int idx = trimmedLine.IndexOf(':');
+                int idx = line.IndexOf(':');
                 string arg, value;
 
                 if (idx == -1)
                 {
-                    arg = trimmedLine;
+                    arg = line;
                     value = "";
                 }
                 else
                 {
-                    arg = trimmedLine.Substring(0, idx);
-                    value = trimmedLine.Substring(idx + 1);
+                    arg = line.Substring(0, idx);
+                    value = line.Substring(idx + 1);
                 }
 
                 if (!string.IsNullOrEmpty(arg) && arg[0] == '-')

@@ -406,6 +406,7 @@ namespace UnityEditor
                         Event.current.Use();
                         s_LastDragMousePos = GUIUtility.GUIToScreenPoint(evt.mousePosition);
                         dragPosition = position;
+                        Unsupported.SetAllowCursorLock(false, Unsupported.DisallowCursorLockReasons.SizeMove);
                     }
                     break;
                 case EventType.MouseUp:
@@ -413,6 +414,7 @@ namespace UnityEditor
                     {
                         GUIUtility.hotControl = 0;
                         Event.current.Use();
+                        Unsupported.SetAllowCursorLock(true, Unsupported.DisallowCursorLockReasons.SizeMove);
                     }
                     break;
                 case EventType.MouseDrag:

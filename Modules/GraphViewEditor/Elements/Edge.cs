@@ -247,39 +247,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             styles.ApplyCustomProperty(k_EdgeColorProperty, ref m_DefaultColor);
         }
 
-        public override void OnDataChanged()
-        {
-            base.OnDataChanged();
-
-            EdgePresenter edgePresenter = GetPresenter<EdgePresenter>();
-            if (edgePresenter != null)
-            {
-                if (output == null || output.presenter != edgePresenter.output)
-                {
-                    GraphView view = GetFirstAncestorOfType<GraphView>();
-                    if (view != null)
-                    {
-                        output = view.Query().OfType<Port>().Where(t => t.presenter == edgePresenter.output);
-                    }
-                }
-
-                if (input == null || input.presenter != edgePresenter.input)
-                {
-                    GraphView view = GetFirstAncestorOfType<GraphView>();
-                    if (view != null)
-                    {
-                        input = view.Query().OfType<Port>().Where(t => t.presenter == edgePresenter.input);
-                    }
-                }
-
-                if (edgePresenter.output != null)
-                    edgeControl.outputOrientation = edgePresenter.output.orientation;
-
-                if (edgePresenter.input != null)
-                    edgeControl.inputOrientation = edgePresenter.input.orientation;
-            }
-        }
-
         protected virtual void DrawEdge()
         {
             if (!UpdateEdgeControl())
@@ -312,17 +279,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 edgeControl.outputColor = m_OutputPort == null ? m_InputPort.portColor : m_OutputPort.portColor;
                 edgeControl.edgeWidth = edgeWidth;
 
-                var edgePresenter = GetPresenter<EdgePresenter>();
-                if (edgePresenter == null)
-                {
-                    edgeControl.toCapColor = m_InputPort == null ? m_OutputPort.portColor : m_InputPort.portColor;
-                    edgeControl.fromCapColor = m_OutputPort == null ? m_InputPort.portColor : m_OutputPort.portColor;
-                }
-                else
-                {
-                    edgeControl.toCapColor = edgePresenter.input == null ?  m_OutputPort.portColor : m_InputPort.portColor;
-                    edgeControl.fromCapColor = edgePresenter.output == null ? m_InputPort.portColor : m_OutputPort.portColor;
-                }
+                edgeControl.toCapColor = m_InputPort == null ? m_OutputPort.portColor : m_InputPort.portColor;
+                edgeControl.fromCapColor = m_OutputPort == null ? m_InputPort.portColor : m_OutputPort.portColor;
 
                 if (isGhostEdge)
                 {

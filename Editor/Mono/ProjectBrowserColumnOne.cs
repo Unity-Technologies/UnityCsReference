@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEditor.Experimental;
@@ -272,15 +273,20 @@ namespace UnityEditor
             TreeViewItem packagesRootItem = null;
             if (Unsupported.IsDeveloperMode() && EditorPrefs.GetBool("ShowPackagesFolder"))
             {
-                var packagesPaths = PackageManager.Folders.GetPackagesPaths();
+                var packages = PackageManager.Packages.GetAll();
 
                 packagesRootItem = new TreeViewItem(0, depth, m_RootItem, "Packages");
                 depth++;
-                foreach (var packagePath in packagesPaths)
+                foreach (var package in packages)
                 {
-                    var packagesFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(packagePath);
-                    var packageDisplayName = Path.GetFileName(packagePath);
-                    TreeViewItem packageItem = new TreeViewItem(packagesFolderInstanceID, depth, null, packageDisplayName);
+                    if (package.source == PackageManager.PackageSource.BuiltIn)
+                        continue;
+
+                    var packagePath = Path.Combine(PackageManager.Folders.GetPackagesMountPoint(), package.name);
+                    var packagesFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(packagePath);
+
+                    displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(package.name.Replace("com.unity.", ""));
+                    TreeViewItem packageItem = new TreeViewItem(packagesFolderInstanceId, depth, null, displayName);
                     packagesRootItem.AddChild(packageItem);
                     ReadAssetDatabase(packagePath, packageItem, depth + 1);
                 }

@@ -92,67 +92,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void ToggleAnchorState(ContextualMenu.MenuAction a)
         {
-            // TODO: Remove when removing presenters.
-            if (dependsOnPresenter)
-            {
-                var bPresenter = GetPresenter<MiniMapPresenter>();
-                bPresenter.anchored = !bPresenter.anchored;
-            }
-            else
-            {
-                anchored = !anchored;
-            }
+            anchored = !anchored;
         }
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            bool isAnchored;
-            // TODO: Remove when removing presenters.
-            if (dependsOnPresenter)
-            {
-                var boxPresenter = GetPresenter<MiniMapPresenter>();
-                isAnchored = boxPresenter.anchored;
-            }
-            else
-            {
-                isAnchored = anchored;
-            }
-            evt.menu.AppendAction(isAnchored ? "Make floating" : "Anchor", ToggleAnchorState, ContextualMenu.MenuAction.AlwaysEnabled);
-        }
-
-        // TODO: Remove when removing presenters.
-        public override void OnDataChanged()
-        {
-            base.OnDataChanged();
-            AdjustAnchoring();
-
-            var miniMapPresenter = GetPresenter<MiniMapPresenter>();
-            style.width = miniMapPresenter.maxWidth;
-            style.height = miniMapPresenter.maxHeight;
-
-            Resize();
-
-            UpdatePresenterPosition();
-        }
-
-        // TODO: Remove when removing presenters.
-        void AdjustAnchoring()
-        {
-            var miniMapPresenter = GetPresenter<MiniMapPresenter>();
-            if (miniMapPresenter == null)
-                return;
-
-            if (miniMapPresenter.anchored)
-            {
-                miniMapPresenter.capabilities &= ~Capabilities.Movable;
-                ResetPositionProperties();
-                AddToClassList("anchored");
-            }
-            else
-            {
-                presenter.capabilities |= Capabilities.Movable;
-                RemoveFromClassList("anchored");
-            }
+            evt.menu.AppendAction(anchored ? "Make floating" : "Anchor", ToggleAnchorState, ContextualMenu.MenuAction.AlwaysEnabled);
         }
 
         void Resize()
@@ -344,6 +289,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     if (elem is Edge)
                         return;
+
                     var rect = CalculateElementRect(elem);
                     Handles.color = elem.elementTypeColor;
 
@@ -353,17 +299,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     s_CachedRect[3].Set(rect.xMin, rect.yMax, 0.0f);
                     Handles.DrawSolidRectangleWithOutline(s_CachedRect, elem.elementTypeColor, elem.elementTypeColor);
 
-                    // TODO: Remove when removing presenters.
-                    if (elem.dependsOnPresenter)
-                    {
-                        var elementPresenter = elem.GetPresenter<GraphElementPresenter>();
-                        if (elementPresenter != null && elementPresenter.selected)
-                            DrawRectangleOutline(rect, m_SelectedChildrenColor);
-                    }
-                    else if (elem.selected)
-                    {
+                    if (elem.selected)
                         DrawRectangleOutline(rect, m_SelectedChildrenColor);
-                    }
                 });
 
             // Draw viewport outline

@@ -352,7 +352,8 @@ namespace UnityEditor
             return FindTextureByType(type);
         }
 
-        internal static GUIContent TrTextContent(string key, string text, string tooltip, Texture icon)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContent(string key, string text, string tooltip, Texture icon)
         {
             GUIContent gc = (GUIContent)s_GUIContents[key];
             if (gc == null)
@@ -371,54 +372,64 @@ namespace UnityEditor
             return gc;
         }
 
-        internal static GUIContent TrTextContent(string text, string tooltip = null, Texture icon = null)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContent(string text, string tooltip = null, Texture icon = null)
         {
             string key = string.Format("{0}|{1}", text ?? "", tooltip ?? "");
             return TrTextContent(key, text, tooltip, icon);
         }
 
-        internal static GUIContent TrTextContent(string text, string tooltip, string iconName)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContent(string text, string tooltip, string iconName)
         {
             string key = string.Format("{0}|{1}|{2}", text ?? "", tooltip ?? "", iconName ?? "");
             return TrTextContent(key, text, tooltip, LoadIconRequired(iconName));
         }
 
-        internal static GUIContent TrTextContent(string text, Texture icon)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContent(string text, Texture icon)
         {
             return TrTextContent(text, null, icon);
         }
 
-        internal static GUIContent TrTextContentWithIcon(string text, Texture icon)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContentWithIcon(string text, Texture icon)
         {
             return TrTextContent(text, null, icon);
         }
 
-        internal static GUIContent TrTextContentWithIcon(string text, string iconName)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContentWithIcon(string text, string iconName)
         {
             return TrTextContent(text, null, iconName);
         }
 
-        internal static GUIContent TrTextContentWithIcon(string text, string tooltip, string iconName)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContentWithIcon(string text, string tooltip, string iconName)
         {
             return TrTextContent(text, tooltip, iconName);
         }
 
-        internal static GUIContent TrTextContentWithIcon(string text, string tooltip, Texture icon)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContentWithIcon(string text, string tooltip, Texture icon)
         {
             return TrTextContent(text, tooltip, icon);
         }
 
-        internal static GUIContent TrTextContentWithIcon(string text, string tooltip, MessageType messageType)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContentWithIcon(string text, string tooltip, MessageType messageType)
         {
             return TrTextContent(text, tooltip, GetHelpIcon(messageType));
         }
 
-        internal static GUIContent TrTextContentWithIcon(string text, MessageType messageType)
+        [ExcludeFromDocs]
+        public static GUIContent TrTextContentWithIcon(string text, MessageType messageType)
         {
             return TrTextContentWithIcon(text, null, messageType);
         }
 
-        internal static GUIContent TrIconContent(string iconName, string tooltip = null)
+        [ExcludeFromDocs]
+        public static GUIContent TrIconContent(string iconName, string tooltip = null)
         {
             string key = (tooltip == null ? iconName : iconName + tooltip);
             GUIContent gc = (GUIContent)s_IconGUIContents[key];
@@ -437,7 +448,8 @@ namespace UnityEditor
             return gc;
         }
 
-        internal static GUIContent TrIconContent(Texture icon, string tooltip = null)
+        [ExcludeFromDocs]
+        public static GUIContent TrIconContent(Texture icon, string tooltip = null)
         {
             GUIContent gc = (tooltip != null) ? (GUIContent)s_IconGUIContents[tooltip] : null;
             if (gc != null)
@@ -454,12 +466,14 @@ namespace UnityEditor
             return gc;
         }
 
-        internal static GUIContent TrTempContent(string t)
+        [ExcludeFromDocs]
+        public static GUIContent TrTempContent(string t)
         {
             return TempContent(L10n.Tr(t));
         }
 
-        internal static GUIContent[] TrTempContent(string[] texts)
+        [ExcludeFromDocs]
+        public static GUIContent[] TrTempContent(string[] texts)
         {
             GUIContent[] retval = new GUIContent[texts.Length];
             for (int i = 0; i < texts.Length; i++)

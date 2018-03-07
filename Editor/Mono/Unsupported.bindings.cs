@@ -15,6 +15,16 @@ namespace UnityEditor
     [NativeHeader("Editor/Mono/Unsupported.bindings.h")]
     public static class Unsupported
     {
+        // These MUST be synchronized with ScreenManager.h
+        internal enum DisallowCursorLockReasons
+        {
+            None = 0,
+            PlayPause = 1 << 0,
+            Other = 1 << 1,
+            Focus = 1 << 2,
+            SizeMove = 1 << 3,
+        };
+
         internal static extern Vector3 MakeNiceVector3(Vector3 vector);
 
         [FreeFunction]
@@ -64,7 +74,8 @@ namespace UnityEditor
         [FreeFunction("GetScreenManager().SetAllowCursorHide")]
         public static extern void SetAllowCursorHide(bool allow);
 
-        public static extern void SetAllowCursorLock(bool allow);
+        [FreeFunction("GetScreenManager().SetAllowCursorLock")]
+        internal static extern void SetAllowCursorLock(bool allow, DisallowCursorLockReasons reasons);
 
         public static bool SetOverrideRenderSettings(Scene scene)
         {

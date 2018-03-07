@@ -68,7 +68,9 @@ namespace UnityEditor
                 Rect rowRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.boldLabel);
                 Rect minusRect = GetAddRemoveButtonRect(rowRect);
                 rowRect.xMax = minusRect.x;
-                GUI.Label(rowRect, shader.name, EditorStyles.boldLabel);
+
+                GUI.Label(rowRect, shader == null ? "<MISSING SHADER>" : shader.name, EditorStyles.boldLabel);
+
                 if (GUI.Button(minusRect, Styles.iconRemove, Styles.invisibleButton))
                 {
                     m_Shaders.DeleteArrayElementAtIndex(shaderIndex);
@@ -96,10 +98,12 @@ namespace UnityEditor
                     variantsProp.DeleteArrayElementAtIndex(i);
                 }
             }
+
             // Add variant button
             Rect addRowRect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.miniLabel);
             Rect plusRect = GetAddRemoveButtonRect(addRowRect);
-            if (GUI.Button(plusRect, Styles.iconAdd, Styles.invisibleButton))
+
+            if (shader != null && GUI.Button(plusRect, Styles.iconAdd, Styles.invisibleButton))
             {
                 DisplayAddVariantsWindow(shader, target as ShaderVariantCollection);
             }

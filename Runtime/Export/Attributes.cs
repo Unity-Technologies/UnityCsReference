@@ -113,18 +113,6 @@ namespace UnityEngine
         public int order { get; private set; }
     }
 
-
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = false)]
-    public sealed class NativeClassAttribute : Attribute
-    {
-        public string QualifiedNativeName { get; private set; }
-
-        public NativeClassAttribute(string qualifiedCppName)
-        {
-            QualifiedNativeName = qualifiedCppName;
-        }
-    }
-
     [AttributeUsage(AttributeTargets.Assembly)]
     [RequiredByNativeCode]
     public class AssemblyIsEditorAssembly : Attribute

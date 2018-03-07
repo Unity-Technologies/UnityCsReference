@@ -258,7 +258,8 @@ namespace UnityEditorInternal.Profiling
 
             var isDataAvailable = frameDataView != null && frameDataView.IsValid();
 
-            m_TreeView.SetFrameDataView(frameDataView);
+            if (isDataAvailable)
+                m_TreeView.SetFrameDataView(frameDataView);
 
             var showDetailedView = isDataAvailable && m_DetailedViewType != DetailedViewType.None;
             if (showDetailedView)

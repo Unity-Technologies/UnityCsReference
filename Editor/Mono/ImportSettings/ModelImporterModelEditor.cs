@@ -76,11 +76,6 @@ namespace UnityEditor
             m_PreserveHierarchy = serializedObject.FindProperty("m_PreserveHierarchy");
         }
 
-        internal override void PreApply()
-        {
-            ScaleAvatar();
-        }
-
         class Styles
         {
             public GUIContent Meshes = EditorGUIUtility.TrTextContent("Meshes", "These options control how geometry is imported.");
@@ -194,12 +189,8 @@ namespace UnityEditor
         {
             GUILayout.Label(styles.Meshes, EditorStyles.boldLabel);
 
-            using (new EditorGUI.DisabledScope(targets.Length > 1))
-            {
-                // Global scale aka User scale
-                EditorGUILayout.PropertyField(m_GlobalScale, styles.ScaleFactor);
-            }
-
+            // Global scale aka User scale
+            EditorGUILayout.PropertyField(m_GlobalScale, styles.ScaleFactor);
             // File Scale Factor
             EditorGUILayout.PropertyField(m_UseFileScale, styles.UseFileScale);
             if (m_UseFileScale.boolValue)
@@ -333,34 +324,6 @@ namespace UnityEditor
                 tangentOption = EditorGUILayout.Popup(styles.TangentSpaceTangentLabel, tangentOption, tangentImportModeOptLabels);
                 if (EditorGUI.EndChangeCheck())
                     m_TangentImportMode.intValue = (int)tangentImportModeOptEnums[tangentOption];
-            }
-        }
-
-        private void ScaleAvatar()
-        {
-            //You can't scale multiple
-            if (m_GlobalScale.hasMultipleDifferentValues)
-                return;
-
-            if (targets.Length != 1)
-                return;
-
-            foreach (object o in targets)
-            {
-                float prevScale = (o as ModelImporter).globalScale;
-                float currentScale = m_GlobalScale.floatValue;
-
-                if (prevScale != currentScale && currentScale != 0 && prevScale != 0)
-                {
-                    float scaleFactor = currentScale / prevScale;
-                    SerializedProperty skeletonBoneArray = serializedObject.FindProperty(AvatarSetupTool.sSkeleton);
-                    for (int i = 0; i < skeletonBoneArray.arraySize; ++i)
-                    {
-                        SerializedProperty bone = skeletonBoneArray.GetArrayElementAtIndex(i);
-                        bone.FindPropertyRelative(AvatarSetupTool.sPosition).vector3Value =
-                            bone.FindPropertyRelative(AvatarSetupTool.sPosition).vector3Value * scaleFactor;
-                    }
-                }
             }
         }
     }

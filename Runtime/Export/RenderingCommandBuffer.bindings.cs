@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
-using UnityEngine.Rendering;
-using UnityEngine;
-using System;
 
 namespace UnityEngine.Rendering
 {
@@ -22,6 +19,9 @@ namespace UnityEngine.Rendering
             ConvertTexture_Internal(src, srcElement, dst, dstElement);
         }
 
-        extern private void ConvertTexture_Internal(RenderTargetIdentifier src, int srcElement, RenderTargetIdentifier dst, int dstElement);
+        [NativeMethod("AddSetInvertCulling")]
+        public extern void SetInvertCulling(bool invertCulling);
+
+        extern void ConvertTexture_Internal(RenderTargetIdentifier src, int srcElement, RenderTargetIdentifier dst, int dstElement);
     }
 }

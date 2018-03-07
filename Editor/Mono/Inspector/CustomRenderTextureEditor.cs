@@ -139,7 +139,7 @@ namespace UnityEditor
             if (isDoubleBuffer)
             {
                 rect.y += (EditorGUIUtility.standardVerticalSpacing + lineHeight);
-                EditorGUI.PropertyField(rect, element.FindPropertyRelative("needSwap"), styles.updateZoneRotation);
+                EditorGUI.PropertyField(rect, element.FindPropertyRelative("needSwap"), styles.needSwap);
             }
         }
 

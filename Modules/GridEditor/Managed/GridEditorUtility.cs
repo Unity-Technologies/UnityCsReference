@@ -195,35 +195,100 @@ namespace UnityEditorInternal
 
         public static void DrawGridMarquee(GridLayout gridLayout, BoundsInt area, Color color)
         {
-            Vector3 cellStride = gridLayout.cellSize + gridLayout.cellGap;
-            Vector3 cellGap = Vector3.one;
-            if (!Mathf.Approximately(cellStride.x, 0f))
+            switch (gridLayout.cellLayout)
             {
-                cellGap.x = gridLayout.cellSize.x / cellStride.x;
-            }
-            if (!Mathf.Approximately(cellStride.y, 0f))
-            {
-                cellGap.y = gridLayout.cellSize.y / cellStride.y;
-            }
+                case Grid.CellLayout.Hexagon:
+                    DrawSelectedHexGridArea(gridLayout, area, color);
+                    break;
+                case Grid.CellLayout.Rectangle:
+                    Vector3 cellStride = gridLayout.cellSize + gridLayout.cellGap;
+                    Vector3 cellGap = Vector3.one;
+                    if (!Mathf.Approximately(cellStride.x, 0f))
+                    {
+                        cellGap.x = gridLayout.cellSize.x / cellStride.x;
+                    }
+                    if (!Mathf.Approximately(cellStride.y, 0f))
+                    {
+                        cellGap.y = gridLayout.cellSize.y / cellStride.y;
+                    }
 
-            Vector3[] cellLocals =
+                    Vector3[] cellLocals =
+                    {
+                        gridLayout.CellToLocal(new Vector3Int(area.xMin, area.yMin, 0)),
+                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMax - 1 + cellGap.x, area.yMin, 0)),
+                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMax - 1 + cellGap.x, area.yMax - 1  + cellGap.y, 0)),
+                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMin, area.yMax - 1 + cellGap.y, 0))
+                    };
+
+                    HandleUtility.ApplyWireMaterial();
+                    GL.PushMatrix();
+                    GL.MultMatrix(gridLayout.transform.localToWorldMatrix);
+                    GL.Begin(GL.LINES);
+                    GL.Color(color);
+                    int i = 0;
+
+                    for (int j = cellLocals.Length - 1; i < cellLocals.Length; j = i++)
+                        DrawBatchedLine(cellLocals[j], cellLocals[i]);
+
+                    GL.End();
+                    GL.PopMatrix();
+                    break;
+            }
+        }
+
+        public static void DrawSelectedHexGridArea(GridLayout gridLayout, BoundsInt area, Color color)
+        {
+            int requiredVertices = 4 * (area.size.x + area.size.y) - 2;
+            if (requiredVertices < 0)
+                return;
+            Vector3[] cellLocals = new Vector3[requiredVertices];
+            int horizontalCount = area.size.x * 2;
+            int verticalCount = area.size.y * 2 - 1;
+            int bottom = 0;
+            int top = horizontalCount + verticalCount + horizontalCount - 1;
+            int left = requiredVertices - 1;
+            int right = horizontalCount;
+            Vector3[] cellOffset =
             {
-                gridLayout.CellToLocal(new Vector3Int(area.xMin, area.yMin, 0)),
-                gridLayout.CellToLocalInterpolated(new Vector3(area.xMax - 1 + cellGap.x, area.yMin, 0)),
-                gridLayout.CellToLocalInterpolated(new Vector3(area.xMax - 1 + cellGap.x, area.yMax - 1  + cellGap.y, 0)),
-                gridLayout.CellToLocalInterpolated(new Vector3(area.xMin, area.yMax - 1 + cellGap.y, 0))
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(0, gridLayout.cellSize.y / 2, 0)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(gridLayout.cellSize.x / 2, gridLayout.cellSize.y / 4, 0)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(gridLayout.cellSize.x / 2, -gridLayout.cellSize.y / 4, 0)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(0, -gridLayout.cellSize.y / 2, 0)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(-gridLayout.cellSize.x / 2, -gridLayout.cellSize.y / 4, 0)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(-gridLayout.cellSize.x / 2, gridLayout.cellSize.y / 4, 0))
             };
-
+            // Fill Top and Bottom Vertices
+            for (int x = area.min.x; x < area.max.x; x++)
+            {
+                cellLocals[bottom++] = gridLayout.CellToLocal(new Vector3Int(x, area.min.y, 0)) + cellOffset[4];
+                cellLocals[bottom++] = gridLayout.CellToLocal(new Vector3Int(x, area.min.y, 0)) + cellOffset[3];
+                cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(x, area.max.y - 1, 0)) + cellOffset[0];
+                cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(x, area.max.y - 1, 0)) + cellOffset[1];
+            }
+            // Fill first Left and Right Vertices
+            cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, area.min.y, 0)) + cellOffset[5];
+            cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, area.max.y - 1, 0)) + cellOffset[2];
+            // Fill Left and Right Vertices
+            for (int y = area.min.y + 1; y < area.max.y; y++)
+            {
+                cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, y, 0)) + cellOffset[4];
+                cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, y, 0)) + cellOffset[5];
+            }
+            for (int y = area.min.y; y < (area.max.y - 1); y++)
+            {
+                cellLocals[right++] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, y, 0)) + cellOffset[2];
+                cellLocals[right++] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, y, 0)) + cellOffset[1];
+            }
             HandleUtility.ApplyWireMaterial();
             GL.PushMatrix();
             GL.MultMatrix(gridLayout.transform.localToWorldMatrix);
             GL.Begin(GL.LINES);
             GL.Color(color);
             int i = 0;
-
             for (int j = cellLocals.Length - 1; i < cellLocals.Length; j = i++)
+            {
                 DrawBatchedLine(cellLocals[j], cellLocals[i]);
-
+            }
             GL.End();
             GL.PopMatrix();
         }
@@ -242,8 +307,16 @@ namespace UnityEditorInternal
                 gridMaterial = (Material)EditorGUIUtility.LoadRequired("SceneView/GridGap.mat");
             }
 
-            gridMaterial.SetVector("_Gap", gridLayout.cellSize);
-            gridMaterial.SetVector("_Stride", gridLayout.cellGap + gridLayout.cellSize);
+            if (gridLayout.cellLayout == GridLayout.CellLayout.Hexagon)
+            {
+                gridMaterial.SetVector("_Gap", new Vector4(1f, 1f / 3f, 1f, 1f));
+                gridMaterial.SetVector("_Stride", new Vector4(1f, 1f, 1f, 1f));
+            }
+            else
+            {
+                gridMaterial.SetVector("_Gap", gridLayout.cellSize);
+                gridMaterial.SetVector("_Stride", gridLayout.cellGap + gridLayout.cellSize);
+            }
 
             gridMaterial.SetPass(0);
             GL.PushMatrix();
@@ -272,12 +345,19 @@ namespace UnityEditorInternal
 
         private static Mesh GenerateCachedGridMesh(GridLayout gridLayout, Color color)
         {
-            int min = k_GridGizmoVertexCount / -32;
-            int max = min * -1;
-            int numCells = max - min;
-            RectInt bounds = new RectInt(min, min, numCells, numCells);
+            switch (gridLayout.cellLayout)
+            {
+                case GridLayout.CellLayout.Hexagon:
+                    return GenerateCachedHexagonalGridMesh(gridLayout, color);
+                case GridLayout.CellLayout.Rectangle:
+                    int min = k_GridGizmoVertexCount / -32;
+                    int max = min * -1;
+                    int numCells = max - min;
+                    RectInt bounds = new RectInt(min, min, numCells, numCells);
 
-            return GenerateCachedGridMesh(gridLayout, color, 0f, bounds, MeshTopology.Lines);
+                    return GenerateCachedGridMesh(gridLayout, color, 0f, bounds, MeshTopology.Lines);
+            }
+            return null;
         }
 
         public static Mesh GenerateCachedGridMesh(GridLayout gridLayout, Color color, float screenPixelSize, RectInt bounds, MeshTopology topology)
@@ -396,6 +476,85 @@ namespace UnityEditorInternal
             mesh.colors = colors;
             mesh.SetIndices(indices, topology, 0);
 
+            return mesh;
+        }
+
+        private static Mesh GenerateCachedHexagonalGridMesh(GridLayout gridLayout, Color color)
+        {
+            Mesh mesh = new Mesh();
+            mesh.hideFlags = HideFlags.HideAndDontSave;
+            int vertex = 0;
+            int max = k_GridGizmoVertexCount / (2 * (6 * 2));
+            max = (max / 4) * 4;
+            int min = -max;
+            float numVerticalCells = 6 * (max / 4);
+            int totalVertices = max * 2 * 6 * 2;
+            var cellStrideY = gridLayout.cellGap.y + gridLayout.cellSize.y;
+            var cellOffsetY = gridLayout.cellSize.y / 2;
+            var hexOffset = (1.0f / 3.0f);
+            var drawTotal = numVerticalCells * 2.0f * hexOffset;
+            var drawDiagTotal = 2 * drawTotal;
+            Vector3[] vertices = new Vector3[totalVertices];
+            Vector2[] uvs2 = new Vector2[totalVertices];
+            // Draw Vertical Lines
+            for (int x = min; x < max; x++)
+            {
+                vertices[vertex] = gridLayout.CellToLocal(new Vector3Int(x, min, 0));
+                vertices[vertex + 1] = gridLayout.CellToLocal(new Vector3Int(x, max, 0));
+                uvs2[vertex] = new Vector2(0f, 2 * hexOffset);
+                uvs2[vertex + 1] = new Vector2(0f, 2 * hexOffset + drawTotal);
+                vertex += 2;
+                // Alternate Row Offset
+                vertices[vertex] = gridLayout.CellToLocal(new Vector3Int(x, min - 1, 0));
+                vertices[vertex + 1] = gridLayout.CellToLocal(new Vector3Int(x, max - 1, 0));
+                uvs2[vertex] = new Vector2(0f, 2 * hexOffset);
+                uvs2[vertex + 1] = new Vector2(0f, 2 * hexOffset + drawTotal);
+                vertex += 2;
+            }
+            // Draw Diagonals
+            for (int y = min; y < max; y++)
+            {
+                float drawDiagOffset = ((y + 1) % 3) * hexOffset;
+                var cellOffSet = Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(0f, y * cellStrideY + cellOffsetY, 0.0f));
+                // Slope Up
+                vertices[vertex] = gridLayout.CellToLocal(new Vector3Int(Mathf.RoundToInt(1.5f * min), min, 0)) + cellOffSet;
+                vertices[vertex + 1] = gridLayout.CellToLocal(new Vector3Int(Mathf.RoundToInt(1.5f * max), max, 0)) + cellOffSet;
+                uvs2[vertex] = new Vector2(0f, drawDiagOffset);
+                uvs2[vertex + 1] = new Vector2(0f, drawDiagOffset + drawDiagTotal);
+                vertex += 2;
+                // Slope Down
+                vertices[vertex] = gridLayout.CellToLocal(new Vector3Int(Mathf.RoundToInt(1.5f * max), min, 0)) + cellOffSet;
+                vertices[vertex + 1] = gridLayout.CellToLocal(new Vector3Int(Mathf.RoundToInt(1.5f * min), max, 0)) + cellOffSet;
+                uvs2[vertex] = new Vector2(0f, drawDiagOffset);
+                uvs2[vertex + 1] = new Vector2(0f, drawDiagOffset + drawDiagTotal);
+                vertex += 2;
+                // Alternate Row Offset
+                vertices[vertex] = gridLayout.CellToLocal(new Vector3Int(Mathf.RoundToInt(1.5f * min) + 1, min, 0)) + cellOffSet;
+                vertices[vertex + 1] = gridLayout.CellToLocal(new Vector3Int(Mathf.RoundToInt(1.5f * max) + 1, max, 0)) + cellOffSet;
+                uvs2[vertex] = new Vector2(0f, drawDiagOffset);
+                uvs2[vertex + 1] = new Vector2(0f, drawDiagOffset + drawDiagTotal);
+                vertex += 2;
+                vertices[vertex] = gridLayout.CellToLocal(new Vector3Int(Mathf.RoundToInt(1.5f * max) + 1, min, 0)) + cellOffSet;
+                vertices[vertex + 1] = gridLayout.CellToLocal(new Vector3Int(Mathf.RoundToInt(1.5f * min) + 1, max, 0)) + cellOffSet;
+                uvs2[vertex] = new Vector2(0f, drawDiagOffset);
+                uvs2[vertex + 1] = new Vector2(0f, drawDiagOffset + drawDiagTotal);
+                vertex += 2;
+            }
+            var uv0 = new Vector2(k_GridGizmoDistanceFalloff, 0f);
+            var indices = new int[totalVertices];
+            var uvs = new Vector2[totalVertices];
+            var colors = new Color[totalVertices];
+            for (int i = 0; i < totalVertices; i++)
+            {
+                uvs[i] = uv0;
+                indices[i] = i;
+                colors[i] = color;
+            }
+            mesh.vertices = vertices;
+            mesh.uv = uvs;
+            mesh.uv2 = uvs2;
+            mesh.colors = colors;
+            mesh.SetIndices(indices, MeshTopology.Lines, 0);
             return mesh;
         }
     }

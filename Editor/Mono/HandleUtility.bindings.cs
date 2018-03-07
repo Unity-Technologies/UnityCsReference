@@ -20,7 +20,7 @@ namespace UnityEditor
         internal static extern GameObject Internal_PickClosestGO(Camera cam, int layers, Vector2 position, GameObject[] ignore, GameObject[] filter, out int materialIndex);
 
 
-        private static extern void Internal_SetHandleWireTextureIndex(int textureIndex);
+        private static extern void Internal_SetHandleWireTextureIndex(int textureIndex, int samplerIndex);
 
         internal static extern float CalcRayPlaceOffset(Transform[] objects, Vector3 normal);
 

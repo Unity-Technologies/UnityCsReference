@@ -9,13 +9,8 @@ using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
-    public abstract class GraphElement : DataWatchContainer, ISelectable
+    public abstract class GraphElement : VisualElement, ISelectable
     {
-        GraphElementPresenter m_Presenter;
-
-        // TODO: Remove when removing presenters.
-        public bool dependsOnPresenter { get; private set; }
-
         public Color elementTypeColor { get; set; }
 
 
@@ -114,7 +109,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected GraphElement()
         {
-            dependsOnPresenter = false;
             ClearClassList();
             AddToClassList("graphElement");
             elementTypeColor = new Color(0.9f, 0.9f, 0.9f, 0.5f);
@@ -127,66 +121,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             RegisterAll();
         }
 
-        // TODO: Remove when removing presenters.
-        public T GetPresenter<T>() where T : GraphElementPresenter
-        {
-            return presenter as T;
-        }
-
         ClickSelector m_ClickSelector;
-
-        // TODO: Remove when removing presenters.
-        public GraphElementPresenter presenter
-        {
-            get { return m_Presenter; }
-            set
-            {
-                if (m_Presenter == value)
-                    return;
-
-                RemoveWatch();
-
-                m_Presenter = value;
-
-                dependsOnPresenter = m_Presenter != null;
-
-                OnDataChanged();
-                AddWatch();
-            }
-        }
-
-        protected override UnityEngine.Object[] toWatch
-        {
-            get { return presenter == null ? null : presenter.GetObjectsToWatch(); }
-        }
-
-        public override void OnDataChanged()
-        {
-            if (presenter == null)
-            {
-                return;
-            }
-
-            // propagate selection but why?
-            foreach (var child in this)
-            {
-                var graphElement = child as GraphElement;
-                if (graphElement != null)
-                {
-                    GraphElementPresenter childPresenter = graphElement.presenter;
-                    if (childPresenter != null)
-                    {
-                        childPresenter.selected = presenter.selected;
-                    }
-                }
-            }
-
-            capabilities = m_Presenter.capabilities;
-
-            selected = presenter.selected;
-
-            SetPosition(presenter.position);
-        }
 
         public virtual bool IsSelectable()
         {
@@ -223,13 +158,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         // TODO: Temporary transition function.
         public virtual void UpdatePresenterPosition()
         {
-            if (presenter == null)
-                return;
-
-            RemoveWatch();
-            presenter.position = GetPosition();
-            presenter.CommitChanges();
-            AddWatch();
+            // This can be overridden by derived class to get notified when a manipulator
+            // has *finished* changing the layout (size or position) of this element.
         }
 
         public virtual Rect GetPosition()
@@ -239,16 +169,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public virtual void SetPosition(Rect newPos)
         {
-            // set absolute position from presenter
             layout = newPos;
         }
 
         public virtual void OnSelected()
         {
             if (IsAscendable())
-            {
                 BringToFront();
-            }
         }
 
         public virtual void OnUnselected()

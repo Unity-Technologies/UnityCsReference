@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Internal;
 
 namespace Unity.Collections
 {
@@ -117,18 +118,29 @@ namespace Unity.Collections
             return SliceWithStride<U>(0);
         }
 
+        // These are double-whammy excluded to we can elide bounds checks in the Burst disassembly view
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void CheckReadIndex(int index)
+        {
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        private void CheckWriteIndex(int index)
+        {
+        }
+
         public unsafe T this[int index]
         {
             get
             {
-
+                CheckReadIndex(index);
                 return UnsafeUtility.ReadArrayElementWithStride<T>(m_Buffer, index, m_Stride);
             }
 
             [WriteAccessRequired]
             set
             {
-
+                CheckWriteIndex(index);
                 UnsafeUtility.WriteArrayElementWithStride(m_Buffer, index, m_Stride, value);
             }
         }
@@ -173,7 +185,12 @@ namespace Unity.Collections
         public int      Stride { get { return m_Stride; } }
         public int      Length { get { return m_Length; } }
 
-        public IEnumerator<T> GetEnumerator()
+        public Enumerator GetEnumerator()
+        {
+            return new Enumerator(ref this);
+        }
+
+        IEnumerator<T> IEnumerable<T>.GetEnumerator()
         {
             return new Enumerator(ref this);
         }
@@ -183,7 +200,8 @@ namespace Unity.Collections
             return GetEnumerator();
         }
 
-        internal struct Enumerator : IEnumerator<T>
+        [ExcludeFromDocs]
+        public struct Enumerator : IEnumerator<T>
         {
             private NativeSlice<T> m_Array;
             private int m_Index;

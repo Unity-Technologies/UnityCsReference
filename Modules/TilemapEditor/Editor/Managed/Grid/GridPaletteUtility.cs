@@ -36,7 +36,7 @@ namespace UnityEditor
             return GridEditorUtility.GetMarqueeRect(min, max);
         }
 
-        public static GameObject CreateNewPaletteNamed(string name, Grid.CellLayout layout, GridPalette.CellSizing cellSizing, Vector3 cellSize)
+        public static GameObject CreateNewPaletteNamed(string name, Grid.CellLayout layout, GridPalette.CellSizing cellSizing, Vector3 cellSize, Grid.CellSwizzle swizzle)
         {
             string defaultPath = ProjectBrowser.s_LastInteractedProjectBrowser ? ProjectBrowser.s_LastInteractedProjectBrowser.GetActiveFolderPath() : "Assets";
             string folderPath = EditorUtility.SaveFolderPanel("Create palette into folder ", defaultPath, "");
@@ -45,10 +45,10 @@ namespace UnityEditor
             if (string.IsNullOrEmpty(folderPath))
                 return null;
 
-            return CreateNewPalette(folderPath, name, layout, cellSizing, cellSize);
+            return CreateNewPalette(folderPath, name, layout, cellSizing, cellSize, swizzle);
         }
 
-        public static GameObject CreateNewPalette(string folderPath, string name, Grid.CellLayout layout, GridPalette.CellSizing cellSizing, Vector3 cellSize)
+        public static GameObject CreateNewPalette(string folderPath, string name, Grid.CellLayout layout, GridPalette.CellSizing cellSizing, Vector3 cellSize, Grid.CellSwizzle swizzle)
         {
             GameObject temporaryGO = new GameObject(name);
             Grid grid = temporaryGO.AddComponent<Grid>();
@@ -57,7 +57,7 @@ namespace UnityEditor
             // Nice default size can be decided when first asset is dragged in
             grid.cellSize = cellSize;
             grid.cellLayout = layout;
-
+            grid.cellSwizzle = swizzle;
             CreateNewLayer(temporaryGO, "Layer1", layout);
 
             string path = AssetDatabase.GenerateUniqueAssetPath(folderPath + "/" + name + ".prefab");
@@ -77,7 +77,7 @@ namespace UnityEditor
         public static GameObject CreateNewLayer(GameObject paletteGO, string name, Grid.CellLayout layout)
         {
             GameObject newLayerGO = new GameObject(name);
-            newLayerGO.AddComponent<Tilemap>();
+            var tilemap = newLayerGO.AddComponent<Tilemap>();
             newLayerGO.AddComponent<TilemapRenderer>();
             newLayerGO.transform.parent = paletteGO.transform;
             newLayerGO.layer = paletteGO.layer;
@@ -85,9 +85,9 @@ namespace UnityEditor
             // Set defaults for certain layouts
             switch (layout)
             {
-                case Grid.CellLayout.Rectangle:
+                case Grid.CellLayout.Hexagon:
                 {
-                    paletteGO.GetComponent<Grid>().cellSize = new Vector3(1f, 1f, 0f);
+                    tilemap.tileAnchor = Vector3.zero;
                     break;
                 }
             }

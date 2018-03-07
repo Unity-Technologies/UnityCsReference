@@ -13,10 +13,10 @@ namespace UnityEditor.Experimental.UIElements
         {
             return new[]
             {
-                new FieldDescription("X", r => r.x, (ref Rect r, double v) => r.x = (float)v),
-                new FieldDescription("Y", r => r.y, (ref Rect r, double v) => r.y = (float)v),
-                new FieldDescription("W", r => r.width, (ref Rect r, double v) => r.width = (float)v),
-                new FieldDescription("H", r => r.height, (ref Rect r, double v) => r.height = (float)v),
+                new FieldDescription("X", r => r.x, (ref Rect r, float v) => r.x = v),
+                new FieldDescription("Y", r => r.y, (ref Rect r, float v) => r.y = v),
+                new FieldDescription("W", r => r.width, (ref Rect r, float v) => r.width = v),
+                new FieldDescription("H", r => r.height, (ref Rect r, float v) => r.height = v),
             };
         }
     }
@@ -27,8 +27,8 @@ namespace UnityEditor.Experimental.UIElements
         {
             return new[]
             {
-                new FieldDescription("X", r => r.x, (ref Vector2 r, double v) => r.x = (float)v),
-                new FieldDescription("Y", r => r.y, (ref Vector2 r, double v) => r.y = (float)v),
+                new FieldDescription("X", r => r.x, (ref Vector2 r, float v) => r.x = v),
+                new FieldDescription("Y", r => r.y, (ref Vector2 r, float v) => r.y = v),
             };
         }
     }
@@ -39,9 +39,9 @@ namespace UnityEditor.Experimental.UIElements
         {
             return new[]
             {
-                new FieldDescription("X", r => r.x, (ref Vector3 r, double v) => r.x = (float)v),
-                new FieldDescription("Y", r => r.y, (ref Vector3 r, double v) => r.y = (float)v),
-                new FieldDescription("Z", r => r.z, (ref Vector3 r, double v) => r.z = (float)v),
+                new FieldDescription("X", r => r.x, (ref Vector3 r, float v) => r.x = v),
+                new FieldDescription("Y", r => r.y, (ref Vector3 r, float v) => r.y = v),
+                new FieldDescription("Z", r => r.z, (ref Vector3 r, float v) => r.z = v),
             };
         }
     }
@@ -52,10 +52,10 @@ namespace UnityEditor.Experimental.UIElements
         {
             return new[]
             {
-                new FieldDescription("X", r => r.x, (ref Vector4 r, double v) => r.x = (float)v),
-                new FieldDescription("Y", r => r.y, (ref Vector4 r, double v) => r.y = (float)v),
-                new FieldDescription("Z", r => r.z, (ref Vector4 r, double v) => r.z = (float)v),
-                new FieldDescription("W", r => r.w, (ref Vector4 r, double v) => r.w = (float)v),
+                new FieldDescription("X", r => r.x, (ref Vector4 r, float v) => r.x = v),
+                new FieldDescription("Y", r => r.y, (ref Vector4 r, float v) => r.y = v),
+                new FieldDescription("Z", r => r.z, (ref Vector4 r, float v) => r.z = v),
+                new FieldDescription("W", r => r.w, (ref Vector4 r, float v) => r.w = v),
             };
         }
     }

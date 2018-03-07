@@ -6,6 +6,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Build.Reporting;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -19,6 +20,11 @@ namespace UnityEditor.Build
     public interface IPreprocessBuild : IOrderedCallback
     {
         void OnPreprocessBuild(BuildReport report);
+    }
+
+    public interface IFilterBuildAssemblies : IOrderedCallback
+    {
+        string[] OnFilterAssemblies(BuildOptions buildOptions, string[] assemblies);
     }
 
     public interface IPostprocessBuild : IOrderedCallback
@@ -38,10 +44,25 @@ namespace UnityEditor.Build
 
     internal static class BuildPipelineInterfaces
     {
-        private static List<IPreprocessBuild> buildPreprocessors;
-        private static List<IPostprocessBuild> buildPostprocessors;
-        private static List<IProcessScene> sceneProcessors;
-        private static List<IActiveBuildTargetChanged> buildTargetProcessors;
+        internal class Processors
+        {
+            public List<IPreprocessBuild> buildPreprocessors;
+            public List<IFilterBuildAssemblies> filterBuildAssembliesProcessor;
+            public List<IPostprocessBuild> buildPostprocessors;
+            public List<IProcessScene> sceneProcessors;
+            public List<IActiveBuildTargetChanged> buildTargetProcessors;
+        }
+
+        private static Processors m_Processors;
+        internal static Processors processors
+        {
+            get
+            {
+                m_Processors = m_Processors ?? new Processors();
+                return m_Processors;
+            }
+            set { m_Processors = value; }
+        }
 
         [Flags]
         internal enum BuildCallbacks
@@ -49,7 +70,8 @@ namespace UnityEditor.Build
             None = 0,
             BuildProcessors = 1,
             SceneProcessors = 2,
-            BuildTargetProcessors = 4
+            BuildTargetProcessors = 4,
+            FilterAssembliesProcessors = 8,
         }
 
         //common comparer for all callback types
@@ -110,6 +132,7 @@ namespace UnityEditor.Build
             bool findBuildProcessors = (findFlags & BuildCallbacks.BuildProcessors) == BuildCallbacks.BuildProcessors;
             bool findSceneProcessors = (findFlags & BuildCallbacks.SceneProcessors) == BuildCallbacks.SceneProcessors;
             bool findTargetProcessors = (findFlags & BuildCallbacks.BuildTargetProcessors) == BuildCallbacks.BuildTargetProcessors;
+            bool findFilterProcessors = (findFlags & BuildCallbacks.FilterAssembliesProcessors) == BuildCallbacks.FilterAssembliesProcessors;
             var postProcessBuildAttributeParams = new Type[] { typeof(BuildTarget), typeof(string) };
             foreach (var t in EditorAssemblies.GetAllTypesWithInterface<IOrderedCallback>())
             {
@@ -119,41 +142,49 @@ namespace UnityEditor.Build
                 if (findBuildProcessors)
                 {
                     if (ValidateType<IPreprocessBuild>(t))
-                        AddToList(instance = Activator.CreateInstance(t), ref buildPreprocessors);
+                        AddToList(instance = Activator.CreateInstance(t), ref processors.buildPreprocessors);
 
                     if (ValidateType<IPostprocessBuild>(t))
-                        AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref buildPostprocessors);
+                        AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref processors.buildPostprocessors);
                 }
 
                 if (findSceneProcessors && ValidateType<IProcessScene>(t))
-                    AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref sceneProcessors);
+                    AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref processors.sceneProcessors);
 
                 if (findTargetProcessors && ValidateType<IActiveBuildTargetChanged>(t))
-                    AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref buildTargetProcessors);
+                    AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref processors.buildTargetProcessors);
+
+                if (findFilterProcessors && ValidateType<IFilterBuildAssemblies>(t))
+                {
+                    instance = instance == null ? Activator.CreateInstance(t) : instance;
+                    AddToList(instance, ref processors.filterBuildAssembliesProcessor);
+                }
             }
 
             if (findBuildProcessors)
             {
                 foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute<Callbacks.PostProcessBuildAttribute>())
                     if (ValidateMethod<Callbacks.PostProcessBuildAttribute>(m, postProcessBuildAttributeParams))
-                        AddToList(new AttributeCallbackWrapper(m), ref buildPostprocessors);
+                        AddToList(new AttributeCallbackWrapper(m), ref processors.buildPostprocessors);
             }
 
             if (findSceneProcessors)
             {
                 foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute<Callbacks.PostProcessSceneAttribute>())
                     if (ValidateMethod<Callbacks.PostProcessSceneAttribute>(m, Type.EmptyTypes))
-                        AddToList(new AttributeCallbackWrapper(m), ref sceneProcessors);
+                        AddToList(new AttributeCallbackWrapper(m), ref processors.sceneProcessors);
             }
 
-            if (buildPreprocessors != null)
-                buildPreprocessors.Sort(CompareICallbackOrder);
-            if (buildPostprocessors != null)
-                buildPostprocessors.Sort(CompareICallbackOrder);
-            if (buildTargetProcessors != null)
-                buildTargetProcessors.Sort(CompareICallbackOrder);
-            if (sceneProcessors != null)
-                sceneProcessors.Sort(CompareICallbackOrder);
+            if (processors.buildPreprocessors != null)
+                processors.buildPreprocessors.Sort(CompareICallbackOrder);
+            if (processors.buildPostprocessors != null)
+                processors.buildPostprocessors.Sort(CompareICallbackOrder);
+            if (processors.buildTargetProcessors != null)
+                processors.buildTargetProcessors.Sort(CompareICallbackOrder);
+            if (processors.sceneProcessors != null)
+                processors.sceneProcessors.Sort(CompareICallbackOrder);
+            if (processors.filterBuildAssembliesProcessor != null)
+                processors.filterBuildAssembliesProcessor.Sort(CompareICallbackOrder);
         }
 
         internal static bool ValidateType<T>(Type t)
@@ -220,9 +251,9 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         internal static void OnBuildPreProcess(BuildReport report)
         {
-            if (buildPreprocessors != null)
+            if (processors.buildPreprocessors != null)
             {
-                foreach (IPreprocessBuild bpp in buildPreprocessors)
+                foreach (IPreprocessBuild bpp in processors.buildPreprocessors)
                 {
                     try
                     {
@@ -241,9 +272,9 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         internal static void OnSceneProcess(UnityEngine.SceneManagement.Scene scene, BuildReport report)
         {
-            if (sceneProcessors != null)
+            if (processors.sceneProcessors != null)
             {
-                foreach (IProcessScene spp in sceneProcessors)
+                foreach (IProcessScene spp in processors.sceneProcessors)
                 {
                     try
                     {
@@ -262,9 +293,9 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         internal static void OnBuildPostProcess(BuildReport report)
         {
-            if (buildPostprocessors != null)
+            if (processors.buildPostprocessors != null)
             {
-                foreach (IPostprocessBuild bpp in buildPostprocessors)
+                foreach (IPostprocessBuild bpp in processors.buildPostprocessors)
                 {
                     try
                     {
@@ -283,9 +314,9 @@ namespace UnityEditor.Build
         [RequiredByNativeCode]
         internal static void OnActiveBuildTargetChanged(BuildTarget previousPlatform, BuildTarget newPlatform)
         {
-            if (buildTargetProcessors != null)
+            if (processors.buildTargetProcessors != null)
             {
-                foreach (IActiveBuildTargetChanged abtc in buildTargetProcessors)
+                foreach (IActiveBuildTargetChanged abtc in processors.buildTargetProcessors)
                 {
                     try
                     {
@@ -300,12 +331,43 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
+        internal static string[] FilterAssembliesIncludedInBuild(BuildOptions buildOptions, string[] assemblies)
+        {
+            if (processors.filterBuildAssembliesProcessor == null)
+            {
+                return assemblies;
+            }
+
+            string[] startAssemblies = assemblies;
+            string[] filteredAssemblies = assemblies;
+
+
+            foreach (var filteredAssembly in processors.filterBuildAssembliesProcessor)
+            {
+                int assemblyCount = filteredAssemblies.Length;
+                filteredAssemblies = filteredAssembly.OnFilterAssemblies(buildOptions, filteredAssemblies);
+                if (filteredAssemblies.Length > assemblyCount)
+                {
+                    throw new Exception("More Assemblies in the list than delivered. Only filtering, not adding extra assemblies");
+                }
+            }
+
+            if (!filteredAssemblies.All(x => startAssemblies.Contains(x)))
+            {
+                throw new Exception("New Assembly names are in the list. Only filtering are allowed");
+            }
+
+            return filteredAssemblies;
+        }
+
+        [RequiredByNativeCode]
         internal static void CleanupBuildCallbacks()
         {
-            buildTargetProcessors = null;
-            buildPreprocessors = null;
-            buildPostprocessors = null;
-            sceneProcessors = null;
+            processors.buildTargetProcessors = null;
+            processors.buildPreprocessors = null;
+            processors.buildPostprocessors = null;
+            processors.sceneProcessors = null;
+            processors.filterBuildAssembliesProcessor = null;
             previousFlags = BuildCallbacks.None;
         }
     }

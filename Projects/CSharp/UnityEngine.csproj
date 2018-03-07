@@ -209,6 +209,9 @@
   <Compile Include="..\..\Runtime\Export\Coroutines.cs">
     <Link>Runtime\Export\Coroutines.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\CullingGroup.bindings.cs">
+    <Link>Runtime\Export\CullingGroup.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Cursor.bindings.cs">
     <Link>Runtime\Export\Cursor.bindings.cs</Link>
   </Compile>
@@ -284,6 +287,9 @@
   <Compile Include="..\..\Runtime\Export\Director\TexturePlayableOutput.bindings.cs">
     <Link>Runtime\Export\Director\TexturePlayableOutput.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Display.bindings.cs">
+    <Link>Runtime\Export\Display.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\DrivenPropertyManager.bindings.cs">
     <Link>Runtime\Export\DrivenPropertyManager.bindings.cs</Link>
   </Compile>
@@ -301,6 +307,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\FailedToLoadScriptObject.cs">
     <Link>Runtime\Export\FailedToLoadScriptObject.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\FlareLayer.bindings.cs">
+    <Link>Runtime\Export\FlareLayer.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\FriendAttributes.cs">
     <Link>Runtime\Export\FriendAttributes.cs</Link>
@@ -334,6 +343,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\Gizmos.cs">
     <Link>Runtime\Export\Gizmos.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Gradient.bindings.cs">
+    <Link>Runtime\Export\Gradient.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\Graphics.bindings.cs">
     <Link>Runtime\Export\Graphics.bindings.cs</Link>
@@ -388,6 +400,12 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\KeyCode.cs">
     <Link>Runtime\Export\KeyCode.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\LOD.bindings.cs">
+    <Link>Runtime\Export\LOD.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\LayerMask.bindings.cs">
+    <Link>Runtime\Export\LayerMask.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\Light.deprecated.cs">
     <Link>Runtime\Export\Light.deprecated.cs</Link>
@@ -469,6 +487,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\PlayerLoop.bindings.cs">
     <Link>Runtime\Export\PlayerLoop.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\PlayerPrefs.bindings.cs">
+    <Link>Runtime\Export\PlayerPrefs.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\Pose.cs">
     <Link>Runtime\Export\Pose.cs</Link>
@@ -605,6 +626,9 @@
   <Compile Include="..\..\Runtime\Export\RuntimeInitializeOnLoadAttribute.cs">
     <Link>Runtime\Export\RuntimeInitializeOnLoadAttribute.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\RuntimeUndo.bindings.cs">
+    <Link>Runtime\Export\RuntimeUndo.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\SceneManager\SceneManager.bindings.cs">
     <Link>Runtime\Export\SceneManager\SceneManager.bindings.cs</Link>
   </Compile>
@@ -689,8 +713,14 @@
   <Compile Include="..\..\Runtime\Export\Shader.cs">
     <Link>Runtime\Export\Shader.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\SortingLayer.bindings.cs">
+    <Link>Runtime\Export\SortingLayer.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\SphericalHarmonicsL2.bindings.cs">
     <Link>Runtime\Export\SphericalHarmonicsL2.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\SplashScreen.bindings.cs">
+    <Link>Runtime\Export\SplashScreen.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\StackTrace.cs">
     <Link>Runtime\Export\StackTrace.cs</Link>
@@ -706,6 +736,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\SystemInfo.bindings.cs">
     <Link>Runtime\Export\SystemInfo.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\TextAsset.bindings.cs">
+    <Link>Runtime\Export\TextAsset.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\Texture.bindings.cs">
     <Link>Runtime\Export\Texture.bindings.cs</Link>
@@ -875,6 +908,9 @@
   <Compile Include="..\..\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs">
     <Link>Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs">
+    <Link>Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Jobs\Managed\BatchQueries.cs">
     <Link>Runtime\Jobs\Managed\BatchQueries.cs</Link>
   </Compile>
@@ -911,9 +947,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\BillboardRendererBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\BillboardRendererBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CachingBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\CachingBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CameraBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\CameraBindings.gen.cs</Link>
   </Compile>
@@ -923,23 +956,8 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CrashReporterBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\CrashReporterBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\CullingGroupBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\CullingGroupBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\DisplayBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\DisplayBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\EventProviderBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\EventProviderBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\FlareLayerBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\FlareLayerBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GradientBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\GradientBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GradientUtilityBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\GradientUtilityBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GraphicsBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\GraphicsBindings.gen.cs</Link>
@@ -949,12 +967,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LODBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\LODBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LayerMaskBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\LayerMaskBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\LightBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\LightBindings.gen.cs</Link>
@@ -968,9 +980,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\PlayerConnectionInternalBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\PlayerConnectionInternalBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\PlayerPrefsBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\PlayerPrefsBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ProfilerBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\ProfilerBindings.gen.cs</Link>
   </Compile>
@@ -983,9 +992,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ResourcesBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\ResourcesBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\RuntimeUndoBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\RuntimeUndoBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SamplerBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\SamplerBindings.gen.cs</Link>
   </Compile>
@@ -997,18 +1003,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ShaderBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\ShaderBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SortingLayerBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\SortingLayerBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SplashScreenBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\SplashScreenBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SpriteAtlasBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\SpriteAtlasBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\TextAssetBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\TextAssetBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\TextureBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\TextureBindings.gen.cs</Link>
@@ -1024,9 +1018,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\WSATilesBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\WSATilesBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\External\JsonParsers\SimpleJson\SimpleJson.cs">
-    <Link>External\JsonParsers\SimpleJson\SimpleJson.cs</Link>
   </Compile>
   <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs">
     <Link>External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs</Link>
@@ -1142,8 +1133,17 @@
   <Compile Include="..\..\Modules\AssetBundle\Managed\AssemblyInfo.cs">
     <Link>Modules\AssetBundle\Managed\AssemblyInfo.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundle.bindings.cs">
+    <Link>Modules\AssetBundle\Managed\AssetBundle.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundle.deprecated.cs">
     <Link>Modules\AssetBundle\Managed\AssetBundle.deprecated.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs">
+    <Link>Modules\AssetBundle\Managed\AssetBundleCreateRequest.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleRequest.bindings.cs">
+    <Link>Modules\AssetBundle\Managed\AssetBundleRequest.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs">
     <Link>Modules\AssetBundle\Managed\AssetBundleUtility.bindings.cs</Link>
@@ -1295,6 +1295,9 @@
   <Compile Include="..\..\Modules\IMGUI\TextEditor.cs">
     <Link>Modules\IMGUI\TextEditor.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs">
+    <Link>Modules\ImageConversion\ScriptBindings\ImageConversion.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Input\Private\Input.cs">
     <Link>Modules\Input\Private\Input.cs</Link>
   </Compile>
@@ -1303,6 +1306,9 @@
   </Compile>
   <Compile Include="..\..\Modules\JSONSerialize\Public\JsonUtility.bindings.cs">
     <Link>Modules\JSONSerialize\Public\JsonUtility.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Localization\Public\LocalizationAsset.binding.cs">
+    <Link>Modules\Localization\Public\LocalizationAsset.binding.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\ParticlesLegacy\Private\ScriptBindings\ParticlesLegacy.deprecated.cs">
     <Link>Modules\ParticlesLegacy\Private\ScriptBindings\ParticlesLegacy.deprecated.cs</Link>
@@ -1334,6 +1340,9 @@
   <Compile Include="..\..\Modules\SpriteShape\Public\ScriptBindings\SpriteShapeUtility.bindings.cs">
     <Link>Modules\SpriteShape\Public\ScriptBindings\SpriteShapeUtility.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Streaming\ScriptBindings\StreamingController.bindings.cs">
+    <Link>Modules\Streaming\ScriptBindings\StreamingController.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Substance\SubstanceUtility.bindings.cs">
     <Link>Modules\Substance\SubstanceUtility.bindings.cs</Link>
   </Compile>
@@ -1352,6 +1361,9 @@
   <Compile Include="..\..\Modules\TextRendering\TextGenerator.cs">
     <Link>Modules\TextRendering\TextGenerator.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\TextRendering\TextRendering.bindings.cs">
+    <Link>Modules\TextRendering\TextRendering.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Tilemap\Managed\CustomGridBrushAttribute.cs">
     <Link>Modules\Tilemap\Managed\CustomGridBrushAttribute.cs</Link>
   </Compile>
@@ -1369,9 +1381,6 @@
   </Compile>
   <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
     <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\UIElements\BaseControl.cs">
-    <Link>Modules\UIElements\BaseControl.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Box.cs">
     <Link>Modules\UIElements\Box.cs</Link>
@@ -1393,6 +1402,33 @@
   </Compile>
   <Compile Include="..\..\Modules\UIElements\ContextualMenuManipulator.cs">
     <Link>Modules\UIElements\ContextualMenuManipulator.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\BaseControl.cs">
+    <Link>Modules\UIElements\Controls\BaseControl.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\INotifyValueChanged.cs">
+    <Link>Modules\UIElements\Controls\INotifyValueChanged.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\KeyboardTextEditor.cs">
+    <Link>Modules\UIElements\Controls\KeyboardTextEditor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\TextEditor.cs">
+    <Link>Modules\UIElements\Controls\TextEditor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\TextEditorEngine.cs">
+    <Link>Modules\UIElements\Controls\TextEditorEngine.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\TextField.cs">
+    <Link>Modules\UIElements\Controls\TextField.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\TextInputFieldBase.cs">
+    <Link>Modules\UIElements\Controls\TextInputFieldBase.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\Toggle.cs">
+    <Link>Modules\UIElements\Controls\Toggle.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Controls\TouchScreenTextEditor.cs">
+    <Link>Modules\UIElements\Controls\TouchScreenTextEditor.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Cursor.cs">
     <Link>Modules\UIElements\Cursor.cs</Link>
@@ -1463,9 +1499,6 @@
   <Compile Include="..\..\Modules\UIElements\IMGUIContainer.cs">
     <Link>Modules\UIElements\IMGUIContainer.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\UIElements\INotifyValueChanged.cs">
-    <Link>Modules\UIElements\INotifyValueChanged.cs</Link>
-  </Compile>
   <Compile Include="..\..\Modules\UIElements\ISerializableJsonDictionary.cs">
     <Link>Modules\UIElements\ISerializableJsonDictionary.cs</Link>
   </Compile>
@@ -1480,9 +1513,6 @@
   </Compile>
   <Compile Include="..\..\Modules\UIElements\InteractionEnums.cs">
     <Link>Modules\UIElements\InteractionEnums.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\UIElements\KeyboardTextEditor.cs">
-    <Link>Modules\UIElements\KeyboardTextEditor.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Label.cs">
     <Link>Modules\UIElements\Label.cs</Link>
@@ -1562,26 +1592,8 @@
   <Compile Include="..\..\Modules\UIElements\TemplateContainer.cs">
     <Link>Modules\UIElements\TemplateContainer.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\UIElements\TextEditor.cs">
-    <Link>Modules\UIElements\TextEditor.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\UIElements\TextEditorEngine.cs">
-    <Link>Modules\UIElements\TextEditorEngine.cs</Link>
-  </Compile>
   <Compile Include="..\..\Modules\UIElements\TextElement.cs">
     <Link>Modules\UIElements\TextElement.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\UIElements\TextField.cs">
-    <Link>Modules\UIElements\TextField.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\UIElements\TextInputFieldBase.cs">
-    <Link>Modules\UIElements\TextInputFieldBase.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\UIElements\Toggle.cs">
-    <Link>Modules\UIElements\Toggle.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\UIElements\TouchScreenTextEditor.cs">
-    <Link>Modules\UIElements\TouchScreenTextEditor.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\UIElementsUtility.cs">
     <Link>Modules\UIElements\UIElementsUtility.cs</Link>
@@ -1706,14 +1718,17 @@
   <Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestUtils.cs">
     <Link>Modules\UnityWebRequest\Public\WebRequestUtils.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoClip.bindings.cs">
+    <Link>Modules\Video\Public\ScriptBindings\VideoClip.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoClipPlayable.bindings.cs">
     <Link>Modules\Video\Public\ScriptBindings\VideoClipPlayable.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoPlayer.bindings.cs">
+    <Link>Modules\Video\Public\ScriptBindings\VideoPlayer.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs">
     <Link>Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\Web\FriendAttributes.cs">
-    <Link>Modules\Web\FriendAttributes.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraInstance.bindings.cs">
     <Link>Modules\XR\Subsystems\Camera\XRCameraInstance.bindings.cs</Link>
@@ -1952,6 +1967,9 @@
   <Compile Include="..\..\Runtime\UI\ScriptBindings\CanvasGroup.bindings.cs">
     <Link>Runtime\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\UI\ScriptBindings\CanvasRenderer.bindings.cs">
+    <Link>Runtime\UI\ScriptBindings\CanvasRenderer.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\UI\ScriptBindings\RectTransformUtil.bindings.cs">
     <Link>Runtime\UI\ScriptBindings\RectTransformUtil.bindings.cs</Link>
   </Compile>
@@ -2051,9 +2069,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\AssetBundle\AssetBundleBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\AssetBundle\AssetBundleBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\AssetBundle\AssetBundleManifestBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\AssetBundle\AssetBundleManifestBindings.gen.cs</Link>
   </Compile>
@@ -2078,20 +2093,11 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Cloth\ClothBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Cloth\ClothBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\ImageConversion\ImageConversionBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\ImageConversion\ImageConversionBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\ParticleSystem\ParticleSystemBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\ParticleSystem\ParticleSystemBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Physics\DynamicsBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Physics\DynamicsBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\TextRendering\TextRenderingBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\TextRendering\TextRenderingBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\UI\CanvasRendererBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\UI\CanvasRendererBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs</Link>
@@ -2105,12 +2111,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Video\VideoClipBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Video\VideoClipBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Video\VideoPlayerBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Video\VideoPlayerBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Wind\WindZoneBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Wind\WindZoneBindings.gen.cs</Link>
   </Compile>
@@ -2120,6 +2120,7 @@
 
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+
   <PropertyGroup>
   </PropertyGroup>
 </Project>

@@ -109,6 +109,7 @@ namespace UnityEditor
 
             // string and matching enum values for standalone subtarget dropdowm
             public GUIContent debugBuild = EditorGUIUtility.TrTextContent("Development Build");
+            public GUIContent datalessBuild = EditorGUIUtility.TrTextContent("Dataless Build");
             public GUIContent profileBuild = EditorGUIUtility.TrTextContent("Autoconnect Profiler");
             public GUIContent vrRemoteStremaing = EditorGUIUtility.TrTextContent("VR Remote Streaming");
             public GUIContent allowDebugging = EditorGUIUtility.TrTextContent("Script Debugging");

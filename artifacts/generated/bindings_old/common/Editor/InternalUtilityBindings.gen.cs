@@ -24,7 +24,6 @@ using UnityEditor.Animations;
 using UnityEditorInternal;
 using UnityEditor.Collaboration;
 using UnityEditor.Connect;
-using UnityEngine.Video;
 
 namespace UnityEditor
 {

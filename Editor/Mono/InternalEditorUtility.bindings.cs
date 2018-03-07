@@ -8,6 +8,7 @@ using Object = UnityEngine.Object;
 using UnityEditor;
 using System.Reflection;
 using UnityEngine.Bindings;
+using UnityEditor.Scripting.ScriptCompilation;
 
 
 namespace UnityEditorInternal
@@ -91,7 +92,7 @@ namespace UnityEditorInternal
     [NativeHeader("Runtime/Utilities/FileUtilities.h")]
     [NativeHeader("Runtime/Utilities/LaunchUtilities.h")]
     [NativeHeader("Runtime/Utilities/UnityRevision.h")]
-    partial class InternalEditorUtility
+    public partial class InternalEditorUtility
     {
         // Needs to be kept in sync with DragAndDropForwarding.h
         public enum HierarchyDropMode
@@ -237,11 +238,20 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::LoadSerializedFileAndForget")]
         extern public static Object[] LoadSerializedFileAndForget(string path);
 
+        [FreeFunction("InternalEditorUtilityBindings::ProjectWindowDrag")]
+        extern public static DragAndDropVisualMode ProjectWindowDrag(HierarchyProperty property, bool perform);
+
+        [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
+        extern public static DragAndDropVisualMode HierarchyWindowDrag(HierarchyProperty property, bool perform, HierarchyDropMode dropMode);
+
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::SceneViewDrag")]
         extern public static DragAndDropVisualMode SceneViewDrag(Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, bool perform);
+
+        [FreeFunction("InternalEditorUtilityBindings::SetRectTransformTemporaryRect")]
+        extern public static void SetRectTransformTemporaryRect([NotNull] RectTransform rectTransform, Rect rect);
 
         [ThreadSafe]
         [StaticAccessor("LicenseInfo", StaticAccessorType.DoubleColon)]
@@ -288,6 +298,22 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetLayersWithId")]
         extern static internal string[] GetLayersWithId();
 
+        [FreeFunction("InternalEditorUtilityBindings::CanRenameAssetInternal")]
+        extern internal static bool CanRenameAsset(int instanceID);
+
+        public static LayerMask ConcatenatedLayersMaskToLayerMask(int concatenatedLayersMask)
+        {
+            return ConcatenatedLayersMaskToLayerMaskInternal(concatenatedLayersMask);
+        }
+
+        [FreeFunction("InternalEditorUtilityBindings::ConcatenatedLayersMaskToLayerMaskInternal")]
+        extern private static int ConcatenatedLayersMaskToLayerMaskInternal(int concatenatedLayersMask);
+
+        public static int LayerMaskToConcatenatedLayersMask(LayerMask mask)
+        {
+            return LayerMaskToConcatenatedLayersMaskInternal(mask);
+        }
+
         [StaticAccessor("GetTagManager()", StaticAccessorType.Dot)]
         extern internal static string GetSortingLayerName(int index);
 
@@ -329,6 +355,16 @@ namespace UnityEditorInternal
             [FreeFunction("InternalEditorUtilityBindings::GetSortingLayerUniqueIDs")]
             get;
         }
+
+        // UV coordinates for the outer part of a sliced Sprite (the whole Sprite)
+        [FreeFunction("InternalEditorUtilityBindings::GetSpriteOuterUV")]
+        extern public static Vector4 GetSpriteOuterUV([NotNull] Sprite sprite, bool getAtlasData);
+
+        [FreeFunction("PPtr<Object>")]
+        extern public static Object GetObjectFromInstanceID(int instanceID);
+
+        [FreeFunction("GetTypeWithoutLoadingObject")]
+        extern public static Type GetTypeWithoutLoadingObject(int instanceID);
 
         [FreeFunction("Object::IDToPointer")]
         extern public static Object GetLoadedObjectFromInstanceID(int instanceID);
@@ -410,6 +446,9 @@ namespace UnityEditorInternal
 
         [FreeFunction("InternalEditorUtilityBindings::GetGameObjectInstanceIDFromComponent")]
         extern public static int GetGameObjectInstanceIDFromComponent(int instanceID);
+
+        [FreeFunction("InternalEditorUtilityBindings::ReadScreenPixel")]
+        extern public static Color[] ReadScreenPixel(Vector2 pixelPos, int sizex, int sizey);
 
         [StaticAccessor("GetGpuDeviceManager()", StaticAccessorType.Dot)]
         [NativeMethod("SetDevice")]
@@ -543,6 +582,9 @@ namespace UnityEditorInternal
         [FreeFunction]
         extern public static string GetNoDiffToolsDetectedMessage();
 
+        [FreeFunction("InternalEditorUtilityBindings::TransformBounds")]
+        extern public static Bounds TransformBounds(Bounds b, Transform t);
+
         [StaticAccessor("CustomLighting::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SetCustomLighting")]
         extern public static void SetCustomLightingInternal(Light[] lights, Color ambient);
@@ -561,6 +603,9 @@ namespace UnityEditorInternal
 
         [StaticAccessor("GetRenderManager()", StaticAccessorType.Dot)]
         extern public static bool HasFullscreenCamera();
+
+        [FreeFunction]
+        extern public static Bounds CalculateSelectionBounds(bool usePivotOnlyForParticles, bool onlyUseActiveSelection);
 
         internal static Bounds CalculateSelectionBoundsInSpace(Vector3 position, Quaternion rotation, bool rectBlueprintMode)
         {
@@ -755,6 +800,18 @@ namespace UnityEditorInternal
         [FreeFunction]
         extern public static int DetermineDepthOrder(Transform lhs, Transform rhs);
 
+
+        internal static PrecompiledAssembly[] GetUnityAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target)
+        {
+            return GetUnityAssembliesInternal(buildingForEditor, target);
+        }
+
+        [FreeFunction("GetUnityAssembliesManaged")]
+        extern private static PrecompiledAssembly[] GetUnityAssembliesInternal(bool buildingForEditor, BuildTarget target);
+
+        [FreeFunction("GetPrecompiledAssembliesManaged")]
+        extern internal static PrecompiledAssembly[] GetPrecompiledAssemblies(bool buildingForEditor, BuildTargetGroup buildTargetGroup, BuildTarget target);
+
         [FreeFunction]
         extern public static void ShowPackageManagerWindow();
 
@@ -768,6 +825,9 @@ namespace UnityEditorInternal
 
         [FreeFunction("InternalEditorUtilityBindings::SaveCursorToFile")]
         extern public static bool SaveCursorToFile(string path, Texture2D image, Vector2 hotSpot);
+
+        [FreeFunction("GetScriptCompilationDefines")]
+        extern internal static string[] GetCompilationDefines(EditorScriptCompilationOptions options, BuildTargetGroup targetGroup, BuildTarget target, ApiCompatibilityLevel apiCompatibilityLevel);
 
         //Launches an application that is kept alive, even during a domain reload
         [FreeFunction("LaunchApplication")]
@@ -798,7 +858,10 @@ namespace UnityEditorInternal
                 PrepareDragAndDropTestingInternal(editorWindow.m_Parent);
         }
 
-        [FreeFunction("InternalEditorUtilityBindings::CanRenameAssetInternal")]
-        extern internal static bool CanRenameAsset(int instanceID);
+        [FreeFunction("InternalEditorUtilityBindings::PrepareDragAndDropTestingInternal")]
+        extern internal static void PrepareDragAndDropTestingInternal(GUIView guiView);
+
+        [FreeFunction("InternalEditorUtilityBindings::LayerMaskToConcatenatedLayersMaskInternal")]
+        extern private static int LayerMaskToConcatenatedLayersMaskInternal(int mask);
     }
 }

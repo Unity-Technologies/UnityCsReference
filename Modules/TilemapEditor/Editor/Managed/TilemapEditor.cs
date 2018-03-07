@@ -30,6 +30,8 @@ namespace UnityEditor
             public static readonly GUIContent tilemapColorLabel = EditorGUIUtility.TrTextContent("Color", "Color tinting all Sprites from tiles in the tilemap");
             public static readonly GUIContent tileAnchorLabel = EditorGUIUtility.TrTextContent("Tile Anchor", "Anchoring position for Sprites from tiles in the tilemap");
             public static readonly GUIContent orientationLabel = EditorGUIUtility.TrTextContent("Orientation", "Orientation for tiles in the tilemap");
+            public static readonly GUIContent pointTopHexagonCreateUndo = EditorGUIUtility.TrTextContent("Hexagonal Point Top Tilemap");
+            public static readonly GUIContent flatTopHexagonCreateUndo = EditorGUIUtility.TrTextContent("Hexagonal Flat Top Tilemap");
         }
 
         private void OnEnable()
@@ -82,6 +84,33 @@ namespace UnityEditor
             Undo.SetTransformParent(tilemapGO.transform, root.transform, "");
             tilemapGO.transform.position = Vector3.zero;
             Undo.SetCurrentGroupName("Create Tilemap");
+        }
+
+        [MenuItem("GameObject/2D Object/Hexagonal Point Top Tilemap")]
+        internal static void CreateHexagonalPointTopTilemap()
+        {
+            CreateHexagonalTilemap(GridLayout.CellSwizzle.XYZ, Styles.pointTopHexagonCreateUndo.text);
+        }
+
+        [MenuItem("GameObject/2D Object/Hexagonal Flat Top Tilemap")]
+        internal static void CreateHexagonalFlatTopTilemap()
+        {
+            CreateHexagonalTilemap(GridLayout.CellSwizzle.YXZ, Styles.flatTopHexagonCreateUndo.text);
+        }
+
+        private static void CreateHexagonalTilemap(GridLayout.CellSwizzle swizzle, string undoMessage)
+        {
+            var root = FindOrCreateRootGrid();
+            var uniqueName = GameObjectUtility.GetUniqueNameForSibling(root.transform, "Tilemap");
+            var tilemapGO = ObjectFactory.CreateGameObject(uniqueName, typeof(Tilemap), typeof(TilemapRenderer));
+            tilemapGO.transform.SetParent(root.transform);
+            tilemapGO.transform.position = Vector3.zero;
+            var grid = root.GetComponent<Grid>();
+            grid.cellLayout = Grid.CellLayout.Hexagon;
+            grid.cellSwizzle = swizzle;
+            var tilemap = tilemapGO.GetComponent<Tilemap>();
+            tilemap.tileAnchor = Vector3.zero;
+            Undo.RegisterCreatedObjectUndo(tilemapGO, undoMessage);
         }
 
         private static GameObject FindOrCreateRootGrid()

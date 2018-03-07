@@ -7,6 +7,7 @@ using UnityEditor.Modules;
 using UnityEditor.Build;
 using UnityEngine;
 using UnityEditorInternal;
+using UnityEditor.Experimental;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
@@ -220,6 +221,8 @@ namespace UnityEditor
                 bool developmentBuild = EditorUserBuildSettings.development;
                 if (developmentBuild)
                     options.options |= BuildOptions.Development;
+                if (EditorUserBuildSettings.datalessPlayer && developmentBuild)
+                    options.options |= BuildOptionsExperimental.DatalessPlayer;
                 if (EditorUserBuildSettings.allowDebugging && developmentBuild)
                     options.options |= BuildOptions.AllowDebugging;
                 if (EditorUserBuildSettings.symlinkLibraries)

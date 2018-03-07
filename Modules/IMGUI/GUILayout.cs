@@ -51,7 +51,7 @@ namespace UnityEngine
         public static string TextField(string text, int maxLength, params GUILayoutOption[] options)                   { return DoTextField(text, maxLength, false, GUI.skin.textField, options); }
         public static string TextField(string text, GUIStyle style, params GUILayoutOption[] options)                  { return DoTextField(text, -1, false, style, options); }
         // Make a single-line text field where the user can edit a string.
-        public static string TextField(string text, int maxLength, GUIStyle style, params GUILayoutOption[] options)   { return DoTextField(text, maxLength, true, style, options); }
+        public static string TextField(string text, int maxLength, GUIStyle style, params GUILayoutOption[] options)   { return DoTextField(text, maxLength, false, style, options); }
 
         public static string PasswordField(string password, char maskChar, params GUILayoutOption[] options)
         {

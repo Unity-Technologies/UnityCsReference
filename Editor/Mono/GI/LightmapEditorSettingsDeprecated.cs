@@ -88,12 +88,6 @@ namespace UnityEditor
             get { return 0; }
             set {}
         }
-        [System.Obsolete("LightmapEditorSettings.bounces has been deprecated.", false)]
-        public static int bounces
-        {
-            get { return 0; }
-            set {}
-        }
         [System.Obsolete("LightmapEditorSettings.bounceIntensity has been deprecated.", false)]
         public static float bounceIntensity
         {

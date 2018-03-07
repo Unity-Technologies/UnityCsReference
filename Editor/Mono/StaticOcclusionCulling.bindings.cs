@@ -45,9 +45,9 @@ namespace UnityEditor
         [NativeProperty(TargetType = TargetType.Field)]
         public static extern float smallestOccluder
         {
-            [NativeName("GetOcclusionBakeSettings().backfaceThreshold")]
+            [NativeName("GetOcclusionBakeSettings().smallestOccluder")]
             get;
-            [NativeName("GetOcclusionBakeSettingsSetDirty().backfaceThreshold")]
+            [NativeName("GetOcclusionBakeSettingsSetDirty().smallestOccluder")]
             set;
         }
 
@@ -55,9 +55,9 @@ namespace UnityEditor
         [NativeProperty(TargetType = TargetType.Field)]
         public static extern float smallestHole
         {
-            [NativeName("GetOcclusionBakeSettings().backfaceThreshold")]
+            [NativeName("GetOcclusionBakeSettings().smallestHole")]
             get;
-            [NativeName("GetOcclusionBakeSettingsSetDirty().backfaceThreshold")]
+            [NativeName("GetOcclusionBakeSettingsSetDirty().smallestHole")]
             set;
         }
 

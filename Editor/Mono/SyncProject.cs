@@ -56,8 +56,6 @@ namespace UnityEditor
             }
 
             SetVisualStudioAsEditorIfNoEditorWasSet();
-
-            UnityVSSupport.Initialize();
         }
 
         private static void SetVisualStudioAsEditorIfNoEditorWasSet()

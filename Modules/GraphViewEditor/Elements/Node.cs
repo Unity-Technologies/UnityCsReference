@@ -125,76 +125,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             style.positionTop = newPos.y;
         }
 
-        // TODO: Remove when removing presenters.
-        protected virtual void SetLayoutClassLists(NodePresenter nodePresenter)
-        {
-        }
-
         protected virtual void OnPortRemoved(Port port)
         {}
-
-        // TODO: Remove when removing presenters.
-        private void ProcessRemovedPorts(IList<Port> currentPorts, VisualElement portContainer, IList<PortPresenter> currentPresenters)
-        {
-            foreach (var port in currentPorts)
-            {
-                bool contains = false;
-                var inputPres = port.GetPresenter<PortPresenter>();
-                foreach (var newPres in currentPresenters)
-                {
-                    if (newPres == inputPres)
-                    {
-                        contains = true;
-                        break;
-                    }
-                }
-
-                if (!contains)
-                {
-                    port.OnConnect -= OnPortConnectAction;
-                    port.OnDisconnect -= OnPortConnectAction;
-                    OnPortRemoved(port);
-                    portContainer.Remove(port);
-                }
-            }
-        }
-
-        // TODO: Remove when removing presenters.
-        private void ProcessAddedPorts(IList<Port> currentPorts, VisualElement portContainer, IList<PortPresenter> currentPresenters)
-        {
-            int index = 0;
-            foreach (var newPres in currentPresenters)
-            {
-                bool contains = false;
-                foreach (Port currPort in currentPorts)
-                {
-                    if (newPres == currPort.GetPresenter<PortPresenter>())
-                    {
-                        contains = true;
-                        break;
-                    }
-                }
-
-                if (!contains)
-                {
-                    Port newPort = InstantiatePort(newPres);
-                    newPort.OnConnect += OnPortConnectAction;
-                    newPort.OnDisconnect += OnPortConnectAction;
-                    portContainer.Insert(index, newPort);
-                }
-
-                index++;
-            }
-        }
 
         public virtual Port InstantiatePort(Orientation orientation, Direction direction, Port.Capacity capacity, Type type)
         {
             return Port.Create<Edge>(orientation, direction, capacity, type);
-        }
-
-        public virtual Port InstantiatePort(PortPresenter newPres)
-        {
-            return Port.Create<EdgePresenter, Edge>(newPres);
         }
 
         private void SetElementVisible(VisualElement element, bool isVisible)
@@ -243,24 +179,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public bool RefreshPorts()
         {
-            var nodePresenter = GetPresenter<NodePresenter>();
-
             bool expandedState = expanded;
-
-            // TODO: Remove when removing presenters.
-            if (nodePresenter != null)
-            {
-                var currentInputs = inputContainer.Query<Port>().ToList();
-                var currentOutputs = outputContainer.Query<Port>().ToList();
-
-                ProcessRemovedPorts(currentInputs, inputContainer, nodePresenter.inputPorts);
-                ProcessRemovedPorts(currentOutputs, outputContainer, nodePresenter.outputPorts);
-
-                ProcessAddedPorts(currentInputs, inputContainer, nodePresenter.inputPorts);
-                ProcessAddedPorts(currentOutputs, outputContainer, nodePresenter.outputPorts);
-
-                expandedState = nodePresenter.expanded;
-            }
 
             // Refresh the lists after all additions and everything took place
             var updatedInputs = inputContainer.Query<Port>().ToList();
@@ -370,39 +289,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public override void OnDataChanged()
-        {
-            base.OnDataChanged();
-
-            var nodePresenter = GetPresenter<NodePresenter>();
-
-            // Just to keep them in sync, but we don't want the logic in
-            // the property setter to apply here.
-            m_Expanded = nodePresenter.expanded;
-
-            RefreshExpandedState();
-
-            m_TitleLabel.text = nodePresenter.title;
-
-            SetLayoutClassLists(nodePresenter);
-        }
-
-        // TODO: Remove when removing presenters.
-        private void ToggleCollapsePresenter()
-        {
-            var nodePresenter = GetPresenter<NodePresenter>();
-            nodePresenter.expanded = !nodePresenter.expanded;
-        }
-
         protected virtual void ToggleCollapse()
         {
-            // TODO: Remove when removing presenters.
-            if (GetPresenter<NodePresenter>() != null)
-            {
-                ToggleCollapsePresenter();
-                return;
-            }
-
             expanded = !expanded;
         }
 

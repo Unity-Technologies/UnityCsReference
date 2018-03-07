@@ -469,8 +469,8 @@ namespace UnityEditor
             public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout Mip Maps");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
-            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mipmaps|Only load larger mip maps as needed to render the current game cameras.");
-            public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Streaming Mipmaps Priority|Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
+            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mip Maps", "Only load larger mip maps as needed to render the current game cameras.");
+            public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Mip Map Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
 
             public readonly GUIContent alphaSource = EditorGUIUtility.TrTextContent("Alpha Source", "How is the alpha generated for the imported texture.");
             public readonly GUIContent[] alphaSourceOptions =
@@ -1061,7 +1061,9 @@ namespace UnityEditor
 
             if (m_StreamingMipmaps.boolValue && !m_StreamingMipmaps.hasMultipleDifferentValues)
             {
+                EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(m_StreamingMipmapsPriority, s_Styles.streamingMipmapsPriority);
+                EditorGUI.indentLevel--;
             }
         }
 

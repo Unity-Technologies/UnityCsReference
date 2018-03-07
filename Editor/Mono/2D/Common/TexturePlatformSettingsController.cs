@@ -15,25 +15,25 @@ namespace UnityEditor.U2D.Common
         {
             Assert.IsTrue(platformSettings.Count > 0, "At least 1 platform setting is needed to display the texture platform setting UI.");
 
-            int allSize = platformSettings[0].maxTextureSize;
-            TextureImporterCompression allCompression = platformSettings[0].textureCompression;
-            bool allUseCrunchedCompression = platformSettings[0].crunchedCompression;
-            int allCompressionQuality = platformSettings[0].compressionQuality;
+            var allSize = platformSettings[0].maxTextureSize;
+            var allCompression = platformSettings[0].textureCompression;
+            var allUseCrunchedCompression = platformSettings[0].crunchedCompression;
+            var allCompressionQuality = platformSettings[0].compressionQuality;
 
             var newSize = allSize;
             var newCompression = allCompression;
             var newUseCrunchedCompression = allUseCrunchedCompression;
             var newCompressionQuality = allCompressionQuality;
 
-            bool mixedSize = false;
-            bool mixedCompression = false;
-            bool mixedUseCrunchedCompression = false;
-            bool mixedCompressionQuality = false;
+            var mixedSize = false;
+            var mixedCompression = false;
+            var mixedUseCrunchedCompression = false;
+            var mixedCompressionQuality = false;
 
-            bool sizeChanged = false;
-            bool compressionChanged = false;
-            bool useCrunchedCompressionChanged = false;
-            bool compressionQualityChanged = false;
+            var sizeChanged = false;
+            var compressionChanged = false;
+            var useCrunchedCompressionChanged = false;
+            var compressionQualityChanged = false;
 
             for (var i = 1; i < platformSettings.Count; ++i)
             {
@@ -83,25 +83,25 @@ namespace UnityEditor.U2D.Common
         {
             Assert.IsTrue(platformSettings.Count > 0, "At least 1 platform setting is needed to display the texture platform setting UI.");
 
-            bool allOverride = platformSettings[0].overridden;
-            int allSize = platformSettings[0].maxTextureSize;
-            TextureImporterFormat allFormat = platformSettings[0].format;
-            int allCompressionQuality = platformSettings[0].compressionQuality;
+            var allOverride = platformSettings[0].overridden;
+            var allSize = platformSettings[0].maxTextureSize;
+            var allFormat = platformSettings[0].format;
+            var allCompressionQuality = platformSettings[0].compressionQuality;
 
             var newOverride = allOverride;
             var newSize = allSize;
             var newFormat = allFormat;
             var newCompressionQuality = allCompressionQuality;
 
-            bool mixedOverride = false;
-            bool mixedSize = false;
-            bool mixedFormat = false;
-            bool mixedCompression = false;
+            var mixedOverride = false;
+            var mixedSize = false;
+            var mixedFormat = false;
+            var mixedCompression = false;
 
-            bool overrideChanged = false;
-            bool sizeChanged = false;
-            bool formatChanged = false;
-            bool compressionChanged = false;
+            var overrideChanged = false;
+            var sizeChanged = false;
+            var formatChanged = false;
+            var compressionChanged = false;
 
             for (var i = 1; i < platformSettings.Count; ++i)
             {
@@ -139,7 +139,7 @@ namespace UnityEditor.U2D.Common
 
                 if (showAsEnum)
                 {
-                    int compressionMode = 1;
+                    var compressionMode = 1;
                     if (allCompressionQuality == (int)TextureCompressionQuality.Fast)
                         compressionMode = 0;
                     else if (allCompressionQuality == (int)TextureCompressionQuality.Best)

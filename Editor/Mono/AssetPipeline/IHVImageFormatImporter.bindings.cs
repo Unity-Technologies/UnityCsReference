@@ -59,5 +59,19 @@ namespace UnityEditor
             get;
             set;
         }
+
+        [NativeConditional("ENABLE_TEXTURE_STREAMING")]
+        public extern bool streamingMipmaps
+        {
+            get;
+            set;
+        }
+
+        [NativeConditional("ENABLE_TEXTURE_STREAMING")]
+        public extern int streamingMipmapsPriority
+        {
+            get;
+            set;
+        }
     }
 }

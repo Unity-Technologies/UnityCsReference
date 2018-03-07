@@ -319,7 +319,7 @@ namespace UnityEngine
 
         internal Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain, bool linear, IntPtr nativeTex)
         {
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, linear);
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = TextureCreationFlags.None;
             if (mipChain)
                 flags |= TextureCreationFlags.MipChain;
@@ -548,7 +548,7 @@ namespace UnityEngine
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear)
         {
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, linear);
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = TextureCreationFlags.None;
             if (mipChain)
                 flags |= TextureCreationFlags.MipChain;
@@ -582,7 +582,7 @@ namespace UnityEngine
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear)
         {
-            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, linear);
+            GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = TextureCreationFlags.None;
             if (mipChain)
                 flags |= TextureCreationFlags.MipChain;

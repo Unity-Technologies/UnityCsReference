@@ -534,7 +534,7 @@ namespace UnityEditorInternal.Profiling
 
         public void Clear()
         {
-            if (m_CalleesTreeView != null)
+            if (m_CallersTreeView != null)
                 m_CallersTreeView.SetCallsData(new CallsData() { calls = null, totalSelectedPropertyTime = 0 });
             if (m_CalleesTreeView != null)
                 m_CalleesTreeView.SetCallsData(new CallsData() { calls = null, totalSelectedPropertyTime = 0 });

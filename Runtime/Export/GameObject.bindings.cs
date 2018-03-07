@@ -10,12 +10,14 @@ using System.Collections.Generic;
 using UnityEngineInternal;
 using UnityEngine.SceneManagement;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using uei = UnityEngine.Internal;
 
 
 namespace UnityEngine
 {
     [ExcludeFromPreset]
+    [UsedByNativeCode]
     [NativeHeader("Runtime/Export/GameObject.bindings.h")]
     public sealed partial class GameObject : Object
     {

@@ -109,8 +109,8 @@ namespace UnityEngine.Experimental.UIElements
         private readonly List<ScheduledItem> m_ScheduledItems = new List<ScheduledItem>();
 
         private bool m_TransactionMode;
-        private readonly List<ScheduledItem> m_ScheduleTransactions = new List<ScheduledItem>();
-        private readonly List<ScheduledItem> m_UnscheduleTransactions = new List<ScheduledItem>();
+        private readonly List<ScheduledItem> m_ScheduleTransactions = new List<ScheduledItem>(); // order is important schedules are executed in add order
+        private readonly HashSet<ScheduledItem> m_UnscheduleTransactions = new HashSet<ScheduledItem>(); // order no important. removal from m_ScheduledItems has no side effect
 
         internal bool disableThrottling = false;
 
@@ -153,7 +153,18 @@ namespace UnityEngine.Experimental.UIElements
 
             if (m_TransactionMode)
             {
-                m_ScheduleTransactions.Add(scheduledItem);
+                if (m_UnscheduleTransactions.Remove(scheduledItem))
+                {
+                    // The item was unscheduled then rescheduled in the same transaction.
+                }
+                else if (m_ScheduledItems.Contains(scheduledItem) || m_ScheduleTransactions.Contains(scheduledItem))
+                {
+                    throw new ArgumentException(string.Concat("Cannot schedule function ", scheduledItem, " more than once"));
+                }
+                else
+                {
+                    m_ScheduleTransactions.Add(scheduledItem);
+                }
             }
             else
             {
@@ -216,7 +227,6 @@ namespace UnityEngine.Experimental.UIElements
             {
                 var item = m_ScheduledItems[index];
                 m_ScheduledItems.RemoveAt(index);
-                item.OnItemUnscheduled();
 
                 return true;
             }
@@ -230,16 +240,40 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (m_TransactionMode)
                 {
-                    m_UnscheduleTransactions.Add(sItem);   //TODO: optimize this, we lose the item and need to re-search
-                }
-                else
-                {
-                    if (!RemovedScheduledItemAt(m_ScheduledItems.IndexOf(sItem)))
+                    if (m_UnscheduleTransactions.Contains(sItem))
+                    {
+                        throw new ArgumentException("Cannot unschedule scheduled function twice" + sItem);
+                    }
+                    else if (m_ScheduleTransactions.Remove(sItem))
+                    {
+                        // A item has been scheduled then unscheduled in the same transaction. which is valid.
+                    }
+                    else if (m_ScheduledItems.Contains(sItem))
+                    {
+                        // Only add it to m_UnscheduleTransactions if it is in m_ScheduledItems.
+                        // if it was successfully removed from m_ScheduleTransaction we are fine.
+                        m_UnscheduleTransactions.Add(sItem);
+                    }
+                    else
                     {
                         throw new ArgumentException("Cannot unschedule unknown scheduled function " + sItem);
                     }
                 }
+                else
+                {
+                    if (!PrivateUnSchedule(sItem))
+                    {
+                        throw new ArgumentException("Cannot unschedule unknown scheduled function " + sItem);
+                    }
+                }
+
+                sItem.OnItemUnscheduled(); // Call OnItemUnscheduled immediately after successful removal even if we are in transaction mode
             }
+        }
+
+        bool PrivateUnSchedule(ScheduledItem sItem)
+        {
+            return m_ScheduleTransactions.Remove(sItem) || RemovedScheduledItemAt(m_ScheduledItems.IndexOf(sItem));
         }
 
         public void UpdateScheduledEvents()
@@ -283,12 +317,15 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         TimerState timerState = new TimerState { start = scheduledItem.startMs, now = currentTime };
 
-                        scheduledItem.PerformTimerUpdate(timerState);
+                        if (!m_UnscheduleTransactions.Contains(scheduledItem)) // Don't execute items that have been amrker for future removal
+                            scheduledItem.PerformTimerUpdate(timerState);
 
                         scheduledItem.startMs = currentTime;
                         scheduledItem.delayMs = scheduledItem.intervalMs;
 
-                        if (scheduledItem.ShouldUnschedule())
+                        if (scheduledItem.ShouldUnschedule() && !m_UnscheduleTransactions.Contains(scheduledItem))
+                        // if the scheduledItem has been unscheduled explicitly in PerformTimerUpdate then it will be in m_UnscheduleTransactions and we shouldn't
+                        // unschedule it again
                         {
                             Unschedule(scheduledItem);
                         }
@@ -302,16 +339,16 @@ namespace UnityEngine.Experimental.UIElements
                 m_TransactionMode = false;
 
                 // Rule: remove unscheduled transactions first
-                for (int s = 0; s < m_UnscheduleTransactions.Count; s++)
+                foreach (var item in m_UnscheduleTransactions)
                 {
-                    Unschedule(m_UnscheduleTransactions[s]);
+                    PrivateUnSchedule(item);
                 }
                 m_UnscheduleTransactions.Clear();
 
                 // Then add scheduled transactions
-                for (int s = 0; s < m_ScheduleTransactions.Count; s++)
+                foreach (var item in m_ScheduleTransactions)
                 {
-                    Schedule(m_ScheduleTransactions[s]);
+                    Schedule(item);
                 }
                 m_ScheduleTransactions.Clear();
             }

@@ -29,8 +29,8 @@ namespace UnityEditor
             public static readonly GUIContent sRGBTexture   = EditorGUIUtility.TrTextContent("sRGB (Color Texture)", "Texture content is stored in gamma space. Non-HDR color textures should enable this flag (except if used for IMGUI).");
             public static readonly GUIContent wrapMode      = EditorGUIUtility.TrTextContent("Wrap Mode");
             public static readonly GUIContent filterMode    = EditorGUIUtility.TrTextContent("Filter Mode");
-            public static readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mipmaps", "Only load larger mip maps as needed to render the current game cameras.");
-            public static readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Streaming Mipmaps Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
+            public static readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mip Maps", "Only load larger mip maps as needed to render the current game cameras.");
+            public static readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Mip Map Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
 
             public static readonly int[] filterModeValues           =
             { (int)FilterMode.Point, (int)FilterMode.Bilinear, (int)FilterMode.Trilinear };
@@ -98,7 +98,9 @@ namespace UnityEditor
 
             if (m_StreamingMipmaps.boolValue && !m_StreamingMipmaps.hasMultipleDifferentValues)
             {
+                EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(m_StreamingMipmapsPriority, Styles.streamingMipmapsPriority);
+                EditorGUI.indentLevel--;
             }
 
             GUILayout.BeginHorizontal();

@@ -158,20 +158,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             get
             {
-                // TODO: Remove when removing presenters.
-                PortPresenter portPresenter = GetPresenter<PortPresenter>();
-                if (portPresenter == null)
-                    return m_Highlight;
-
-                return portPresenter.highlight;
+                return m_Highlight;
             }
             set
             {
-                // TODO: Remove when removing presenters.
-                PortPresenter portPresenter = GetPresenter<PortPresenter>();
-                if (portPresenter != null)
-                    portPresenter.highlight = value;
-
                 if (m_Highlight == value)
                     return;
 
@@ -196,11 +186,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             get
             {
-                // TODO: Remove when removing presenters.
-                PortPresenter portPresenter = GetPresenter<PortPresenter>();
-                if (portPresenter != null)
-                    return portPresenter.connected;
-
                 return m_Connections.Count > 0;
             }
         }
@@ -209,11 +194,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             get
             {
-                // TODO: Remove when removing presenters.
-                PortPresenter portPresenter = GetPresenter<PortPresenter>();
-                if (portPresenter != null)
-                    return portPresenter.collapsed;
-
                 return false;
             }
         }
@@ -266,24 +246,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public virtual void Connect(Edge edge)
         {
             if (edge == null)
-            {
                 throw new ArgumentException("The value passed to Port.Connect is null");
-            }
 
-            // TODO: Remove when removing presenters.
-            var presenter = GetPresenter<PortPresenter>();
-            if (presenter != null)
-            {
-                var edgePresenter = edge.GetPresenter<EdgePresenter>();
-                presenter.Connect(edgePresenter);
-            }
-            else
-            {
-                if (!m_Connections.Contains(edge))
-                {
-                    m_Connections.Add(edge);
-                }
-            }
+            if (!m_Connections.Contains(edge))
+                m_Connections.Add(edge);
 
             OnConnect?.Invoke(this);
         }
@@ -291,39 +257,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public virtual void Disconnect(Edge edge)
         {
             if (edge == null)
-            {
                 throw new ArgumentException("The value passed to PortPresenter.Disconnect is null");
-            }
 
-
-            // TODO: Remove when removing presenters.
-            var presenter = GetPresenter<PortPresenter>();
-            if (presenter != null)
-            {
-                var edgePresenter = edge.GetPresenter<EdgePresenter>();
-                presenter.Disconnect(edgePresenter);
-            }
-            else
-            {
-                m_Connections.Remove(edge);
-            }
+            m_Connections.Remove(edge);
 
             OnDisconnect?.Invoke(this);
         }
 
         public virtual void DisconnectAll()
         {
-            // TODO: Remove when removing presenters.
-            var presenter = GetPresenter<PortPresenter>();
-            if (presenter != null)
-            {
-                foreach (var edge in m_Connections)
-                {
-                    var edgePresenter = edge.GetPresenter<EdgePresenter>();
-                    presenter.Disconnect(edgePresenter);
-                }
-            }
-
             m_Connections.Clear();
 
             OnDisconnect?.Invoke(this);
@@ -380,36 +322,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        // TODO: Remove when removing presenters.
-        protected class DefaultEdgePresenterConnectorListener<TEdgePresenter> : IEdgeConnectorListener where TEdgePresenter : EdgePresenter
-        {
-            public void OnDropOutsidePort(Edge edge, Vector2 position) {}
-            public void OnDrop(GraphView graphView, Edge edge)
-            {
-                if (graphView == null || edge == null)
-                    return;
-
-                if (graphView.presenter == null)
-                    return;
-
-                // Check if the edge already has a presenter then do not create it
-                EdgePresenter edgePresenter = edge.GetPresenter<EdgePresenter>();
-
-                if (edgePresenter == null)
-                {
-                    edgePresenter = ScriptableObject.CreateInstance<TEdgePresenter>();
-                }
-
-                edgePresenter.output = edge.output.GetPresenter<PortPresenter>();
-                edgePresenter.input = edge.input.GetPresenter<PortPresenter>();
-
-                edgePresenter.output.Connect(edgePresenter);
-                edgePresenter.input.Connect(edgePresenter);
-
-                graphView.presenter.AddElement(edgePresenter);
-            }
-        }
-
         // TODO This is a workaround to avoid having a generic type for the port as generic types mess with USS.
         public static Port Create<TEdge>(Orientation orientation, Direction direction, Capacity capacity, Type type) where TEdge : Edge, new()
         {
@@ -420,28 +332,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             };
             port.AddManipulator(port.m_EdgeConnector);
             return port;
-        }
-
-        // TODO: Remove when removing presenters.
-        public static Port Create<TEdgePresenter, TEdge>(PortPresenter presenter)
-            where TEdgePresenter : EdgePresenter
-            where TEdge : Edge, new()
-        {
-            var connectorListener = new DefaultEdgePresenterConnectorListener<TEdgePresenter>();
-            var port = new Port(Orientation.Horizontal, Direction.Input, Capacity.Multi, typeof(object))
-            {
-                m_EdgeConnector = new EdgeConnector<TEdge>(connectorListener),
-                presenter = presenter
-            };
-            port.AddManipulator(port.m_EdgeConnector);
-            return port;
-        }
-
-        // TODO: Remove when removing presenters.
-        // TODO: Remove!
-        protected virtual VisualElement CreateConnector()
-        {
-            return new VisualElement();
         }
 
         protected Port(Orientation portOrientation, Direction portDirection, Capacity portCapacity, Type type)
@@ -465,74 +355,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             portType = type;
             capacity = portCapacity;
 
+            AddToClassList("port");
             AddToClassList(portDirection.ToString().ToLower());
             AddStyleSheetPath("StyleSheets/GraphView/Port.uss");
-        }
-
-        // TODO: Remove when removing presenters.
-        private void UpdateConnector()
-        {
-            if (m_EdgeConnector == null)
-                return;
-
-            var portPresenter = GetPresenter<PortPresenter>();
-
-            if (m_EdgeConnector.target == null || !m_EdgeConnector.target.HasMouseCapture())  // if the edge connector has capture, it means that an edge is being created. so don't remove the manipulator at the moment.
-            {
-                if (!portPresenter.connected || portPresenter.direction != Direction.Input)
-                {
-                    this.AddManipulator(m_EdgeConnector);
-                }
-                else
-                {
-                    this.RemoveManipulator(m_EdgeConnector);
-                }
-            }
         }
 
         public Node node
         {
             get { return GetFirstAncestorOfType<Node>(); }
-        }
-
-        public bool IsConnectable()
-        {
-            // TODO: Remove when removing presenters.
-            PortPresenter portPresenter = presenter as PortPresenter;
-            if (portPresenter != null)
-                return portPresenter.IsConnectable();
-
-            return true;
-        }
-
-        // TODO: Remove when removing presenters.
-        public override void OnDataChanged()
-        {
-            UpdateConnector();
-
-            var portPresenter = GetPresenter<PortPresenter>();
-            Type presenterPortType = portPresenter.portType;
-            Type genericClass = typeof(PortSource<>);
-            try
-            {
-                Type constructedClass = genericClass.MakeGenericType(presenterPortType);
-                portPresenter.source = Activator.CreateInstance(constructedClass);
-            }
-            catch (Exception e)
-            {
-                Debug.Log("Couldn't build PortSouce<" + (presenterPortType == null ? "null" : presenterPortType.Name) + "> " + e.Message);
-            }
-
-            string portName = string.IsNullOrEmpty(portPresenter.name) ? presenterPortType.Name : portPresenter.name;
-            m_ConnectorText.text = portName;
-
-            portPresenter.capabilities &= ~Capabilities.Selectable;
-
-            // Cache some stuff for easier access from the outside.
-            direction = portPresenter.direction;
-            orientation = portPresenter.orientation;
-            portType = portPresenter.portType;
-            source = portPresenter.source;
         }
 
         public override Vector3 GetGlobalCenter()

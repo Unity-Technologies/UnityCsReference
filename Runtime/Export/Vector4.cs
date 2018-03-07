@@ -5,13 +5,15 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
-    [UsedByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
+    [NativeHeader("Runtime/Math/Vector4.h")]
+    [NativeClass("Vector4f")]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     // Representation of four-dimensional vectors.
     public partial struct Vector4
     {

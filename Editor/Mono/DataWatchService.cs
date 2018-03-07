@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using Object = UnityEngine.Object;
 
@@ -94,7 +95,7 @@ namespace UnityEditor
 
             public bool IsEmpty()
             {
-                return spyList == null;
+                return spyList == null || spyList.Count == 0;
             }
 
             public void OnTimerPoolForChanges(TimerState ts)
@@ -186,7 +187,7 @@ namespace UnityEditor
                 spy.onDataChanged(w.watchedObject);
             }
 
-            if (w.watchedObject == null)
+            if (w.watchedObject == null && w.scheduledItem != null)
             {
                 DoRemoveWatcher(w);
             }
@@ -196,6 +197,7 @@ namespace UnityEditor
         {
             m_Watched.Remove(watchers.watchedObject);
             m_Scheduler.Unschedule(watchers.scheduledItem);
+            watchers.scheduledItem = null;
             watchers.tracker.ReleaseTracker();
         }
 
@@ -237,6 +239,7 @@ namespace UnityEditor
                         if (spy.handleID == handleImpl.id)
                         {
                             spyList.RemoveAt(i);
+
                             if (watchers.IsEmpty())
                             {
                                 DoRemoveWatcher(watchers);

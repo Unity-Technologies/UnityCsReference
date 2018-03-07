@@ -15,7 +15,7 @@ namespace UnityEngine.Networking.PlayerConnection
         public byte[] data;
     }
 
-    internal interface IEditorPlayerConnection
+    public interface IEditorPlayerConnection
     {
         void Register(Guid messageId, UnityAction<MessageEventArgs> callback);
 

@@ -12,7 +12,6 @@ namespace Unity.Collections.LowLevel.Unsafe
 {
     [NativeHeader("Runtime/Export/Unsafe/UnsafeUtility.bindings.h")]
     [StaticAccessor("UnsafeUtility", StaticAccessorType.DoubleColon)]
-    [VisibleToOtherModules]
     public static partial class UnsafeUtility
     {
 
@@ -54,6 +53,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         unsafe public static extern void Free(void* memory, Allocator allocator);
 
+        public static bool IsValidAllocator(Allocator allocator) { return allocator > Allocator.None; }
+
+
         [ThreadSafe]
         unsafe public static extern void MemCpy(void* destination, void* source, long size);
 
@@ -68,6 +70,9 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         [ThreadSafe]
         unsafe public static extern void MemClear(void* destination, long size);
+
+        [ThreadSafe]
+        unsafe public static extern int MemCmp(void* ptr1, void* ptr2, long size);
 
         [ThreadSafe]
         public static extern int SizeOf(Type type);

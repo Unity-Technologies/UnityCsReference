@@ -15,6 +15,7 @@ namespace UnityEngine
         public enum CellLayout
         {
             Rectangle = 0,
+            Hexagon = 1
         }
 
         public enum CellSwizzle

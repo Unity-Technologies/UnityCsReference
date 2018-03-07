@@ -185,7 +185,6 @@ namespace UnityEngine.Experimental.UIElements
 
             public void Resume()
             {
-                isScheduled = true;
                 m_Activator.SetActive(true);
             }
 
@@ -206,9 +205,12 @@ namespace UnityEngine.Experimental.UIElements
 
             public void OnPanelActivate()
             {
-                isScheduled = true;
-                ResetStartTime();
-                element.elementPanel.scheduler.Schedule(this);
+                if (!isScheduled)
+                {
+                    isScheduled = true;
+                    ResetStartTime();
+                    element.elementPanel.scheduler.Schedule(this);
+                }
             }
 
             public void OnPanelDeactivate()

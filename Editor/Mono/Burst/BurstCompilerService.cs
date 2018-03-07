@@ -28,7 +28,7 @@ namespace Unity.Burst.LowLevel
 
             var message = InitializeInternal(folderRuntime, extractCompilerFlags);
 
-            if (message != null)
+            if (!String.IsNullOrEmpty(message))
                 Debug.LogError($"Unexpected error while trying to initialize the burst JIT compiler: {message}");
         }
     }

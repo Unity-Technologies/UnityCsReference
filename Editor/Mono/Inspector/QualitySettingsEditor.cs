@@ -22,7 +22,11 @@ namespace UnityEditor
 
             public static readonly GUIContent kPlatformTooltip = EditorGUIUtility.TrTextContent("", "Allow quality setting on platform");
             public static readonly GUIContent kAddQualityLevel = EditorGUIUtility.TrTextContent("Add Quality Level");
-            public static readonly GUIContent kTextureStreamingBudget = EditorGUIUtility.TrTextContent("Texture Streaming Budget", "Texture Streaming Budget in MB");
+            public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "Must be enabled to use texture streaming at runtime. This is an editor only setting. When disabled all CPU memory overheads of the system are removed.");
+            public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "Texture Streaming Budget in MB.");
+            public static readonly GUIContent kStreamingMipmapsRenderersPerFrame = EditorGUIUtility.TrTextContent("Renderers Per Frame", "Number of renderers to process each frame. A lower number will decrease the CPU load at the cost of delaying the mipmap loading.");
+            public static readonly GUIContent kStreamingMipmapsAddAllCameras = EditorGUIUtility.TrTextContent("Add All Cameras", "Adds all cameras to texture streaming system even if it lacks a StreamingController component. If a camera has the StreamingController component that will control whether its processed or not.");
+            public static readonly GUIContent kStreamingMipmapsMaxLevelReduction = EditorGUIUtility.TrTextContent("Max Level Reduction", "This is the maximum number of mipmap levels a texture should drop.");
 
             public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
             public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require using Deferred Lighting or making camera render the depth texture.");
@@ -42,7 +46,6 @@ namespace UnityEditor
         public const int kMaxAsyncRingBufferSize = 512;
         public const int kMinAsyncUploadTimeSlice = 1;
         public const int kMaxAsyncUploadTimeSlice = 33;
-        public const int kTextureStreamSmallestMip = 8; // This needs to match definition in TextureStreamingManager.h
 
         private SerializedObject m_QualitySettings;
         private SerializedProperty m_QualitySettingsProperty;
@@ -535,6 +538,24 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(realtimeReflectionProbes);
             EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Styles.kBillboardsFaceCameraPos);
             EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
+
+            var streamingMipmapsActiveProperty = currentSettings.FindPropertyRelative("streamingMipmapsActive");
+            EditorGUILayout.PropertyField(streamingMipmapsActiveProperty, Styles.kStreamingMipmapsActive);
+            if (streamingMipmapsActiveProperty.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                var streamingMipmapsAddAllCameras = currentSettings.FindPropertyRelative("streamingMipmapsAddAllCameras");
+                EditorGUILayout.PropertyField(streamingMipmapsAddAllCameras, Styles.kStreamingMipmapsAddAllCameras);
+                var streamingMipmapsBudgetProperty = currentSettings.FindPropertyRelative("streamingMipmapsMemoryBudget");
+                EditorGUILayout.PropertyField(streamingMipmapsBudgetProperty, Styles.kStreamingMipmapsMemoryBudget);
+                var streamingMipmapsRenderersPerFrameProperty = currentSettings.FindPropertyRelative("streamingMipmapsRenderersPerFrame");
+                EditorGUILayout.PropertyField(streamingMipmapsRenderersPerFrameProperty, Styles.kStreamingMipmapsRenderersPerFrame);
+                var streamingMipmapsMaxLevelReductionProperty = currentSettings.FindPropertyRelative("streamingMipmapsMaxLevelReduction");
+                EditorGUILayout.PropertyField(streamingMipmapsMaxLevelReductionProperty, Styles.kStreamingMipmapsMaxLevelReduction);
+                EditorGUI.indentLevel--;
+            }
+
+
             GUILayout.Space(10);
 
             GUILayout.Label(EditorGUIUtility.TempContent("Shadows"), EditorStyles.boldLabel);
@@ -554,10 +575,9 @@ namespace UnityEditor
                     DrawCascadeSplitGUI<float>(ref shadowCascade2SplitProperty);
                 else if (shadowCascadesProperty.intValue == 4)
                     DrawCascadeSplitGUI<Vector3>(ref shadowCascade4SplitProperty);
-
-                GUILayout.Space(10);
             }
 
+            GUILayout.Space(10);
             GUILayout.Label(EditorGUIUtility.TempContent("Other"), EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(blendWeightsProperty);
             EditorGUILayout.PropertyField(vSyncCountProperty);
@@ -569,19 +589,6 @@ namespace UnityEditor
 
             asyncUploadTimeSliceProperty.intValue = Mathf.Clamp(asyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
             asyncUploadBufferSizeProperty.intValue = Mathf.Clamp(asyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);
-
-            GUILayout.Space(10);
-            var streamingMipmapsFeatureEnabledProperty = currentSettings.FindPropertyRelative("streamingMipmapsFeatureEnabled");
-            EditorGUILayout.PropertyField(streamingMipmapsFeatureEnabledProperty);
-            if (streamingMipmapsFeatureEnabledProperty.boolValue)
-            {
-                var streamingMipmapsActiveProperty = currentSettings.FindPropertyRelative("streamingMipmapsActive");
-                EditorGUILayout.PropertyField(streamingMipmapsActiveProperty);
-                var textureStreamingBudgetProperty = currentSettings.FindPropertyRelative("textureStreamingBudget");
-                EditorGUILayout.PropertyField(textureStreamingBudgetProperty, Styles.kTextureStreamingBudget);
-                var minStreamingMipLevelProperty = currentSettings.FindPropertyRelative("minStreamingMipLevel");
-                EditorGUILayout.PropertyField(minStreamingMipLevelProperty);
-            }
 
             if (m_Dragging != null && m_Dragging.m_Position != m_Dragging.m_StartPosition)
             {

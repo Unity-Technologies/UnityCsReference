@@ -180,8 +180,11 @@ namespace UnityEditor
         public extern bool isReadable { get; set; }
 
         // Is texture data able to be streamed by mip level.
+        [NativeConditional("ENABLE_TEXTURE_STREAMING")]
         public extern bool streamingMipmaps { get; set; }
         // This texture's mipmap streaming priority.
+
+        [NativeConditional("ENABLE_TEXTURE_STREAMING")]
         public extern int streamingMipmapsPriority { get; set; }
 
         // Generate mip maps for the texture?

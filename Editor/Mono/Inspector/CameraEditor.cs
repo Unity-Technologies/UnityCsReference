@@ -50,8 +50,6 @@ namespace UnityEditor
             public SerializedProperty orthographic { get; private set; }
             public SerializedProperty orthographicSize { get; private set; }
             public SerializedProperty depth { get; private set; }
-            public SerializedProperty streamingMipmapBias { get; private set; }
-            public SerializedProperty streamingInfluence { get; private set; }
             public SerializedProperty cullingMask { get; private set; }
             public SerializedProperty renderingPath { get; private set; }
             public SerializedProperty occlusionCulling { get; private set; }
@@ -89,8 +87,6 @@ namespace UnityEditor
                 orthographic = m_SerializedObject.FindProperty("orthographic");
                 orthographicSize = m_SerializedObject.FindProperty("orthographic size");
                 depth = m_SerializedObject.FindProperty("m_Depth");
-                streamingMipmapBias = m_SerializedObject.FindProperty("m_StreamingMipmapBias");
-                streamingInfluence = m_SerializedObject.FindProperty("m_StreamingInfluence");
                 cullingMask = m_SerializedObject.FindProperty("m_CullingMask");
                 renderingPath = m_SerializedObject.FindProperty("m_RenderingPath");
                 occlusionCulling = m_SerializedObject.FindProperty("m_OcclusionCulling");
@@ -165,13 +161,6 @@ namespace UnityEditor
             {
                 EditorGUILayout.PropertyField(depth);
             }
-
-            public void DrawStreamingMipmap()
-            {
-                EditorGUILayout.PropertyField(streamingMipmapBias);
-                EditorGUILayout.PropertyField(streamingInfluence);
-            }
-
 
             public void DrawRenderingPath()
             {
@@ -480,7 +469,6 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
             settings.DrawDepth();
-            settings.DrawStreamingMipmap();
             settings.DrawRenderingPath();
             if (m_ShowOrthoOptions.target && wantDeferredRendering)
                 EditorGUILayout.HelpBox("Deferred rendering does not work with Orthographic camera, will use Forward.",

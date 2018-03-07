@@ -51,9 +51,6 @@ namespace UnityEngine
         extern public float aspect { get; set; }
         extern public void ResetAspect();
 
-        extern public float streamingMipmapBias { get; set; }
-        extern public bool streamingInfluence { get; set; }
-
         extern public Vector3 velocity { get; }
 
         extern public int cullingMask { get; set; }

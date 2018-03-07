@@ -253,11 +253,11 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreatePrefab>(), "New Prefab.prefab", EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D, null);
         }
 
-        internal static void CreateAssetWithContent(string filename, string content, Texture2D icon = null, string resourceFile = null)
+        public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
             action.filecontent = content;
-            StartNameEditingIfProjectWindowExists(0, action, filename, icon, resourceFile);
+            StartNameEditingIfProjectWindowExists(0, action, filename, icon, null);
         }
 
         static void CreateScriptAsset(string templatePath, string destName)

@@ -65,7 +65,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            var graphElement = e.target as Port;
+            var graphElement = target as Port;
             if (graphElement == null)
             {
                 return;

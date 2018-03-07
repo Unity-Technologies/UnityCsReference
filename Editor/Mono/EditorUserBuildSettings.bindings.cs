@@ -521,6 +521,9 @@ namespace UnityEditor
         // Enables a development build.
         public static extern bool development { get; set; }
 
+        // Enables a development build with no assets bundled.
+        internal static extern bool datalessPlayer { get; set; }
+
         // Use prebuilt UnityNative asm.js module
         public static extern bool webGLUsePreBuiltUnityEngine { get; set; }
 

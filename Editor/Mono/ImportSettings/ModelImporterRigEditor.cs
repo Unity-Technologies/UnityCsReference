@@ -734,7 +734,7 @@ With this option, this model will not create any avatar but only import animatio
                 {
                     ModelImporter importer = targets[i] as ModelImporter;
                     // Special case if the model didn't have animation before...
-                    if (oldModelSettings[i].hasNoAnimation && assetTarget != null)
+                    if (oldModelSettings[i].hasNoAnimation && assetTargets[i] != null)
                     {
                         // We have to do an extra import first, before the automapping works.
                         // Because the model doesn't have any skinned meshes when it was last imported with
@@ -747,7 +747,7 @@ With this option, this model will not create any avatar but only import animatio
 
                     // Perform auto-setup on this model.
                     SerializedObject so = new SerializedObject(targets[i]);
-                    GameObject go = assetTarget as GameObject;
+                    GameObject go = assetTargets[i] as GameObject;
                     // The character could be optimized right now
                     // 'm_OptimizeGameObjects' can't be used to tell if it is optimized, because the user can change this value from UI,
                     // and the change hasn't been applied yet.

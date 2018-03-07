@@ -54,17 +54,7 @@ namespace UnityEditor.Experimental.UIElements
 
         void UpdateValueOnMouseDown(MouseDownEvent evt)
         {
-            Rect dragHotZone;
-            if (m_DragHotZone.width < 0 || m_DragHotZone.height < 0)
-            {
-                dragHotZone = m_DragElement.rect;
-            }
-            else
-            {
-                dragHotZone = m_DragHotZone;
-            }
-
-            if (evt.button == 0 && dragHotZone.Contains(m_DragElement.WorldToLocal(evt.mousePosition)))
+            if (evt.button == 0 && (m_DragHotZone.width < 0 || m_DragHotZone.height < 0 || m_DragHotZone.Contains(m_DragElement.WorldToLocal(evt.mousePosition))))
             {
                 m_DragElement.TakeMouseCapture();
 

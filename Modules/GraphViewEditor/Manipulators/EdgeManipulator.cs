@@ -13,7 +13,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     {
         private bool m_Active;
         private Edge m_Edge;
-        private EdgePresenter m_EdgePresenter;
         private Vector2 m_PressPos;
         private Port m_ConnectedPort;
         private EdgeDragHelper m_ConnectedEdgeDragHelper;
@@ -70,11 +69,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             m_Edge = (evt.target as VisualElement).GetFirstOfType<Edge>();
 
-            if (m_Edge != null)
-            {
-                m_EdgePresenter = m_Edge.GetPresenter<EdgePresenter>();
-            }
-
             m_PressPos = evt.mousePosition;
             target.TakeMouseCapture();
             evt.StopPropagation();
@@ -119,10 +113,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     m_DetachedPort.Disconnect(m_Edge);
 
                     m_Edge.input = null;
-                    if (m_EdgePresenter != null)
-                    {
-                        m_EdgePresenter.input = null;
-                    }
                 }
                 else
                 {
@@ -131,10 +121,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     m_DetachedPort.Disconnect(m_Edge);
 
                     m_Edge.output = null;
-                    if (m_EdgePresenter != null)
-                    {
-                        m_EdgePresenter.output = null;
-                    }
                 }
 
                 // Use the edge drag helper of the still connected port
@@ -157,13 +143,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             if (m_Active)
-            {
-                if (m_EdgePresenter != null)
-                {
-                    m_EdgePresenter.candidatePosition = evt.mousePosition;
-                }
                 m_ConnectedEdgeDragHelper.HandleMouseMove(evt);
-            }
         }
 
         protected void OnMouseUp(MouseUpEvent evt)
@@ -173,20 +153,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 target.ReleaseMouseCapture();
                 if (m_Active)
                 {
-                    GraphView graphView = m_Edge.GetFirstAncestorOfType<GraphView>();
-
                     // Restore the detached port before potentially delete or reconnect it.
                     // This is to ensure that the edge has valid input and output so it can be properly handled by the model.
                     RestoreDetachedPort();
 
                     m_ConnectedEdgeDragHelper.HandleMouseUp(evt);
-
-                    if ((m_EdgePresenter != null) && ((m_EdgePresenter.input == null) || (m_EdgePresenter.output == null)))
-                    {
-                        m_EdgePresenter.input = null;
-                        m_EdgePresenter.output = null;
-                        graphView.presenter.RemoveElement(m_EdgePresenter);
-                    }
                 }
                 Reset();
                 evt.StopPropagation();
@@ -215,27 +186,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 m_Edge.input = m_DetachedPort;
 
-                if (m_EdgePresenter)
-                {
-                    m_EdgePresenter.input = m_DetachedPort.GetPresenter<PortPresenter>();
-                }
-                else
-                {
-                    m_DetachedPort.Connect(m_Edge);
-                }
+                m_DetachedPort.Connect(m_Edge);
             }
             else
             {
                 m_Edge.output = m_DetachedPort;
 
-                if (m_EdgePresenter)
-                {
-                    m_EdgePresenter.output = m_DetachedPort.GetPresenter<PortPresenter>();
-                }
-                else
-                {
-                    m_DetachedPort.Connect(m_Edge);
-                }
+                m_DetachedPort.Connect(m_Edge);
             }
         }
     }

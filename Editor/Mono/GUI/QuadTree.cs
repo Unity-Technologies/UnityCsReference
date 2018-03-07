@@ -453,8 +453,13 @@ namespace UnityEditorInternal
 
         public List<T> GetItemsAtPosition(Vector2 pos)
         {
-            Rect r = new Rect(pos, Vector2.one);
-            return IntersectsWith(r);
+            if (m_Root.BoundingRect.Contains(pos))
+            {
+                Rect r = new Rect(pos, Vector2.one);
+                return IntersectsWith(r);
+            }
+
+            return new List<T>();
         }
 
         public List<T> IntersectsWith(Rect area)

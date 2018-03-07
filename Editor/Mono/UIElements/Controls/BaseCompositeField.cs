@@ -13,13 +13,13 @@ namespace UnityEditor.Experimental.UIElements
     {
         public class FieldDescription
         {
-            public delegate void WriteDelegate(ref T val, double fieldValue);
+            public delegate void WriteDelegate(ref T val, float fieldValue);
 
             internal readonly string name;
-            internal readonly Func<T, double> read;
+            internal readonly Func<T, float> read;
             internal readonly WriteDelegate write;
 
-            public FieldDescription(string name, Func<T, double> read, WriteDelegate write)
+            public FieldDescription(string name, Func<T, float> read, WriteDelegate write)
             {
                 this.name = name;
                 this.read = read;
@@ -28,7 +28,7 @@ namespace UnityEditor.Experimental.UIElements
         }
 
         protected static FieldDescription[] s_FieldDescriptions;
-        protected List<DoubleField> m_Fields;
+        protected List<FloatField> m_Fields;
 
         internal abstract FieldDescription[] DescribeFields();
 
@@ -44,13 +44,13 @@ namespace UnityEditor.Experimental.UIElements
                 return;
             }
 
-            m_Fields = new List<DoubleField>(s_FieldDescriptions.Length);
+            m_Fields = new List<FloatField>(s_FieldDescriptions.Length);
             foreach (FieldDescription desc in s_FieldDescriptions)
             {
                 var fieldContainer = new VisualElement();
                 fieldContainer.AddToClassList("field");
                 fieldContainer.Add(new Label(desc.name));
-                var field = new DoubleField();
+                var field = new FloatField();
                 fieldContainer.Add(field);
                 field.OnValueChanged(e =>
                     {
@@ -87,15 +87,6 @@ namespace UnityEditor.Experimental.UIElements
             // Focus first field if any
             if (evt.GetEventTypeId() == FocusEvent.TypeId() && m_Fields.Count > 0)
                 m_Fields[0].Focus();
-        }
-
-        private DoubleField AddDoubleField(EventCallback<ChangeEvent<double>> callback)
-        {
-            var field = new DoubleField();
-
-            shadow.Add(field);
-            field.OnValueChanged(callback);
-            return field;
         }
     }
 }

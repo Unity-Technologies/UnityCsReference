@@ -19,28 +19,20 @@ namespace UnityEngineInternal.Input
 
         public static extern bool hasDeviceDiscoveredCallback { set; }
 
+        [FreeFunction("AllocateInputDeviceId")]
+        public static extern int AllocateDeviceId();
+
         // C# doesn't allow taking the address of a value type because of pinning requirements for the heap.
         // And our bindings generator doesn't support overloading. So ugly code following here...
-        public unsafe static void SendInput<TInputEvent>(TInputEvent inputEvent)
+        public static unsafe void QueueInputEvent<TInputEvent>(ref TInputEvent inputEvent)
             where TInputEvent : struct
         {
-            SendInput((IntPtr)UnsafeUtility.AddressOf<TInputEvent>(ref inputEvent));
+            QueueInputEvent((IntPtr)UnsafeUtility.AddressOf<TInputEvent>(ref inputEvent));
         }
 
-        public static extern void SendInput(IntPtr inputEvent);
+        public static extern void QueueInputEvent(IntPtr inputEvent);
 
-        unsafe public static bool SendOutput<TOutputEvent>(int deviceId, int type, TOutputEvent outputEvent)
-            where TOutputEvent : struct
-        {
-            return SendOutput(deviceId, type, UnsafeUtility.SizeOf<TOutputEvent>(), (IntPtr)UnsafeUtility.AddressOf(ref outputEvent));
-        }
-
-        public static extern bool SendOutput(int deviceId, int type, int sizeInBytes, IntPtr data);
-
-        // TODO: This was ported from the old bindings system, but it doesn't look needed.
-        public static string GetDeviceConfiguration(int deviceId) { return null; }
-
-        public static extern string GetControlConfiguration(int deviceId, int controlIndex);
+        public static extern long IOCTL(int deviceId, int code, IntPtr data, int sizeInBytes);
 
         public static void SetPollingFrequency(float hertz)
         {
@@ -55,10 +47,8 @@ namespace UnityEngineInternal.Input
         // that are normally done either by platform-specific backends or by the player
         // loop. However, they can be used, for example, to drive the system from
         // managed code during tests.
-        static extern void SendEvents();
-        static extern void Update(NativeInputUpdateType updateType);
-        static extern int ReportNewInputDevice(string descriptor);
-        static extern void ReportInputDeviceDisconnect(int nativeDeviceId);
-        static extern void ReportInputDeviceReconnect(int nativeDeviceId);
+        public static extern void Update(NativeInputUpdateType updateType);
+        public static extern int ReportNewInputDevice(string descriptor);
+        public static extern void ReportInputDeviceRemoved(int id);
     }
 }
