@@ -103,9 +103,19 @@ public sealed partial class Unsupported
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public static  void SetAllowCursorHide (bool allow) ;
 
+    internal enum DisallowCursorLockReasons
+        {
+            None = 0,
+            PlayPause = 1 << 0,
+            Other = 1 << 1,
+            Focus = 1 << 2,
+            SizeMove = 1 << 3,
+        };
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public static  void SetAllowCursorLock (bool allow) ;
+    extern internal static  void SetAllowCursorLock (bool allow, DisallowCursorLockReasons reasons) ;
 
     public static bool SetOverrideRenderSettings(Scene scene)
         {

@@ -336,7 +336,7 @@ namespace UnityEditor
 
         void AllowCursorLockAndHide(bool enable)
         {
-            Unsupported.SetAllowCursorLock(enable);
+            Unsupported.SetAllowCursorLock(enable, Unsupported.DisallowCursorLockReasons.Other);
             Unsupported.SetAllowCursorHide(enable);
         }
 

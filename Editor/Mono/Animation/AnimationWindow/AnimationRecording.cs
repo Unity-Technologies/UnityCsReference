@@ -608,8 +608,10 @@ namespace UnityEditorInternal
             Animator animator = root.GetComponent<Animator>();
 
             bool isHuman = animator != null ? animator.isHuman : false;
-            bool hasRootMotion = animator != null ? animator.hasRootMotion : false;
-            bool applyRootMotion = animator != null ? animator.applyRootMotion : false;
+
+            // timeline root motion scale revert
+            // bool hasRootMotion = animator != null ? animator.hasRootMotion : false;
+            // bool applyRootMotion = animator != null ? animator.applyRootMotion : false;
 
             // process animator positions
             List<object> discardListPos = new List<object>();
@@ -628,7 +630,10 @@ namespace UnityEditorInternal
                     continue;
 
                 bool isRootTransform = root.transform == target;
-                bool isRootMotion = (isHuman || hasRootMotion || applyRootMotion) && isRootTransform;
+                // timeline root motion scale revert
+                // bool isRootMotion = (isHuman || hasRootMotion || applyRootMotion) && isRootTransform;
+                bool isRootMotion = false;
+
                 bool isHumanBone = isHuman && !isRootTransform && animator.IsBoneTransform(target);
 
                 if (isHumanBone)
@@ -677,7 +682,11 @@ namespace UnityEditorInternal
                     continue;
 
                 bool isRootTransform = root.transform == target;
-                bool isRootMotion = (isHuman || hasRootMotion || applyRootMotion) && isRootTransform;
+
+                // timeline root motion scale revert
+                // bool isRootMotion = (isHuman || hasRootMotion || applyRootMotion) && isRootTransform;
+                bool isRootMotion = false;
+
                 bool isHumanBone = isHuman && !isRootTransform && animator.IsBoneTransform(target);
 
                 if (isHumanBone)

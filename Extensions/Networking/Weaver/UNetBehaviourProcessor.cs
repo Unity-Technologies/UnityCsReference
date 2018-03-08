@@ -2214,6 +2214,7 @@ namespace Unity.UNetWeaver
                             fieldModuleName != Weaver.m_UnityAssemblyDefinition.MainModule.Name &&
                             fieldModuleName != Weaver.m_UNetAssemblyDefinition.MainModule.Name &&
                             fieldModuleName != Weaver.corLib.Name &&
+                            fieldModuleName != "netstandard.dll" &&
                             fieldModuleName != "System.Runtime.dll" // this is only for Metro, built-in types are not in corlib on metro
                             )
                         {

@@ -9,6 +9,7 @@ namespace UnityEngine.Experimental.Rendering
     public abstract class RenderPipeline : IRenderPipeline
     {
         public static event Action<Camera[]> beginFrameRendering;
+        public static event Action<Camera> beginCameraRendering;
 
         public virtual void Render(ScriptableRenderContext renderContext, Camera[] cameras)
         {
@@ -26,6 +27,11 @@ namespace UnityEngine.Experimental.Rendering
         public static void BeginFrameRendering(Camera[] cameras)
         {
             beginFrameRendering?.Invoke(cameras);
+        }
+
+        public static void BeginCameraRendering(Camera camera)
+        {
+            beginCameraRendering?.Invoke(camera);
         }
     }
 }

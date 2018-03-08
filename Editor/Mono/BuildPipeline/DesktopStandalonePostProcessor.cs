@@ -296,10 +296,15 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         var playerFolder = args.playerPackage + "/Variations/" + GetVariationName(args);
         FileUtil.CopyDirectoryFiltered(playerFolder, args.stagingArea, true, f => CopyPlayerFilter(f, args), recursive: true);
 
+        RecordCommonFiles(args, playerFolder, args.stagingAreaData);
+    }
+
+    protected static void RecordCommonFiles(BuildPostProcessArgs args, string variationSourceFolder, string monoFolderRoot)
+    {
         // Mark all the managed DLLs in Data/Managed as engine API assemblies
         // Data/Managed may already contain managed DLLs in the UnityEngine.*.dll naming scheme from the extensions
         // So we find the files in the source Variations directory and mark the corresponding files in the output
-        foreach (var file in Directory.GetFiles(Path.Combine(playerFolder, "Data/Managed"), "*.dll"))
+        foreach (var file in Directory.GetFiles(Path.Combine(variationSourceFolder, "Data/Managed"), "*.dll"))
         {
             var filename = Path.GetFileName(file);
             if (!filename.StartsWith("UnityEngine"))
@@ -310,13 +315,16 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
 
         // Mark the default resources file
-        args.report.RecordFileAdded(Path.Combine(args.stagingArea, "Data/Resources/unity default resources"), CommonRoles.builtInResources);
+        args.report.RecordFileAdded(Path.Combine(args.stagingArea, "Data/Resources/unity default resources"),
+            CommonRoles.builtInResources);
 
         // Mark up each mono runtime
-        foreach (var monoName in new[] { "Mono", "MonoBleedingEdge" })
+        foreach (var monoName in new[] {"Mono", "MonoBleedingEdge"})
         {
-            args.report.RecordFilesAddedRecursive(Path.Combine(args.stagingArea, "Data/" + monoName + "/EmbedRuntime"), CommonRoles.monoRuntime);
-            args.report.RecordFilesAddedRecursive(Path.Combine(args.stagingArea, "Data/" + monoName + "/etc"), CommonRoles.monoConfig);
+            args.report.RecordFilesAddedRecursive(Path.Combine(monoFolderRoot, monoName + "/EmbedRuntime"),
+                CommonRoles.monoRuntime);
+            args.report.RecordFilesAddedRecursive(Path.Combine(monoFolderRoot, monoName + "/etc"),
+                CommonRoles.monoConfig);
         }
     }
 

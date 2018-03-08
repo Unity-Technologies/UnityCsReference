@@ -143,6 +143,7 @@ namespace UnityEditor.Collaboration
 
         void ShowBuildForCommit()
         {
+            CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "ShowBuild");
             if (s_OnShowBuild != null)
             {
                 s_OnShowBuild(m_RevisionId);
@@ -151,6 +152,7 @@ namespace UnityEditor.Collaboration
 
         void ShowServicePage()
         {
+            CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "ShowServices");
             if (s_OnShowServices != null)
             {
                 s_OnShowServices();
@@ -159,6 +161,7 @@ namespace UnityEditor.Collaboration
 
         void Restore()
         {
+            CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "Restore");
             if (s_OnRestore != null)
             {
                 s_OnRestore(m_RevisionId, false);
@@ -167,6 +170,7 @@ namespace UnityEditor.Collaboration
 
         void GoBackTo()
         {
+            CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "GoBackTo");
             if (s_OnGoBack != null)
             {
                 s_OnGoBack(m_RevisionId, false);
@@ -175,6 +179,7 @@ namespace UnityEditor.Collaboration
 
         void UpdateTo()
         {
+            CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "Update");
             if (s_OnUpdate != null)
             {
                 s_OnUpdate(m_RevisionId, true);
@@ -206,12 +211,14 @@ namespace UnityEditor.Collaboration
         {
             if (m_Expanded)
             {
+                CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "CollapseDescription");
                 m_Expanded = false;
                 m_ExpandCollapseButton.text = "Show More";
                 m_Description.text = GetTruncatedDescription(m_FullDescription);
             }
             else
             {
+                CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "ExpandDescription");
                 m_Expanded = true;
                 m_ExpandCollapseButton.text = "Show Less";
                 m_Description.text = m_FullDescription;

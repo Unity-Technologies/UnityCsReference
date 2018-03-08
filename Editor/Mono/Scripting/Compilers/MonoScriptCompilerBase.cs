@@ -16,21 +16,26 @@ namespace UnityEditor.Scripting.Compilers
 
         protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments)
         {
+            return StartCompiler(target, compiler, arguments, BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level));
+        }
+
+        protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments, string profileDirectory)
+        {
             AddCustomResponseFileIfPresent(arguments, Path.GetFileNameWithoutExtension(compiler) + ".rsp");
 
             var monoInstallation = (PlayerSettingsEditor.IsLatestApiCompatibility(_island._api_compatibility_level))
                 ? MonoInstallationFinder.GetMonoBleedingEdgeInstallation()
                 : MonoInstallationFinder.GetMonoInstallation();
-            return StartCompiler(target, compiler, arguments, true, monoInstallation);
+            return StartCompiler(target, compiler, arguments, profileDirectory, true, monoInstallation);
         }
 
-        protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments, bool setMonoEnvironmentVariables, string monodistro)
+        protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments, string profileDirectory, bool setMonoEnvironmentVariables, string monodistro)
         {
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
 
             RunAPIUpdaterIfRequired(responseFile);
 
-            var program = new ManagedProgram(monodistro, BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level), compiler, " @" + responseFile, setMonoEnvironmentVariables, null);
+            var program = new ManagedProgram(monodistro, profileDirectory, compiler, " @" + responseFile, setMonoEnvironmentVariables, null);
             program.Start();
 
             return program;

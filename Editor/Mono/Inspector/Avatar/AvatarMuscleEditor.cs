@@ -607,6 +607,11 @@ namespace UnityEditor
                 WritePose();
             }
 
+            if (avatarAsset == null)
+            {
+                return;
+            }
+
             using (new EditorGUI.DisabledScope(!avatarAsset.isHuman))
             {
                 EditorGUIUtility.labelWidth = 110;

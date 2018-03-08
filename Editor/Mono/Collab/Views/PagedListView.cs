@@ -60,6 +60,8 @@ namespace UnityEditor.Collaboration
             if (m_CurPage <= 0)
                 return;
 
+            CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "NewerPage");
+
             m_CurPage--;
 
             if (OnPageChange != null)
@@ -72,6 +74,8 @@ namespace UnityEditor.Collaboration
         {
             if (m_CurPage >= m_TotalPages)
                 return;
+
+            CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "OlderPage");
 
             m_CurPage++;
 
