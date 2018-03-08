@@ -54,6 +54,9 @@ namespace Unity.Collections.LowLevel.Unsafe
         [ThreadSafe]
         unsafe public static extern void Free(void* memory, Allocator allocator);
 
+        public static bool IsValidAllocator(Allocator allocator) { return allocator > Allocator.None; }
+
+
         [ThreadSafe]
         unsafe public static extern void MemCpy(void* destination, void* source, long size);
 

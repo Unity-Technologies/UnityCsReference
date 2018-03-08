@@ -14,6 +14,7 @@ namespace UnityEditor.Scripting.Compilers
     class UnityScriptCompiler : MonoScriptCompilerBase
     {
         private static readonly Regex UnityEditorPattern = new Regex(@"UnityEditor\.dll$", RegexOptions.ExplicitCapture);
+        const string k_UnityScriptProfileDirectory = "unityscript";
 
         public UnityScriptCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
@@ -58,8 +59,24 @@ namespace UnityEditor.Scripting.Compilers
             foreach (string source in _island._files)
                 arguments.Add(PrepareFileName(source));
 
-            var compilerPath = Path.Combine(GetMonoProfileLibDirectory(), "us.exe");
-            return StartCompiler(_island._target, compilerPath, arguments);
+            var compilerPath = Path.Combine(GetUnityScriptCompilerDirectory(), "us.exe");
+            return StartCompiler(_island._target, compilerPath, arguments, GetUnityScriptProfileDirectory());
+        }
+
+        string GetUnityScriptCompilerDirectory()
+        {
+            if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+                return GetMonoProfileLibDirectory();
+
+            return Path.Combine(MonoInstallationFinder.GetProfilesDirectory(MonoInstallationFinder.MonoBleedingEdgeInstallation), k_UnityScriptProfileDirectory);
+        }
+
+        string GetUnityScriptProfileDirectory()
+        {
+            if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+                return BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
+
+            return k_UnityScriptProfileDirectory;
         }
 
         private bool StrictBuildTarget()

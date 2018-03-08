@@ -56,7 +56,7 @@ namespace UnityEditor
         protected GameObject prefab { get { return m_Inspector.prefab; } }
         protected Dictionary<Transform, bool> modelBones { get { return m_Inspector.m_ModelBones; } }
         protected Transform root { get { return gameObject == null ? null : gameObject.transform; } }
-        protected SerializedObject serializedObject { get { return m_Inspector.serializedObject; } }
+        protected SerializedObject serializedObject { get { return m_Inspector.serializedAssetImporter; } }
         protected Avatar avatarAsset { get { return m_Inspector.avatar; } }
 
         public virtual void Enable(AvatarEditor inspector)
@@ -193,6 +193,22 @@ namespace UnityEditor
         private SceneSetup[] sceneSetup;
 
         // These member are used when the avatar is part of an asset
+        // This is used as a backend by the AvatarSubEditors to serialize
+        // only the FBXImporter part and not mess up with the Editor's serializedObject.
+        internal SerializedObject m_SerializedAssetImporter = null;
+        public SerializedObject serializedAssetImporter
+        {
+            get
+            {
+                // TODO find a better sync for that and be in better control of the lifetime
+                if (m_SerializedAssetImporter == null)
+                {
+                    m_SerializedAssetImporter = CreateSerializedImporterForTarget(target);
+                }
+                return m_SerializedAssetImporter;
+            }
+        }
+
         internal Avatar avatar { get { return target as Avatar; } }
 
         protected bool m_InspectorLocked;
@@ -254,14 +270,15 @@ namespace UnityEditor
             }
         }
 
-        internal override SerializedObject GetSerializedObjectInternal()
+        static private SerializedObject CreateSerializedImporterForTarget(UnityEngine.Object target)
         {
-            if (m_SerializedObject == null)
-                m_SerializedObject = SerializedObject.LoadFromCache(GetInstanceID());
-            // Override to make serializedObject be the model importer instead of being the avatar
-            if (m_SerializedObject == null)
-                m_SerializedObject = new SerializedObject(AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(target)));
-            return m_SerializedObject;
+            SerializedObject so = null;
+            AssetImporter importer = AssetImporter.GetAtPath(AssetDatabase.GetAssetPath(target));
+            if (importer != null)
+            {
+                so = new SerializedObject(importer);
+            }
+            return so;
         }
 
         void OnEnable()
@@ -291,10 +308,11 @@ namespace UnityEditor
                 editor.Disable();
 
             EditorApplication.update -= Update;
-            if (m_SerializedObject != null)
+
+            if (m_SerializedAssetImporter != null)
             {
-                m_SerializedObject.Cache(GetInstanceID());
-                m_SerializedObject = null;
+                m_SerializedAssetImporter.Cache(GetInstanceID());
+                m_SerializedAssetImporter = null;
             }
         }
 
@@ -466,12 +484,12 @@ namespace UnityEditor
 
             // Instantiate character
             m_GameObject = Instantiate(prefab) as GameObject;
-            if (serializedObject.FindProperty("m_OptimizeGameObjects").boolValue)
+            if (serializedAssetImporter.FindProperty("m_OptimizeGameObjects").boolValue)
                 AnimatorUtility.DeoptimizeTransformHierarchy(m_GameObject);
 
             // First get all available modelBones
             Dictionary<Transform, bool> modelBones = AvatarSetupTool.GetModelBones(m_GameObject.transform, true, null);
-            AvatarSetupTool.BoneWrapper[] humanBones = AvatarSetupTool.GetHumanBones(serializedObject, modelBones);
+            AvatarSetupTool.BoneWrapper[] humanBones = AvatarSetupTool.GetHumanBones(serializedAssetImporter, modelBones);
 
             m_ModelBones = AvatarSetupTool.GetModelBones(m_GameObject.transform, false, humanBones);
 
@@ -544,19 +562,27 @@ namespace UnityEditor
                         else
                             EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects);
 
+                        // Make sure that we restore the "original" selection
+                        // globally.
+                        // This should really be done in a more controlled manner
+                        // so that a globally important/observable state (i.e. selection) is not set
+                        // in a "random" very granular piece of control flow and
+                        // by an unrelated editor for which it is not the responsability to do so.
+
+                        SelectAsset();
+
+                        if (!m_CameFromImportSettings)
+                            m_EditMode = EditMode.NotEditing;
+
                         EditorApplication.update -= CleanUpSceneOnDestroy;
                     };
 
                 EditorApplication.update += CleanUpSceneOnDestroy;
             }
 
+            // Reset back the Edit Mode specific states (they probably should be better encapsulated)
             m_GameObject = null;
             m_ModelBones = null;
-
-            SelectAsset();
-
-            if (!m_CameFromImportSettings)
-                m_EditMode = EditMode.NotEditing;
         }
 
         void ChangeInspectorLock(bool locked)

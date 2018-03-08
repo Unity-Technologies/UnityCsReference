@@ -127,6 +127,17 @@ namespace UnityEditor.VisualStudioIntegration
                 @"    <NoWarn>0169</NoWarn>",
                 @"    <AllowUnsafeBlocks>{12}</AllowUnsafeBlocks>",
                 @"  </PropertyGroup>",
+            };
+
+            var forceExplicitReferences = new string[] {
+                @"  <PropertyGroup>",
+                @"    <NoConfig>true</NoConfig>",
+                @"    <NoStdLib>true</NoStdLib>",
+                @"    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>",
+                @"  </PropertyGroup>",
+            };
+
+            var itemGroupStart = new[] {
                 @"  <ItemGroup>",
             };
 
@@ -153,9 +164,9 @@ namespace UnityEditor.VisualStudioIntegration
             string[] text;
 
             if (language == ScriptingLanguage.CSharp)
-                text = header.Concat(footer).ToArray();
+                text = header.Concat(forceExplicitReferences).Concat(itemGroupStart).Concat(footer).ToArray();
             else
-                text = header.Concat(systemReferences).Concat(footer).ToArray();
+                text = header.Concat(itemGroupStart).Concat(systemReferences).Concat(footer).ToArray();
 
             return string.Join("\r\n", text);
         }

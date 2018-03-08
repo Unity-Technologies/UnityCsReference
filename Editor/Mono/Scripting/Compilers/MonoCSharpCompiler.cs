@@ -53,7 +53,7 @@ namespace UnityEditor.Scripting.Compilers
                 else if (_island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0 && AddCustomResponseFileIfPresent(arguments, "gmcs.rsp"))
                     Debug.LogWarning(string.Format("Using obsolete custom response file 'gmcs.rsp'. Please use '{0}' instead.", ReponseFilename));
             }
-            return StartCompiler(_island._target, GetCompilerPath(arguments), arguments, false, MonoInstallationFinder.GetMonoInstallation(MonoInstallationFinder.MonoBleedingEdgeInstallation));
+            return StartCompiler(_island._target, GetCompilerPath(arguments), arguments, BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level), false, MonoInstallationFinder.GetMonoInstallation(MonoInstallationFinder.MonoBleedingEdgeInstallation));
         }
 
         private string GetCompilerPath(List<string> arguments)

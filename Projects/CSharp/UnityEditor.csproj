@@ -2288,6 +2288,9 @@
 <Compile Include="..\..\Editor\Mono\Collab\AssetAccess.cs" >
 <Link>Editor\Mono\Collab\AssetAccess.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\Collab\CollabAnalytics.cs" >
+<Link>Editor\Mono\Collab\CollabAnalytics.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\Collab\Collab.bindings.cs" >
 <Link>Editor\Mono\Collab\Collab.bindings.cs</Link>
 </Compile>

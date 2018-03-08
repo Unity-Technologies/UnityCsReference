@@ -27,11 +27,6 @@ namespace UnityEditor.VisualStudioIntegration
             Initialize(null);
         }
 
-        public static void Initialize()
-        {
-            Initialize(null);
-        }
-
         public static void Initialize(string editorPath)
         {
             var externalEditor = editorPath ?? ScriptEditorUtility.GetExternalScriptEditor();

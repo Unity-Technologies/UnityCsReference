@@ -162,7 +162,7 @@ namespace UnityEditorInternal
             if (m_ModifyOutputBeforeCompile != null)
                 m_ModifyOutputBeforeCompile(outputDirectory);
 
-            ConvertPlayerDlltoCpp(GetUserAssembliesToConvert(managedDir), outputDirectory, managedDir);
+            ConvertPlayerDlltoCpp(GetUserAssembliesToConvert(managedDir), outputDirectory, managedDir, m_PlatformProvider.supportsManagedDebugging);
 
             var compiler = m_PlatformProvider.CreateNativeCompiler();
             if (compiler != null && m_PlatformProvider.CreateIl2CppNativeCodeBuilder() == null)
@@ -254,7 +254,7 @@ namespace UnityEditorInternal
                     Application.platform == RuntimePlatform.WindowsEditor ? @"Tools\MapFileParser\MapFileParser.exe" : @"Tools/MapFileParser/MapFileParser"));
         }
 
-        private void ConvertPlayerDlltoCpp(ICollection<string> userAssemblies, string outputDirectory, string workingDirectory)
+        private void ConvertPlayerDlltoCpp(ICollection<string> userAssemblies, string outputDirectory, string workingDirectory, bool platformSupportsManagedDebugging)
         {
             if (userAssemblies.Count == 0)
                 return;
@@ -281,10 +281,6 @@ namespace UnityEditorInternal
             if (m_BuildForMonoRuntime)
                 arguments.Add("--mono-runtime");
 
-            //Currently In Development, Not yet ready to enable
-            //if (m_PlatformProvider.enableDebugger)
-            //    arguments.Add("--enable-debugger");
-
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
             if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
                 arguments.Add("--dotnetprofile=\"unityjit\"");
@@ -292,11 +288,13 @@ namespace UnityEditorInternal
             if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_Standard_2_0)
                 arguments.Add("--dotnetprofile=\"unityaot\"");
 
+            var useDebugBuild = EditorUserBuildSettings.allowDebugging;
+            if (useDebugBuild && platformSupportsManagedDebugging && EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+                arguments.Add("--enable-debugger");
+
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
             {
-                var useDebugBuild = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup) == Il2CppCompilerConfiguration.Debug;
-
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
                 arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, useDebugBuild));
             }
@@ -407,7 +405,7 @@ namespace UnityEditorInternal
         bool developmentMode { get; }
         string moduleStrippingInformationFolder { get; }
         bool supportsEngineStripping { get; }
-        bool enableDebugger { get; }
+        bool supportsManagedDebugging { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -460,7 +458,7 @@ namespace UnityEditorInternal
             get { return false; }
         }
 
-        public virtual bool enableDebugger
+        public virtual bool supportsManagedDebugging
         {
             get { return false; }
         }
