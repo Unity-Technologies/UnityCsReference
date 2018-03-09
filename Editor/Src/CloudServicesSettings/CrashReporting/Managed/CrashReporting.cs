@@ -162,9 +162,9 @@ namespace UnityEditor.CrashReporting
             string args = string.Format("-symbolPath \"{0}\" -log \"{1}\" -filter \"{2}\" -excludeFilter \"{3}\"", symbolPath, platformConfig.LogFilePath, includeFilter, excludeFilter);
 
             NativeProgram nativeProgram = new NativeProgram(platformConfig.UsymtoolPath, args);
-            nativeProgram.GetProcessStartInfo().EnvironmentVariables.Add("USYM_UPLOAD_AUTH_TOKEN", authToken);
-            nativeProgram.GetProcessStartInfo().EnvironmentVariables.Add("USYM_UPLOAD_URL_SOURCE", SignedUrlSourceUrl);
-            nativeProgram.GetProcessStartInfo().EnvironmentVariables.Add("LZMA_PATH", platformConfig.LzmaPath);
+            nativeProgram.GetProcessStartInfo().EnvironmentVariables["USYM_UPLOAD_AUTH_TOKEN"] = authToken;
+            nativeProgram.GetProcessStartInfo().EnvironmentVariables["USYM_UPLOAD_URL_SOURCE"] = SignedUrlSourceUrl;
+            nativeProgram.GetProcessStartInfo().EnvironmentVariables["LZMA_PATH"] = platformConfig.LzmaPath;
             nativeProgram.Start();
 
             if (waitForExit)

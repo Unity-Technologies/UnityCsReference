@@ -44,6 +44,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.TreeEditor")]
 [assembly: InternalsVisibleTo("UnityEditor.Timeline")]
 [assembly: InternalsVisibleTo("UnityEditor.VR")]
+[assembly: InternalsVisibleTo("Unity.RuntimeTests")]
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.Framework")]
 [assembly: InternalsVisibleTo("UnityEditor.Facebook.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
