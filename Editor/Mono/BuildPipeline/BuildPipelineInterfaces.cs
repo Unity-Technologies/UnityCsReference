@@ -103,9 +103,10 @@ namespace UnityEditor.Build
         {
             if (findFlags == previousFlags)
                 return;
-            previousFlags = findFlags;
 
             CleanupBuildCallbacks();
+            previousFlags = findFlags;
+
             var excludedAssemblies = new HashSet<string>();
             excludedAssemblies.Add("UnityEditor");
             excludedAssemblies.Add("UnityEngine.UI");
