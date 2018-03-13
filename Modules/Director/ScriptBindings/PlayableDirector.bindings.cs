@@ -117,6 +117,11 @@ namespace UnityEngine.Playables
         public event Action<PlayableDirector> paused;
         public event Action<PlayableDirector> stopped;
 
+        //internal director manager api;
+        [NativeHeader("Runtime/Director/Core/DirectorManager.h")]
+        [StaticAccessor("GetDirectorManager()", StaticAccessorType.Dot)]
+        internal extern static void ResetFrameTiming();
+
         [RequiredByNativeCode]
         void SendOnPlayableDirectorPlay()
         {

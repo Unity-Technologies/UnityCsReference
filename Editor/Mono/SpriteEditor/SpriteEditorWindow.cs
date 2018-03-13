@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.IO;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.U2D;
@@ -14,6 +13,8 @@ using UnityEngine.U2D.Interface;
 using UnityTexture2D = UnityEngine.Texture2D;
 using System.Linq;
 using System.Reflection;
+using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor
 {
@@ -64,6 +65,10 @@ namespace UnityEditor
         private UnityTexture2D m_OutlineTexture;
         private UnityTexture2D m_ReadableTexture;
         private Dictionary<Type, RequireSpriteDataProviderAttribute> m_ModuleRequireSpriteDataProvider = new Dictionary<Type, RequireSpriteDataProviderAttribute>();
+
+        private IMGUIContainer m_ToolbarIMGUIElement;
+        private IMGUIContainer m_MainViewIMGUIElement;
+        private VisualElement m_MainViewElement;
 
         [SerializeField]
         private string m_SelectedSpriteRectGUID;
@@ -119,14 +124,10 @@ namespace UnityEditor
 
             if (Selection.activeGameObject)
             {
-                if (Selection.activeGameObject.GetComponent<SpriteRenderer>())
-                {
-                    if (Selection.activeGameObject.GetComponent<SpriteRenderer>().sprite)
-                    {
-                        selection = UnityEditor.Sprites.SpriteUtility.GetSpriteTexture(Selection.activeGameObject.GetComponent<SpriteRenderer>().sprite, false);
-                    }
-                }
+                var spriteRenderer = Selection.activeGameObject.GetComponent<SpriteRenderer>();
+                selection = spriteRenderer != null ? spriteRenderer.sprite : null;
             }
+
             return m_AssetDatabase.GetAssetPath(selection);
         }
 
@@ -145,22 +146,6 @@ namespace UnityEditor
                     k_InspectorWindowMargin + k_ScrollbarMargin,
                     k_WarningMessageWidth,
                     k_WarningMessageHeight);
-            }
-        }
-
-        private bool multipleSprites
-        {
-            get
-            {
-                return spriteImportMode == SpriteImportMode.Multiple;
-            }
-        }
-
-        private bool validSprite
-        {
-            get
-            {
-                return spriteImportMode != SpriteImportMode.None;
             }
         }
 
@@ -241,7 +226,29 @@ namespace UnityEditor
             ResetWindow();
             RefreshPropertiesCache();
             RefreshRects();
+            SetupVisualElements();
             InitModules();
+        }
+
+        private void SetupVisualElements()
+        {
+            m_ToolbarIMGUIElement = new IMGUIContainer(DoToolbarGUI)
+            {
+                name = "spriteEditorWindowToolbar",
+            };
+            m_MainViewIMGUIElement = new IMGUIContainer(DoTextureAndModulesGUI)
+            {
+                name = "mainViewIMGUIElement"
+            };
+            m_MainViewElement = new VisualElement()
+            {
+                name = "spriteEditorWindowMainView",
+            };
+            m_MainViewElement.Add(m_MainViewIMGUIElement);
+            var root = this.GetRootVisualContainer();
+            root.AddStyleSheetPath("StyleSheets/SpriteEditor/SpriteEditor.uss");
+            root.Add(m_ToolbarIMGUIElement);
+            root.Add(m_MainViewElement);
         }
 
         private void UndoRedoPerformed()
@@ -319,10 +326,8 @@ namespace UnityEditor
             InitSelectedSpriteRect();
         }
 
-        void OnGUI()
+        private void Update()
         {
-            InitStyles();
-
             if (m_ResetOnNextRepaint || selectedProviderChanged || m_RectsCache == null)
             {
                 m_ResetOnNextRepaint = false;
@@ -333,8 +338,11 @@ namespace UnityEditor
                 UpdateAvailableModules();
                 SetupModule(m_CurrentModuleIndex);
             }
-            Matrix4x4 oldHandlesMatrix = Handles.matrix;
+        }
 
+        private void DoTextureAndModulesGUI()
+        {
+            InitStyles();
             if (!activeDataProviderSelected)
             {
                 using (new EditorGUI.DisabledScope(true))
@@ -343,7 +351,6 @@ namespace UnityEditor
                 }
                 return;
             }
-
             if (m_CurrentModule == null)
             {
                 using (new EditorGUI.DisabledScope(true))
@@ -352,16 +359,13 @@ namespace UnityEditor
                 }
                 return;
             }
-
-            // Top menu bar
-            DoToolbarGUI();
+            m_TextureViewRect = new Rect(0f, 0f, m_MainViewIMGUIElement.layout.width - k_ScrollbarMargin, m_MainViewIMGUIElement.layout.height - k_ScrollbarMargin);
+            Matrix4x4 oldHandlesMatrix = Handles.matrix;
             DoTextureGUI();
-
             // Warning message if applicable
             DoEditingDisabledMessage();
             m_CurrentModule.DoPostGUI();
             Handles.matrix = oldHandlesMatrix;
-
             if (m_RequestRepaint == true)
             {
                 Repaint();
@@ -390,6 +394,8 @@ namespace UnityEditor
 
         private void DoToolbarGUI()
         {
+            InitStyles();
+
             GUIStyle toolBarStyle = EditorStyles.toolbar;
 
             Rect toolbarRect = new Rect(0, 0, position.width, k_ToolbarHeight);
@@ -397,8 +403,9 @@ namespace UnityEditor
             {
                 toolBarStyle.Draw(toolbarRect, false, false, false, false);
             }
-            m_TextureViewRect = new Rect(0f, k_ToolbarHeight, position.width - k_ScrollbarMargin, position.height - k_ScrollbarMargin - k_ToolbarHeight);
 
+            if (!activeDataProviderSelected || m_CurrentModule == null)
+                return;
             // Top menu bar
 
             // only show popup if there is more than 1 module.
@@ -520,6 +527,7 @@ namespace UnityEditor
                     m_EventSystem.current.Use();
                 }
             }
+
             return changed;
         }
 
@@ -629,6 +637,7 @@ namespace UnityEditor
             if (s_Instance == null)
                 return;
 
+            m_MainViewIMGUIElement.Clear();
             if (m_RegisteredModules.Count > newModuleIndex)
             {
                 m_CurrentModuleIndex = newModuleIndex;
@@ -638,8 +647,13 @@ namespace UnityEditor
                 m_CurrentModule = null;
 
                 m_CurrentModule = m_RegisteredModules[newModuleIndex];
+
                 m_CurrentModule.OnModuleActivate();
             }
+            if (m_MainViewElement != null)
+                m_MainViewElement.Dirty(ChangeType.Repaint);
+            if (m_MainViewIMGUIElement != null)
+                m_MainViewIMGUIElement.Dirty(ChangeType.Repaint);
         }
 
         void UpdateAvailableModules()
@@ -779,7 +793,22 @@ namespace UnityEditor
             }
             set
             {
+                var oldSelected = m_SelectedSpriteRectGUID;
                 m_SelectedSpriteRectGUID = value?.spriteID.ToString();
+                if (oldSelected != m_SelectedSpriteRectGUID)
+                {
+                    if (m_MainViewIMGUIElement != null)
+                        m_MainViewIMGUIElement.Dirty(ChangeType.Repaint);
+                    if (m_MainViewElement != null)
+                    {
+                        m_MainViewElement.Dirty(ChangeType.Repaint);
+                        using (var e = SpriteSelectionChangeEvent.GetPooled())
+                        {
+                            e.target = m_MainViewIMGUIElement;
+                            UIElementsUtility.eventDispatcher.DispatchEvent(e, m_MainViewElement.panel);
+                        }
+                    }
+                }
             }
         }
 
@@ -857,6 +886,11 @@ namespace UnityEditor
             return m_SpriteDataProvider?.GetDataProvider<T>();
         }
 
+        public VisualElement GetMainVisualContainer()
+        {
+            return m_MainViewIMGUIElement;
+        }
+
         static internal void OnTextureReimport(string path)
         {
             if (s_Instance != null && s_Instance.m_SelectedAssetPath == path)
@@ -881,5 +915,9 @@ namespace UnityEditor
                 SpriteEditorWindow.OnTextureReimport(importedAsset);
             }
         }
+    }
+
+    internal class SpriteSelectionChangeEvent : EventBase<SpriteSelectionChangeEvent>, IPropagatableEvent
+    {
     }
 }

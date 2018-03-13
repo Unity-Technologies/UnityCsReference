@@ -53,6 +53,8 @@ namespace UnityEditor
             spriteEditor.spriteRects = m_RectsCache.spriteRects;
             if (spriteEditor.selectedSpriteRect != null)
                 spriteEditor.selectedSpriteRect = m_RectsCache.spriteRects.FirstOrDefault(x => x.spriteID == spriteEditor.selectedSpriteRect.spriteID);
+            AddMainUI(spriteEditor.GetMainVisualContainer());
+            undoSystem.RegisterUndoCallback(UndoCallback);
         }
 
         public override void OnModuleDeactivate()
@@ -63,6 +65,7 @@ namespace UnityEditor
                 ScriptableObject.DestroyImmediate(m_RectsCache);
                 m_RectsCache = null;
             }
+            undoSystem.UnregisterUndoCallback(UndoCallback);
         }
 
         public override bool ApplyRevert(bool apply)
@@ -282,6 +285,11 @@ namespace UnityEditor
 
             outAlignment = snappedAlignment;
             outPivot = ConvertFromTextureToNormalizedSpace(snapPoints[(int)snappedAlignment], rect);
+        }
+
+        private void UndoCallback()
+        {
+            UIUndoCallback();
         }
 
         protected static Rect ClampSpriteRect(Rect rect, float maxX, float maxY)

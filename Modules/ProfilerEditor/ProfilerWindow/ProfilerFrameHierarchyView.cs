@@ -256,10 +256,13 @@ namespace UnityEditorInternal.Profiling
         {
             InitIfNeeded();
 
-            var isDataAvailable = frameDataView != null && frameDataView.IsValid();
+            var collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
+            var isSearchAllowed = string.IsNullOrEmpty(treeView.searchString) || !(collectingSamples && ProfilerDriver.deepProfiling);
 
-            if (isDataAvailable)
-                m_TreeView.SetFrameDataView(frameDataView);
+            var isDataAvailable = frameDataView != null && frameDataView.IsValid();
+            if (isDataAvailable && isSearchAllowed)
+                if (isDataAvailable)
+                    m_TreeView.SetFrameDataView(frameDataView);
 
             var showDetailedView = isDataAvailable && m_DetailedViewType != DetailedViewType.None;
             if (showDetailedView)
@@ -273,6 +276,10 @@ namespace UnityEditorInternal.Profiling
             if (!isDataAvailable)
             {
                 GUILayout.Label(BaseStyles.noData, BaseStyles.label);
+            }
+            else if (!isSearchAllowed)
+            {
+                GUILayout.Label(BaseStyles.disabledSearchText, BaseStyles.label);
             }
             else
             {

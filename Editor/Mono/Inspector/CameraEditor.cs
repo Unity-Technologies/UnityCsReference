@@ -276,8 +276,6 @@ namespace UnityEditor
         private RenderTexture m_PreviewTexture;
 
         // should match color in GizmosDrawers.cpp
-        private static readonly Color kGizmoCamera = new Color(233f / 255f, 233f / 255f, 233f / 255f, 128f / 255f);
-
         private const float kPreviewNormalizedSize = 0.2f;
 
         private bool m_CommandBuffersShown = true;
@@ -593,7 +591,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static float GetGameViewAspectRatio()
+        internal static float GetGameViewAspectRatio()
         {
             Vector2 gameViewSize = GameView.GetMainGameViewTargetSize();
             if (gameViewSize.x < 0f)
@@ -606,147 +604,22 @@ namespace UnityEditor
             return gameViewSize.x / gameViewSize.y;
         }
 
-        static float GetFrustumAspectRatio(Camera camera)
-        {
-            Rect normalizedViewPortRect = camera.rect;
-            if (normalizedViewPortRect.width <= 0f || normalizedViewPortRect.height <= 0f)
-                return -1f;
-
-            float viewportAspect = normalizedViewPortRect.width / normalizedViewPortRect.height;
-            return GetGameViewAspectRatio() * viewportAspect;
-        }
-
-        // Returns near- and far-corners in this order: leftBottom, leftTop, rightTop, rightBottom
-        // Assumes input arrays are of length 4 (if allocated)
-        static bool GetFrustum(Camera camera, Vector3[] near, Vector3[] far, out float frustumAspect)
-        {
-            frustumAspect = GetFrustumAspectRatio(camera);
-            if (frustumAspect < 0)
-                return false;
-
-            if (far != null)
-            {
-                far[0] = new Vector3(0, 0, camera.farClipPlane); // leftBottomFar
-                far[1] = new Vector3(0, 1, camera.farClipPlane); // leftTopFar
-                far[2] = new Vector3(1, 1, camera.farClipPlane); // rightTopFar
-                far[3] = new Vector3(1, 0, camera.farClipPlane); // rightBottomFar
-                for (int i = 0; i < 4; ++i)
-                    far[i] = camera.ViewportToWorldPoint(far[i]);
-            }
-
-            if (near != null)
-            {
-                near[0] = new Vector3(0, 0, camera.nearClipPlane); // leftBottomNear
-                near[1] = new Vector3(0, 1, camera.nearClipPlane); // leftTopNear
-                near[2] = new Vector3(1, 1, camera.nearClipPlane); // rightTopNear
-                near[3] = new Vector3(1, 0, camera.nearClipPlane); // rightBottomNear
-                for (int i = 0; i < 4; ++i)
-                    near[i] = camera.ViewportToWorldPoint(near[i]);
-            }
-            return true;
-        }
-
         // Called from C++ when we need to render a Camera's gizmo
         internal static void RenderGizmo(Camera camera)
         {
-            var near = new Vector3[4];
-            var far = new Vector3[4];
-            float frustumAspect;
-            if (GetFrustum(camera, near, far, out frustumAspect))
-            {
-                Color orgColor = Handles.color;
-                Handles.color = kGizmoCamera;
-                for (int i = 0; i < 4; ++i)
-                {
-                    Handles.DrawLine(near[i], near[(i + 1) % 4]);
-                    Handles.DrawLine(far[i], far[(i + 1) % 4]);
-                    Handles.DrawLine(near[i], far[i]);
-                }
-                Handles.color = orgColor;
-            }
-        }
-
-        static bool IsViewPortRectValidToRender(Rect normalizedViewPortRect)
-        {
-            if (normalizedViewPortRect.width <= 0f || normalizedViewPortRect.height <= 0f)
-                return false;
-            if (normalizedViewPortRect.x >= 1f || normalizedViewPortRect.xMax <= 0f)
-                return false;
-            if (normalizedViewPortRect.y >= 1f || normalizedViewPortRect.yMax <= 0f)
-                return false;
-            return true;
+            CameraEditorUtils.DrawFrustumGizmo(camera);
         }
 
         public virtual void OnSceneGUI()
         {
             var c = (Camera)target;
 
-            if (!IsViewPortRectValidToRender(c.rect))
+            if (!CameraEditorUtils.IsViewportRectValidToRender(c.rect))
                 return;
 
             SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Camera Preview"), OnOverlayGUI, (int)SceneViewOverlay.Ordering.Camera, target, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
 
-            Color orgHandlesColor = Handles.color;
-            Color slidersColor = kGizmoCamera;
-            slidersColor.a *= 2f;
-            Handles.color = slidersColor;
-
-            // get the corners of the far clip plane in world space
-            var far = new Vector3[4];
-            float frustumAspect;
-            if (!GetFrustum(c, null, far, out frustumAspect))
-                return;
-            Vector3 leftBottomFar = far[0];
-            Vector3 leftTopFar = far[1];
-            Vector3 rightTopFar = far[2];
-            Vector3 rightBottomFar = far[3];
-
-            // manage our own gui changed state, so we can use it for individual slider changes
-            bool guiChanged = GUI.changed;
-
-            // FOV handles
-            Vector3 farMid = Vector3.Lerp(leftBottomFar, rightTopFar, 0.5f);
-
-            // Top and bottom handles
-            float halfHeight = -1.0f;
-            Vector3 changedPosition = MidPointPositionSlider(leftTopFar, rightTopFar, c.transform.up);
-            if (!GUI.changed)
-                changedPosition = MidPointPositionSlider(leftBottomFar, rightBottomFar, -c.transform.up);
-            if (GUI.changed)
-                halfHeight = (changedPosition - farMid).magnitude;
-
-            // Left and right handles
-            GUI.changed = false;
-            changedPosition = MidPointPositionSlider(rightBottomFar, rightTopFar, c.transform.right);
-            if (!GUI.changed)
-                changedPosition = MidPointPositionSlider(leftBottomFar, leftTopFar, -c.transform.right);
-            if (GUI.changed)
-                halfHeight = (changedPosition - farMid).magnitude / frustumAspect;
-
-            // Update camera settings if changed
-            if (halfHeight >= 0.0f)
-            {
-                Undo.RecordObject(c, "Adjust Camera");
-                if (c.orthographic)
-                {
-                    c.orthographicSize = halfHeight;
-                }
-                else
-                {
-                    Vector3 pos = farMid + c.transform.up * halfHeight;
-                    c.fieldOfView = Vector3.Angle(c.transform.forward, (pos - c.transform.position)) * 2f;
-                }
-                guiChanged = true;
-            }
-
-            GUI.changed = guiChanged;
-            Handles.color = orgHandlesColor;
-        }
-
-        private static Vector3 MidPointPositionSlider(Vector3 position1, Vector3 position2, Vector3 direction)
-        {
-            Vector3 midPoint = Vector3.Lerp(position1, position2, 0.5f);
-            return Handles.Slider(midPoint, direction, HandleUtility.GetHandleSize(midPoint) * 0.03f, Handles.DotHandleCap, 0f);
+            CameraEditorUtils.HandleFrustum(c);
         }
     }
 }

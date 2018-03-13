@@ -322,7 +322,7 @@ namespace UnityEditor
 
         public void UseScrollView(bool useScrollView)
         {
-            m_AudioGroupTree.SetUseScrollView(useScrollView);
+            m_AudioGroupTree.useScrollView = useScrollView;
         }
 
         public void ReloadTreeData()

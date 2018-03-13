@@ -20,6 +20,7 @@ using Debug = UnityEngine.Debug;
 using PackageInfo = Unity.DataContract.PackageInfo;
 using System.Xml.Linq;
 using System.Xml.XPath;
+using UnityEditor.Experimental.Build.Player;
 
 namespace UnityEditorInternal
 {
@@ -190,7 +191,7 @@ namespace UnityEditorInternal
 
                 var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
                 var useDebugBuild = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup) == Il2CppCompilerConfiguration.Debug;
-                var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, useDebugBuild).ToList();
+                var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, useDebugBuild).ToList();
 
                 arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
                 arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
@@ -279,7 +280,6 @@ namespace UnityEditorInternal
                 arguments.Add("--mono-runtime");
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-            var useDebugBuild = EditorUserBuildSettings.allowDebugging;
 
             switch (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))
             {
@@ -292,14 +292,16 @@ namespace UnityEditorInternal
                     break;
             }
 
-            if (useDebugBuild && platformSupportsManagedDebugging && EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+            if (EditorUserBuildSettings.allowDebugging && platformSupportsManagedDebugging && EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
                 arguments.Add("--enable-debugger");
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
             {
+                var useDebugBuild = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup) == Il2CppCompilerConfiguration.Debug;
+
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
-                arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, useDebugBuild));
+                arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, useDebugBuild));
             }
 
             arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
@@ -331,6 +333,19 @@ namespace UnityEditorInternal
             Action<ProcessStartInfo> setupStartInfo = null;
             if (il2CppNativeCodeBuilder != null)
                 setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
+
+            if (PlayerBuildInterface.ExtraTypesProvider != null)
+            {
+                var extraTypes = new HashSet<string>();
+                foreach (var extraType in PlayerBuildInterface.ExtraTypesProvider())
+                {
+                    extraTypes.Add(extraType);
+                }
+
+                var tempFile = Path.GetFullPath(Path.Combine(m_TempFolder, "extra-types.txt"));
+                File.WriteAllLines(tempFile, extraTypes.ToArray());
+                arguments.Add(string.Format("--extra-types-file=\"{0}\"", tempFile));
+            }
 
             RunIl2CppWithArguments(arguments, setupStartInfo, workingDirectory);
         }
@@ -481,10 +496,7 @@ namespace UnityEditorInternal
         {
             get
             {
-                return new[] {
-                    GetFileInPackageOrDefault("bdwgc/lib/bdwgc." + staticLibraryExtension),
-                    GetFileInPackageOrDefault("libil2cpp/lib/libil2cpp." + staticLibraryExtension)
-                };
+                return new string[0];
             }
         }
 

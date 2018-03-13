@@ -6,6 +6,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.U2D
 {
@@ -37,6 +38,7 @@ namespace UnityEditor.Experimental.U2D
         void RequestRepaint();
         void SetDataModified();
         void ApplyOrRevertModification(bool apply);
+        VisualElement GetMainVisualContainer();
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]

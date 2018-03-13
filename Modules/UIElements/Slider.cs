@@ -27,6 +27,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     m_LowValue = value;
                     ClampValue();
+                    UpdateDragElementPosition();
                 }
             }
         }
@@ -41,11 +42,12 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     m_HighValue = value;
                     ClampValue();
+                    UpdateDragElementPosition();
                 }
             }
         }
 
-        public float range { get { return highValue - lowValue; } }
+        public float range { get { return Math.Abs(highValue - lowValue); } }
         public float pageSize { get; set; }
 
         public event System.Action<float> valueChanged;
@@ -68,7 +70,15 @@ namespace UnityEngine.Experimental.UIElements
                 if (m_SliderValue == null)
                     m_SliderValue = new SliderValue() { m_Value = lowValue };
 
-                var newValue = Mathf.Clamp(value, lowValue, highValue);
+                // Clamp the value around the real lowest and highest range values.
+                float lowest = lowValue, highest = highValue;
+                if (lowest > highest)
+                {
+                    float t = lowest;
+                    lowest = highest;
+                    highest = t;
+                }
+                var newValue = Mathf.Clamp(value, lowest, highest);
 
                 if (Mathf.Approximately(m_SliderValue.m_Value, newValue))
                     return;
@@ -109,7 +119,6 @@ namespace UnityEngine.Experimental.UIElements
         public Slider(float start, float end, System.Action<float> valueChanged,
                       Direction direction = Direction.Horizontal, float pageSize = 10f)
         {
-            this.valueChanged = valueChanged;
             this.direction = direction;
             this.pageSize = pageSize;
             lowValue = start;
@@ -124,6 +133,9 @@ namespace UnityEngine.Experimental.UIElements
 
             clampedDragger = new ClampedDragger(this, SetSliderValueFromClick, SetSliderValueFromDrag);
             this.AddManipulator(clampedDragger);
+
+            // We set this event last, so that the construction does not call it.
+            this.valueChanged = valueChanged;
         }
 
         private void ClampValue()
@@ -161,7 +173,8 @@ namespace UnityEngine.Experimental.UIElements
             if (Mathf.Abs(totalRange) < Mathf.Epsilon)
                 return;
 
-            value = (Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange * range) + lowValue;
+            float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange;
+            value = Mathf.LerpUnclamped(lowValue, highValue, normalizedDragElementPosition);
         }
 
         // Handles slider clicks and page scrolls
@@ -212,13 +225,15 @@ namespace UnityEngine.Experimental.UIElements
                 (clampedDragger.dragDirection != ClampedDragger.DragDirection.LowToHigh))
             {
                 clampedDragger.dragDirection = ClampedDragger.DragDirection.HighToLow;
-                value = (Mathf.Max(0f, Mathf.Min(dragElementPos - pageSize, totalRange)) / totalRange * range) + lowValue;
+                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos - pageSize, totalRange)) / totalRange;
+                value = Mathf.LerpUnclamped(lowValue, highValue, normalizedDragElementPosition);
             }
             else if ((dragElementLastPos > (dragElementPos + dragElementLength)) &&
                      (clampedDragger.dragDirection != ClampedDragger.DragDirection.HighToLow))
             {
                 clampedDragger.dragDirection = ClampedDragger.DragDirection.LowToHigh;
-                value = (Mathf.Max(0f, Mathf.Min(dragElementPos + pageSize, totalRange)) / totalRange * range) + lowValue;
+                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos + pageSize, totalRange)) / totalRange;
+                value = Mathf.LerpUnclamped(lowValue, highValue, normalizedDragElementPosition);
             }
         }
 
@@ -267,19 +282,19 @@ namespace UnityEngine.Experimental.UIElements
             if (panel == null)
                 return;
 
-            float pos = value - lowValue;
+            float normalizedPosition = (value - lowValue) / (highValue - lowValue);
             float dragElementWidth = dragElement.style.width;
             float dragElementHeight = dragElement.style.height;
 
             if (direction == Direction.Horizontal)
             {
                 float totalWidth = layout.width - dragElementWidth;
-                dragElement.style.positionLeft = ((pos / range) * totalWidth);
+                dragElement.style.positionLeft = normalizedPosition * totalWidth;
             }
             else
             {
                 float totalHeight = layout.height - dragElementHeight;
-                dragElement.style.positionTop = ((pos / range) * totalHeight);
+                dragElement.style.positionTop = normalizedPosition * totalHeight;
             }
         }
 

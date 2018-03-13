@@ -396,4 +396,15 @@ namespace UnityEngine.Bindings
     {
         public bool DoesNotContributeToSize { get; set; }
     }
+
+    [AttributeUsage(AttributeTargets.Class)]
+    [VisibleToOtherModules]
+    class MarshalUnityObjectAs : Attribute, IBindingsAttribute
+    {
+        public Type MarshalAsType { get; set; }
+        public MarshalUnityObjectAs(Type marshalAsType)
+        {
+            MarshalAsType = marshalAsType;
+        }
+    }
 }

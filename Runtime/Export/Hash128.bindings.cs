@@ -19,7 +19,7 @@ namespace UnityEngine
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Utilities/Hash128.h")]
-    public partial struct Hash128 : IComparable, IComparable<Hash128>
+    public partial struct Hash128 : IComparable, IComparable<Hash128>, IEquatable<Hash128>
     {
         public Hash128(uint u32_0, uint u32_1, uint u32_2, uint u32_3)
         {
@@ -69,6 +69,11 @@ namespace UnityEngine
         public override bool Equals(object obj)
         {
             return obj is Hash128 && this == (Hash128)obj;
+        }
+
+        public bool Equals(Hash128 obj)
+        {
+            return this == obj;
         }
 
         public override int GetHashCode()

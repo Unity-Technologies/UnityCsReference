@@ -15,7 +15,7 @@ namespace UnityEngine
     [NativeClass("Vector4f")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     // Representation of four-dimensional vectors.
-    public partial struct Vector4
+    public partial struct Vector4 : IEquatable<Vector4>
     {
         // *undocumented*
         public const float kEpsilon = 0.00001F;
@@ -128,8 +128,12 @@ namespace UnityEngine
         {
             if (!(other is Vector4)) return false;
 
-            Vector4 rhs = (Vector4)other;
-            return x.Equals(rhs.x) && y.Equals(rhs.y) && z.Equals(rhs.z) && w.Equals(rhs.w);
+            return Equals((Vector4)other);
+        }
+
+        public bool Equals(Vector4 other)
+        {
+            return x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
         }
 
         // *undoc* --- we have normalized property now

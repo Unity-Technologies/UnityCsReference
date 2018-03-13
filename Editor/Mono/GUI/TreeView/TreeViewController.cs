@@ -118,9 +118,9 @@ namespace UnityEditor.IMGUI.Controls
             this.data = data;
             this.gui = gui;
             this.dragging = dragging;
-            m_TotalRect = rect; // We initialize the total rect because it might be needed for framing selection when reloading data the first time.
+            m_VisibleRect = m_TotalRect = rect; // We initialize the total rect because it might be needed for framing selection when reloading data the first time.
 
-            // Allow sub systems to set up delegates etc after treeview references have been setup
+            // Allow sub systems to set up delegates etc after treeview references have been set up
             data.OnInitialize();
             gui.OnInitialize();
             if (dragging != null)
@@ -175,6 +175,17 @@ namespace UnityEditor.IMGUI.Controls
                 if (searchChanged != null)
                     searchChanged(state.searchString);
             }
+        }
+
+        public bool useScrollView
+        {
+            get { return m_UseScrollView; }
+            set { m_UseScrollView = value; }
+        }
+
+        public Rect visibleRect
+        {
+            get { return m_VisibleRect; }
         }
 
         public bool IsSelected(int id)
@@ -252,6 +263,7 @@ namespace UnityEditor.IMGUI.Controls
             return data.FindItem(id);
         }
 
+        [System.Obsolete("SetUseScrollView has been deprecated. Use property useScrollView instead.")]
         public void SetUseScrollView(bool useScrollView)
         {
             m_UseScrollView = useScrollView;
@@ -550,7 +562,29 @@ namespace UnityEditor.IMGUI.Controls
                 GUI.BeginClip(m_TotalRect);
 
             if (evt.type == EventType.Repaint)
-                m_VisibleRect = m_UseScrollView ? GUI.GetTopScrollView().visibleRect : m_TotalRect;
+            {
+                if (m_UseScrollView)
+                {
+                    m_VisibleRect = GUI.GetTopScrollView().visibleRect;
+                }
+                else
+                {
+                    // We may be inside of a scroll view.
+                    var scrollView = GUI.GetTopScrollView();
+                    if (scrollView != null)
+                    {
+                        // Calculate the visible area of the TreeView inside of the ScrollView taking into account
+                        // that the TreeView may not be contained within the whole ScrollView area.
+                        state.scrollPos = Vector2.Max(Vector2.zero, scrollView.scrollPosition - m_TotalRect.min - scrollView.position.min);
+                        m_VisibleRect = scrollView.visibleRect;
+                        m_VisibleRect.size = Vector2.Max(Vector2.zero, Vector2.Min(m_VisibleRect.size, (m_TotalRect.size - state.scrollPos)));
+                    }
+                    else
+                    {
+                        m_VisibleRect = m_TotalRect;
+                    }
+                }
+            }
 
             gui.BeginRowGUI();
 

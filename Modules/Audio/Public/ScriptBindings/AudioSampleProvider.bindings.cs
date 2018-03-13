@@ -23,7 +23,7 @@ namespace UnityEngine.Experimental.Audio
             uint providerId, Object ownerObj, ushort trackIndex)
         {
             AudioSampleProvider provider = InternalGetScriptingPtr(providerId);
-            if (provider != null)
+            if (provider != null || !InternalIsValid(providerId))
                 return provider;
 
             return new AudioSampleProvider(providerId, ownerObj, trackIndex);

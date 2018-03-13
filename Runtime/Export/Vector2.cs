@@ -14,7 +14,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [NativeClass("Vector2f")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
-    public struct Vector2
+    public struct Vector2 : IEquatable<Vector2>
     {
         // X component of the vector.
         public float x;
@@ -128,8 +128,12 @@ namespace UnityEngine
         {
             if (!(other is Vector2)) return false;
 
-            Vector2 rhs = (Vector2)other;
-            return x.Equals(rhs.x) && y.Equals(rhs.y);
+            return Equals((Vector2)other);
+        }
+
+        public bool Equals(Vector2 other)
+        {
+            return x.Equals(other.x) && y.Equals(other.y);
         }
 
         public static Vector2 Reflect(Vector2 inDirection, Vector2 inNormal)

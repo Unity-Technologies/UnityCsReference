@@ -13,6 +13,7 @@ namespace UnityEditor
         private GUIContent rotationContent = EditorGUIUtility.TrTextContent("Rotation", "The local rotation of this Game Object relative to the parent.");
 
         private Vector3 m_EulerAngles;
+        private float[] m_EulerFloats = new float[3];
         // Some random rotation that will never be the same as the current one
         private Vector3  m_OldEulerAngles = new Vector3(1000000, 10000000, 1000000);
         private RotationOrder m_OldRotationOrder = RotationOrder.OrderZXY;
@@ -21,6 +22,7 @@ namespace UnityEditor
         Object[] targets;
 
         private static int s_FoldoutHash = "Foldout".GetHashCode();
+        private static readonly GUIContent[] s_XYZLabels = {EditorGUIUtility.TextContent("X"), EditorGUIUtility.TextContent("Y"), EditorGUIUtility.TextContent("Z")};
 
         public void OnEnable(SerializedProperty m_Rotation, GUIContent label)
         {
@@ -64,6 +66,9 @@ namespace UnityEditor
 
             Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight * (EditorGUIUtility.wideMode ? 1 : 2));
             GUIContent label = EditorGUI.BeginProperty(r, rotationContent, m_Rotation);
+            m_EulerFloats[0] = m_EulerAngles.x;
+            m_EulerFloats[1] = m_EulerAngles.y;
+            m_EulerFloats[2] = m_EulerAngles.z;
 
             EditorGUI.showMixedValue = differentRotation;
 
@@ -86,15 +91,19 @@ namespace UnityEditor
                 label.text = label.text + " (" + rotationLabel + ")";
             }
 
+            // Using MultiFieldPrefixLabel/MultiFloatField here instead of Vector3Field
+            // so that the label and the float fields can be disabled separately,
+            // similar to other property-driven controls
+            // Using MultiFloatField instead of Vector3Field to avoid superfluous label
+            // (which creates a focus target even when there's no content (Case 953241))
             r = EditorGUI.MultiFieldPrefixLabel(r, id, label, 3);
             r.height = EditorGUIUtility.singleLineHeight;
             using (new EditorGUI.DisabledScope(disabled))
-            {
-                m_EulerAngles = EditorGUI.Vector3Field(r, GUIContent.none, m_EulerAngles);
-            }
+                EditorGUI.MultiFloatField(r, s_XYZLabels, m_EulerFloats);
 
             if (EditorGUI.EndChangeCheck())
             {
+                m_EulerAngles = new Vector3(m_EulerFloats[0], m_EulerFloats[1], m_EulerFloats[2]);
                 Undo.RecordObjects(targets, "Inspector");  // Generic undo title to be consistent with Position and Scale changes.
                 foreach (Transform tr in targets)
                 {

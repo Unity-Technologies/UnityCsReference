@@ -23,6 +23,14 @@ namespace UnityEditor
         ExitingPlayMode,
     }
 
+    // Must be kept in sync with enum in ScriptCompilationPipeline.h
+    internal enum ScriptChangesDuringPlayOptions
+    {
+        RecompileAndContinuePlaying = 0,
+        RecompileAfterFinishedPlaying = 1,
+        StopPlayingAndRecompile = 2
+    }
+
     public enum PauseState
     {
         Paused,

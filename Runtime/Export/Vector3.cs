@@ -16,7 +16,7 @@ namespace UnityEngine
     [NativeClass("Vector3f")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Vector3
+    public partial struct Vector3 : IEquatable<Vector3>
     {
         public const float kEpsilon = 0.00001F;
 
@@ -163,8 +163,12 @@ namespace UnityEngine
         {
             if (!(other is Vector3)) return false;
 
-            Vector3 rhs = (Vector3)other;
-            return x.Equals(rhs.x) && y.Equals(rhs.y) && z.Equals(rhs.z);
+            return Equals((Vector3)other);
+        }
+
+        public bool Equals(Vector3 other)
+        {
+            return x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z);
         }
 
         // Reflects a vector off the plane defined by a normal.

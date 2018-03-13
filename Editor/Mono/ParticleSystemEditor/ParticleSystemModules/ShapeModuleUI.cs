@@ -272,7 +272,7 @@ namespace UnityEditor
             m_Rotation = GetProperty("m_Rotation");
 
             if (!s_Material)
-                s_Material = EditorGUIUtility.GetBuiltinExtraResource(typeof(Material), "Default-Material.mat") as Material;
+                s_Material = Material.GetDefaultMaterial();
             if (!s_TextureMaterial)
                 s_TextureMaterial = new Material((Shader)EditorGUIUtility.Load("SceneView/ParticleShapeGizmo.shader"));
             if (!s_SphereTextureMaterial)

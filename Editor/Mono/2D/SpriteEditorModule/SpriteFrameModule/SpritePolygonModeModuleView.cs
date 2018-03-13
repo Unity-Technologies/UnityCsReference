@@ -5,8 +5,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
-using UnityEngine.U2D.Interface;
-using UnityEditor.Experimental.U2D;
+using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
+using UIElementButton = UnityEngine.Experimental.UIElements.Button;
 
 namespace UnityEditor
 {
@@ -15,24 +17,21 @@ namespace UnityEditor
         private static class SpritePolygonModeStyles
         {
             public static readonly GUIContent changeShapeLabel = EditorGUIUtility.TrTextContent("Change Shape");
-            public static readonly GUIContent sidesLabel = EditorGUIUtility.TrTextContent("Sides");
-            public static readonly GUIContent polygonChangeShapeHelpBoxContent = EditorGUIUtility.TrTextContent("Sides can only be either 0 or anything between 3 and 128");
-            public static readonly GUIContent changeButtonLabel = EditorGUIUtility.TrTextContent("Change", "Change to the new number of sides");
         }
 
-        private const int k_PolygonChangeShapeWindowMargin = EditorGUI.kWindowToolbarHeight;
-        private const int k_PolygonChangeShapeWindowWidth = 150;
-        private const int k_PolygonChangeShapeWindowHeight = 45;
-        private const int k_PolygonChangeShapeWindowWarningHeight = k_PolygonChangeShapeWindowHeight + 20;
-
-        private Rect m_PolygonChangeShapeWindowRect = new Rect(0, k_PolygonChangeShapeWindowMargin, k_PolygonChangeShapeWindowWidth, k_PolygonChangeShapeWindowHeight);
+        private VisualElement m_PolygonShapeView;
+        private UIElementButton m_ChangeButton;
+        private VisualElement m_WarningMessage;
 
         // overrides for SpriteFrameModuleViewBase
-        public override void DoPostGUI()
+        private void AddMainUI(VisualElement element)
         {
-            // Polygon change shape window
-            DoPolygonChangeShapeWindow();
-            base.DoPostGUI();
+            var visualTree = EditorGUIUtility.Load("UXML/SpriteEditor/PolygonChangeShapeWindow.uxml") as VisualTreeAsset;
+            m_PolygonShapeView = visualTree.CloneTree(null).Q<VisualElement>("polygonShapeWindow");
+            m_PolygonShapeView.RegisterCallback<MouseDownEvent>((e) => { e.StopPropagation(); });
+            m_PolygonShapeView.RegisterCallback<MouseUpEvent>((e) => { e.StopPropagation(); });
+            SetupPolygonChangeShapeWindowElements(m_PolygonShapeView);
+            element.Add(m_PolygonShapeView);
         }
 
         public override void DoMainGUI()
@@ -88,63 +87,35 @@ namespace UnityEditor
             DrawSpriteRectGizmos();
         }
 
-        private void DoPolygonChangeShapeWindow()
+        private void SetupPolygonChangeShapeWindowElements(VisualElement moduleView)
         {
-            if (showChangeShapeWindow && !spriteEditor.editingDisabled)
-            {
-                bool createAndClose = false;
-
-                float oldLabelWidth = EditorGUIUtility.labelWidth;
-                EditorGUIUtility.labelWidth = 45f;
-
-                GUILayout.BeginArea(m_PolygonChangeShapeWindowRect);
-                GUILayout.BeginVertical(GUI.skin.box);
-
-                // Catch "return" key before text box
-                IEvent evt = eventSystem.current;
-                if (isSidesValid &&
-                    evt.type == EventType.KeyDown &&
-                    evt.keyCode == KeyCode.Return)
+            var sidesField = moduleView.Q<PropertyControl<long>>("labelIntegerField");
+            sidesField.value = polygonSides;
+            sidesField.OnValueChanged((evt) =>
                 {
-                    createAndClose = true;
-                    evt.Use();
-                }
-
-                EditorGUI.BeginChangeCheck();
-                polygonSides = EditorGUILayout.IntField(SpritePolygonModeStyles.sidesLabel, polygonSides);
-                if (EditorGUI.EndChangeCheck())
-                    m_PolygonChangeShapeWindowRect.height = isSidesValid ? k_PolygonChangeShapeWindowHeight : k_PolygonChangeShapeWindowWarningHeight;
-
-                GUILayout.FlexibleSpace();
-
-                if (!isSidesValid)
-                    EditorGUILayout.HelpBox(SpritePolygonModeStyles.polygonChangeShapeHelpBoxContent.text, MessageType.Warning, true);
-                else
-                {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.FlexibleSpace();
-
-                    EditorGUI.BeginDisabledGroup(!isSidesValid);
-                    if (GUILayout.Button(SpritePolygonModeStyles.changeButtonLabel))
-                        createAndClose = true;
-                    EditorGUI.EndDisabledGroup();
-
-                    GUILayout.EndHorizontal();
-                }
-                GUILayout.EndVertical();
-
-                if (createAndClose)
+                    polygonSides = (int)evt.newValue;
+                    ShowHideWarningMessage();
+                });
+            m_ChangeButton = moduleView.Q<UIElementButton>("changeButton");
+            m_ChangeButton.RegisterCallback<MouseUpEvent>((e) =>
                 {
                     if (isSidesValid)
+                    {
                         GeneratePolygonOutline();
-                    showChangeShapeWindow = false;
-                    GUIUtility.hotControl = 0;
-                    GUIUtility.keyboardControl = 0;
-                }
+                        showChangeShapeWindow = false;
+                    }
+                });
+            m_WarningMessage = moduleView.Q("warning");
+            ShowHideWarningMessage();
+        }
 
-                EditorGUIUtility.labelWidth = oldLabelWidth;
-                GUILayout.EndArea();
-            }
+        void ShowHideWarningMessage()
+        {
+            m_WarningMessage.visible = !isSidesValid;
+            m_WarningMessage.style.positionType = m_WarningMessage.visible ? PositionType.Relative : PositionType.Absolute;
+
+            m_ChangeButton.visible = isSidesValid;
+            m_ChangeButton.style.positionType = m_ChangeButton.visible ? PositionType.Relative : PositionType.Absolute;
         }
 
         private bool isSidesValid
@@ -157,8 +128,13 @@ namespace UnityEditor
 
         public bool showChangeShapeWindow
         {
-            get;
-            set;
+            get { return m_PolygonShapeView.visible; }
+            set
+            {
+                if (m_PolygonShapeView.visible == value)
+                    return;
+                m_PolygonShapeView.visible = value;
+            }
         }
     }
 }

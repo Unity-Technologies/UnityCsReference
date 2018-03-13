@@ -14,8 +14,6 @@ namespace UnityEditor
         {
             public static readonly GUIContent sliceButtonLabel = EditorGUIUtility.TrTextContent("Slice");
             public static readonly GUIContent trimButtonLabel = EditorGUIUtility.TrTextContent("Trim", "Trims selected rectangle (T)");
-            public static readonly GUIContent okButtonLabel = EditorGUIUtility.TrTextContent("Ok");
-            public static readonly GUIContent cancelButtonLabel = EditorGUIUtility.TrTextContent("Cancel");
         }
 
         internal static PrefKey k_SpriteEditorTrim = new PrefKey("Sprite Editor/Trim", "#t");
@@ -44,8 +42,7 @@ namespace UnityEditor
             if (containsMultipleSprites)
                 HandleDragging();
 
-            if (!MouseOnTopOfInspector())
-                spriteEditor.HandleSpriteSelection();
+            spriteEditor.HandleSpriteSelection();
 
             if (containsMultipleSprites)
             {
@@ -121,6 +118,7 @@ namespace UnityEditor
                 rect.yMax = top;
                 rect.yMin = bottom;
                 ScaleSpriteRect(rect);
+                PopulateSpriteFrameInspectorField();
             }
         }
 
@@ -158,6 +156,7 @@ namespace UnityEditor
                 rect.yMin = bottom;
 
                 ScaleSpriteRect(rect);
+                PopulateSpriteFrameInspectorField();
             }
         }
 

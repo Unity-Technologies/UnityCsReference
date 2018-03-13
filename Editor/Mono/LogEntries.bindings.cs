@@ -67,5 +67,7 @@ namespace UnityEditor
         public static extern int GetStatusViewErrorIndex();
 
         public static extern void ClickStatusBar(int count);
+
+        public static extern void AddMessageWithDoubleClickCallback(LogEntry outputEntry);
     }
 }

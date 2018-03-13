@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using scm = System.ComponentModel;
@@ -15,7 +16,7 @@ namespace UnityEngine
     [NativeClass("AABB")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Bounds
+    public partial struct Bounds : IEquatable<Bounds>
     {
         private Vector3 m_Center;
         [NativeName("m_Extent")]
@@ -39,8 +40,12 @@ namespace UnityEngine
         {
             if (!(other is Bounds)) return false;
 
-            Bounds rhs = (Bounds)other;
-            return center.Equals(rhs.center) && extents.Equals(rhs.extents);
+            return Equals((Bounds)other);
+        }
+
+        public bool Equals(Bounds other)
+        {
+            return center.Equals(other.center) && extents.Equals(other.extents);
         }
 
         // The center of the bounding box.

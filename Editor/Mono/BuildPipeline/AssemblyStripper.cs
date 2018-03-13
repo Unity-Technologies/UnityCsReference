@@ -54,7 +54,7 @@ namespace UnityEditorInternal
             return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
         }
 
-        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist)
+        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist, BuildTargetGroup buildTargetGroup)
         {
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
@@ -70,18 +70,16 @@ namespace UnityEditorInternal
 
             var args = new List<string>
             {
-                "--api=" + PlayerSettings.GetApiCompatibilityLevel(EditorUserBuildSettings.activeBuildTargetGroup).ToString(),
                 "-out=\"" + outputFolder + "\"",
-                "-l=none",
-                "-c=link",
-                "--link-symbols",
                 "-x=\"" + GetModuleWhitelist("Core", platformProvider.moduleStrippingInformationFolder) + "\"",
-                "-f=\"" + Path.Combine(platformProvider.il2CppFolder, "LinkerDescriptors") + "\""
             };
             args.AddRange(additionalBlacklist.Select(path => "-x \"" + path + "\""));
 
             args.AddRange(searchDirs.Select(d => "-d \"" + d + "\""));
             args.AddRange(assemblies.Select(assembly => "-a  \"" + Path.GetFullPath(assembly) + "\""));
+            args.Add($"--dotnetruntime={GetRuntimeArgumentValueForLinker(buildTargetGroup)}");
+            args.Add($"--dotnetprofile={GetProfileArgumentValueForLinker(buildTargetGroup)}");
+            args.Add("--use-editor-options");
 
             var additionalArgs = System.Environment.GetEnvironmentVariable("UNITYLINKER_ADDITIONAL_ARGS");
             if (!string.IsNullOrEmpty(additionalArgs))
@@ -157,6 +155,25 @@ namespace UnityEditorInternal
             return result;
         }
 
+        private static string GetRuntimeArgumentValueForLinker(BuildTargetGroup buildTargetGroup)
+        {
+            var backend = PlayerSettings.GetScriptingBackend(buildTargetGroup);
+            switch (backend)
+            {
+                case ScriptingImplementation.IL2CPP:
+                    return "il2cpp";
+                case ScriptingImplementation.Mono2x:
+                    return "mono";
+                default:
+                    throw new NotImplementedException($"Don't know the backend value to pass to UnityLinker for {backend}");
+            }
+        }
+
+        private static string GetProfileArgumentValueForLinker(BuildTargetGroup buildTargetGroup)
+        {
+            return IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup));
+        }
+
         private static void RunAssemblyStripper(IEnumerable assemblies, string managedAssemblyFolderPath, string[] assembliesToStrip, string[] searchDirs, string monoLinkerPath, IIl2CppPlatformProvider platformProvider, RuntimeClassRegistry rcr)
         {
             string output;
@@ -174,17 +191,8 @@ namespace UnityEditorInternal
                 });
             }
 
-            if (PlayerSettingsEditor.IsLatestApiCompatibility(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup)))
-            {
-                var il2cppFolder = Path.Combine(platformProvider.il2CppFolder, "LinkerDescriptors");
-                blacklists = blacklists.Concat(Directory.GetFiles(il2cppFolder, "*45.xml"));
-            }
             if (isMono)
             {
-                // Apply mono-specific assembly whitelists, taken from old Mono assembly stripping code path.
-                var il2cppFolder = Path.Combine(platformProvider.il2CppFolder, "LinkerDescriptors");
-                blacklists = blacklists.Concat(Directory.GetFiles(il2cppFolder, "*_mono.xml"));
-
                 // The old Mono assembly stripper uses per-platform link.xml files if available. Apply these here.
                 var platformDescriptor = Path.Combine(BuildPipeline.GetBuildToolsDirectory(platformProvider.target), "link.xml");
                 if (File.Exists(platformDescriptor))
@@ -217,7 +225,8 @@ namespace UnityEditorInternal
                         out error,
                         monoLinkerPath,
                         platformProvider,
-                        blacklists))
+                        blacklists,
+                        buildTargetGroup))
                     throw new Exception("Error in stripping assemblies: " + assemblies + ", " + error);
 
                 if (platformProvider.supportsEngineStripping)

@@ -9,6 +9,7 @@ using UnityEditor.StyleSheets;
 using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -214,6 +215,20 @@ namespace UnityEditor
         {
             if (window != null)
                 window.HandleWindowDecorationEnd(windowPosition);
+        }
+
+        [RequiredByNativeCode]
+        internal static string GetTypeNameOfMostSpecificActiveView()
+        {
+            var currentView = current;
+            if (currentView == null)
+                return string.Empty;
+
+            var hostView = currentView as HostView;
+            if (hostView != null && hostView.actualView != null)
+                return hostView.actualView.GetType().FullName;
+
+            return currentView.GetType().FullName;
         }
     }
 } //namespace

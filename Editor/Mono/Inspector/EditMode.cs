@@ -72,8 +72,6 @@ namespace UnityEditorInternal
             LightProbeProxyVolumeBox,
             LightProbeProxyVolumeOrigin,
             LightProbeGroup,
-            ParticleSystemCollisionModulePlanesMove,
-            ParticleSystemCollisionModulePlanesRotate,
             JointAngularLimits,
             GridPainting,
             GridPicking,
@@ -82,6 +80,10 @@ namespace UnityEditorInternal
             GridBox,
             GridSelect,
             GridMove,
+            ParticleSystemCollisionModulePlanesMove,
+            ParticleSystemCollisionModulePlanesRotate,
+            LineRendererEdit,
+            LineRendererCreate,
         }
 
         private static Tool toolBeforeEnteringEditMode

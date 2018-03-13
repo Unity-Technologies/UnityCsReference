@@ -332,7 +332,6 @@ namespace UnityEditor
                     if (GUILayout.Button(Styles.Cancel, GUILayout.Width(kButtonWidth)))
                     {
                         Lightmapping.Cancel();
-                        UsabilityAnalytics.Track("/LightMapper/Cancel");
                     }
                 }
             }
@@ -344,10 +343,6 @@ namespace UnityEditor
 
         private void DoBake()
         {
-            UsabilityAnalytics.Track("/LightMapper/Start");
-            UsabilityAnalytics.Event("LightMapper", "Mode", LightmapSettings.lightmapsMode.ToString(), 1);
-
-            UsabilityAnalytics.Event("LightMapper", "Button", "BakeScene", 1);
             Lightmapping.BakeAsync();
         }
 
@@ -355,13 +350,11 @@ namespace UnityEditor
         {
             Lightmapping.ClearLightingDataAsset();
             Lightmapping.Clear();
-            UsabilityAnalytics.Track("/LightMapper/Clear");
         }
 
         private void DoBakeReflectionProbes()
         {
             Lightmapping.BakeAllReflectionProbesSnapshots();
-            UsabilityAnalytics.Track("/LightMapper/BakeAllReflectionProbesSnapshots");
         }
 
         void Summary()

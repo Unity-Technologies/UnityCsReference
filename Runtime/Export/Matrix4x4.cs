@@ -11,7 +11,7 @@ namespace UnityEngine
 {
     // A standard 4x4 transformation matrix.
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Matrix4x4
+    public partial struct Matrix4x4 : IEquatable<Matrix4x4>
     {
         // memory layout:
         //
@@ -147,11 +147,15 @@ namespace UnityEngine
         {
             if (!(other is Matrix4x4)) return false;
 
-            Matrix4x4 rhs = (Matrix4x4)other;
-            return GetColumn(0).Equals(rhs.GetColumn(0))
-                && GetColumn(1).Equals(rhs.GetColumn(1))
-                && GetColumn(2).Equals(rhs.GetColumn(2))
-                && GetColumn(3).Equals(rhs.GetColumn(3));
+            return Equals((Matrix4x4)other);
+        }
+
+        public bool Equals(Matrix4x4 other)
+        {
+            return GetColumn(0).Equals(other.GetColumn(0))
+                && GetColumn(1).Equals(other.GetColumn(1))
+                && GetColumn(2).Equals(other.GetColumn(2))
+                && GetColumn(3).Equals(other.GetColumn(3));
         }
 
         // Multiplies two matrices.

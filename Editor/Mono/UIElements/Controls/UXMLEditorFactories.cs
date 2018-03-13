@@ -35,6 +35,8 @@ namespace UnityEditor.Experimental.UIElements
             Factories.RegisterFactory<Vector3Field>((bag, __) => new Vector3Field());
             Factories.RegisterFactory<Vector4Field>((bag, __) => new Vector4Field());
             Factories.RegisterFactory<BoundsField>((bag, __) => new BoundsField());
+
+            Factories.RegisterFactory("UnityEditor.Experimental.UIElements.PropertyControl", (bag, cc) => PropertyControlFactory.Create(bag, cc));
         }
     }
 }

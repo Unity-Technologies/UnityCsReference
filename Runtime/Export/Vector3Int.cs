@@ -10,7 +10,7 @@ namespace UnityEngine
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector3Int
+    public struct Vector3Int : IEquatable<Vector3Int>
     {
         public int x { get { return m_X; } set { m_X = value; } }
         public int y { get { return m_Y; } set { m_Y = value; } }
@@ -161,8 +161,12 @@ namespace UnityEngine
         {
             if (!(other is Vector3Int)) return false;
 
-            Vector3Int rhs = (Vector3Int)other;
-            return this == rhs;
+            return Equals((Vector3Int)other);
+        }
+
+        public bool Equals(Vector3Int other)
+        {
+            return this == other;
         }
 
         public override int GetHashCode()

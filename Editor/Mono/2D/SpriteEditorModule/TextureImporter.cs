@@ -40,7 +40,8 @@ namespace UnityEditor
             {
                 for (int i = m_SpritesMultiple.Count - 1; i >= 0; --i)
                 {
-                    if (!spriteRects.Contains(m_SpritesMultiple[i]))
+                    var spriteID = m_SpritesMultiple[i].spriteID;
+                    if (spriteRects.FirstOrDefault(x => x.spriteID == spriteID) == null)
                         m_SpritesMultiple.RemoveAt(i);
                 }
                 for (int i = 0; i < spriteRects.Length; i++)
@@ -113,14 +114,12 @@ namespace UnityEditor
             var so = new SerializedObject(this);
             var spriteSheetSO = so.FindProperty("m_SpriteSheet.m_Sprites");
             m_SpritesMultiple = new List<SpriteDataExt>();
-            m_SpriteSingle = new SpriteDataExt();
-            m_SpriteSingle.Load(so);
+            m_SpriteSingle = new SpriteDataExt(so);
 
             for (int i = 0; i < spriteSheetSO.arraySize; ++i)
             {
-                var data = new SpriteDataExt();
                 var sp = spriteSheetSO.GetArrayElementAtIndex(i);
-                data.Load(sp);
+                var data = new SpriteDataExt(sp);
                 m_SpritesMultiple.Add(data);
             }
         }

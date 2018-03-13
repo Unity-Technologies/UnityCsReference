@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor.Experimental;
@@ -168,14 +169,14 @@ namespace UnityEditor.IMGUI.Controls
         // Should return the row index of the first and last row thats fits in the pixel rect defined by top and height
         virtual public void GetFirstAndLastRowVisible(out int firstRowVisible, out int lastRowVisible)
         {
-            if (m_TreeView.data.rowCount == 0)
+            if (m_TreeView.data.rowCount == 0 || Mathf.Approximately(m_TreeView.visibleRect.height, 0.0f))
             {
                 firstRowVisible = lastRowVisible = -1;
                 return;
             }
 
             float topPixel = m_TreeView.state.scrollPos.y;
-            float heightInPixels = m_TreeView.GetTotalRect().height;
+            float heightInPixels = m_TreeView.visibleRect.height;
             firstRowVisible = (int)Mathf.Floor((topPixel - topRowMargin) / k_LineHeight);
             lastRowVisible = firstRowVisible + (int)Mathf.Ceil(heightInPixels / k_LineHeight);
 

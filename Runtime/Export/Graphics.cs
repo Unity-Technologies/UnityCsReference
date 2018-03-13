@@ -20,7 +20,7 @@ namespace UnityEngine
             if (list == null)
                 throw new ArgumentNullException("list");
             if (size < 0 || size > list.Capacity)
-                throw new ArgumentException("list", "invalid size to resize.");
+                throw new ArgumentException("invalid size to resize.", "list");
             if (size != list.Count)
                 Internal_ResizeList(list, size);
         }
@@ -429,7 +429,7 @@ namespace UnityEngine
         public static void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int layer, Camera camera, int submeshIndex, MaterialPropertyBlock properties, ShadowCastingMode castShadows, bool receiveShadows, Transform probeAnchor, LightProbeUsage lightProbeUsage, [uei.DefaultValue("null")] LightProbeProxyVolume lightProbeProxyVolume)
         {
             if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
-                throw new ArgumentException("lightProbeProxyVolume", "Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.");
+                throw new ArgumentException("Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.", "lightProbeProxyVolume");
             Internal_DrawMesh(mesh, submeshIndex, matrix, material, layer, camera, properties, castShadows, receiveShadows, probeAnchor, lightProbeUsage, lightProbeProxyVolume);
         }
 
@@ -450,7 +450,7 @@ namespace UnityEngine
             else if (count < 0 || count > Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length))
                 throw new ArgumentOutOfRangeException("count", String.Format("Count must be in the range of 0 to {0}.", Mathf.Min(kMaxDrawMeshInstanceCount, matrices.Length)));
             else if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
-                throw new ArgumentException("lightProbeProxyVolume", "Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.");
+                throw new ArgumentException("Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.", "lightProbeProxyVolume");
 
             if (count > 0)
                 Internal_DrawMeshInstanced(mesh, submeshIndex, material, matrices, count, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
@@ -477,7 +477,7 @@ namespace UnityEngine
             else if (bufferWithArgs == null)
                 throw new ArgumentNullException("bufferWithArgs");
             if (lightProbeUsage == LightProbeUsage.UseProxyVolume && lightProbeProxyVolume == null)
-                throw new ArgumentException("lightProbeProxyVolume", "Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.");
+                throw new ArgumentException("Argument lightProbeProxyVolume must not be null if lightProbeUsage is set to UseProxyVolume.", "lightProbeProxyVolume");
 
             Internal_DrawMeshInstancedIndirect(mesh, submeshIndex, material, bounds, bufferWithArgs, argsOffset, properties, castShadows, receiveShadows, layer, camera, lightProbeUsage, lightProbeProxyVolume);
         }
@@ -539,6 +539,10 @@ namespace UnityEngine
 
         public static void BlitMultiTap(Texture source, RenderTexture dest, Material mat, params Vector2[] offsets)
         {
+            // in case params were not passed, we will end up with empty array (not null) but our cpp code is not ready for that.
+            // do explicit argument exception instead of potential nullref coming from native side
+            if (offsets.Length == 0)
+                throw new ArgumentException("empty offsets list passed.", "offsets");
             Internal_BlitMultiTap(source, dest, mat, offsets);
         }
     }

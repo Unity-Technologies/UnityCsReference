@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -13,7 +14,7 @@ namespace UnityEngine
     [NativeClass("Rectf", "template<typename T> class RectT; typedef RectT<float> Rectf;")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Rect
+    public partial struct Rect : IEquatable<Rect>
     {
         [NativeName("x")]
         private float m_XMin;
@@ -195,8 +196,12 @@ namespace UnityEngine
         {
             if (!(other is Rect)) return false;
 
-            Rect rhs = (Rect)other;
-            return x.Equals(rhs.x) && y.Equals(rhs.y) && width.Equals(rhs.width) && height.Equals(rhs.height);
+            return Equals((Rect)other);
+        }
+
+        public bool Equals(Rect other)
+        {
+            return x.Equals(other.x) && y.Equals(other.y) && width.Equals(other.width) && height.Equals(other.height);
         }
 
         public override string ToString()

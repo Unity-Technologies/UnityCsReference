@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.Experimental.U2D;
+using UnityEditor.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.U2D.Interface;
@@ -29,39 +31,6 @@ namespace UnityEditor
             public readonly GUIStyle dragBorderDotActive = new GUIStyle();
 
             public readonly GUIStyle toolbar;
-
-            public readonly GUIContent[] spriteAlignmentOptions =
-            {
-                EditorGUIUtility.TrTextContent("Center"),
-                EditorGUIUtility.TrTextContent("Top Left"),
-                EditorGUIUtility.TrTextContent("Top"),
-                EditorGUIUtility.TrTextContent("Top Right"),
-                EditorGUIUtility.TrTextContent("Left"),
-                EditorGUIUtility.TrTextContent("Right"),
-                EditorGUIUtility.TrTextContent("Bottom Left"),
-                EditorGUIUtility.TrTextContent("Bottom"),
-                EditorGUIUtility.TrTextContent("Bottom Right"),
-                EditorGUIUtility.TrTextContent("Custom"),
-            };
-
-            public readonly GUIContent pivotLabel = EditorGUIUtility.TrTextContent("Pivot");
-
-            public readonly GUIContent spriteLabel = EditorGUIUtility.TrTextContent("Sprite");
-            public readonly GUIContent customPivotLabel = EditorGUIUtility.TrTextContent("Custom Pivot");
-
-            public readonly GUIContent borderLabel = EditorGUIUtility.TrTextContent("Border");
-            public readonly GUIContent lLabel = EditorGUIUtility.TextContent("L");
-            public readonly GUIContent tLabel = EditorGUIUtility.TextContent("T");
-            public readonly GUIContent rLabel = EditorGUIUtility.TextContent("R");
-            public readonly GUIContent bLabel = EditorGUIUtility.TextContent("B");
-
-            public readonly GUIContent positionLabel = EditorGUIUtility.TrTextContent("Position");
-            public readonly GUIContent xLabel = EditorGUIUtility.TextContent("X");
-            public readonly GUIContent yLabel = EditorGUIUtility.TextContent("Y");
-            public readonly GUIContent wLabel = EditorGUIUtility.TextContent("W");
-            public readonly GUIContent hLabel = EditorGUIUtility.TextContent("H");
-
-            public readonly GUIContent nameLabel = EditorGUIUtility.TrTextContent("Name");
 
             public Styles()
             {
@@ -92,137 +61,242 @@ namespace UnityEditor
             }
         }
 
-        private const float kScrollbarMargin = 16f;
-        private const float kInspectorWindowMargin = 8f;
         private const float kInspectorWidth = 330f;
-        private const float kInspectorHeight = 160f;
-
+        private const float kInspectorHeight = 170;
         private float m_Zoom = 1.0f;
         private GizmoMode m_GizmoMode;
+
+        private VisualElement m_NameElement;
+        private PropertyControl<string> m_NameField;
+        private VisualElement m_PositionElement;
+        private PropertyControl<long> m_PositionFieldX;
+        private PropertyControl<long> m_PositionFieldY;
+        private PropertyControl<long> m_PositionFieldW;
+        private PropertyControl<long> m_PositionFieldH;
+        private PropertyControl<long> m_BorderFieldL;
+        private PropertyControl<long> m_BorderFieldT;
+        private PropertyControl<long> m_BorderFieldR;
+        private PropertyControl<long> m_BorderFieldB;
+        private EnumField m_PivotField;
+        private VisualElement m_CustomPivotElement;
+        private PropertyControl<double> m_CustomPivotFieldX;
+        private PropertyControl<double> m_CustomPivotFieldY;
+        private VisualElement m_SelectedFrameInspector;
 
         private bool ShouldShowRectScaling()
         {
             return hasSelected && m_GizmoMode == GizmoMode.RectEditing;
         }
 
-        private void DoPivotFields()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            SpriteAlignment alignment = selectedSpriteAlignment;
-            alignment = (SpriteAlignment)EditorGUILayout.Popup(styles.pivotLabel, (int)alignment, styles.spriteAlignmentOptions);
-
-            Vector2 oldPivot = selectedSpritePivot;
-            Vector2 newPivot = oldPivot;
-
-            using (new EditorGUI.DisabledScope(alignment != SpriteAlignment.Custom))
-            {
-                Rect pivotRect = GUILayoutUtility.GetRect(kInspectorWidth - kInspectorWindowMargin, EditorGUI.GetPropertyHeight(SerializedPropertyType.Vector2, styles.customPivotLabel));
-                GUI.SetNextControlName("PivotField");
-                newPivot = EditorGUI.Vector2Field(pivotRect, styles.customPivotLabel, oldPivot);
-            }
-
-            if (EditorGUI.EndChangeCheck())
-                SetSpritePivotAndAlignment(newPivot, alignment);
-        }
-
-        private void DoBorderFields()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            Vector4 oldBorder = selectedSpriteBorder;
-            int x = Mathf.RoundToInt(oldBorder.x);
-            int y = Mathf.RoundToInt(oldBorder.y);
-            int z = Mathf.RoundToInt(oldBorder.z);
-            int w = Mathf.RoundToInt(oldBorder.w);
-
-            SpriteEditorUtility.FourIntFields(new Vector2(kInspectorWidth - kInspectorWindowMargin, EditorGUI.kSingleLineHeight * 2f + EditorGUI.kVerticalSpacingMultiField),
-                styles.borderLabel,
-                styles.lLabel,
-                styles.tLabel,
-                styles.rLabel,
-                styles.bLabel,
-                ref x, ref w, ref z, ref y);
-
-            Vector4 newBorder = new Vector4(x, y, z, w);
-
-            if (EditorGUI.EndChangeCheck())
-                selectedSpriteBorder = newBorder;
-        }
-
-        private void DoPositionField()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            Rect oldRect = selectedSpriteRect;
-            int x = Mathf.RoundToInt(oldRect.x);
-            int y = Mathf.RoundToInt(oldRect.y);
-            int w = Mathf.RoundToInt(oldRect.width);
-            int h = Mathf.RoundToInt(oldRect.height);
-
-            SpriteEditorUtility.FourIntFields(new Vector2(kInspectorWidth - kInspectorWindowMargin, EditorGUI.kSingleLineHeight * 2f + EditorGUI.kVerticalSpacingMultiField),
-                styles.positionLabel,
-                styles.xLabel,
-                styles.yLabel,
-                styles.wLabel,
-                styles.hLabel,
-                ref x, ref y, ref w, ref h);
-
-            if (EditorGUI.EndChangeCheck())
-                selectedSpriteRect = new Rect(x, y, w, h);
-        }
-
-        private void DoNameField()
-        {
-            EditorGUI.BeginChangeCheck();
-
-            string oldName = selectedSpriteName;
-            GUI.SetNextControlName("SpriteName");
-            string newName = EditorGUILayout.TextField(styles.nameLabel, oldName);
-
-            if (EditorGUI.EndChangeCheck())
-                selectedSpriteName = newName;
-        }
-
-        private Rect inspectorRect
+        private static Rect inspectorRect
         {
             get
             {
-                Rect position = spriteEditor.windowDimension;
                 return new Rect(
-                    position.width - kInspectorWidth - kInspectorWindowMargin,
-                    position.height - kInspectorHeight - kInspectorWindowMargin,
+                    0, 0,
                     kInspectorWidth,
                     kInspectorHeight);
             }
         }
 
-        private void DoSelectedFrameInspector()
+        private void AddMainUI(VisualElement mainView)
         {
+            var visualTree = EditorGUIUtility.Load("UXML/SpriteEditor/SpriteFrameModuleInspector.uxml") as VisualTreeAsset;
+            m_SelectedFrameInspector = visualTree.CloneTree(null).Q("spriteFrameModuleInspector");
+
+            m_NameElement = m_SelectedFrameInspector.Q("name");
+            m_NameField = m_SelectedFrameInspector.Q<PropertyControl<string>>("spriteName");
+            m_NameField.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        selectedSpriteName = evt.newValue;
+                    }
+                });
+
+            m_PositionElement = m_SelectedFrameInspector.Q("position");
+            m_PositionFieldX = m_PositionElement.Q<PropertyControl<long>>("positionX");
+            m_PositionFieldX.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var rect = selectedSpriteRect;
+                        rect.x = evt.newValue;
+                        selectedSpriteRect = rect;
+                        m_PositionFieldX.value = (long)selectedSpriteRect.x;
+                    }
+                });
+
+            m_PositionFieldY = m_PositionElement.Q<PropertyControl<long>>("positionY");
+            m_PositionFieldY.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var rect = selectedSpriteRect;
+                        rect.y = evt.newValue;
+                        selectedSpriteRect = rect;
+                        m_PositionFieldY.value = (long)selectedSpriteRect.y;
+                    }
+                });
+
+            m_PositionFieldW = m_PositionElement.Q<PropertyControl<long>>("positionW");
+            m_PositionFieldW.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var rect = selectedSpriteRect;
+                        rect.width = evt.newValue;
+                        selectedSpriteRect = rect;
+                        m_PositionFieldW.value = (long)selectedSpriteRect.width;
+                    }
+                });
+
+            m_PositionFieldH = m_PositionElement.Q<PropertyControl<long>>("positionH");
+            m_PositionFieldH.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var rect = selectedSpriteRect;
+                        rect.height = evt.newValue;
+                        selectedSpriteRect = rect;
+                        m_PositionFieldH.value = (long)selectedSpriteRect.height;
+                    }
+                });
+
+            var borderElement = m_SelectedFrameInspector.Q("border");
+            m_BorderFieldL = borderElement.Q<PropertyControl<long>>("borderL");
+            m_BorderFieldL.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var border = selectedSpriteBorder;
+                        border.x = evt.newValue;
+                        selectedSpriteBorder = border;
+                        m_BorderFieldL.value = (long)selectedSpriteBorder.x;
+                    }
+                });
+
+            m_BorderFieldT = borderElement.Q<PropertyControl<long>>("borderT");
+            m_BorderFieldT.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var border = selectedSpriteBorder;
+                        border.y = evt.newValue;
+                        selectedSpriteBorder = border;
+                        m_BorderFieldT.value = (long)selectedSpriteBorder.y;
+                    }
+                });
+
+            m_BorderFieldR = borderElement.Q<PropertyControl<long>>("borderR");
+            m_BorderFieldR.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var border = selectedSpriteBorder;
+                        border.z = evt.newValue;
+                        selectedSpriteBorder = border;
+                        m_BorderFieldR.value = (long)selectedSpriteBorder.z;
+                    }
+                });
+
+            m_BorderFieldB = borderElement.Q<PropertyControl<long>>("borderB");
+            m_BorderFieldB.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var border = selectedSpriteBorder;
+                        border.w = evt.newValue;
+                        selectedSpriteBorder = border;
+                        m_BorderFieldB.value = (long)selectedSpriteBorder.w;
+                    }
+                });
+
+            m_PivotField = m_SelectedFrameInspector.Q<EnumField>("pivotField");
+            m_PivotField.Init(SpriteAlignment.Center);
+            m_PivotField.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        SpriteAlignment alignment = (SpriteAlignment)evt.newValue;
+                        SetSpritePivotAndAlignment(selectedSpritePivot, alignment);
+                        m_CustomPivotElement.SetEnabled(selectedSpriteAlignment == SpriteAlignment.Custom);
+                        m_CustomPivotFieldX.value = selectedSpritePivot.x;
+                        m_CustomPivotFieldY.value = selectedSpritePivot.y;
+                    }
+                });
+
+
+            m_CustomPivotElement = m_SelectedFrameInspector.Q("customPivot");
+            m_CustomPivotFieldX = m_CustomPivotElement.Q<PropertyControl<double>>("customPivotX");
+            m_CustomPivotFieldX.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var pivot = selectedSpritePivot;
+                        pivot.x = (float)evt.newValue;
+                        SetSpritePivotAndAlignment(pivot, selectedSpriteAlignment);
+                    }
+                });
+
+            m_CustomPivotFieldY = m_CustomPivotElement.Q<PropertyControl<double>>("customPivotY");
+            m_CustomPivotFieldY.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        var pivot = selectedSpritePivot;
+                        pivot.y = (float)evt.newValue;
+                        SetSpritePivotAndAlignment(pivot, selectedSpriteAlignment);
+                    }
+                });
+
+            //// Force an update of all the fields.
+            PopulateSpriteFrameInspectorField();
+
+            mainView.RegisterCallback<SpriteSelectionChangeEvent>(SelectionChange);
+
+            // Stop mouse events from reaching the main view.
+            m_SelectedFrameInspector.pickingMode = PickingMode.Ignore;
+            m_SelectedFrameInspector.RegisterCallback<MouseDownEvent>((e) => { e.StopPropagation(); });
+            m_SelectedFrameInspector.RegisterCallback<MouseUpEvent>((e) => { e.StopPropagation(); });
+            m_SelectedFrameInspector.AddToClassList("moduleWindow");
+            m_SelectedFrameInspector.AddToClassList("bottomRightFloating");
+            mainView.Add(m_SelectedFrameInspector);
+        }
+
+        private void SelectionChange(SpriteSelectionChangeEvent evt)
+        {
+            m_SelectedFrameInspector.visible = hasSelected;
+            PopulateSpriteFrameInspectorField();
+        }
+
+        private void UIUndoCallback()
+        {
+            PopulateSpriteFrameInspectorField();
+        }
+
+        protected void PopulateSpriteFrameInspectorField()
+        {
+            m_SelectedFrameInspector.visible = hasSelected;
             if (!hasSelected)
                 return;
-
-            EditorGUIUtility.wideMode = true;
-            float oldLabelWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = 135f;
-
-            GUILayout.BeginArea(inspectorRect);
-            GUILayout.BeginVertical(styles.spriteLabel, GUI.skin.window);
-
-            // Name and Position is set by importer in Single import mode
-            using (new EditorGUI.DisabledScope(!containsMultipleSprites))
-            {
-                DoNameField();
-                DoPositionField();
-            }
-
-            DoBorderFields();
-            DoPivotFields();
-
-            GUILayout.EndVertical();
-            GUILayout.EndArea();
-
-            EditorGUIUtility.labelWidth = oldLabelWidth;
+            m_NameElement.SetEnabled(containsMultipleSprites);
+            m_NameField.value = selectedSpriteName;
+            m_PositionElement.SetEnabled(containsMultipleSprites);
+            var spriteRect = selectedSpriteRect;
+            m_PositionFieldX.value = Mathf.RoundToInt(spriteRect.x);
+            m_PositionFieldY.value = Mathf.RoundToInt(spriteRect.y);
+            m_PositionFieldW.value = Mathf.RoundToInt(spriteRect.width);
+            m_PositionFieldH.value = Mathf.RoundToInt(spriteRect.height);
+            var spriteBorder = selectedSpriteBorder;
+            m_BorderFieldL.value = Mathf.RoundToInt(spriteBorder.x);
+            m_BorderFieldT.value = Mathf.RoundToInt(spriteBorder.y);
+            m_BorderFieldR.value = Mathf.RoundToInt(spriteBorder.z);
+            m_BorderFieldB.value = Mathf.RoundToInt(spriteBorder.w);
+            m_PivotField.value = selectedSpriteAlignment;
+            m_CustomPivotFieldX.value = (selectedSpritePivot.x);
+            m_CustomPivotFieldY.value = (selectedSpritePivot.y);
+            m_CustomPivotElement.SetEnabled(hasSelected && selectedSpriteAlignment == SpriteAlignment.Custom);
         }
 
         private static Vector2 ApplySpriteAlignmentToPivot(Vector2 pivot, Rect rect, SpriteAlignment alignment)
@@ -308,6 +382,7 @@ namespace UnityEditor
                     alignment = SpriteAlignment.Custom;
                 }
                 SetSpritePivotAndAlignment(pivot, alignment);
+                PopulateSpriteFrameInspectorField();
             }
         }
 
@@ -352,6 +427,7 @@ namespace UnityEditor
                 border.w = rect.yMax - top;
                 border.y = bottom - rect.yMin;
                 selectedSpriteBorder = border;
+                PopulateSpriteFrameInspectorField();
             }
         }
 
@@ -387,6 +463,7 @@ namespace UnityEditor
                 border.w = rect.yMax - top;
                 border.y = bottom - rect.yMin;
                 selectedSpriteBorder = border;
+                PopulateSpriteFrameInspectorField();
             }
         }
 
@@ -425,6 +502,7 @@ namespace UnityEditor
                 border.y = bottom - rect.yMin;
 
                 selectedSpriteBorder = border;
+                PopulateSpriteFrameInspectorField();
             }
         }
 
@@ -516,7 +594,6 @@ namespace UnityEditor
 
         public override void DoPostGUI()
         {
-            DoSelectedFrameInspector();
         }
     }
 }

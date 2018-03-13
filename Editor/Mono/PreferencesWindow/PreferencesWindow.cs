@@ -68,6 +68,7 @@ namespace UnityEditor
             public static readonly GUIContent disableEditorAnalytics = EditorGUIUtility.TrTextContent("Disable Editor Analytics (Pro Only)");
             public static readonly GUIContent showAssetStoreSearchHits = EditorGUIUtility.TrTextContent("Show Asset Store search hits");
             public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets");
+            public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Skin");
             public static readonly GUIContent[] editorSkinOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional"), };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alpha Numeric Sorting");
@@ -160,6 +161,7 @@ namespace UnityEditor
         private bool m_EnableEditorAnalytics;
         private bool m_ShowAssetStoreSearchHits;
         private bool m_VerifySavingAssets;
+        private ScriptChangesDuringPlayOptions m_ScriptCompilationDuringPlay;
         private bool m_DeveloperMode;
         private bool m_DeveloperModeDirty;
         private bool m_AllowAttachedDebuggingOfEditor;
@@ -545,6 +547,8 @@ namespace UnityEditor
                 assetStoreSearchChanged = true;
 
             m_VerifySavingAssets = EditorGUILayout.Toggle(Styles.verifySavingAssets, m_VerifySavingAssets);
+
+            m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorGUILayout.EnumPopup(Styles.scriptChangesDuringPlay, m_ScriptCompilationDuringPlay);
 
             // Only show this toggle if this is a source build or we're already in developer mode.
             // We don't want to show this to users yet.
@@ -1026,6 +1030,7 @@ namespace UnityEditor
             EditorPrefs.SetBool("EnableEditorAnalytics", m_EnableEditorAnalytics);
             EditorPrefs.SetBool("ShowAssetStoreSearchHits", m_ShowAssetStoreSearchHits);
             EditorPrefs.SetBool("VerifySavingAssets", m_VerifySavingAssets);
+            EditorPrefs.SetInt("ScriptCompilationDuringPlay", (int)m_ScriptCompilationDuringPlay);
 
             // The Preferences window always writes all preferences, we don't want this behavior since we
             // want the default value to just match "IsSourceBuild" until the developer has explicitly changed it.
@@ -1136,6 +1141,7 @@ namespace UnityEditor
             m_EnableEditorAnalytics = EditorPrefs.GetBool("EnableEditorAnalytics", true);
             m_ShowAssetStoreSearchHits = EditorPrefs.GetBool("ShowAssetStoreSearchHits", true);
             m_VerifySavingAssets = EditorPrefs.GetBool("VerifySavingAssets", false);
+            m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorPrefs.GetInt("ScriptCompilationDuringPlay", 0);
             m_DeveloperMode = Unsupported.IsDeveloperMode();
 
             m_GICacheSettings.m_EnableCustomPath = EditorPrefs.GetBool("GICacheEnableCustomPath");

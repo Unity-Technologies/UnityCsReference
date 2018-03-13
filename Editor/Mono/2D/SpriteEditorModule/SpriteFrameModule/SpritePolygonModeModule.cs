@@ -23,6 +23,7 @@ namespace UnityEditor
         public override void OnModuleActivate()
         {
             base.OnModuleActivate();
+            AddMainUI(spriteEditor.GetMainVisualContainer());
             m_Outline = new List<List<Vector2[]>>();
 
             for (int i = 0; i < m_RectsCache.spriteRects.Count; ++i)

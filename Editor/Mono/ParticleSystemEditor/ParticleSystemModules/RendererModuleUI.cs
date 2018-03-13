@@ -46,6 +46,7 @@ namespace UnityEditor
         SerializedProperty m_VertexStreams;
         SerializedProperty m_MaskInteraction;
         SerializedProperty m_EnableGPUInstancing;
+        SerializedProperty m_ApplyActiveColorSpace;
 
 
         ReorderableList m_VertexStreamsList;
@@ -95,6 +96,7 @@ namespace UnityEditor
             public GUIContent visualizePivot = EditorGUIUtility.TrTextContent("Visualize Pivot", "Render the pivot positions of the particles.");
             public GUIContent useCustomVertexStreams = EditorGUIUtility.TrTextContent("Custom Vertex Streams", "Choose whether to send custom particle data to the shader.");
             public GUIContent enableGPUInstancing = EditorGUIUtility.TrTextContent("Enable GPU Instancing", "Use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
+            public GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, particle colors will be converted appropriately before being passed to the GPU.");
 
             // Keep in sync with enum in ParticleSystemRenderer.h
             public GUIContent[] particleTypes = new GUIContent[]
@@ -238,6 +240,7 @@ namespace UnityEditor
             m_MaskInteraction = GetProperty0("m_MaskInteraction");
 
             m_EnableGPUInstancing = GetProperty0("m_EnableGPUInstancing");
+            m_ApplyActiveColorSpace = GetProperty0("m_ApplyActiveColorSpace");
 
             m_UseCustomVertexStreams = GetProperty0("m_UseCustomVertexStreams");
             m_VertexStreams = GetProperty0("m_VertexStreams");
@@ -338,6 +341,7 @@ namespace UnityEditor
                 }
 
                 GUIPopup(s_Texts.maskingMode, m_MaskInteraction, s_Texts.maskInteractions);
+                GUIToggle(s_Texts.applyActiveColorSpace, m_ApplyActiveColorSpace);
 
                 if (GUIToggle(s_Texts.useCustomVertexStreams, m_UseCustomVertexStreams))
                     DoVertexStreamsGUI(renderMode);

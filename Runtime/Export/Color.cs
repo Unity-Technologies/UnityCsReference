@@ -15,7 +15,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Math/Color.h")]
     [NativeClass("ColorRGBAf")]
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
-    public struct Color
+    public struct Color : IEquatable<Color>
     {
         // Red component of the color.
         public float r;
@@ -64,8 +64,13 @@ namespace UnityEngine
         public override bool Equals(object other)
         {
             if (!(other is Color)) return false;
-            Color rhs = (Color)other;
-            return r.Equals(rhs.r) && g.Equals(rhs.g) && b.Equals(rhs.b) && a.Equals(rhs.a);
+
+            return Equals((Color)other);
+        }
+
+        public bool Equals(Color other)
+        {
+            return r.Equals(other.r) && g.Equals(other.g) && b.Equals(other.b) && a.Equals(other.a);
         }
 
         // Adds two colors together. Each component is added separately.

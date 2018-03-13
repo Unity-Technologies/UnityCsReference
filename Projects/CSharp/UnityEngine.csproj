@@ -377,6 +377,9 @@
   <Compile Include="..\..\Runtime\Export\Graphics_BindingsOverloads.cs">
     <Link>Runtime\Export\Graphics_BindingsOverloads.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Handheld.bindings.cs">
+    <Link>Runtime\Export\Handheld.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Handheld.cs">
     <Link>Runtime\Export\Handheld.cs</Link>
   </Compile>
@@ -628,6 +631,12 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\RuntimeUndo.bindings.cs">
     <Link>Runtime\Export\RuntimeUndo.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\SceneManager\Scene.bindings.cs">
+    <Link>Runtime\Export\SceneManager\Scene.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\SceneManager\Scene.cs">
+    <Link>Runtime\Export\SceneManager\Scene.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\SceneManager\SceneManager.bindings.cs">
     <Link>Runtime\Export\SceneManager\SceneManager.bindings.cs</Link>
@@ -962,9 +971,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\GraphicsBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\GraphicsBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\HandheldBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\HandheldBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs</Link>
   </Compile>
@@ -994,9 +1000,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SamplerBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\SamplerBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\SceneBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\SceneBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\ScriptableRenderLoopBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Core\ScriptableRenderLoopBindings.gen.cs</Link>
@@ -1730,6 +1733,9 @@
   <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs">
     <Link>Modules\Video\Public\ScriptBindings\VideoPlayerExtensions.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Wind\Public\WindZone.bindings.cs">
+    <Link>Modules\Wind\Public\WindZone.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraInstance.bindings.cs">
     <Link>Modules\XR\Subsystems\Camera\XRCameraInstance.bindings.cs</Link>
   </Compile>
@@ -2096,9 +2102,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\ParticleSystem\ParticleSystemBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\ParticleSystem\ParticleSystemBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Physics\DynamicsBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Physics\DynamicsBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs</Link>
   </Compile>
@@ -2110,9 +2113,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Wind\WindZoneBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Wind\WindZoneBindings.gen.cs</Link>
   </Compile>
 
   </ItemGroup>

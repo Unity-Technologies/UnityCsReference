@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting.APIUpdating;
@@ -167,7 +168,9 @@ namespace UnityEditorInternal.Profiling
 
         public extern bool HasItemChildren(int id);
 
-        public extern int[] GetItemChildren(int id);
+        public extern int GetItemChildrenCount(int id);
+
+        public extern void GetItemChildren(int id, List<int> outChildren);
 
         public extern int[] GetItemAncestors(int id);
 

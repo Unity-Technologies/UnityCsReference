@@ -12,7 +12,7 @@ namespace UnityEngine
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct BoundsInt
+    public struct BoundsInt : IEquatable<BoundsInt>
     {
         private Vector3Int m_Position;
         private Vector3Int m_Size;
@@ -96,8 +96,12 @@ namespace UnityEngine
         {
             if (!(other is BoundsInt)) return false;
 
-            BoundsInt rhs = (BoundsInt)other;
-            return m_Position.Equals(rhs.m_Position) && m_Size.Equals(rhs.m_Size);
+            return Equals((BoundsInt)other);
+        }
+
+        public bool Equals(BoundsInt other)
+        {
+            return m_Position.Equals(other.m_Position) && m_Size.Equals(other.m_Size);
         }
 
         public override int GetHashCode()

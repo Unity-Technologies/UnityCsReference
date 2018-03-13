@@ -11,7 +11,7 @@ namespace UnityEditor
     [Serializable]
     [RequiredByNativeCode]
     [NativeHeader("Runtime/Utilities/GUID.h")]
-    public partial struct GUID : IComparable, IComparable<GUID>
+    public partial struct GUID : IComparable, IComparable<GUID>, IEquatable<GUID>
     {
         private uint m_Value0, m_Value1, m_Value2, m_Value3;
 
@@ -58,8 +58,13 @@ namespace UnityEditor
         {
             if (obj == null || !(obj is GUID))
                 return false;
-            GUID rhs = (GUID)obj;
-            return rhs == this;
+
+            return Equals((GUID)obj);
+        }
+
+        public bool Equals(GUID obj)
+        {
+            return this == obj;
         }
 
         public override int GetHashCode()

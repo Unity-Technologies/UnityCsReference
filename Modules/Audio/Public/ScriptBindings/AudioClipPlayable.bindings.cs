@@ -108,7 +108,6 @@ namespace UnityEngine.Audio
 
         internal void SetStartDelay(double value)
         {
-            ValidateStartDelayInternal(value);
             SetStartDelayInternal(ref m_Handle, value);
         }
 
@@ -136,7 +135,6 @@ namespace UnityEngine.Audio
 
         public void Seek(double startTime, double startDelay, [DefaultValue("0")] double duration)
         {
-            ValidateStartDelayInternal(startDelay);
             SetStartDelayInternal(ref m_Handle, startDelay);
             if (duration > 0)
             {
@@ -154,22 +152,6 @@ namespace UnityEngine.Audio
 
             m_Handle.SetTime(startTime);
             m_Handle.Play();
-        }
-
-        private void ValidateStartDelayInternal(double startDelay)
-        {
-            double currentDelay = GetStartDelayInternal(ref m_Handle);
-
-            //FIXME Chanage 0.5 from arbitrary value to something that is dependent on sample rate and dsp buffer size
-            const double validEndDelay = 0.05;
-            const double validStartDelay = 0.00001; // for double/float errors
-
-            if (IsChannelPlaying() &&
-                (startDelay < validEndDelay || (currentDelay >= validStartDelay && currentDelay < validEndDelay)))
-            {
-                Debug.LogWarning("AudioClipPlayable.StartDelay: Setting new delay when existing delay is too small or 0.0 ("
-                    + currentDelay + "), audio system will not be able to change in time");
-            }
         }
 
         // Bindings methods.

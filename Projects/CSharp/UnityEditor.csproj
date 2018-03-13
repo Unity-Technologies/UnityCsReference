@@ -161,6 +161,9 @@
   <Compile Include="..\..\Editor\Mono\Accessibility\UserAccessibilitySettings.cs">
     <Link>Editor\Mono\Accessibility\UserAccessibilitySettings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\ActiveEditorTracker.bindings.cs">
+    <Link>Editor\Mono\ActiveEditorTracker.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\AnimationCurvePreviewCache.bindings.cs">
     <Link>Editor\Mono\AnimationCurvePreviewCache.bindings.cs</Link>
   </Compile>
@@ -878,6 +881,9 @@
   <Compile Include="..\..\Editor\Mono\CompilationPipeline.bindings.cs">
     <Link>Editor\Mono\CompilationPipeline.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\ComponentUtility.bindings.cs">
+    <Link>Editor\Mono\ComponentUtility.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\ComponentUtility.cs">
     <Link>Editor\Mono\ComponentUtility.cs</Link>
   </Compile>
@@ -1048,6 +1054,12 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\EditorResources.cs">
     <Link>Editor\Mono\EditorResources.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorSceneManager.bindings.cs">
+    <Link>Editor\Mono\EditorSceneManager.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorSceneManager.cs">
+    <Link>Editor\Mono\EditorSceneManager.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\EditorSettings.bindings.cs">
     <Link>Editor\Mono\EditorSettings.bindings.cs</Link>
@@ -1811,6 +1823,9 @@
   <Compile Include="..\..\Editor\Mono\Inspector\CameraEditor.cs">
     <Link>Editor\Mono\Inspector\CameraEditor.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\CameraEditorUtils.cs">
+    <Link>Editor\Mono\Inspector\CameraEditorUtils.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\CanvasEditor.cs">
     <Link>Editor\Mono\Inspector\CanvasEditor.cs</Link>
   </Compile>
@@ -1976,8 +1991,17 @@
   <Compile Include="..\..\Editor\Mono\Inspector\LineRendererCurveEditor.cs">
     <Link>Editor\Mono\Inspector\LineRendererCurveEditor.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\LineRendererInspector.cs">
-    <Link>Editor\Mono\Inspector\LineRendererInspector.cs</Link>
+  <Compile Include="..\..\Editor\Mono\Inspector\LineRendererEditor.cs">
+    <Link>Editor\Mono\Inspector\LineRendererEditor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\LineRendererEditorSettings.cs">
+    <Link>Editor\Mono\Inspector\LineRendererEditorSettings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\LineRendererPositionsView.cs">
+    <Link>Editor\Mono\Inspector\LineRendererPositionsView.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\LineRendererToolModes.cs">
+    <Link>Editor\Mono\Inspector\LineRendererToolModes.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\MaterialEditor.cs">
     <Link>Editor\Mono\Inspector\MaterialEditor.cs</Link>
@@ -2228,8 +2252,8 @@
   <Compile Include="..\..\Editor\Mono\Inspector\TimelineControl.cs">
     <Link>Editor\Mono\Inspector\TimelineControl.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\TrailRendererInspector.cs">
-    <Link>Editor\Mono\Inspector\TrailRendererInspector.cs</Link>
+  <Compile Include="..\..\Editor\Mono\Inspector\TrailRendererEditor.cs">
+    <Link>Editor\Mono\Inspector\TrailRendererEditor.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\TransformInspector.cs">
     <Link>Editor\Mono\Inspector\TransformInspector.cs</Link>
@@ -2579,6 +2603,9 @@
   <Compile Include="..\..\Editor\Mono\PlayerConnectionLogReceiver.cs">
     <Link>Editor\Mono\PlayerConnectionLogReceiver.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\PlayerSettings.bindings.cs">
+    <Link>Editor\Mono\PlayerSettings.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\PlayerSettings.deprecated.cs">
     <Link>Editor\Mono\PlayerSettings.deprecated.cs</Link>
   </Compile>
@@ -2624,8 +2651,14 @@
   <Compile Include="..\..\Editor\Mono\Plugins\PluginsHelper.cs">
     <Link>Editor\Mono\Plugins\PluginsHelper.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\PointCreator.cs">
+    <Link>Editor\Mono\PointCreator.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\PointEditor.cs">
     <Link>Editor\Mono\PointEditor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\PolygonEditor.bindings.cs">
+    <Link>Editor\Mono\PolygonEditor.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\PostprocessScene.cs">
     <Link>Editor\Mono\PostprocessScene.cs</Link>
@@ -3200,6 +3233,9 @@
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\PopupField.cs">
     <Link>Editor\Mono\UIElements\Controls\PopupField.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\PropertyControl.cs">
+    <Link>Editor\Mono\UIElements\Controls\PropertyControl.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\TextValueField.cs">
     <Link>Editor\Mono\UIElements\Controls\TextValueField.cs</Link>
   </Compile>
@@ -3470,9 +3506,6 @@
   <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewTestFunctions.cs">
     <Link>Editor\Mono\WebViewEditorWindow\WebViewTestFunctions.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\ActiveEditorTrackerBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\ActiveEditorTrackerBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AnimationUtilityBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\AnimationUtilityBindings.gen.cs</Link>
   </Compile>
@@ -3518,14 +3551,8 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\CollabBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\CollabBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\ComponentUtilityBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\ComponentUtilityBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\EditorConnectionInternalBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\EditorSceneManagerBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\EditorSceneManagerBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\FrameDebuggerBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\FrameDebuggerBindings.gen.cs</Link>
@@ -3565,9 +3592,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsWebGLBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsWebGLBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PolygonEditorBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\PolygonEditorBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\SerializedPropertyBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\SerializedPropertyBindings.gen.cs</Link>
@@ -3613,6 +3637,9 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\WebViewBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\WebViewBindings.gen.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Src\Physics\ScriptBindings\ColliderUtil.bindings.cs">
+    <Link>Editor\Src\Physics\ScriptBindings\ColliderUtil.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Src\Physics\ScriptBindings\PhysicsDebug.bindings.cs">
     <Link>Editor\Src\Physics\ScriptBindings\PhysicsDebug.bindings.cs</Link>
@@ -4240,9 +4267,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\AIEditor\NavMeshVisualizationSettingsBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\AIEditor\NavMeshVisualizationSettingsBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\PhysicsEditor\ColliderUtilBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\PhysicsEditor\ColliderUtilBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\ProfilerEditor\ProfilerAPIBindings.gen.cs</Link>

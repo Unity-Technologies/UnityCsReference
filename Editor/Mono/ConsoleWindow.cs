@@ -818,6 +818,22 @@ namespace UnityEditor
                     ToggleLogStackTracesForAll, stackTraceLogType);
             }
         }
+
+        private static event EntryDoubleClickedDelegate entryWithManagedCallbackDoubleClicked;
+
+        [RequiredByNativeCode]
+        private static void SendEntryDoubleClicked(LogEntry entry)
+        {
+            if (ConsoleWindow.entryWithManagedCallbackDoubleClicked != null)
+                ConsoleWindow.entryWithManagedCallbackDoubleClicked(entry);
+        }
+
+        // This method is used by the Visual Scripting project. Please do not delete. Contact @husseink for more information.
+        internal void AddMessageWithDoubleClickCallback(string condition, string file, int mode, int instanceID)
+        {
+            var outputEntry = new LogEntry {condition = condition, file = file, mode = mode, instanceID = instanceID};
+            LogEntries.AddMessageWithDoubleClickCallback(outputEntry);
+        }
     }
 
     internal class GettingLogEntriesScope : IDisposable

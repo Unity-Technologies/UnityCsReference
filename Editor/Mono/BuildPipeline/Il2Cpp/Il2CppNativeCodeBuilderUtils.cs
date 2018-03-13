@@ -12,7 +12,7 @@ namespace UnityEditorInternal
 {
     public static class Il2CppNativeCodeBuilderUtils
     {
-        public static IEnumerable<string> AddBuilderArguments(Il2CppNativeCodeBuilder builder, string outputRelativePath, IEnumerable<string> includeRelativePaths, bool debugBuild)
+        public static IEnumerable<string> AddBuilderArguments(Il2CppNativeCodeBuilder builder, string outputRelativePath, IEnumerable<string> includeRelativePaths, IEnumerable<string> additionalLibs, bool debugBuild)
         {
             var arguments = new List<string>();
 
@@ -43,6 +43,8 @@ namespace UnityEditorInternal
 
             foreach (var includePath in builder.ConvertIncludesToFullPaths(includeRelativePaths))
                 arguments.Add(FormatArgument("additional-include-directories", includePath));
+            foreach (var library in additionalLibs)
+                arguments.Add(FormatArgument("additional-libraries", library));
 
             arguments.AddRange(builder.AdditionalIl2CPPArguments);
 

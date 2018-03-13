@@ -481,7 +481,24 @@ namespace UnityEngine.Experimental.UIElements
                 root.worldBound.size.magnitude > Mathf.Epsilon;
         }
 
-        private void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, Rect currentGlobalClip)
+        private bool whinedOnceAboutRotatedClipSpaceThisFrame = false;
+        private bool DoesMatrixHaveUnsupportedRotation(Matrix4x4 m)
+        {
+            Func<float, bool> ApproximatelyZero = delegate(float f) { return Math.Abs(f) < 1e-4f; };
+
+            // In order to pass on rotation angles that are multiples of 90 degrees, we check for two zeroes per row.
+            for (int column = 0; column < 3; ++column)
+            {
+                int zeroCount = 0;
+                zeroCount += ApproximatelyZero(m[0, column]) ? 1 : 0;
+                zeroCount += ApproximatelyZero(m[1, column]) ? 1 : 0;
+                zeroCount += ApproximatelyZero(m[2, column]) ? 1 : 0;
+                if (zeroCount < 2) return true;
+            }
+            return false;
+        }
+
+        private void PaintSubTree(Event e, VisualElement root, Matrix4x4 offset, VisualElement.ClippingOptions clippingOption, Rect currentGlobalClip)
         {
             if (root == null || root.panel != this)
                 return;
@@ -505,12 +522,20 @@ namespace UnityEngine.Experimental.UIElements
                 float y1 = Mathf.Max(worldBound.y, currentGlobalClip.y);
                 float y2 = Mathf.Min(worldBound.y + worldBound.height, currentGlobalClip.y + currentGlobalClip.height);
 
-                // new global clip
+                // new global clip and hierarchical clip space option.
                 currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
+                clippingOption = root.clippingOptions;
             }
             else
             {
                 //since our children are not clipped, there is no early out.
+            }
+
+            // Check for the rotated space - clipping issue.
+            if (!whinedOnceAboutRotatedClipSpaceThisFrame && clippingOption == VisualElement.ClippingOptions.ClipContents && DoesMatrixHaveUnsupportedRotation(root.worldTransform))
+            {
+                Debug.LogError("Panel.PaintSubTree - Rotated clip-spaces are only supported by the VisualElement.ClippingOptions.ClipAndCacheContents mode. First offending Panel:'" + root.name + "'.");
+                whinedOnceAboutRotatedClipSpaceThisFrame = true;
             }
 
             if (ShouldUsePixelCache(root))
@@ -603,7 +628,7 @@ namespace UnityEngine.Experimental.UIElements
                                 root.DoRepaint(painter);
                                 root.ClearDirty(ChangeType.Repaint);
 
-                                PaintSubTreeChildren(e, root, childrenOffset, textureClip);
+                                PaintSubTreeChildren(e, root, childrenOffset, clippingOption, textureClip);
                             }
 
                         if (hasRoundedBorderRects)
@@ -698,19 +723,19 @@ namespace UnityEngine.Experimental.UIElements
                     stylePainter.opacity = 1.0f;
                     root.ClearDirty(ChangeType.Repaint);
 
-                    PaintSubTreeChildren(e, root, offset, currentGlobalClip);
+                    PaintSubTreeChildren(e, root, offset, clippingOption, currentGlobalClip);
                 }
             }
         }
 
-        private void PaintSubTreeChildren(Event e, VisualElement root, Matrix4x4 offset, Rect textureClip)
+        private void PaintSubTreeChildren(Event e, VisualElement root, Matrix4x4 offset, VisualElement.ClippingOptions clippingOption, Rect textureClip)
         {
             int count = root.shadow.childCount;
             for (int i = 0; i < count; i++)
             {
                 VisualElement child = root.shadow[i];
 
-                PaintSubTree(e, child, offset, textureClip);
+                PaintSubTree(e, child, offset, clippingOption, textureClip);
 
                 if (count != root.shadow.childCount)
                 {
@@ -738,8 +763,9 @@ namespace UnityEngine.Experimental.UIElements
             // paint
             Rect clipRect = visualTree.clippingOptions != VisualElement.ClippingOptions.NoClipping ? visualTree.layout : GUIClip.topmostRect;
 
+            whinedOnceAboutRotatedClipSpaceThisFrame = false;
             Profiler.BeginSample("Panel Root PaintSubTree");
-            PaintSubTree(e, visualTree, Matrix4x4.identity, clipRect);
+            PaintSubTree(e, visualTree, Matrix4x4.identity, VisualElement.ClippingOptions.NoClipping, clipRect);
             Profiler.EndSample();
             Profiler.EndSample();
 

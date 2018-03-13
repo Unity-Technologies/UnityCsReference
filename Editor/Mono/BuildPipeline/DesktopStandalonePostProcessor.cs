@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Modules;
 using UnityEditor.Utils;
@@ -21,8 +22,30 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     public override void PostProcess(BuildPostProcessArgs args)
     {
-        SetupStagingArea(args);
-        CopyStagingAreaIntoDestination(args);
+        try
+        {
+            CheckSafeProjectOverwrite(args);
+
+            var filesToNotOverwrite = new HashSet<string>(new FilePathComparer());
+            SetupStagingArea(args, filesToNotOverwrite);
+
+            if (EditorUtility.DisplayCancelableProgressBar("Building Player", "Copying files to final destination", 0.1f))
+                throw new OperationCanceledException();
+
+            CopyStagingAreaIntoDestination(args, filesToNotOverwrite);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            throw new BuildFailedException(e);
+        }
+    }
+
+    protected virtual void CheckSafeProjectOverwrite(BuildPostProcessArgs args)
+    {
     }
 
     public override bool SupportsLz4Compression()
@@ -163,19 +186,17 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     private void CopyCppPlugins(string cppOutputDir, IEnumerable<string> cppPlugins)
     {
+        if (GetCreateSolution())
+            return;
+
         foreach (var plugin in cppPlugins)
         {
             FileUtil.CopyFileOrDirectory(plugin, Path.Combine(cppOutputDir, Path.GetFileName(plugin)));
         }
     }
 
-    private void SetupStagingArea(BuildPostProcessArgs args)
+    private void SetupStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
     {
-        if (UseIl2Cpp && GetCreateSolution())
-        {
-            throw new Exception("CreateSolution is not supported with IL2CPP build");
-        }
-
         Directory.CreateDirectory(args.stagingAreaData);
 
         List<string> cppPlugins;
@@ -189,72 +210,85 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         PostprocessBuildPlayer.InstallStreamingAssets(args.stagingAreaData, args.report);
 
-        if (UseIl2Cpp)
-        {
-            CopyVariationFolderIntoStagingArea(args);
-            IL2CPPUtils.RunIl2Cpp(args.stagingAreaData, GetPlatformProvider(args), (cppOutputDir) => CopyCppPlugins(cppOutputDir, cppPlugins), args.usedClassRegistry);
-
-            // Move GameAssembly next to game executable
-            var il2cppOutputNativeDirectory = Path.Combine(args.stagingAreaData, "Native");
-            var gameAssemblyDirectory = GetDirectoryForGameAssembly(args);
-            foreach (var file in Directory.GetFiles(il2cppOutputNativeDirectory))
-            {
-                var fileName = Path.GetFileName(file);
-                if (fileName.StartsWith("."))
-                    continue; // Skip files starting with ., as they weren't output by our tools and potentially belong to the OS (like .DS_Store on macOS)
-
-                FileUtil.MoveFileOrDirectory(file, Path.Combine(gameAssemblyDirectory, fileName));
-            }
-
-            if (PlaceIL2CPPSymbolMapNextToExecutable())
-            {
-                // Move symbol map to be next to game executable
-                FileUtil.MoveFileOrDirectory(Paths.Combine(il2cppOutputNativeDirectory, "Data", "SymbolMap"), Path.Combine(args.stagingArea, "SymbolMap"));
-            }
-
-            // Move il2cpp data directory one directory up
-            FileUtil.MoveFileOrDirectory(Path.Combine(il2cppOutputNativeDirectory, "Data"), Path.Combine(args.stagingAreaData, "il2cpp_data"));
-
-            // Native directory is supposed to be empty at this point
-            FileUtil.DeleteFileOrDirectory(il2cppOutputNativeDirectory);
-
-            var dataBackupFolder = Path.Combine(args.stagingArea, GetIl2CppDataBackupFolderName(args));
-            FileUtil.CreateOrCleanDirectory(dataBackupFolder);
-
-            // Move generated C++ code out of Data directory
-            FileUtil.MoveFileOrDirectory(Path.Combine(args.stagingAreaData, "il2cppOutput"), Path.Combine(dataBackupFolder, "il2cppOutput"));
-
-            if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(args.target)))
-            {
-                // Are we using IL2CPP code generation with the Mono runtime? If so, strip the assemblies so we can use them for metadata.
-                StripAssembliesToLeaveOnlyMetadata(args.target, args.stagingAreaDataManaged);
-            }
-            else
-            {
-                // Otherwise, move them to temp data directory as il2cpp does not need managed assemblies to run
-                FileUtil.MoveFileOrDirectory(args.stagingAreaDataManaged, Path.Combine(dataBackupFolder, "Managed"));
-            }
-
-            ProcessPlatformSpecificIL2CPPOutput(args);
-        }
-
         if (GetInstallingIntoBuildsFolder(args))
         {
             CopyDataForBuildsFolder(args);
         }
         else
         {
-            if (!UseIl2Cpp)
-            {
-                CopyVariationFolderIntoStagingArea(args);
-            }
+            CopyVariationFolderIntoStagingArea(args);
 
             if (GetCreateSolution())
+                CopyPlayerSolutionIntoStagingArea(args, filesToNotOverwrite);
+
+            if (UseIl2Cpp)
             {
-                CopyPlayerSolutionIntoStagingArea(args);
+                var il2cppPlatformProvider = GetPlatformProvider(args);
+                IL2CPPUtils.RunIl2Cpp(args.stagingAreaData, il2cppPlatformProvider, (cppOutputDir) => CopyCppPlugins(cppOutputDir, cppPlugins), args.usedClassRegistry);
+
+                if (GetCreateSolution())
+                {
+                    ProcessIl2CppOutputForSolution(args, il2cppPlatformProvider, cppPlugins);
+                }
+                else
+                {
+                    ProcessIl2CppOutputForBinary(args);
+                }
             }
+
             RenameFilesInStagingArea(args);
         }
+    }
+
+    private void ProcessIl2CppOutputForBinary(BuildPostProcessArgs args)
+    {
+        // Move GameAssembly next to game executable
+        var il2cppOutputNativeDirectory = Path.Combine(args.stagingAreaData, "Native");
+        var gameAssemblyDirectory = GetDirectoryForGameAssembly(args);
+        foreach (var file in Directory.GetFiles(il2cppOutputNativeDirectory))
+        {
+            var fileName = Path.GetFileName(file);
+            if (fileName.StartsWith("."))
+                continue; // Skip files starting with ., as they weren't output by our tools and potentially belong to the OS (like .DS_Store on macOS)
+
+            FileUtil.MoveFileOrDirectory(file, Path.Combine(gameAssemblyDirectory, fileName));
+        }
+
+        if (PlaceIL2CPPSymbolMapNextToExecutable())
+        {
+            // Move symbol map to be next to game executable
+            FileUtil.MoveFileOrDirectory(Paths.Combine(il2cppOutputNativeDirectory, "Data", "SymbolMap"), Path.Combine(args.stagingArea, "SymbolMap"));
+        }
+
+        // Move il2cpp data directory one directory up
+        FileUtil.MoveFileOrDirectory(Path.Combine(il2cppOutputNativeDirectory, "Data"), Path.Combine(args.stagingAreaData, "il2cpp_data"));
+
+        // Native directory is supposed to be empty at this point
+        FileUtil.DeleteFileOrDirectory(il2cppOutputNativeDirectory);
+
+        var dataBackupFolder = Path.Combine(args.stagingArea, GetIl2CppDataBackupFolderName(args));
+        FileUtil.CreateOrCleanDirectory(dataBackupFolder);
+
+        // Move generated C++ code out of Data directory
+        FileUtil.MoveFileOrDirectory(Path.Combine(args.stagingAreaData, "il2cppOutput"), Path.Combine(dataBackupFolder, "il2cppOutput"));
+
+        if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(args.target)))
+        {
+            // Are we using IL2CPP code generation with the Mono runtime? If so, strip the assemblies so we can use them for metadata.
+            StripAssembliesToLeaveOnlyMetadata(args.target, args.stagingAreaDataManaged);
+        }
+        else
+        {
+            // Otherwise, move them to temp data directory as il2cpp does not need managed assemblies to run
+            FileUtil.MoveFileOrDirectory(args.stagingAreaDataManaged, Path.Combine(dataBackupFolder, "Managed"));
+        }
+
+        ProcessPlatformSpecificIL2CPPOutput(args);
+    }
+
+    protected virtual void ProcessIl2CppOutputForSolution(BuildPostProcessArgs args, IIl2CppPlatformProvider il2cppPlatformProvider, IEnumerable<string> cppPlugins)
+    {
+        throw new NotSupportedException("CreateSolution is not supported on " + BuildPipeline.GetBuildTargetName(args.target));
     }
 
     static void StripAssembliesToLeaveOnlyMetadata(BuildTarget target, string stagingAreaDataManaged)
@@ -286,9 +320,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return Path.GetExtension(path) != ".mdb" || !Path.GetFileName(path).StartsWith("UnityEngine.");
     }
 
-    protected virtual void CopyPlayerSolutionIntoStagingArea(BuildPostProcessArgs args)
+    protected virtual void CopyPlayerSolutionIntoStagingArea(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
     {
-        throw new Exception("CreateSolution is not supported on " + BuildPipeline.GetBuildTargetName(args.target));
+        throw new NotSupportedException("CreateSolution is not supported on " + BuildPipeline.GetBuildTargetName(args.target));
     }
 
     protected virtual void CopyVariationFolderIntoStagingArea(BuildPostProcessArgs args)
@@ -328,7 +362,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
     }
 
-    private void CopyStagingAreaIntoDestination(BuildPostProcessArgs args)
+    private void CopyStagingAreaIntoDestination(BuildPostProcessArgs args, HashSet<string> filesToNotOverwrite)
     {
         if (GetInstallingIntoBuildsFolder(args))
         {
@@ -343,19 +377,40 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
         else
         {
-            if (GetCreateSolution())
-            {
-                // TODO: smart overwrite
-            }
-            else
-            {
-                DeleteDestination(args);
-            }
+            DeleteDestination(args);
 
             // Copy entire stagingarea over
-            FileUtil.CopyDirectoryFiltered(args.stagingArea, GetDestinationFolder(args), true, f => true, recursive: true);
+            CopyFilesToDestination(args.stagingArea, GetDestinationFolder(args), filesToNotOverwrite);
             args.report.RecordFilesMoved(args.stagingArea, GetDestinationFolder(args));
         }
+    }
+
+    private void CopyFilesToDestination(string source, string target, HashSet<string> filesToNotOverwrite)
+    {
+        bool createDirectory = !Directory.Exists(target);
+        foreach (string sourceFile in Directory.GetFiles(source))
+        {
+            if (createDirectory)
+            {
+                Directory.CreateDirectory(target);
+                createDirectory = false;
+            }
+
+            string targetFile = Path.Combine(target, Path.GetFileName(sourceFile));
+
+            if (File.Exists(targetFile))
+            {
+                if (filesToNotOverwrite.Contains(sourceFile))
+                    continue;
+
+                FileUtil.DeleteFileOrDirectory(targetFile);
+            }
+
+            FileUtil.MoveFileOrDirectory(sourceFile, targetFile);
+        }
+
+        foreach (string directory in Directory.GetDirectories(source))
+            CopyFilesToDestination(directory, Path.Combine(target, Path.GetFileName(directory)), filesToNotOverwrite);
     }
 
     protected abstract string GetStagingAreaPluginsFolder(BuildPostProcessArgs args);
@@ -403,7 +458,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         return (args.options & BuildOptions.InstallInBuildFolder) != 0;
     }
 
-    protected bool UseIl2Cpp
+    protected static bool UseIl2Cpp
     {
         get
         {
@@ -456,5 +511,18 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
     internal class ScriptingImplementations : DefaultScriptingImplementations
     {
+    }
+
+    private class FilePathComparer : IEqualityComparer<string>
+    {
+        public bool Equals(string left, string right)
+        {
+            return string.Equals(Path.GetFullPath(left), Path.GetFullPath(right), StringComparison.OrdinalIgnoreCase);
+        }
+
+        public int GetHashCode(string path)
+        {
+            return Path.GetFullPath(path).ToLowerInvariant().GetHashCode();
+        }
     }
 }

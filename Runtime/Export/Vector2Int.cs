@@ -11,7 +11,7 @@ namespace UnityEngine
     // Representation of 2D vectors and points.
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct Vector2Int
+    public struct Vector2Int : IEquatable<Vector2Int>
     {
         public int x { get { return m_X; } set { m_X = value; } }
         public int y { get { return m_Y; } set { m_Y = value; } }
@@ -151,8 +151,12 @@ namespace UnityEngine
         {
             if (!(other is Vector2Int)) return false;
 
-            Vector2Int rhs = (Vector2Int)other;
-            return x.Equals(rhs.x) && y.Equals(rhs.y);
+            return Equals((Vector2Int)other);
+        }
+
+        public bool Equals(Vector2Int other)
+        {
+            return x.Equals(other.x) && y.Equals(other.y);
         }
 
         public override int GetHashCode()

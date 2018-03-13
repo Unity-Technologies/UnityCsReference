@@ -90,7 +90,7 @@ namespace UnityEditor
                 m_GeometryMesh.hideFlags = HideFlags.HideAndDontSave;
                 m_GeometryMesh.MarkDynamic();
                 m_ShadedMaterialProperties = new MaterialPropertyBlock();
-                m_GeometryMaterial = EditorGUIUtility.GetBuiltinExtraResource(typeof(Material), "Default-Material.mat") as Material;
+                m_GeometryMaterial = Material.GetDefaultMaterial();
                 m_WireframeMaterial = ModelInspector.CreateWireframeMaterial();
                 EditorUtility.SetCameraAnimateMaterials(m_PreviewUtility.camera, true);
             }

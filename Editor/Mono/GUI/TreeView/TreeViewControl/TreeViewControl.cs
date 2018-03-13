@@ -163,6 +163,12 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
+        protected bool useScrollView
+        {
+            get { return m_TreeView.useScrollView; }
+            set { m_TreeView.useScrollView = value; }
+        }
+
         protected Rect GetCellRectForTreeFoldouts(Rect rowRect)
         {
             if (multiColumnHeader == null)

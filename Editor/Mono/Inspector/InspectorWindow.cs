@@ -1101,7 +1101,7 @@ namespace UnityEditor
             // Case 891450:
             // - ActiveEditorTracker will automatically create editors for materials of components on tracked game objects
             // - UnityEngine.UI.Mask will destroy this material in OnDisable (e.g. disabling it with the checkbox) causing problems when drawing the material editor
-            if (target == null && target.GetType() != typeof(MonoBehaviour) && target.GetType() != typeof(ScriptableObject))
+            if (!target && !(target is MonoBehaviour) && !(target is ScriptableObject))
                 return;
 
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
@@ -1125,7 +1125,7 @@ namespace UnityEditor
 
             rebuildOptimizedGUIBlock |= editor.isInspectorDirty;
 
-            // Reset dirtyness when repainting
+            // Reset dirtiness when repainting
             if (Event.current.type == EventType.Repaint)
             {
                 editor.isInspectorDirty = false;

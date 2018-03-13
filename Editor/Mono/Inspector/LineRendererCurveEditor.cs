@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -33,14 +31,18 @@ namespace UnityEditor
             m_Settings.hRangeMax = 1.0f;
             m_Settings.vSlider = false;
             m_Settings.hSlider = false;
+            m_Settings.rectangleToolFlags = CurveEditorSettings.RectangleToolFlags.MiniRectangleTool;
+            m_Settings.allowDeleteLastKeyInCurve = false;
 
             TickStyle hTS = new TickStyle();
             hTS.tickColor.color = new Color(0.0f, 0.0f, 0.0f, 0.15f);
             hTS.distLabel = 30;
+            hTS.stubs = false;
             m_Settings.hTickStyle = hTS;
             TickStyle vTS = new TickStyle();
             vTS.tickColor.color = new Color(0.0f, 0.0f, 0.0f, 0.15f);
             vTS.distLabel = 20;
+            vTS.stubs = false;
             m_Settings.vTickStyle = vTS;
 
             m_Settings.undoRedoSelection = true;
@@ -48,6 +50,7 @@ namespace UnityEditor
             m_Editor = new CurveEditor(new Rect(0, 0, 1000, 100), new CurveWrapper[0], false);
             m_Editor.settings = m_Settings;
             m_Editor.margin = 25;
+            m_Editor.leftmargin = 35;
             m_Editor.SetShownHRangeInsideMargins(0.0f, 1.0f);
             m_Editor.SetShownVRangeInsideMargins(0.0f, 1.0f);
             m_Editor.ignoreScrollWheelUntilClicked = true;
@@ -75,12 +78,19 @@ namespace UnityEditor
             wrapper.renderer = new NormalCurveRenderer(curve);
             wrapper.renderer.SetCustomRange(0.0f, 1.0f);
             wrapper.getAxisUiScalarsCallback = GetAxisScalars;
+            wrapper.setAxisUiScalarsCallback = SetAxisScalars;
             return wrapper;
         }
 
         public Vector2 GetAxisScalars()
         {
             return new Vector2(1.0f, m_WidthMultiplier.floatValue);
+        }
+
+        public void SetAxisScalars(Vector2 scalars)
+        {
+            m_WidthMultiplier.floatValue = scalars.y;
+            m_Refresh = true;
         }
 
         private void UndoRedoPerformed()
@@ -114,12 +124,7 @@ namespace UnityEditor
 
         public void OnInspectorGUI()
         {
-            EditorGUI.BeginChangeCheck();
-            EditorGUILayout.PropertyField(m_WidthMultiplier, Styles.widthMultiplier);
-            if (EditorGUI.EndChangeCheck())
-                m_Refresh = true;
-
-            Rect r = GUILayoutUtility.GetAspectRect(2.5f, GUI.skin.textField);
+            Rect r = GUILayoutUtility.GetAspectRect(2, GUI.skin.textField);
             r.xMin += EditorGUI.indent;
             if (Event.current.type != EventType.Layout && Event.current.type != EventType.Used)
             {
@@ -139,6 +144,9 @@ namespace UnityEditor
             m_Editor.vRangeLocked = EditorGUI.actionKey;
 
             m_Editor.OnGUI();
+
+            var labelRect = new Rect(r.x + 4, r.y, r.width, EditorGUI.kSingleLineHeight);
+            EditorGUI.LabelField(labelRect, Styles.widthMultiplier);
 
             // Apply curve changes
             if ((m_Editor.GetCurveWrapperFromID(0) != null) && (m_Editor.GetCurveWrapperFromID(0).changed))

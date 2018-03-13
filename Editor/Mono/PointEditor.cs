@@ -62,14 +62,19 @@ namespace UnityEditor
                     points.GetPosition(selection[0]) :
                     selection.Aggregate(handlePos, (current, index) => current + points.GetPosition(index)) / selection.Count;
 
-                handlePos = cloudTransform.TransformPoint(handlePos);
-
+                if (cloudTransform != null)
+                    handlePos = cloudTransform.TransformPoint(handlePos);
 
                 var newPos = Handles.PositionHandle(handlePos,
-                        Tools.pivotRotation == PivotRotation.Local ? cloudTransform.rotation : Quaternion.identity);
+                        Tools.pivotRotation == PivotRotation.Local && cloudTransform != null ? cloudTransform.rotation : Quaternion.identity);
                 if (GUI.changed)
                 {
-                    Vector3 delta = cloudTransform.InverseTransformPoint(newPos) - cloudTransform.InverseTransformPoint(handlePos);
+                    Vector3 delta;
+                    if (cloudTransform != null)
+                        delta = cloudTransform.InverseTransformPoint(newPos) - cloudTransform.InverseTransformPoint(handlePos);
+                    else
+                        delta = newPos - handlePos;
+
                     foreach (int i in selection)
                         points.SetPosition(i, points.GetPosition(i) + delta);
                     return true;
@@ -88,7 +93,8 @@ namespace UnityEditor
                 float distance = 0;
                 Vector3 collisionPoint = Vector3.zero;
 
-                if (MathUtils.IntersectRaySphere(r, cloudTransform.TransformPoint(points.GetPosition(i)), points.GetPointScale() * 0.5f, ref distance, ref collisionPoint))
+                Vector3 position = cloudTransform != null ? cloudTransform.TransformPoint(points.GetPosition(i)) : points.GetPosition(i);
+                if (MathUtils.IntersectRaySphere(r, position, points.GetPointScale(), ref distance, ref collisionPoint))
                 {
                     //Only care if we start outside a probe
                     if (distance > 0)
@@ -161,31 +167,34 @@ namespace UnityEditor
                         // the start drag position
                         Rect r = FromToRect(s_StartMouseDragPosition, evt.mousePosition);
 
-                        var oldMatrix = Handles.matrix;
-                        Handles.matrix = cloudTransform.localToWorldMatrix;
-                        // Go over all the points and add them if they are inside the rect
-                        for (int i = 0; i < points.Count; i++)
+                        using (new Handles.DrawingScope())
                         {
-                            var point = HandleUtility.WorldToGUIPoint(points.GetPosition(i));
-                            if (r.Contains(point))
+                            if (cloudTransform != null)
+                                Handles.matrix = cloudTransform.localToWorldMatrix;
+
+                            // Go over all the points and add them if they are inside the rect
+                            for (int i = 0; i < points.Count; i++)
                             {
-                                if (EditorGUI.actionKey)
+                                var point = HandleUtility.WorldToGUIPoint(points.GetPosition(i));
+                                if (r.Contains(point))
                                 {
-                                    if (s_SelectionStart.Contains(i))
+                                    if (EditorGUI.actionKey)
                                     {
-                                        selection.Remove(i);
+                                        if (s_SelectionStart.Contains(i))
+                                        {
+                                            selection.Remove(i);
+                                        }
                                     }
-                                }
-                                else
-                                {
-                                    if (!s_SelectionStart.Contains(i))
+                                    else
                                     {
-                                        selection.Add(i);
+                                        if (!s_SelectionStart.Contains(i))
+                                        {
+                                            selection.Add(i);
+                                        }
                                     }
                                 }
                             }
                         }
-                        Handles.matrix = oldMatrix;
 
                         // We'll assume the selection has changed and set GUI.changed to true.
                         // Worst case, somebody will validate a bit too much, but oh well.

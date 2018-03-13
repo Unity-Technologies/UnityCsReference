@@ -446,19 +446,20 @@ namespace UnityEditorInternal.Profiling
             var callers = new Dictionary<int, CallInformation>();
             var callees = new Dictionary<int, CallInformation>();
 
+            var childrenIds = new List<int>(256);
             var stack = new Stack<int>();
             stack.Push(m_FrameDataView.GetRootItemID());
 
             while (stack.Count > 0)
             {
                 var current = stack.Pop();
-                if (!m_FrameDataView.HasItemChildren(current))
+
+                if (m_FrameDataView.HasItemChildren(current))
                     continue;
 
                 var markerId = m_FrameDataView.GetItemMarkerID(current);
-
-                var childrenId = m_FrameDataView.GetItemChildren(current);
-                foreach (var childId in childrenId)
+                m_FrameDataView.GetItemChildren(current, childrenIds);
+                foreach (var childId in childrenIds)
                 {
                     var childMarkerId = m_FrameDataView.GetItemMarkerID(childId);
                     if (childMarkerId == selectedMarkerId)

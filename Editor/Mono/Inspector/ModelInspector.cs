@@ -41,7 +41,7 @@ namespace UnityEditor
             {
                 m_PreviewUtility = new PreviewRenderUtility();
                 m_PreviewUtility.camera.fieldOfView = 30.0f;
-                m_Material = EditorGUIUtility.GetBuiltinExtraResource(typeof(Material), "Default-Material.mat") as Material;
+                m_Material = Material.GetDefaultMaterial();
                 m_WireMaterial = CreateWireframeMaterial();
             }
         }

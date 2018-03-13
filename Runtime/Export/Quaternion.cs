@@ -10,7 +10,7 @@ using uei = UnityEngine.Internal;
 namespace UnityEngine
 {
     [StructLayout(LayoutKind.Sequential)]
-    public partial struct Quaternion
+    public partial struct Quaternion : IEquatable<Quaternion>
     {
         // X component of the Quaternion. Don't modify this directly unless you know quaternions inside out.
         public float x;
@@ -208,8 +208,12 @@ namespace UnityEngine
         {
             if (!(other is Quaternion)) return false;
 
-            Quaternion rhs = (Quaternion)other;
-            return x.Equals(rhs.x) && y.Equals(rhs.y) && z.Equals(rhs.z) && w.Equals(rhs.w);
+            return Equals((Quaternion)other);
+        }
+
+        public bool Equals(Quaternion other)
+        {
+            return x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
         }
 
         public override string ToString()
