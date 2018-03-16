@@ -10,6 +10,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.XR
 {
+    [UsedByNativeCode]
     [Flags]
     public enum PlaneAlignment
     {
@@ -20,22 +21,24 @@ namespace UnityEngine.Experimental.XR
 
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    [NativeHeader("Modules/XR/Subsystems/Environment/Planes/XRBoundedPlane.h")]
+    [NativeHeader("Modules/XR/XRPrefix.h")]
+    [NativeHeader("Modules/XR/Subsystems/Planes/XRBoundedPlane.h")]
     [NativeHeader("XRScriptingClasses.h")]
+    [NativeConditional("ENABLE_XR")]
     public struct BoundedPlane
     {
         private uint m_InstanceId;
 
         public TrackableId Id { get; set; }
-        public Vector3 Position { get; set; }
+        public TrackableId SubsumedById { get; set; }
+        public Pose Pose { get; set; }
         public Vector3 Center { get; set; }
-        public Quaternion Rotation { get; set; }
         public Vector2 Size { get; set; }
         public PlaneAlignment Alignment { get; set; }
 
         public float Width { get { return Size.x; } }
         public float Height { get { return Size.y; } }
-        public Vector3 Normal { get { return Rotation * Vector3.up; } }
+        public Vector3 Normal { get { return Pose.up; } }
         public Plane Plane { get { return new Plane(Normal, Center); } }
 
         public void GetCorners(
@@ -44,8 +47,8 @@ namespace UnityEngine.Experimental.XR
             out Vector3 p2,
             out Vector3 p3)
         {
-            var worldHalfX = (Rotation * Vector3.right) * (Width * .5f);
-            var worldHalfZ = (Rotation * Vector3.forward) * (Height * .5f);
+            var worldHalfX = (Pose.right) * (Width * .5f);
+            var worldHalfZ = (Pose.forward) * (Height * .5f);
             p0 = Center - worldHalfX - worldHalfZ;
             p1 = Center - worldHalfX + worldHalfZ;
             p2 = Center + worldHalfX + worldHalfZ;
@@ -60,12 +63,10 @@ namespace UnityEngine.Experimental.XR
             return Internal_GetBoundaryAsList(m_InstanceId, Id, boundaryOut);
         }
 
-        [NativeConditional("ENABLE_XR")]
         private static extern Vector3[] Internal_GetBoundaryAsFixedArray(
             uint instanceId,
             TrackableId id);
 
-        [NativeConditional("ENABLE_XR")]
         private static extern bool Internal_GetBoundaryAsList(
             uint instanceId,
             TrackableId id,
@@ -74,58 +75,34 @@ namespace UnityEngine.Experimental.XR
 
     public struct PlaneAddedEventArgs
     {
-        internal XRPlane m_Planes;
-        public XRPlane XRPlane { get { return m_Planes; } }
-        public BoundedPlane AddedPlane { get; set; }
+        public XRPlaneSubsystem PlaneSubsystem { get; internal set; }
+        public BoundedPlane Plane { get; internal set; }
     }
 
     public struct PlaneUpdatedEventArgs
     {
-        internal XRPlane m_Planes;
-        public XRPlane XRPlane { get { return m_Planes; } }
-        public BoundedPlane UpdatedPlane { get; set; }
+        public XRPlaneSubsystem PlaneSubsystem { get; internal set; }
+        public BoundedPlane Plane { get; internal set; }
     }
 
     public struct PlaneRemovedEventArgs
     {
-        internal XRPlane m_Planes;
-        public XRPlane XRPlane { get { return m_Planes; } }
-        public BoundedPlane RemovedPlane { get; set; }
-        public BoundedPlane? SubsumedByPlane { get; set; }
+        public XRPlaneSubsystem PlaneSubsystem { get; internal set; }
+        public BoundedPlane Plane { get; internal set; }
     }
 
     [NativeHeader("Modules/XR/XRPrefix.h")]
-    [NativeHeader("Modules/XR/Subsystems/Environment/Planes/XRPlane.h")]
-    [StructLayout(LayoutKind.Sequential)]
-    public class XRPlane
+    [NativeHeader("Modules/XR/Subsystems/Planes/XRPlaneSubsystem.h")]
+    [UsedByNativeCode]
+    [NativeConditional("ENABLE_XR")]
+    public class XRPlaneSubsystem : Subsystem<XRPlaneSubsystemDescriptor>
     {
-        private IntPtr m_Ptr;
-        private XREnvironment m_Environment;
-
-        public bool Valid
-        {
-            get
-            {
-                return m_Ptr != IntPtr.Zero;
-            }
-        }
-
-        public XREnvironment XREnvironment
-        {
-            get
-            {
-                return m_Environment;
-            }
-        }
-
         public event Action<PlaneAddedEventArgs> PlaneAdded;
         public event Action<PlaneUpdatedEventArgs> PlaneUpdated;
         public event Action<PlaneRemovedEventArgs> PlaneRemoved;
 
-        [NativeConditional("ENABLE_XR")]
-        public extern int FrameOfLastPlaneUpdate { get; }
+        public extern int LastUpdatedFrame { get; }
 
-        [NativeConditional("ENABLE_XR")]
         public extern bool TryGetPlane(TrackableId planeId, out BoundedPlane plane);
 
         public void GetAllPlanes(List<BoundedPlane> planesOut)
@@ -144,19 +121,6 @@ namespace UnityEngine.Experimental.XR
             return Internal_GetBoundaryAsList(planeId, boundaryOut);
         }
 
-        internal XRPlane(IntPtr nativeEnvironment, XREnvironment managedEnvironment)
-        {
-            m_Ptr = Internal_Create(nativeEnvironment);
-            m_Environment = managedEnvironment;
-            SetHandle(this);
-        }
-
-        [RequiredByNativeCode]
-        private void NotifyPlanesDestruction()
-        {
-            m_Ptr = IntPtr.Zero;
-        }
-
         [RequiredByNativeCode]
         private void InvokePlaneAddedEvent(BoundedPlane plane)
         {
@@ -164,8 +128,8 @@ namespace UnityEngine.Experimental.XR
             {
                 PlaneAdded(new PlaneAddedEventArgs()
                 {
-                    m_Planes = this,
-                    AddedPlane = plane
+                    PlaneSubsystem = this,
+                    Plane = plane
                 });
             }
         }
@@ -177,22 +141,8 @@ namespace UnityEngine.Experimental.XR
             {
                 PlaneUpdated(new PlaneUpdatedEventArgs()
                 {
-                    m_Planes = this,
-                    UpdatedPlane = plane
-                });
-            }
-        }
-
-        [RequiredByNativeCode]
-        private void InvokePlaneMergedEvent(BoundedPlane removedPlane, BoundedPlane subsumedByPlane)
-        {
-            if (PlaneRemoved != null)
-            {
-                PlaneRemoved(new PlaneRemovedEventArgs()
-                {
-                    m_Planes = this,
-                    RemovedPlane = removedPlane,
-                    SubsumedByPlane = subsumedByPlane
+                    PlaneSubsystem = this,
+                    Plane = plane
                 });
             }
         }
@@ -204,29 +154,18 @@ namespace UnityEngine.Experimental.XR
             {
                 PlaneRemoved(new PlaneRemovedEventArgs()
                 {
-                    m_Planes = this,
-                    RemovedPlane = removedPlane,
-                    SubsumedByPlane = null
+                    PlaneSubsystem = this,
+                    Plane = removedPlane
                 });
             }
         }
 
-        [NativeConditional("ENABLE_XR")]
         private extern BoundedPlane[] GetAllPlanesAsFixedArray();
 
-        [NativeConditional("ENABLE_XR")]
         private extern void GetAllPlanesAsList(List<BoundedPlane> planes);
 
-        [NativeConditional("ENABLE_XR")]
         private extern bool Internal_GetBoundaryAsList(TrackableId planeId, List<Vector3> boundaryOut);
 
-        [NativeConditional("ENABLE_XR")]
         private extern Vector3[] Internal_GetBoundaryAsFixedArray(TrackableId planeId);
-
-        [NativeConditional("ENABLE_XR")]
-        private static extern IntPtr Internal_Create(IntPtr xrEnvironment);
-
-        [NativeConditional("ENABLE_XR")]
-        private extern void SetHandle(XRPlane inst);
     }
 }

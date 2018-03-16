@@ -38,6 +38,7 @@ namespace UnityEditor
         HistoryState m_State;
         VisualElement m_Container;
         PagedListView m_Pager;
+        ScrollView m_HistoryView;
         int m_ItemsPerPage = 5;
         string m_InProgressRev;
         bool m_RevisionActionsEnabled;
@@ -100,7 +101,6 @@ namespace UnityEditor
             m_Pager = new PagedListView()
             {
                 name = "PagedElement",
-                PagerLoc = PagerLocation.Top,
                 pageSize = m_ItemsPerPage
             };
 
@@ -140,9 +140,9 @@ namespace UnityEditor
                 message = "Updating...",
             };
 
-            var historyView = new ScrollView() { name = "HistoryContainer", showHorizontal = false};
-            historyView.contentContainer.StretchToParentWidth();
-            historyView.Add(m_Pager);
+            m_HistoryView = new ScrollView() { name = "HistoryContainer", showHorizontal = false};
+            m_HistoryView.contentContainer.StretchToParentWidth();
+            m_HistoryView.Add(m_Pager);
 
             m_Views = new Dictionary<HistoryState, VisualElement>()
             {
@@ -152,7 +152,7 @@ namespace UnityEditor
                 {HistoryState.LoggedOut,   loginView},
                 {HistoryState.NoSeat,      noSeatView},
                 {HistoryState.Waiting,     waitingView},
-                {HistoryState.Ready,       historyView}
+                {HistoryState.Ready,       m_HistoryView}
             };
         }
 
@@ -176,7 +176,7 @@ namespace UnityEditor
             m_Container.Add(m_Views[m_State]);
         }
 
-        public void UpdateRevisions(IEnumerable<RevisionData> datas, string tip, int totalRevisions)
+        public void UpdateRevisions(IEnumerable<RevisionData> datas, string tip, int totalRevisions, int currentPage)
         {
             var elements = new List<VisualElement>();
             var isFullDateObtained = false; // Has everything from this date been obtained?
@@ -219,7 +219,9 @@ namespace UnityEditor
                 }
             }
 
+            m_HistoryView.scrollOffset = new Vector2(0, 0);
             m_Pager.totalItems = totalRevisions;
+            m_Pager.curPage = currentPage;
             m_Pager.items = elements;
         }
 
@@ -248,7 +250,7 @@ namespace UnityEditor
 
         public PageChangeAction OnPageChangeAction
         {
-            set { m_Pager.OnPageChange = value; }
+            set { m_Pager.OnPageChanged = value; }
         }
 
         public RevisionAction OnGoBackAction
@@ -276,11 +278,11 @@ namespace UnityEditor
             set { CollabHistoryItem.s_OnShowServices = value; }
         }
 
-        private void UpdateHistoryView(VisualElement history)
+        void UpdateHistoryView(VisualElement history)
         {
         }
 
-        private void NoSeatClick()
+        void NoSeatClick()
         {
             var connection = UnityConnect.instance;
             var env = connection.GetEnvironment();
@@ -297,7 +299,7 @@ namespace UnityEditor
             Application.OpenURL(url);
         }
 
-        private void SignInClick()
+        void SignInClick()
         {
             UnityConnect.instance.ShowLogin();
         }

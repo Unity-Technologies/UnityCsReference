@@ -4,27 +4,34 @@
 
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Collaboration
 {
+    internal delegate bool IsPagerVisible(PagerLocation loc);
+
+    internal interface IPagerData
+    {
+        int curPage { get; }
+        int totalPages { get; }
+        PageChangeAction OnPageChanged { get; }
+    }
+
     internal class PagerElement : VisualElement
     {
-        public PageChangeAction OnPageChange;
+        IPagerData m_Data;
+        readonly Label m_PageText;
+        readonly Button m_DownButton;
+        readonly Button m_UpButton;
 
-        private readonly Label m_PageText;
-        private readonly Button m_DownButton;
-        private readonly Button m_UpButton;
-        private int m_CurPage;
-        private int m_TotalPages;
-
-        public PagerElement(int pageCount, int startPage = 0)
+        public PagerElement(IPagerData dataSource)
         {
+            m_Data = dataSource;
+
             this.style.flexDirection = FlexDirection.Row;
             this.style.alignSelf = Align.Center;
-            m_CurPage = startPage;
-            m_TotalPages = pageCount;
 
             Add(m_DownButton = new Button(OnPageDownClicked) {text = "\u25c5 Newer"});
             m_DownButton.AddToClassList("PagerDown");
@@ -39,57 +46,31 @@ namespace UnityEditor.Collaboration
             UpdateControls();
         }
 
-        public int PageCount
+        void OnPageDownClicked()
         {
-            get { return m_TotalPages; }
-            set
-            {
-                if (m_TotalPages == value)
-                    return;
-                m_TotalPages = value;
-                if (m_CurPage > m_TotalPages)
-                {
-                    m_CurPage = m_TotalPages;
-                }
-                UpdateControls();
-            }
-        }
-
-        private void OnPageDownClicked()
-        {
-            if (m_CurPage <= 0)
-                return;
-
             CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "NewerPage");
-
-            m_CurPage--;
-
-            if (OnPageChange != null)
-                OnPageChange(m_CurPage);
-
-            UpdateControls();
+            m_Data.OnPageChanged(m_Data.curPage - 1);
         }
 
-        private void OnPageUpClicked()
+        void OnPageUpClicked()
         {
-            if (m_CurPage >= m_TotalPages)
-                return;
-
             CollabAnalytics.SendUserAction(CollabAnalytics.historyCategoryString, "OlderPage");
+            m_Data.OnPageChanged(m_Data.curPage + 1);
+        }
 
-            m_CurPage++;
-
-            if (OnPageChange != null)
-                OnPageChange(m_CurPage);
-
+        public void Refresh()
+        {
             UpdateControls();
         }
 
-        private void UpdateControls()
+        void UpdateControls()
         {
-            m_PageText.text = (m_CurPage + 1) + " / " + m_TotalPages;
-            m_DownButton.SetEnabled(m_CurPage > 0);
-            m_UpButton.SetEnabled(m_CurPage < m_TotalPages - 1);
+            var curPage = m_Data.curPage;
+            var totalPages = m_Data.totalPages;
+
+            m_PageText.text = (curPage + 1) + " / " + totalPages;
+            m_DownButton.SetEnabled(curPage > 0);
+            m_UpButton.SetEnabled(curPage < totalPages - 1);
         }
     }
 
@@ -97,32 +78,18 @@ namespace UnityEditor.Collaboration
     {
         Top,
         Bottom,
-        None
     }
 
-    internal class PagedListView : VisualElement
+    internal class PagedListView : VisualElement, IPagerData
     {
         public const int DefaultItemsPerPage = 10;
 
-        private readonly VisualElement m_ItemContainer;
-        private readonly PagerElement m_Pager;
-        private int m_PageSize = DefaultItemsPerPage;
-        private IEnumerable<VisualElement> m_Items;
-        private int m_TotalItems;
-        private PagerLocation m_PagerLoc = PagerLocation.Bottom;
-
-        public PagerLocation PagerLoc
-        {
-            get { return m_PagerLoc; }
-            set
-            {
-                if (value == m_PagerLoc)
-                    return;
-
-                m_PagerLoc = value;
-                UpdatePager();
-            }
-        }
+        readonly VisualElement m_ItemContainer;
+        readonly PagerElement m_PagerTop, m_PagerBottom;
+        int m_PageSize = DefaultItemsPerPage;
+        IEnumerable<VisualElement> m_Items;
+        int m_TotalItems;
+        int m_CurPage;
 
         public int pageSize
         {
@@ -150,14 +117,11 @@ namespace UnityEditor.Collaboration
             }
         }
 
-        public PageChangeAction OnPageChange
-        {
-            set { m_Pager.OnPageChange = value; }
-        }
+        public PageChangeAction OnPageChanged { get; set; }
 
         public PagedListView()
         {
-            m_Pager = new PagerElement(0);
+            m_PagerTop = new PagerElement(this);
 
             m_ItemContainer = new VisualElement()
             {
@@ -165,35 +129,33 @@ namespace UnityEditor.Collaboration
             };
             Add(m_ItemContainer);
             m_Items = new List<VisualElement>();
+
+            m_PagerBottom = new PagerElement(this);
         }
 
-        private void UpdatePager()
-        {
-            if (m_Pager.parent == this)
-            {
-                Remove(m_Pager);
-            }
-
-            switch (m_PagerLoc)
-            {
-                case PagerLocation.Top:
-                    Insert(0, m_Pager);
-                    break;
-                case PagerLocation.Bottom:
-                    Add(m_Pager);
-                    break;
-            }
-
-            m_Pager.PageCount = pageCount;
-        }
-
-        private void LayoutItems()
+        void LayoutItems()
         {
             m_ItemContainer.Clear();
             foreach (var item in m_Items)
             {
                 m_ItemContainer.Add(item);
             }
+        }
+
+        void UpdatePager()
+        {
+            if (m_PagerTop.parent != this && totalPages > 1 && curPage > 0)
+                Insert(0, m_PagerTop);
+            if (m_PagerTop.parent == this && (totalPages <= 1 || curPage == 0))
+                Remove(m_PagerTop);
+
+            if (m_PagerBottom.parent != this && totalPages > 1)
+                Add(m_PagerBottom);
+            if (m_PagerBottom.parent == this && totalPages <= 1)
+                Remove(m_PagerBottom);
+
+            m_PagerTop.Refresh();
+            m_PagerBottom.Refresh();
         }
 
         int pageCount
@@ -205,6 +167,27 @@ namespace UnityEditor.Collaboration
                     pages++;
 
                 return pages;
+            }
+        }
+
+        public int curPage
+        {
+            get { return m_CurPage; }
+            set
+            {
+                m_CurPage = value;
+                UpdatePager();
+            }
+        }
+
+        public int totalPages
+        {
+            get
+            {
+                var extraPage = 0;
+                if (m_TotalItems % m_PageSize > 0)
+                    extraPage = 1;
+                return m_TotalItems / m_PageSize + extraPage;
             }
         }
     }

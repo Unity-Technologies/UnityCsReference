@@ -12,57 +12,56 @@ using UnityEngine.Scripting;
 
 using intptr_t = System.Int32;
 
-namespace UnityEngine.Experimental.XR
+namespace UnityEngine.Experimental
 {
-    public interface IXRSubsystemDescriptor
+    public interface ISubsystemDescriptor
     {
     }
 
-    internal interface IXRSubsystemDescriptorImpl
+    internal interface ISubsystemDescriptorImpl
     {
         IntPtr ptr { get; set; }
     }
 
     [UsedByNativeCode("XRSubsystemDescriptorBase")]
     [StructLayout(LayoutKind.Sequential)]
-    public class XRSubsystemDescriptorBase : IXRSubsystemDescriptor, IXRSubsystemDescriptorImpl
+    public class SubsystemDescriptorBase : ISubsystemDescriptor, ISubsystemDescriptorImpl
     {
         internal IntPtr m_Ptr;
 
         public string id
         {
-            get { return Internal_XRSubsystemDescriptors.GetId(m_Ptr); }
+            get { return Internal_SubsystemDescriptors.GetId(m_Ptr); }
         }
 
-        IntPtr IXRSubsystemDescriptorImpl.ptr { get { return m_Ptr; } set { m_Ptr = value; } }
+        IntPtr ISubsystemDescriptorImpl.ptr { get { return m_Ptr; } set { m_Ptr = value; } }
     }
 
     [NativeType(Header = "Modules/XR/XRSubsystemDescriptor.h")]
     [UsedByNativeCode("XRSubsystemDescriptor")]
     [StructLayout(LayoutKind.Sequential)]
-    public class XRSubsystemDescriptor<TXRInstance> : XRSubsystemDescriptorBase
-        where TXRInstance : XRInstance
+    public class SubsystemDescriptor<TSubsystem> : SubsystemDescriptorBase
+        where TSubsystem : Subsystem
     {
-        public TXRInstance Create()
+        public TSubsystem Create()
         {
-            IntPtr ptr = Internal_XRSubsystemDescriptors.Create(m_Ptr);
-            var instance = (TXRInstance)Internal_XRSubsystemInstances.Internal_GetInstanceByPtr(ptr);
+            IntPtr ptr = Internal_SubsystemDescriptors.Create(m_Ptr);
+            var instance = (TSubsystem)Internal_SubsystemInstances.Internal_GetInstanceByPtr(ptr);
             instance.m_subsystemDescriptor = this;
             return instance;
         }
     }
 
     // Handle instance lifetime (on managed side)
-    internal static class Internal_XRSubsystemInstances
+    internal static class Internal_SubsystemInstances
     {
-        internal static List<XRInstance> s_SubsystemInstances = new List<XRInstance>();
+        internal static List<Subsystem> s_SubsystemInstances = new List<Subsystem>();
 
         [RequiredByNativeCode]
-        internal static void Internal_InitializeManagedInstance(IntPtr ptr, XRInstance inst)
+        internal static void Internal_InitializeManagedInstance(IntPtr ptr, Subsystem inst)
         {
             inst.m_Ptr = ptr;
             inst.SetHandle(inst);
-            inst.Initialize();
             s_SubsystemInstances.Add(inst);
         }
 
@@ -89,9 +88,9 @@ namespace UnityEngine.Experimental.XR
             }
         }
 
-        internal static XRInstance Internal_GetInstanceByPtr(IntPtr ptr)
+        internal static Subsystem Internal_GetInstanceByPtr(IntPtr ptr)
         {
-            foreach (XRInstance instance in s_SubsystemInstances)
+            foreach (Subsystem instance in s_SubsystemInstances)
             {
                 if (instance.m_Ptr == ptr)
                     return instance;
@@ -101,12 +100,12 @@ namespace UnityEngine.Experimental.XR
     }
 
     // Handle subsystem descriptor lifetime (on managed side)
-    internal static class Internal_XRSubsystemDescriptors
+    internal static class Internal_SubsystemDescriptors
     {
-        internal static List<IXRSubsystemDescriptorImpl> s_SubsystemDescriptors = new List<IXRSubsystemDescriptorImpl>();
+        internal static List<ISubsystemDescriptorImpl> s_SubsystemDescriptors = new List<ISubsystemDescriptorImpl>();
 
         [RequiredByNativeCode]
-        internal static void Internal_InitializeManagedDescriptor(IntPtr ptr, IXRSubsystemDescriptorImpl desc)
+        internal static void Internal_InitializeManagedDescriptor(IntPtr ptr, ISubsystemDescriptorImpl desc)
         {
             desc.ptr = ptr;
             s_SubsystemDescriptors.Add(desc);
@@ -122,24 +121,24 @@ namespace UnityEngine.Experimental.XR
             s_SubsystemDescriptors.Clear();
         }
 
-        // These are here instead of on XRSubsystemDescriptor because generic types are not supported by .bindings.cs
+        // These are here instead of on SubsystemDescriptor because generic types are not supported by .bindings.cs
         public static extern IntPtr Create(IntPtr descriptorPtr);
         public static extern string GetId(IntPtr descriptorPtr);
     }
 
     [NativeType(Header = "Modules/XR/XRSubsystemManager.h")]
-    public static class XRSubsystemManager
+    public static class SubsystemManager
     {
-        static XRSubsystemManager()
+        static SubsystemManager()
         {
             StaticConstructScriptingClassMap();
         }
 
         public static void GetSubsystemDescriptors<T>(List<T> descriptors)
-            where T : IXRSubsystemDescriptor
+            where T : ISubsystemDescriptor
         {
             descriptors.Clear();
-            foreach (var descriptor in Internal_XRSubsystemDescriptors.s_SubsystemDescriptors)
+            foreach (var descriptor in Internal_SubsystemDescriptors.s_SubsystemDescriptors)
             {
                 if (descriptor is T)
                     descriptors.Add((T)descriptor);
@@ -147,10 +146,10 @@ namespace UnityEngine.Experimental.XR
         }
 
         public static void GetInstances<T>(List<T> instances)
-            where T : XRInstance
+            where T : Subsystem
         {
             instances.Clear();
-            foreach (var instance in Internal_XRSubsystemInstances.s_SubsystemInstances)
+            foreach (var instance in Internal_SubsystemInstances.s_SubsystemInstances)
             {
                 if (instance is T)
                     instances.Add((T)instance);
@@ -161,31 +160,30 @@ namespace UnityEngine.Experimental.XR
         extern internal static void StaticConstructScriptingClassMap();
     }
 
-    [NativeType(Header = "Modules/XR/XRInstance.h")]
+    [NativeType(Header = "Modules/XR/XRSubsystem.h")]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public class XRInstance
+    public class Subsystem
     {
         internal IntPtr m_Ptr;
-        internal IXRSubsystemDescriptor m_subsystemDescriptor;
+        internal ISubsystemDescriptor m_subsystemDescriptor;
 
-        extern internal void SetHandle(XRInstance inst);
-        virtual internal void Initialize() {}
+        extern internal void SetHandle(Subsystem inst);
         extern public void Start();
         extern public void Stop();
         public void Destroy()
         {
             IntPtr removedPtr = m_Ptr;
-            Internal_XRSubsystemInstances.Internal_RemoveInstanceByPtr(m_Ptr);
-            XRSubsystemManager.DestroyInstance_Internal(removedPtr);
+            Internal_SubsystemInstances.Internal_RemoveInstanceByPtr(m_Ptr);
+            SubsystemManager.DestroyInstance_Internal(removedPtr);
         }
     }
-    [UsedByNativeCode("XRInstance_TXRSubsystemDescriptor")]
-    public class XRInstance<TXRSubsystemDescriptor> : XRInstance where TXRSubsystemDescriptor : IXRSubsystemDescriptor
+    [UsedByNativeCode("XRSubsystem_TXRSubsystemDescriptor")]
+    public class Subsystem<TSubsystemDescriptor> : Subsystem where TSubsystemDescriptor : ISubsystemDescriptor
     {
-        public TXRSubsystemDescriptor SubsystemDescriptor
+        public TSubsystemDescriptor SubsystemDescriptor
         {
-            get { return (TXRSubsystemDescriptor)m_subsystemDescriptor; }
+            get { return (TSubsystemDescriptor)m_subsystemDescriptor; }
         }
     }
 }

@@ -7,11 +7,16 @@ using UnityEngine.Bindings;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using UnityEngine.Experimental;
 
 namespace UnityEngine.Experimental.XR
 {
-    [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystemDescriptor.h")]
+    [NativeHeader("Modules/XR/XRPrefix.h")]
+    [NativeType(Header = "Modules/XR/Subsystems/Depth/XRDepthSubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRInputSubsystemDescriptor : SubsystemDescriptor<XRInputSubsystem>
-    {}
+    [NativeConditional("ENABLE_XR")]
+    public class XRDepthSubsystemDescriptor : SubsystemDescriptor<XRDepthSubsystem>
+    {
+        public extern bool SupportsFeaturePoints { get; }
+    }
 }

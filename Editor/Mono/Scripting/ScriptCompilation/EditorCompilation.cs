@@ -613,7 +613,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (packageCustomScriptAssemblies != null)
                 allCustomScriptAssemblies.AddRange(packageCustomScriptAssemblies);
 
-            var customScriptAssembly = allCustomScriptAssemblies.Single(a => a.Name == AssetPath.GetAssemblyNameWithoutExtension(assemblyName));
+            var customScriptAssembly = allCustomScriptAssemblies.Single(a => AssemblyNameWithSuffix(a.Name) == AssetPath.GetAssemblyNameWithoutExtension(assemblyName));
             return customScriptAssembly;
         }
 
@@ -748,13 +748,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     if (messages.Any(m => m.type == CompilerMessageType.Error))
                     {
-                        var errorMessages = messages.Where(m => m.type == CompilerMessageType.Error);
-
-                        // error CS0227: Unsafe code requires the `unsafe' command line option to be specified
-                        if (errorMessages.Any(em => em.message.Contains("CS0227")))
-                        {
-                            messages.Add(new CompilerMessage { message = "You can allow 'unsafe' code for Assembly Definition Files in the inspector and for predefined assemblies in player settings.", type = CompilerMessageType.Warning, file = assembly.FullPath, line = -1, column = -1 });
-                        }
+                        AddUnitySpecificErrorMessages(assembly, messages);
 
                         InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;
@@ -786,6 +780,46 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             compilationTask.Poll();
             return true;
+        }
+
+        void AddUnitySpecificErrorMessages(ScriptAssembly assembly, List<CompilerMessage> messages)
+        {
+            // error CS0227: Unsafe code requires the `unsafe' command line option to be specified
+            if (!messages.Any(m => m.type == CompilerMessageType.Error && m.message.Contains("CS0227")))
+                return;
+
+            var assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assembly.Filename);
+
+            string unityUnsafeMessage;
+
+            try
+            {
+                var customScriptAssembly = FindCustomScriptAssemblyFromAssemblyName(assemblyName);
+                unityUnsafeMessage = string.Format("Enable \"Allow 'unsafe' code\" in the inspector for '{0}' to fix this error.", customScriptAssembly.FilePath);
+            }
+            catch
+            {
+                unityUnsafeMessage = "Enable \"Allow 'unsafe' code\" in Player Settings to fix this error.";
+            }
+
+            List<CompilerMessage> newMessages = new List<CompilerMessage>();
+
+            foreach (var message in messages)
+            {
+                if (message.type == CompilerMessageType.Error && message.message.Contains("CS0227"))
+                {
+                    var newMessage = new CompilerMessage(message);
+                    newMessage.message += ". " + unityUnsafeMessage;
+                    newMessages.Add(newMessage);
+                }
+                else
+                {
+                    newMessages.Add(message);
+                }
+            }
+
+            messages.Clear();
+            messages.AddRange(newMessages);
         }
 
         public void InvokeAssemblyCompilationStarted(string assemblyOutputPath)
@@ -989,6 +1023,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return assemblyFilename;
+        }
+
+        string AssemblyNameWithSuffix(string assemblyName)
+        {
+            if (!string.IsNullOrEmpty(assemblySuffix))
+            {
+                var basename = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
+                return string.Concat(basename, assemblySuffix);
+            }
+
+            return assemblyName;
         }
 
         public TargetAssemblyInfo[] GetTargetAssemblies()

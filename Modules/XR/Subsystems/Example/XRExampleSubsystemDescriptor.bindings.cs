@@ -12,7 +12,7 @@ namespace UnityEngine.Experimental.XR
 {
     [NativeType(Header = "Modules/XR/Subsystems/Example/XRExampleSubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRExampleSubsystemDescriptor : XRSubsystemDescriptor<XRExampleInstance>
+    public class XRExampleSubsystemDescriptor : SubsystemDescriptor<XRExampleSubsystem>
     {
         public extern bool supportsEditorMode { get; }
         public extern bool disableBackbufferMSAA { get; }

@@ -1207,8 +1207,8 @@ namespace UnityEditor
             if (m_ColorLibraryEditor != null)
                 m_ColorLibraryEditor.UnloadUsedLibraries();
 
-
             GUIUtility.keyboardControl = originalKeyboardControl;
+            originalKeyboardControl = 0;
         }
     }
 

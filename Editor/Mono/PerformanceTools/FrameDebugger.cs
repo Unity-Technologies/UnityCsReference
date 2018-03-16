@@ -677,7 +677,7 @@ namespace UnityEditor
                 m_PreviewUtility.camera.fieldOfView = 30.0f;
             }
             if (m_Material == null)
-                m_Material = EditorGUIUtility.GetBuiltinExtraResource(typeof(Material), "Default-Material.mat") as Material;
+                m_Material = Material.GetDefaultMaterial();
             if (m_WireMaterial == null)
             {
                 m_WireMaterial = ModelInspector.CreateWireframeMaterial();

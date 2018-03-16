@@ -10,9 +10,9 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Experimental.XR
 {
-    [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputInstance.h")]
+    [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystem")]
     [UsedByNativeCode]
-    public class XRInputInstance : XRInstance<XRInputSubsystemDescriptor>
+    public class XRInputSubsystem : Subsystem<XRInputSubsystemDescriptor>
     {
     }
 }

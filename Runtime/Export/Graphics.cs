@@ -460,6 +460,10 @@ namespace UnityEngine
 
         public static void BlitMultiTap(Texture source, RenderTexture dest, Material mat, params Vector2[] offsets)
         {
+            // in case params were not passed, we will end up with empty array (not null) but our cpp code is not ready for that.
+            // do explicit argument exception instead of potential nullref coming from native side
+            if (offsets.Length == 0)
+                throw new ArgumentException("empty offsets list passed.", "offsets");
             Internal_BlitMultiTap(source, dest, mat, offsets);
         }
     }

@@ -18,9 +18,9 @@ namespace UnityEditorInternal.Profiling
             public static GUIContent emptyText = new GUIContent("");
             public static GUIContent selectLineText = EditorGUIUtility.TrTextContent("Select Line for the detailed information");
 
-            public static readonly GUIStyle expandedArea = GUIStyle.none;
-            public static readonly GUIStyle callstackScroll = GUIStyle.none;
-            public static readonly GUIStyle callstackTextArea = EditorStyles.textArea;
+            public static readonly GUIStyle expandedArea = new GUIStyle();
+            public static readonly GUIStyle callstackScroll = new GUIStyle();
+            public static readonly GUIStyle callstackTextArea = new GUIStyle(EditorStyles.textArea);
 
             static Styles()
             {

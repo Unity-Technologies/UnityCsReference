@@ -10,33 +10,36 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine.Bindings;
 using UnityEngine.AI;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.Experimental.AI
 {
-    public struct PolygonID
+    public struct PolygonId : IEquatable<PolygonId>
     {
         internal ulong polyRef;
 
         public bool IsNull() { return polyRef == 0; }
 
-        public static bool operator==(PolygonID x, PolygonID y) { return x.polyRef == y.polyRef; }
-        public static bool operator!=(PolygonID x, PolygonID y) { return x.polyRef != y.polyRef; }
+        public static bool operator==(PolygonId x, PolygonId y) { return x.polyRef == y.polyRef; }
+        public static bool operator!=(PolygonId x, PolygonId y) { return x.polyRef != y.polyRef; }
         public override int GetHashCode() { return polyRef.GetHashCode(); }
+        public bool Equals(PolygonId rhs) { return rhs == this; }
+
         public override bool Equals(object obj)
         {
-            if (obj == null || !(obj is PolygonID))
+            if (obj == null || !(obj is PolygonId))
                 return false;
-            var rhs = (PolygonID)obj;
+            var rhs = (PolygonId)obj;
             return rhs == this;
         }
     }
 
     public struct NavMeshLocation
     {
-        public PolygonID polygon { get; }
+        public PolygonId polygon { get; }
         public Vector3 position { get; }
 
-        internal NavMeshLocation(Vector3 position, PolygonID polygon)
+        internal NavMeshLocation(Vector3 position, PolygonId polygon)
         {
             this.position = position;
             this.polygon = polygon;
@@ -125,7 +128,8 @@ namespace UnityEngine.Experimental.AI
         [NativeDisableUnsafePtrRestriction]
         internal IntPtr             m_NavMeshQuery;
         Allocator                   m_Allocator;
-
+        const string                k_NoBufferAllocatedErrorMessage = "This query has no buffer allocated for pathfinding operations. " +
+            "Create a different NavMeshQuery with an explicit node pool size.";
 
         public NavMeshQuery(NavMeshWorld world, Allocator allocator, int pathNodePoolSize = 0)
         {
@@ -163,7 +167,7 @@ namespace UnityEngine.Experimental.AI
             return EndFindPath(m_NavMeshQuery, out pathSize);
         }
 
-        public unsafe int GetPathResult(NativeSlice<PolygonID> path)
+        public unsafe int GetPathResult(NativeSlice<PolygonId> path)
         {
             return GetPathResult(m_NavMeshQuery, path.GetUnsafePtr(), path.Length);
         }
@@ -181,15 +185,15 @@ namespace UnityEngine.Experimental.AI
         unsafe static extern int GetPathResult(IntPtr navMeshQuery, void* path, int maxPath);
 
         // If BeginFindPath/UpdateFindPath/EndFindPath existing NativeArray become invalid...
-//      extern NavMeshPathStatus GetPath(out NativeArray<PolygonID> outputPath);
+//      extern NavMeshPathStatus GetPath(out NativeArray<PolygonId> outputPath);
 
         //void DidScheduleJob(JobHandle handle);
 
 
         [ThreadSafe]
-        static extern bool IsValidPolygon(IntPtr navMeshQuery, PolygonID polygon);
+        static extern bool IsValidPolygon(IntPtr navMeshQuery, PolygonId polygon);
 
-        public bool IsValid(PolygonID polygon)
+        public bool IsValid(PolygonId polygon)
         {
             return polygon.polyRef != 0 && IsValidPolygon(m_NavMeshQuery, polygon);
         }
@@ -200,16 +204,16 @@ namespace UnityEngine.Experimental.AI
         }
 
         [ThreadSafe]
-        static extern int GetAgentTypeIdForPolygon(IntPtr navMeshQuery, PolygonID polygon);
-        public int GetAgentTypeIdForPolygon(PolygonID polygon)
+        static extern int GetAgentTypeIdForPolygon(IntPtr navMeshQuery, PolygonId polygon);
+        public int GetAgentTypeIdForPolygon(PolygonId polygon)
         {
             return GetAgentTypeIdForPolygon(m_NavMeshQuery, polygon);
         }
 
         [ThreadSafe]
-        static extern bool IsPositionInPolygon(IntPtr navMeshQuery, Vector3 position, PolygonID polygon);
+        static extern bool IsPositionInPolygon(IntPtr navMeshQuery, Vector3 position, PolygonId polygon);
 
-        public NavMeshLocation CreateLocation(Vector3 position, PolygonID polygon)
+        public NavMeshLocation CreateLocation(Vector3 position, PolygonId polygon)
         {
             return new NavMeshLocation(position, polygon);
         }
@@ -243,42 +247,42 @@ namespace UnityEngine.Experimental.AI
         }
 
         [ThreadSafe]
-        static extern bool GetPortalPoints(IntPtr navMeshQuery, PolygonID polygon, PolygonID neighbourPolygon, out Vector3 left, out Vector3 right);
-        public bool GetPortalPoints(PolygonID polygon, PolygonID neighbourPolygon, out Vector3 left, out Vector3 right)
+        static extern bool GetPortalPoints(IntPtr navMeshQuery, PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right);
+        public bool GetPortalPoints(PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right)
         {
             return GetPortalPoints(m_NavMeshQuery, polygon, neighbourPolygon, out left, out right);
         }
 
         [ThreadSafe]
-        static extern Matrix4x4 PolygonLocalToWorldMatrix(IntPtr navMeshQuery, PolygonID polygon);
-        public Matrix4x4 PolygonLocalToWorldMatrix(PolygonID polygon)
+        static extern Matrix4x4 PolygonLocalToWorldMatrix(IntPtr navMeshQuery, PolygonId polygon);
+        public Matrix4x4 PolygonLocalToWorldMatrix(PolygonId polygon)
         {
             return PolygonLocalToWorldMatrix(m_NavMeshQuery, polygon);
         }
 
         [ThreadSafe]
-        static extern Matrix4x4 PolygonWorldToLocalMatrix(IntPtr navMeshQuery, PolygonID polygon);
-        public Matrix4x4 PolygonWorldToLocalMatrix(PolygonID polygon)
+        static extern Matrix4x4 PolygonWorldToLocalMatrix(IntPtr navMeshQuery, PolygonId polygon);
+        public Matrix4x4 PolygonWorldToLocalMatrix(PolygonId polygon)
         {
             return PolygonWorldToLocalMatrix(m_NavMeshQuery, polygon);
         }
 
         [ThreadSafe]
-        static extern NavMeshPolyTypes GetPolygonType(IntPtr navMeshQuery, PolygonID polygon);
-        public NavMeshPolyTypes GetPolygonType(PolygonID polygon)
+        static extern NavMeshPolyTypes GetPolygonType(IntPtr navMeshQuery, PolygonId polygon);
+        public NavMeshPolyTypes GetPolygonType(PolygonId polygon)
         {
             return GetPolygonType(m_NavMeshQuery, polygon);
         }
 
         //NavMeshStatus MoveAlongSurface(NavMeshLocation location, Vector3 targetPosition, int agentTypeID, int areaMask,
-        //    out NavMeshLocation outputLocation, NativeArray<PolygonID> visitedBuffer, out int actualVisited);
+        //    out NavMeshLocation outputLocation, NativeArray<PolygonId> visitedBuffer, out int actualVisited);
 
         //// Trace a ray between two points on the NavMesh.
         //extern bool Raycast(NavMeshLocation location, Vector3 targetPosition, out NavMeshHit hit, int agentTypeID, int areaMask, NativeArray<float> costs);
 
         //// Polygon Queries
-        //public NavMeshPolyData GetPolygon(PolygonID poly);
-        //public void GetPolygon(NativeArray<PolygonID> polygonIDs, NativeArray<NavMeshPolyData> polygons);
+        //public NavMeshPolyData GetPolygon(PolygonId poly);
+        //public void GetPolygon(NativeArray<PolygonId> polygonIDs, NativeArray<NavMeshPolyData> polygons);
         //public void GetPolygons(MappedPosition position, float distance, NativeList<NavMeshPolyData> polygons);
 
         //public static void LocalizePolygonIndices(NativeArray<NavMeshPolyData> polygons);

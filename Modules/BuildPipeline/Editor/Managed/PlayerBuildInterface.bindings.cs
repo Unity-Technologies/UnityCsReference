@@ -7,6 +7,7 @@ using System.Collections.ObjectModel;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using System.Collections.Generic;
 
 namespace UnityEditor.Experimental.Build.Player
 {
@@ -67,6 +68,8 @@ namespace UnityEditor.Experimental.Build.Player
     [NativeHeader("Modules/BuildPipeline/Editor/Public/PlayerBuildInterface.h")]
     public class PlayerBuildInterface
     {
+        public static Func<IEnumerable<string>> ExtraTypesProvider;
+
         [FreeFunction(Name = "BuildPipeline::CompilePlayerScripts")]
         extern private static ScriptCompilationResult CompilePlayerScriptsNative(ScriptCompilationSettings input, string outputFolder, bool editorScripts);
 
