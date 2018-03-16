@@ -75,20 +75,34 @@ namespace UnityEditor
             return definition;
         }
 
+        static private bool CouldBelongToDotNetOrWindowsRuntime(string assemblyPath)
+        {
+            return assemblyPath.IndexOf("mscorlib.dll") != -1 ||
+                assemblyPath.IndexOf("System.") != -1 ||
+                assemblyPath.IndexOf("Windows.dll") != -1 ||
+                assemblyPath.IndexOf("Microsoft.") != -1 ||
+                assemblyPath.IndexOf("Windows.") != -1 ||
+                assemblyPath.IndexOf("WinRTLegacy.dll") != -1 ||
+                assemblyPath.IndexOf("platform.dll") != -1;
+        }
+
         static private bool IgnoreAssembly(string assemblyPath, BuildTarget target)
         {
-            if (target == BuildTarget.WSAPlayer ||
-                (target == BuildTarget.XboxOne && PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.XboxOne) == ApiCompatibilityLevel.NET_4_6))
+            if (target == BuildTarget.WSAPlayer)
             {
-                if (assemblyPath.IndexOf("mscorlib.dll") != -1 ||
-                    assemblyPath.IndexOf("System.") != -1 ||
-                    assemblyPath.IndexOf("Windows.dll") != -1 ||
-                    assemblyPath.IndexOf("Microsoft.") != -1 ||
-                    assemblyPath.IndexOf("Windows.") != -1 ||
-                    assemblyPath.IndexOf("WinRTLegacy.dll") != -1 ||
-                    assemblyPath.IndexOf("platform.dll") != -1)
+                if (CouldBelongToDotNetOrWindowsRuntime(assemblyPath))
                     return true;
             }
+            else if (target == BuildTarget.XboxOne)
+            {
+                var profile = PlayerSettings.GetApiCompatibilityLevel(BuildTargetGroup.XboxOne);
+                if (profile == ApiCompatibilityLevel.NET_4_6 || profile == ApiCompatibilityLevel.NET_Standard_2_0)
+                {
+                    if (CouldBelongToDotNetOrWindowsRuntime(assemblyPath))
+                        return true;
+                }
+            }
+
             return IsInternalAssembly(assemblyPath);
         }
 

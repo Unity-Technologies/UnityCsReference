@@ -5,8 +5,6 @@
 using System;
 using System.Globalization;
 using UnityEngine;
-using UnityEditor;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -177,20 +175,16 @@ namespace UnityEditor
             {
                 if (additionalMenuItems == null)
                 {
-                    additionalMenuItems = new List<string>();
-                    additionalMenuItems.Add("Player Logging");
+                    additionalMenuItems = new List<string> {"Player Logging"};
                     if (Unsupported.IsDeveloperMode())
                         additionalMenuItems.Add("Full Log (Developer Mode Only)");
                     additionalMenuItems.Add("");
                 }
 
-                var names = additionalMenuItems.Concat(profilers.Select(p => p.Name));
-
-                var enabled = new List<bool>();
+                var names = additionalMenuItems.Concat(profilers.Select(p => p.Name)).ToArray();
 
                 // "Player Logging" field is always enabled.
-                enabled.Add(true);
-
+                var enabled = new List<bool> {true};
                 var selected = new List<int>();
 
                 var connected = PlayerConnectionLogReceiver.instance.State != PlayerConnectionLogReceiver.ConnectionState.Disconnected;
@@ -211,7 +205,7 @@ namespace UnityEditor
                 else
                 {
                     // everything but first menu item is disabled.
-                    enabled.AddRange(new bool[names.Count() - 1]);
+                    enabled.AddRange(new bool[names.Length - 1]);
                 }
 
                 int index = profilers.FindIndex(p => p.IsSelected());
@@ -220,12 +214,13 @@ namespace UnityEditor
 
                 var seperators = new bool[enabled.Count];
                 seperators[additionalMenuItems.Count - 1] = true;
-                EditorUtility.DisplayCustomMenuWithSeparators(connectRect, names.ToArray(), enabled.ToArray(), seperators, selected.ToArray(), SelectClick, profilers);
+                EditorUtility.DisplayCustomMenuWithSeparators(connectRect, names, enabled.ToArray(), seperators, selected.ToArray(), SelectClick, profilers);
             }
         }
 
         ConsoleAttachProfilerUI m_AttachProfilerUI = new ConsoleAttachProfilerUI();
 
+        [Flags]
         internal enum Mode
         {
             Error = 1 << 0,
@@ -618,8 +613,6 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
-            m_ListView.totalRows = LogEntries.StartGettingEntries();
-
             SplitterGUILayout.BeginVerticalSplit(spl);
             int rowHeight = RowHeight;
             EditorGUIUtility.SetIconSize(new Vector2(rowHeight, rowHeight));
@@ -627,24 +620,20 @@ namespace UnityEditor
             int id = GUIUtility.GetControlID(0);
 
             /////@TODO: Make Frame selected work with ListViewState
-            try
+            using (new GettingLogEntriesScope(m_ListView))
             {
-                bool selected = false;
+                int selectedRow = -1;
+                bool openSelectedItem = false;
                 bool collapsed = HasFlag(ConsoleFlags.Collapse);
                 foreach (ListViewElement el in ListViewGUI.ListView(m_ListView, Constants.Box))
                 {
                     if (e.type == EventType.MouseDown && e.button == 0 && el.position.Contains(e.mousePosition))
                     {
+                        selectedRow = m_ListView.row;
                         if (e.clickCount == 2)
-                        {
-                            LogEntries.RowGotDoubleClicked(m_ListView.row);
-                        }
-
-                        selected = true;
+                            openSelectedItem = true;
                     }
-
-                    // Paint list view element
-                    if (e.type == EventType.Repaint)
+                    else if (e.type == EventType.Repaint)
                     {
                         int mode = 0;
                         string text = null;
@@ -663,7 +652,6 @@ namespace UnityEditor
                         GUIStyle errorModeStyle = GetStyleForErrorMode(mode, false, Constants.LogStyleLineCount == 1);
                         errorModeStyle.Draw(el.position, tempContent, id, m_ListView.row == el.row);
 
-
                         if (collapsed)
                         {
                             Rect badgeRect = el.position;
@@ -677,12 +665,11 @@ namespace UnityEditor
                     }
                 }
 
-                if (selected)
+                if (selectedRow != -1)
                 {
                     if (m_ListView.scrollPos.y >= m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight)
                         m_ListView.scrollPos.y = m_ListView.rowHeight * m_ListView.totalRows - ms_LVHeight - 1;
                 }
-
 
                 // Make sure the selected entry is up to date
                 if (m_ListView.totalRows == 0 || m_ListView.row >= m_ListView.totalRows || m_ListView.row < 0)
@@ -707,20 +694,23 @@ namespace UnityEditor
                 // Open entry using return key
                 if ((GUIUtility.keyboardControl == m_ListView.ID) && (e.type == EventType.KeyDown) && (e.keyCode == KeyCode.Return) && (m_ListView.row != 0))
                 {
-                    LogEntries.RowGotDoubleClicked(m_ListView.row);
-                    Event.current.Use();
+                    selectedRow = m_ListView.row;
+                    openSelectedItem = true;
                 }
 
                 if (e.type != EventType.Layout && ListViewGUI.ilvState.rectHeight != 1)
                     ms_LVHeight = ListViewGUI.ilvState.rectHeight;
-            }
-            finally
-            {
-                LogEntries.EndGettingEntries();
-                EditorGUIUtility.SetIconSize(Vector2.zero);
+
+                if (openSelectedItem)
+                {
+                    LogEntries.RowGotDoubleClicked(selectedRow);
+                    Event.current.Use();
+                }
             }
 
-            // Display active text (We want wordwrapped text with a vertical scrollbar)
+            EditorGUIUtility.SetIconSize(Vector2.zero);
+
+            // Display active text (We want word wrapped text with a vertical scrollbar)
             m_TextScroll = GUILayout.BeginScrollView(m_TextScroll, Constants.Box);
             float height = Constants.MessageStyle.CalcHeight(GUIContent.Temp(m_ActiveText), position.width);
             EditorGUILayout.SelectableLabel(m_ActiveText, Constants.MessageStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height));
@@ -835,6 +825,30 @@ namespace UnityEditor
         {
             if (ConsoleWindow.entryWithManagedCallbackDoubleClicked != null)
                 ConsoleWindow.entryWithManagedCallbackDoubleClicked(entry);
+        }
+    }
+
+    internal class GettingLogEntriesScope : IDisposable
+    {
+        private bool m_Disposed;
+
+        public GettingLogEntriesScope(ListViewState listView)
+        {
+            listView.totalRows = LogEntries.StartGettingEntries();
+        }
+
+        public void Dispose()
+        {
+            if (m_Disposed)
+                return;
+            LogEntries.EndGettingEntries();
+            m_Disposed = true;
+        }
+
+        ~GettingLogEntriesScope()
+        {
+            if (!m_Disposed)
+                Debug.LogError("Scope was not disposed! You should use the 'using' keyword or manually call Dispose.");
         }
     }
 }

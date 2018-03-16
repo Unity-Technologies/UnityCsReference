@@ -10,9 +10,9 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Experimental.XR
 {
-    [NativeType(Header = "Modules/XR/Subsystems/Example/XRExampleInstance.h")]
+    [NativeType(Header = "Modules/XR/Subsystems/Example/XRExampleSubsystem.h")]
     [UsedByNativeCode]
-    public class XRExampleInstance : XRInstance<XRExampleSubsystemDescriptor>
+    public class XRExampleSubsystem : Subsystem<XRExampleSubsystemDescriptor>
     {
         public extern void PrintExample();
         public extern bool GetBool();

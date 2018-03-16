@@ -65,7 +65,7 @@ namespace UnityEditor.Collaboration
     internal interface ICollabHistoryWindow
     {
         void UpdateState(HistoryState state, bool force);
-        void UpdateRevisions(IEnumerable<RevisionData> items, string tip, int totalRevisions);
+        void UpdateRevisions(IEnumerable<RevisionData> items, string tip, int totalRevisions, int currentPage);
 
         bool revisionActionsEnabled { get; set; }
         int itemsPerPage { set; }

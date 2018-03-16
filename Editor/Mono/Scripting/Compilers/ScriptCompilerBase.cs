@@ -435,5 +435,15 @@ namespace UnityEditor.Scripting.Compilers
         /// The normalized status. Each class deriving from ScriptCompilerBase must map errors / warning #
         /// if it can be mapped to a NormalizedCompilerStatusCode.
         public NormalizedCompilerStatus normalizedStatus;
+
+        public CompilerMessage(CompilerMessage cm)
+        {
+            message = cm.message;
+            file = cm.file;
+            line = cm.line;
+            column = cm.column;
+            type = cm.type;
+            normalizedStatus = cm.normalizedStatus;
+        }
     }
 }

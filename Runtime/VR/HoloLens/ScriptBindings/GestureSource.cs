@@ -404,7 +404,7 @@ namespace UnityEngine.XR.WSA.Input
             SourceReleased
         }
 
-        private delegate void InternalSourceEventHandler(EventType eventType, InteractionSourceState state, InteractionSourcePressType pressType);
+        private delegate void InternalSourceEventHandler(EventType eventType, ref InteractionSourceState state, InteractionSourcePressType pressType);
         private static InternalSourceEventHandler m_OnSourceEventHandler;
 
         static InteractionManager()
@@ -415,7 +415,7 @@ namespace UnityEngine.XR.WSA.Input
 
 #pragma warning disable 0618
         [AOT.MonoPInvokeCallback(typeof(InternalSourceEventHandler))]
-        private static void OnSourceEvent(EventType eventType, InteractionSourceState state, InteractionSourcePressType pressType)
+        private static void OnSourceEvent(EventType eventType, ref InteractionSourceState state, InteractionSourcePressType pressType)
         {
             switch (eventType)
             {

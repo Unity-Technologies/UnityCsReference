@@ -146,11 +146,19 @@ namespace UnityEngine.XR
             // Command buffer setup
             m_CommandBuffer = new CommandBuffer();
 
-            if (m_BackgroundTexture != null)
-                m_CommandBuffer.Blit(m_BackgroundTexture, BuiltinRenderTextureType.CameraTarget, m_BackgroundMaterial);
-            else
-                m_CommandBuffer.Blit(m_BackgroundMaterial.GetTexture("_MainTex"), BuiltinRenderTextureType.CameraTarget, m_BackgroundMaterial);
+            var backgroundTexture = m_BackgroundTexture;
+            if (backgroundTexture == null)
+            {
+                const string kMainTexName = "_MainTex";
 
+                // GetTexture will return null if the texture isn't found, but it also
+                // writes an error to the console. We check for existence to silence
+                // this error.
+                if (m_BackgroundMaterial.HasProperty(kMainTexName))
+                    backgroundTexture = m_BackgroundMaterial.GetTexture(kMainTexName);
+            }
+
+            m_CommandBuffer.Blit(backgroundTexture, BuiltinRenderTextureType.CameraTarget, m_BackgroundMaterial);
             camera.AddCommandBuffer(CameraEvent.BeforeForwardOpaque, m_CommandBuffer);
             camera.AddCommandBuffer(CameraEvent.BeforeGBuffer, m_CommandBuffer);
 

@@ -7,11 +7,14 @@ using UnityEngine.Bindings;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using UnityEngine.Experimental;
 
 namespace UnityEngine.Experimental.XR
 {
-    [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystemDescriptor.h")]
+    [NativeHeader("Modules/XR/XRPrefix.h")]
+    [NativeType(Header = "Modules/XR/Subsystems/Session/XRSessionSubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRInputSubsystemDescriptor : SubsystemDescriptor<XRInputSubsystem>
-    {}
+    public class XRSessionSubsystemDescriptor : SubsystemDescriptor<XRSessionSubsystem>
+    {
+    }
 }

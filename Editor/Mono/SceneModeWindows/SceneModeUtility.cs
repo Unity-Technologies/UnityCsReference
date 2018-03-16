@@ -147,9 +147,24 @@ namespace UnityEditor
         public static bool SetStaticFlags(Object[] targetObjects, int changedFlags, bool flagValue)
         {
             bool allFlagsAreChanged = (changedFlags == ~0);
+            var msgChangedFlags = changedFlags;
+            if (msgChangedFlags < 0 && !allFlagsAreChanged)
+            {
+                //In order to have a list of human readable list of changed flags,
+                //we need to filter out bits that does not correspont to any option.
+                int allPossibleValues = 0;
+                var values = Enum.GetValues(typeof(StaticEditorFlags));
+                foreach (var value in values)
+                {
+                    allPossibleValues |= (int)value;
+                }
+
+                msgChangedFlags = msgChangedFlags & allPossibleValues;
+            }
             StaticEditorFlags flag = allFlagsAreChanged ?
                 (StaticEditorFlags)0 :
-                (StaticEditorFlags)Enum.Parse(typeof(StaticEditorFlags), changedFlags.ToString());
+                (StaticEditorFlags)Enum.Parse(typeof(StaticEditorFlags), msgChangedFlags.ToString());
+
 
             // Should we include child objects?
             GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targetObjects.OfType<GameObject>(), "Change Static Flags",

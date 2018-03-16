@@ -19,6 +19,7 @@ namespace UnityEditor.Collaboration
         bool m_IsCollabError;
         int m_TotalRevisions;
         int m_CurrentPage;
+        int m_RequestedPage;
         bool m_FetchInProgress;
 
         BuildAccess m_BuildAccess;
@@ -134,7 +135,8 @@ namespace UnityEditor.Collaboration
 
         private void OnCollabRevisionUpdated(CollabInfo state)
         {
-            OnUpdatePage(m_CurrentPage);
+            if (m_CollabState.tip != state.tip)
+                OnUpdatePage(m_CurrentPage);
         }
 
         private void OnCollabJobsCompleted(CollabInfo state)
@@ -151,6 +153,8 @@ namespace UnityEditor.Collaboration
         private void OnCollabErrorCleared()
         {
             m_IsCollabError = false;
+            m_FetchInProgress = true;
+            m_Service.GetRevisions(m_CurrentPage * k_ItemsPerPage, k_ItemsPerPage);
             m_Window.UpdateState(RecalculateState(), false);
         }
 
@@ -231,7 +235,7 @@ namespace UnityEditor.Collaboration
             m_FetchInProgress = true;
             m_Service.GetRevisions(page * k_ItemsPerPage, k_ItemsPerPage);
             m_Window.UpdateState(RecalculateState(), false);
-            m_CurrentPage = page;
+            m_RequestedPage = page;
         }
 
         private void OnFetchRevisions(RevisionsResult data)
@@ -240,13 +244,14 @@ namespace UnityEditor.Collaboration
             IEnumerable<RevisionData> items = null;
             if (data != null)
             {
+                m_CurrentPage = m_RequestedPage;
                 m_TotalRevisions = data.RevisionsInRepo;
                 items = m_Factory.GenerateElements(data.Revisions, m_TotalRevisions, m_CurrentPage * k_ItemsPerPage, m_Service.tipRevision, m_Window.inProgressRevision, m_Window.revisionActionsEnabled, BuildServiceEnabled, m_Service.currentUser);
             }
 
             // State must be recalculated prior to inserting items
             m_Window.UpdateState(RecalculateState(), false);
-            m_Window.UpdateRevisions(items, m_Service.tipRevision, m_TotalRevisions);
+            m_Window.UpdateRevisions(items, m_Service.tipRevision, m_TotalRevisions, m_CurrentPage);
         }
 
         private void OnRestore(string revisionId, bool updatetorevision)

@@ -19,9 +19,9 @@ namespace Unity.Collections
             return new NativeSlice<T>(thisArray);
         }
 
-        public static NativeSlice<T> Slice<T>(this NativeArray<T> thisArray, int length) where T : struct
+        public static NativeSlice<T> Slice<T>(this NativeArray<T> thisArray, int start) where T : struct
         {
-            return new NativeSlice<T>(thisArray, length);
+            return new NativeSlice<T>(thisArray, start);
         }
 
         public static NativeSlice<T> Slice<T>(this NativeArray<T> thisArray, int start, int length) where T : struct
@@ -34,9 +34,9 @@ namespace Unity.Collections
             return thisSlice;
         }
 
-        public static NativeSlice<T> Slice<T>(this NativeSlice<T> thisSlice, int length) where T : struct
+        public static NativeSlice<T> Slice<T>(this NativeSlice<T> thisSlice, int start) where T : struct
         {
-            return new NativeSlice<T>(thisSlice, length);
+            return new NativeSlice<T>(thisSlice, start);
         }
 
         public static NativeSlice<T> Slice<T>(this NativeSlice<T> thisSlice, int start, int length) where T : struct

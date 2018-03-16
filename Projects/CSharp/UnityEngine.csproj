@@ -1992,47 +1992,62 @@
 <Compile Include="..\..\artifacts\generated\bindings_old\common\Wind\WindZoneBindings.gen.cs" >
 <Link>artifacts\generated\bindings_old\common\Wind\WindZoneBindings.gen.cs</Link>
 </Compile>
+<Compile Include="..\..\Modules\XR\DotNetHelper.cs" >
+<Link>Modules\XR\DotNetHelper.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\UnityXRTrackable.bindings.cs" >
+<Link>Modules\XR\UnityXRTrackable.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Modules\XR\XRSubsystemManager.bindings.cs" >
 <Link>Modules\XR\XRSubsystemManager.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraInstance.bindings.cs" >
-<Link>Modules\XR\Subsystems\Camera\XRCameraInstance.bindings.cs</Link>
+<Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraSubsystem.bindings.cs" >
+<Link>Modules\XR\Subsystems\Camera\XRCameraSubsystem.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraSubsystemDescriptor.bindings.cs" >
 <Link>Modules\XR\Subsystems\Camera\XRCameraSubsystemDescriptor.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Environment\XREnvironment.bindings.cs" >
-<Link>Modules\XR\Subsystems\Environment\XREnvironment.bindings.cs</Link>
+<Compile Include="..\..\Modules\XR\Subsystems\Depth\XRDepthSubsystem.bindings.cs" >
+<Link>Modules\XR\Subsystems\Depth\XRDepthSubsystem.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Environment\XREnvironmentSubsystemDescriptor.bindings.cs" >
-<Link>Modules\XR\Subsystems\Environment\XREnvironmentSubsystemDescriptor.bindings.cs</Link>
+<Compile Include="..\..\Modules\XR\Subsystems\Depth\XRDepthSubsystemDescriptor.bindings.cs" >
+<Link>Modules\XR\Subsystems\Depth\XRDepthSubsystemDescriptor.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Environment\Depth\XRDepth.bindings.cs" >
-<Link>Modules\XR\Subsystems\Environment\Depth\XRDepth.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Environment\Planes\XRPlane.bindings.cs" >
-<Link>Modules\XR\Subsystems\Environment\Planes\XRPlane.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Environment\Raycast\XRRaycast.bindings.cs" >
-<Link>Modules\XR\Subsystems\Environment\Raycast\XRRaycast.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Environment\ReferencePoints\XRReferencePoint.bindings.cs" >
-<Link>Modules\XR\Subsystems\Environment\ReferencePoints\XRReferencePoint.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Environment\Session\XRSession.bindings.cs" >
-<Link>Modules\XR\Subsystems\Environment\Session\XRSession.bindings.cs</Link>
-</Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Example\XRExampleInstance.bindings.cs" >
-<Link>Modules\XR\Subsystems\Example\XRExampleInstance.bindings.cs</Link>
+<Compile Include="..\..\Modules\XR\Subsystems\Example\XRExampleSubsystem.bindings.cs" >
+<Link>Modules\XR\Subsystems\Example\XRExampleSubsystem.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\XR\Subsystems\Example\XRExampleSubsystemDescriptor.bindings.cs" >
 <Link>Modules\XR\Subsystems\Example\XRExampleSubsystemDescriptor.bindings.cs</Link>
 </Compile>
-<Compile Include="..\..\Modules\XR\Subsystems\Input\XRInputInstance.bindings.cs" >
-<Link>Modules\XR\Subsystems\Input\XRInputInstance.bindings.cs</Link>
+<Compile Include="..\..\Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs" >
+<Link>Modules\XR\Subsystems\Input\XRInputSubsystem.bindings.cs</Link>
 </Compile>
 <Compile Include="..\..\Modules\XR\Subsystems\Input\XRInputSubsystemDescriptor.bindings.cs" >
 <Link>Modules\XR\Subsystems\Input\XRInputSubsystemDescriptor.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\Subsystems\Planes\XRPlaneSubsystem.bindings.cs" >
+<Link>Modules\XR\Subsystems\Planes\XRPlaneSubsystem.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\Subsystems\Planes\XRPlaneSubsystemDescriptor.bindings.cs" >
+<Link>Modules\XR\Subsystems\Planes\XRPlaneSubsystemDescriptor.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\Subsystems\Raycast\XRRaycastSubsystem.bindings.cs" >
+<Link>Modules\XR\Subsystems\Raycast\XRRaycastSubsystem.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\Subsystems\Raycast\XRRaycastSubsystemDescriptor.bindings.cs" >
+<Link>Modules\XR\Subsystems\Raycast\XRRaycastSubsystemDescriptor.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\Subsystems\ReferencePoints\XRReferencePointSubsystem.bindings.cs" >
+<Link>Modules\XR\Subsystems\ReferencePoints\XRReferencePointSubsystem.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\Subsystems\ReferencePoints\XRReferencePointSubsystemDescriptor.bindings.cs" >
+<Link>Modules\XR\Subsystems\ReferencePoints\XRReferencePointSubsystemDescriptor.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\Subsystems\Session\XRSessionSubsystem.bindings.cs" >
+<Link>Modules\XR\Subsystems\Session\XRSessionSubsystem.bindings.cs</Link>
+</Compile>
+<Compile Include="..\..\Modules\XR\Subsystems\Session\XRSessionSubsystemDescriptor.bindings.cs" >
+<Link>Modules\XR\Subsystems\Session\XRSessionSubsystemDescriptor.bindings.cs</Link>
 </Compile>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

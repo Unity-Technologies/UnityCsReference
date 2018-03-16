@@ -10,6 +10,7 @@ namespace UnityEditorInternal
 {
     [NativeHeader("Editor/Src/GradientPreviewCache.h")]
     [NativeHeader("Runtime/Graphics/Texture2D.h")]
+    [NativeHeader("Runtime/Math/Gradient.h")]
     internal partial class GradientPreviewCache
     {
         public static extern Texture2D GenerateGradientPreview(Gradient gradient, Texture2D existingTexture);

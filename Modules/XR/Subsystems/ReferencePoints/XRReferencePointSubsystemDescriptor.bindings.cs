@@ -4,25 +4,17 @@
 
 using System;
 using UnityEngine.Bindings;
-using UnityEngine.Rendering;
 using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using UnityEngine.Experimental;
 
 namespace UnityEngine.Experimental.XR
 {
     [NativeHeader("Modules/XR/XRPrefix.h")]
-    [NativeType(Header = "Modules/XR/Subsystems/Camera/XRCameraInstance.h")]
+    [NativeType(Header = "Modules/XR/Subsystems/ReferencePoints/XRReferencePointSubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRCameraInstance : XRInstance<XRCameraSubsystemDescriptor>
+    public class XRReferencePointSubsystemDescriptor : SubsystemDescriptor<XRReferencePointSubsystem>
     {
-        [NativeConditional("ENABLE_XR")]
-        public extern void SetMaterial(Material mat);
-
-        [NativeConditional("ENABLE_XR")]
-        public extern float GetAverageBrightness();
-
-        [NativeConditional("ENABLE_XR")]
-        public extern float GetAverageColorTemperature();
     }
 }

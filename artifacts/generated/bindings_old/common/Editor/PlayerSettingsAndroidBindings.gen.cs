@@ -55,6 +55,10 @@ public enum AndroidSdkVersions
     AndroidApiLevel24 = 24,
     
     AndroidApiLevel25 = 25,
+    
+    AndroidApiLevel26 = 26,
+    
+    AndroidApiLevel27 = 27,
 }
 
 public enum AndroidPreferredInstallLocation

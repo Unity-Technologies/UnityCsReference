@@ -58,7 +58,9 @@ namespace UnityEngine
     {
         public int probeOcclusionLightIndex;
         public int occlusionMaskChannel;
+        [NativeName("lightmapBakeMode.lightmapBakeType")]
         public LightmapBakeType lightmapBakeType;
+        [NativeName("lightmapBakeMode.mixedLightingMode")]
         public MixedLightingMode mixedLightingMode;
         public bool isBaked;
     }
