@@ -246,7 +246,7 @@ namespace UnityEditor
             if (IsVisibleRootNode(item))
                 return false;
 
-            return base.IsRenamingItemAllowed(item);
+            return InternalEditorUtility.CanRenameAsset(item.id);
         }
 
         public static int GetAssetsFolderInstanceID()
@@ -270,26 +270,27 @@ namespace UnityEditor
             TreeViewItem assetRootItem = new TreeViewItem(assetsFolderInstanceID, depth, m_RootItem, displayName);
             ReadAssetDatabase("Assets", assetRootItem, depth + 1);
 
-            TreeViewItem packagesRootItem = null;
-            if (Unsupported.IsDeveloperMode() && EditorPrefs.GetBool("ShowPackagesFolder"))
+            TreeViewItem packagesRootItem = new TreeViewItem(0, depth, m_RootItem, "Packages");
+            depth++;
+
+            Texture2D folderIcon = EditorGUIUtility.FindTexture(EditorResources.folderIconName);
+            Texture2D emptyFolderIcon = EditorGUIUtility.FindTexture(EditorResources.emptyFolderIconName);
+            packagesRootItem.icon = emptyFolderIcon;
+
+            var packages = PackageManager.Packages.GetAll();
+            foreach (var package in packages)
             {
-                var packages = PackageManager.Packages.GetAll();
+                if (package.source == PackageManager.PackageSource.BuiltIn)
+                    continue;
 
-                packagesRootItem = new TreeViewItem(0, depth, m_RootItem, "Packages");
-                depth++;
-                foreach (var package in packages)
-                {
-                    if (package.source == PackageManager.PackageSource.BuiltIn)
-                        continue;
+                var packagePath = Path.Combine(PackageManager.Folders.GetPackagesMountPoint(), package.name);
+                var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(packagePath);
 
-                    var packagePath = Path.Combine(PackageManager.Folders.GetPackagesMountPoint(), package.name);
-                    var packagesFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(packagePath);
-
-                    displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(package.name.Replace("com.unity.", ""));
-                    TreeViewItem packageItem = new TreeViewItem(packagesFolderInstanceId, depth, null, displayName);
-                    packagesRootItem.AddChild(packageItem);
-                    ReadAssetDatabase(packagePath, packageItem, depth + 1);
-                }
+                displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : CultureInfo.InvariantCulture.TextInfo.ToTitleCase(package.name.Replace("com.unity.", ""));
+                TreeViewItem packageItem = new TreeViewItem(packageFolderInstanceId, depth, null, displayName);
+                packagesRootItem.AddChild(packageItem);
+                ReadAssetDatabase(packagePath, packageItem, depth + 1);
+                packagesRootItem.icon = folderIcon;
             }
 
             // Fetch saved filters

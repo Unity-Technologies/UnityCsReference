@@ -51,6 +51,8 @@ namespace UnityEditor
             return menuItems.Count;
         }
 
+        public bool allowDuplicateNames {get; set; }
+
         private ArrayList menuItems = new ArrayList();
 
         private sealed class MenuItem
@@ -105,7 +107,7 @@ namespace UnityEditor
                     selected.Add(idx);
             }
 
-            EditorUtility.DisplayCustomMenuWithSeparators(position, titles, enabled, separator, (int[])selected.ToArray(typeof(int)), CatchMenu, null, true);
+            EditorUtility.DisplayCustomMenuWithSeparators(position, titles, enabled, separator, (int[])selected.ToArray(typeof(int)), CatchMenu, null, true, allowDuplicateNames);
         }
 
         // Display as a popup with /selectedIndex/. How this behaves depends on the platform (on Mac, it'll try to scroll the menu to the right place)

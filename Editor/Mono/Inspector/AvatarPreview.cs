@@ -146,7 +146,7 @@ namespace UnityEditor
             public GUIContent pivot = EditorGUIUtility.TrIconContent("AvatarPivot", "Displays avatar's pivot and mass center");
             public GUIContent ik = EditorGUIUtility.TrTextContent("IK", "Toggles feet IK preview");
             public GUIContent is2D = EditorGUIUtility.TrTextContent("2D", "Toggles 2D preview mode");
-            public GUIContent avatarIcon = EditorGUIUtility.TrIconContent("Avatar Icon", "Changes the model to use for previewing.");
+            public GUIContent avatarIcon = EditorGUIUtility.TrIconContent<Avatar>("Changes the model to use for previewing.");
 
             public GUIStyle preButton = "preButton";
             public GUIStyle preSlider = "preSlider";

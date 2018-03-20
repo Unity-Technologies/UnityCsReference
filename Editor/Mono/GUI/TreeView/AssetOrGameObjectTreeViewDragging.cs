@@ -21,6 +21,21 @@ namespace UnityEditor
         {
         }
 
+        public override bool CanStartDrag(TreeViewItem targetItem, List<int> draggedItemIDs, Vector2 mouseDownPosition)
+        {
+            // Prevent dragging of immutable root folder
+            foreach (var draggedItemID in draggedItemIDs)
+            {
+                var path = AssetDatabase.GetAssetPath(draggedItemID);
+                bool rootFolder, readOnly;
+                bool validPath = AssetDatabase.GetAssetFolderInfo(path, out rootFolder, out readOnly);
+                if (validPath && rootFolder && readOnly)
+                    return false;
+            }
+            return true;
+        }
+
+
         public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
         {
             DragAndDrop.PrepareStartDrag();
@@ -39,12 +54,29 @@ namespace UnityEditor
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
         {
-            var hierarchyProperty = new HierarchyProperty(HierarchyType.Assets);
-            if (parentItem == null || !hierarchyProperty.Find(parentItem.id, null))
-                hierarchyProperty = null;
+            if (parentItem != null)
+            {
+                var hierarchyProperty = new HierarchyProperty(HierarchyType.Assets);
+                if (hierarchyProperty.Find(parentItem.id, null))
+                    return InternalEditorUtility.ProjectWindowDrag(hierarchyProperty, perform);
 
-            // When hierarchyProperty == null then drag is performed on the Assets folder
-            return InternalEditorUtility.ProjectWindowDrag(hierarchyProperty, perform);
+                var path = AssetDatabase.GetAssetPath(parentItem.id);
+                if (string.IsNullOrEmpty(path))
+                    return DragAndDropVisualMode.Rejected;
+
+                var pathComponents = path.Split('/');
+                if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
+                {
+                    hierarchyProperty = new HierarchyProperty(pathComponents[0] + "/" + pathComponents[1]);
+                    if (hierarchyProperty.Find(parentItem.id, null))
+                        return InternalEditorUtility.ProjectWindowDrag(hierarchyProperty, perform);
+                }
+
+                return DragAndDropVisualMode.Rejected;
+            }
+
+            // Perform drag as on the Assets folder
+            return InternalEditorUtility.ProjectWindowDrag(null, perform);
         }
     }
 

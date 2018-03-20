@@ -4,24 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
-using UnityEngine.Playables;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Playables
 {
-    public struct PlayableBinding
-    {
-        public static readonly PlayableBinding[] None = new PlayableBinding[0];
-        public static readonly double DefaultDuration = double.PositiveInfinity;
-
-        public string streamName { get; set; }
-        public DataStreamType streamType { get; set; }
-        public UnityEngine.Object sourceObject { get; set; }
-        public System.Type sourceBindingType { get; set; }
-    };
-
     public interface IPlayableAsset
     {
         Playable CreatePlayable(PlayableGraph graph, GameObject owner);

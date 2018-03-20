@@ -23,6 +23,7 @@ namespace UnityEditorInternal
                 FrameDataView.GetMarkerCategoryColor(0),                            // "Rendering"
                 FrameDataView.GetMarkerCategoryColor(1),                            // "Scripts"
                 FrameDataView.GetMarkerCategoryColor(5),                            // "Physics"
+                FrameDataView.GetMarkerCategoryColor(6),                            // "Animation"
                 FrameDataView.GetMarkerCategoryColor(15),                           // "GarbageCollector"
                 FrameDataView.GetMarkerCategoryColor(16),                           // "VSync"
                 FrameDataView.GetMarkerCategoryColor(11),                           // "Global Illumination"

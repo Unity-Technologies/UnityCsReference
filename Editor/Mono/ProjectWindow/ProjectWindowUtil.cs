@@ -291,13 +291,13 @@ namespace UnityEditor
                     icon = EditorGUIUtility.IconContent("boo Script Icon").image as Texture2D;
                     break;
                 case ".shader":
-                    icon = EditorGUIUtility.IconContent("Shader Icon").image as Texture2D;
+                    icon = EditorGUIUtility.IconContent<Shader>().image as Texture2D;
                     break;
                 case ".asmdef":
-                    icon = EditorGUIUtility.IconContent("AssemblyDefinitionAsset Icon").image as Texture2D;
+                    icon = EditorGUIUtility.IconContent<AssemblyDefinitionAsset>().image as Texture2D;
                     break;
                 default:
-                    icon = EditorGUIUtility.IconContent("TextAsset Icon").image as Texture2D;
+                    icon = EditorGUIUtility.IconContent<TextAsset>().image as Texture2D;
                     break;
             }
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScriptAsset>(), destName, icon, templatePath);
@@ -313,13 +313,13 @@ namespace UnityEditor
 
         static private void CreateAnimatorController()
         {
-            var icon = EditorGUIUtility.IconContent("AnimatorController Icon").image as Texture2D;
+            var icon = EditorGUIUtility.IconContent<Animations.AnimatorController>().image as Texture2D;
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAnimatorController>(), "New Animator Controller.controller", icon, null);
         }
 
         static private void CreateAudioMixer()
         {
-            var icon = EditorGUIUtility.IconContent("AudioMixerController Icon").image as Texture2D;
+            var icon = EditorGUIUtility.IconContent<AudioMixerController>().image as Texture2D;
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", icon, null);
         }
 
@@ -352,7 +352,7 @@ namespace UnityEditor
                     break;
             }
 
-            var icon = EditorGUIUtility.IconContent("Sprite Icon").image as Texture2D;
+            var icon = EditorGUIUtility.IconContent<Sprite>().image as Texture2D;
             DoCreateSpritePolygon action = ScriptableObject.CreateInstance<DoCreateSpritePolygon>();
             action.sides = sides;
             StartNameEditingIfProjectWindowExists(0, action, assetName + ".png", icon, null);

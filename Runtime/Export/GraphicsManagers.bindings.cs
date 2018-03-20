@@ -95,6 +95,7 @@ namespace UnityEngine
         extern public static int streamingMipmapsRenderersPerFrame { get; set; }
         extern public static int streamingMipmapsMaxLevelReduction { get; set; }
         extern public static bool streamingMipmapsAddAllCameras { get; set; }
+        extern public static int streamingMipmapsMaxFileIORequests { get; set; }
 
         [StaticAccessor("QualitySettingsScripting", StaticAccessorType.DoubleColon)] extern public static int maxQueuedFrames { get; set; }
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -102,6 +103,7 @@ namespace UnityEngine
     public sealed partial class MeshFilter : Component
     {
         extern public Mesh sharedMesh { get; set; }
+        [RequiredByNativeCode]  // Used in the VR Splash screen.
         extern public Mesh mesh {[NativeName("GetInstantiatedMeshFromScript")] get; [NativeName("SetInstantiatedMesh")] set; }
     }
 

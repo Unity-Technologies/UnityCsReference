@@ -19,13 +19,6 @@ namespace UnityEngine.Playables
         Manual = 3
     }
 
-    public enum DataStreamType
-    {
-        Animation = 0,
-        Audio = 1,
-        Texture = 2,
-        None = 3
-    }
 
     [NativeHeader("Runtime/Director/Core/HPlayableGraph.h")]
     [NativeHeader("Runtime/Director/Core/HPlayableOutput.h")]

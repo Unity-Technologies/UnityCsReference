@@ -13,6 +13,7 @@ namespace UnityEngine
     public class Behaviour : Component
     {
         // Enabled Behaviours are Updated, disabled Behaviours are not.
+        [RequiredByNativeCode] // GetFixedBehaviourManager is directly used by fixed update in the player loop
         [NativeProperty]
         extern public bool enabled { get; set; }
 

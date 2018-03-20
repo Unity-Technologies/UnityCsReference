@@ -502,6 +502,8 @@ public sealed partial class ParticleSystem : Component
                     public Mesh mesh { get { return GetMesh(m_ParticleSystem); } set { SetMesh(m_ParticleSystem, value); } }
                     public MeshRenderer meshRenderer { get { return GetMeshRenderer(m_ParticleSystem); } set { SetMeshRenderer(m_ParticleSystem, value); } }
                     public SkinnedMeshRenderer skinnedMeshRenderer { get { return GetSkinnedMeshRenderer(m_ParticleSystem); } set { SetSkinnedMeshRenderer(m_ParticleSystem, value); } }
+                    public Sprite sprite { get { return GetSprite(m_ParticleSystem); } set { SetSprite(m_ParticleSystem, value); } }
+                    public SpriteRenderer spriteRenderer { get { return GetSpriteRenderer(m_ParticleSystem); } set { SetSpriteRenderer(m_ParticleSystem, value); } }
                     public bool useMeshMaterialIndex { get { return GetUseMeshMaterialIndex(m_ParticleSystem); } set { SetUseMeshMaterialIndex(m_ParticleSystem, value); } }
                     public int meshMaterialIndex { get { return GetMeshMaterialIndex(m_ParticleSystem); } set { SetMeshMaterialIndex(m_ParticleSystem, value); } }
                     public bool useMeshColors { get { return GetUseMeshColors(m_ParticleSystem); } set { SetUseMeshColors(m_ParticleSystem, value); } }
@@ -683,6 +685,22 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  SkinnedMeshRenderer GetSkinnedMeshRenderer (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetSprite (ParticleSystem system, Sprite value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  Sprite GetSprite (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetSpriteRenderer (ParticleSystem system, SpriteRenderer value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  SpriteRenderer GetSpriteRenderer (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3275,6 +3293,7 @@ public sealed partial class ParticleSystem : Component
         return IsAlive ( withChildren );
     }
 
+    [RequiredByNativeCode]
     public void Emit (int count) {
         INTERNAL_CALL_Emit ( this, count );
     }
@@ -3371,6 +3390,7 @@ public sealed partial class ParticleSystemRenderer : Renderer
     }
 
     public int meshCount { get { return Internal_GetMeshCount(); } }
+    [RequiredByNativeCode]
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private int Internal_GetMeshCount () ;

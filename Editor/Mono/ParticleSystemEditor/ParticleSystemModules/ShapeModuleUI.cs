@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 
@@ -75,6 +76,8 @@ namespace UnityEditor
         SerializedProperty m_Mesh;
         SerializedProperty m_MeshRenderer;
         SerializedProperty m_SkinnedMeshRenderer;
+        SerializedProperty m_Sprite;
+        SerializedProperty m_SpriteRenderer;
         SerializedProperty m_MeshMaterialIndex;
         SerializedProperty m_UseMeshMaterialIndex;
         SerializedProperty m_UseMeshColors;
@@ -105,8 +108,10 @@ namespace UnityEditor
         private SphereBoundsHandle m_SphereBoundsHandle = new SphereBoundsHandle();
         private static Color s_ShapeGizmoColor = new Color(148f / 255f, 229f / 255f, 1f, 0.9f);
 
-        private readonly ParticleSystemShapeType[] m_GuiTypes = new[] { ParticleSystemShapeType.Sphere, ParticleSystemShapeType.Hemisphere, ParticleSystemShapeType.Cone, ParticleSystemShapeType.Donut, ParticleSystemShapeType.Box, ParticleSystemShapeType.Mesh, ParticleSystemShapeType.MeshRenderer, ParticleSystemShapeType.SkinnedMeshRenderer, ParticleSystemShapeType.Circle, ParticleSystemShapeType.SingleSidedEdge, ParticleSystemShapeType.Rectangle };
-        private readonly int[] m_TypeToGuiTypeIndex = new[] { 0, 0, 1, 1, 2, 4, 5, 2, 2, 2, 8, 8, 9, 6, 7, 4, 4, 3, 10 };
+        private Mesh m_SpriteMesh;
+
+        private readonly ParticleSystemShapeType[] m_GuiTypes = new[] { ParticleSystemShapeType.Sphere, ParticleSystemShapeType.Hemisphere, ParticleSystemShapeType.Cone, ParticleSystemShapeType.Donut, ParticleSystemShapeType.Box, ParticleSystemShapeType.Mesh, ParticleSystemShapeType.MeshRenderer, ParticleSystemShapeType.SkinnedMeshRenderer, ParticleSystemShapeType.Sprite, ParticleSystemShapeType.SpriteRenderer, ParticleSystemShapeType.Circle, ParticleSystemShapeType.SingleSidedEdge, ParticleSystemShapeType.Rectangle };
+        private readonly int[] m_TypeToGuiTypeIndex = new[] { 0, 0, 1, 1, 2, 4, 5, 2, 2, 2, 10, 10, 11, 6, 7, 4, 4, 3, 12, 8, 9 };
 
         private readonly ParticleSystemShapeType[] boxShapes = new ParticleSystemShapeType[] { ParticleSystemShapeType.Box, ParticleSystemShapeType.BoxShell, ParticleSystemShapeType.BoxEdge };
         private readonly ParticleSystemShapeType[] coneShapes = new ParticleSystemShapeType[] { ParticleSystemShapeType.Cone, ParticleSystemShapeType.ConeVolume };
@@ -123,6 +128,8 @@ namespace UnityEditor
             public GUIContent mesh = EditorGUIUtility.TrTextContent("Mesh", "Mesh that the particle system will emit from.");
             public GUIContent meshRenderer = EditorGUIUtility.TrTextContent("Mesh", "MeshRenderer that the particle system will emit from.");
             public GUIContent skinnedMeshRenderer = EditorGUIUtility.TrTextContent("Mesh", "SkinnedMeshRenderer that the particle system will emit from.");
+            public GUIContent sprite = EditorGUIUtility.TrTextContent("Sprite", "Sprite that the particle system will emit from.");
+            public GUIContent spriteRenderer = EditorGUIUtility.TrTextContent("Sprite", "SpriteRenderer that the particle system will emit from.");
             public GUIContent meshMaterialIndex = EditorGUIUtility.TrTextContent("Single Material", "Only emit from a specific material of the mesh.");
             public GUIContent useMeshColors = EditorGUIUtility.TrTextContent("Use Mesh Colors", "Modulate particle color with mesh vertex colors, or if they don't exist, use the shader color property \"_Color\" or \"_TintColor\" from the material. Does not read texture colors.");
             public GUIContent meshNormalOffset = EditorGUIUtility.TrTextContent("Normal Offset", "Offset particle spawn positions along the mesh normal.");
@@ -153,6 +160,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Mesh"),
                 EditorGUIUtility.TrTextContent("Mesh Renderer"),
                 EditorGUIUtility.TrTextContent("Skinned Mesh Renderer"),
+                EditorGUIUtility.TextContent("Sprite"),
+                EditorGUIUtility.TextContent("Sprite Renderer"),
                 EditorGUIUtility.TrTextContent("Circle"),
                 EditorGUIUtility.TrTextContent("Edge"),
                 EditorGUIUtility.TrTextContent("Rectangle")
@@ -251,6 +260,8 @@ namespace UnityEditor
             m_Mesh = GetProperty("m_Mesh");
             m_MeshRenderer = GetProperty("m_MeshRenderer");
             m_SkinnedMeshRenderer = GetProperty("m_SkinnedMeshRenderer");
+            m_Sprite = GetProperty("m_Sprite");
+            m_SpriteRenderer = GetProperty("m_SpriteRenderer");
             m_MeshMaterialIndex = GetProperty("m_MeshMaterialIndex");
             m_UseMeshMaterialIndex = GetProperty("m_UseMeshMaterialIndex");
             m_UseMeshColors = GetProperty("m_UseMeshColors");
@@ -425,6 +436,20 @@ namespace UnityEditor
                                 }
                             }
                         }
+
+                        GUIFloat(s_Texts.meshNormalOffset, m_MeshNormalOffset);
+                    }
+                    break;
+
+                    case ParticleSystemShapeType.Sprite:
+                    case ParticleSystemShapeType.SpriteRenderer:
+                    {
+                        GUIPopup(s_Texts.meshType, m_PlacementMode, s_Texts.meshTypes);
+
+                        if (guiType == ParticleSystemShapeType.Sprite)
+                            GUIObject(s_Texts.sprite, m_Sprite);
+                        else if (guiType == ParticleSystemShapeType.SpriteRenderer)
+                            GUIObject(s_Texts.spriteRenderer, m_SpriteRenderer);
 
                         GUIFloat(s_Texts.meshNormalOffset, m_MeshNormalOffset);
                     }
@@ -740,6 +765,31 @@ namespace UnityEditor
                     }
 
                     OnSceneViewTextureGUI(shapeModule, s_QuadMesh, true, s_TextureMaterial, transformMatrix * Matrix4x4.Scale(m_BoxBoundsHandle.size));
+                }
+                else if (type == ParticleSystemShapeType.Sprite)
+                {
+                    Sprite sprite = shapeModule.sprite;
+                    if (sprite)
+                    {
+                        if (!m_SpriteMesh)
+                        {
+                            m_SpriteMesh = new Mesh();
+                            m_SpriteMesh.name = "ParticleSpritePreview";
+                            m_SpriteMesh.hideFlags |= HideFlags.HideAndDontSave;
+                        }
+
+                        m_SpriteMesh.vertices = Array.ConvertAll(sprite.vertices, i => (Vector3)i);
+                        m_SpriteMesh.uv = sprite.uv;
+                        m_SpriteMesh.triangles = Array.ConvertAll(sprite.triangles, i => (int)i);
+
+                        bool orgWireframeMode = GL.wireframe;
+                        GL.wireframe = true;
+                        s_Material.SetPass(0);
+                        Graphics.DrawMeshNow(m_SpriteMesh, transformMatrix);
+                        GL.wireframe = orgWireframeMode;
+
+                        OnSceneViewTextureGUI(shapeModule, m_SpriteMesh, false, s_TextureMaterial, transformMatrix);
+                    }
                 }
             }
 

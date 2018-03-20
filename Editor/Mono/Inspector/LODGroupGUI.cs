@@ -63,7 +63,7 @@ namespace UnityEditor
 
             public readonly GUIContent m_IconRendererPlus                   = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add New Renderers");
             public readonly GUIContent m_IconRendererMinus                  = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove Renderer");
-            public readonly GUIContent m_CameraIcon                         = EditorGUIUtility.IconContent("Camera Icon");
+            public readonly GUIContent m_CameraIcon                         = EditorGUIUtility.IconContent<Camera>();
 
             public readonly GUIContent m_UploadToImporter                   = EditorGUIUtility.TrTextContent("Upload to Importer", "Upload the modified screen percentages to the model importer.");
             public readonly GUIContent m_UploadToImporterDisabled           = EditorGUIUtility.TrTextContent("Upload to Importer", "Number of LOD's in the scene instance differ from the number of LOD's in the imported model.");

@@ -1246,12 +1246,23 @@ namespace UnityEditor
 
             public DragAndDropVisualMode DoDrag(int dragToInstanceID, bool perform)
             {
-                // Need to get a real HierarchyProperty class, which can be casted in C++.
                 HierarchyProperty search = new HierarchyProperty(HierarchyType.Assets);
-                if (!search.Find(dragToInstanceID, null))
-                    search = null;
+                if (search.Find(dragToInstanceID, null))
+                    return InternalEditorUtility.ProjectWindowDrag(search, perform);
 
-                return InternalEditorUtility.ProjectWindowDrag(search, perform);
+                var path = AssetDatabase.GetAssetPath(dragToInstanceID);
+                if (string.IsNullOrEmpty(path))
+                    return DragAndDropVisualMode.Rejected;
+
+                var pathComponents = path.Split('/');
+                if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
+                {
+                    search = new HierarchyProperty(pathComponents[0] + "/" + pathComponents[1]);
+                    if (search.Find(dragToInstanceID, null))
+                        return InternalEditorUtility.ProjectWindowDrag(search, perform);
+                }
+
+                return InternalEditorUtility.ProjectWindowDrag(null, perform);
             }
 
             static internal int GetControlIDFromInstanceID(int instanceID)

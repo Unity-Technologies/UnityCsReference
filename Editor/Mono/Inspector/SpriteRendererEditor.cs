@@ -37,6 +37,7 @@ namespace UnityEditor
             public static readonly GUIContent spriteLabel = EditorGUIUtility.TrTextContent("Sprite", "The Sprite to render");
             public static readonly GUIContent colorLabel = EditorGUIUtility.TrTextContent("Color", "Rendering color for the Sprite graphic");
             public static readonly GUIContent maskInteractionLabel = EditorGUIUtility.TrTextContent("Mask Interaction", "SpriteRenderer's interaction with a Sprite Mask");
+            public static readonly GUIContent spriteSortPointLabel = EditorGUIUtility.TrTextContent("Sprite Sort Point", "Determines which position of the Sprite which is used for sorting");
             public static readonly Texture2D warningIcon = EditorGUIUtility.LoadIcon("console.warnicon");
         }
 
@@ -51,6 +52,7 @@ namespace UnityEditor
         private AnimBool m_ShowTileMode;
         private AnimBool m_ShowAdaptiveThreshold;
         private SerializedProperty m_MaskInteraction;
+        private SerializedProperty m_SpriteSortPoint;
 
         public override void OnEnable()
         {
@@ -73,6 +75,7 @@ namespace UnityEditor
             m_ShowTileMode.valueChanged.AddListener(Repaint);
             m_ShowAdaptiveThreshold.valueChanged.AddListener(Repaint);
             m_MaskInteraction = serializedObject.FindProperty("m_MaskInteraction");
+            m_SpriteSortPoint = serializedObject.FindProperty("m_SpriteSortPoint");
         }
 
         public override void OnInspectorGUI()
@@ -138,6 +141,12 @@ namespace UnityEditor
             RenderSortingLayerFields();
 
             EditorGUILayout.PropertyField(m_MaskInteraction, Contents.maskInteractionLabel);
+
+            if (EditorGUILayout.BeginFadeGroup(1.0f - m_ShowDrawMode.faded))
+            {
+                EditorGUILayout.PropertyField(m_SpriteSortPoint, Contents.spriteSortPointLabel);
+            }
+            EditorGUILayout.EndFadeGroup();
 
             RenderRenderingLayer();
 
@@ -219,7 +228,6 @@ namespace UnityEditor
 
             EditorGUI.EndProperty();
         }
-
 
         private void CheckForErrors()
         {

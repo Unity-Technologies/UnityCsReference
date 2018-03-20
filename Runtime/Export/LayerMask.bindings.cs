@@ -9,10 +9,12 @@ using UnityEngine.Scripting;
 namespace UnityEngine
 {
     // LayerMask allow you to display the LayerMask popup menu in the inspector
-    [UsedByNativeCode]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [NativeHeader("Runtime/BaseClasses/TagManager.h")]
+    [NativeClass("BitField", "struct BitField;")]
     public struct LayerMask
     {
+        [NativeName("m_Bits")]
         private int m_Mask;
 
         public static implicit operator int(LayerMask mask)

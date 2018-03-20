@@ -39,6 +39,23 @@ namespace UnityEditor.Compilation
         public BuildTargetGroup buildTargetGroup { get; set; }
         public BuildTarget buildTarget { get; set; }
 
+        public string[] defaultReferences
+        {
+            get
+            {
+                return GetDefaultReferences(EditorCompilationInterface.Instance);
+            }
+        }
+
+        public string[] defaultDefines
+        {
+            get
+            {
+                return GetDefaultDefines(EditorCompilationInterface.Instance);
+            }
+        }
+
+
         CompilationTask compilationTask;
 
         public AssemblyBuilder(string assemblyPath, params string[] scriptPaths)
@@ -93,6 +110,16 @@ namespace UnityEditor.Compilation
             editorCompilation.AddAssemblyBuilder(this);
 
             return true;
+        }
+
+        internal string[] GetDefaultReferences(EditorCompilation editorCompilation)
+        {
+            return editorCompilation.GetDefaultReferences(this);
+        }
+
+        internal string[] GetDefaultDefines(EditorCompilation editorCompilation)
+        {
+            return editorCompilation.GetDefaultDefines(this);
         }
 
         public AssemblyBuilderStatus status

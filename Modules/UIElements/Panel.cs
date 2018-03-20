@@ -421,10 +421,10 @@ namespace UnityEngine.Experimental.UIElements
             Rect lastRect = root.renderData.lastLayout;
             bool rectChanged = lastRect != yogaRect;
 
-            // if the last layout rect is different than the current one we must dirty transform on children
+            // If the last layout rect is different than the current one we must dirty transform on children
             if (rectChanged)
             {
-                if (lastRect.position != yogaRect.position)
+                if (yogaRect.position != lastRect.position)
                 {
                     root.Dirty(ChangeType.Transform);
                 }

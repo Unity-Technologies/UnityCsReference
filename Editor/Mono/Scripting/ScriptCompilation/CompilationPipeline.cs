@@ -33,7 +33,7 @@ namespace UnityEditor.Compilation
         public string outputPath { get; private set; }
         public string[] sourceFiles { get; private set; }
         public string[] defines { get; private set; }
-        public Assembly[] assemblyReferences { get; private set; }
+        public Assembly[] assemblyReferences { get; internal set; }
         public string[] compiledAssemblyReferences { get; private set; }
         public AssemblyFlags flags { get; private set; }
         public ScriptCompilerOptions compilerOptions { get; private set; }
@@ -170,11 +170,6 @@ namespace UnityEditor.Compilation
             var scriptAssemblies = editorCompilation.GetAllEditorScriptAssemblies(additionalOptions);
             var assemblies = new Assembly[scriptAssemblies.Length];
 
-            var scriptAssemblyToAssembly = new Dictionary<ScriptAssembly, Assembly>();
-
-            for (int i = 0; i < scriptAssemblies.Length; ++i)
-                scriptAssemblyToAssembly.Add(scriptAssemblies[i], assemblies[i]);
-
             for (int i = 0; i < scriptAssemblies.Length; ++i)
             {
                 var scriptAssembly = scriptAssemblies[i];
@@ -184,7 +179,6 @@ namespace UnityEditor.Compilation
                 var sourceFiles = scriptAssembly.Files;
                 var defines = scriptAssembly.Defines;
                 var compiledAssemblyReferences = scriptAssembly.References;
-                var assemblyReferences = scriptAssembly.ScriptAssemblyReferences.Select(a => scriptAssemblyToAssembly[a]).ToArray();
 
                 var flags = AssemblyFlags.None;
 
@@ -197,11 +191,25 @@ namespace UnityEditor.Compilation
                         outputPath,
                         sourceFiles,
                         defines,
-                        assemblyReferences,
+                        null,
                         compiledAssemblyReferences,
                         flags,
                         compilerOptions);
             }
+
+            var scriptAssemblyToAssembly = new Dictionary<ScriptAssembly, Assembly>();
+
+            for (int i = 0; i < scriptAssemblies.Length; ++i)
+                scriptAssemblyToAssembly.Add(scriptAssemblies[i], assemblies[i]);
+
+            for (int i = 0; i < scriptAssemblies.Length; ++i)
+            {
+                var scriptAssembly = scriptAssemblies[i];
+                var assemblyReferences = scriptAssembly.ScriptAssemblyReferences.Select(a => scriptAssemblyToAssembly[a]).ToArray();
+
+                assemblies[i].assemblyReferences = assemblyReferences;
+            }
+
 
             return assemblies;
         }

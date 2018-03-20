@@ -1111,6 +1111,7 @@ namespace UnityEngine
 
         internal static bool ScrollerRepeatButton(int scrollerID, Rect rect, GUIStyle style)
         {
+            bool hasChanged = false;
             if (DoRepeatButton(rect, GUIContent.none, style, FocusType.Passive))
             {
                 bool firstClick = s_ScrollControlId != scrollerID;
@@ -1118,14 +1119,14 @@ namespace UnityEngine
 
                 if (firstClick)
                 {
-                    changed = true;
+                    hasChanged = true;
                     nextScrollStepTime = DateTime.Now.AddMilliseconds(ScrollWaitDefinitions.firstWait);
                 }
                 else
                 {
                     if (DateTime.Now >= nextScrollStepTime)
                     {
-                        changed = true;
+                        hasChanged = true;
                         nextScrollStepTime = DateTime.Now.AddMilliseconds(ScrollWaitDefinitions.regularWait);
                     }
                 }
@@ -1134,7 +1135,7 @@ namespace UnityEngine
                     InternalRepaintEditorWindow();
             }
 
-            return changed;
+            return hasChanged;
         }
 
         public static float VerticalScrollbar(Rect position, float value, float size, float topValue, float bottomValue)

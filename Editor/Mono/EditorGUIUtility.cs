@@ -16,7 +16,8 @@ using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using UnityEngineInternal;
 using UnityEditor.Experimental;
-using Object = UnityEngine.Object;
+
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -181,7 +182,7 @@ namespace UnityEditor
             }
         }
 
-        internal static void ShowObjectPicker<T>(Object obj, bool allowSceneObjects, string searchFilter, ObjectSelectorReceiver objectSelectorReceiver) where T : Object
+        internal static void ShowObjectPicker<T>(UnityObject obj, bool allowSceneObjects, string searchFilter, ObjectSelectorReceiver objectSelectorReceiver) where T : UnityObject
         {
             Type objType = typeof(T);
             ObjectSelector.get.Show(obj, objType, null, allowSceneObjects);
@@ -189,9 +190,9 @@ namespace UnityEditor
             ObjectSelector.get.searchFilter = searchFilter;
         }
 
-        private delegate bool HeaderItemDelegate(Rect rectangle, Object[] targets);
+        private delegate bool HeaderItemDelegate(Rect rectangle, UnityObject[] targets);
         private static List<HeaderItemDelegate> s_EditorHeaderItemsMethods = null;
-        internal static Rect DrawEditorHeaderItems(Rect rectangle, Object[] targetObjs)
+        internal static Rect DrawEditorHeaderItems(Rect rectangle, UnityObject[] targetObjs)
         {
             if (targetObjs.Length == 0 || (targetObjs.Length == 1 && targetObjs[0].GetType() == typeof(System.Object)))
                 return rectangle;
@@ -481,6 +482,11 @@ namespace UnityEditor
             return retval;
         }
 
+        internal static GUIContent TrIconContent<T>(string tooltip = null) where T : UnityObject
+        {
+            return TrIconContent(FindTexture(typeof(T)), tooltip);
+        }
+
         public static float singleLineHeight => EditorGUI.kSingleLineHeight;
         public static float standardVerticalSpacing => EditorGUI.kControlVerticalSpacing;
 
@@ -617,6 +623,11 @@ namespace UnityEditor
             return tex;
         }
 
+        internal static GUIContent IconContent<T>(string text = null) where T : UnityObject
+        {
+            return IconContent(FindTexture(typeof(T)), text);
+        }
+
         [ExcludeFromDocs]
         public static GUIContent IconContent(string name)
         {
@@ -645,6 +656,27 @@ namespace UnityEditor
             return gc;
         }
 
+        static GUIContent IconContent(Texture icon, string text)
+        {
+            GUIContent gc = text != null ? (GUIContent)s_IconGUIContents[text] : null;
+            if (gc != null)
+            {
+                return gc;
+            }
+            gc = new GUIContent { image = icon };
+
+            if (text != null)
+            {
+                string[] strings = GetNameAndTooltipString(text);
+                if (strings[2] != null)
+                {
+                    gc.tooltip = strings[2];
+                }
+                s_IconGUIContents[text] = gc;
+            }
+            return gc;
+        }
+
         // Is the user currently using the pro skin? (RO)
         public static bool isProSkin => skinIndex == 1;
 
@@ -656,7 +688,7 @@ namespace UnityEditor
         static readonly GUIContent s_ObjectContent = new GUIContent();
 
         // Return a GUIContent object with the name and icon of an Object.
-        public static GUIContent ObjectContent(Object obj, Type type)
+        public static GUIContent ObjectContent(UnityObject obj, Type type)
         {
             if (obj)
             {
@@ -787,24 +819,24 @@ namespace UnityEditor
         }
 
         // Load a built-in resource that has to be there.
-        public static Object LoadRequired(string path)
+        public static UnityObject LoadRequired(string path)
         {
-            Object o = Load(path, typeof(Object));
+            var o = Load(path, typeof(UnityObject));
             if (!o)
                 Debug.LogError("Unable to find required resource at " + path);
             return o;
         }
 
         // Load a built-in resource
-        public static Object Load(string path)
+        public static UnityObject Load(string path)
         {
-            return Load(path, typeof(Object));
+            return Load(path, typeof(UnityObject));
         }
 
         [TypeInferenceRule(TypeInferenceRules.TypeReferencedBySecondArgument)]
-        private static Object Load(string filename, Type type)
+        private static UnityObject Load(string filename, Type type)
         {
-            Object asset = EditorResources.Load(filename, type);
+            var asset = EditorResources.Load(filename, type);
             if (asset != null)
                 return asset;
 
@@ -825,7 +857,7 @@ namespace UnityEditor
         }
 
         /// *listonly*
-        public static void PingObject(Object obj)
+        public static void PingObject(UnityObject obj)
         {
             if (obj != null)
                 PingObject(obj.GetInstanceID());
@@ -1348,7 +1380,7 @@ namespace UnityEditor
         internal static EventType swipeGestureEventType => (EventType)1001;
         internal static EventType rotateGestureEventType => (EventType)1002;
 
-        public static void ShowObjectPicker<T>(Object obj, bool allowSceneObjects, string searchFilter, int controlID) where T : Object
+        public static void ShowObjectPicker<T>(UnityObject obj, bool allowSceneObjects, string searchFilter, int controlID) where T : UnityObject
         {
             Type objType = typeof(T);
             ObjectSelector.get.Show(obj, objType, null, allowSceneObjects);
@@ -1356,7 +1388,7 @@ namespace UnityEditor
             ObjectSelector.get.searchFilter = searchFilter;
         }
 
-        public static Object GetObjectPickerObject()
+        public static UnityObject GetObjectPickerObject()
         {
             return ObjectSelector.GetCurrentObject();
         }

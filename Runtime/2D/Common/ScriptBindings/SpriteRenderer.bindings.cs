@@ -80,7 +80,6 @@ namespace UnityEngine
             set;
         }
 
-
         public extern bool flipX
         {
             get;
@@ -93,6 +92,11 @@ namespace UnityEngine
             set;
         }
 
+        public extern SpriteSortPoint spriteSortPoint
+        {
+            get;
+            set;
+        }
 
         [NativeMethod(Name = "GetSpriteBounds")]
         internal extern Bounds Internal_GetSpriteBounds(SpriteDrawMode mode);

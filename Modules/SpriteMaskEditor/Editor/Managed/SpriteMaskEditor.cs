@@ -18,6 +18,7 @@ namespace UnityEditor
         private SerializedProperty m_FrontSortingLayerID;
         private SerializedProperty m_BackSortingOrder;
         private SerializedProperty m_BackSortingLayerID;
+        private SerializedProperty m_SpriteSortPoint;
         private AnimBool m_ShowCustomRangeValues;
 
         private static class Contents
@@ -29,6 +30,7 @@ namespace UnityEditor
             public static readonly GUIContent newSpriteMaskName = EditorGUIUtility.TrTextContent("New Sprite Mask");
             public static readonly GUIContent frontLabel = EditorGUIUtility.TrTextContent("Front");
             public static readonly GUIContent backLabel = EditorGUIUtility.TrTextContent("Back");
+            public static readonly GUIContent spriteSortPointLabel = EditorGUIUtility.TrTextContent("Sprite Sort Point", "Determines which position of the Sprite which is used for sorting");
         }
 
         [MenuItem("GameObject/2D Object/Sprite Mask")]
@@ -72,6 +74,7 @@ namespace UnityEditor
             m_BackSortingLayerID = serializedObject.FindProperty("m_BackSortingLayerID");
             m_ShowCustomRangeValues = new AnimBool(ShouldShowCustomRangeValues());
             m_ShowCustomRangeValues.valueChanged.AddListener(Repaint);
+            m_SpriteSortPoint = serializedObject.FindProperty("m_SpriteSortPoint");
         }
 
         public override void OnInspectorGUI()
@@ -99,6 +102,8 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
             EditorGUILayout.EndFadeGroup();
+
+            EditorGUILayout.PropertyField(m_SpriteSortPoint, Contents.spriteSortPointLabel);
 
             RenderRenderingLayer();
 

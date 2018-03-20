@@ -26,6 +26,9 @@ namespace UnityEditor
         public bool hRangeLocked { get { return m_HRangeLocked; } set { m_HRangeLocked = value; } }
         public bool vRangeLocked { get { return m_VRangeLocked; } set { m_VRangeLocked = value; } }
 
+        // Zoom lock settings
+        public bool hZoomLockedByDefault = false;
+        public bool vZoomLockedByDefault = false;
 
         [SerializeField] private float m_HBaseRangeMin = 0;
         [SerializeField] private float m_HBaseRangeMax = 1;
@@ -108,6 +111,7 @@ namespace UnityEditor
             set { m_VScaleMax = Mathf.Clamp(value, kMinScale, kMaxScale); }
         }
 
+
         // Window resize settings
         [SerializeField] private bool m_ScaleWithWindow = false;
         public bool scaleWithWindow { get { return m_ScaleWithWindow; } set { m_ScaleWithWindow = value; } }
@@ -167,6 +171,8 @@ namespace UnityEditor
         public float rightmargin { get { return m_MarginRight; } set { m_MarginRight = value; } }
         public float topmargin { get { return m_MarginTop; } set { m_MarginTop = value; } }
         public float bottommargin { get { return m_MarginBottom; } set { m_MarginBottom = value; } }
+        public float vSliderWidth { get { return vSlider ? styles.sliderWidth : 0f; } }
+        public float hSliderHeight { get { return hSlider ? styles.sliderWidth : 0f; } }
 
         // IDs for scrollbars
         int verticalScrollbarID, horizontalScrollbarID;
@@ -766,6 +772,16 @@ namespace UnityEditor
         {
             if (uniformScale)
                 lockHorizontal = lockVertical = false;
+            else
+            {
+                // if an axis is locked by default, it is as if that modifier key is permanently held down
+                // actually pressing the key then lifts the lock. In other words, LockedByDefault acts like an inversion.
+                if (hZoomLockedByDefault)
+                    lockHorizontal = !lockHorizontal;
+
+                if (hZoomLockedByDefault)
+                    lockVertical = !lockVertical;
+            }
 
             if (!m_HRangeLocked && !lockHorizontal)
             {

@@ -205,6 +205,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 return m_PortColor.GetSpecifiedValueOrDefault(new Color(240 / 255f, 240 / 255f, 240 / 255f));
             }
+            set
+            {
+                m_PortColor = value;
+            }
         }
 
         StyleValue<Color> m_DisabledPortColor;

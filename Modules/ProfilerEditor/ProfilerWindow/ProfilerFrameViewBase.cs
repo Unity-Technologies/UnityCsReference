@@ -22,33 +22,35 @@ namespace UnityEditorInternal.Profiling
         {
             public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available");
             public static GUIContent disabledSearchText = EditorGUIUtility.TrTextContent("Showing search results are disabled while recording with deep profiling.\nStop recording to view search results.");
+            public static GUIContent cpuGPUTime = EditorGUIUtility.TrTextContent("CPU:{0}ms   GPU:{1}ms");
 
             public static readonly GUIStyle header = "OL title";
             public static readonly GUIStyle label = "OL label";
-            public static readonly GUIStyle toolbar = EditorStyles.toolbar;
+            public static readonly GUIStyle toolbar = new GUIStyle(EditorStyles.toolbar);
             public static readonly GUIStyle tooltip = "AnimationEventTooltip";
             public static readonly GUIStyle tooltipArrow = "AnimationEventTooltipArrow";
-            public static readonly GUIStyle viewTypeToolbarDropDown = EditorStyles.toolbarDropDown;
+            public static readonly GUIStyle viewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
+            public static readonly GUIStyle detailedViewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);
 
             static BaseStyles()
             {
-                toolbar.padding.left = 0;
+                viewTypeToolbarDropDown.fixedWidth = Chart.kSideWidth - 1f - viewTypeToolbarDropDown.padding.left;
+                viewTypeToolbarDropDown.stretchWidth = false;
 
-                //viewTypeToolbarDropDown.fixedWidth = 120;
-                viewTypeToolbarDropDown.stretchWidth = true;
+                detailedViewTypeToolbarDropDown.fixedWidth = 130f;
             }
         }
 
         static readonly GUIContent[] kCPUProfilerViewTypeNames = new GUIContent[]
         {
-            EditorGUIUtility.TrTextContent("Hierarchy"),
             EditorGUIUtility.TrTextContent("Timeline"),
+            EditorGUIUtility.TrTextContent("Hierarchy"),
             EditorGUIUtility.TrTextContent("Raw Hierarchy")
         };
         static readonly int[] kCPUProfilerViewTypes = new int[]
         {
-            (int)ProfilerViewType.Hierarchy,
             (int)ProfilerViewType.Timeline,
+            (int)ProfilerViewType.Hierarchy,
             (int)ProfilerViewType.RawHierarchy
         };
 
@@ -77,13 +79,13 @@ namespace UnityEditorInternal.Profiling
             ProfilerViewType newViewType;
             if (!gpuView)
             {
-                newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kCPUProfilerViewTypeNames, kCPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown);
+                newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kCPUProfilerViewTypeNames, kCPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
             }
             else
             {
                 if (viewType == ProfilerViewType.Timeline)
                     viewType = ProfilerViewType.Hierarchy;
-                newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kGPUProfilerViewTypeNames, kGPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown);
+                newViewType = (ProfilerViewType)EditorGUILayout.IntPopup((int)viewType, kGPUProfilerViewTypeNames, kGPUProfilerViewTypes, BaseStyles.viewTypeToolbarDropDown, GUILayout.Width(BaseStyles.viewTypeToolbarDropDown.fixedWidth));
             }
 
             if (newViewType != viewType)
@@ -93,7 +95,12 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        protected void ShowLargeTooltip(Vector2 pos, Rect fullRect, string text)
+        protected void DrawCPUGPUTime(string cpuTime, string gpuTime)
+        {
+            GUILayout.Label(string.Format(BaseStyles.cpuGPUTime.text, cpuTime, gpuTime), EditorStyles.miniLabel);
+        }
+
+        protected void ShowLargeTooltip(Vector2 pos, Rect fullRect, string text, float lineHeight)
         {
             var textC = GUIContent.Temp(text);
             var style = BaseStyles.tooltip;
@@ -118,7 +125,6 @@ namespace UnityEditorInternal.Profiling
                 arrowRect.x = fullRect.xMin - 20;
 
             // Flip tooltip if too close to bottom (but do not flip if flipping would mean the tooltip is too high up)
-            const float lineHeight = 16.0f;
             var flipRectAdjust = (lineHeight + rect.height + 2 * arrowRect.height);
             var flipped = (pos.y + size.y + 6 > fullRect.yMax) && (rect.y - flipRectAdjust > 0);
             if (flipped)

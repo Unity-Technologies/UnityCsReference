@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using uei = UnityEngine.Internal;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Scripting;
 
 
 namespace UnityEngine
@@ -459,6 +460,7 @@ namespace UnityEngine
 
     public sealed partial class Cubemap : Texture
     {
+        [RequiredByNativeCode] // used to create builtin textures
         public Cubemap(int width, GraphicsFormat format, TextureCreationFlags flags)
         {
             if (ValidateFormat(format, FormatUsage.Sample))
@@ -511,6 +513,7 @@ namespace UnityEngine
 
     public sealed partial class Texture3D : Texture
     {
+        [RequiredByNativeCode] // used to create builtin textures
         public Texture3D(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
         {
             if (ValidateFormat(format, FormatUsage.Sample))
@@ -540,6 +543,7 @@ namespace UnityEngine
 
     public sealed partial class Texture2DArray : Texture
     {
+        [RequiredByNativeCode] // used to create builtin textures
         public Texture2DArray(int width, int height, int depth, GraphicsFormat format, TextureCreationFlags flags)
         {
             if (ValidateFormat(format, FormatUsage.Sample))

@@ -40,8 +40,12 @@ namespace UnityEditor
             public static readonly GUIContent frame = EditorGUIUtility.TrTextContent("Frame: ");
             public static readonly GUIContent clearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play");
             public static readonly GUIContent clearData = EditorGUIUtility.TrTextContent("Clear");
+            public static readonly GUIContent saveWindowTitle = EditorGUIUtility.TrTextContent("Save Window");
             public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrTextContent("Save", "Save current profiling information to a binary file");
+            public static readonly GUIContent loadWindowTitle = EditorGUIUtility.TrTextContent("Load Window");
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrTextContent("Load", "Load binary profiling information from a file. Shift click to append to the existing data");
+            public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
+
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode");
@@ -88,6 +92,10 @@ namespace UnityEditor
         SplitterState m_ViewSplit = new SplitterState(new[] { 70f, 30f }, new[] { 450, 50 }, null);
         SplitterState m_NetworkSplit = new SplitterState(new[] { 20f, 80f }, new[] { 100, 100 }, null);
 
+        const int k_VertSplitterMinSizes = 100;
+        const float k_LineHeight = 16.0f;
+        const float k_RightPaneMinSize = 80;
+
         // For keeping correct "Recording" state on window maximizing
         [SerializeField]
         private bool m_Recording;
@@ -106,7 +114,7 @@ namespace UnityEditor
         static List<ProfilerWindow> m_ProfilerWindows = new List<ProfilerWindow>();
 
         [SerializeField]
-        ProfilerViewType m_ViewType = ProfilerViewType.Hierarchy;
+        ProfilerViewType m_ViewType = ProfilerViewType.Timeline;
 
         [SerializeField]
         ProfilerArea m_CurrentArea = ProfilerArea.CPU;
@@ -365,7 +373,9 @@ namespace UnityEditor
             }
 
             if (m_VertSplit == null || m_VertSplit.relativeSizes == null || m_VertSplit.relativeSizes.Length == 0)
-                m_VertSplit = new SplitterState(new[] { 50f, 50f }, new[] { 50, 50 }, null);
+                m_VertSplit = new SplitterState(new[] { 50f, 50f }, new[] { k_VertSplitterMinSizes, k_VertSplitterMinSizes }, null);
+            // 2 times the min splitter size plus one line height for the toolbar up top
+            minSize = new Vector2(Chart.kSideWidth + k_RightPaneMinSize, k_VertSplitterMinSizes * m_VertSplit.minSizes.Length + k_LineHeight);
 
             if (m_ReferenceListView == null)
                 m_ReferenceListView = new MemoryTreeList(this, null);
@@ -1203,7 +1213,6 @@ namespace UnityEditor
 
         void SaveProfilingData()
         {
-            string title = EditorGUIUtility.TempContent("Save profile").text;
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
             string directory = string.IsNullOrEmpty(recent)
                 ? ""
@@ -1212,7 +1221,7 @@ namespace UnityEditor
                 ? ""
                 : System.IO.Path.GetFileName(recent);
 
-            string selected = EditorUtility.SaveFilePanel(title, directory, filename, "data");
+            string selected = EditorUtility.SaveFilePanel(Styles.saveWindowTitle.text, directory, filename, "data");
             if (selected.Length != 0)
             {
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
@@ -1225,9 +1234,9 @@ namespace UnityEditor
 
         void LoadProfilingData(bool keepExistingData)
         {
-            string title = EditorGUIUtility.TempContent("Load profile").text;
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
-            string selected = EditorUtility.OpenFilePanel(title, recent, "data");
+            string selected = EditorUtility.OpenFilePanelWithFilters(Styles.loadWindowTitle.text, recent, Styles.loadProfilingDataFileFilters);
+
             if (selected.Length != 0)
             {
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
@@ -1249,7 +1258,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
 
             // Graph types
-            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, GUILayout.Width(120));
+            Rect popupRect = GUILayoutUtility.GetRect(Styles.addArea, EditorStyles.toolbarDropDown, GUILayout.Width(Chart.kSideWidth - EditorStyles.toolbarDropDown.padding.left));
             if (EditorGUI.DropdownButton(popupRect, Styles.addArea, FocusType.Passive, EditorStyles.toolbarDropDown))
             {
                 int length = m_Charts.Length;

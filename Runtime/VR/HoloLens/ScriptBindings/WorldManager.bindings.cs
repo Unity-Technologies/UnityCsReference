@@ -25,8 +25,8 @@ namespace UnityEngine.XR.WSA
     // Augmented Reality specific world methods
     // exposes information about the real world
     // tracking systems to managed systems.
+    [StaticAccessor("HoloLensWorldManager", StaticAccessorType.DoubleColon)]
     [MovedFrom("UnityEngine.VR.WSA")]
-    [StaticAccessor("HoloLensWorldManager::Get()", StaticAccessorType.Arrow)]
     public class WorldManager
     {
         // Notification on when the world tracking systems state has changed

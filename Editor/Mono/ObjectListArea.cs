@@ -1655,6 +1655,19 @@ namespace UnityEditor
                 {
                     name = hierarchyProperty.name;
                 }
+                var path = AssetDatabase.GetAssetPath(instanceID);
+                if (string.IsNullOrEmpty(path))
+                    return;
+
+                var pathComponents = path.Split('/');
+                if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
+                {
+                    hierarchyProperty = new HierarchyProperty(pathComponents[0] + "/" + pathComponents[1]);
+                    if (hierarchyProperty.Find(instanceID, null))
+                    {
+                        name = hierarchyProperty.name;
+                    }
+                }
                 if (name == null)
                     return;
 

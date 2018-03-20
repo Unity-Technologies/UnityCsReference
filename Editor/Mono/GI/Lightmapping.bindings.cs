@@ -328,6 +328,10 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern void OnUpdateLightmapEncoding(BuildTargetGroup target);
 
+        // Called when the user changes the Lightmap streaming settings:
+        [FreeFunction]
+        internal static extern void OnUpdateLightmapStreaming(BuildTargetGroup target);
+
         [FreeFunction]
         public static extern void GetTerrainGIChunks([NotNull] Terrain terrain, ref int numChunksX, ref int numChunksY);
 

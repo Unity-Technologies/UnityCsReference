@@ -55,6 +55,7 @@ namespace UnityEditor.Web
             AdvertisementSettings.SetEnabledServiceWindow(false);
             AdvertisementSettings.SetGameId(RuntimePlatform.IPhonePlayer, "");
             AdvertisementSettings.SetGameId(RuntimePlatform.Android, "");
+            AdvertisementSettings.SetGameId(RuntimePlatform.tvOS, "");
             AdvertisementSettings.testMode = false;
         }
 
@@ -76,6 +77,16 @@ namespace UnityEditor.Web
         public void SetIOSGameId(string value)
         {
             AdvertisementSettings.SetGameId(RuntimePlatform.IPhonePlayer, value);
+        }
+
+        public string GetAppleTVGameId()
+        {
+            return AdvertisementSettings.GetGameId(RuntimePlatform.tvOS);
+        }
+
+        public void SetAppleTVGameId(string value)
+        {
+            AdvertisementSettings.SetGameId(RuntimePlatform.tvOS, value);
         }
 
         public string GetAndroidGameId()

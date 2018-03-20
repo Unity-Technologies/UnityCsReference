@@ -111,6 +111,19 @@ namespace UnityEngine.Experimental.Rendering
         }
     };
 
+    // Keep in sync with CameraCullingParameters.h CullFlags
+    [Flags]
+    public enum CullFlag
+    {
+        None = 0,
+        ForceEvenIfCameraIsNotActive = 1 << 0,
+        OcclusionCull = 1 << 1,
+        NeedsLighting = 1 << 2,
+        Stereo = 1 << 3,
+        DisablePerObjectCulling = 1 << 4
+    };
+
+
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     public unsafe struct ScriptableCullingParameters
@@ -132,7 +145,7 @@ namespace UnityEngine.Experimental.Rendering
 
         private float m_shadowDistance;
 
-        private int m_CullingFlags;
+        private CullFlag m_CullingFlags;
 
         private ReflectionProbeSortOptions m_ReflectionProbeSortOptions;
 
@@ -202,7 +215,7 @@ namespace UnityEngine.Experimental.Rendering
             set { m_shadowDistance = value; }
         }
 
-        public int cullingFlags
+        public CullFlag cullingFlags
         {
             get { return m_CullingFlags; }
             set { m_CullingFlags = value; }

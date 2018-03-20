@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 using System;
 using System.Collections;
@@ -16,6 +17,7 @@ namespace UnityEngine
     [NativeHeader("Configuration/UnityConfigure.h")]
     [NativeHeader("Runtime/Transform/Transform.h")]
     [NativeHeader("Runtime/Transform/ScriptBindings/TransformScriptBindings.h")]
+    [RequiredByNativeCode]
     public partial class Transform : Component, IEnumerable
     {
         protected Transform() {}

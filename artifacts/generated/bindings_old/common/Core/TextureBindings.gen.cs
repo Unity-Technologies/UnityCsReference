@@ -338,6 +338,7 @@ public sealed partial class SparseTexture : Texture
 [UsedByNativeCode]
 public partial class RenderTexture : Texture
 {
+    [RequiredByNativeCode] 
     internal protected RenderTexture()
         {
         }

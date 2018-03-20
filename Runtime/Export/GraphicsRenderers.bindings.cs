@@ -14,6 +14,7 @@ using LT = UnityEngineInternal.LightmapType;
 namespace UnityEngine
 {
     [RequireComponent(typeof(Transform))]
+    [UsedByNativeCode]
     public partial class Renderer : Component
     {
         // called when the object became visible by any camera.
@@ -291,6 +292,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/MeshRenderer.h")]
     public partial class MeshRenderer : Renderer
     {
+        [RequiredByNativeCode] // Used in the VR Splash screen.
         extern public Mesh additionalVertexStreams { get; set; }
         extern public int subMeshStartIndex {[NativeName("GetSubMeshStartIndex")] get; }
     }

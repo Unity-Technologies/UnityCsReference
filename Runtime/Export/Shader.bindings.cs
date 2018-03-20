@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using SphericalHarmonicsL2 = UnityEngine.Rendering.SphericalHarmonicsL2;
 
@@ -101,6 +102,9 @@ namespace UnityEngine
         [FreeFunction("MaterialScripting::CreateWithString")]   extern private static void CreateWithString([Writable] Material self);
 
         public Material(Shader shader)   { CreateWithShader(this, shader); }
+        // will otherwise be stripped if scene only uses default materials not explicitly referenced
+        // (ie some components will get a default material if a material reference is null)
+        [RequiredByNativeCode]
         public Material(Material source) { CreateWithMaterial(this, source); }
 
         // TODO: is it time to make it deprecated with error?

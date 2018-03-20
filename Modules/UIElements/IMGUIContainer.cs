@@ -190,12 +190,20 @@ namespace UnityEngine.Experimental.UIElements
 
             try
             {
-                Matrix4x4 currentTransform;
-                Rect clippingRect;
-                GetCurrentTransformAndClip(this, evt, out currentTransform, out clippingRect);
+                // On a layout event, we should not try to get the worldTransform... it is dependant on the layout, which is being calculated (thus, not good)
+                if (originalEventType != EventType.Layout)
+                {
+                    Matrix4x4 currentTransform;
+                    Rect clippingRect;
+                    GetCurrentTransformAndClip(this, evt, out currentTransform, out clippingRect);
 
-                // Push UIElements matrix in GUIClip to make mouse position relative to the IMGUIContainer top left
-                using (new GUIClip.ParentClipScope(currentTransform, clippingRect))
+                    // Push UIElements matrix in GUIClip to make mouse position relative to the IMGUIContainer top left
+                    using (new GUIClip.ParentClipScope(currentTransform, clippingRect))
+                    {
+                        m_OnGUIHandler();
+                    }
+                }
+                else
                 {
                     m_OnGUIHandler();
                 }

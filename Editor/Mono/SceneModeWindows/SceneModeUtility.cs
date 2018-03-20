@@ -103,9 +103,9 @@ namespace UnityEditor
                 Type type = types[i];
                 Texture2D icon = null;
                 if (type == typeof(Renderer))
-                    icon = EditorGUIUtility.IconContent("MeshRenderer Icon").image as Texture2D;
+                    icon = EditorGUIUtility.IconContent<MeshRenderer>().image as Texture2D;
                 else if (type == typeof(Terrain))
-                    icon = EditorGUIUtility.IconContent("Terrain Icon").image as Texture2D;
+                    icon = EditorGUIUtility.IconContent<Terrain>().image as Texture2D;
                 else
                     icon = AssetPreview.GetMiniTypeThumbnail(type);
                 string name = ObjectNames.NicifyVariableName(type.Name) + "s";

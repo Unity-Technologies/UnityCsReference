@@ -177,7 +177,10 @@ namespace UnityEditor
 
         static public void MonoCilStrip(BuildTarget buildTarget, string managedLibrariesDirectory, string[] fileNames)
         {
-            string basePath = MonoInstallationFinder.GetProfileDirectory(BuildPipeline.CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel.NET_4_6), MonoInstallationFinder.MonoBleedingEdgeInstallation);
+            // Previously requested the directory for the ApiCompatibilityLevel.NET_4_6 profile. That gets
+            // translated to unityjit which does not contain mono-cil-strip.exe.
+            // Per the scripting team, hardcoding to 4.5 is the correct course of action at this time.
+            string basePath = MonoInstallationFinder.GetProfileDirectory("4.5", MonoInstallationFinder.MonoBleedingEdgeInstallation);
             string cilStripper = Path.Combine(basePath, "mono-cil-strip.exe");
 
             foreach (string fileName in fileNames)

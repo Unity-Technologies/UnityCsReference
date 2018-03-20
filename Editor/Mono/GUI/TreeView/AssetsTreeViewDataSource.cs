@@ -169,11 +169,11 @@ namespace UnityEditor
         override public bool IsRenamingItemAllowed(TreeViewItem item)
         {
             // Only main representations can be renamed (currently)
-            if (AssetDatabase.IsSubAsset(item.id))
+            // Root items cannot be renamed
+            if (AssetDatabase.IsSubAsset(item.id) || (item.parent == null))
                 return false;
 
-            // All items can be renamed except from the root Item
-            return item.parent != null;
+            return InternalEditorUtility.CanRenameAsset(item.id);
         }
 
         protected CreateAssetUtility GetCreateAssetUtility()

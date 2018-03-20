@@ -282,11 +282,16 @@ namespace UnityEditor
 
         internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey)
         {
+            DisplayCustomMenuWithSeparators(position, options, enabled, separator, selected, callback, userData, showHotkey, false);
+        }
+
+        internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames)
+        {
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
             position.x = temp.x;
             position.y = temp.y;
 
-            Internal_DisplayCustomMenu(position, options, enabled, separator, selected, callback, userData, showHotkey);
+            Internal_DisplayCustomMenu(position, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames);
             ResetMouseDown();
         }
 
@@ -380,9 +385,9 @@ namespace UnityEditor
             return false;
         }
 
-        private static void Internal_DisplayCustomMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey)
+        private static void Internal_DisplayCustomMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames = false)
         {
-            DisplayCustomContextPopupMenu(screenPosition, options, enabled, separator, selected, callback, userData, showHotkey);
+            DisplayCustomContextPopupMenu(screenPosition, options, enabled, separator, selected, callback, userData, showHotkey, allowDisplayNames);
         }
     }
 }

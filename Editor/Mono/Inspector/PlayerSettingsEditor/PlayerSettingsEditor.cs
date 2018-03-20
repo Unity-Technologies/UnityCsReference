@@ -171,6 +171,8 @@ namespace UnityEditor
             public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TrTextContent("Virtual Reality moved to XR Settings");
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
             public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
+            public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mip maps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
+            public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent monoNotSupportediOS11WarningGUIContent = EditorGUIUtility.TrTextContent("Mono is not supported on iOS11 and above.");
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
@@ -320,6 +322,8 @@ namespace UnityEditor
         SerializedProperty m_RequireES31AEP;
 
         SerializedProperty m_LightmapEncodingQuality;
+        SerializedProperty m_LightmapStreamingEnabled;
+        SerializedProperty m_LightmapStreamingPriority;
 
         // Localization Cache
         string m_LocalizedTargetName;
@@ -1700,6 +1704,33 @@ namespace UnityEditor
 
                         GUIUtility.ExitGUI();
                     }
+                }
+            }
+
+            // Light map settings
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying || Lightmapping.isRunning))
+            {
+                bool streamingEnabled = PlayerSettings.GetLightmapStreamingEnabledForPlatformGroup(targetGroup);
+                int streamingPriority = PlayerSettings.GetLightmapStreamingPriorityForPlatformGroup(targetGroup);
+
+                EditorGUI.BeginChangeCheck();
+                streamingEnabled = EditorGUILayout.Toggle(Styles.lightmapStreamingEnabled, streamingEnabled);
+                if (streamingEnabled)
+                {
+                    EditorGUI.indentLevel++;
+                    streamingPriority = EditorGUILayout.DelayedIntField(Styles.lightmapStreamingPriority, streamingPriority);
+                    EditorGUI.indentLevel--;
+                }
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.SetLightmapStreamingEnabledForPlatformGroup(targetGroup, streamingEnabled);
+                    PlayerSettings.SetLightmapStreamingPriorityForPlatformGroup(targetGroup, streamingPriority);
+
+                    Lightmapping.OnUpdateLightmapStreaming(targetGroup);
+
+                    serializedObject.ApplyModifiedProperties();
+
+                    GUIUtility.ExitGUI();
                 }
             }
 

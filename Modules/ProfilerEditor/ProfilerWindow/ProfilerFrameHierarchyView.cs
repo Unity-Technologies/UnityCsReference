@@ -133,6 +133,7 @@ namespace UnityEditorInternal.Profiling
             m_TreeView = new ProfilerFrameDataTreeView(m_TreeViewState, multiColumnHeader);
             m_TreeView.selectionChanged += OnMainTreeViewSelectionChanged;
             m_TreeView.searchChanged += OnMainTreeViewSearchChanged;
+            m_TreeView.Reload();
 
             m_SearchField = new SearchField();
             m_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
@@ -329,12 +330,13 @@ namespace UnityEditorInternal.Profiling
         {
             EditorGUILayout.BeginHorizontal(BaseStyles.toolbar);
 
-            DrawViewTypePopup(frameDataView.viewType);
+            if (frameDataView != null)
+                DrawViewTypePopup(frameDataView.viewType);
 
             GUILayout.FlexibleSpace();
 
             if (frameDataView != null)
-                GUILayout.Label(string.Format("CPU:{0}ms   GPU:{1}ms", frameDataView.frameTime, frameDataView.frameGpuTime), EditorStyles.miniLabel);
+                DrawCPUGPUTime(frameDataView.frameTime, frameDataView.frameGpuTime);
 
             GUILayout.FlexibleSpace();
 
@@ -348,7 +350,7 @@ namespace UnityEditorInternal.Profiling
 
         void DrawDetailedViewPopup()
         {
-            m_DetailedViewType = (DetailedViewType)EditorGUILayout.IntPopup((int)m_DetailedViewType, kDetailedViewTypeNames, kDetailedViewTypes, EditorStyles.toolbarDropDown, GUILayout.Width(120));
+            m_DetailedViewType = (DetailedViewType)EditorGUILayout.IntPopup((int)m_DetailedViewType, kDetailedViewTypeNames, kDetailedViewTypes, BaseStyles.detailedViewTypeToolbarDropDown, GUILayout.Width(BaseStyles.detailedViewTypeToolbarDropDown.fixedWidth));
         }
 
         void HandleKeyboardEvents()

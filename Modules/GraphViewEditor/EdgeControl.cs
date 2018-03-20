@@ -98,7 +98,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        [Obsolete("Use inputEdgeColor and/or outputEdgeColor")]
+        [Obsolete("Use inputColor and/or outputColor")]
         public Color edgeColor
         {
             get { return m_InputColor; }

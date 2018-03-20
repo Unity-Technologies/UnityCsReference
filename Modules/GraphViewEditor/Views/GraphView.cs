@@ -250,7 +250,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void RestoreSavedSelection(IGraphViewSelection graphViewSelection)
         {
-            if (graphViewSelection.version == m_SavedSelectionVersion)
+            if (graphViewSelection.selectedElements.Count == selection.Count && graphViewSelection.version == m_SavedSelectionVersion)
                 return;
 
             // Update both selection objects' versions.
@@ -258,27 +258,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_PersistedSelection.version = graphViewSelection.version;
 
             ClearSelection();
-            List<string> invalidGuids = null;
             foreach (string guid in graphViewSelection.selectedElements)
             {
                 var element = GetElementByGuid(guid);
                 if (element == null)
-                {
-                    if (invalidGuids == null)
-                        invalidGuids = new List<string>();
-
-                    invalidGuids.Add(guid);
                     continue;
-                }
 
-                AddToSelection(element);
-            }
-
-            // Remove invalid GUIDs.
-            if (invalidGuids != null)
-            {
-                foreach (string guid in invalidGuids)
-                    graphViewSelection.selectedElements.Remove(guid);
+                AddToSelectionNoUndoRecord(element);
             }
 
             m_SavedSelectionVersion = graphViewSelection.version;
@@ -289,6 +275,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             selectionObjectToSync.selectedElements.Clear();
             selectionObjectToSync.selectedElements.AddRange(graphViewSelection.selectedElements);
+        }
+
+        private void RestorePersistedSelection()
+        {
+            if (m_PersistedSelection != null)
+                RestoreSavedSelection(m_PersistedSelection);
         }
 
         private void UndoRedoPerformed()
@@ -346,20 +338,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         internal void ChangeLayer(GraphElement element)
         {
             if (!m_ContainerLayers.ContainsKey(element.layer))
-            {
                 AddLayer(element.layer);
-            }
 
             bool selected = element.selected;
             if (selected)
-            {
                 element.UnregisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
-            }
+
             GetLayer(element.layer).Add(element);
+
             if (selected)
-            {
                 element.RegisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
-            }
         }
 
         public UQuery.QueryState<GraphElement> graphElements { get; private set; }
@@ -519,21 +507,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         // ISelection implementation
         public List<ISelectable> selection { get; protected set; }
 
+        internal void AddToPersistedSelection(string guid)
+        {
+            m_PersistedSelection.selectedElements.Add(guid);
+        }
+
         // functions to ISelection extensions
         public virtual void AddToSelection(ISelectable selectable)
         {
             var graphElement = selectable as GraphElement;
             if (graphElement == null)
                 return;
-            graphElement.selected = true;
 
-            selection.Add(selectable);
-            graphElement.OnSelected();
-
-            // To ensure that the selected GraphElement gets unselected if it is removed from the GraphView.
-            graphElement.RegisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
-
-            contentViewContainer.Dirty(ChangeType.Repaint);
+            AddToSelectionNoUndoRecord(graphElement);
 
             if (ShouldRecordUndo())
             {
@@ -544,7 +530,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        private void RemoveFromSelectionImpl(ISelectable selectable)
+        private void AddToSelectionNoUndoRecord(GraphElement graphElement)
+        {
+            graphElement.selected = true;
+            selection.Add(graphElement);
+            graphElement.OnSelected();
+
+            // To ensure that the selected GraphElement gets unselected if it is removed from the GraphView.
+            graphElement.RegisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
+
+            contentViewContainer.Dirty(ChangeType.Repaint);
+        }
+
+        private void RemoveFromSelectionNoUndoRecord(ISelectable selectable)
         {
             var graphElement = selectable as GraphElement;
             if (graphElement == null)
@@ -563,7 +561,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (graphElement == null)
                 return;
 
-            RemoveFromSelectionImpl(selectable);
+            RemoveFromSelectionNoUndoRecord(selectable);
 
             if (ShouldRecordUndo())
             {
@@ -599,7 +597,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void OnSelectedElementDetachedFromPanel(DetachFromPanelEvent evt)
         {
-            RemoveFromSelectionImpl(evt.target as ISelectable);
+            RemoveFromSelectionNoUndoRecord(evt.target as ISelectable);
         }
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
@@ -1034,6 +1032,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 AddLayer(newLayer);
             }
             GetLayer(newLayer).Add(graphElement);
+
+            // Attempt to restore selection on the new element if it
+            // was previously selected (same GUID).
+            RestorePersistedSelection();
         }
 
         public void RemoveElement(GraphElement graphElement)

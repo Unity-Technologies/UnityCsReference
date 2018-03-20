@@ -474,6 +474,8 @@ namespace UnityEditor
                 cw.rootView = host;
                 MakeParentsSettingsMatchMe();
                 cw.Show(mode, true, false);
+                // set min/max size now that native window is not null so that it will e.g., use proper styleMask on macOS
+                cw.SetMinMaxSizes(minSize, maxSize);
 
                 oldState.ApplyAndForget();
             }

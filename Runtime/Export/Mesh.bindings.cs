@@ -14,6 +14,7 @@ namespace UnityEngine
     {
         [FreeFunction("MeshScripting::CreateMesh")] extern private static void Internal_Create([Writable] Mesh mono);
 
+        [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
         public Mesh()
         {
             Internal_Create(this);

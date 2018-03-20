@@ -57,7 +57,7 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Src/Gizmos/GizmoUtil.h")]
     [NativeHeader("Editor/Src/HierarchyState.h")]
     [NativeHeader("Editor/Src/InspectorExpandedState.h")]
-    [NativeHeader("Editor/Src/License/LicenseInfo.h")]
+    [NativeHeader("Modules/LicensingLegacy/Public/LicenseInfo.h")]
     [NativeHeader("Editor/Src/RemoteInput/RemoteInput.h")]
     [NativeHeader("Editor/Src/ShaderMenu.h")]
     [NativeHeader("Editor/Src/Undo/ObjectUndo.h")]

@@ -57,7 +57,7 @@ namespace UnityEngine
 
         public CullingGroup()
         {
-            m_Ptr = Init();
+            m_Ptr = Init(this);
         }
 
         ~CullingGroup()
@@ -160,7 +160,7 @@ namespace UnityEngine
         }
 
         [FreeFunction("CullingGroup_Bindings::Init")]
-        extern private static IntPtr Init();
+        extern private static IntPtr Init(object scripting);
 
         [FreeFunction("CullingGroup_Bindings::FinalizerFailure", HasExplicitThis = true, IsThreadSafe = true)]
         extern private void FinalizerFailure();

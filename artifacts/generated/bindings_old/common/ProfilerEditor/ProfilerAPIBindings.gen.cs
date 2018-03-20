@@ -661,7 +661,7 @@ static Texture2D UISystemProfilerRender(int renderDataIndex, int renderDataCount
 
 }
 
-public sealed partial class ProfilerFrameDataIterator
+public sealed partial class ProfilerFrameDataIterator : IDisposable
 {
     
             #pragma warning disable 169

@@ -33,71 +33,6 @@ namespace UnityEditor
             }
         }
 
-        static string[] s_blackListNativeClassNames = new string[]
-        {
-            "Behaviour", // GetFixedBehaviourManager is directly used by fixed update in the player loop
-            "PreloadData",
-            // will otherwise be stripped if scene only uses default materials not explicitly referenced
-            // (ie some components will get a default material if a material reference is null)
-            "Material",
-
-            // those are used to create builtin textures and availability is checked at runtime
-            "Cubemap",
-            "Texture3D",
-            "Texture2DArray",
-            "RenderTexture",
-
-            "Mesh", // Used by IMGUI (even on empty projects, it draws development console & watermarks)
-            "MeshFilter", // Used in the VR Splash screen.
-            "MeshRenderer", // Used in the VR Splash screen.
-            "Sprite", // Used by Unity splash screen.
-            "LowerResBlitTexture",
-
-            "Transform",        // well, Transform is always used
-            "RectTransform",    // Transform depends on RectTransform's TransformHierarchyChangeDispatch
-        };
-
-        static UnityType[] s_blackListNativeClasses;
-
-        public static UnityType[] BlackListNativeClasses
-        {
-            get
-            {
-                if (s_blackListNativeClasses == null)
-                {
-                    s_blackListNativeClasses = s_blackListNativeClassNames.Select(
-                            typeName => FindTypeByNameChecked(typeName, "code stripping blacklist native class")).ToArray();
-                }
-
-                return s_blackListNativeClasses;
-            }
-        }
-
-        static readonly Dictionary<string, string> s_blackListNativeClassesDependencyNames = new Dictionary<string, string>
-        {
-            {"ParticleSystemRenderer", "ParticleSystem"},
-            {"ParticleSystem", "ParticleSystemRenderer"}
-        };
-
-        static Dictionary<UnityType, UnityType> s_blackListNativeClassesDependency;
-
-        public static Dictionary<UnityType, UnityType> BlackListNativeClassesDependency
-        {
-            get
-            {
-                if (s_blackListNativeClassesDependency == null)
-                {
-                    s_blackListNativeClassesDependency = new Dictionary<UnityType, UnityType>();
-                    foreach (var kv in s_blackListNativeClassesDependencyNames)
-                        BlackListNativeClassesDependency.Add(
-                            FindTypeByNameChecked(kv.Key, "code stripping blacklist native class dependency key"),
-                            FindTypeByNameChecked(kv.Value, "code stripping blacklist native class dependency value"));
-                }
-
-                return s_blackListNativeClassesDependency;
-            }
-        }
-
         private static UnityType FindTypeByNameChecked(string name, string msg)
         {
             UnityType result = UnityType.FindTypeByName(name);
@@ -227,21 +162,18 @@ namespace UnityEditor
                     foreach (var module in nativeModules.ToList())
                     {
                         var dependecies = ModuleMetadata.GetModuleDependencies(module);
-                        if (dependecies != null)
+                        foreach (var dependentModule in dependecies)
                         {
-                            foreach (var dependentModule in dependecies)
+                            if (!nativeModules.Contains(dependentModule))
                             {
-                                if (!nativeModules.Contains(dependentModule))
-                                {
-                                    nativeModules.Add(dependentModule);
-                                    didAdd = true;
-                                }
-                                if (strippingInfo != null)
-                                {
-                                    var moduleName = StrippingInfo.ModuleName(module);
-                                    strippingInfo.RegisterDependency(StrippingInfo.ModuleName(dependentModule), "Required by " + moduleName);
-                                    strippingInfo.SetIcon("Required by " + moduleName, $"package/com.unity.modules.{module.ToLower()}");
-                                }
+                                nativeModules.Add(dependentModule);
+                                didAdd = true;
+                            }
+                            if (strippingInfo != null)
+                            {
+                                var moduleName = StrippingInfo.ModuleName(module);
+                                strippingInfo.RegisterDependency(StrippingInfo.ModuleName(dependentModule), "Required by " + moduleName);
+                                strippingInfo.SetIcon("Required by " + moduleName, $"package/com.unity.modules.{module.ToLower()}");
                             }
                         }
                     }
@@ -428,19 +360,6 @@ namespace UnityEditor
         {
             HashSet<UnityType> nativeClasses = CollectNativeClassListFromRoots(directory, rootAssemblies, strippingInfo);
 
-            // Inject blacklisted native types
-            foreach (var klass in BlackListNativeClasses)
-                nativeClasses.Add(klass);
-
-            foreach (var dependent in BlackListNativeClassesDependency.Keys)
-            {
-                if (nativeClasses.Contains(dependent))
-                {
-                    var provider = BlackListNativeClassesDependency[dependent];
-                    nativeClasses.Add(provider);
-                }
-            }
-
             // List native classes found in scenes
             foreach (string klassName in rcr.GetAllNativeClassesIncludingManagersAsString())
             {
@@ -568,6 +487,14 @@ namespace UnityEditor
             return foundTypes;
         }
 
+        public class ModuleDependencyComparer : IComparer<string>
+        {
+            public int Compare(string stringA, string stringB)
+            {
+                return ModuleMetadata.GetModuleDependencies(stringA).Contains(stringB) ? 1 : ModuleMetadata.GetModuleDependencies(stringB).Contains(stringA) ? -1 : 0;
+            }
+        }
+
         private static void WriteStaticallyLinkedModuleRegistration(TextWriter w, HashSet<string> nativeModules, HashSet<UnityType> nativeClasses)
         {
             w.WriteLine("void InvokeRegisterStaticallyLinkedModuleClasses()");
@@ -585,7 +512,9 @@ namespace UnityEditor
             w.WriteLine();
             w.WriteLine("void RegisterStaticallyLinkedModulesGranular()");
             w.WriteLine("{");
-            foreach (string module in nativeModules)
+
+            var nativeModulesSorted = nativeModules.OrderBy(x => x, new ModuleDependencyComparer());
+            foreach (string module in nativeModulesSorted)
             {
                 w.WriteLine("\tvoid RegisterModule_" + module + "();");
                 w.WriteLine("\tRegisterModule_" + module + "();");

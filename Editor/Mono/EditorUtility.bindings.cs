@@ -100,7 +100,7 @@ namespace UnityEditor
 
         [FreeFunction("DisplayCustomContextPopupMenu")]
         private static extern void DisplayCustomContextPopupMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback,
-            object userData, bool showHotkey);
+            object userData, bool showHotkey, bool allowDisplayNames);
 
         [FreeFunction("FormatBytes")]
         public static extern string FormatBytes(long bytes);

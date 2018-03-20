@@ -27,7 +27,7 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent goIcon = EditorGUIUtility.IconContent("GameObject Icon");
+            public GUIContent goIcon = EditorGUIUtility.IconContent<GameObject>();
             public GUIContent typelessIcon = EditorGUIUtility.IconContent("Prefab Icon");
             public GUIContent prefabIcon = EditorGUIUtility.IconContent("PrefabNormal Icon");
             public GUIContent modelIcon = EditorGUIUtility.IconContent("PrefabModel Icon");
@@ -348,20 +348,30 @@ namespace UnityEditor
                                 {
                                     UnityObject correspondingAssetObject = PrefabUtility.GetCorrespondingObjectFromSource(rootUploadGameObject);
                                     string prefabAssetPath = AssetDatabase.GetAssetPath(correspondingAssetObject);
+                                    bool isRootFolder, isReadonly;
+                                    bool validPath = AssetDatabase.GetAssetFolderInfo(prefabAssetPath, out isRootFolder, out isReadonly);
 
-                                    bool editablePrefab = Provider.PromptAndCheckoutIfNeeded(
-                                            new string[] { prefabAssetPath },
-                                            "The version control requires you to check out the prefab before applying changes.");
-
-                                    if (editablePrefab)
+                                    if (validPath && isReadonly)
                                     {
-                                        PrefabUtility.ReplacePrefabWithUndo(rootUploadGameObject);
+                                        string prefabName = FileUtil.GetLastPathNameComponent(FileUtil.GetPathWithoutExtension(prefabAssetPath));
+                                        EditorUtility.DisplayDialog("Cannot apply changes", string.Format("Original prefab \"{0}\" is immutable.", prefabName), "Close");
+                                    }
+                                    else
+                                    {
+                                        bool editablePrefab = Provider.PromptAndCheckoutIfNeeded(
+                                                new string[] { prefabAssetPath },
+                                                "The version control requires you to check out the prefab before applying changes.");
 
-                                        CalculatePrefabStatus();
+                                        if (editablePrefab)
+                                        {
+                                            PrefabUtility.ReplacePrefabWithUndo(rootUploadGameObject);
 
-                                        // This is necessary because ReplacePrefab can potentially destroy game objects and components
-                                        // In that case the Editor classes would be destroyed but still be invoked. (case 468434)
-                                        GUIUtility.ExitGUI();
+                                            CalculatePrefabStatus();
+
+                                            // This is necessary because ReplacePrefab can potentially destroy game objects and components
+                                            // In that case the Editor classes would be destroyed but still be invoked. (case 468434)
+                                            GUIUtility.ExitGUI();
+                                        }
                                     }
                                 }
                             }

@@ -1786,6 +1786,9 @@ namespace UnityEngine
 
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeClass("ContactFilter", "struct ContactFilter;")]
+    [NativeHeader("Modules/Physics2D/Public/Collider2D.h")]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     public struct ContactFilter2D
     {
         public ContactFilter2D NoFilter()
@@ -1931,18 +1934,29 @@ namespace UnityEngine
     }
 
     // Describes a collision.
-    [UsedByNativeCode]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeAsStruct]
+    [NativeClass("ScriptingCollision2D", "struct ScriptingCollision2D;")]
     public partial class Collision2D
     {
+        [NativeName("collider")]
         internal int m_Collider;
+        [NativeName("otherCollider")]
         internal int m_OtherCollider;
+        [NativeName("rigidbody")]
         internal int m_Rigidbody;
+        [NativeName("otherRigidbody")]
         internal int m_OtherRigidbody;
+        [NativeName("relativeVelocity")]
         internal Vector2 m_RelativeVelocity;
+        [NativeName("enabled")]
         internal int m_Enabled;
+        [NativeName("contactCount")]
         internal int m_ContactCount;
+        [NativeName("contacts")]
         internal IntPtr m_Contacts;
+        [NativeName("legacyContactArray")]
         internal ContactPoint2D[] m_LegacyContactArray;
 
         // The first collider involved in the collision.
@@ -2045,20 +2059,43 @@ namespace UnityEngine
     };
 
     // Describes a contact point where the collision occurs.
-    [UsedByNativeCode]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeClass("ScriptingContactPoint2D", "struct ScriptingContactPoint2D;")]
+    [NativeHeader("Modules/Physics2D/Public/PhysicsScripting2D.h")]
     public struct ContactPoint2D
     {
+        [NativeName("point")]
         private Vector2 m_Point;
+
+        [NativeName("normal")]
         private Vector2 m_Normal;
+
+        [NativeName("relativeVelocity")]
         private Vector2 m_RelativeVelocity;
+
+        [NativeName("separation")]
         private float m_Separation;
+
+        [NativeName("normalImpulse")]
         private float m_NormalImpulse;
+
+        [NativeName("tangentImpulse")]
         private float m_TangentImpulse;
+
+        [NativeName("collider")]
         private int m_Collider;
+
+        [NativeName("otherCollider")]
         private int m_OtherCollider;
+
+        [NativeName("rigidbody")]
         private int m_Rigidbody;
+
+        [NativeName("otherRigidbody")]
         private int m_OtherRigidbody;
+
+        [NativeName("enabled")]
         private int m_Enabled;
 
         // The point of contact.
@@ -2156,15 +2193,28 @@ namespace UnityEngine
     }
 
     // NOTE: must match memory layout of native RaycastHit2D
-    [UsedByNativeCode]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeClass("RaycastHit2D", "struct RaycastHit2D;")]
+    [NativeHeader("Runtime/Interfaces/IPhysics2D.h")]
     public partial struct RaycastHit2D
     {
+        [NativeName("centroid")]
         private Vector2 m_Centroid;
+
+        [NativeName("point")]
         private Vector2 m_Point;
+
+        [NativeName("normal")]
         private Vector2 m_Normal;
+
+        [NativeName("distance")]
         private float m_Distance;
+
+        [NativeName("fraction")]
         private float m_Fraction;
+
+        [NativeName("collider")]
         private int m_Collider;
 
         public Vector2 centroid
@@ -2236,8 +2286,10 @@ namespace UnityEngine
         }
     }
 
-    [UsedByNativeCode]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeClass("PhysicsJobOptions2D", "struct PhysicsJobOptions2D;")]
+    [NativeHeader("Modules/Physics2D/Public/Physics2DSettings.h")]
     public partial struct PhysicsJobOptions2D
     {
         private bool m_UseMultithreading;
@@ -2536,6 +2588,7 @@ namespace UnityEngine
 
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Modules/Physics2D/Public/Collider2D.h")]
+    [RequiredByNativeCode(Optional = true)]
     public partial class Collider2D : Behaviour
     {
         // The density of the collider.

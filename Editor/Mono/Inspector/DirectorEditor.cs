@@ -25,6 +25,8 @@ namespace UnityEditor
             public static readonly GUIContent WrapModeContent = EditorGUIUtility.TrTextContent("Wrap Mode", "Controls the behaviour of evaluating the Playable outside its duration");
             public static readonly GUIContent NoBindingsContent = EditorGUIUtility.TrTextContent("This channel will not playback because it is not currently assigned");
             public static readonly GUIContent BindingsTitleContent = EditorGUIUtility.TrTextContent("Bindings");
+
+            public static readonly int ObjectFieldControlID = "s_ObjectFieldHash".GetHashCode();
         }
 
         private SerializedProperty m_PlayableAsset;
@@ -34,11 +36,9 @@ namespace UnityEditor
         private SerializedProperty m_UpdateMethod;
         private SerializedProperty m_SceneBindings;
 
-        private GUIContent m_AnimatorContent;
-        private GUIContent m_AudioContent;
-        private GUIContent m_VideoContent;
-        private GUIContent m_ScriptContent;
         private Texture    m_DefaultScriptContentTexture;
+
+        private GUIContent m_BindingContent = new GUIContent();
 
         private struct BindingPropertyPair
         {
@@ -59,11 +59,7 @@ namespace UnityEditor
             m_InitialTime = serializedObject.FindProperty("m_InitialTime");
             m_SceneBindings = serializedObject.FindProperty("m_SceneBindings");
 
-            m_AnimatorContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(Animator)));
-            m_AudioContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(AudioSource)));
-            m_VideoContent = new GUIContent(AssetPreview.GetMiniTypeThumbnail(typeof(RenderTexture)));
-            m_ScriptContent = new GUIContent(EditorGUIUtility.FindTexture(typeof(ScriptableObject)));
-            m_DefaultScriptContentTexture = m_ScriptContent.image;
+            m_DefaultScriptContentTexture = EditorGUIUtility.FindTexture(typeof(ScriptableObject));
         }
 
         public override void OnInspectorGUI()
@@ -73,7 +69,7 @@ namespace UnityEditor
 
             serializedObject.Update();
 
-            if (PropertyFieldAsObject(m_PlayableAsset, Styles.PlayableText, typeof(PlayableAsset), false))
+            if (PropertyFieldAsObject(m_PlayableAsset, Styles.PlayableText, typeof(PlayableAsset)))
             {
                 serializedObject.ApplyModifiedProperties();
                 SynchSceneBindings();
@@ -135,38 +131,22 @@ namespace UnityEditor
 
         private void BindingInspector(SerializedProperty bindingProperty, PlayableBinding binding)
         {
-            if (binding.sourceObject == null)
+            if (binding.sourceObject == null || binding.outputTargetType == null || !typeof(UnityEngine.Object).IsAssignableFrom(binding.outputTargetType))
                 return;
 
             var source = bindingProperty.objectReferenceValue;
+            PropertyFieldAsObject(bindingProperty,
+                GetContentForOutput(binding, source),
+                binding.outputTargetType
+                );
+        }
 
-            if (binding.streamType == DataStreamType.Audio)
-            {
-                m_AudioContent.text = binding.streamName;
-                m_AudioContent.tooltip = source == null ? Styles.NoBindingsContent.text : string.Empty;
-                PropertyFieldAsObject(bindingProperty, m_AudioContent, typeof(AudioSource), true);
-            }
-            else if (binding.streamType == DataStreamType.Animation)
-            {
-                m_AnimatorContent.text = binding.streamName;
-                m_AnimatorContent.tooltip = source is GameObject ? Styles.NoBindingsContent.text : string.Empty;
-                PropertyFieldAsObject(bindingProperty, m_AnimatorContent, typeof(Animator), true, true);
-            }
-            if (binding.streamType == DataStreamType.Texture)
-            {
-                m_VideoContent.text = binding.streamName;
-                m_VideoContent.tooltip = source == null ? Styles.NoBindingsContent.text : string.Empty;
-                PropertyFieldAsObject(bindingProperty, m_VideoContent, typeof(RenderTexture), false);
-            }
-            else if (binding.streamType == DataStreamType.None)
-            {
-                m_ScriptContent.text = binding.streamName;
-                m_ScriptContent.tooltip = source == null ? Styles.NoBindingsContent.text : string.Empty;
-                m_ScriptContent.image = AssetPreview.GetMiniTypeThumbnail(binding.sourceBindingType) ?? m_DefaultScriptContentTexture;
-
-                if (binding.sourceBindingType != null && typeof(UnityEngine.Object).IsAssignableFrom(binding.sourceBindingType))
-                    PropertyFieldAsObject(bindingProperty, m_ScriptContent, binding.sourceBindingType, true);
-            }
+        GUIContent GetContentForOutput(PlayableBinding binding, UnityEngine.Object source)
+        {
+            m_BindingContent.text = binding.streamName;
+            m_BindingContent.tooltip = (source == null) ? Styles.NoBindingsContent.text : string.Empty;
+            m_BindingContent.image = AssetPreview.GetMiniTypeThumbnail(binding.outputTargetType) ?? m_DefaultScriptContentTexture;
+            return m_BindingContent;
         }
 
         private void DoDirectorBindingInspector()
@@ -251,30 +231,24 @@ namespace UnityEditor
             EditorGUI.EndProperty();
         }
 
-        private static bool PropertyFieldAsObject(SerializedProperty property, GUIContent title, Type objType, bool allowSceneObjects, bool useBehaviourGameObject = false)
+        private static bool PropertyFieldAsObject(SerializedProperty property, GUIContent title, Type objType)
         {
+            bool allowSceneObjects = typeof(GameObject).IsAssignableFrom(objType) ||
+                typeof(Component).IsAssignableFrom(objType);
+
             Rect rect = EditorGUILayout.GetControlRect();
             var label = EditorGUI.BeginProperty(rect, title, property);
             EditorGUI.BeginChangeCheck();
-            var result = EditorGUI.ObjectField(rect, label, property.objectReferenceValue, objType, allowSceneObjects);
-            bool changed = EditorGUI.EndChangeCheck();
 
-            if (changed)
+            int id = GUIUtility.GetControlID(Styles.ObjectFieldControlID, FocusType.Keyboard, rect);
+            rect = EditorGUI.PrefixLabel(rect, id, label);
+            var result = EditorGUI.DoObjectField(rect, rect, id, property.objectReferenceValue, objType, null, null, allowSceneObjects, EditorStyles.objectField);
+            if (EditorGUI.EndChangeCheck())
             {
-                if (useBehaviourGameObject)
-                {
-                    var behaviour = result as Behaviour;
-                    property.objectReferenceValue = behaviour != null ? behaviour.gameObject : null;
-                }
-                else
-                {
-                    property.objectReferenceValue = result;
-                }
+                property.objectReferenceValue = result;
+                return true;
             }
-
-            EditorGUI.EndProperty();
-
-            return changed;
+            return false;
         }
 
         // Does not use Properties because time is not a serialized property

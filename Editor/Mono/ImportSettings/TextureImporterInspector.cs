@@ -469,7 +469,7 @@ namespace UnityEditor
             public readonly GUIContent mipmapFadeOutToggle = EditorGUIUtility.TrTextContent("Fadeout Mip Maps");
             public readonly GUIContent mipmapFadeOut = EditorGUIUtility.TrTextContent("Fade Range");
             public readonly GUIContent readWrite = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Enable to be able to access the raw pixel data from code.");
-            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mip Maps", "Only load larger mip maps as needed to render the current game cameras.");
+            public readonly GUIContent streamingMipmaps = EditorGUIUtility.TrTextContent("Streaming Mip Maps", "Only load larger mip maps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings.");
             public readonly GUIContent streamingMipmapsPriority = EditorGUIUtility.TrTextContent("Mip Map Priority", "Mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127.");
 
             public readonly GUIContent alphaSource = EditorGUIUtility.TrTextContent("Alpha Source", "How is the alpha generated for the imported texture.");

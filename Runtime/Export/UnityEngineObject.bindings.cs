@@ -59,6 +59,9 @@ namespace UnityEngine
 
         internal static int OffsetOfInstanceIDInCPlusPlusObject = -1;
 
+        const string objectIsNullMessage = "The Object you want to instantiate is null.";
+        const string cloneDestroyedMessage = "Instantiate failed because the clone was destroyed during creation. This can happen if DestroyImmediate is called in MonoBehaviour.Awake.";
+
         [System.Security.SecuritySafeCritical]
         public unsafe int GetInstanceID()
         {
@@ -155,12 +158,17 @@ namespace UnityEngine
         [TypeInferenceRule(TypeInferenceRules.TypeOfFirstArgument)]
         public static Object Instantiate(Object original, Vector3 position, Quaternion rotation)
         {
-            CheckNullArgument(original, "The Object you want to instantiate is null.");
+            CheckNullArgument(original, objectIsNullMessage);
 
             if (original is ScriptableObject)
                 throw new ArgumentException("Cannot instantiate a ScriptableObject with a position and rotation");
 
-            return Internal_InstantiateSingle(original, position, rotation);
+            var obj = Internal_InstantiateSingle(original, position, rotation);
+
+            if (obj == null)
+                throw new UnityException(cloneDestroyedMessage);
+
+            return obj;
         }
 
         // Clones the object /original/ and returns the clone.
@@ -168,19 +176,29 @@ namespace UnityEngine
         public static Object Instantiate(Object original, Vector3 position, Quaternion rotation, Transform parent)
         {
             if (parent == null)
-                return Internal_InstantiateSingle(original, position, rotation);
+                return Instantiate(original, position, rotation);
 
-            CheckNullArgument(original, "The Object you want to instantiate is null.");
+            CheckNullArgument(original, objectIsNullMessage);
 
-            return Internal_InstantiateSingleWithParent(original, parent, position, rotation);
+            var obj = Internal_InstantiateSingleWithParent(original, parent, position, rotation);
+
+            if (obj == null)
+                throw new UnityException(cloneDestroyedMessage);
+
+            return obj;
         }
 
         // Clones the object /original/ and returns the clone.
         [TypeInferenceRule(TypeInferenceRules.TypeOfFirstArgument)]
         public static Object Instantiate(Object original)
         {
-            CheckNullArgument(original, "The Object you want to instantiate is null.");
-            return Internal_CloneSingle(original);
+            CheckNullArgument(original, objectIsNullMessage);
+            var obj = Internal_CloneSingle(original);
+
+            if (obj == null)
+                throw new UnityException(cloneDestroyedMessage);
+
+            return obj;
         }
 
         // Clones the object /original/ and returns the clone.
@@ -194,17 +212,27 @@ namespace UnityEngine
         public static Object Instantiate(Object original, Transform parent, bool instantiateInWorldSpace)
         {
             if (parent == null)
-                return Internal_CloneSingle(original);
+                return Instantiate(original);
 
-            CheckNullArgument(original, "The Object you want to instantiate is null.");
+            CheckNullArgument(original, objectIsNullMessage);
 
-            return Internal_CloneSingleWithParent(original, parent, instantiateInWorldSpace);
+            var obj = Internal_CloneSingleWithParent(original, parent, instantiateInWorldSpace);
+
+            if (obj == null)
+                throw new UnityException(cloneDestroyedMessage);
+
+            return obj;
         }
 
         public static T Instantiate<T>(T original) where T : UnityEngine.Object
         {
-            CheckNullArgument(original, "The Object you want to instantiate is null.");
-            return (T)Internal_CloneSingle(original);
+            CheckNullArgument(original, objectIsNullMessage);
+            var obj = (T)Internal_CloneSingle(original);
+
+            if (obj == null)
+                throw new UnityException(cloneDestroyedMessage);
+
+            return obj;
         }
 
         public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation) where T : UnityEngine.Object

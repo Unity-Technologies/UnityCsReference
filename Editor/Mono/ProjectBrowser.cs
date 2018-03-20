@@ -1993,7 +1993,6 @@ namespace UnityEditor
 
                 if (Unsupported.IsDeveloperMode())
                 {
-                    menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Show Packages in Project Window"), EditorPrefs.GetBool("ShowPackagesFolder", false), ToggleShowPackagesInAssetsFolder);
                     menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Open TreeView Test Window..."), false, OpenTreeViewTestWindow);
                     menu.AddItem(EditorGUIUtility.TrTextContent("DEVELOPER/Use TreeView Expansion Animation"), EditorPrefs.GetBool(TreeViewController.kExpansionAnimationPrefKey, false), ToggleExpansionAnimationPreference);
                 }
@@ -2069,12 +2068,15 @@ namespace UnityEditor
 
         void CreateDropdown()
         {
+            var isInReadOnlyContext = AssetsMenuUtility.SelectionHasImmutable();
+            EditorGUI.BeginDisabledGroup(isInReadOnlyContext);
             Rect r = GUILayoutUtility.GetRect(s_Styles.m_CreateDropdownContent, EditorStyles.toolbarDropDown);
             if (EditorGUI.DropdownButton(r, s_Styles.m_CreateDropdownContent, FocusType.Passive, EditorStyles.toolbarDropDown))
             {
                 GUIUtility.hotControl = 0;
                 EditorUtility.DisplayPopupMenu(r, "Assets/Create", null);
             }
+            EditorGUI.EndDisabledGroup();
         }
 
         void AssetLabelsDropDown()
@@ -2502,14 +2504,14 @@ namespace UnityEditor
         }
 
         // Also called from C++ (used for AssetSelection overriding)
-        static int[] GetTreeViewFolderSelection()
+        static int[] GetTreeViewFolderSelection(bool forceUseTreeViewSelection = false)
         {
             // Since we can delete entire folder hierarchies with the returned selection we need to be very careful. We therefore require the following:
             // - The folder/favorite tree view must have keyboard focus
             // Note we cannot require window focus (focusedWindow) since on OSX window focus is lost to popup window when right clicking
             ProjectBrowser ob = s_LastInteractedProjectBrowser;
 
-            if (ob != null && ob.useTreeViewSelectionInsteadOfMainSelection && ob.m_FolderTree != null)
+            if (ob != null && (ob.useTreeViewSelectionInsteadOfMainSelection || forceUseTreeViewSelection) && ob.m_FolderTree != null)
             {
                 return s_LastInteractedProjectBrowser.m_FolderTree.GetSelection();
             }

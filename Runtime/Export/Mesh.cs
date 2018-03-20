@@ -10,7 +10,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [UsedByNativeCode]
+    [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
     public sealed partial class Mesh : Object
     {
         // WARNING: this is used ONLY internally for setters/getters to avoid writing specialized code in bindings

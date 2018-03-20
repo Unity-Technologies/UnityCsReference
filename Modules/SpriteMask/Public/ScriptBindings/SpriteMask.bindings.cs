@@ -22,6 +22,8 @@ namespace UnityEngine
         extern public Sprite sprite { get; set; }
         extern public bool isCustomRangeActive {[NativeMethod("IsCustomRangeActive")] get; [NativeMethod("SetCustomRangeActive")] set; }
 
+        public extern SpriteSortPoint spriteSortPoint { get; set; }
+
         internal extern Bounds GetSpriteBounds();
     }
 }

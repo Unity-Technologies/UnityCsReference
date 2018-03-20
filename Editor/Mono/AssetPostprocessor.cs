@@ -3,15 +3,59 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    // AssetPostprocessor lets you hook into the import pipeline and run scripts prior or after importing assets.
+    public partial class AssetPostprocessor
+    {
+        private string m_PathName;
+
+        // The path name of the asset being imported.
+        public string assetPath { get { return m_PathName; } set { m_PathName = value; } }
+
+        // Logs an import warning to the console.
+        [ExcludeFromDocs]
+        public void LogWarning(string warning)
+        {
+            Object context = null;
+            LogWarning(warning, context);
+        }
+
+        public void LogWarning(string warning, [DefaultValue("null")]  Object context) { Debug.LogWarning(warning, context); }
+
+        // Logs an import error message to the console.
+        [ExcludeFromDocs]
+        public void LogError(string warning)
+        {
+            Object context = null;
+            LogError(warning, context);
+        }
+
+        public void LogError(string warning, [DefaultValue("null")]  Object context) { Debug.LogError(warning, context); }
+
+        // Returns the version of the asset postprocessor.
+        public virtual uint GetVersion() { return 0; }
+
+        // Reference to the asset importer
+        public AssetImporter assetImporter { get { return AssetImporter.GetAtPath(assetPath); } }
+
+        [Obsolete("To set or get the preview, call EditorUtility.SetAssetPreview or AssetPreview.GetAssetPreview instead", true)]
+        public Texture2D preview { get { return null; } set {} }
+
+        // Override the order in which importers are processed.
+        public virtual int GetPostprocessOrder() { return 0; }
+
+    }
+
     internal class AssetPostprocessingInternal
     {
         static void LogPostProcessorMissingDefaultConstructor(Type type)

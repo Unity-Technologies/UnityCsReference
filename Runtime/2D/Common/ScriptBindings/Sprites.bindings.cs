@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
@@ -43,12 +44,19 @@ namespace UnityEngine
         Any = 15
     }
 
+    public enum SpriteSortPoint
+    {
+        Center = 0,
+        Pivot = 1
+    }
+
     [NativeHeader("Runtime/2D/Common/ScriptBindings/SpritesMarshalling.h")]
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]
     [NativeHeader("Runtime/Graphics/SpriteUtility.h")]
     [NativeType("Runtime/Graphics/SpriteFrame.h")]
     public sealed partial class Sprite : Object
     {
+        [RequiredByNativeCode] // Used by Unity splash screen.
         private Sprite() {}
         internal extern int GetPackingMode();
         internal extern int GetPackingRotation();

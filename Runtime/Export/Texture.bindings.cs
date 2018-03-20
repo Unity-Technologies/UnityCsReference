@@ -102,6 +102,12 @@ namespace UnityEngine
             get;
         }
 
+        extern public static ulong streamingTexturePendingLoadCount
+        {
+            [FreeFunction("GetTextureStreamingManager().GetStreamingTexturePendingLoadCount")]
+            get;
+        }
+
         extern public static ulong streamingTextureLoadingCount
         {
             [FreeFunction("GetTextureStreamingManager().GetStreamingTextureLoadingCount")]
@@ -115,6 +121,11 @@ namespace UnityEngine
         {
             [FreeFunction(Name = "GetTextureStreamingManager().GetForceLoadAll")] get;
             [FreeFunction(Name = "GetTextureStreamingManager().SetForceLoadAll")] set;
+        }
+        extern public static bool streamingTextureDiscardUnusedMips
+        {
+            [FreeFunction(Name = "GetTextureStreamingManager().GetDiscardUnusedMips")] get;
+            [FreeFunction(Name = "GetTextureStreamingManager().SetDiscardUnusedMips")] set;
         }
     }
 

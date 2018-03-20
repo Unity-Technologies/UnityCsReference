@@ -90,7 +90,9 @@ namespace UnityEngine
         BoxShell = 15,              // Emit from the surface of a box.
         BoxEdge = 16,               // Emit from the edges of a box.
         Donut = 17,                 // Emit in a donut volume.
-        Rectangle = 18              // Emit from a rectangle.
+        Rectangle = 18,             // Emit from a rectangle.
+        Sprite = 19,                // Emit from a Sprite.
+        SpriteRenderer = 20         // Emit from a SpriteRenderer.
     }
 
     // The mesh emission type
