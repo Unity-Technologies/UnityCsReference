@@ -178,15 +178,23 @@ namespace UnityEditor
         }
 
         // Area of the render target in zoom content space (it is centered in content space)
-        Rect targetInContent { get { return EditorGUIUtility.PixelsToPoints(new Rect(-0.5f * targetSize, targetSize)); } }
+        Rect targetInContent
+        {
+            get
+            {
+                var targetSizeCached = targetSize;
+                return EditorGUIUtility.PixelsToPoints(new Rect(-0.5f * targetSizeCached, targetSizeCached));
+            }
+        }
 
         Rect targetInView // Area of the render target in zoom view space
         {
             get
             {
+                var targetInContentCached = targetInContent;
                 return new Rect(
-                    m_ZoomArea.DrawingToViewTransformPoint(targetInContent.position),
-                    m_ZoomArea.DrawingToViewTransformVector(targetInContent.size)
+                    m_ZoomArea.DrawingToViewTransformPoint(targetInContentCached.position),
+                    m_ZoomArea.DrawingToViewTransformVector(targetInContentCached.size)
                     );
             }
         }
@@ -225,18 +233,24 @@ namespace UnityEditor
 
         Rect targetInParent // Area of the render target in parent view space
         {
-            get { return new Rect(targetInView.position + viewInParent.position, targetInView.size); }
+            get
+            {
+                var targetInViewCached = targetInView;
+                return new Rect(targetInViewCached.position + viewInParent.position, targetInViewCached.size);
+            }
         }
 
         Rect clippedTargetInParent // targetInParent, but clipped to viewInParent to discard outside mouse events
         {
             get
             {
+                var targetInParentCached = targetInParent;
+                var viewInParentCached = viewInParent;
                 var clippedTargetInParent = Rect.MinMaxRect(
-                        Mathf.Max(targetInParent.xMin, viewInParent.xMin),
-                        Mathf.Max(targetInParent.yMin, viewInParent.yMin),
-                        Mathf.Min(targetInParent.xMax, viewInParent.xMax),
-                        Mathf.Min(targetInParent.yMax, viewInParent.yMax)
+                        Mathf.Max(targetInParentCached.xMin, viewInParentCached.xMin),
+                        Mathf.Max(targetInParentCached.yMin, viewInParentCached.yMin),
+                        Mathf.Min(targetInParentCached.xMax, viewInParentCached.xMax),
+                        Mathf.Min(targetInParentCached.yMax, viewInParentCached.yMax)
                         );
                 return clippedTargetInParent;
             }
@@ -639,10 +653,11 @@ namespace UnityEditor
         {
             m_ZoomArea.rect = viewInWindow;
             // Sliders are sized with respect to canvas
-            m_ZoomArea.hBaseRangeMin = targetInContent.xMin;
-            m_ZoomArea.vBaseRangeMin = targetInContent.yMin;
-            m_ZoomArea.hBaseRangeMax = targetInContent.xMax;
-            m_ZoomArea.vBaseRangeMax = targetInContent.yMax;
+            var targetInContentCached = targetInContent;
+            m_ZoomArea.hBaseRangeMin = targetInContentCached.xMin;
+            m_ZoomArea.vBaseRangeMin = targetInContentCached.yMin;
+            m_ZoomArea.hBaseRangeMax = targetInContentCached.xMax;
+            m_ZoomArea.vBaseRangeMax = targetInContentCached.yMax;
             // Restrict zooming
             m_ZoomArea.hScaleMin = m_ZoomArea.vScaleMin = minScale;
             m_ZoomArea.hScaleMax = m_ZoomArea.vScaleMax = maxScale;
@@ -651,16 +666,17 @@ namespace UnityEditor
         private void EnforceZoomAreaConstraints()
         {
             var shownArea = m_ZoomArea.shownArea;
+            var targetInContentCached = targetInContent;
 
             // When zoomed out, we disallow panning by automatically centering the view
-            if (shownArea.width > targetInContent.width)
+            if (shownArea.width > targetInContentCached.width)
             {
                 shownArea.x = -0.5f * shownArea.width;
             }
             else
             // When zoomed in, we prevent panning outside the render area
             {
-                shownArea.x = Mathf.Clamp(shownArea.x, targetInContent.xMin, targetInContent.xMax - shownArea.width);
+                shownArea.x = Mathf.Clamp(shownArea.x, targetInContentCached.xMin, targetInContentCached.xMax - shownArea.width);
             }
             // Horizontal and vertical are separated because otherwise we get weird behaviour when only one is zoomed out
             if (shownArea.height > targetInContent.height)
@@ -669,7 +685,7 @@ namespace UnityEditor
             }
             else
             {
-                shownArea.y = Mathf.Clamp(shownArea.y, targetInContent.yMin, targetInContent.yMax - shownArea.height);
+                shownArea.y = Mathf.Clamp(shownArea.y, targetInContentCached.yMin, targetInContentCached.yMax - shownArea.height);
             }
 
             m_ZoomArea.shownArea = shownArea;
@@ -707,8 +723,9 @@ namespace UnityEditor
 
             // We hide sliders when playing, and also when we are zoomed out beyond canvas edges
             var playing = EditorApplication.isPlaying && !EditorApplication.isPaused;
-            m_ZoomArea.hSlider = !playing && m_ZoomArea.shownArea.width < targetInContent.width;
-            m_ZoomArea.vSlider = !playing && m_ZoomArea.shownArea.height < targetInContent.height;
+            var targetInContentCached = targetInContent;
+            m_ZoomArea.hSlider = !playing && m_ZoomArea.shownArea.width < targetInContentCached.width;
+            m_ZoomArea.vSlider = !playing && m_ZoomArea.shownArea.height < targetInContentCached.height;
             m_ZoomArea.enableMouseInput = !playing;
             ConfigureZoomArea();
 

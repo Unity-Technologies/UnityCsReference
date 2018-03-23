@@ -20,7 +20,7 @@ using UnityEngine.SceneManagement;
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Inspector", useTypeNameAsIconName = true)]
-    public class InspectorWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver
+    internal class InspectorWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver
     {
         internal Vector2 m_ScrollPosition;
         internal InspectorMode   m_InspectorMode = InspectorMode.Normal;
@@ -70,7 +70,6 @@ namespace UnityEditor
         private IPreviewable m_SelectedPreview;
 
         private EditorDragging editorDragging;
-        static public Action<Editor> OnPostHeaderGUI = null;
 
         internal class Styles
         {
@@ -1220,8 +1219,6 @@ namespace UnityEditor
             }
 
             DisplayDeprecationMessageIfNecessary(editor);
-            if (OnPostHeaderGUI != null)
-                OnPostHeaderGUI(editor);
 
             // We need to reset again after drawing the header.
             EditorGUIUtility.ResetGUIState();
