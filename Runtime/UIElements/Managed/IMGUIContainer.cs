@@ -29,6 +29,7 @@ namespace UnityEngine.Experimental.UIElements
         public ContextType contextType { get; set; }
         internal int GUIDepth { get; private set; }
 
+        int newKeyboardFocusControlID = 0;
         internal Matrix4x4 imguiTransform
         {
             get
@@ -148,7 +149,11 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            GUIUtility.CheckForTabEvent(evt);
+            int focusBefore = GUIUtility.keyboardControl;
+            if (GUIUtility.CheckForTabEvent(evt) && GUIUtility.keyboardControl != focusBefore)
+            {
+                newKeyboardFocusControlID = GUIUtility.keyboardControl;
+            }
 
             // The Event will probably be nuked with the next function call, so we get its type now.
             EventType eventType = Event.current.type;
@@ -215,6 +220,17 @@ namespace UnityEngine.Experimental.UIElements
             // the actual event
             evt.imguiEvent.type = originalEventType;
             ret |= DoOnGUI(evt.imguiEvent);
+
+            if (newKeyboardFocusControlID > 0)
+            {
+                newKeyboardFocusControlID = 0;
+                Event focusCommand = new Event();
+                focusCommand.type = EventType.Layout;
+                DoOnGUI(focusCommand);
+                focusCommand.type = EventType.ExecuteCommand;
+                focusCommand.commandName = "NewKeyboardFocus";
+                DoOnGUI(focusCommand);
+            }
 
             if (ret)
             {

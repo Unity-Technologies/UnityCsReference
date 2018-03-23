@@ -84,6 +84,9 @@
 <Compile Include="..\..\Runtime\Export\UnitySynchronizationContext.cs" >
 <Link>Runtime\Export\UnitySynchronizationContext.cs</Link>
 </Compile>
+<Compile Include="..\..\Runtime\Export\Caching.deprecated.cs" >
+<Link>Runtime\Export\Caching.deprecated.cs</Link>
+</Compile>
 <Compile Include="..\..\Runtime\Export\Random.cs" >
 <Link>Runtime\Export\Random.cs</Link>
 </Compile>
