@@ -155,7 +155,7 @@ namespace UnityEditor
             if (s_Styles == null)
                 s_Styles = new Styles();
 
-            m_ShowSettings = EditorGUILayout.Foldout(m_ShowSettings, s_Styles.Lighting);
+            m_ShowSettings = EditorGUILayout.Foldout(m_ShowSettings, s_Styles.Lighting, true);
             if (!m_ShowSettings)
                 return false;
 
@@ -216,12 +216,12 @@ namespace UnityEditor
 
                 if (showEnlightenSettings)
                 {
-                    m_ShowChartingSettings = EditorGUILayout.Foldout(m_ShowChartingSettings, s_Styles.UVCharting);
+                    m_ShowChartingSettings = EditorGUILayout.Foldout(m_ShowChartingSettings, s_Styles.UVCharting, true);
                     if (m_ShowChartingSettings)
                         RendererUVSettings();
                 }
 
-                m_ShowLightmapSettings = EditorGUILayout.Foldout(m_ShowLightmapSettings, s_Styles.LightmapSettings);
+                m_ShowLightmapSettings = EditorGUILayout.Foldout(m_ShowLightmapSettings, s_Styles.LightmapSettings, true);
 
                 if (m_ShowLightmapSettings)
                 {
@@ -250,11 +250,11 @@ namespace UnityEditor
 
                     LightmapParametersGUI(m_LightmapParameters, s_Styles.LightmapParameters);
 
-                    m_ShowBakedLM = EditorGUILayout.Foldout(m_ShowBakedLM, s_Styles.Atlas);
+                    m_ShowBakedLM = EditorGUILayout.Foldout(m_ShowBakedLM, s_Styles.Atlas, true);
                     if (m_ShowBakedLM)
                         ShowAtlasGUI(m_Renderers[0].GetInstanceID());
 
-                    m_ShowRealtimeLM = EditorGUILayout.Foldout(m_ShowRealtimeLM, s_Styles.RealtimeLM);
+                    m_ShowRealtimeLM = EditorGUILayout.Foldout(m_ShowRealtimeLM, s_Styles.RealtimeLM, true);
                     if (m_ShowRealtimeLM)
                         ShowRealtimeLMGUI(m_Renderers[0]);
 
@@ -302,7 +302,7 @@ namespace UnityEditor
 
             if (enableSettings)
             {
-                m_ShowLightmapSettings = EditorGUILayout.Foldout(m_ShowLightmapSettings, s_Styles.LightmapSettings);
+                m_ShowLightmapSettings = EditorGUILayout.Foldout(m_ShowLightmapSettings, s_Styles.LightmapSettings, true);
 
                 if (m_ShowLightmapSettings)
                 {
@@ -325,11 +325,11 @@ namespace UnityEditor
                         if (GUI.enabled && m_Terrains.Length == 1 && m_Terrains[0].terrainData != null)
                             ShowBakePerformanceWarning(m_Terrains[0]);
 
-                        m_ShowBakedLM = EditorGUILayout.Foldout(m_ShowBakedLM, s_Styles.Atlas);
+                        m_ShowBakedLM = EditorGUILayout.Foldout(m_ShowBakedLM, s_Styles.Atlas, true);
                         if (m_ShowBakedLM)
                             ShowAtlasGUI(m_Terrains[0].GetInstanceID());
 
-                        m_ShowRealtimeLM = EditorGUILayout.Foldout(m_ShowRealtimeLM, s_Styles.RealtimeLM);
+                        m_ShowRealtimeLM = EditorGUILayout.Foldout(m_ShowRealtimeLM, s_Styles.RealtimeLM, true);
                         if (m_ShowRealtimeLM)
                             ShowRealtimeLMGUI(m_Terrains[0]);
 

@@ -7,7 +7,7 @@ using UnityEditor.Build;
 
 namespace UnityEditor
 {
-    internal class UnityBuildPostprocessor : IProcessScene
+    internal class UnityBuildPostprocessor : IProcessSceneWithReport
     {
         public int callbackOrder { get { return 0; } }
         public void OnProcessScene(UnityEngine.SceneManagement.Scene scene, Build.Reporting.BuildReport report)

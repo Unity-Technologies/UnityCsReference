@@ -23,6 +23,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     {
         SetupStagingArea(args);
         CopyStagingAreaIntoDestination(args);
+        ProcessSymbolFiles(args);
     }
 
     public override bool SupportsLz4Compression()
@@ -436,6 +437,10 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     protected abstract IIl2CppPlatformProvider GetPlatformProvider(BuildPostProcessArgs args);
 
     protected virtual void ProcessPlatformSpecificIL2CPPOutput(BuildPostProcessArgs args)
+    {
+    }
+
+    protected virtual void ProcessSymbolFiles(BuildPostProcessArgs args)
     {
     }
 

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Experimental.Rendering
@@ -54,60 +55,125 @@ namespace UnityEngine.Experimental.Rendering
         public bool rendererSupportsReceiveShadows { get; set; } = true;
         public bool rendererSupportsReflectionProbes { get; set; } = true;
 
-        [RequiredByNativeCode]
-        internal static MixedLightingMode FallbackMixedLightingMode()
+        internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {
-            // the pipline has picked a default value that is supported
+            MixedLightingMode fallbackMode;
+            FallbackMixedLightingModeByRef(new IntPtr(&fallbackMode));
+            return fallbackMode;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void FallbackMixedLightingModeByRef(IntPtr fallbackModePtr)
+        {
+            var fallbackMode = (MixedLightingMode*)fallbackModePtr;
+
+            // if the pipeline has picked a default value that is supported
             if ((SupportedRenderingFeatures.active.defaultMixedLightingMode != LightmapMixedBakeMode.None)
                 && ((SupportedRenderingFeatures.active.supportedMixedLightingModes & SupportedRenderingFeatures.active.defaultMixedLightingMode) == SupportedRenderingFeatures.active.defaultMixedLightingMode))
             {
                 switch (SupportedRenderingFeatures.active.defaultMixedLightingMode)
                 {
                     case LightmapMixedBakeMode.Shadowmask:
-                        return MixedLightingMode.Shadowmask;
+                        *fallbackMode = MixedLightingMode.Shadowmask;
+                        break;
 
                     case LightmapMixedBakeMode.Subtractive:
-                        return MixedLightingMode.Subtractive;
+                        *fallbackMode = MixedLightingMode.Subtractive;
+                        break;
 
                     default:
-                        return MixedLightingMode.IndirectOnly;
+                        *fallbackMode = MixedLightingMode.IndirectOnly;
+                        break;
+                }
+                return;
+            }
+
+            // otherwise we try to find a value that is supported
+            if (IsMixedLightingModeSupported(MixedLightingMode.Shadowmask))
+            {
+                *fallbackMode = MixedLightingMode.Shadowmask;
+                return;
+            }
+
+            if (IsMixedLightingModeSupported(MixedLightingMode.Subtractive))
+            {
+                *fallbackMode = MixedLightingMode.Subtractive;
+                return;
+            }
+
+            // last restort. make sure Mixed mode is even supported, otherwise the baking pipeline will treat the Mixed lights it as Realtime
+            *fallbackMode = MixedLightingMode.IndirectOnly;
+        }
+
+        internal static unsafe bool IsMixedLightingModeSupported(MixedLightingMode mixedMode)
+        {
+            bool isSupported;
+            IsMixedLightingModeSupportedByRef(mixedMode, new IntPtr(&isSupported));
+            return isSupported;
+        }
+
+        [RequiredByNativeCode]
+        internal unsafe static void IsMixedLightingModeSupportedByRef(MixedLightingMode mixedMode, IntPtr isSupportedPtr)
+        {
+            // if Mixed mode hasn't been turned off completely and the Mixed lights will be treated as Realtime
+            bool* isSupported = (bool*)isSupportedPtr;
+
+            if (!IsLightmapBakeTypeSupported(LightmapBakeType.Mixed))
+            {
+                *isSupported = false;
+                return;
+            }
+            // this is done since the original enum doesn't allow flags due to it starting at 0, not 1
+            *isSupported = ((mixedMode == MixedLightingMode.IndirectOnly &&
+                             ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
+                               LightmapMixedBakeMode.IndirectOnly) == LightmapMixedBakeMode.IndirectOnly)) ||
+                            (mixedMode == MixedLightingMode.Subtractive &&
+                             ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
+                               LightmapMixedBakeMode.Subtractive) == LightmapMixedBakeMode.Subtractive)) ||
+                            (mixedMode == MixedLightingMode.Shadowmask &&
+                             ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
+                               LightmapMixedBakeMode.Shadowmask) == LightmapMixedBakeMode.Shadowmask)));
+        }
+
+        internal static unsafe bool IsLightmapBakeTypeSupported(LightmapBakeType bakeType)
+        {
+            bool isSupported;
+            IsLightmapBakeTypeSupportedByRef(bakeType, new IntPtr(&isSupported));
+            return isSupported;
+        }
+
+        [RequiredByNativeCode]
+        internal static unsafe void IsLightmapBakeTypeSupportedByRef(LightmapBakeType bakeType, IntPtr isSupportedPtr)
+        {
+            var isSupported = (bool*)isSupportedPtr;
+
+            if (bakeType == LightmapBakeType.Mixed)
+            {
+                // we can't have Mixed without Bake
+                bool isBakedSupported = IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
+                // we can't support Mixed mode and then not support any of the different modes
+                if (!isBakedSupported || SupportedRenderingFeatures.active.supportedMixedLightingModes == LightmapMixedBakeMode.None)
+                {
+                    *isSupported = false;
+                    return;
                 }
             }
 
-            if (IsMixedLightingModeSupported(MixedLightingMode.Shadowmask))
-                return MixedLightingMode.Shadowmask;
+            *isSupported = ((SupportedRenderingFeatures.active.supportedLightmapBakeTypes & bakeType) == bakeType);
+        }
 
-            if (IsMixedLightingModeSupported(MixedLightingMode.Subtractive))
-                return MixedLightingMode.Subtractive;
-
-            return MixedLightingMode.IndirectOnly;
+        internal static unsafe bool IsLightmapsModeSupported(LightmapsMode mode)
+        {
+            bool isSupported;
+            IsLightmapsModeSupportedByRef(mode, new IntPtr(&isSupported));
+            return isSupported;
         }
 
         [RequiredByNativeCode]
-        internal static bool IsMixedLightingModeSupported(MixedLightingMode mixedMode)
+        internal static unsafe void IsLightmapsModeSupportedByRef(LightmapsMode mode, IntPtr isSupportedPtr)
         {
-            // this is done since the original enum doesn't allow flags due to it starting at 0, not 1
-            return ((mixedMode == MixedLightingMode.IndirectOnly &&
-                     ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                       LightmapMixedBakeMode.IndirectOnly) == LightmapMixedBakeMode.IndirectOnly)) ||
-                    (mixedMode == MixedLightingMode.Subtractive &&
-                     ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                       LightmapMixedBakeMode.Subtractive) == LightmapMixedBakeMode.Subtractive)) ||
-                    (mixedMode == MixedLightingMode.Shadowmask &&
-                     ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                       LightmapMixedBakeMode.Shadowmask) == LightmapMixedBakeMode.Shadowmask)));
-        }
-
-        [RequiredByNativeCode]
-        internal static bool IsLightmapBakeTypeSupported(LightmapBakeType bakeType)
-        {
-            return ((SupportedRenderingFeatures.active.supportedLightmapBakeTypes & bakeType) == bakeType);
-        }
-
-        [RequiredByNativeCode]
-        internal static bool IsLightmapsModeSupported(LightmapsMode mode)
-        {
-            return ((SupportedRenderingFeatures.active.supportedLightmapsModes & mode) == mode);
+            var isSupported = (bool*)isSupportedPtr;
+            *isSupported = ((SupportedRenderingFeatures.active.supportedLightmapsModes & mode) == mode);
         }
     }
 }

@@ -486,14 +486,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         // Delete all .dll's that aren't used anymore
         public void DeleteUnusedAssemblies()
         {
-            string fullEditorAssemblyPath = AssetPath.Combine(AssetPath.GetDirectoryName(UnityEngine.Application.dataPath), GetCompileScriptsOutputDirectory());
+            string fullEditorAssemblyPath = AssetPath.Combine(projectDirectory, GetCompileScriptsOutputDirectory());
 
             if (!Directory.Exists(fullEditorAssemblyPath))
                 return;
 
             var deleteFiles = Directory.GetFiles(fullEditorAssemblyPath).Select(f => AssetPath.ReplaceSeparators(f)).ToList();
             string timestampPath = GetAssemblyTimestampPath(GetCompileScriptsOutputDirectory());
-            deleteFiles.Remove(AssetPath.Combine(AssetPath.GetDirectoryName(UnityEngine.Application.dataPath), timestampPath));
+            deleteFiles.Remove(AssetPath.Combine(projectDirectory, timestampPath));
 
             var scriptAssemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor);
 
@@ -514,7 +514,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public void CleanScriptAssemblies()
         {
-            string fullEditorAssemblyPath = AssetPath.Combine(AssetPath.GetDirectoryName(UnityEngine.Application.dataPath), GetCompileScriptsOutputDirectory());
+            string fullEditorAssemblyPath = AssetPath.Combine(projectDirectory, GetCompileScriptsOutputDirectory());
 
             if (!Directory.Exists(fullEditorAssemblyPath))
                 return;
@@ -661,6 +661,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal bool CompileScripts(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, EditorScriptCompilationOptions options, ref EditorBuildRules.TargetAssembly[] notCompiledTargetAssemblies)
         {
+            DeleteUnusedAssemblies();
+
             IEnumerable<string> allDirtyScripts = areAllScriptsDirty ? allScripts.ToArray() : dirtyScripts.ToArray();
 
             areAllScriptsDirty = false;

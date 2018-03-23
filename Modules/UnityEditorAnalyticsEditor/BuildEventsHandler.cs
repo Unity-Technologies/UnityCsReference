@@ -19,7 +19,7 @@ namespace UnityEditor
         public bool is_default_2d_mode;
     }
 
-    internal class BuildEventsHandlerPostProcess : IPostprocessBuild
+    internal class BuildEventsHandlerPostProcess : IPostprocessBuildWithReport
     {
         private static bool s_EventSent = false;
         private static int s_NumOfSceneViews = 0;

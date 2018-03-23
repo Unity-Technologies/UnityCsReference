@@ -14,7 +14,6 @@ namespace UnityEditor.U2D
 {
     internal class SpriteDataExt : SpriteRect
     {
-        public List<SpriteBone> spriteBone;
         public float tessellationDetail = 0;
 
         // The following lists are to be left un-initialized.
@@ -24,9 +23,35 @@ namespace UnityEditor.U2D
         public List<int> indices;
         public List<Vector2Int> edges;
         public List<Vector2[]> spritePhysicsOutline;
+        public List<SpriteBone> spriteBone;
 
-        internal SpriteDataExt()
+        internal SpriteDataExt(SerializedObject so)
         {
+            var ti = so.targetObject as TextureImporter;
+            var texture = AssetDatabase.LoadAssetAtPath<Texture>(ti.assetPath);
+            name = texture.name;
+            alignment = (SpriteAlignment)so.FindProperty("m_Alignment").intValue;
+            border = ti.spriteBorder;
+            pivot = SpriteEditorUtility.GetPivotValue(alignment, ti.spritePivot);
+            tessellationDetail = so.FindProperty("m_SpriteTessellationDetail").floatValue;
+
+            int width = 0, height = 0;
+            ti.GetWidthAndHeight(ref width, ref height);
+            rect = new Rect(0, 0, width, height);
+
+            var guidSP = so.FindProperty("m_SpriteSheet.m_SpriteID");
+            spriteID = new GUID(guidSP.stringValue);
+        }
+
+        internal SpriteDataExt(SerializedProperty sp)
+        {
+            rect = sp.FindPropertyRelative("m_Rect").rectValue;
+            border = sp.FindPropertyRelative("m_Border").vector4Value;
+            name = sp.FindPropertyRelative("m_Name").stringValue;
+            alignment = (SpriteAlignment)sp.FindPropertyRelative("m_Alignment").intValue;
+            pivot = SpriteEditorUtility.GetPivotValue(alignment, sp.FindPropertyRelative("m_Pivot").vector2Value);
+            tessellationDetail = sp.FindPropertyRelative("m_TessellationDetail").floatValue;
+            spriteID = new GUID(sp.FindPropertyRelative("m_SpriteID").stringValue);
         }
 
         internal SpriteDataExt(SpriteRect sr)
@@ -39,6 +64,12 @@ namespace UnityEditor.U2D
             spriteID = sr.spriteID;
             alignment = sr.alignment;
             pivot = sr.pivot;
+            spriteOutline = new List<Vector2[]>();
+            vertices = new List<Vertex2DMetaData>();
+            indices = new List<int>();
+            edges = new List<Vector2Int>();
+            spritePhysicsOutline = new List<Vector2[]>();
+            spriteBone = new List<SpriteBone>();
         }
 
         public void Apply(SerializedObject so)
@@ -78,35 +109,6 @@ namespace UnityEditor.U2D
                 SpritePhysicsOutlineDataTransfer.Apply(sp, spritePhysicsOutline);
             if (vertices != null)
                 SpriteMeshDataTransfer.Apply(sp, vertices, indices, edges);
-        }
-
-        public void Load(SerializedObject so)
-        {
-            var ti = so.targetObject as TextureImporter;
-            var texture = AssetDatabase.LoadAssetAtPath<Texture>(ti.assetPath);
-            name = texture.name;
-            alignment = (SpriteAlignment)so.FindProperty("m_Alignment").intValue;
-            border = ti.spriteBorder;
-            pivot = SpriteEditorUtility.GetPivotValue(alignment, ti.spritePivot);
-            tessellationDetail = so.FindProperty("m_SpriteTessellationDetail").floatValue;
-
-            int width = 0, height = 0;
-            ti.GetWidthAndHeight(ref width, ref height);
-            rect = new Rect(0, 0, width, height);
-
-            var guidSP = so.FindProperty("m_SpriteSheet.m_SpriteID");
-            spriteID = new GUID(guidSP.stringValue);
-        }
-
-        public void Load(SerializedProperty sp)
-        {
-            rect = sp.FindPropertyRelative("m_Rect").rectValue;
-            border = sp.FindPropertyRelative("m_Border").vector4Value;
-            name = sp.FindPropertyRelative("m_Name").stringValue;
-            alignment = (SpriteAlignment)sp.FindPropertyRelative("m_Alignment").intValue;
-            pivot = SpriteEditorUtility.GetPivotValue(alignment, sp.FindPropertyRelative("m_Pivot").vector2Value);
-            tessellationDetail = sp.FindPropertyRelative("m_TessellationDetail").floatValue;
-            spriteID = new GUID(sp.FindPropertyRelative("m_SpriteID").stringValue);
         }
 
         public void CopyFromSpriteRect(SpriteRect spriteRect)

@@ -16,17 +16,35 @@ namespace UnityEditor.Build
         int callbackOrder { get; }
     }
 
+    [Obsolete("Use IPreprocessBuildWithReport instead")]
     public interface IPreprocessBuild : IOrderedCallback
+    {
+        void OnPreprocessBuild(BuildTarget target, string path);
+    }
+
+    public interface IPreprocessBuildWithReport : IOrderedCallback
     {
         void OnPreprocessBuild(BuildReport report);
     }
 
+    [Obsolete("Use IPostprocessBuildWithReport instead")]
     public interface IPostprocessBuild : IOrderedCallback
+    {
+        void OnPostprocessBuild(BuildTarget target, string path);
+    }
+
+    public interface IPostprocessBuildWithReport : IOrderedCallback
     {
         void OnPostprocessBuild(BuildReport report);
     }
 
+    [Obsolete("Use IProcessSceneWithReport instead")]
     public interface IProcessScene : IOrderedCallback
+    {
+        void OnProcessScene(UnityEngine.SceneManagement.Scene scene);
+    }
+
+    public interface IProcessSceneWithReport : IOrderedCallback
     {
         void OnProcessScene(UnityEngine.SceneManagement.Scene scene, BuildReport report);
     }
@@ -38,9 +56,16 @@ namespace UnityEditor.Build
 
     internal static class BuildPipelineInterfaces
     {
+#pragma warning disable 618
         private static List<IPreprocessBuild> buildPreprocessors;
         private static List<IPostprocessBuild> buildPostprocessors;
         private static List<IProcessScene> sceneProcessors;
+#pragma warning restore 618
+
+        private static List<IPreprocessBuildWithReport> buildPreprocessorsWithReport;
+        private static List<IPostprocessBuildWithReport> buildPostprocessorsWithReport;
+        private static List<IProcessSceneWithReport> sceneProcessorsWithReport;
+
         private static List<IActiveBuildTargetChanged> buildTargetProcessors;
 
         [Flags]
@@ -68,7 +93,17 @@ namespace UnityEditor.Build
             list.Add(inst);
         }
 
-        private class AttributeCallbackWrapper : IPostprocessBuild, IProcessScene, IActiveBuildTargetChanged
+        static void AddToListIfTypeImplementsInterface<T>(Type t, ref object o, ref List<T> list) where T : class
+        {
+            if (!ValidateType<T>(t))
+                return;
+
+            if (o == null)
+                o = Activator.CreateInstance(t);
+            AddToList(o, ref list);
+        }
+
+        private class AttributeCallbackWrapper : IPostprocessBuildWithReport, IProcessSceneWithReport, IActiveBuildTargetChanged
         {
             int m_callbackOrder;
             MethodInfo m_method;
@@ -115,45 +150,58 @@ namespace UnityEditor.Build
             {
                 if (t.IsAbstract || t.IsInterface)
                     continue;
+
+                // Defer creating the instance until we actually add it to one of the lists
                 object instance = null;
+
                 if (findBuildProcessors)
                 {
-                    if (ValidateType<IPreprocessBuild>(t))
-                        AddToList(instance = Activator.CreateInstance(t), ref buildPreprocessors);
-
-                    if (ValidateType<IPostprocessBuild>(t))
-                        AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref buildPostprocessors);
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref buildPreprocessors);
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref buildPreprocessorsWithReport);
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref buildPostprocessors);
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref buildPostprocessorsWithReport);
                 }
 
-                if (findSceneProcessors && ValidateType<IProcessScene>(t))
-                    AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref sceneProcessors);
+                if (findSceneProcessors)
+                {
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref sceneProcessors);
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref sceneProcessorsWithReport);
+                }
 
-                if (findTargetProcessors && ValidateType<IActiveBuildTargetChanged>(t))
-                    AddToList(instance = instance == null ? Activator.CreateInstance(t) : instance, ref buildTargetProcessors);
+                if (findTargetProcessors)
+                {
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref buildTargetProcessors);
+                }
             }
 
             if (findBuildProcessors)
             {
                 foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute<Callbacks.PostProcessBuildAttribute>())
                     if (ValidateMethod<Callbacks.PostProcessBuildAttribute>(m, postProcessBuildAttributeParams))
-                        AddToList(new AttributeCallbackWrapper(m), ref buildPostprocessors);
+                        AddToList(new AttributeCallbackWrapper(m), ref buildPostprocessorsWithReport);
             }
 
             if (findSceneProcessors)
             {
                 foreach (var m in EditorAssemblies.GetAllMethodsWithAttribute<Callbacks.PostProcessSceneAttribute>())
                     if (ValidateMethod<Callbacks.PostProcessSceneAttribute>(m, Type.EmptyTypes))
-                        AddToList(new AttributeCallbackWrapper(m), ref sceneProcessors);
+                        AddToList(new AttributeCallbackWrapper(m), ref sceneProcessorsWithReport);
             }
 
             if (buildPreprocessors != null)
                 buildPreprocessors.Sort(CompareICallbackOrder);
+            if (buildPreprocessorsWithReport != null)
+                buildPreprocessorsWithReport.Sort(CompareICallbackOrder);
             if (buildPostprocessors != null)
                 buildPostprocessors.Sort(CompareICallbackOrder);
+            if (buildPostprocessorsWithReport != null)
+                buildPostprocessorsWithReport.Sort(CompareICallbackOrder);
             if (buildTargetProcessors != null)
                 buildTargetProcessors.Sort(CompareICallbackOrder);
             if (sceneProcessors != null)
                 sceneProcessors.Sort(CompareICallbackOrder);
+            if (sceneProcessorsWithReport != null)
+                sceneProcessorsWithReport.Sort(CompareICallbackOrder);
         }
 
         internal static bool ValidateType<T>(Type t)
@@ -217,67 +265,81 @@ namespace UnityEditor.Build
             return false;
         }
 
+        private static bool InvokeCallbackInterfacesPair<T1, T2>(List<T1> oneInterfaces, Action<T1> invocationOne, List<T2> twoInterfaces, Action<T2> invocationTwo, bool exitOnFailure) where T1 : IOrderedCallback where T2 : IOrderedCallback
+        {
+            if (oneInterfaces == null && twoInterfaces == null)
+                return true;
+
+            // We want to walk both interface lists and invoke the callbacks, but if we just did the whole of list 1 followed by the whole of list 2, the ordering would be wrong.
+            // So, we have to walk both lists simultaneously, calling whichever callback has the lower ordering value
+            IEnumerator<T1> e1 = (oneInterfaces != null) ? (IEnumerator<T1>)oneInterfaces.GetEnumerator() : null;
+            IEnumerator<T2> e2 = (twoInterfaces != null) ? (IEnumerator<T2>)twoInterfaces.GetEnumerator() : null;
+            if (e1 != null && !e1.MoveNext())
+                e1 = null;
+            if (e2 != null && !e2.MoveNext())
+                e2 = null;
+
+            while (e1 != null || e2 != null)
+            {
+                try
+                {
+                    if (e1 != null && (e2 == null || e1.Current.callbackOrder < e2.Current.callbackOrder))
+                    {
+                        var callback = e1.Current;
+                        if (!e1.MoveNext())
+                            e1 = null;
+                        invocationOne(callback);
+                    }
+                    else if (e2 != null)
+                    {
+                        var callback = e2.Current;
+                        if (!e2.MoveNext())
+                            e2 = null;
+                        invocationTwo(callback);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    if (exitOnFailure)
+                        return false;
+                }
+            }
+
+            return true;
+        }
+
         [RequiredByNativeCode]
         internal static void OnBuildPreProcess(BuildReport report)
         {
-            if (buildPreprocessors != null)
-            {
-                foreach (IPreprocessBuild bpp in buildPreprocessors)
-                {
-                    try
-                    {
-                        bpp.OnPreprocessBuild(report);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogException(e);
-                        if ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0)
-                            return;
-                    }
-                }
-            }
+#pragma warning disable 618
+            InvokeCallbackInterfacesPair(
+                buildPreprocessors, bpp => bpp.OnPreprocessBuild(report.summary.platform, report.summary.outputPath),
+                buildPreprocessorsWithReport, bpp => bpp.OnPreprocessBuild(report),
+                (report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0);
+#pragma warning restore 618
         }
 
         [RequiredByNativeCode]
         internal static void OnSceneProcess(UnityEngine.SceneManagement.Scene scene, BuildReport report)
         {
-            if (sceneProcessors != null)
-            {
-                foreach (IProcessScene spp in sceneProcessors)
-                {
-                    try
-                    {
-                        spp.OnProcessScene(scene, report);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogException(e);
-                        if ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0)
-                            return;
-                    }
-                }
-            }
+#pragma warning disable 618
+            InvokeCallbackInterfacesPair(
+                sceneProcessors, spp => spp.OnProcessScene(scene),
+                sceneProcessorsWithReport, spp => spp.OnProcessScene(scene, report),
+                report && ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0));
+#pragma warning restore 618
         }
 
         [RequiredByNativeCode]
         internal static void OnBuildPostProcess(BuildReport report)
         {
-            if (buildPostprocessors != null)
-            {
-                foreach (IPostprocessBuild bpp in buildPostprocessors)
-                {
-                    try
-                    {
-                        bpp.OnPostprocessBuild(report);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.LogException(e);
-                        if ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0)
-                            return;
-                    }
-                }
-            }
+#pragma warning disable 618
+            InvokeCallbackInterfacesPair(
+                buildPostprocessors, bpp => bpp.OnPostprocessBuild(report.summary.platform, report.summary.outputPath),
+                buildPostprocessorsWithReport, bpp => bpp.OnPostprocessBuild(report),
+                (report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0);
+#pragma warning restore 618
         }
 
         [RequiredByNativeCode]
@@ -306,6 +368,9 @@ namespace UnityEditor.Build
             buildPreprocessors = null;
             buildPostprocessors = null;
             sceneProcessors = null;
+            buildPreprocessorsWithReport = null;
+            buildPostprocessorsWithReport = null;
+            sceneProcessorsWithReport = null;
             previousFlags = BuildCallbacks.None;
         }
     }

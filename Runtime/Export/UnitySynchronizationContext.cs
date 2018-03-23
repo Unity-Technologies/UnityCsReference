@@ -51,7 +51,8 @@ namespace UnityEngine
         {
             lock (m_AsyncWorkQueue)
             {
-                while (m_AsyncWorkQueue.Count > 0)
+                var workCount = m_AsyncWorkQueue.Count;
+                for (int i = 0; i < workCount; i++)
                 {
                     var work = m_AsyncWorkQueue.Dequeue();
                     work.Invoke();

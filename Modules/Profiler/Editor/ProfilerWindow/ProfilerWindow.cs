@@ -40,8 +40,11 @@ namespace UnityEditor
             public static readonly GUIContent frame = EditorGUIUtility.TrTextContent("Frame: ");
             public static readonly GUIContent clearOnPlay = EditorGUIUtility.TrTextContent("Clear on Play");
             public static readonly GUIContent clearData = EditorGUIUtility.TrTextContent("Clear");
+            public static readonly GUIContent saveWindowTitle = EditorGUIUtility.TrTextContent("Save Window");
             public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrTextContent("Save", "Save current profiling information to a binary file");
+            public static readonly GUIContent loadWindowTitle = EditorGUIUtility.TrTextContent("Load Window");
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrTextContent("Load", "Load binary profiling information from a file. Shift click to append to the existing data");
+            public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode");
@@ -1197,7 +1200,6 @@ namespace UnityEditor
 
         void SaveProfilingData()
         {
-            string title = EditorGUIUtility.TempContent("Save profile").text;
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
             string directory = string.IsNullOrEmpty(recent)
                 ? ""
@@ -1206,7 +1208,7 @@ namespace UnityEditor
                 ? ""
                 : System.IO.Path.GetFileName(recent);
 
-            string selected = EditorUtility.SaveFilePanel(title, directory, filename, "data");
+            string selected = EditorUtility.SaveFilePanel(Styles.saveWindowTitle.text, directory, filename, "data");
             if (selected.Length != 0)
             {
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
@@ -1219,9 +1221,8 @@ namespace UnityEditor
 
         void LoadProfilingData(bool keepExistingData)
         {
-            string title = EditorGUIUtility.TempContent("Load profile").text;
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
-            string selected = EditorUtility.OpenFilePanel(title, recent, "data");
+            string selected = EditorUtility.OpenFilePanelWithFilters(Styles.loadWindowTitle.text, recent, Styles.loadProfilingDataFileFilters);
             if (selected.Length != 0)
             {
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
