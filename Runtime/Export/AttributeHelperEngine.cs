@@ -26,11 +26,17 @@ namespace UnityEngine
 {
     class AttributeHelperEngine
     {
+        [System.NonSerialized] static Dictionary<Type, Type> mBaseTypeLookup = new Dictionary<Type, Type>();
 
         [RequiredByNativeCode]
         static Type GetParentTypeDisallowingMultipleInclusion(Type type)
         {
+            Type baseType = null;
+
+            if (mBaseTypeLookup.TryGetValue(type, out baseType)) return baseType;
+
             var typeStack = new Stack<Type>();
+
             while (type != null && type != typeof(MonoBehaviour))
             {
                 typeStack.Push(type);
@@ -39,19 +45,24 @@ namespace UnityEngine
             }
 
 
-            Type baseType = null;
             while (typeStack.Count > 0)
             {
                 baseType = typeStack.Pop();
                 object[] attrs = baseType.GetCustomAttributes(typeof(DisallowMultipleComponent), false);
                 int count = attrs.Length;
+
                 if (count != 0)
+                {
+                    mBaseTypeLookup.Add(type, baseType);
                     return baseType;
+                }
             }
 
-
+            mBaseTypeLookup.Add(type, null);
             return null;
         }
+
+        [System.NonSerialized] static Dictionary<Type, Type[]> mRequiredCompLookup = new Dictionary<Type, Type[]>();
 
         [RequiredByNativeCode]
         static Type[] GetRequiredComponents(Type klass)
@@ -59,7 +70,11 @@ namespace UnityEngine
             // Generate an array for all required components
             // .NET doesnt give us multiple copies of the same attribute on derived classes
             // Thus we do it manually
+            Type[] retVal = null;
+            if (mRequiredCompLookup.TryGetValue(klass, out retVal)) return retVal;
+
             List<Type> required = null;
+
             while (klass != null && klass != typeof(MonoBehaviour))
             {
                 RequireComponent[] attrs = (RequireComponent[])klass.GetCustomAttributes(typeof(RequireComponent), false);
@@ -87,10 +102,18 @@ namespace UnityEngine
 
                 klass = baseType;
             }
+
             if (required == null)
+            {
+                mRequiredCompLookup.Add(klass, null);
                 return null;
+            }
             else
-                return required.ToArray();
+            {
+                retVal = required.ToArray();
+                mRequiredCompLookup.Add(klass, retVal);
+                return retVal;
+            }
         }
 
         [RequiredByNativeCode]
