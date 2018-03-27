@@ -250,12 +250,12 @@ namespace UnityEditor
             return toggleValue;
         }
 
-        public static void GUILayerMask(GUIContent guiContent, SerializedProperty boolProp, params GUILayoutOption[] layoutOptions)
+        public static void GUILayerMask(GUIContent guiContent, SerializedProperty layerMaskProp, params GUILayoutOption[] layoutOptions)
         {
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
-            guiContent = EditorGUI.BeginProperty(rect, guiContent, boolProp);
+            guiContent = EditorGUI.BeginProperty(rect, guiContent, layerMaskProp);
             rect = PrefixLabel(rect, guiContent);
-            EditorGUI.LayerMaskField(rect, boolProp, null, ParticleSystemStyles.Get().popup);
+            EditorGUI.LayerMaskField(rect, layerMaskProp, null);
             EditorGUI.EndProperty();
         }
 
@@ -480,7 +480,7 @@ namespace UnityEditor
             // copied
             float dragSensitity = Mathf.Max(1, Mathf.Pow(Mathf.Abs((float)value), 0.5f) * .03f);
             //float dragSensitity = Mathf.Clamp01(Mathf.Max(1, Mathf.Pow(Mathf.Abs((float)value), 0.5f)) * 0.03f );
-            return (int)EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor, intFieldRect, dragZoneRect, id, value, EditorGUI.kIntFieldFormatString, ParticleSystemStyles.Get().numberField, true, dragSensitity);
+            return EditorGUI.DoIntField(EditorGUI.s_RecycledEditor, intFieldRect, dragZoneRect, id, value, EditorGUI.kIntFieldFormatString, ParticleSystemStyles.Get().numberField, true, dragSensitity);
         }
 
         public static void GUIMinMaxRange(GUIContent label, SerializedProperty vec2Prop, params GUILayoutOption[] layoutOptions)

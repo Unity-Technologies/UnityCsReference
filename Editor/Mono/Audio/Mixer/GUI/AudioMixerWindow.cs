@@ -255,9 +255,7 @@ namespace UnityEditor
         static List<AudioMixerController> FindAllAudioMixerControllers()
         {
             var result = new List<AudioMixerController>();
-            var prop = new HierarchyProperty(HierarchyType.Assets);
-            prop.SetSearchFilter(new SearchFilter() { classNames = new[] { "AudioMixerController" } });
-            while (prop.Next(null))
+            foreach (var prop in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { "AudioMixerController" } }))
             {
                 var controller = prop.pptrValue as AudioMixerController;
                 if (controller)
@@ -768,8 +766,8 @@ namespace UnityEditor
         static public void Show(Rect buttonRect, string[] classNames, int initialSelectedInstanceID)
         {
             var menu = new GenericMenu();
-            var objs = FindAssetsOfType(classNames);
 
+            var objs = AssetDatabase.FindAllAssets(new SearchFilter() { classNames = classNames }).Select(property => property.pptrValue).ToList();
             if (objs.Any())
             {
                 objs.Sort((result1, result2) => EditorUtility.NaturalCompare(result1.name, result2.name));
@@ -792,18 +790,6 @@ namespace UnityEditor
             UnityEngine.Object obj = userData as UnityEngine.Object;
             if (obj != null)
                 Selection.activeInstanceID = obj.GetInstanceID();
-        }
-
-        static List<UnityEngine.Object> FindAssetsOfType(string[] classNames)
-        {
-            var prop = new HierarchyProperty(HierarchyType.Assets);
-            prop.SetSearchFilter(new SearchFilter() { classNames = classNames });
-            var objs = new List<UnityEngine.Object>();
-            while (prop.Next(null))
-            {
-                objs.Add(prop.pptrValue);
-            }
-            return objs;
         }
     }
 }

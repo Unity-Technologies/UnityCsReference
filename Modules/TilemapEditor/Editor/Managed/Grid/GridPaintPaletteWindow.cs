@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -128,17 +129,113 @@ namespace UnityEditor
         private PaintableSceneViewGrid m_PaintableSceneViewGrid;
         public PaintableGrid paintableSceneViewGrid { get { return m_PaintableSceneViewGrid; } }
 
-        static PrefKey kGridSelectKey = new PrefKey("Grid Painting/Select", "s");
-        static PrefKey kGridMoveKey = new PrefKey("Grid Painting/Move", "m");
-        static PrefKey kGridBrushKey = new PrefKey("Grid Painting/Brush", "b");
-        static PrefKey kGridRectangleKey = new PrefKey("Grid Painting/Rectangle", "u");
-        static PrefKey kGridPickerKey = new PrefKey("Grid Painting/Picker", "i");
-        static PrefKey kGridEraseKey = new PrefKey("Grid Painting/Erase", "d");
-        static PrefKey kGridFillKey = new PrefKey("Grid Painting/Fill", "g");
-        static PrefKey kRotateClockwise = new PrefKey("Grid Painting/Rotate Clockwise", "[");
-        static PrefKey kRotateAntiClockwise = new PrefKey("Grid Painting/Rotate Anti-Clockwise", "]");
-        static PrefKey kFlipX = new PrefKey("Grid Painting/Flip X", "#[");
-        static PrefKey kFlipY = new PrefKey("Grid Painting/Flip Y", "#]");
+        static void ToggleEditMode(EditMode.SceneViewEditMode mode)
+        {
+            if (EditMode.editMode != mode)
+                EditMode.ChangeEditMode(mode, GridPaintingState.instance);
+            else
+                EditMode.QuitEditMode();
+        }
+
+        class ShortcutContext : IShortcutPriorityContext
+        {
+            public bool active { get; set; }
+        }
+
+        ShortcutContext m_ShortcutContext = new ShortcutContext { active = true };
+
+        [FormerlyPrefKeyAs("Grid Painting/Select", "s")]
+        [Shortcut("Grid Painting/Select", typeof(ShortcutContext), "s")]
+        static void GridSelectKey()
+        {
+            ToggleEditMode(EditMode.SceneViewEditMode.GridSelect);
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Move", "m")]
+        [Shortcut("Grid Painting/Move", typeof(ShortcutContext), "m")]
+        static void GridMoveKey()
+        {
+            ToggleEditMode(EditMode.SceneViewEditMode.GridMove);
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Brush", "b")]
+        [Shortcut("Grid Painting/Brush", typeof(ShortcutContext), "b")]
+        static void GridBrushKey()
+        {
+            ToggleEditMode(EditMode.SceneViewEditMode.GridPainting);
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Rectangle", "u")]
+        [Shortcut("Grid Painting/Rectangle", typeof(ShortcutContext), "u")]
+        static void GridRectangleKey()
+        {
+            ToggleEditMode(EditMode.SceneViewEditMode.GridBox);
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Picker", "i")]
+        [Shortcut("Grid Painting/Picker", typeof(ShortcutContext), "i")]
+        static void GridPickerKey()
+        {
+            ToggleEditMode(EditMode.SceneViewEditMode.GridPicking);
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Erase", "d")]
+        [Shortcut("Grid Painting/Erase", typeof(ShortcutContext), "d")]
+        static void GridEraseKey()
+        {
+            ToggleEditMode(EditMode.SceneViewEditMode.GridEraser);
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Fill", "g")]
+        [Shortcut("Grid Painting/Fill", typeof(ShortcutContext), "g")]
+        static void GridFillKey()
+        {
+            ToggleEditMode(EditMode.SceneViewEditMode.GridFloodFill);
+        }
+
+        static void RotateBrush(GridBrush.RotationDirection direction)
+        {
+            GridPaintingState.gridBrush.Rotate(direction, GridPaintingState.activeGrid.cellLayout);
+            GridPaintingState.activeGrid.Repaint();
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Rotate Clockwise", "[")]
+        [Shortcut("Grid Painting/Rotate Clockwise", typeof(ShortcutContext), "[")]
+        static void RotateBrushClockwise()
+        {
+            if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
+                RotateBrush(GridBrush.RotationDirection.Clockwise);
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Rotate Anti-Clockwise", "]")]
+        [Shortcut("Grid Painting/Rotate Anti-Clockwise", typeof(ShortcutContext), "]")]
+        static void RotateBrushAntiClockwise()
+        {
+            if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
+                RotateBrush(GridBrush.RotationDirection.CounterClockwise);
+        }
+
+        static void FlipBrush(GridBrush.FlipAxis axis)
+        {
+            GridPaintingState.gridBrush.Flip(axis, GridPaintingState.activeGrid.cellLayout);
+            GridPaintingState.activeGrid.Repaint();
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Flip X", "#[")]
+        [Shortcut("Grid Painting/Flip X", typeof(ShortcutContext), "#[")]
+        static void FlipBrushX()
+        {
+            if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
+                FlipBrush(GridBrush.FlipAxis.X);
+        }
+
+        [FormerlyPrefKeyAs("Grid Painting/Flip Y", "#]")]
+        [Shortcut("Grid Painting/Flip Y", typeof(ShortcutContext), "#]")]
+        static void FlipBrushY()
+        {
+            if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
+                FlipBrush(GridBrush.FlipAxis.Y);
+        }
 
         static private List<GridPaintPaletteWindow> s_Instances;
         static public List<GridPaintPaletteWindow> instances
@@ -500,7 +597,6 @@ namespace UnityEditor
             }
 
             GridPaletteBrushes.FlushCache();
-            EditorApplication.globalEventHandler += HotkeyHandler;
             EditMode.editModeStarted += OnEditModeStart;
             EditMode.editModeEnded += OnEditModeEnd;
             GridSelection.gridSelectionChanged += OnGridSelectionChanged;
@@ -528,6 +624,8 @@ namespace UnityEditor
             }
 
             Tools.onToolChanged += ToolChanged;
+
+            ShortcutController.priorityContext = m_ShortcutContext;
         }
 
         private void PrefabInstanceUpdated(GameObject updatedPrefab)
@@ -578,7 +676,6 @@ namespace UnityEditor
             if (PaintableGrid.InGridEditMode())
                 EditMode.QuitEditMode();
 
-            EditorApplication.globalEventHandler -= HotkeyHandler;
             EditMode.editModeStarted -= OnEditModeStart;
             EditMode.editModeEnded -= OnEditModeEnd;
             Tools.onToolChanged -= ToolChanged;
@@ -588,6 +685,8 @@ namespace UnityEditor
             GridPaintingState.brushChanged -= OnBrushChanged;
             GridPaintingState.UnregisterPainterInterest(this);
             PrefabUtility.prefabInstanceUpdated -= PrefabInstanceUpdated;
+
+            m_ShortcutContext.active = false;
         }
 
         private void OnScenePaintTargetChanged(GameObject scenePaintTarget)
@@ -601,100 +700,6 @@ namespace UnityEditor
         {
             EditMode.ChangeEditMode(PaintableGrid.BrushToolToEditMode(tool), new Bounds(Vector3.zero, Vector3.positiveInfinity), GridPaintingState.instance);
             Repaint();
-        }
-
-        private void HotkeyHandler()
-        {
-            if (kGridSelectKey.activated)
-            {
-                if (EditMode.editMode != EditMode.SceneViewEditMode.GridSelect)
-                    EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridSelect, GridPaintingState.instance);
-                else
-                    EditMode.QuitEditMode();
-
-                Event.current.Use();
-            }
-            if (kGridMoveKey.activated)
-            {
-                if (EditMode.editMode != EditMode.SceneViewEditMode.GridMove)
-                    EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridMove, GridPaintingState.instance);
-                else
-                    EditMode.QuitEditMode();
-
-                Event.current.Use();
-            }
-            if (kGridBrushKey.activated)
-            {
-                if (EditMode.editMode != EditMode.SceneViewEditMode.GridPainting)
-                    EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridPainting, GridPaintingState.instance);
-                else
-                    EditMode.QuitEditMode();
-
-                Event.current.Use();
-            }
-            if (kGridEraseKey.activated)
-            {
-                if (EditMode.editMode != EditMode.SceneViewEditMode.GridEraser)
-                    EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridEraser, GridPaintingState.instance);
-                else
-                    EditMode.QuitEditMode();
-
-                Event.current.Use();
-            }
-            if (kGridFillKey.activated)
-            {
-                if (EditMode.editMode != EditMode.SceneViewEditMode.GridFloodFill)
-                    EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridFloodFill, GridPaintingState.instance);
-                else
-                    EditMode.QuitEditMode();
-
-                Event.current.Use();
-            }
-            if (kGridPickerKey.activated)
-            {
-                if (EditMode.editMode != EditMode.SceneViewEditMode.GridPicking)
-                    EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridPicking, GridPaintingState.instance);
-                else
-                    EditMode.QuitEditMode();
-
-                Event.current.Use();
-            }
-            if (kGridRectangleKey.activated)
-            {
-                if (EditMode.editMode != EditMode.SceneViewEditMode.GridBox)
-                    EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridBox, GridPaintingState.instance);
-                else
-                    EditMode.QuitEditMode();
-
-                Event.current.Use();
-            }
-            if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
-            {
-                if (kRotateClockwise.activated)
-                {
-                    GridPaintingState.gridBrush.Rotate(GridBrush.RotationDirection.Clockwise, GridPaintingState.activeGrid.cellLayout);
-                    GridPaintingState.activeGrid.Repaint();
-                    Event.current.Use();
-                }
-                if (kRotateAntiClockwise.activated)
-                {
-                    GridPaintingState.gridBrush.Rotate(GridBrush.RotationDirection.CounterClockwise, GridPaintingState.activeGrid.cellLayout);
-                    GridPaintingState.activeGrid.Repaint();
-                    Event.current.Use();
-                }
-                if (kFlipX.activated)
-                {
-                    GridPaintingState.gridBrush.Flip(GridBrush.FlipAxis.X, GridPaintingState.activeGrid.cellLayout);
-                    GridPaintingState.activeGrid.Repaint();
-                    Event.current.Use();
-                }
-                if (kFlipY.activated)
-                {
-                    GridPaintingState.gridBrush.Flip(GridBrush.FlipAxis.Y, GridPaintingState.activeGrid.cellLayout);
-                    GridPaintingState.activeGrid.Repaint();
-                    Event.current.Use();
-                }
-            }
         }
 
         public void OnEditModeStart(IToolModeOwner owner, EditMode.SceneViewEditMode editMode)

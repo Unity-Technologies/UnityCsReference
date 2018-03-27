@@ -2,13 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
+using UnityEditorInternal;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -16,6 +20,23 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     public class CameraEditor : Editor
     {
+        private static class Styles
+        {
+            public static GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove command buffer");
+            public static GUIContent clearFlags = EditorGUIUtility.TrTextContent("Clear Flags", "What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas.");
+            public static GUIContent background = EditorGUIUtility.TrTextContent("Background", "The Camera clears the screen to this color before rendering.");
+            public static GUIContent projection = EditorGUIUtility.TrTextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective.");
+            public static GUIContent size = EditorGUIUtility.TrTextContent("Size");
+            public static GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The width of the Camera’s view angle, measured in degrees along the local Y axis.");
+            public static GUIContent viewportRect = EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1).");
+            public static GUIContent cameraPreview = EditorGUIUtility.TrTextContent("Camera Preview");
+            public static GUIContent sensorSize = EditorGUIUtility.TrTextContent("Sensor Size");
+            public static GUIContent lensShift = EditorGUIUtility.TrTextContent("Lens Shift");
+            public static GUIContent physicalCamera = EditorGUIUtility.TrTextContent("Physical Camera");
+            public static GUIContent cameraType = EditorGUIUtility.TrTextContent("Camera Type");
+            public static GUIContent focalLength = EditorGUIUtility.TrTextContent("Focal Length");
+            public static GUIStyle invisibleButton = "InvisibleButton";
+        }
         public sealed class Settings
         {
             private SerializedObject m_SerializedObject;
@@ -23,6 +44,35 @@ namespace UnityEditor
             {
                 m_SerializedObject = so;
             }
+
+            static readonly string[] k_ApertureFormatNames =
+            {
+                "8mm",
+                "Super 8mm",
+                "16mm",
+                "Super 16mm",
+                "35mm 2-perf",
+                "35mm Academy",
+                "Super-35",
+                "65mm ALEXA",
+                "70mm",
+                "70mm IMAX",
+                "Custom"
+            };
+
+            static readonly Vector2[] k_ApertureFormats =
+            {
+                new Vector2(4.8f, 3.5f) , // 8mm
+                new Vector2(5.79f, 4.01f) , // Super 8mm
+                new Vector2(10.26f, 7.49f) , // 16mm
+                new Vector2(12.52f, 7.41f) , // Super 16mm
+                new Vector2(21.95f, 9.35f) , // 35mm 2-perf
+                new Vector2(21.0f, 15.2f) , // 35mm academy
+                new Vector2(24.89f, 18.66f) , // Super-35
+                new Vector2(54.12f, 25.59f) , // 65mm ALEXA
+                new Vector2(70.0f, 51.0f) , // 70mm
+                new Vector2(70.41f, 52.63f), // 70mm IMAX
+            };
 
             // Manually entered rendering path names/values, since we want to show them
             // in different order than they appear in the enum.
@@ -46,6 +96,10 @@ namespace UnityEditor
             public SerializedProperty clearFlags { get; private set; }
             public SerializedProperty backgroundColor { get; private set; }
             public SerializedProperty normalizedViewPortRect { get; private set; }
+            internal SerializedProperty projectionMatrixMode { get; private set; }
+            public SerializedProperty sensorSize { get; private set; }
+            public SerializedProperty lensShift { get; private set; }
+            public SerializedProperty focalLength { get; private set; }
             public SerializedProperty fieldOfView { get; private set; }
             public SerializedProperty orthographic { get; private set; }
             public SerializedProperty orthographicSize { get; private set; }
@@ -81,6 +135,10 @@ namespace UnityEditor
                 clearFlags = m_SerializedObject.FindProperty("m_ClearFlags");
                 backgroundColor = m_SerializedObject.FindProperty("m_BackGroundColor");
                 normalizedViewPortRect = m_SerializedObject.FindProperty("m_NormalizedViewPortRect");
+                sensorSize = m_SerializedObject.FindProperty("m_SensorSize");
+                lensShift = m_SerializedObject.FindProperty("m_LensShift");
+                focalLength = m_SerializedObject.FindProperty("m_FocalLength");
+                projectionMatrixMode = m_SerializedObject.FindProperty("m_projectionMatrixMode");
                 nearClippingPlane = m_SerializedObject.FindProperty("near clip plane");
                 farClippingPlane = m_SerializedObject.FindProperty("far clip plane");
                 fieldOfView = m_SerializedObject.FindProperty("field of view");
@@ -115,12 +173,12 @@ namespace UnityEditor
 
             public void DrawClearFlags()
             {
-                EditorGUILayout.PropertyField(clearFlags, EditorGUIUtility.TrTextContent("Clear Flags", "What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas."));
+                EditorGUILayout.PropertyField(clearFlags, Styles.clearFlags);
             }
 
             public void DrawBackgroundColor()
             {
-                EditorGUILayout.PropertyField(backgroundColor, EditorGUIUtility.TrTextContent("Background", "The Camera clears the screen to this color before rendering."));
+                EditorGUILayout.PropertyField(backgroundColor, Styles.background);
             }
 
             public void DrawCullingMask()
@@ -133,7 +191,7 @@ namespace UnityEditor
                 ProjectionType projectionType = orthographic.boolValue ? ProjectionType.Orthographic : ProjectionType.Perspective;
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = orthographic.hasMultipleDifferentValues;
-                projectionType = (ProjectionType)EditorGUILayout.EnumPopup(EditorGUIUtility.TrTextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective."), projectionType);
+                projectionType = (ProjectionType)EditorGUILayout.EnumPopup(Styles.projection, projectionType);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                     orthographic.boolValue = (projectionType == ProjectionType.Orthographic);
@@ -141,9 +199,68 @@ namespace UnityEditor
                 if (!orthographic.hasMultipleDifferentValues)
                 {
                     if (projectionType == ProjectionType.Orthographic)
-                        EditorGUILayout.PropertyField(orthographicSize, EditorGUIUtility.TrTextContent("Size"));
+                        EditorGUILayout.PropertyField(orthographicSize, Styles.size);
                     else
-                        EditorGUILayout.Slider(fieldOfView, 1f, 179f, EditorGUIUtility.TrTextContent("Field of View", "The width of the Camera’s view angle, measured in degrees along the local Y axis."));
+                    {
+                        bool isPhysicalCamera = projectionMatrixMode.intValue == (int)Camera.ProjectionMatrixMode.PhysicalPropertiesBased;
+
+                        GUIContent content = EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), Styles.fieldOfView, fieldOfView);
+                        EditorGUI.BeginDisabled(projectionMatrixMode.hasMultipleDifferentValues || isPhysicalCamera && (focalLength.hasMultipleDifferentValues || sensorSize.hasMultipleDifferentValues));
+                        EditorGUI.BeginChangeCheck();
+                        float fovNewValue = EditorGUILayout.Slider(content, fieldOfView.floatValue, 1f, 179f);
+                        bool fovChanged = EditorGUI.EndChangeCheck();
+                        EditorGUI.EndDisabled();
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUI.EndProperty();
+
+                        content = EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), Styles.physicalCamera, projectionMatrixMode);
+                        EditorGUI.showMixedValue = projectionMatrixMode.hasMultipleDifferentValues;
+
+                        EditorGUI.BeginChangeCheck();
+                        isPhysicalCamera = EditorGUILayout.Toggle(content, isPhysicalCamera);
+                        if (EditorGUI.EndChangeCheck())
+                            projectionMatrixMode.intValue = isPhysicalCamera ? (int)Camera.ProjectionMatrixMode.PhysicalPropertiesBased : (int)Camera.ProjectionMatrixMode.Implicit;
+                        EditorGUILayout.EndHorizontal();
+                        EditorGUI.EndProperty();
+
+                        EditorGUI.showMixedValue = false;
+                        if (isPhysicalCamera && !projectionMatrixMode.hasMultipleDifferentValues)
+                        {
+                            using (new EditorGUI.IndentLevelScope())
+                            {
+                                EditorGUI.showMixedValue = sensorSize.hasMultipleDifferentValues;
+                                EditorGUI.BeginChangeCheck();
+                                int filmGateIndex = Array.IndexOf(k_ApertureFormats, new Vector2((float)Math.Round(sensorSize.vector2Value.x, 3), (float)Math.Round(sensorSize.vector2Value.y, 3)));
+                                if (filmGateIndex == -1)
+                                    filmGateIndex = EditorGUILayout.Popup(Styles.cameraType, k_ApertureFormatNames.Length - 1, k_ApertureFormatNames);
+                                else
+                                    filmGateIndex = EditorGUILayout.Popup(Styles.cameraType, filmGateIndex, k_ApertureFormatNames);
+                                EditorGUI.showMixedValue = false;
+                                if (EditorGUI.EndChangeCheck() && filmGateIndex < k_ApertureFormats.Length)
+                                {
+                                    sensorSize.vector2Value = k_ApertureFormats[filmGateIndex];
+                                }
+
+                                EditorGUI.BeginChangeCheck();
+                                EditorGUI.showMixedValue = focalLength.hasMultipleDifferentValues;
+
+                                float focalLengthVal = fovChanged ? sensorSize.vector2Value.y * .5f / Mathf.Tan(Mathf.Deg2Rad * fovNewValue * .5f) : focalLength.floatValue;
+                                focalLengthVal = EditorGUILayout.FloatField(Styles.focalLength, focalLengthVal);
+                                EditorGUI.showMixedValue = false;
+                                if (EditorGUI.EndChangeCheck() || fovChanged)
+                                    focalLength.floatValue = focalLengthVal;
+
+                                EditorGUILayout.PropertyField(sensorSize, Styles.sensorSize);
+
+                                EditorGUILayout.PropertyField(lensShift, Styles.lensShift);
+                            }
+                        }
+                        else if (fovChanged)
+                        {
+                            fieldOfView.floatValue = fovNewValue;
+                        }
+                        EditorGUILayout.Space();
+                    }
                 }
             }
 
@@ -154,7 +271,7 @@ namespace UnityEditor
 
             public void DrawNormalizedViewPort()
             {
-                EditorGUILayout.PropertyField(normalizedViewPortRect, EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1)."));
+                EditorGUILayout.PropertyField(normalizedViewPortRect, Styles.viewportRect);
             }
 
             public void DrawDepth()
@@ -233,12 +350,6 @@ namespace UnityEditor
                     EditorGUILayout.IntPopup(targetEye, kTargetEyes, kTargetEyeValues, EditorGUIUtility.TempContent("Target Eye"));
                 }
             }
-        }
-
-        private class Styles
-        {
-            public static GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove command buffer");
-            public static GUIStyle invisibleButton = "InvisibleButton";
         }
 
         readonly AnimatedBool m_ShowBGColorOptions = new AnimatedBool();
@@ -511,13 +622,15 @@ namespace UnityEditor
             // cache some deep values
             var c = (Camera)target;
 
-            Vector2 previewSize = GameView.GetMainGameViewTargetSize();
+            Vector2 previewSize = c.targetTexture ? new Vector2(c.targetTexture.width, c.targetTexture.height) : GameView.GetMainGameViewTargetSize();
+
             if (previewSize.x < 0f)
             {
                 // Fallback to Scene View of not a valid game view size
                 previewSize.x = sceneView.position.width;
                 previewSize.y = sceneView.position.height;
             }
+
             // Apply normalizedviewport rect of camera
             Rect normalizedViewPortRect = c.rect;
             previewSize.x *= Mathf.Max(normalizedViewPortRect.width, 0f);
@@ -575,6 +688,16 @@ namespace UnityEditor
                 Handles.EmitGUIGeometryForCamera(c, previewCamera);
 
                 GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
+
+                if (c.usePhysicalProperties)
+                {
+                    // when sensor size is reduced, the previous frame is still visible behing so we need to clear the texture before rendering.
+                    RenderTexture rt = RenderTexture.active;
+                    RenderTexture.active = previewTexture;
+                    GL.Clear(false, true, Color.clear);
+                    RenderTexture.active = rt;
+                }
+
                 previewCamera.Render();
                 GL.sRGBWrite = false;
                 Graphics.DrawTexture(cameraRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);

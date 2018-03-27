@@ -262,22 +262,6 @@ namespace UnityEditor
 
         static void CreateScriptAsset(string templatePath, string destName)
         {
-            var templateFilename = Path.GetFileName(templatePath);
-            if (templateFilename.ToLower().Contains("editortest") || templateFilename.ToLower().Contains("editmode"))
-            {
-                var tempPath =  AssetDatabase.GetUniquePathNameAtSelectedPath(destName);
-                if (!tempPath.ToLower().Contains("/editor/"))
-                {
-                    tempPath = tempPath.Substring(0, tempPath.Length - destName.Length - 1);
-                    var editorDirPath = Path.Combine(tempPath, "Editor");
-                    if (!Directory.Exists(editorDirPath))
-                        AssetDatabase.CreateFolder(tempPath, "Editor");
-                    tempPath = Path.Combine(editorDirPath, destName);
-                    tempPath = tempPath.Replace("\\", "/");
-                }
-                destName = tempPath;
-            }
-
             Texture2D icon = null;
             switch (Path.GetExtension(destName))
             {

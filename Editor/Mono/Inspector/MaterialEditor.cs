@@ -627,8 +627,7 @@ namespace UnityEditor
 
         internal float RangePropertyInternal(Rect position, MaterialProperty prop, GUIContent label)
         {
-            float power = (prop.name == "_Shininess") ? 5f : 1f;
-            return DoPowerRangeProperty(position, prop, label, power);
+            return DoPowerRangeProperty(position, prop, label, 1f);
         }
 
         internal static float DoPowerRangeProperty(Rect position, MaterialProperty prop, GUIContent label, float power)

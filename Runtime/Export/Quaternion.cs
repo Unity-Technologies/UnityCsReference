@@ -197,6 +197,26 @@ namespace UnityEngine
             return SlerpUnclamped(from, to, Mathf.Min(1.0f, maxDegreesDelta / angle));
         }
 
+        public static Quaternion Normalize(Quaternion q)
+        {
+            float mag = Mathf.Sqrt(Dot(q, q));
+
+            if (mag < Mathf.Epsilon)
+                return Quaternion.identity;
+
+            return new Quaternion(q.x / mag, q.y / mag, q.z / mag, q.w / mag);
+        }
+
+        public void Normalize()
+        {
+            this = Normalize(this);
+        }
+
+        public Quaternion normalized
+        {
+            get { return Normalize(this); }
+        }
+
         // used to allow Quaternions to be used as keys in hash tables
         public override int GetHashCode()
         {

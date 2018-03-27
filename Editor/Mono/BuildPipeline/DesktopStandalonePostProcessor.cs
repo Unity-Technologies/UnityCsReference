@@ -33,6 +33,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
                 throw new OperationCanceledException();
 
             CopyStagingAreaIntoDestination(args, filesToNotOverwrite);
+
+            ProcessSymbolFiles(args);
         }
         catch (OperationCanceledException)
         {
@@ -59,8 +61,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 
         if (PlayerSettings.forceSingleInstance)
             config.AddKey("single-instance");
-        if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
-            config.Set("scripting-runtime-version", "latest");
         if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(target)))
             config.Set("mono-codegen", "il2cpp");
     }
@@ -491,6 +491,10 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     protected abstract IIl2CppPlatformProvider GetPlatformProvider(BuildPostProcessArgs args);
 
     protected virtual void ProcessPlatformSpecificIL2CPPOutput(BuildPostProcessArgs args)
+    {
+    }
+
+    protected virtual void ProcessSymbolFiles(BuildPostProcessArgs args)
     {
     }
 

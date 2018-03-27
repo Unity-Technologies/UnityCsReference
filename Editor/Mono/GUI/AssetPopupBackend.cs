@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -74,11 +75,7 @@ namespace UnityEditor
             }
 
             // Add items from asset database
-            var property = new HierarchyProperty(HierarchyType.Assets);
-            var searchFilter = new SearchFilter() { classNames = new[] { typeName } };
-            property.SetSearchFilter(searchFilter);
-            property.Reset();
-            while (property.Next(null))
+            foreach (var property in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { typeName } }))
             {
                 gm.AddItem(new GUIContent(property.name), property.instanceID == selectedInstanceID, AssetPopupMenuCallback, new object[] { property.instanceID, serializedProperty });
             }

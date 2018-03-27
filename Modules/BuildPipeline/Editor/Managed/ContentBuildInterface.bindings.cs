@@ -5,11 +5,11 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
-using UnityEditor.Experimental.Build.Player;
+using UnityEditor.Build.Player;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEditor.Experimental.Build.AssetBundle
+namespace UnityEditor.Build.Content
 {
     public enum CompressionType
     {
@@ -61,14 +61,15 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     }
 
 
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/AssetBundleBuildInterface.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildTypes.h")]
 
-    [NativeHeader("Modules/BuildPipeline/Editor/Shared/AssetBundleBuildInterface.bindings.h")]
-    public class BundleBuildInterface
+    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
+
+    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
+    public static class ContentBuildInterface
     {
-        [FreeFunction("BuildPipeline::GenerateBuildInput")]
-        // DEPRECATED - We want to move AB info out of asset meta file into separate asset for all bundle info
-        extern public static BuildInput GenerateBuildInput();
+        [FreeFunction("BuildPipeline::GenerateAssetBundleBuilds")]
+        extern public static AssetBundleBuild[] GenerateAssetBundleBuilds();
 
         [FreeFunction("BuildPipeline::PrepareScene")]
         extern public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder);

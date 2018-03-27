@@ -13,7 +13,6 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIStyle header = new GUIStyle("IN GameObjectHeader");
             public static readonly GUIContent gridSelectionLabel = EditorGUIUtility.TrTextContent("Grid Selection");
         }
 
@@ -27,7 +26,7 @@ namespace UnityEditor
 
         protected override void OnHeaderGUI()
         {
-            EditorGUILayout.BeginHorizontal(Styles.header);
+            EditorGUILayout.BeginHorizontal(EditorStyles.inspectorBig);
             Texture2D icon = AssetPreview.GetMiniTypeThumbnail(typeof(Grid));
             GUILayout.Label(icon, GUILayout.Width(iconSize), GUILayout.Height(iconSize));
             EditorGUILayout.BeginVertical();

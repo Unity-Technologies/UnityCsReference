@@ -33,7 +33,7 @@ namespace UnityEngine.XR.WSA.Input
     [RequiredByNativeCode]
     [MovedFrom("UnityEngine.VR.WSA.Input")]
     [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureCommon.h")]
-    public struct InteractionSource
+    public struct InteractionSource : IEquatable<InteractionSource>
     {
         public override bool Equals(object obj)
         {
@@ -41,7 +41,12 @@ namespace UnityEngine.XR.WSA.Input
             if (source == null)
                 return false;
 
-            return source.Value.m_Id == m_Id;
+            return Equals(source.Value);
+        }
+
+        public bool Equals(InteractionSource other)
+        {
+            return other.m_Id == m_Id;
         }
 
         public override int GetHashCode()
@@ -376,7 +381,7 @@ namespace UnityEngine.XR.WSA.Input
     [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureSource.h")]
     public partial class InteractionManager
     {
-        private delegate void InternalSourceEventHandler(EventType eventType, InteractionSourceState state, InteractionSourcePressType pressType);
+        private delegate void InternalSourceEventHandler(EventType eventType, ref InteractionSourceState state, InteractionSourcePressType pressType);
         private static InternalSourceEventHandler m_OnSourceEventHandler;
 
         static InteractionManager()
@@ -429,7 +434,7 @@ namespace UnityEngine.XR.WSA.Input
 
 #pragma warning disable 0618
         [AOT.MonoPInvokeCallback(typeof(InternalSourceEventHandler))]
-        private static void OnSourceEvent(EventType eventType, InteractionSourceState state, InteractionSourcePressType pressType)
+        private static void OnSourceEvent(EventType eventType, ref InteractionSourceState state, InteractionSourcePressType pressType)
         {
             switch (eventType)
             {

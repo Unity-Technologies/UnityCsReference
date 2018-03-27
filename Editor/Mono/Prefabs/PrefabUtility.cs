@@ -247,7 +247,8 @@ namespace UnityEditor
             List<Object> prefabHierarchy = new List<Object>();
             GetObjectListFromHierarchy(prefabHierarchy, correspondingAssetObject as GameObject);
 
-            ReplacePrefab(rootUploadGameObject, correspondingAssetObject, ReplacePrefabOptions.ConnectToPrefab);
+            if (ReplacePrefab(rootUploadGameObject, correspondingAssetObject, ReplacePrefabOptions.ConnectToPrefab) == null)
+                return;
 
             List<Object> newPrefabHierarchy = new List<Object>();
             GetObjectListFromHierarchy(newPrefabHierarchy, correspondingAssetObject as GameObject);

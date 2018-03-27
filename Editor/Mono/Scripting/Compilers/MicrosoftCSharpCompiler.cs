@@ -44,6 +44,7 @@ namespace UnityEditor.Scripting.Compilers
 
             // Case 755238: Always use english for outputing errors, the same way as Mono compilers do
             arguments.Add("/preferreduilang:en-US");
+            arguments.Add("/langversion:latest");
 
             var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
             var compilationExtension = platformSupportModule.CreateCompilationExtension();
@@ -73,11 +74,7 @@ namespace UnityEditor.Scripting.Compilers
                 arguments.Add(PrepareFileName(source).Replace('/', '\\'));
             }
 
-            var coreRun = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "Roslyn", "CoreRun.exe").Replace('/', '\\');
             var csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "Roslyn", "csc.exe").Replace('/', '\\');
-
-            if (!File.Exists(coreRun))
-                ThrowCompilerNotFoundException(coreRun);
 
             if (!File.Exists(csc))
                 ThrowCompilerNotFoundException(csc);
@@ -88,7 +85,7 @@ namespace UnityEditor.Scripting.Compilers
 
             RunAPIUpdaterIfRequired(responseFile);
 
-            var psi = new ProcessStartInfo() { Arguments = "\"" + csc + "\" " + argsPrefix + "@" + responseFile, FileName = coreRun, CreateNoWindow = true };
+            var psi = new ProcessStartInfo() { Arguments = argsPrefix + "@" + responseFile, FileName = csc, CreateNoWindow = true };
             var program = new Program(psi);
             program.Start();
             return program;

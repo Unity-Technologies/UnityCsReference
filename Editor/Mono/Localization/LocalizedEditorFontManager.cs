@@ -144,7 +144,7 @@ namespace UnityEditor
 
         static void ReplaceFontForLocalization(FontDictionary dict, Font font)
         {
-            if (dict.ContainsKey(font.name))
+            if (dict != null && dict.ContainsKey(font.name))
             {
                 font.fontNames = dict[font.name].fontNames;
                 // Avoid the font to be unloaded in EditorUtility.UnloadUnusedAssetsIgnoreManagedReferences and lose the font name information.

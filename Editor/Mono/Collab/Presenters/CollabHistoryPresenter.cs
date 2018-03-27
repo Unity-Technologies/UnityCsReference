@@ -134,8 +134,7 @@ namespace UnityEditor.Collaboration
 
         private void OnCollabRevisionUpdated(CollabInfo state)
         {
-            if (m_CollabState.tip != state.tip)
-                OnUpdatePage(m_CurrentPage);
+            OnUpdatePage(m_CurrentPage);
         }
 
         private void OnCollabJobsCompleted(CollabInfo state)

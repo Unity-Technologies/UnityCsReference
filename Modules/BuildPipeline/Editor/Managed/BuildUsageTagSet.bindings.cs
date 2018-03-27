@@ -3,39 +3,19 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.Serialization;
+using UnityEngine;
 
-namespace UnityEditor.Experimental.Build.AssetBundle
+namespace UnityEditor.Build.Content
 {
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/BuildUsageTagSet.h")]
     [Serializable]
     [UsedByNativeCode]
+    [NativeHeader("Modules/BuildPipeline/Editor/Public/BuildUsageTagSet.h")]
     public class BuildUsageTagSet : ISerializable, IDisposable
     {
-        [FreeFunction("BuildPipeline::BuildUsageTagSet::Internal_Create")]
-        private static extern IntPtr Internal_Create();
-        [FreeFunction("BuildPipeline::BuildUsageTagSet::Internal_Destroy", true)]
-        private static extern void Internal_Destroy(IntPtr ptr);
-
-        [NativeMethod("GetHash")]
-        private extern int GetHash();
-
-        [NativeMethod("SerializeNativeToString")]
-        private extern string SerializeNativeToString();
-        [NativeMethod("DeserializeNativeFromString")]
-        private extern void DeserializeNativeFromString(string data);
-
-        [NativeMethod("GetBuildUsageJson")]
-        internal extern string GetBuildUsageJson(ObjectIdentifier objectId);
-
-        [NativeMethod("GetObjectIdentifiers")]
-        public extern ObjectIdentifier[] GetObjectIdentifiers();
-
-        [NativeMethod("UnionWith")]
-        public extern void UnionWith(BuildUsageTagSet other);
-
         private IntPtr m_Ptr;
 
         public BuildUsageTagSet()
@@ -45,10 +25,16 @@ namespace UnityEditor.Experimental.Build.AssetBundle
 
         ~BuildUsageTagSet()
         {
-            Dispose();
+            Dispose(false);
         }
 
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             if (m_Ptr != IntPtr.Zero)
             {
@@ -57,30 +43,50 @@ namespace UnityEditor.Experimental.Build.AssetBundle
             }
         }
 
+        [NativeMethod(IsThreadSafe = true)]
+        private static extern IntPtr Internal_Create();
+
+        [NativeMethod(IsThreadSafe = true)]
+        private static extern void Internal_Destroy(IntPtr ptr);
+
+        public extern Hash128 GetHash128();
+
+        internal extern string SerializeToJson();
+        internal extern void DeserializeFromJson(string data);
+
+        internal extern byte[] SerializeToBinary();
+        internal extern void DeserializeFromBinary([Out] byte[] data);
+
+        internal extern string GetBuildUsageJson(ObjectIdentifier objectId);
+
+        public extern ObjectIdentifier[] GetObjectIdentifiers();
+
+        public extern void UnionWith(BuildUsageTagSet other);
+
         public override bool Equals(object obj)
         {
             BuildUsageTagSet other = obj as BuildUsageTagSet;
             if (other == null)
                 return false;
-            return other.GetHash() == GetHash();
+            return other.GetHash128() == GetHash128();
         }
 
         public override int GetHashCode()
         {
-            return GetHash();
+            return GetHash128().GetHashCode();
         }
 
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, StreamingContext context)
         {
-            string text = SerializeNativeToString();
-            info.AddValue("tags", text);
+            byte[] data = SerializeToBinary();
+            info.AddValue("tags", data);
         }
 
         protected BuildUsageTagSet(System.Runtime.Serialization.SerializationInfo info, StreamingContext context)
         {
             m_Ptr = Internal_Create();
-            string serializedBuildUsageTagSetString = (string)info.GetValue("tags", typeof(string));
-            DeserializeNativeFromString(serializedBuildUsageTagSetString);
+            byte[] data = (byte[])info.GetValue("tags", typeof(byte[]));
+            DeserializeFromBinary(data);
         }
     }
 }

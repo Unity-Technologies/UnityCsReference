@@ -146,7 +146,7 @@ namespace UnityEditor.CrashReporting
             else if (Application.platform == RuntimePlatform.LinuxEditor)
             {
                 config.UsymtoolPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "usymtool");
-                config.LzmaPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "lzma-linux32");
+                config.LzmaPath = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "lzma-linux64");
                 config.LogFilePath = Paths.Combine(Environment.GetEnvironmentVariable("HOME"), ".config", "unity3d", "symbol_upload.log");
             }
 

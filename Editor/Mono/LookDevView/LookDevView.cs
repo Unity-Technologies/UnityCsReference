@@ -4,9 +4,9 @@
 
 using System;
 using UnityEngine;
-using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEditor.SceneManagement;
+using UnityEditor.ShortcutManagement;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -316,6 +316,8 @@ namespace UnityEditor
                 UnityEngine.Object.DestroyImmediate(m_FinalCompositionTexture);
                 m_FinalCompositionTexture = null;
             }
+
+            m_CameraController.DeactivateFlyModeContext();
         }
 
         private void UpdateRenderTexture(Rect rect)
@@ -1481,24 +1483,13 @@ namespace UnityEditor
                 int otherContextIndex = (currentContextIndex + 1) % 2;
 
                 // Camera controller updates Camera States according to inputs
-                m_CameraController.Update(m_LookDevConfig.cameraState[currentContextIndex], m_PreviewUtilityContexts[m_LookDevConfig.currentEditionContextIndex].m_PreviewUtility[0].camera); // We can use m_PreviewUtility[0] because all of them should be always synchronized anyway
+                m_CameraController.Update(m_LookDevConfig.cameraState[currentContextIndex], m_PreviewUtilityContexts[m_LookDevConfig.currentEditionContextIndex].m_PreviewUtility[0].camera, this); // We can use m_PreviewUtility[0] because all of them should be always synchronized anyway
+
 
                 // If single or side by side mode and camera are linked we need to update both cameras
                 if ((m_LookDevConfig.lookDevMode == LookDevMode.Single1 || m_LookDevConfig.lookDevMode == LookDevMode.Single2 || m_LookDevConfig.lookDevMode == LookDevMode.SideBySide) && m_LookDevConfig.sideBySideCameraLinked)
                 {
                     m_LookDevConfig.cameraState[otherContextIndex].Copy(m_LookDevConfig.cameraState[currentContextIndex]);
-                }
-
-                if (m_CameraController.currentViewTool == ViewTool.None)
-                {
-                    if (Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.F)
-                    {
-                        if (!EditorGUIUtility.editingTextField)
-                        {
-                            Frame(m_LookDevConfig.currentEditionContext, true);
-                            Event.current.Use();
-                        }
-                    }
                 }
 
                 // Update the actual Cameras with CameraState infos
@@ -1513,6 +1504,19 @@ namespace UnityEditor
 
                 DelayedSaveLookDevConfig();
             }
+        }
+
+        [Shortcut("LookDevView/Frame", typeof(LookDevView), "f")]
+        static void RefreshWindow(ShortcutArguments args)
+        {
+            if (GUIUtility.keyboardControl != 0)
+                return;
+            var window = (args.context as LookDevView);
+            if (window.m_CameraController.currentViewTool != ViewTool.None)
+                return;
+            if (EditorGUIUtility.editingTextField)
+                return;
+            window.Frame(window.m_LookDevConfig.currentEditionContext, true);
         }
 
         public void HandleKeyboardShortcut()

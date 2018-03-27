@@ -6,8 +6,21 @@ using System;
 
 namespace UnityEngine.Playables
 {
+    // This must always be in sync with DirectorWrapMode in Runtime/Director/Core/Playable.h
+    public enum PlayableTraversalMode
+    {
+        Mix = 0,
+        Passthrough = 1
+    }
+
     public static class PlayableExtensions
     {
+        public static bool IsNull<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            return playable.GetHandle().IsNull();
+        }
+
         public static bool IsValid<U>(this U playable)
             where U : struct, IPlayable
         {
@@ -261,6 +274,18 @@ namespace UnityEngine.Playables
             where U : struct, IPlayable
         {
             return playable.GetHandle().GetLeadTime();
+        }
+
+        public static PlayableTraversalMode GetTraversalMode<U>(this U playable)
+            where U : struct, IPlayable
+        {
+            return playable.GetHandle().GetTraversalMode();
+        }
+
+        public static void SetTraversalMode<U>(this U playable, PlayableTraversalMode mode)
+            where U : struct, IPlayable
+        {
+            playable.GetHandle().SetTraversalMode(mode);
         }
     }
 }

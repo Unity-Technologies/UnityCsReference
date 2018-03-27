@@ -190,6 +190,9 @@ namespace UnityEngine
 
         extern public void Clear();
 
+        public void BakeMesh(Mesh mesh, bool useTransform = false) { BakeMesh(mesh, Camera.main, useTransform); }
+        extern public void BakeMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);
+
         public AnimationCurve widthCurve    { get { return GetWidthCurveCopy(); }    set { SetWidthCurve(value); } }
         public Gradient       colorGradient { get { return GetColorGradientCopy(); } set { SetColorGradient(value); } }
 
@@ -242,6 +245,9 @@ namespace UnityEngine
         extern public LineAlignment   alignment   { get; set; }
 
         extern public void Simplify(float tolerance);
+
+        public void BakeMesh(Mesh mesh, bool useTransform = false) { BakeMesh(mesh, Camera.main, useTransform); }
+        extern public void BakeMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);
 
         public AnimationCurve widthCurve    { get { return GetWidthCurveCopy(); }    set { SetWidthCurve(value); } }
         public Gradient       colorGradient { get { return GetColorGradientCopy(); } set { SetColorGradient(value); } }

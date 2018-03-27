@@ -5,12 +5,18 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
-using UnityEngine;
 using UnityEngine.Scripting;
-using UnityEditor.Experimental.Build.Player;
+using UnityEditor.Build.Player;
 
-namespace UnityEditor.Experimental.Build.AssetBundle
+namespace UnityEditor.Build.Content
 {
+    [Flags]
+    public enum ContentBuildFlags
+    {
+        None = 0,
+        DisableWriteTypeTree = 1 << 0
+    }
+
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
@@ -38,6 +44,14 @@ namespace UnityEditor.Experimental.Build.AssetBundle
         {
             get { return m_Group; }
             set { m_Group = value; }
+        }
+
+        [NativeName("buildFlags")]
+        internal ContentBuildFlags m_BuildFlags;
+        public ContentBuildFlags buildFlags
+        {
+            get { return m_BuildFlags; }
+            set { m_BuildFlags = value; }
         }
     }
 }

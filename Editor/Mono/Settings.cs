@@ -234,18 +234,25 @@ namespace UnityEditor
             }
         }
 
+        internal static bool TryParseUniquePrefString(string prefString, out string name, out Event keyboardEvent)
+        {
+            int i = prefString.IndexOf(";");
+            if (i < 0)
+            {
+                name = null;
+                keyboardEvent = null;
+                return false;
+            }
+            name = prefString.Substring(0, i);
+            keyboardEvent = Event.KeyboardEvent(prefString.Substring(i + 1));
+            return true;
+        }
 
         public void FromUniqueString(string s)
         {
             Load();
-            int i = s.IndexOf(";");
-            if (i < 0)
-            {
+            if (!TryParseUniquePrefString(s, out m_name, out m_event))
                 Debug.LogError("Malformed string in Keyboard preferences");
-                return;
-            }
-            m_name = s.Substring(0, i);
-            m_event = Event.KeyboardEvent(s.Substring(i + 1));
         }
 
         internal void ResetToDefault()

@@ -812,11 +812,8 @@ namespace UnityEditor
             }
             else if (type != EventType.Layout && type != EventType.Used)
             {
-                if (WindowLayout.s_MaximizeKey.activated)
-                {
-                    if (!EditorApplication.isPlaying || EditorApplication.isPaused)
-                        return;
-                }
+                if (!EditorApplication.isPlaying || EditorApplication.isPaused)
+                    return;
 
                 bool mousePosInGameViewRect = viewInWindow.Contains(Event.current.mousePosition);
 

@@ -47,16 +47,22 @@ namespace UnityEditor
         {
             var dpi = EditorGUIUtility.pixelsPerPoint;
             var resourcePath = gc.m_CurrentResourcePath;
+            var resourceDpi = 1.0f;
+
             for (int i = 0, count = gc.m_TextureResources.Count; i < count; ++i)
             {
-                if (gc.m_TextureResources[i].pixelsPerPoint > dpi)
+                var currentResource = gc.m_TextureResources[i];
+                resourcePath = currentResource.resourcePath;
+                resourceDpi = currentResource.pixelsPerPoint;
+                if (resourceDpi >= dpi)
                     break;
-                resourcePath = gc.m_TextureResources[i].resourcePath;
             }
             if (resourcePath != gc.m_CurrentResourcePath)
             {
-                gc.m_GuiContent.image =
+                Texture2D loadedResource =
                     StyleSheetResourceUtil.LoadResource(resourcePath, typeof(Texture2D), false) as Texture2D;
+                loadedResource.pixelsPerPoint = resourceDpi;
+                gc.m_GuiContent.image = loadedResource;
                 gc.m_CurrentResourcePath = resourcePath;
             }
             return gc.m_GuiContent;

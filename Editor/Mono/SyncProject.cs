@@ -176,7 +176,7 @@ namespace UnityEditor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            Synchronizer.SyncIfNeeded(addedAssets.Union(deletedAssets.Union(movedAssets.Union(movedFromAssetPaths))));
+            Synchronizer.SyncIfNeeded(addedAssets.Union(deletedAssets.Union(movedAssets.Union(movedFromAssetPaths))), importedAssets);
         }
 
         [MenuItem("Assets/Open C# Project")]

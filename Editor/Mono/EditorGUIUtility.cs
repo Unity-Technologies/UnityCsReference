@@ -528,7 +528,7 @@ namespace UnityEditor
             if (gc == null)
             {
                 string[] strings = GetNameAndTooltipString(textAndTooltip);
-                gc = new GUIContent(strings[1]) {image = LoadIconRequired(icon)};
+                gc = new GUIContent(strings[1]) { image = LoadIconRequired(icon) };
 
                 // We want to catch missing icons so we can fix them (therefore using LoadIconRequired)
 
@@ -591,15 +591,41 @@ namespace UnityEditor
             return LoadIconForSkin(name, skinIndex);
         }
 
-        // Takes a name that already includes d_ if dark skin version is desired.
-        // Equivalent to Texture2DSkinNamed in ObjectImages.cpp
+        // Attempts to load a higher resolution icon if needed
         static Texture2D LoadGeneratedIconOrNormalIcon(string name)
         {
+            Texture2D icon = null;
+            if (GUIUtility.pixelsPerPoint > 1.0f)
+            {
+                icon = InnerLoadGeneratedIconOrNormalIcon(name + "@2x");
+                if (icon != null)
+                {
+                    icon.pixelsPerPoint = 2.0f;
+                }
+            }
+
+            if (icon == null)
+            {
+                icon = InnerLoadGeneratedIconOrNormalIcon(name);
+            }
+            return icon;
+        }
+
+        // Takes a name that already includes d_ if dark skin version is desired.
+        // Equivalent to Texture2DSkinNamed in ObjectImages.cpp
+        static Texture2D InnerLoadGeneratedIconOrNormalIcon(string name)
+        {
             Texture2D tex = Load(EditorResources.generatedIconsPath + name + ".asset") as Texture2D;
+
             if (!tex)
+            {
                 tex = Load(EditorResources.iconsPath + name + ".png") as Texture2D;
+            }
             if (!tex)
+            {
                 tex = Load(name) as Texture2D; // Allow users to specify their own project path to an icon (e.g see EditorWindowTitleAttribute)
+            }
+
             return tex;
         }
 

@@ -15,6 +15,7 @@ using UnityEngine.Profiling;
 using Object = UnityEngine.Object;
 using UnityEngine.Rendering;
 using UnityEditor.Rendering;
+using UnityEditor.ShortcutManagement;
 using UnityEngine.Experimental.Rendering;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -152,9 +153,6 @@ namespace UnityEditor
                 showParticleSystems = value;
             }
         }
-
-        static readonly PrefKey k2DMode = new PrefKey("Tools/2D Mode", "2");
-        private static bool waitingFor2DModeKeyUp;
 
         [SerializeField]
         private bool m_2DMode;
@@ -610,6 +608,7 @@ namespace UnityEditor
             }
 
             CleanupEditorDragFunctions();
+            SceneViewMotion.DeactivateFlyModeContext();
             base.OnDisable();
         }
 
@@ -999,27 +998,11 @@ namespace UnityEditor
 
         private void CreateCameraTargetTexture(Rect cameraRect, bool hdr)
         {
-            int msaa = Mathf.Max(1, QualitySettings.antiAliasing);
-            // deferred does not support MSAA now, so not point in using it
-            if (IsSceneCameraDeferred())
-                msaa = 1;
-
-            // TODO: 1st gen OSX Metal drivers (El Capitan) do not support
-            // MSAA store+resolve action flag or deferred store action flags,
-            // this can be lead to undefined behaviour depending on GPU driver
-            // used. Some may work with multiple load/store passes or survive
-            // setting the depth store action to DontCare with MSAA depth buffers
-            //
-            // MSAA should be ok with game view, but SceneView RT handling is
-            // a bit more complicated that needs improvements later
-            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal)
-                msaa = 1;
-
             // make sure we actually support ARGBHalf (ShaderModel20 emulation doesn't)
             RenderTextureFormat format = (hdr && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBHalf)) ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
             if (m_SceneTargetTexture != null)
             {
-                if (m_SceneTargetTexture.format != format || m_SceneTargetTexture.antiAliasing != msaa)
+                if (m_SceneTargetTexture.format != format)
                 {
                     Object.DestroyImmediate(m_SceneTargetTexture);
                     m_SceneTargetTexture = null;
@@ -1034,7 +1017,7 @@ namespace UnityEditor
             {
                 m_SceneTargetTexture = new RenderTexture(0, 0, 24, format, RenderTextureReadWrite.sRGB);
                 m_SceneTargetTexture.name = "SceneView RT";
-                m_SceneTargetTexture.antiAliasing = msaa;
+                m_SceneTargetTexture.antiAliasing = 1;
                 m_SceneTargetTexture.hideFlags = HideFlags.HideAndDontSave;
             }
             if (m_SceneTargetTexture.width != width || m_SceneTargetTexture.height != height)
@@ -1824,8 +1807,6 @@ namespace UnityEditor
                 SceneViewMotion.DoViewTool(this);
             }
 
-            Handle2DModeSwitch();
-
             GUI.EndGroup();
             GUI.color = origColor;
 
@@ -1842,20 +1823,13 @@ namespace UnityEditor
             m_Camera.rect = origCameraRect;
         }
 
-        void Handle2DModeSwitch()
+        [Shortcut("Scene View/Toggle 2D Mode", typeof(SceneView), "2")]
+        [FormerlyPrefKeyAs("Tools/2D Mode", "2")]
+        static void Toggle2DMode(ShortcutArguments args)
         {
-            Event evt = Event.current;
-            if (k2DMode.activated && !waitingFor2DModeKeyUp)
-            {
-                waitingFor2DModeKeyUp = true;
-                in2DMode = !in2DMode;
-                evt.Use();
-            }
-            else
-            {
-                if (evt.type == EventType.KeyUp && evt.keyCode == k2DMode.KeyboardEvent.keyCode)
-                    waitingFor2DModeKeyUp = false;
-            }
+            var window = args.context as SceneView;
+            if (window != null)
+                window.in2DMode = !window.in2DMode;
         }
 
         void HandleMouseCursor()

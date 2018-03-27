@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal;
 
@@ -382,17 +383,11 @@ namespace UnityEditor
         private void OnEnable()
         {
             s_Get = this;
-            EditorApplication.globalEventHandler += ControlsHack;
             pivotMode = (PivotMode)EditorPrefs.GetInt("PivotMode", 0);
             rectBlueprintMode = EditorPrefs.GetBool("RectBlueprintMode", false);
             pivotRotation = (PivotRotation)EditorPrefs.GetInt("PivotRotation", 0);
             visibleLayers = EditorPrefs.GetInt("VisibleLayers", -1);
             lockedLayers = EditorPrefs.GetInt("LockedLayers", 0);
-        }
-
-        private void OnDisable()
-        {
-            EditorApplication.globalEventHandler -= ControlsHack;
         }
 
         internal static void OnSelectionChange()
@@ -410,92 +405,71 @@ namespace UnityEditor
         Tool currentTool = Tool.Move;
         ViewTool m_ViewTool = ViewTool.Pan;
 
-        static PrefKey kViewKey = new PrefKey("Tools/View", "q");
-        static PrefKey kMoveKey = new PrefKey("Tools/Move", "w");
-        static PrefKey kRotateKey = new PrefKey("Tools/Rotate", "e");
-        static PrefKey kScaleKey = new PrefKey("Tools/Scale", "r");
-        static PrefKey kRectKey = new PrefKey("Tools/Rect Handles", "t");
-        static PrefKey kTransformKey = new PrefKey("Tools/Transform Handles", "y");
-        static PrefKey kPivotMode = new PrefKey("Tools/Pivot Mode", "z");
-        static PrefKey kPivotRotation = new PrefKey("Tools/Pivot Rotation", "x");
-
-        internal static void ControlsHack()
+        static void SetToolMode(Tool toolMode)
         {
-            Event evt = Event.current;
-            if (kViewKey.activated)
-            {
-                Tools.current = 0;
-                ResetGlobalHandleRotation();
-                evt.Use();
-                if (Toolbar.get)
-                    Toolbar.get.Repaint();
-                else
-                    Debug.LogError("Press Play twice for sceneview keyboard shortcuts to work");
-            }
-            if (kMoveKey.activated)
-            {
-                Tools.current = Tool.Move;
-                ResetGlobalHandleRotation();
-                evt.Use();
-                if (Toolbar.get)
-                    Toolbar.get.Repaint();
-                else
-                    Debug.LogError("Press Play twice for sceneview keyboard shortcuts to work");
-            }
-            if (kRotateKey.activated)
-            {
-                Tools.current = Tool.Rotate;
-                ResetGlobalHandleRotation();
-                evt.Use();
-                if (Toolbar.get)
-                    Toolbar.get.Repaint();
-                else
-                    Debug.LogError("Press Play twice for sceneview keyboard shortcuts to work");
-            }
-            if (kScaleKey.activated)
-            {
-                Tools.current = Tool.Scale;
-                ResetGlobalHandleRotation();
-                evt.Use();
-                if (Toolbar.get)
-                    Toolbar.get.Repaint();
-                else
-                    Debug.LogError("Press Play twice for sceneview keyboard shortcuts to work");
-            }
-            if (kRectKey.activated)
-            {
-                Tools.current = Tool.Rect;
-                ResetGlobalHandleRotation();
-                evt.Use();
-                if (Toolbar.get)
-                    Toolbar.get.Repaint();
-                else
-                    Debug.LogError("Press Play twice for sceneview keyboard shortcuts to work");
-            }
-            if (kTransformKey.activated)
-            {
-                Tools.current = Tool.Transform;
-                ResetGlobalHandleRotation();
-                evt.Use();
-                if (Toolbar.get)
-                    Toolbar.get.Repaint();
-                else
-                    Debug.LogError("Press Play twice for sceneview keyboard shortcuts to work");
-            }
-            if (kPivotMode.activated)
-            {
-                pivotMode = (PivotMode)(1 - (int)pivotMode);
-                ResetGlobalHandleRotation();
-                evt.Use();
-                Tools.RepaintAllToolViews();
-            }
-            if (kPivotRotation.activated)
-            {
-                pivotRotation = (PivotRotation)(1 - (int)pivotRotation);
-                ResetGlobalHandleRotation();
-                evt.Use();
-                Tools.RepaintAllToolViews();
-            }
+            current = toolMode;
+            Toolbar.get?.Repaint();
+            ResetGlobalHandleRotation();
+        }
+
+        [Shortcut("Tools/View", null, "q")]
+        [FormerlyPrefKeyAs("Tools/View", "q")]
+        static void SetToolModeView(ShortcutArguments args)
+        {
+            SetToolMode(Tool.View);
+        }
+
+        [Shortcut("Tools/Move", null, "w")]
+        [FormerlyPrefKeyAs("Tools/Move", "w")]
+        static void SetToolModeMove(ShortcutArguments args)
+        {
+            SetToolMode(Tool.Move);
+        }
+
+        [Shortcut("Tools/Rotate", null, "e")]
+        [FormerlyPrefKeyAs("Tools/Rotate", "e")]
+        static void SetToolModeRotate(ShortcutArguments args)
+        {
+            SetToolMode(Tool.Rotate);
+        }
+
+        [Shortcut("Tools/Scale", null, "r")]
+        [FormerlyPrefKeyAs("Tools/Scale", "r")]
+        static void SetToolModeScale(ShortcutArguments args)
+        {
+            SetToolMode(Tool.Scale);
+        }
+
+        [Shortcut("Tools/Rect", null, "t")]
+        [FormerlyPrefKeyAs("Tools/Rect Handles", "t")]
+        static void SetToolModeRect(ShortcutArguments args)
+        {
+            SetToolMode(Tool.Rect);
+        }
+
+        [Shortcut("Tools/Transform", null, "y")]
+        [FormerlyPrefKeyAs("Tools/Transform Handles", "y")]
+        static void SetToolModeTransform(ShortcutArguments args)
+        {
+            SetToolMode(Tool.Transform);
+        }
+
+        [Shortcut("Tools/Toggle Pivot Position", null, "z")]
+        [FormerlyPrefKeyAs("Tools/Pivot Mode", "z")]
+        static void TogglePivotMode(ShortcutArguments args)
+        {
+            pivotMode = pivotMode == PivotMode.Center ? PivotMode.Pivot : PivotMode.Center;
+            ResetGlobalHandleRotation();
+            RepaintAllToolViews();
+        }
+
+        [Shortcut("Tools/Toggle Pivot Orientation", null, "x")]
+        [FormerlyPrefKeyAs("Tools/Pivot Rotation", "x")]
+        static void TogglePivotRotation(ShortcutArguments args)
+        {
+            pivotRotation = pivotRotation == PivotRotation.Global ? PivotRotation.Local : PivotRotation.Global;
+            ResetGlobalHandleRotation();
+            RepaintAllToolViews();
         }
 
         internal static void RepaintAllToolViews()
@@ -504,11 +478,6 @@ namespace UnityEditor
                 Toolbar.get.Repaint();
             SceneView.RepaintAll();
             InspectorWindow.RepaintAllInspectors();
-        }
-
-        internal static void HandleKeys()
-        {
-            ControlsHack();
         }
 
         internal static void LockHandlePosition(Vector3 pos)

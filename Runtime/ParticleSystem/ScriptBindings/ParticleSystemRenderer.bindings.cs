@@ -33,6 +33,12 @@ namespace UnityEngine
         extern public Material trailMaterial { get; set; }
         extern public bool enableGPUInstancing { get; set; }
 
+        public void BakeMesh(Mesh mesh, bool useTransform = false) { BakeMesh(mesh, Camera.main, useTransform); }
+        extern public void BakeMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);
+
+        public void BakeTrailsMesh(Mesh mesh, bool useTransform = false) { BakeTrailsMesh(mesh, Camera.main, useTransform); }
+        extern public void BakeTrailsMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);
+
         extern internal bool editorEnabled { get; set; }
     }
 }

@@ -8,7 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-namespace UnityEditor.Experimental.Build.AssetBundle
+namespace UnityEditor.Build.Content
 {
     public enum FileType
     {
@@ -21,7 +21,7 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [Serializable]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct ObjectIdentifier
+    public struct ObjectIdentifier : IEquatable<ObjectIdentifier>
     {
         [NativeName("guid")]
         internal GUID m_GUID;
@@ -78,7 +78,12 @@ namespace UnityEditor.Experimental.Build.AssetBundle
 
         public override bool Equals(object obj)
         {
-            return obj is ObjectIdentifier && this == (ObjectIdentifier)obj;
+            return obj is ObjectIdentifier && Equals((ObjectIdentifier)obj);
+        }
+
+        public bool Equals(ObjectIdentifier other)
+        {
+            return this == other;
         }
 
         public override int GetHashCode()

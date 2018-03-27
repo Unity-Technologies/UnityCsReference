@@ -26,11 +26,6 @@ namespace UnityEditor
             get { return m_ClassName; }
         }
 
-        internal enum Language
-        {
-            CSharp = 0
-        }
-
         public NewScriptDropdownItem() : base("New Script", -1) {}
 
         public override bool OnAction()

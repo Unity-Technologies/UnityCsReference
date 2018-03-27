@@ -11,7 +11,7 @@ namespace UnityEngine
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct PropertyName
+    public struct PropertyName : IEquatable<PropertyName>
     {
         internal int id;
         internal int conflictIndex;
@@ -52,7 +52,12 @@ namespace UnityEngine
 
         public override bool Equals(object other)
         {
-            return other is PropertyName && this == (PropertyName)other;
+            return other is PropertyName && Equals((PropertyName)other);
+        }
+
+        public bool Equals(PropertyName other)
+        {
+            return this == other;
         }
 
         public static implicit operator PropertyName(string name)

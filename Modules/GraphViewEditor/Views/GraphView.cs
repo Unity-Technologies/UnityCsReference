@@ -48,6 +48,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     public struct NodeCreationContext
     {
         public Vector2 screenMousePosition;
+        public VisualElement target;
+        public int index;
     }
 
     public abstract class GraphView : VisualElement, ISelection
@@ -57,17 +59,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         // Delegates and Callbacks
         public Action<NodeCreationContext> nodeCreationRequest { get; set; }
+        internal IInsertLocation currentInsertLocation {get; set; }
+
 
         public delegate GraphViewChange GraphViewChanged(GraphViewChange graphViewChange);
         public GraphViewChanged graphViewChanged { get; set; }
 
-        public delegate void GroupNodeTitleChanged(GroupNode groupNode, string title);
-        public delegate void ElementAddedToGroupNode(GroupNode groupNode, GraphElement element);
-        public delegate void ElementRemovedFromGroupNode(GroupNode groupNode, GraphElement element);
+        public Action<Group, string> groupTitleChanged { get; set; }
+        public Action<Group, GraphElement> elementAddedToGroup { get; set; }
+        public Action<Group, GraphElement> elementRemovedFromGroup { get; set; }
 
-        public GroupNodeTitleChanged groupNodeTitleChanged { get; set; }
-        public ElementAddedToGroupNode elementAddedToGroupNode { get; set; }
-        public ElementRemovedFromGroupNode elementRemovedFromGroupNode { get; set; }
+        public Action<StackNode, int, GraphElement> elementInsertedToStackNode { get; set; }
+        public Action<StackNode, GraphElement> elementRemovedFromStackNode { get; set; }
 
         private GraphViewChange m_GraphViewChange;
         private List<GraphElement> m_ElementsToRemove;
@@ -607,12 +610,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 evt.menu.AppendAction("Create Node", OnContextMenuNodeCreate, ContextualMenu.MenuAction.AlwaysEnabled);
                 evt.menu.AppendSeparator();
             }
-            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is GroupNode)
+            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendAction("Cut", (a) => { CutSelectionCallback(); },
                     (a) => { return canCutSelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
             }
-            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is GroupNode)
+            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendAction("Copy", (a) => { CopySelectionCallback(); },
                     (a) => { return canCopySelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
@@ -622,13 +625,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 evt.menu.AppendAction("Paste", (a) => { PasteCallback(); },
                     (a) => { return canPaste ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
             }
-            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is GroupNode || evt.target is Edge)
+            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group || evt.target is Edge)
             {
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Delete", (a) => { DeleteSelectionCallback(AskUser.DontAskUser); },
                     (a) => { return canDeleteSelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
             }
-            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is GroupNode)
+            if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Duplicate", (a) => { DuplicateSelectionCallback(); },
@@ -639,6 +642,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void OnContextMenuNodeCreate(ContextualMenu.MenuAction a)
         {
+            RequestNodeCreation(null, -1, a.eventInfo.mousePosition);
+        }
+
+        private void RequestNodeCreation(VisualElement target, int index, Vector2 position)
+        {
             if (nodeCreationRequest == null)
                 return;
 
@@ -646,10 +654,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (guiView == null)
                 return;
 
-            Vector2 referencePosition = a.eventInfo.mousePosition;
-            Vector2 screenPoint = guiView.screenPosition.position + referencePosition;
+            Vector2 screenPoint = guiView.screenPosition.position + position;
 
-            nodeCreationRequest(new NodeCreationContext() { screenMousePosition = screenPoint });
+            nodeCreationRequest(new NodeCreationContext() { screenMousePosition = screenPoint, target = target, index = index});
         }
 
         protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -709,6 +716,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 case ']':
                     result = FrameNext();
                     break;
+                case ' ':
+                    result = OnInsertNodeKeyDown(evt);
+                    break;
             }
 
             if (result == EventPropagation.Stop)
@@ -719,6 +729,26 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     evt.imguiEvent.Use();
                 }
             }
+        }
+
+        EventPropagation OnInsertNodeKeyDown(KeyDownEvent evt)
+        {
+            InsertInfo insertInfo = InsertInfo.nil;
+            Vector2 worldPosition = evt.originalMousePosition;
+
+            if (currentInsertLocation != null)
+            {
+                currentInsertLocation.GetInsertInfo(evt.originalMousePosition, out insertInfo);
+
+                if (insertInfo.target != null)
+                {
+                    worldPosition = insertInfo.target.LocalToWorld(insertInfo.localPosition);
+                }
+            }
+
+            RequestNodeCreation(insertInfo.target, insertInfo.index, worldPosition);
+
+            return EventPropagation.Stop;
         }
 
         void OnValidateCommand(ValidateCommandEvent evt)
@@ -836,7 +866,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected internal virtual bool canCopySelection
         {
-            get { return selection.OfType<Node>().Any() || selection.OfType<GroupNode>().Any(); }
+            get { return selection.OfType<Node>().Any() || selection.OfType<Group>().Any(); }
         }
 
         private void CollectElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> collectedElementSet, Func<GraphElement, bool> conditionFunc)
@@ -848,10 +878,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (node != null)
                 {
                     CollectConnectedEgdes(collectedElementSet, node);
+
+                    StackNode stackNode = node as StackNode;
+
+                    if (stackNode != null)
+                    {
+                        CollectElements(stackNode.Children().OfType<GraphElement>(), collectedElementSet, conditionFunc);
+                    }
                 }
                 else
                 {
-                    var groupNode = element as GroupNode;
+                    var groupNode = element as Group;
 
                     // If the selected element is a group then visit its contained element
                     if (groupNode != null)
@@ -866,7 +903,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected internal virtual void CollectCopyableGraphElements(IEnumerable<GraphElement> elements, HashSet<GraphElement> elementsToCopySet)
         {
-            CollectElements(elements, elementsToCopySet, e => (e is Node || e is GroupNode));
+            CollectElements(elements, elementsToCopySet, e => (e is Node || e is Group));
         }
 
         protected internal void CopySelectionCallback()
@@ -885,7 +922,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected internal virtual bool canCutSelection
         {
-            get { return selection.OfType<Node>().Any() || selection.OfType<GroupNode>().Any(); }
+            get { return selection.OfType<Node>().Any() || selection.OfType<Group>().Any(); }
         }
 
         protected internal void CutSelectionCallback()
@@ -1040,6 +1077,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void RemoveElement(GraphElement graphElement)
         {
+            // TODO : Find a better way to remove a graphElement from its scope when it is removed from the GraphView.
+            Scope scope = graphElement.GetContainingScope();
+
+            if (scope != null)
+            {
+                scope.RemoveElement(graphElement);
+            }
             graphElement.RemoveFromHierarchy();
         }
 

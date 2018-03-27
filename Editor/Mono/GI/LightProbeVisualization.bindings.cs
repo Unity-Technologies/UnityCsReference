@@ -33,7 +33,7 @@ namespace UnityEditor
         public extern static bool dynamicUpdateLightProbes { get; set; }
 
         [StaticAccessor("GetLightProbeVisualizationSettings()")]
-        internal static extern void DrawPointCloud([NotNull] Vector3[] unselectedPositions, [NotNull] Vector3[] selectedPositions, Color baseColor, Color selectedColor, float scale, [NotNull] Transform cloudTransform);
+        internal static extern void DrawPointCloud([NotNull] Vector3[] unselectedPositions, [NotNull] Vector3[] selectedPositions, Color baseColor, Color selectedColor, float scale, Transform cloudTransform);
 
         [StaticAccessor("GetLightProbeVisualizationSettings()")]
         internal static extern void DrawTetrahedra(bool shouldRecalculateTetrahedra, Vector3 cameraPosition);

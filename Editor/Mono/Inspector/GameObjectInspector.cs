@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor.SceneManagement;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEngine;
@@ -40,10 +39,10 @@ namespace UnityEditor
             public float layerFieldWidth;
 
             public GUIStyle staticDropdown = "StaticDropdown";
-            public GUIStyle header = new GUIStyle("IN GameObjectHeader");
             public GUIStyle layerPopup = new GUIStyle(EditorStyles.popup);
 
             public GUIStyle instanceManagementInfo = new GUIStyle(EditorStyles.helpBox);
+            public GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
 
             public GUIContent goTypeLabelMultiple = EditorGUIUtility.TrTextContent("Multiple");
 
@@ -69,7 +68,9 @@ namespace UnityEditor
 
                 // Seems to be a bug in the way controls with margin internal to layout groups with padding calculate position. We'll work around it here.
                 layerPopup.margin.right = 0;
-                header.padding.bottom -= 3;
+
+                // match modification in Editor.Styles
+                inspectorBig.padding.bottom -= 1;
             }
         }
         static Styles s_Styles;
@@ -176,7 +177,7 @@ namespace UnityEditor
 
             bool enabledTemp = GUI.enabled;
             GUI.enabled = true;
-            EditorGUILayout.BeginVertical(s_Styles.header);
+            EditorGUILayout.BeginVertical(s_Styles.inspectorBig);
             GUI.enabled = enabledTemp;
             DrawInspector();
             EditorGUILayout.EndVertical();

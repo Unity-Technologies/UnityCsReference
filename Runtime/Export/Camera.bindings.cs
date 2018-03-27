@@ -85,6 +85,11 @@ namespace UnityEngine
         extern public void SetReplacementShader(Shader shader, string replacementTag);
         extern public void ResetReplacementShader();
 
+        internal enum ProjectionMatrixMode{ Explicit, Implicit, PhysicalPropertiesBased };
+        extern public bool usePhysicalProperties { get; set; }
+        extern public Vector2 sensorSize  { get; set; }
+        extern public Vector2 lensShift  { get; set; }
+        extern public float focalLength  { get; set; }
         [NativeProperty("NormalizedViewportRect")] extern public Rect rect      { get; set; }
         [NativeProperty("ScreenViewportRect")]     extern public Rect pixelRect { get; set; }
 

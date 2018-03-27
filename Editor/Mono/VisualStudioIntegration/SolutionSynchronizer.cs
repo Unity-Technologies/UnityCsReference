@@ -61,6 +61,8 @@ namespace UnityEditor.VisualStudioIntegration
             {"glslinc", ScriptingLanguage.None},
         };
 
+        private static readonly string[] reimportSyncExtensions = new[] { ".dll", ".asmdef" };
+
         string[] ProjectSupportedExtensions = new string[0];
 
         /// <summary>
@@ -177,18 +179,26 @@ namespace UnityEditor.VisualStudioIntegration
         /// <param name='affectedFiles'>
         /// A set of files whose status has changed
         /// </param>
-        public bool SyncIfNeeded(IEnumerable<string> affectedFiles)
+        /// <param name="reimportedFiles">
+        /// A set of files that got reimported
+        /// </param>
+        public bool SyncIfNeeded(IEnumerable<string> affectedFiles, IEnumerable<string> reimportedFiles)
         {
             SetupProjectSupportedExtensions();
 
             // Don't sync if we haven't synced before
-            if (SolutionExists() && affectedFiles.Any(ShouldFileBePartOfSolution))
+            if (SolutionExists() && (affectedFiles.Any(ShouldFileBePartOfSolution) || reimportedFiles.Any(ShouldSyncOnReimportedAsset)))
             {
                 Sync();
                 return true;
             }
 
             return false;
+        }
+
+        private bool ShouldSyncOnReimportedAsset(string asset)
+        {
+            return reimportSyncExtensions.Contains(new FileInfo(asset).Extension);
         }
 
         public void Sync()

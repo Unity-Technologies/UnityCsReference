@@ -396,11 +396,11 @@ namespace UnityEditor
                         var startRatio = startRect.width / startRect.height;
                         if (startRatio < gameViewSize.aspectRatio)
                         {
-                            targetSize = new Vector2(startRect.width, startRect.width / gameViewSize.aspectRatio);
+                            targetSize = new Vector2(startRect.width, Mathf.Round(startRect.width / gameViewSize.aspectRatio));
                         }
                         else
                         {
-                            targetSize = new Vector2(startRect.height * gameViewSize.aspectRatio, startRect.height);
+                            targetSize = new Vector2(Mathf.Round(startRect.height * gameViewSize.aspectRatio), startRect.height);
                         }
                     }
                     break;

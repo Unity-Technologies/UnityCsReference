@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Object = UnityEngine.Object;
+using UnityEditor.Experimental.AssetImporters;
 
 namespace UnityEditor
 {
@@ -18,9 +19,13 @@ namespace UnityEditor
     public partial class AssetPostprocessor
     {
         private string m_PathName;
+        private AssetImportContext m_Context;
 
         // The path name of the asset being imported.
         public string assetPath { get { return m_PathName; } set { m_PathName = value; } }
+
+        // The context of the import, used to specify dependencies
+        public AssetImportContext context { get { return m_Context; } internal set { m_Context = value; } }
 
         // Logs an import warning to the console.
         [ExcludeFromDocs]
@@ -182,7 +187,7 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void InitPostprocessors(string pathName)
+        static void InitPostprocessors(AssetImportContext context, string pathName)
         {
             m_ImportProcessors = new ArrayList();
 
@@ -194,6 +199,7 @@ namespace UnityEditor
                 {
                     var assetPostprocessor = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                     assetPostprocessor.assetPath = pathName;
+                    assetPostprocessor.context = context;
                     m_ImportProcessors.Add(assetPostprocessor);
                 }
                 catch (MissingMethodException)

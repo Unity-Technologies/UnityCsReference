@@ -422,13 +422,19 @@ namespace UnityEditor
                     {
                         Vector2 absMouse = GUIUtility.GUIToScreenPoint(evt.mousePosition);
                         Vector2 movement = absMouse - s_LastDragMousePos;
-                        s_LastDragMousePos = absMouse;
 
-                        dragPosition.x += movement.x;
-                        dragPosition.y += movement.y;
-                        position = dragPosition;
+                        float minimumDelta = 1.0f / GUIUtility.pixelsPerPoint;
 
-                        GUI.changed = true;
+                        if (Mathf.Abs(movement.x) >= minimumDelta || Mathf.Abs(movement.y) >= minimumDelta)
+                        {
+                            s_LastDragMousePos = absMouse;
+
+                            dragPosition.x += movement.x;
+                            dragPosition.y += movement.y;
+                            position = dragPosition;
+
+                            GUI.changed = true;
+                        }
                     }
                     break;
             }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -11,6 +12,16 @@ namespace UnityEditor
         static readonly Color k_ColorThemeCameraGizmo = new Color(233f / 255f, 233f / 255f, 233f / 255f, 128f / 255f);
 
         public static float GameViewAspectRatio => CameraEditor.GetGameViewAspectRatio();
+
+        static int s_MovingHandleId = 0;
+        static Vector3 s_InitialFarMid;
+        static readonly int[] s_FrustrumHandleIds =
+        {
+            "CameraEditor_FrustrumHandleTop".GetHashCode(),
+            "CameraEditor_FrustrumHandleBottom".GetHashCode(),
+            "CameraEditor_FrustrumHandleLeft".GetHashCode(),
+            "CameraEditor_FrustrumHandleRight".GetHashCode()
+        };
 
         public static void HandleFrustum(Camera c)
         {
@@ -30,24 +41,37 @@ namespace UnityEditor
             var rightBottomFar = far[3];
 
             // manage our own gui changed state, so we can use it for individual slider changes
-            var guiChanged = GUI.changed;
+            bool guiChanged = GUI.changed;
+
+
+            Vector3 farMid = Vector3.Lerp(leftBottomFar, rightTopFar, 0.5f);
+            if (s_MovingHandleId != 0)
+            {
+                if (!s_FrustrumHandleIds.Contains(GUIUtility.hotControl))
+                    s_MovingHandleId = GUIUtility.hotControl;
+                else
+                    farMid = s_InitialFarMid;
+            }
+            else if (s_FrustrumHandleIds.Contains(GUIUtility.hotControl))
+            {
+                s_MovingHandleId = GUIUtility.hotControl;
+                s_InitialFarMid = farMid;
+            }
 
             // FOV handles
-            var farMid = Vector3.Lerp(leftBottomFar, rightTopFar, 0.5f);
-
             // Top and bottom handles
             float halfHeight = -1.0f;
-            var changedPosition = MidpointPositionSlider(leftTopFar, rightTopFar, c.transform.up);
+            Vector3 changedPosition = MidPointPositionSlider(s_FrustrumHandleIds[0], leftTopFar, rightTopFar, c.transform.up);
             if (!GUI.changed)
-                changedPosition = MidpointPositionSlider(leftBottomFar, rightBottomFar, -c.transform.up);
+                changedPosition = MidPointPositionSlider(s_FrustrumHandleIds[1], leftBottomFar, rightBottomFar, -c.transform.up);
             if (GUI.changed)
                 halfHeight = (changedPosition - farMid).magnitude;
 
             // Left and right handles
             GUI.changed = false;
-            changedPosition = MidpointPositionSlider(rightBottomFar, rightTopFar, c.transform.right);
+            changedPosition = MidPointPositionSlider(s_FrustrumHandleIds[2], rightBottomFar, rightTopFar, c.transform.right);
             if (!GUI.changed)
-                changedPosition = MidpointPositionSlider(leftBottomFar, leftTopFar, -c.transform.right);
+                changedPosition = MidPointPositionSlider(s_FrustrumHandleIds[3], leftBottomFar, leftTopFar, -c.transform.right);
             if (GUI.changed)
                 halfHeight = (changedPosition - farMid).magnitude / frustumAspect;
 
@@ -56,11 +80,15 @@ namespace UnityEditor
             {
                 Undo.RecordObject(c, "Adjust Camera");
                 if (c.orthographic)
+                {
                     c.orthographicSize = halfHeight;
+                }
                 else
                 {
-                    Vector3 pos = farMid + c.transform.up * halfHeight;
-                    c.fieldOfView = Vector3.Angle(c.transform.forward, (pos - c.transform.position)) * 2f;
+                    Vector3 posUp = farMid + c.transform.up * halfHeight;
+                    Vector3 posDown = farMid - c.transform.up * halfHeight;
+                    Vector3 nearMid = farMid - c.transform.forward * c.farClipPlane;
+                    c.fieldOfView = Vector3.Angle((posDown - nearMid), (posUp - nearMid));
                 }
                 guiChanged = true;
             }
@@ -157,10 +185,10 @@ namespace UnityEditor
                 points[i] = PerspectiveClipToWorld(clipToWorld, viewPosition, points[i]);
         }
 
-        static Vector3 MidpointPositionSlider(Vector3 position1, Vector3 position2, Vector3 direction)
+        static Vector3 MidPointPositionSlider(int controlID, Vector3 position1, Vector3 position2, Vector3 direction)
         {
             Vector3 midPoint = Vector3.Lerp(position1, position2, 0.5f);
-            return Handles.Slider(midPoint, direction, HandleUtility.GetHandleSize(midPoint) * 0.03f, Handles.DotHandleCap, 0f);
+            return Handles.Slider(controlID, midPoint, direction, HandleUtility.GetHandleSize(midPoint) * 0.03f, Handles.DotHandleCap, 0f);
         }
     }
 }

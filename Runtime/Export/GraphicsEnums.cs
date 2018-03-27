@@ -414,6 +414,7 @@ namespace UnityEngine
         AllowVerticalFlip = 1 << 7,
         NoResolvedColorSurface = 1 << 8,
         DynamicallyScalable = 1 << 10,
+        BindMS = 1 << 11,
     }
 
     public enum RenderTextureReadWrite
@@ -1056,7 +1057,7 @@ namespace UnityEngine.Rendering
 
     // Note: match layout of C++ MonoRenderTargetIdentifier!
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public struct RenderTargetIdentifier
+    public struct RenderTargetIdentifier : IEquatable<RenderTargetIdentifier>
     {
         // constructors
         public RenderTargetIdentifier(BuiltinRenderTextureType type)

@@ -20,7 +20,7 @@ using Debug = UnityEngine.Debug;
 using PackageInfo = Unity.DataContract.PackageInfo;
 using System.Xml.Linq;
 using System.Xml.XPath;
-using UnityEditor.Experimental.Build.Player;
+using UnityEditor.Build.Player;
 
 namespace UnityEditorInternal
 {

@@ -70,6 +70,9 @@ namespace UnityEditor.Modules
                     config.Set("wait-for-managed-debugger", "0");
                 }
             }
+
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+                config.Set("scripting-runtime-version", "latest");
         }
 
         public virtual string GetExtension(BuildTarget target, BuildOptions options)

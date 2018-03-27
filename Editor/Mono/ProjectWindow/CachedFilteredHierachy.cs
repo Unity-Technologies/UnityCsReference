@@ -111,14 +111,41 @@ namespace UnityEditor
 
         public void SetResults(int[] instanceIDs)
         {
-            HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
-            property.Reset();
-
-            System.Array.Resize(ref m_Results, instanceIDs.Length);
-            for (int i = 0; i < instanceIDs.Length; ++i)
+            if (m_HierarchyType ==  HierarchyType.Assets)
             {
-                if (property.Find(instanceIDs[i], null))
-                    CopyPropertyData(ref m_Results[i], property);
+                string[] rootPaths = new string[instanceIDs.Length];
+                for (int i = 0; i < instanceIDs.Length; ++i)
+                {
+                    var rootPath = "Assets";
+
+                    var path = AssetDatabase.GetAssetPath(instanceIDs[i]);
+                    var pathComponents = path.Split('/');
+                    // Find the right rootPath if folderPath is part of a package
+                    if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
+                        rootPath = pathComponents[0] + "/" + pathComponents[1];
+
+                    rootPaths[i] = rootPath;
+                }
+
+                System.Array.Resize(ref m_Results, instanceIDs.Length);
+                for (int i = 0; i < instanceIDs.Length; ++i)
+                {
+                    HierarchyProperty property = new HierarchyProperty(rootPaths[i], false);
+                    if (property.Find(instanceIDs[i], null))
+                        CopyPropertyData(ref m_Results[i], property);
+                }
+            }
+            else
+            {
+                HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
+                property.Reset();
+
+                System.Array.Resize(ref m_Results, instanceIDs.Length);
+                for (int i = 0; i < instanceIDs.Length; ++i)
+                {
+                    if (property.Find(instanceIDs[i], null))
+                        CopyPropertyData(ref m_Results[i], property);
+                }
             }
         }
 
@@ -149,20 +176,39 @@ namespace UnityEditor
 
         void SearchAllAssets()
         {
-            HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
-            property.SetSearchFilter(m_SearchFilter);
-
             const int k_MaxAddCount = 3000;
-            int elements = property.CountRemaining(null);
-            elements = Mathf.Min(elements, k_MaxAddCount);
-            property.Reset();
-
-            int i = m_Results.Length;
-            System.Array.Resize(ref m_Results, m_Results.Length + elements);
-            while (property.Next(null) && i < m_Results.Length)
+            if (m_HierarchyType == HierarchyType.Assets)
             {
-                CopyPropertyData(ref m_Results[i], property);
-                i++;
+                List<FilterResult> list = new List<FilterResult>();
+                list.AddRange(m_Results);
+
+                var maxAddCount = k_MaxAddCount;
+                var enumerator = AssetDatabase.EnumerateAllAssets(m_SearchFilter);
+                while (enumerator.MoveNext() && --maxAddCount >= 0)
+                {
+                    var result = new FilterResult();
+                    CopyPropertyData(ref result, enumerator.Current);
+                    list.Add(result);
+                }
+
+                m_Results = list.ToArray();
+            }
+            else
+            {
+                HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
+                property.SetSearchFilter(m_SearchFilter);
+
+                int elements = property.CountRemaining(null);
+                elements = Mathf.Min(elements, k_MaxAddCount);
+                property.Reset();
+
+                int i = m_Results.Length;
+                System.Array.Resize(ref m_Results, m_Results.Length + elements);
+                while (property.Next(null) && i < m_Results.Length)
+                {
+                    CopyPropertyData(ref m_Results[i], property);
+                    i++;
+                }
             }
         }
 

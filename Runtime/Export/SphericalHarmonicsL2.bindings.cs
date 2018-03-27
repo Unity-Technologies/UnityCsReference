@@ -11,7 +11,7 @@ namespace UnityEngine.Rendering
 {
     [UsedByNativeCode]
     [NativeHeader("Runtime/Export/SphericalHarmonicsL2.bindings.h")]
-    public partial struct SphericalHarmonicsL2
+    public partial struct SphericalHarmonicsL2 : IEquatable<SphericalHarmonicsL2>
     {
         private float shr0, shr1, shr2, shr3, shr4, shr5, shr6, shr7, shr8;
         private float shg0, shg1, shg2, shg3, shg4, shg5, shg6, shg7, shg8;
@@ -171,11 +171,12 @@ namespace UnityEngine.Rendering
 
         public override bool Equals(object other)
         {
-            if (!(other is SphericalHarmonicsL2))
-                return false;
+            return other is SphericalHarmonicsL2 && Equals((SphericalHarmonicsL2)other);
+        }
 
-            SphericalHarmonicsL2 rhs = (SphericalHarmonicsL2)other;
-            return (this == rhs);
+        public bool Equals(SphericalHarmonicsL2 other)
+        {
+            return this == other;
         }
 
         static public SphericalHarmonicsL2 operator*(SphericalHarmonicsL2 lhs, float rhs)

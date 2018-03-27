@@ -37,7 +37,7 @@ namespace UnityEngine
 
     [NativeHeader("Runtime/Misc/Cache.h")]
     [StaticAccessor("CacheWrapper", StaticAccessorType.DoubleColon)]
-    public partial struct Cache
+    public partial struct Cache : IEquatable<Cache>
     {
 #pragma warning disable 649
         private int m_Handle;
@@ -49,11 +49,12 @@ namespace UnityEngine
         public override int GetHashCode() { return m_Handle; }
         public override bool Equals(object other)
         {
-            if (!(other is Cache))
-                return false;
+            return other is Cache && Equals((Cache)other);
+        }
 
-            Cache rhs = (Cache)other;
-            return handle == rhs.handle;
+        public bool Equals(Cache other)
+        {
+            return handle == other.handle;
         }
 
         public bool valid { get { return Cache_IsValid(m_Handle); } }

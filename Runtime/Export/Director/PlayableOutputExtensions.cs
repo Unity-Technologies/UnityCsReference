@@ -7,8 +7,13 @@ using UnityEngine;
 
 namespace UnityEngine.Playables
 {
-    public static class PlayableOutputExtensions
+    public static partial class PlayableOutputExtensions
     {
+        public static bool IsOutputNull<U>(this U output) where U : struct, IPlayableOutput
+        {
+            return output.GetHandle().IsNull();
+        }
+
         public static bool IsOutputValid<U>(this U output) where U : struct, IPlayableOutput
         {
             return output.GetHandle().IsValid();
@@ -46,14 +51,23 @@ namespace UnityEngine.Playables
             output.GetHandle().SetSourcePlayable(value.GetHandle());
         }
 
-        public static int GetSourceInputPort<U>(this U output) where U : struct, IPlayableOutput
+        public static void SetSourcePlayable<U, V>(this U output, V value, int port)
+            where U : struct, IPlayableOutput
+            where V : struct, IPlayable
         {
-            return output.GetHandle().GetSourceInputPort();
+            var handle = output.GetHandle();
+            handle.SetSourcePlayable(value.GetHandle());
+            handle.SetSourceOutputPort(port);
         }
 
-        public static void SetSourceInputPort<U>(this U output, int value) where U : struct, IPlayableOutput
+        public static int GetSourceOutputPort<U>(this U output) where U : struct, IPlayableOutput
         {
-            output.GetHandle().SetSourceInputPort(value);
+            return output.GetHandle().GetSourceOutputPort();
+        }
+
+        public static void SetSourceOutputPort<U>(this U output, int value) where U : struct, IPlayableOutput
+        {
+            output.GetHandle().SetSourceOutputPort(value);
         }
 
         public static float GetWeight<U>(this U output) where U : struct, IPlayableOutput

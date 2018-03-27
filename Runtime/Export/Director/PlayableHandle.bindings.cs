@@ -25,10 +25,10 @@ namespace UnityEngine.Playables
 
     [NativeHeader("Runtime/Director/Core/HPlayable.h")]
     [UsedByNativeCode]
-    public struct PlayableHandle
+    public struct PlayableHandle : IEquatable<PlayableHandle>
     {
         internal IntPtr m_Handle;
-        internal Int32 m_Version;
+        internal UInt32 m_Version;
 
         internal T GetObject<T>()
             where T : class, IPlayableBehaviour
@@ -51,7 +51,7 @@ namespace UnityEngine.Playables
 
         public static PlayableHandle Null
         {
-            get { return new PlayableHandle() { m_Version = 10 }; }
+            get { return new PlayableHandle() { m_Version = UInt32.MaxValue }; }
         }
 
         internal Playable GetInput(int inputPort)
@@ -93,9 +93,12 @@ namespace UnityEngine.Playables
 
         public override bool Equals(object p)
         {
-            if (!(p is PlayableHandle))
-                return false;
-            return CompareVersion(this, (PlayableHandle)p);
+            return p is PlayableHandle && Equals((PlayableHandle)p);
+        }
+
+        public bool Equals(PlayableHandle other)
+        {
+            return CompareVersion(this, other);
         }
 
         public override int GetHashCode() { return m_Handle.GetHashCode() ^ m_Version.GetHashCode(); }
@@ -130,9 +133,14 @@ namespace UnityEngine.Playables
 
         // Bindings methods.
         [VisibleToOtherModules]
+        extern internal bool IsNull();
+        [VisibleToOtherModules]
         extern internal bool IsValid();
         [VisibleToOtherModules]
         extern internal Type GetPlayableType();
+
+        [VisibleToOtherModules]
+        extern internal Type GetJobType();
         [VisibleToOtherModules]
         extern internal void SetScriptInstance(object scriptInstance);
         [VisibleToOtherModules]
@@ -191,6 +199,12 @@ namespace UnityEngine.Playables
         extern internal void SetLeadTime(float value);
         [VisibleToOtherModules]
         extern internal float GetLeadTime();
+        [VisibleToOtherModules]
+        extern internal PlayableTraversalMode GetTraversalMode();
+        [VisibleToOtherModules]
+        extern internal void SetTraversalMode(PlayableTraversalMode mode);
+        [VisibleToOtherModules]
+        extern internal IntPtr GetAdditionalPayload();
 
         extern private object GetScriptInstance();
         extern private PlayableHandle GetInputHandle(int index);

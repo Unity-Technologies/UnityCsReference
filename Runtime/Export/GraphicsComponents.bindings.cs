@@ -66,6 +66,14 @@ namespace UnityEngine
         public bool isBaked;
     }
 
+    [NativeHeader("Runtime/Camera/SharedLightData.h")]
+    public enum LightShadowCasterMode
+    {
+        Default,
+        NonLightmappedOnly,
+        Everything
+    }
+
     [RequireComponent(typeof(Transform))]
     [NativeHeader("Runtime/Camera/Light.h")]
     public sealed partial class Light : Behaviour
@@ -88,6 +96,7 @@ namespace UnityEngine
 
         extern public LightBakingOutput bakingOutput { get; set; }
         extern public int  cullingMask        { get; set; }
+        extern public LightShadowCasterMode lightShadowCasterMode { get; set; }
         extern public float shadowRadius { get; set; }
         extern public float shadowAngle { get; set; }
     }

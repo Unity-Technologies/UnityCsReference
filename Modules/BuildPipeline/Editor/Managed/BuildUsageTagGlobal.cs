@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEditor.Experimental.Build
+namespace UnityEditor.Build.Content
 {
     [Serializable]
     [UsedByNativeCode]

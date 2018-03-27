@@ -38,13 +38,6 @@ namespace UnityEditor
 
     // Exposed as internal, editor-only, because we only need it do make a custom inspector
     [NativeClass(null)]
-    internal sealed class TagManager : ProjectSettingsBase
-    {
-        private TagManager() {}
-    }
-
-    // Exposed as internal, editor-only, because we only need it do make a custom inspector
-    [NativeClass(null)]
     internal sealed class InputManager : ProjectSettingsBase
     {
         private InputManager() {}

@@ -3,15 +3,17 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.Serialization;
+using UnityEngine;
 
-namespace UnityEditor.Experimental.Build.AssetBundle
+namespace UnityEditor.Build.Content
 {
-    [NativeHeader("Modules/BuildPipeline/Editor/Public/BuildReferenceMap.h")]
     [Serializable]
     [UsedByNativeCode]
+    [NativeHeader("Modules/BuildPipeline/Editor/Public/BuildReferenceMap.h")]
     public class BuildReferenceMap : ISerializable, IDisposable
     {
         private IntPtr m_Ptr;
@@ -23,10 +25,16 @@ namespace UnityEditor.Experimental.Build.AssetBundle
 
         ~BuildReferenceMap()
         {
-            Dispose();
+            Dispose(false);
         }
 
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             if (m_Ptr != IntPtr.Zero)
             {
@@ -35,46 +43,60 @@ namespace UnityEditor.Experimental.Build.AssetBundle
             }
         }
 
-        [FreeFunction("BuildPipeline::BuildReferenceMap::Internal_Create")]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern IntPtr Internal_Create();
 
-        [FreeFunction("BuildPipeline::BuildReferenceMap::Internal_Destroy", true)]
+        [NativeMethod(IsThreadSafe = true)]
         private static extern void Internal_Destroy(IntPtr ptr);
 
-        private extern int GetHash();
+        public extern Hash128 GetHash128();
 
-        internal extern string SerializeNativeToString();
+        internal extern string SerializeToJson();
+        internal extern void DeserializeFromJson(string data);
 
-        internal extern void DeserializeNativeFromString(string data);
+        internal extern byte[] SerializeToBinary();
+        internal extern void DeserializeFromBinary([Out] byte[] data);
 
-        public extern void AddMapping(string internalFileName, long serializationIndex, ObjectIdentifier objectID);
+        public void AddMapping(string internalFileName, long serializationIndex, ObjectIdentifier objectID, bool overwrite = false)
+        {
+            Internal_AddMapping(internalFileName, serializationIndex, objectID, overwrite);
+        }
 
-        public extern void AddMappings(string internalFileName, SerializationInfo[] objectIDs);
+        [NativeMethod("AddMapping")]
+        private extern void Internal_AddMapping(string internalFileName, long serializationIndex, ObjectIdentifier objectID, bool overwrite);
+
+        public void AddMappings(string internalFileName, SerializationInfo[] objectIDs, bool overwrite = false)
+        {
+            Internal_AddMappings(internalFileName, objectIDs, overwrite);
+        }
+
+        [NativeMethod("AddMappings")]
+        private extern void Internal_AddMappings(string internalFileName, SerializationInfo[] objectIDs, bool overwrite);
 
         public override bool Equals(object obj)
         {
             BuildReferenceMap other = obj as BuildReferenceMap;
             if (other == null)
                 return false;
-            return other.GetHash() == GetHash();
+            return other.GetHash128() == GetHash128();
         }
 
         public override int GetHashCode()
         {
-            return GetHash();
+            return GetHash128().GetHashCode();
         }
 
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, StreamingContext context)
         {
-            string text = SerializeNativeToString();
-            info.AddValue("tags", text);
+            byte[] data = SerializeToBinary();
+            info.AddValue("referenceMap", data);
         }
 
         protected BuildReferenceMap(System.Runtime.Serialization.SerializationInfo info, StreamingContext context)
         {
             m_Ptr = Internal_Create();
-            string serializedBuildReferenceMapString = (string)info.GetValue("tags", typeof(string));
-            DeserializeNativeFromString(serializedBuildReferenceMapString);
+            byte[] data = (byte[])info.GetValue("referenceMap", typeof(byte[]));
+            DeserializeFromBinary(data);
         }
     }
 }

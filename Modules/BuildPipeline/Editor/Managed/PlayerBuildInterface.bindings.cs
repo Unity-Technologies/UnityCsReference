@@ -9,7 +9,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Collections.Generic;
 
-namespace UnityEditor.Experimental.Build.Player
+namespace UnityEditor.Build.Player
 {
     public enum ScriptCompilationOptions
     {
@@ -66,7 +66,7 @@ namespace UnityEditor.Experimental.Build.Player
     }
 
     [NativeHeader("Modules/BuildPipeline/Editor/Public/PlayerBuildInterface.h")]
-    public class PlayerBuildInterface
+    public static class PlayerBuildInterface
     {
         public static Func<IEnumerable<string>> ExtraTypesProvider;
 

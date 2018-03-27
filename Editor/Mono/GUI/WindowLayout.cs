@@ -10,17 +10,16 @@ using System.IO;
 using UnityEditorInternal;
 using UnityEditor.VersionControl;
 using UnityEditor.Connect;
+using UnityEditor.ShortcutManagement;
 using UnityEditor.Web;
 using UnityEngine;
-
+using Directory = System.IO.Directory;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
     internal class WindowLayout
     {
-        static internal PrefKey s_MaximizeKey = new PrefKey("Window/Maximize View", "# ");
-
         private const string kMaximizeRestoreFile = "CurrentMaximizeLayout.dwlt";
 
         /// Used by EditorWindowController to display the window
@@ -213,42 +212,6 @@ namespace UnityEditor
             return window.m_Parent is MaximizedHostView;
         }
 
-        static internal void MaximizeKeyHandler()
-        {
-            if ((s_MaximizeKey.activated || Event.current.type == EditorGUIUtility.magnifyGestureEventType) && GUIUtility.hotControl == 0)
-            {
-                EventType type = Event.current.type;
-                Event.current.Use();
-                EditorWindow mouseOver = EditorWindow.mouseOverWindow;
-                if (mouseOver)
-                {
-                    if (!(mouseOver is PreviewWindow))
-                    {
-                        if (type == EditorGUIUtility.magnifyGestureEventType)
-                        {
-                            if (Event.current.delta.x < -0.05)
-                            {
-                                if (IsMaximized(mouseOver))
-                                    Unmaximize(mouseOver);
-                            }
-                            else if (Event.current.delta.x > 0.05)
-                            {
-                                if (!IsMaximized(mouseOver))
-                                    Maximize(mouseOver);
-                            }
-                        }
-                        else
-                        {
-                            if (IsMaximized(mouseOver))
-                                Unmaximize(mouseOver);
-                            else
-                                Maximize(mouseOver);
-                        }
-                    }
-                }
-            }
-        }
-
         public static void Unmaximize(EditorWindow win)
         {
             HostView maximizedHostView = win.m_Parent;
@@ -356,6 +319,38 @@ namespace UnityEditor
             {
                 ContainerWindow.SetFreezeDisplay(false);
             }
+        }
+
+        internal static void MaximizeGestureHandler()
+        {
+            if (Event.current.type != EditorGUIUtility.magnifyGestureEventType || GUIUtility.hotControl != 0)
+                return;
+
+            var mouseOverWindow = EditorWindow.mouseOverWindow;
+            if (mouseOverWindow == null)
+                return;
+
+            var args = new ShortcutArguments { state = ShortcutState.End };
+            if (IsMaximized(mouseOverWindow))
+                args.context = Event.current.delta.x < -0.05f ? mouseOverWindow : null;
+            else
+                args.context = Event.current.delta.x > 0.05f ? mouseOverWindow : null;
+
+            if (args.context != null)
+                MaximizeKeyHandler(args);
+        }
+
+        [Shortcut("Window/Maximize View", null, "# ")]
+        [FormerlyPrefKeyAs("Window/Maximize View", "# ")]
+        internal static void MaximizeKeyHandler(ShortcutArguments args)
+        {
+            if (args.context == null || args.context is PreviewWindow)
+                return;
+
+            if (IsMaximized(args.context))
+                Unmaximize(args.context);
+            else
+                Maximize(args.context);
         }
 
         public static void AddSplitViewAndChildrenRecurse(View splitview, ArrayList list)

@@ -13,14 +13,12 @@ using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
 using Object = UnityEngine.Object;
 using UnityEditor.VersionControl;
-using UnityEngine.Events;
 using UnityEngine.Profiling;
-using UnityEngine.SceneManagement;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Inspector", useTypeNameAsIconName = true)]
-    public class InspectorWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver
+    internal class InspectorWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver
     {
         internal Vector2 m_ScrollPosition;
         internal InspectorMode   m_InspectorMode = InspectorMode.Normal;
@@ -67,10 +65,10 @@ namespace UnityEditor
         private bool   m_InvalidateGUIBlockCache = true;
 
         private List<IPreviewable> m_Previews;
+        private Dictionary<Type, List<Type>> m_PreviewableTypes;
         private IPreviewable m_SelectedPreview;
 
         private EditorDragging editorDragging;
-        static public Action<Editor> OnPostHeaderGUI = null;
 
         [SerializeField]
         InspectorHistory m_History = null;
@@ -366,27 +364,62 @@ namespace UnityEditor
             }
         }
 
-        private IEnumerable<IPreviewable> GetPreviewsForType(Editor editor)
+        private Dictionary<Type, List<Type>> GetPreviewableTypes()
         {
-            //TODO: cache this in a map. probably in another utility class
-            List<IPreviewable> previews = new List<IPreviewable>();
-
-            foreach (var type in EditorAssemblies.GetAllTypesWithInterface<IPreviewable>())
+            // We initialize this list once per InspectorWindow, instead of globally.
+            // This means that if the user is debugging an IPreviewable structure,
+            // the InspectorWindow can be closed and reopened to refresh this list.
+            //
+            if (m_PreviewableTypes == null)
             {
-                if (typeof(Editor).IsAssignableFrom(type)) //we don't want Editor classes with preview here.
-                    continue;
-
-                var attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false);
-                foreach (var attr in attrs)
+                m_PreviewableTypes = new Dictionary<Type, List<Type>>();
+                foreach (var type in EditorAssemblies.GetAllTypesWithInterface<IPreviewable>())
                 {
-                    var previewAttr = (CustomPreviewAttribute)attr;
-                    if (editor.target == null || previewAttr.m_Type != editor.target.GetType())
+                    // we don't want Editor classes with preview here.
+                    if (type.IsSubclassOf(typeof(Editor)))
                         continue;
 
-                    var preview = Activator.CreateInstance(type) as IPreviewable;
-                    preview.Initialize(editor.targets);
-                    previews.Add(preview);
+                    // Record only the types with a CustomPreviewAttribute.
+                    var attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false) as CustomPreviewAttribute[];
+                    foreach (CustomPreviewAttribute previewAttr in attrs)
+                    {
+                        if (previewAttr.m_Type == null)
+                            continue;
+
+                        List<Type> previewableTypes;
+                        if (!m_PreviewableTypes.TryGetValue(previewAttr.m_Type, out previewableTypes))
+                        {
+                            previewableTypes = new List<Type>();
+                            m_PreviewableTypes.Add(previewAttr.m_Type, previewableTypes);
+                        }
+                        previewableTypes.Add(type);
+                    }
                 }
+            }
+
+            return m_PreviewableTypes;
+        }
+
+        private IEnumerable<IPreviewable> GetPreviewsForType(Editor editor)
+        {
+            List<IPreviewable> previews = new List<IPreviewable>();
+
+            // Retrieve the type we are looking for.
+            if (editor == null || editor.target == null)
+                return previews;
+            Type targetType = editor.target.GetType();
+            if (!GetPreviewableTypes().ContainsKey(targetType))
+                return previews;
+
+            var previewerList = GetPreviewableTypes()[targetType];
+            if (previewerList == null)
+                return previews;
+
+            foreach (var previewerType in previewerList)
+            {
+                var preview = Activator.CreateInstance(previewerType) as IPreviewable;
+                preview.Initialize(editor.targets);
+                previews.Add(preview);
             }
             return previews;
         }
@@ -1226,6 +1259,15 @@ namespace UnityEditor
             // so we don't draw a component header for all the components that can't be shown.
             if (!largeHeader)
             {
+                // ensure first component's title bar is flush with the header
+                if (editorIndex > 0 && editors[editorIndex - 1].target is GameObject && target is Component)
+                {
+                    GUILayout.Space(
+                        -1f                                                                                   // move back up so line overlaps
+                        - EditorStyles.inspectorBig.margin.bottom - EditorStyles.inspectorTitlebar.margin.top // move back up margins
+                        );
+                }
+
                 using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
                 {
                     bool isVisible = UnityEditor.EditorGUILayout.InspectorTitlebar(wasVisible, editor.targets, editor.CanBeExpandedViaAFoldout());
@@ -1250,8 +1292,6 @@ namespace UnityEditor
             }
 
             DisplayDeprecationMessageIfNecessary(editor);
-            if (OnPostHeaderGUI != null)
-                OnPostHeaderGUI(editor);
 
             // We need to reset again after drawing the header.
             EditorGUIUtility.ResetGUIState();
@@ -1272,7 +1312,7 @@ namespace UnityEditor
                 OptimizedGUIBlock optimizedBlock;
 
                 EditorGUIUtility.hierarchyMode = true;
-                EditorGUIUtility.wideMode = position.width > 330;
+                EditorGUIUtility.wideMode = position.width > Editor.k_WideModeMinWidth;
 
                 //set the current PropertyHandlerCache to the current editor
                 ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;

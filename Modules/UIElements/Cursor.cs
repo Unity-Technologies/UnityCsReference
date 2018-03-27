@@ -2,11 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public struct CursorStyle
+    public struct CursorStyle : IEquatable<CursorStyle>
     {
         public Texture2D texture { get; set; }
         public Vector2 hotspot { get; set; }
@@ -20,13 +21,12 @@ namespace UnityEngine.Experimental.UIElements
 
         public override bool Equals(object other)
         {
-            if (!(other is CursorStyle))
-            {
-                return false;
-            }
+            return other is CursorStyle && Equals((CursorStyle)other);
+        }
 
-            CursorStyle rhs = (CursorStyle)other;
-            return texture.Equals(rhs.texture) && hotspot.Equals(rhs.hotspot) && defaultCursorId == rhs.defaultCursorId;
+        public bool Equals(CursorStyle other)
+        {
+            return texture.Equals(other.texture) && hotspot.Equals(other.hotspot) && defaultCursorId == other.defaultCursorId;
         }
 
         public static bool operator==(CursorStyle lhs, CursorStyle rhs)

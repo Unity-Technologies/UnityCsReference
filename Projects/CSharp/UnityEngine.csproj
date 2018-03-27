@@ -281,6 +281,9 @@
   <Compile Include="..\..\Runtime\Export\Director\PlayableOutputExtensions.cs">
     <Link>Runtime\Export\Director\PlayableOutputExtensions.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Director\PlayableOutputExtensions.deprecated.cs">
+    <Link>Runtime\Export\Director\PlayableOutputExtensions.deprecated.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Director\ScriptPlayable.cs">
     <Link>Runtime\Export\Director\ScriptPlayable.cs</Link>
   </Compile>
@@ -919,6 +922,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\iOS\tvOSDevice.bindings.cs">
     <Link>Runtime\Export\iOS\tvOSDevice.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs">
     <Link>Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs</Link>
@@ -1745,11 +1751,17 @@
   <Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestUtils.cs">
     <Link>Modules\UnityWebRequest\Public\WebRequestUtils.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Video\Public\ScriptBindings\MediaComponent.bindings.cs">
+    <Link>Modules\Video\Public\ScriptBindings\MediaComponent.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoClip.bindings.cs">
     <Link>Modules\Video\Public\ScriptBindings\VideoClip.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoClipPlayable.bindings.cs">
     <Link>Modules\Video\Public\ScriptBindings\VideoClipPlayable.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoMediaPlayback.bindings.cs">
+    <Link>Modules\Video\Public\ScriptBindings\VideoMediaPlayback.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\Video\Public\ScriptBindings\VideoPlayer.bindings.cs">
     <Link>Modules\Video\Public\ScriptBindings\VideoPlayer.bindings.cs</Link>
@@ -1847,6 +1859,15 @@
   <Compile Include="..\..\Runtime\Animation\Managed\Animator.deprecated.cs">
     <Link>Runtime\Animation\Managed\Animator.deprecated.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Animation\Managed\IAnimationJob.cs">
+    <Link>Runtime\Animation\Managed\IAnimationJob.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Animation\Managed\IAnimationJobPlayable.cs">
+    <Link>Runtime\Animation\Managed\IAnimationJobPlayable.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Animation\Managed\ProcessAnimationJobStruct.cs">
+    <Link>Runtime\Animation\Managed\ProcessAnimationJobStruct.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Animation\Managed\StateMachineBehaviour.cs">
     <Link>Runtime\Animation\Managed\StateMachineBehaviour.cs</Link>
   </Compile>
@@ -1858,6 +1879,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationClipPlayable.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimationClipPlayable.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationHumanStream.bindings.cs">
+    <Link>Runtime\Animation\ScriptBindings\AnimationHumanStream.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimationLayerMixerPlayable.bindings.cs</Link>
@@ -1880,6 +1904,15 @@
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs">
+    <Link>Runtime\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationStream.bindings.cs">
+    <Link>Runtime\Animation\ScriptBindings\AnimationStream.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationStreamHandles.bindings.cs">
+    <Link>Runtime\Animation\ScriptBindings\AnimationStreamHandles.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\Animator.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\Animator.bindings.cs</Link>
   </Compile>
@@ -1888,6 +1921,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimatorControllerPlayable.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorJobExtensions.bindings.cs">
+    <Link>Runtime\Animation\ScriptBindings\AnimatorJobExtensions.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimatorOverrideController.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimatorOverrideController.bindings.cs</Link>
@@ -1918,6 +1954,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\Motion.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\Motion.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Animation\ScriptBindings\MuscleHandle.bindings.cs">
+    <Link>Runtime\Animation\ScriptBindings\MuscleHandle.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\ParentConstraint.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\ParentConstraint.bindings.cs</Link>

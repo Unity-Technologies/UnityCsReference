@@ -2825,6 +2825,9 @@
   <Compile Include="..\..\Editor\Mono\SceneModeWindows\TierSettingsWindow.cs">
     <Link>Editor\Mono\SceneModeWindows\TierSettingsWindow.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneView\CameraFlyModeContext.cs">
+    <Link>Editor\Mono\SceneView\CameraFlyModeContext.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\SceneView\RectSelection.cs">
     <Link>Editor\Mono\SceneView\RectSelection.cs</Link>
   </Compile>
@@ -3151,6 +3154,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\SyncProject.cs">
     <Link>Editor\Mono\SyncProject.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\TagManager.bindings.cs">
+    <Link>Editor\Mono\TagManager.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\TerrainEditor\Brush.cs">
     <Link>Editor\Mono\TerrainEditor\Brush.cs</Link>
@@ -3683,14 +3689,8 @@
   <Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs">
     <Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\AssetBundleBuildInterface.bindings.cs">
-    <Link>Modules\BuildPipeline\Editor\Managed\AssetBundleBuildInterface.bindings.cs</Link>
-  </Compile>
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildDefines.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\BuildDefines.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildInput.cs">
-    <Link>Modules\BuildPipeline\Editor\Managed\BuildInput.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildOutput.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\BuildOutput.cs</Link>
@@ -3701,11 +3701,14 @@
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildSettings.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\BuildSettings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsage.cs">
-    <Link>Modules\BuildPipeline\Editor\Managed\BuildUsage.cs</Link>
+  <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageTagGlobal.cs">
+    <Link>Modules\BuildPipeline\Editor\Managed\BuildUsageTagGlobal.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageTagSet.bindings.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\BuildUsageTagSet.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ContentBuildInterface.bindings.cs">
+    <Link>Modules\BuildPipeline\Editor\Managed\ContentBuildInterface.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\ObjectIdentifier.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\ObjectIdentifier.cs</Link>
@@ -3815,11 +3818,14 @@
   <Compile Include="..\..\Modules\GraphViewEditor\Elements\GraphElement.cs">
     <Link>Modules\GraphViewEditor\Elements\GraphElement.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\GraphElementGroupNodeExtensions.cs">
-    <Link>Modules\GraphViewEditor\Elements\GraphElementGroupNodeExtensions.cs</Link>
+  <Compile Include="..\..\Modules\GraphViewEditor\Elements\GraphElementScopeExtensions.cs">
+    <Link>Modules\GraphViewEditor\Elements\GraphElementScopeExtensions.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\GraphViewEditor\Elements\GroupNode.cs">
-    <Link>Modules\GraphViewEditor\Elements\GroupNode.cs</Link>
+  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Group.cs">
+    <Link>Modules\GraphViewEditor\Elements\Group.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\Elements\GroupDropArea.cs">
+    <Link>Modules\GraphViewEditor\Elements\GroupDropArea.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Elements\MiniMap.cs">
     <Link>Modules\GraphViewEditor\Elements\MiniMap.cs</Link>
@@ -3833,11 +3839,29 @@
   <Compile Include="..\..\Modules\GraphViewEditor\Elements\Port.cs">
     <Link>Modules\GraphViewEditor\Elements\Port.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\Elements\Scope.cs">
+    <Link>Modules\GraphViewEditor\Elements\Scope.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\Elements\ScopeContentContainer.cs">
+    <Link>Modules\GraphViewEditor\Elements\ScopeContentContainer.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\Elements\StackNode.cs">
+    <Link>Modules\GraphViewEditor\Elements\StackNode.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\Elements\StackNodeDropTarget.cs">
+    <Link>Modules\GraphViewEditor\Elements\StackNodeDropTarget.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\Elements\StackNodeSeparator.cs">
+    <Link>Modules\GraphViewEditor\Elements\StackNodeSeparator.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Elements\TokenNode.cs">
     <Link>Modules\GraphViewEditor\Elements\TokenNode.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\IDroppable.cs">
     <Link>Modules\GraphViewEditor\IDroppable.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\IInsertLocation.cs">
+    <Link>Modules\GraphViewEditor\IInsertLocation.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\ISelectable.cs">
     <Link>Modules\GraphViewEditor\ISelectable.cs</Link>
@@ -3868,6 +3892,9 @@
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\FreehandSelector.cs">
     <Link>Modules\GraphViewEditor\Manipulators\FreehandSelector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\Inserter.cs">
+    <Link>Modules\GraphViewEditor\Manipulators\Inserter.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Manipulators\RectangleSelector.cs">
     <Link>Modules\GraphViewEditor\Manipulators\RectangleSelector.cs</Link>
@@ -3904,6 +3931,9 @@
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Utils\VisualElementAttacher.cs">
     <Link>Modules\GraphViewEditor\Utils\VisualElementAttacher.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\GraphViewEditor\ValueAnimation.cs">
+    <Link>Modules\GraphViewEditor\ValueAnimation.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\GraphViewEditor\Views\GraphView.cs">
     <Link>Modules\GraphViewEditor\Views\GraphView.cs</Link>
@@ -3958,6 +3988,9 @@
   </Compile>
   <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManager.bindings.cs">
     <Link>Modules\PackageManager\Editor\Managed\PackageManager.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManager.cs">
+    <Link>Modules\PackageManager\Editor\Managed\PackageManager.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs">
     <Link>Modules\PackageManager\Editor\Managed\PackageManagerCommands.cs</Link>
@@ -4129,6 +4162,51 @@
   </Compile>
   <Compile Include="..\..\Modules\RestService\ScriptEditorSettings.cs">
     <Link>Modules\RestService\ScriptEditorSettings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ConflictResolver.cs">
+    <Link>Modules\ShortcutManagerEditor\ConflictResolver.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\Directory.cs">
+    <Link>Modules\ShortcutManagerEditor\Directory.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\Discovery.cs">
+    <Link>Modules\ShortcutManagerEditor\Discovery.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs">
+    <Link>Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\IConflictResolver.cs">
+    <Link>Modules\ShortcutManagerEditor\IConflictResolver.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\IDirectory.cs">
+    <Link>Modules\ShortcutManagerEditor\IDirectory.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\IDiscovery.cs">
+    <Link>Modules\ShortcutManagerEditor\IDiscovery.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\IShortcutPriorityContext.cs">
+    <Link>Modules\ShortcutManagerEditor\IShortcutPriorityContext.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutAttribute.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutAttribute.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutController.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutController.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutEntry.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutEntry.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutProfile.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutProfile.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutProfileLoader.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutProfileLoader.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutProfileManager.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutProfileManager.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\Trigger.cs">
+    <Link>Modules\ShortcutManagerEditor\Trigger.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\SpriteMaskEditor\Editor\Managed\SpriteMaskEditor.cs">
     <Link>Modules\SpriteMaskEditor\Editor\Managed\SpriteMaskEditor.cs</Link>

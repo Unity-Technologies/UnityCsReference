@@ -134,6 +134,21 @@ public Color[] GetPixels( [uei.DefaultValue("0")] int miplevel )
         set;
     }
 
+    internal float pixelsPerPoint
+        {
+            get { return GetPixelsPerPoint_Internal(); }
+            set { SetPixelsPerPoint_Internal(value); }
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private float GetPixelsPerPoint_Internal () ;
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void SetPixelsPerPoint_Internal (float value) ;
+
 }
 
 [ExcludeFromPreset]

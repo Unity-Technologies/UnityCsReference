@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
@@ -33,14 +34,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             for (int i = 0; i < pickList.Count; i++)
             {
-                if (pickList[i] == target)
+                if (pickList[i] == target && target != m_GraphView)
                     continue;
 
                 var picked = pickList[i];
 
                 dropTarget = picked as IDropTarget;
 
-                if (dropTarget != null && dropTarget != target)
+                if (dropTarget != null)
                 {
                     if (exclusionList.Contains(picked))
                     {
@@ -120,6 +121,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (m_Active)
             {
+                if (m_PrevDropTarget != null && m_GraphView != null)
+                {
+                    if (m_PrevDropTarget.CanAcceptDrop(m_GraphView.selection))
+                    {
+                        m_PrevDropTarget.DragExited();
+                    }
+                }
+
                 // Stop processing the event sequence if the target has lost focus, then.
                 selectedElement = null;
                 m_PrevDropTarget = null;
@@ -168,7 +177,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (ce == null || !ce.IsMovable())
                         continue;
 
-                    m_OriginalPos[ce] = ce.GetPosition();
+                    if (ce.parent is StackNode)
+                    {
+                        StackNode stackNode = ce.parent as StackNode;
+
+                        if (stackNode.IsSelected(m_GraphView))
+                            continue;
+                    }
+
+                    Rect geometry = ce.GetPosition();
+                    Rect geometryInContentViewSpace = ce.shadow.parent.ChangeCoordinatesTo(m_GraphView.contentViewContainer, geometry);
+                    m_OriginalPos[ce] = geometryInContentViewSpace;
                 }
 
                 m_originalMouse = e.mousePosition;
@@ -247,16 +266,27 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 GraphElement ce = v.Key;
 
-                Matrix4x4 g = ce.worldTransform;
-                var scale = new Vector3(g.m00, g.m11, g.m22);
+                // Detach the selected element from its parent before dragging it
+                // TODO: Make it more generic
+                if (ce.parent is StackNode)
+                {
+                    StackNode stackNode = ce.parent as StackNode;
 
-                Rect ceLayout = ce.GetPosition();
+                    ce.RemoveFromHierarchy();
 
-                ce.SetPosition(
-                    new Rect(v.Value.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x,
-                        v.Value.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y,
-                        ceLayout.width, ceLayout.height));
+                    m_GraphView.AddElement(ce);
+                    // Reselect it because RemoveFromHierarchy unselected it
+                    ce.Select(m_GraphView, true);
+
+                    if (m_GraphView.elementRemovedFromStackNode != null)
+                    {
+                        m_GraphView.elementRemovedFromStackNode(stackNode, ce);
+                    }
+                }
+
+                MoveElement(ce, v.Value);
             }
+
             List<ISelectable> selection = m_GraphView.selection;
 
             // TODO: Replace with a temp drawing or something...maybe manipulator could fake position
@@ -290,18 +320,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             foreach (KeyValuePair<GraphElement, Rect> v in m_OriginalPos)
             {
-                GraphElement ce = v.Key;
-
-                Matrix4x4 g = ce.worldTransform;
-                var scale = new Vector3(g.m00, g.m11, g.m22);
-
-                Rect ceLayout = ce.GetPosition();
-
-                ce.SetPosition(
-                    new Rect(v.Value.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x,
-                        v.Value.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y,
-                        ceLayout.width, ceLayout.height));
+                MoveElement(v.Key, v.Value);
             }
+        }
+
+        void MoveElement(GraphElement element, Rect originalPos)
+        {
+            Matrix4x4 g = element.worldTransform;
+            var scale = new Vector3(g.m00, g.m11, g.m22);
+
+            Rect newPost = new Rect(0, 0, originalPos.width, originalPos.height);
+
+            // Compute the new position of the selected element using the mouse delta position and panning info
+            newPost.x = originalPos.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x;
+            newPost.y = originalPos.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y;
+
+            element.SetPosition(m_GraphView.contentViewContainer.ChangeCoordinatesTo(element.shadow.parent, newPost));
         }
 
         protected new void OnMouseUp(MouseUpEvent evt)

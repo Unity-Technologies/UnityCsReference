@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
@@ -174,7 +175,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public virtual void OnSelected()
         {
-            if (IsAscendable())
+            if (IsAscendable() && style.positionType != PositionType.Relative)
                 BringToFront();
         }
 
@@ -190,9 +191,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public virtual void Select(VisualElement selectionContainer, bool additive)
         {
             var gView = selectionContainer as GraphView;
-            if (gView != null &&
-                (parent == gView.contentViewContainer ||
-                 (parent != null && parent.parent == gView.contentViewContainer)))
+            if (gView != null && selectionContainer.Contains(this))
             {
                 if (!gView.selection.Contains(this))
                 {
@@ -207,9 +206,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public virtual void Unselect(VisualElement  selectionContainer)
         {
             var gView = selectionContainer as GraphView;
-            if (gView != null &&
-                (parent == gView.contentViewContainer ||
-                 (parent != null && parent.parent == gView.contentViewContainer)))
+            if (gView != null && selectionContainer.Contains(this))
             {
                 if (gView.selection.Contains(this))
                 {
@@ -221,9 +218,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public virtual bool IsSelected(VisualElement selectionContainer)
         {
             var gView = selectionContainer as GraphView;
-            if (gView != null &&
-                (parent == gView.contentViewContainer ||
-                 (parent != null && parent.parent == gView.contentViewContainer)))
+            if (gView != null && selectionContainer.Contains(this))
             {
                 if (gView.selection.Contains(this))
                 {

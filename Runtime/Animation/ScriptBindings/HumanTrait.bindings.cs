@@ -82,12 +82,21 @@ namespace UnityEngine
         // Return default maximum values for muscle.
         extern public static float GetMuscleDefaultMax(int i);
 
+        // Return bone hierarchy mass
+        static public float GetBoneDefaultHierarchyMass(int i)
+        {
+            return Internal_GetBoneHierarchyMass(GetBoneIndexFromMono(i));
+        }
+
         // Return parent human bone id
         static public int GetParentBone(int i)
         {
             int parentIndex = Internal_GetParent(GetBoneIndexFromMono(i));
             return parentIndex != -1 ? GetBoneIndexToMono(parentIndex) : -1;
         }
+
+        [NativeMethod("GetBoneHierarchyMass")]
+        extern static float Internal_GetBoneHierarchyMass(int i);
 
         [NativeMethod("GetParent")]
         extern static int Internal_GetParent(int i);

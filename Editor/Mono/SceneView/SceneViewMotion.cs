@@ -26,14 +26,7 @@ namespace UnityEditor
 
         static int s_ViewToolID = GUIUtility.GetPermanentControlID();
 
-        static PrefKey kFPSForward = new PrefKey("View/FPS Forward", "w");
-        static PrefKey kFPSBack = new PrefKey("View/FPS Back", "s");
-        static PrefKey kFPSLeft = new PrefKey("View/FPS Strafe Left", "a");
-        static PrefKey kFPSRight = new PrefKey("View/FPS Strafe Right", "d");
-        static PrefKey kFPSUp = new PrefKey("View/FPS Strafe Up", "e");
-        static PrefKey kFPSDown = new PrefKey("View/FPS Strafe Down", "q");
-
-        static TimeHelper s_FPSTiming = new TimeHelper();
+        static readonly CameraFlyModeContext s_CameraFlyModeContext = new CameraFlyModeContext();
 
         // CURSOR KEYS
         public static void ArrowKeys(SceneView sv)
@@ -153,6 +146,16 @@ namespace UnityEditor
                 view.FixNegativeSize();
             }
 
+            s_CameraFlyModeContext.active = Tools.viewTool == ViewTool.FPS;
+            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(s_CameraFlyModeContext))
+            {
+                if (inputSamplingScope.currentlyMoving)
+                    view.viewIsLockedToObject = false;
+                if (inputSamplingScope.inputVectorChanged)
+                    s_FlySpeed = 0;
+                s_Motion = inputSamplingScope.currentInputVector;
+            }
+
             switch (eventType)
             {
                 case EventType.ScrollWheel:     HandleScrollWheel(view, view.in2DMode == evt.alt); break; // Default to zooming to mouse position in 2D mode without alt
@@ -160,7 +163,6 @@ namespace UnityEditor
                 case EventType.MouseUp:         HandleMouseUp(view, id, evt.button, evt.clickCount); break;
                 case EventType.MouseDrag:       HandleMouseDrag(view, id); break;
                 case EventType.KeyDown:         HandleKeyDown(view); break;
-                case EventType.KeyUp:           HandleKeyUp(); break;
                 case EventType.Layout:
                 {
                     Vector3 motion = GetMovementDirection();
@@ -186,7 +188,7 @@ namespace UnityEditor
 
         static Vector3 GetMovementDirection()
         {
-            float deltaTime = s_FPSTiming.Update();
+            var deltaTime = CameraFlyModeContext.deltaTime;
             if (s_Motion.sqrMagnitude == 0)
             {
                 s_FlySpeed = 0;
@@ -449,74 +451,6 @@ namespace UnityEditor
                 GUIUtility.hotControl = 0;
                 ResetDragState();
             }
-
-            if (Tools.s_LockedViewTool == ViewTool.FPS)
-            {
-                Event evt = Event.current;
-                Vector3 lastMotion = s_Motion;
-                if (evt.keyCode == ((Event)kFPSForward).keyCode)
-                {
-                    sceneView.viewIsLockedToObject = false;
-                    s_Motion.z = 1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSBack).keyCode)
-                {
-                    sceneView.viewIsLockedToObject = false;
-                    s_Motion.z = -1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSLeft).keyCode)
-                {
-                    sceneView.viewIsLockedToObject = false;
-                    s_Motion.x = -1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSRight).keyCode)
-                {
-                    sceneView.viewIsLockedToObject = false;
-                    s_Motion.x = 1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSUp).keyCode)
-                {
-                    sceneView.viewIsLockedToObject = false;
-                    s_Motion.y = 1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSDown).keyCode)
-                {
-                    sceneView.viewIsLockedToObject = false;
-                    s_Motion.y = -1;
-                    evt.Use();
-                }
-
-                if (evt.type != EventType.KeyDown && lastMotion.sqrMagnitude == 0)
-                    s_FPSTiming.Begin();
-            }
-        }
-
-        private static void HandleKeyUp()
-        {
-            if (Tools.s_LockedViewTool == ViewTool.FPS)
-            {
-                Event evt = Event.current;
-                if (evt.keyCode == ((Event)kFPSForward).keyCode || evt.keyCode == ((Event)kFPSBack).keyCode)
-                {
-                    s_Motion.z = 0;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSLeft).keyCode || evt.keyCode == ((Event)kFPSRight).keyCode)
-                {
-                    s_Motion.x = 0;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSUp).keyCode || evt.keyCode == ((Event)kFPSDown).keyCode)
-                {
-                    s_Motion.y = 0;
-                    evt.Use();
-                }
-            }
         }
 
         private static void HandleScrollWheel(SceneView view, bool zoomTowardsCenter)
@@ -553,6 +487,11 @@ namespace UnityEditor
         public static void ResetMotion()
         {
             s_Motion = Vector3.zero;
+        }
+
+        public static void DeactivateFlyModeContext()
+        {
+            s_CameraFlyModeContext.active = false;
         }
     }
 

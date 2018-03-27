@@ -238,10 +238,8 @@ namespace UnityEditor
 
                 List<int> allowedInstanceIDs = ObjectSelector.get.allowedInstanceIDs;
 
-                HierarchyProperty prop = new HierarchyProperty(HierarchyType.Assets);
-                prop.SetSearchFilter(new SearchFilter() {classNames = new[] {"AudioMixerController"}});
                 var controllers = new List<AudioMixerController>();
-                while (prop.Next(null))
+                foreach (var prop in AssetDatabase.FindAllAssets(new SearchFilter() { classNames = new[] { "AudioMixerController" } }))
                 {
                     var controller = prop.pptrValue as AudioMixerController;
                     if (ShouldShowController(controller, allowedInstanceIDs))

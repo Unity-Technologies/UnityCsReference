@@ -590,7 +590,7 @@ namespace UnityEngine
 
     [Serializable]
     [UsedByNativeCode]
-    public struct BoneWeight
+    public struct BoneWeight : IEquatable<BoneWeight>
     {
         [SerializeField]
         private float   m_Weight0, m_Weight1, m_Weight2, m_Weight3;
@@ -616,11 +616,13 @@ namespace UnityEngine
 
         public override bool Equals(object other)
         {
-            if (!(other is BoneWeight)) return false;
+            return other is BoneWeight && Equals((BoneWeight)other);
+        }
 
-            BoneWeight rhs = (BoneWeight)other;
-            return boneIndex0.Equals(rhs.boneIndex0) && boneIndex1.Equals(rhs.boneIndex1) && boneIndex2.Equals(rhs.boneIndex2) && boneIndex3.Equals(rhs.boneIndex3)
-                && (new Vector4(weight0, weight1, weight2, weight3)).Equals(new Vector4(rhs.weight0, rhs.weight1, rhs.weight2, rhs.weight3));
+        public bool Equals(BoneWeight other)
+        {
+            return boneIndex0.Equals(other.boneIndex0) && boneIndex1.Equals(other.boneIndex1) && boneIndex2.Equals(other.boneIndex2) && boneIndex3.Equals(other.boneIndex3)
+                && (new Vector4(weight0, weight1, weight2, weight3)).Equals(new Vector4(other.weight0, other.weight1, other.weight2, other.weight3));
         }
 
         public static bool operator==(BoneWeight lhs, BoneWeight rhs)

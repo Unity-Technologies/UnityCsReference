@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEditorInternal.VersionControl;
 
@@ -444,16 +445,6 @@ namespace UnityEditor.VersionControl
             refresh = refresh || refreshButtonClicked;
             GUI.color = origColor;
 
-            if (e.isKey && GUIUtility.keyboardControl == 0)
-            {
-                if (e.type == EventType.KeyDown && e.keyCode == KeyCode.F5)
-                {
-                    // TODO handle refresh different
-                    refresh = true;
-                    e.Use();
-                }
-            }
-
             if (refresh)
             {
                 if (refreshButtonClicked)
@@ -549,6 +540,14 @@ namespace UnityEditor.VersionControl
 
             if (repaint)
                 Repaint();
+        }
+
+        [Shortcut("VersionControl/RefreshWindow", typeof(WindowPending), "F5")]
+        static void RefreshWindow(ShortcutArguments args)
+        {
+            if (GUIUtility.keyboardControl != 0)
+                return;
+            (args.context as WindowPending).UpdateWindow();
         }
 
         /* Keep for future description area

@@ -5,6 +5,7 @@
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
@@ -18,6 +19,13 @@ namespace UnityEditor
         GUIContent closeWindowText = EditorGUIUtility.TrTextContent("Close Editor");
         GUIContent hideWindowText = EditorGUIUtility.TrTextContent("Hide Editor");
         static GUIContent m_PlayBackTitle;
+
+        public class ShortcutContext : IShortcutPriorityContext
+        {
+            public bool active { get; set; }
+        }
+
+        ShortcutContext m_ShortcutContext = new ShortcutContext { active = true };
 
 
         public static GUIContent playBackTitle
@@ -55,6 +63,8 @@ namespace UnityEditor
             EditorApplication.projectChanged += HierarchyOrProjectWindowWasChanged;
             SceneView.onSceneGUIDelegate += OnSceneViewGUI;
             Undo.undoRedoPerformed += UndoRedoPerformed;
+
+            ShortcutController.priorityContext = m_ShortcutContext;
         }
 
         public void OnDisable()
@@ -66,6 +76,8 @@ namespace UnityEditor
 
             if (m_ParticleEffectUI != null)
                 m_ParticleEffectUI.Clear();
+
+            m_ShortcutContext.active = false;
         }
 
         private void HierarchyOrProjectWindowWasChanged()

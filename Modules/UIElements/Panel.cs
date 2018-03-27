@@ -625,7 +625,11 @@ namespace UnityEngine.Experimental.UIElements
                             {
                                 // Paint self
                                 painter.currentWorldClip = textureClip;
+
+                                stylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
                                 root.DoRepaint(painter);
+                                stylePainter.opacity = 1.0f;
+
                                 root.ClearDirty(ChangeType.Repaint);
 
                                 PaintSubTreeChildren(e, root, childrenOffset, clippingOption, textureClip);
@@ -635,7 +639,7 @@ namespace UnityEngine.Experimental.UIElements
                         {
                             RenderTexture.active = root.renderData.pixelCache;
 
-                            // Fix up transform for subtree to match texture upper left
+                            // Fix up transform for subtree to match texture upper left.
                             painter.currentTransform = Matrix4x4.identity;
 
                             using (new GUIUtility.ManualTex2SRGBScope(manualTex2SRGBEnabled))

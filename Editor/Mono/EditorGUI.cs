@@ -5142,59 +5142,37 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Make a field for layer masks.
         internal static void LayerMaskField(Rect position, SerializedProperty property, GUIContent label)
         {
-            LayerMaskField(position, property, label, EditorStyles.layerMaskField);
+            LayerMaskField(position, unchecked((uint)property.intValue), property, label, EditorStyles.layerMaskField);
         }
 
-        internal static void LayerMaskField(Rect position, SerializedProperty property, GUIContent label, GUIStyle style)
+        internal static LayerMask LayerMaskField(Rect position, LayerMask layers, GUIContent label)
         {
-            LayerMaskField(position, property.layerMaskBits, property, label, style, SetLayerMaskValueDelegate);
+            return (LayerMask) unchecked((int)LayerMaskField(position, unchecked((uint)layers.value), null, label, EditorStyles.layerMaskField));
         }
 
-        internal static void LayerMaskField(Rect position, UInt32 layers, GUIContent label, EditorUtility.SelectMenuItemFunction callback)
+        internal static uint LayerMaskField(Rect position, UInt32 layers, GUIContent label)
         {
-            LayerMaskField(position, layers, null, label, EditorStyles.layerMaskField, callback);
+            return LayerMaskField(position, layers, null, label, EditorStyles.layerMaskField);
         }
 
-        internal static void LayerMaskField(Rect position, UInt32 layers, SerializedProperty property, GUIContent label, GUIStyle style, EditorUtility.SelectMenuItemFunction callback)
+        private static string[] s_LayerNames;
+        private static int[] s_LayerValues;
+
+        internal static uint LayerMaskField(Rect position, UInt32 layers, SerializedProperty property, GUIContent label, GUIStyle style)
         {
             int id = GUIUtility.GetControlID(s_LayerMaskField, FocusType.Keyboard, position);
+
             if (label != null)
             {
                 position = PrefixLabel(position, id, label);
             }
-            Event evt = Event.current;
-            if (evt.type == EventType.Repaint)
-            {
-                if (showMixedValue)
-                {
-                    BeginHandleMixedValueContentColor();
-                    style.Draw(position, s_MixedValueContent, id, false);
-                    EndHandleMixedValueContentColor();
-                }
-                else
-                {
-                    style.Draw(position, EditorGUIUtility.TempContent(SerializedProperty.GetLayerMaskStringValue(layers)), id, false);
-                }
-            }
-            else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(id))
-            {
-                SerializedProperty propertyWithPath = property?.serializedObject.FindProperty(property.propertyPath);
-                var userData = new Tuple<SerializedProperty, UInt32>(propertyWithPath, layers);
-                EditorUtility.DisplayCustomMenu(position, SerializedProperty.GetLayerMaskNames(layers), (property != null && property.hasMultipleDifferentValues) ? new int[0] : SerializedProperty.GetLayerMaskSelectedIndex(layers), callback, userData);
-                Event.current.Use();
-                GUIUtility.keyboardControl = id;
-            }
-        }
 
-        internal static void SetLayerMaskValueDelegate(object userData, string[] options, int selected)
-        {
-            var data = (Tuple<SerializedProperty, UInt32>)userData;
-            if (data.Item1 != null)
-            {
-                data.Item1.ToggleLayerMaskAtIndex(selected);
-                data.Item1.serializedObject.ApplyModifiedProperties();
-                data.Item2 = data.Item1.layerMaskBits;
-            }
+            TagManager.GetDefinedLayers(ref s_LayerNames, ref s_LayerValues);
+
+            var newValue = MaskFieldGUI.DoMaskField(position, id, unchecked((int)layers), s_LayerNames, s_LayerValues, style);
+            if (property != null)
+                property.intValue = newValue;
+            return unchecked((uint)newValue);
         }
 
         // Helper function for helping with debugging the editor
@@ -8230,10 +8208,16 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return EditorGUI.Foldout(r, foldout, content, toggleOnLabelClick, style);
         }
 
-        internal static void LayerMaskField(UInt32 layers, GUIContent label, EditorUtility.SelectMenuItemFunction callback, params GUILayoutOption[] options)
+        internal static uint LayerMaskField(UInt32 layers, GUIContent label, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, options);
-            EditorGUI.LayerMaskField(r, layers, label, callback);
+            return EditorGUI.LayerMaskField(r, layers, label);
+        }
+
+        internal static LayerMask LayerMaskField(LayerMask layers, GUIContent label, params GUILayoutOption[] options)
+        {
+            var rect = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, options);
+            return EditorGUI.LayerMaskField(rect, layers, label);
         }
 
         internal static void LayerMaskField(SerializedProperty property, GUIContent label, params GUILayoutOption[] options)

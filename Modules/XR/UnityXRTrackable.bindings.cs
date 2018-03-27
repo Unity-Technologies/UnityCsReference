@@ -13,7 +13,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/XRManagedBindings.h")]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct TrackableId
+    public struct TrackableId : IEquatable<TrackableId>
     {
         public override string ToString()
         {
@@ -29,15 +29,12 @@ namespace UnityEngine.Experimental.XR
 
         public override bool Equals(object obj)
         {
-            if (obj is TrackableId)
-            {
-                var id = (TrackableId)obj;
-                return
-                    (m_SubId1 == id.m_SubId1) &&
-                    (m_SubId2 == id.m_SubId2);
-            }
+            return obj is TrackableId && Equals((TrackableId)obj);
+        }
 
-            return false;
+        public bool Equals(TrackableId other)
+        {
+            return (m_SubId1 == other.m_SubId1) && (m_SubId2 == other.m_SubId2);
         }
 
         public static bool operator==(TrackableId id1, TrackableId id2)

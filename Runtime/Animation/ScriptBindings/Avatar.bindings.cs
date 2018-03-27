@@ -11,7 +11,7 @@ using System.Collections;
 
 namespace UnityEngine
 {
-    internal enum BodyDoF
+    public enum BodyDoF
     {
         SpineFrontBack = 0,
         SpineLeftRight,
@@ -25,7 +25,7 @@ namespace UnityEngine
         LastBodyDoF
     }
 
-    internal enum HeadDoF
+    public enum HeadDoF
     {
         NeckFrontBack = 0,
         NeckLeftRight,
@@ -42,7 +42,7 @@ namespace UnityEngine
         LastHeadDoF
     }
 
-    internal enum LegDoF
+    public enum LegDoF
     {
         UpperLegFrontBack = 0,
         UpperLegInOut,
@@ -55,7 +55,7 @@ namespace UnityEngine
         LastLegDoF
     }
 
-    internal enum ArmDoF
+    public enum ArmDoF
     {
         ShoulderDownUp = 0,
         ShoulderFrontBack,
@@ -69,13 +69,34 @@ namespace UnityEngine
         LastArmDoF
     }
 
-    internal enum FingerDoF
+    public enum FingerDoF
     {
         ProximalDownUp = 0,
         ProximalInOut,
         IntermediateCloseOpen,
         DistalCloseOpen,
         LastFingerDoF
+    }
+
+    public enum HumanPartDoF
+    {
+        Body = 0,
+        Head,
+        LeftLeg,
+        RightLeg,
+        LeftArm,
+        RightArm,
+        LeftThumb,
+        LeftIndex,
+        LeftMiddle,
+        LeftRing,
+        LeftLittle,
+        RightThumb,
+        RightIndex,
+        RightMiddle,
+        RightRing,
+        RightLittle,
+        LastHumanPartDoF
     }
 
     internal enum DoF

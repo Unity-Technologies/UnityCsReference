@@ -125,31 +125,29 @@ namespace UnityEditor
         {
             EditorGUILayout.Space();
 
-            GUILayout.BeginHorizontal();
-
-            using (new EditorGUI.DisabledScope(!HasModified()))
+            using (new GUILayout.HorizontalScope())
             {
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button("Revert"))
+                using (new EditorGUI.DisabledScope(!HasModified()))
                 {
-                    ResetValues();
-                    if (HasModified())
-                        Debug.LogError("Avatar tool reports modified values after reset.");
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("Revert"))
+                    {
+                        ResetValues();
+                        System.Diagnostics.Debug.Assert(!HasModified(), "Avatar settings are marked as modified after calling Reset.");
+                    }
+
+                    if (GUILayout.Button("Apply"))
+                    {
+                        ApplyAndImport();
+                    }
                 }
 
-                if (GUILayout.Button("Apply"))
+                if (GUILayout.Button("Done"))
                 {
-                    ApplyAndImport();
+                    m_Inspector.SwitchToAssetMode();
+                    GUIUtility.ExitGUI();
                 }
             }
-
-            if (GUILayout.Button("Done"))
-            {
-                m_Inspector.SwitchToAssetMode();
-                GUIUtility.ExitGUI();
-            }
-
-            GUILayout.EndHorizontal();
         }
     }
 
@@ -392,25 +390,24 @@ namespace UnityEditor
         {
             GUI.enabled = true;
 
-            EditorGUILayout.BeginVertical(EditorStyles.inspectorFullWidthMargins);
-
-            if (m_EditMode == EditMode.Editing)
+            using (new EditorGUILayout.VerticalScope(EditorStyles.inspectorFullWidthMargins))
             {
-                EditingGUI();
-            }
-            else if (!m_CameFromImportSettings)
-            {
-                EditButtonGUI();
-            }
-            else
-            {
-                if (m_EditMode == EditMode.NotEditing && Event.current.type == EventType.Repaint)
+                if (m_EditMode == EditMode.Editing)
                 {
-                    m_SwitchToEditMode = true;
+                    EditingGUI();
+                }
+                else if (!m_CameFromImportSettings)
+                {
+                    EditButtonGUI();
+                }
+                else
+                {
+                    if (m_EditMode == EditMode.NotEditing && Event.current.type == EventType.Repaint)
+                    {
+                        m_SwitchToEditMode = true;
+                    }
                 }
             }
-
-            EditorGUILayout.EndVertical();
         }
 
         void EditButtonGUI()
@@ -424,39 +421,43 @@ namespace UnityEditor
             if (modelImporter == null)
                 return;
 
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button(styles.editCharacter, GUILayout.Width(120)) &&
-                EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+            using (new EditorGUILayout.HorizontalScope())
             {
-                SwitchToEditMode();
-                GUIUtility.ExitGUI();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button(styles.editCharacter, GUILayout.Width(120)) &&
+                    EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                {
+                    SwitchToEditMode();
+                    GUIUtility.ExitGUI();
+                }
+
+                GUILayout.FlexibleSpace();
             }
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
         }
 
         void EditingGUI()
         {
-            EditorGUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
+            using (new EditorGUILayout.HorizontalScope())
             {
-                int tabIndex = m_TabIndex;
-                bool wasEnable = GUI.enabled;
-                GUI.enabled = !(avatar == null || !avatar.isHuman);
-                tabIndex = GUILayout.Toolbar(tabIndex, styles.tabs, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
-                GUI.enabled = wasEnable;
-                if (tabIndex != m_TabIndex)
+                GUILayout.FlexibleSpace();
                 {
-                    DestroyEditor();
-                    if (avatar != null && avatar.isHuman)
-                        m_TabIndex = tabIndex;
+                    int tabIndex = m_TabIndex;
+                    bool wasEnable = GUI.enabled;
+                    GUI.enabled = !(avatar == null || !avatar.isHuman);
+                    tabIndex = GUILayout.Toolbar(tabIndex, styles.tabs, "LargeButton",
+                            GUI.ToolbarButtonSize.FitToContents);
+                    GUI.enabled = wasEnable;
+                    if (tabIndex != m_TabIndex)
+                    {
+                        DestroyEditor();
+                        if (avatar != null && avatar.isHuman)
+                            m_TabIndex = tabIndex;
 
-                    CreateEditor();
+                        CreateEditor();
+                    }
                 }
+                GUILayout.FlexibleSpace();
             }
-            GUILayout.FlexibleSpace();
-            EditorGUILayout.EndHorizontal();
 
             editor.OnInspectorGUI();
         }

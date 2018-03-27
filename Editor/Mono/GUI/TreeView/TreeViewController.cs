@@ -91,6 +91,7 @@ namespace UnityEditor.IMGUI.Controls
 
         List<int> m_DragSelection = new List<int>();                    // Temp id state while dragging (not serialized)
         bool m_UseScrollView = true;                                    // Internal scrollview can be omitted when e.g mulitple tree views in one scrollview is wanted
+        bool m_ConsumeKeyDownEvents = true;
         bool m_AllowRenameOnMouseUp = true;
 
         internal const string kExpansionAnimationPrefKey = "TreeViewExpansionAnimation";
@@ -267,6 +268,11 @@ namespace UnityEditor.IMGUI.Controls
         public void SetUseScrollView(bool useScrollView)
         {
             m_UseScrollView = useScrollView;
+        }
+
+        public void SetConsumeKeyDownEvents(bool consume)
+        {
+            m_ConsumeKeyDownEvents = consume;
         }
 
         public void Repaint()
@@ -982,6 +988,9 @@ namespace UnityEditor.IMGUI.Controls
             // Let client handle keyboard first
             if (keyboardInputCallback != null)
                 keyboardInputCallback();
+
+            if (!m_ConsumeKeyDownEvents)
+                return;
 
             if (Event.current.type == EventType.KeyDown)
             {

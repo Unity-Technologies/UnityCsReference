@@ -199,7 +199,7 @@ namespace UnityEditor
                     // stuff drawn with both GUI and Handles/GL. Otherwise things are off by one pixel half the time.
 
                     float labelpos = Mathf.Floor(FrameToPixel(frame, frameRate, position));
-                    string label = FormatTime(labelTicks[i], frameRate, timeFormat);
+                    string label = FormatTickTime(labelTicks[i], frameRate, timeFormat);
                     GUI.Label(new Rect(labelpos + 3, -3, 40, 20), label, timeAreaStyles.timelineTick);
                 }
             }
@@ -502,6 +502,11 @@ namespace UnityEditor
             {
                 return frame.ToString();
             }
+        }
+
+        public virtual string FormatTickTime(float time, float frameRate, TimeFormat timeFormat)
+        {
+            return FormatTime(time, frameRate, timeFormat);
         }
 
         public string FormatValue(float value)

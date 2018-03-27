@@ -114,7 +114,7 @@ namespace UnityEditor
             {
                 int guid = connectionGuids[index];
                 string name = ProfilerDriver.GetConnectionIdentifier(guid);
-                bool isProhibited = ProfilerDriver.IsIdentifierOnLocalhost(guid) && name.Contains("MetroPlayerX");
+                bool isProhibited = ProfilerDriver.IsIdentifierOnLocalhost(guid) && (name.Contains("MetroPlayerX") || name.Contains("UWPPlayerX"));
                 bool enabled = !isProhibited && ProfilerDriver.IsIdentifierConnectable(guid);
 
                 if (!enabled)

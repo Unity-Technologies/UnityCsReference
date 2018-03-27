@@ -27,7 +27,7 @@ namespace UnityEngine.Playables
     public struct PlayableGraph
     {
         internal IntPtr m_Handle;
-        internal Int32  m_Version;
+        internal UInt32 m_Version;
 
         public Playable GetRootPlayable(int index)
         {

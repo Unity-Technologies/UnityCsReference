@@ -14,6 +14,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using UnityEditor.Connect;
+using UnityEditor.ShortcutManagement;
+using Directory = System.IO.Directory;
 using UnityEditor.Collaboration;
 using UnityEditor.Web;
 
@@ -207,7 +209,7 @@ namespace UnityEditor
         private string[] m_ImageAppDisplayNames;
         Vector2 m_KeyScrollPos;
         Vector2 m_SectionScrollPos;
-        PrefKey m_SelectedKey = null;
+        int m_SelectedShortcut = -1;
         private const string kRecentScriptAppsKey = "RecentlyUsedScriptApp";
         private const string kRecentImageAppsKey = "RecentlyUsedImageApp";
 
@@ -215,6 +217,7 @@ namespace UnityEditor
             "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
             "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
             "\n(This does work with Visual Studio Pro)";
+        private const string kKeyCollisionFormat = "Key {0} can't be used for action \"{1}\" because it's already used for action \"{2}\"";
 
         private const int kRecentAppsCount = 10;
 
@@ -227,6 +230,7 @@ namespace UnityEditor
 
         private bool m_ValidKeyChange = true;
         private string m_InvalidKeyMessage = string.Empty;
+        private static readonly char[] kShortcutIdentifierSplitters = {'/'};
 
         class RefString
         {
@@ -260,7 +264,7 @@ namespace UnityEditor
             m_Sections.Add(new Section("General", ShowGeneral));
             m_Sections.Add(new Section("External Tools", ShowExternalApplications));
             m_Sections.Add(new Section("Colors", ShowColors));
-            m_Sections.Add(new Section("Keys", ShowKeys));
+            m_Sections.Add(new Section("Keys", ShowShortcuts));
             m_Sections.Add(new Section("GI Cache", ShowGICache));
             m_Sections.Add(new Section("2D", Show2D));
             SystemLanguage[] editorLanguages = LocalizationDatabase.GetAvailableEditorLanguages();
@@ -614,7 +618,12 @@ namespace UnityEditor
             }
         }
 
-        private void RevertKeys()
+        private void RevertShortcuts()
+        {
+            ShortcutIntegration.instance.profileManager.ResetToDefault();
+        }
+
+        private void RevertPrefKeys()
         {
             foreach (KeyValuePair<string, PrefKey> kvp in Settings.Prefs<PrefKey>())
             {
@@ -657,164 +666,281 @@ namespace UnityEditor
             return retval;
         }
 
-        static int s_KeysControlHash = "KeysControlHash".GetHashCode();
-        private void ShowKeys()
+        private object ShowShortcutsAndKeys(int controlID)
         {
-            int id = GUIUtility.GetControlID(s_KeysControlHash, FocusType.Keyboard);
+            int current = 0;
+            bool selected = false;
+            ShortcutEntry currentShortcutEntry = null;
+            PrefKey currentPrefKey = null;
+            var shortcutProfileManager = ShortcutIntegration.instance.profileManager;
 
-            GUILayout.BeginHorizontal();
-            GUILayout.BeginVertical(GUILayout.Width(185f));
-            GUILayout.Label("Actions", constants.settingsBoxTitle, GUILayout.ExpandWidth(true));
-            m_KeyScrollPos = GUILayout.BeginScrollView(m_KeyScrollPos, constants.settingsBox);
-
-            PrefKey prevKey = null;
-            PrefKey nextKey = null;
-            bool foundSelectedKey = false;
-
-            foreach (KeyValuePair<string, PrefKey> kvp in Settings.Prefs<PrefKey>())
+            foreach (ShortcutEntry shortcut in shortcutProfileManager.GetAllShortcuts())
             {
-                if (!foundSelectedKey)
-                {
-                    if (kvp.Value == m_SelectedKey)
-                    {
-                        foundSelectedKey = true;
-                    }
-                    else
-                    {
-                        prevKey = kvp.Value;
-                    }
-                }
-                else
-                {
-                    if (nextKey == null) nextKey = kvp.Value;
-                }
+                ++current;
+                selected = (current == m_SelectedShortcut);
+                if (selected)
+                    currentShortcutEntry = shortcut;
 
-                EditorGUI.BeginChangeCheck();
-                if (GUILayout.Toggle(kvp.Value == m_SelectedKey, kvp.Key, constants.keysElement))
+                using (var changeCheckScope = new EditorGUI.ChangeCheckScope())
                 {
-                    if (m_SelectedKey != kvp.Value)
+                    if (GUILayout.Toggle(selected, shortcut.identifier.path, constants.keysElement))
                     {
+                        m_ValidKeyChange = !selected;
+                        m_SelectedShortcut = current;
+                    }
+
+                    if (changeCheckScope.changed)
+                        GUIUtility.keyboardControl = controlID;
+                }
+            }
+            foreach (KeyValuePair<string, PrefKey> keypair in Settings.Prefs<PrefKey>())
+            {
+                ++current;
+                selected = (current == m_SelectedShortcut);
+                if (selected)
+                    currentPrefKey = keypair.Value;
+
+                using (var changeCheckScope = new EditorGUI.ChangeCheckScope())
+                {
+                    if (GUILayout.Toggle(selected, keypair.Key, constants.keysElement))
+                    {
+                        m_ValidKeyChange = !selected;
+                        m_SelectedShortcut = current;
+                    }
+
+                    if (changeCheckScope.changed)
+                        GUIUtility.keyboardControl = controlID;
+                }
+            }
+
+            return currentShortcutEntry == null ? (object)currentPrefKey : currentShortcutEntry;
+        }
+
+        static string BuildDescription(Event keyEvent)
+        {
+            var keyDescription = new StringBuilder();
+            if (Application.platform == RuntimePlatform.OSXEditor && keyEvent.command)
+                keyDescription.Append("Command+");
+            if (keyEvent.control)
+                keyDescription.Append("Ctrl+");
+            if (keyEvent.shift)
+                keyDescription.Append("Shift+");
+            if (keyEvent.alt)
+                keyDescription.Append("Alt+");
+            keyDescription.Append(keyEvent.keyCode);
+            return keyDescription.ToString();
+        }
+
+        private void ProcessArrowKeyInShortcutConfiguration()
+        {
+            switch (Event.current.keyCode)
+            {
+                case KeyCode.UpArrow:
+                    if (m_SelectedShortcut > 1)
+                    {
+                        --m_SelectedShortcut;
                         m_ValidKeyChange = true;
                     }
-                    m_SelectedKey = kvp.Value;
-                }
-                if (EditorGUI.EndChangeCheck())
-                    GUIUtility.keyboardControl = id;
+
+                    Event.current.Use();
+                    break;
+                case KeyCode.DownArrow:
+                    if (m_SelectedShortcut < ShortcutIntegration.instance.profileManager.GetAllShortcuts().Count() + Settings.Prefs<PrefKey>().Count())
+                    {
+                        m_SelectedShortcut++;
+                        m_ValidKeyChange = true;
+                    }
+
+                    Event.current.Use();
+                    break;
             }
-            GUILayout.EndScrollView();
-            GUILayout.EndVertical();
+        }
 
-            GUILayout.Space(10.0f);
+        private void CheckForCollisions(Event e, ShortcutEntry selectedShortcut, PrefKey selectedPrefKey)
+        {
+            ShortcutController shortcutController = ShortcutIntegration.instance;
+            var collisions = new List<ShortcutEntry>();
+            m_ValidKeyChange = true;
+            Type context = selectedShortcut?.context;
+            string identifier = selectedShortcut != null
+                ? selectedShortcut.identifier.path
+                : selectedPrefKey.Name;
 
-            GUILayout.BeginVertical();
 
-            if (m_SelectedKey != null)
+            // Check shortcuts
+            shortcutController.directory.FindShortcutEntries(
+                new List<KeyCombination> {new KeyCombination(e)},
+                new[] {context},
+                collisions);
+
+            if (collisions.Any())
             {
-                Event e = m_SelectedKey.KeyboardEvent;
-                GUI.changed = false;
-                var splitKey = m_SelectedKey.Name.Split('/');
-                System.Diagnostics.Debug.Assert(splitKey.Length == 2, "Unexpected Split: " + m_SelectedKey.Name);
-                GUILayout.Label(splitKey[0], "boldLabel");
-                GUILayout.Label(splitKey[1], "boldLabel");
+                m_ValidKeyChange = false;
+                m_InvalidKeyMessage = string.Format(kKeyCollisionFormat, BuildDescription(e), identifier, collisions[0].identifier);
+                return;
+            }
 
-                GUILayout.BeginHorizontal();
+
+            // Check prefkeys
+            string selectedToolName = identifier.Split('/')[0];
+
+            // Setting the same key to the same action is ok.
+            // Setting the same key to a different action from a different tool is ok too.
+            KeyValuePair<string, PrefKey> collision = Settings.Prefs<PrefKey>().FirstOrDefault(kvp =>
+                    kvp.Value.KeyboardEvent.Equals(e) &&
+                    kvp.Key.Split('/')[0] == selectedToolName && kvp.Key != identifier
+                    );
+
+            if (collision.Key != null)
+            {
+                m_ValidKeyChange = false;
+                m_InvalidKeyMessage = string.Format(kKeyCollisionFormat, BuildDescription(e), identifier, collision.Key);
+            }
+        }
+
+        private void ShowShortcutConfiguration(int controlID, ShortcutEntry selectedShortcut)
+        {
+            // TODO: chords
+            Event e = selectedShortcut.combinations.First().ToKeyboardEvent();
+            GUI.changed = false;
+
+            // FIXME: Are we going to support/enforce paths like this?
+            var splitKey = selectedShortcut.identifier.path.Split(kShortcutIdentifierSplitters, 2);
+            GUILayout.Label(splitKey[0], EditorStyles.boldLabel);
+            GUILayout.Label(splitKey[1], EditorStyles.boldLabel);
+
+            using (new GUILayout.HorizontalScope())
+            {
                 GUILayout.Label("Key:");
                 e = EditorGUILayout.KeyEventField(e);
-                GUILayout.EndHorizontal();
-
-                GUILayout.BeginHorizontal();
-                GUILayout.Label("Modifiers:");
-                GUILayout.BeginVertical();
-                if (Application.platform == RuntimePlatform.OSXEditor)
-                    e.command = GUILayout.Toggle(e.command, "Command");
-                e.control = GUILayout.Toggle(e.control, "Control");
-                e.shift = GUILayout.Toggle(e.shift, "Shift");
-                e.alt = GUILayout.Toggle(e.alt, "Alt");
-
-                if (GUI.changed)
-                {
-                    m_ValidKeyChange = true;
-                    string selectedToolName = m_SelectedKey.Name.Split('/')[0];
-
-                    foreach (KeyValuePair<string, PrefKey> kvp in Settings.Prefs<PrefKey>())
-                    {
-                        // Setting the same key to the same action is ok.
-                        // Setting the same key to a different action from a different tool is ok too.
-                        string toolName = kvp.Key.Split('/')[0];
-                        if (kvp.Value.KeyboardEvent.Equals(e) && (toolName == selectedToolName && kvp.Key != m_SelectedKey.Name))
-                        {
-                            m_ValidKeyChange = false;
-                            StringBuilder sb = new StringBuilder();
-                            if (Application.platform == RuntimePlatform.OSXEditor && e.command)
-                                sb.Append("Command+");
-                            if (e.control)
-                                sb.Append("Ctrl+");
-                            if (e.shift)
-                                sb.Append("Shift+");
-                            if (e.alt)
-                                sb.Append("Alt+");
-                            sb.Append(e.keyCode);
-
-                            m_InvalidKeyMessage = string.Format("Key {0} can't be used for action \"{1}\" because it's already used for action \"{2}\"",
-                                    sb, m_SelectedKey.Name, kvp.Key);
-                            break;
-                        }
-                    }
-
-                    if (m_ValidKeyChange)
-                    {
-                        m_SelectedKey.KeyboardEvent = e;
-                        Settings.Set(m_SelectedKey.Name, m_SelectedKey);
-                    }
-                }
-                else
-                {
-                    if (GUIUtility.keyboardControl == id && Event.current.type == EventType.KeyDown)
-                    {
-                        switch (Event.current.keyCode)
-                        {
-                            case KeyCode.UpArrow:
-                                if (prevKey != null && prevKey != m_SelectedKey)
-                                {
-                                    m_SelectedKey = prevKey;
-                                    m_ValidKeyChange = true;
-                                }
-                                Event.current.Use();
-                                break;
-                            case KeyCode.DownArrow:
-                                if (nextKey != null && nextKey != m_SelectedKey)
-                                {
-                                    m_SelectedKey = nextKey;
-                                    m_ValidKeyChange = true;
-                                }
-                                Event.current.Use();
-                                break;
-                        }
-                    }
-                }
-
-                GUILayout.EndVertical();
-                GUILayout.EndHorizontal();
-
-                if (!m_ValidKeyChange)
-                {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.Label("", constants.warningIcon);
-                    GUILayout.Label(m_InvalidKeyMessage, constants.errorLabel);
-                    GUILayout.EndHorizontal();
-                }
             }
 
-            GUILayout.EndVertical();
-            GUILayout.Space(10f);
+            using (new GUILayout.HorizontalScope())
+            {
+                GUILayout.Label("Modifiers:");
+                using (new GUILayout.VerticalScope())
+                {
+                    ShortcutController shortcutController = ShortcutIntegration.instance;
+                    if (Application.platform == RuntimePlatform.OSXEditor)
+                        e.command = GUILayout.Toggle(e.command, "Command");
+                    else
+                        e.control = GUILayout.Toggle(e.control, "Control");
+                    e.shift = GUILayout.Toggle(e.shift, "Shift");
+                    e.alt = GUILayout.Toggle(e.alt, "Alt");
 
-            GUILayout.EndHorizontal();
+                    if (GUI.changed)
+                    {
+                        CheckForCollisions(e, selectedShortcut, null);
+                        if (m_ValidKeyChange)
+                        {
+                            var newCombination = new List<KeyCombination> { new KeyCombination(e) };
+                            shortcutController.profileManager.ModifyShortcutEntry(selectedShortcut.identifier, newCombination);
+                            shortcutController.profileManager.PersistChanges();
+                        }
+                    }
+                    else if (GUIUtility.keyboardControl == controlID && Event.current.type == EventType.KeyDown)
+                        ProcessArrowKeyInShortcutConfiguration();
+                }
+            }
+            if (!m_ValidKeyChange)
+            {
+                using (new GUILayout.HorizontalScope())
+                {
+                    GUILayout.Label("", constants.warningIcon);
+                    GUILayout.Label(m_InvalidKeyMessage, constants.errorLabel);
+                }
+            }
+        }
+
+        private void ShowPrefKeyConfiguration(int controlID, PrefKey selectedKey)
+        {
+            Event e = selectedKey.KeyboardEvent;
+            GUI.changed = false;
+            var splitKey = selectedKey.Name.Split('/');
+            System.Diagnostics.Debug.Assert(splitKey.Length == 2, "Unexpected Split: " + selectedKey.Name);
+            GUILayout.Label(splitKey[0], EditorStyles.boldLabel);
+            GUILayout.Label(splitKey[1], EditorStyles.boldLabel);
+
+            using (new GUILayout.HorizontalScope())
+            {
+                GUILayout.Label("Key:");
+                e = EditorGUILayout.KeyEventField(e);
+            }
+
+            using (new GUILayout.HorizontalScope())
+            {
+                GUILayout.Label("Modifiers:");
+                using (new GUILayout.VerticalScope())
+                {
+                    if (Application.platform == RuntimePlatform.OSXEditor)
+                        e.command = GUILayout.Toggle(e.command, "Command");
+                    e.control = GUILayout.Toggle(e.control, "Control");
+                    e.shift = GUILayout.Toggle(e.shift, "Shift");
+                    e.alt = GUILayout.Toggle(e.alt, "Alt");
+
+                    if (GUI.changed)
+                    {
+                        CheckForCollisions(e, null, selectedKey);
+                        if (m_ValidKeyChange)
+                        {
+                            selectedKey.KeyboardEvent = e;
+                            Settings.Set(selectedKey.Name, selectedKey);
+                        }
+                    }
+                    else if (GUIUtility.keyboardControl == controlID && Event.current.type == EventType.KeyDown)
+                        ProcessArrowKeyInShortcutConfiguration();
+                }
+            }
+            if (!m_ValidKeyChange)
+            {
+                using (new GUILayout.HorizontalScope())
+                {
+                    GUILayout.Label("", constants.warningIcon);
+                    GUILayout.Label(m_InvalidKeyMessage, constants.errorLabel);
+                }
+            }
+        }
+
+        static int s_KeysControlHash = "KeysControlHash".GetHashCode();
+        private void ShowShortcuts()
+        {
+            // TODO: Some code duplication between Shortcut/PrefKey for now
+            // Leaving it this way so that it can be easily removed when we kill PrefKey for 2018.3
+            int id = GUIUtility.GetControlID(s_KeysControlHash, FocusType.Keyboard);
+            object selectedItem = null;
+
+            using (new GUILayout.HorizontalScope())
+            {
+                using (new GUILayout.VerticalScope(GUILayout.Width(185f)))
+                {
+                    GUILayout.Label("Actions", constants.settingsBoxTitle, GUILayout.ExpandWidth(true));
+                    using (var scrollViewScope = new GUILayout.ScrollViewScope(m_KeyScrollPos, constants.settingsBox))
+                    {
+                        m_KeyScrollPos = scrollViewScope.scrollPosition;
+                        selectedItem = ShowShortcutsAndKeys(id);
+                    }
+                }
+                GUILayout.Space(10.0f);
+
+                using (new GUILayout.VerticalScope())
+                {
+                    ShortcutEntry shortcut = selectedItem as ShortcutEntry;
+                    if (shortcut != null)
+                        ShowShortcutConfiguration(id, shortcut);
+                    PrefKey prefKey = selectedItem as PrefKey;
+                    if (prefKey != null)
+                        ShowPrefKeyConfiguration(id, prefKey);
+                }
+
+                GUILayout.Space(10f);
+            }
             GUILayout.Space(5f);
 
             if (GUILayout.Button(Styles.userDefaults, GUILayout.Width(120)))
             {
                 m_ValidKeyChange = true;
-                RevertKeys();
+                RevertShortcuts();
+                RevertPrefKeys();
             }
         }
 

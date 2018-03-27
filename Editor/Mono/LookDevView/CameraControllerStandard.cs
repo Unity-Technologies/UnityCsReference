@@ -11,13 +11,6 @@ namespace UnityEditor
 {
     internal class CameraControllerStandard : CameraController
     {
-        static PrefKey kFPSForward = new PrefKey("View/FPS Forward", "w");
-        static PrefKey kFPSBack = new PrefKey("View/FPS Back", "s");
-        static PrefKey kFPSLeft = new PrefKey("View/FPS Strafe Left", "a");
-        static PrefKey kFPSRight = new PrefKey("View/FPS Strafe Right", "d");
-        static PrefKey kFPSUp = new PrefKey("View/FPS Strafe Up", "e");
-        static PrefKey kFPSDown = new PrefKey("View/FPS Strafe Down", "q");
-
         private ViewTool    m_CurrentViewTool = ViewTool.None;
         private float       m_StartZoom = 0.0f;
         private float       m_ZoomSpeed = 0.0f;
@@ -25,7 +18,7 @@ namespace UnityEditor
         private Vector3     m_Motion = new Vector3();
         private float       m_FlySpeed = 0;
         const float         kFlyAcceleration = 1.1f;
-        static TimeHelper   m_FPSTiming = new TimeHelper();
+        private readonly CameraFlyModeContext m_CameraFlyModeContext = new CameraFlyModeContext();
 
         public ViewTool currentViewTool
         {
@@ -125,68 +118,6 @@ namespace UnityEditor
             {
                 ResetCameraControl();
             }
-
-            if (m_CurrentViewTool == ViewTool.FPS)
-            {
-                Event evt = Event.current;
-                Vector3 lastMotion = m_Motion;
-                if (evt.keyCode == ((Event)kFPSForward).keyCode)
-                {
-                    m_Motion.z = 1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSBack).keyCode)
-                {
-                    m_Motion.z = -1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSLeft).keyCode)
-                {
-                    m_Motion.x = -1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSRight).keyCode)
-                {
-                    m_Motion.x = 1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSUp).keyCode)
-                {
-                    m_Motion.y = 1;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSDown).keyCode)
-                {
-                    m_Motion.y = -1;
-                    evt.Use();
-                }
-
-                if (evt.type != EventType.KeyDown && lastMotion.sqrMagnitude == 0)
-                    m_FPSTiming.Begin();
-            }
-        }
-
-        private void HandleCameraKeyUp()
-        {
-            if (m_CurrentViewTool == ViewTool.FPS)
-            {
-                Event evt = Event.current;
-                if (evt.keyCode == ((Event)kFPSForward).keyCode || evt.keyCode == ((Event)kFPSBack).keyCode)
-                {
-                    m_Motion.z = 0;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSLeft).keyCode || evt.keyCode == ((Event)kFPSRight).keyCode)
-                {
-                    m_Motion.x = 0;
-                    evt.Use();
-                }
-                else if (evt.keyCode == ((Event)kFPSUp).keyCode || evt.keyCode == ((Event)kFPSDown).keyCode)
-                {
-                    m_Motion.y = 0;
-                    evt.Use();
-                }
-            }
         }
 
         private void HandleCameraMouseUp()
@@ -197,7 +128,7 @@ namespace UnityEditor
 
         private Vector3 GetMovementDirection()
         {
-            float deltaTime = m_FPSTiming.Update();
+            var deltaTime = CameraFlyModeContext.deltaTime;
             if (m_Motion.sqrMagnitude == 0)
             {
                 m_FlySpeed = 0;
@@ -214,7 +145,7 @@ namespace UnityEditor
             }
         }
 
-        public override void Update(CameraState cameraState, Camera cam)
+        public override void Update(CameraState cameraState, Camera cam, EditorWindow window)
         {
             Event evt = Event.current;
 
@@ -229,6 +160,7 @@ namespace UnityEditor
 
                 bool controlKeyOnMac = (evt.control && Application.platform == RuntimePlatform.OSXEditor);
 
+                var rightMouseButton = false;
                 if (button == 2)
                 {
                     m_CurrentViewTool = ViewTool.Pan;
@@ -241,6 +173,7 @@ namespace UnityEditor
                     m_StartZoom = cameraState.viewSize.value;
                     m_ZoomSpeed = Mathf.Max(Mathf.Abs(m_StartZoom), .3f);
                     m_TotalMotion = 0;
+                    rightMouseButton = button == 1;
                 }
                 else if (button <= 0)
                 {
@@ -249,7 +182,20 @@ namespace UnityEditor
                 else if (button == 1 && !evt.alt)
                 {
                     m_CurrentViewTool = ViewTool.FPS;
+                    rightMouseButton = true;
                 }
+
+                // see also SceneView.HandleClickAndDragToFocus()
+                if (rightMouseButton && Application.platform == RuntimePlatform.OSXEditor)
+                    window.Focus();
+            }
+
+            m_CameraFlyModeContext.active = m_CurrentViewTool == ViewTool.FPS;
+            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(m_CameraFlyModeContext))
+            {
+                if (inputSamplingScope.inputVectorChanged)
+                    m_FlySpeed = 0;
+                m_Motion = inputSamplingScope.currentInputVector;
             }
 
             switch (evt.type)
@@ -258,7 +204,6 @@ namespace UnityEditor
                 case EventType.MouseUp:     HandleCameraMouseUp(); break;
                 case EventType.MouseDrag:   HandleCameraMouseDrag(cameraState, cam); break;
                 case EventType.KeyDown:     HandleCameraKeyDown(); break;
-                case EventType.KeyUp:       HandleCameraKeyUp(); break;
                 case EventType.Layout:
                 {
                     Vector3 motion = GetMovementDirection();
@@ -269,6 +214,11 @@ namespace UnityEditor
                 }
                 break;
             }
+        }
+
+        public void DeactivateFlyModeContext()
+        {
+            m_CameraFlyModeContext.active = false;
         }
     }
 }

@@ -13,6 +13,6 @@ namespace UnityEditor
     {
         // Actual API to be defined
         // Passing the associated Camera as a parameter should not be needed (only CameraState should be important). See how we can break that dependency when doing the proper refactoring.
-        public abstract void Update(CameraState cameraState, Camera cam);
+        public abstract void Update(CameraState cameraState, Camera cam, EditorWindow window);
     }
 }

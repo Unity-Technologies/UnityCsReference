@@ -4,7 +4,6 @@
 
 using System;
 using System.Linq;
-using System.Collections.Generic;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEngine;
 using UnityEngine.Internal;
@@ -318,9 +317,6 @@ namespace UnityEditor
     [ExcludeFromObjectFactory]
     public partial class Editor : ScriptableObject, IPreviewable, IToolModeOwner
     {
-        static Styles s_Styles;
-
-
         //If you modify the members of the Editor class, please keep in mind
         //that you need to keep the c++ struct MonoInspectorData in sync.
         //Last time this struct could be found at: Editor\src\Utility\CreateEditor.cpp
@@ -342,6 +338,8 @@ namespace UnityEditor
         internal bool hideInspector = false;
 
         const float kImageSectionWidth = 44;
+        internal const float k_WideModeMinWidth = 330f;
+
         internal delegate void OnEditorGUIDelegate(Editor editor, Rect drawRect);
         internal static OnEditorGUIDelegate OnPostIconGUI = null;
 
@@ -371,16 +369,19 @@ namespace UnityEditor
             get { return m_PropertyHandlerCache; }
         }
 
-        class Styles
+        static class Styles
         {
-            public GUIContent open = EditorGUIUtility.TrTextContent("Open");
-            public GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
-            public GUIStyle inspectorBigInner = new GUIStyle("IN BigTitle inner");
-            public GUIStyle centerStyle = new GUIStyle();
+            public static readonly GUIContent open = EditorGUIUtility.TrTextContent("Open");
+            public static readonly GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
+            public static readonly GUIStyle inspectorBigInner = "IN BigTitle inner";
+            public static readonly GUIStyle centerStyle = new GUIStyle();
+            public static readonly GUIStyle postLargeHeaderBackground = "IN BigTitle Post";
 
-            public Styles()
+            static Styles()
             {
                 centerStyle.alignment = TextAnchor.MiddleCenter;
+                // modify header bottom padding on a mutable copy here
+                // this was done rather than modifying the style asset itself in order to minimize possible side effects where the style was already used
                 inspectorBig.padding.bottom -= 1;
             }
         }
@@ -646,6 +647,8 @@ namespace UnityEditor
             return false;
         }
 
+        public static event Action<Editor> finishedDefaultHeaderGUI = null;
+
         // This is the method that should be called from externally e.g. myEditor.DrawHeader ();
         // Do not make this method virtual - override OnHeaderGUI instead.
         public void DrawHeader()
@@ -657,6 +660,26 @@ namespace UnityEditor
                 DrawHeaderFromInsideHierarchy();
             else
                 OnHeaderGUI();
+
+            if (finishedDefaultHeaderGUI != null)
+            {
+                EditorGUIUtility.ResetGUIState();
+                GUILayout.Space(
+                    -1f                                      // move up to cover up bottom pixel of header box
+                    - Styles.inspectorBig.margin.bottom
+                    - Styles.inspectorBig.padding.bottom
+                    - Styles.inspectorBig.overflow.bottom    // move up to bottom of content area in header
+                    );
+
+                // align with controls in the Inspector
+                // see InspectorWindow.DrawEditor before calls to OnOptimizedInspectorGUI()/OnInspectorGUI()
+                EditorGUIUtility.hierarchyMode = true;
+                EditorGUIUtility.wideMode = EditorGUIUtility.contextWidth > k_WideModeMinWidth;
+
+                EditorGUILayout.BeginVertical(Styles.postLargeHeaderBackground, GUILayout.ExpandWidth(true));
+                finishedDefaultHeaderGUI(this);
+                EditorGUILayout.EndVertical();
+            }
         }
 
         // This is the method to override to create custom header GUI.
@@ -690,7 +713,7 @@ namespace UnityEditor
 
             if (showOpenButton && !ShouldHideOpenButton())
             {
-                if (GUILayout.Button(s_Styles.open, EditorStyles.miniButton))
+                if (GUILayout.Button(Styles.open, EditorStyles.miniButton))
                 {
                     if (this is AssetImporterEditor)
                         AssetDatabase.OpenAsset((this as AssetImporterEditor).assetTargets);
@@ -708,9 +731,6 @@ namespace UnityEditor
 
         internal virtual void OnHeaderIconGUI(Rect iconRect)
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
             Texture2D icon = null;
             if (!HasPreviewGUI())
             {
@@ -728,9 +748,9 @@ namespace UnityEditor
 
             if (HasPreviewGUI())
                 // OnPreviewGUI must have all events; not just Repaint, or else the control IDs will mis-match.
-                OnPreviewGUI(iconRect, s_Styles.inspectorBigInner);
+                OnPreviewGUI(iconRect, Styles.inspectorBigInner);
             else if (icon)
-                GUI.Label(iconRect, icon, s_Styles.centerStyle);
+                GUI.Label(iconRect, icon, Styles.centerStyle);
         }
 
         internal virtual void OnHeaderTitleGUI(Rect titleRect, string header)
@@ -778,10 +798,7 @@ namespace UnityEditor
 
         internal static Rect DrawHeaderGUI(Editor editor, string header, float leftMargin)
         {
-            if (s_Styles == null)
-                s_Styles = new Styles();
-
-            GUILayout.BeginHorizontal(s_Styles.inspectorBig);
+            GUILayout.BeginHorizontal(Styles.inspectorBig);
             GUILayout.Space(kImageSectionWidth - 6);
             GUILayout.BeginVertical();
             GUILayout.Space(19);
@@ -806,7 +823,7 @@ namespace UnityEditor
             if (editor)
                 editor.OnHeaderIconGUI(iconRect);
             else
-                GUI.Label(iconRect, AssetPreview.GetMiniTypeThumbnail(typeof(UnityObject)), s_Styles.centerStyle);
+                GUI.Label(iconRect, AssetPreview.GetMiniTypeThumbnail(typeof(UnityObject)), Styles.centerStyle);
 
             if (editor)
                 editor.DrawPostIconContent(iconRect);

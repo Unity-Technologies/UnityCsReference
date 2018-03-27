@@ -8,14 +8,14 @@ using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
-namespace UnityEditor.Experimental.Build.AssetBundle
+namespace UnityEditor.Build.Content
 {
     [Serializable]
     [UsedByNativeCode]
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/BuildPipeline/Editor/Shared/AssetBundleBuildInterface.bindings.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     public class PreloadInfo
     {
         [NativeName("preloadObjects")]
@@ -32,7 +32,7 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/BuildPipeline/Editor/Shared/AssetBundleBuildInterface.bindings.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     public class AssetLoadInfo
     {
         [NativeName("asset")]
@@ -73,7 +73,7 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/BuildPipeline/Editor/Shared/AssetBundleBuildInterface.bindings.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     public class AssetBundleInfo
     {
         [NativeName("bundleName")]
@@ -82,14 +82,6 @@ namespace UnityEditor.Experimental.Build.AssetBundle
         {
             get { return m_BundleName; }
             set { m_BundleName = value; }
-        }
-
-        [NativeName("bundleDependencies")]
-        private List<string> m_BundleDependencies;
-        public List<string> bundleDependencies
-        {
-            get { return m_BundleDependencies; }
-            set { m_BundleDependencies = value; }
         }
 
         [NativeName("bundleAssets")]
@@ -107,7 +99,7 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/BuildPipeline/Editor/Shared/AssetBundleBuildInterface.bindings.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     public class SceneLoadInfo
     {
         [NativeName("asset")]
@@ -140,7 +132,7 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/BuildPipeline/Editor/Shared/AssetBundleBuildInterface.bindings.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     public class SceneBundleInfo
     {
         [NativeName("bundleName")]
@@ -149,14 +141,6 @@ namespace UnityEditor.Experimental.Build.AssetBundle
         {
             get { return m_BundleName; }
             set { m_BundleName = value; }
-        }
-
-        [NativeName("bundleDependencies")]
-        private List<string> m_BundleDependencies;
-        public List<string> bundleDependencies
-        {
-            get { return m_BundleDependencies; }
-            set { m_BundleDependencies = value; }
         }
 
         [NativeName("bundleScenes")]
@@ -197,7 +181,7 @@ namespace UnityEditor.Experimental.Build.AssetBundle
     [NativeAsStruct]
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom)]
-    [NativeHeader("Modules/BuildPipeline/Editor/Shared/AssetBundleBuildInterface.bindings.h")]
+    [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
     public class WriteCommand
     {
         [NativeName("fileName")]
@@ -214,14 +198,6 @@ namespace UnityEditor.Experimental.Build.AssetBundle
         {
             get { return m_InternalName; }
             set { m_InternalName = value; }
-        }
-
-        [NativeName("dependencies")]
-        private List<string> m_Dependencies;
-        public List<string> dependencies
-        {
-            get { return m_Dependencies; }
-            set { m_Dependencies = value; }
         }
 
         [NativeName("serializeObjects")]

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -77,10 +78,54 @@ namespace UnityEditor
             }
         }
 
-        static PrefKey kPlay = new PrefKey("ParticleSystem/Play", ",");
-        static PrefKey kStop = new PrefKey("ParticleSystem/Stop", ".");
-        static PrefKey kForward = new PrefKey("ParticleSystem/Forward", "m");
-        static PrefKey kReverse = new PrefKey("ParticleSystem/Reverse", "n");
+        static Event CreateCommandEvent(string commandName)
+        {
+            return new Event { type = EventType.ExecuteCommand, commandName = "ParticleSystem/" + commandName };
+        }
+
+        static Event s_PlayEvent = CreateCommandEvent("Play");
+        static Event s_StopEvent = CreateCommandEvent("Stop");
+        static Event s_ForwardBeginEvent = CreateCommandEvent("ForwardBegin");
+        static Event s_ForwardEndEvent = CreateCommandEvent("ForwardEnd");
+        static Event s_ReverseBeginEvent = CreateCommandEvent("ReverseBegin");
+        static Event s_ReverseEndEvent = CreateCommandEvent("ReverseEnd");
+
+        static void DispatchShortcutEvent(Event evt)
+        {
+            var sceneView = SceneView.lastActiveSceneView;
+            if (sceneView != null)
+                sceneView.SendEvent(evt);
+            else
+                Object.FindObjectOfType<ParticleSystemWindow>()?.SendEvent(evt);
+        }
+
+        [FormerlyPrefKeyAs("ParticleSystem/Play", ",")]
+        [Shortcut("ParticleSystem/Play", typeof(ParticleSystemInspector.ShortcutContext), ",")]
+        static void PlayPauseShortcut(ShortcutArguments args)
+        {
+            DispatchShortcutEvent(s_PlayEvent);
+        }
+
+        [FormerlyPrefKeyAs("ParticleSystem/Stop", ".")]
+        [Shortcut("ParticleSystem/Stop", typeof(ParticleSystemInspector.ShortcutContext), ".")]
+        static void StopShortcut(ShortcutArguments args)
+        {
+            DispatchShortcutEvent(s_StopEvent);
+        }
+
+        [FormerlyPrefKeyAs("ParticleSystem/Forward", "m")]
+        [ClutchShortcut("ParticleSystem/Forward", typeof(ParticleSystemInspector.ShortcutContext), "m")]
+        static void ForwardShortcut(ShortcutArguments args)
+        {
+            DispatchShortcutEvent(args.state == ShortcutState.Begin ? s_ForwardBeginEvent : s_ForwardEndEvent);
+        }
+
+        [FormerlyPrefKeyAs("ParticleSystem/Reverse", "n")]
+        [ClutchShortcut("ParticleSystem/Reverse", typeof(ParticleSystemInspector.ShortcutContext), "n")]
+        static void ReverseShortcut(ShortcutArguments args)
+        {
+            DispatchShortcutEvent(args.state == ShortcutState.Begin ? s_ReverseBeginEvent : s_ReverseEndEvent);
+        }
 
         public ParticleEffectUI(ParticleEffectUIOwner owner)
         {
@@ -542,7 +587,7 @@ namespace UnityEditor
 
             if (!EditorApplication.isPlaying)
             {
-                EditorGUILayout.LayerMaskField(ParticleSystemEditorUtils.previewLayers, s_Texts.previewLayers, SetPreviewLayersDelegate);
+                ParticleSystemEditorUtils.previewLayers = EditorGUILayout.LayerMaskField(ParticleSystemEditorUtils.previewLayers, s_Texts.previewLayers);
                 ParticleSystemEditorUtils.resimulation = GUILayout.Toggle(ParticleSystemEditorUtils.resimulation, s_Texts.resimulation, EditorStyles.toggle);
             }
 
@@ -551,20 +596,51 @@ namespace UnityEditor
             EditorGUIUtility.labelWidth = 0.0f;
         }
 
-        internal static void SetPreviewLayersDelegate(object userData, string[] options, int selected)
+        bool m_ScrubForward;
+        bool m_ScrubReverse;
+        float m_ScrubNextUpdate;
+
+        void HandleScrubbing()
         {
-            var data = (System.Tuple<SerializedProperty, System.UInt32>)userData;
-            ParticleSystemEditorUtils.previewLayers = SerializedProperty.ToggleLayerMask(data.Item2, selected);
+            if ((!m_ScrubForward && !m_ScrubReverse) || Time.realtimeSinceStartup < m_ScrubNextUpdate)
+                return;
+
+            var evt = Event.current;
+
+            var changeTime = 0;
+            if (m_ScrubForward)
+                changeTime++;
+            if (m_ScrubReverse)
+                changeTime--;
+
+            ParticleSystemEditorUtils.playbackIsScrubbing = true;
+            float previewSpeed = ParticleSystemEditorUtils.simulationSpeed;
+            float timeDiff = (evt.shift ? 3f : 1f) * m_TimeHelper.deltaTime * (changeTime * 3f);
+            ParticleSystemEditorUtils.playbackTime = Mathf.Max(0f, ParticleSystemEditorUtils.playbackTime + timeDiff * (previewSpeed));
+
+            foreach (ParticleSystem ps in m_SelectedParticleSystems)
+            {
+                ParticleSystem root = ParticleSystemEditorUtils.GetRoot(ps);
+                if (root.isStopped)
+                {
+                    root.Play();
+                    root.Pause();
+                }
+            }
+
+            ParticleSystemEditorUtils.PerformCompleteResimulation();
+
+            // Mimic previous behavior that relied on key repeat
+            m_ScrubNextUpdate = Time.realtimeSinceStartup + 1f / 15f;
         }
 
         private void HandleKeyboardShortcuts()
         {
-            Event evt = Event.current;
+            var evt = Event.current;
 
-            if (evt.type == EventType.KeyDown)
+            if (evt.type == EventType.ExecuteCommand)
             {
-                int changeTime = 0;
-                if (evt.keyCode == ((Event)kPlay).keyCode)
+                if (evt.commandName == s_PlayEvent.commandName)
                 {
                     if (EditorApplication.isPlaying)
                     {
@@ -580,47 +656,41 @@ namespace UnityEditor
                         else
                             Pause();
                     }
+
                     evt.Use();
                 }
-                else if (evt.keyCode == ((Event)kStop).keyCode)
+                else if (evt.commandName == s_StopEvent.commandName)
                 {
                     Stop();
                     evt.Use();
                 }
-                else if (evt.keyCode == ((Event)kReverse).keyCode)
+                else if (evt.commandName == s_ForwardBeginEvent.commandName)
                 {
-                    changeTime = -1;
+                    m_ScrubForward = true;
+                    evt.Use();
                 }
-                else if (evt.keyCode == ((Event)kForward).keyCode)
+                else if (evt.commandName == s_ForwardEndEvent.commandName)
                 {
-                    changeTime = 1;
+                    m_ScrubForward = false;
+                    if (!m_ScrubReverse)
+                        ParticleSystemEditorUtils.playbackIsScrubbing = false;
+                    evt.Use();
                 }
-
-                if (changeTime != 0)
+                else if (evt.commandName == s_ReverseBeginEvent.commandName)
                 {
-                    ParticleSystemEditorUtils.playbackIsScrubbing = true;
-                    float previewSpeed = ParticleSystemEditorUtils.simulationSpeed;
-                    float timeDiff = (evt.shift ? 3f : 1f) * m_TimeHelper.deltaTime * (changeTime > 0 ? 3f : -3f);
-                    ParticleSystemEditorUtils.playbackTime = Mathf.Max(0f, ParticleSystemEditorUtils.playbackTime + timeDiff * (previewSpeed));
-
-                    foreach (ParticleSystem ps in m_SelectedParticleSystems)
-                    {
-                        ParticleSystem root = ParticleSystemEditorUtils.GetRoot(ps);
-                        if (root.isStopped)
-                        {
-                            root.Play();
-                            root.Pause();
-                        }
-                    }
-
-                    ParticleSystemEditorUtils.PerformCompleteResimulation();
+                    m_ScrubReverse = true;
+                    evt.Use();
+                }
+                else if (evt.commandName == s_ReverseEndEvent.commandName)
+                {
+                    m_ScrubReverse = false;
+                    if (!m_ScrubForward)
+                        ParticleSystemEditorUtils.playbackIsScrubbing = false;
                     evt.Use();
                 }
             }
 
-            if (evt.type == EventType.KeyUp)
-                if (evt.keyCode == ((Event)kReverse).keyCode || evt.keyCode == ((Event)kForward).keyCode)
-                    ParticleSystemEditorUtils.playbackIsScrubbing = false;
+            HandleScrubbing();
         }
 
         internal static bool IsStopped(ParticleSystem root)

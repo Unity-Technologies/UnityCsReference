@@ -50,5 +50,7 @@ namespace UnityEngine
         public static extern void UnfocusWindow();
         private static extern void Internal_BeginWindows();
         private static extern void Internal_EndWindows();
+
+        internal static extern string Internal_Concatenate(GUIContent first, GUIContent second);
     }
 }

@@ -89,6 +89,7 @@ namespace UnityEditor.Experimental
             // We need editor resources meta files to be visible to prevent build issues.
             EditorSettings.Internal_UserGeneratedProjectSuffix = "-testable";
             EditorSettings.externalVersionControl = ExternalVersionControl.Generic;
+            AssetDatabase.SaveAssets();
 
             PackageManager.Client.Add($"{packageName}@file:{editorResourcesPath}");
             return true;
@@ -106,6 +107,15 @@ namespace UnityEditor.Experimental
             editorResourcesPath = EditorUtility.OpenFolderPanel("Select editor resources folder", editorResourcesPath, "");
             if (String.IsNullOrEmpty(editorResourcesPath))
                 return;
+
+            // Make sure the editor_resources project does not contain any Library/ folder which could make the asset database crash if imported.
+            var editorResourcesLibraryPath = Path.Combine(editorResourcesPath, "Library");
+            if (Directory.Exists(editorResourcesLibraryPath))
+            {
+                Debug.LogError($"Please dispose of the Library folder under {editorResourcesPath} as it might fail to be imported.");
+                return;
+            }
+
             if (LoadEditorResourcesPackage(editorResourcesPath))
                 EditorApplication.OpenProject(Path.Combine(Application.dataPath, ".."), Environment.GetCommandLineArgs());
         }

@@ -258,6 +258,15 @@ namespace UnityEditor
                 set;
             }
 
+            // Support different CPU architectures with each APK (a.k.a. Multiple APK support).
+            public static extern bool buildApkPerCpuArchitecture
+            {
+                [NativeMethod("GetBuildApkPerCpuArchitecture")]
+                get;
+                [NativeMethod("SetBuildApkPerCpuArchitecture")]
+                set;
+            }
+
             // Android splash screen scale mode
             public static extern AndroidSplashScreenScale splashScreenScale
             {

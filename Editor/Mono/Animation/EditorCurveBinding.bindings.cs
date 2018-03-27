@@ -12,7 +12,7 @@ using UnityEngine.Internal;
 namespace UnityEditor
 {
     [NativeType(CodegenOptions.Custom, "MonoEditorCurveBinding")]
-    public struct EditorCurveBinding
+    public struct EditorCurveBinding : IEquatable<EditorCurveBinding>
     {
         // The path of the game object / bone being animated.
         public string path;
@@ -64,10 +64,12 @@ namespace UnityEditor
 
         public override bool Equals(object other)
         {
-            if (!(other is EditorCurveBinding)) return false;
+            return other is EditorCurveBinding && Equals((EditorCurveBinding)other);
+        }
 
-            EditorCurveBinding rhs = (EditorCurveBinding)other;
-            return this == rhs;
+        public bool Equals(EditorCurveBinding other)
+        {
+            return this == other;
         }
 
         public Type type

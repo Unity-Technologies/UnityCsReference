@@ -9,6 +9,33 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 {
     public class ClickSelector : MouseManipulator
     {
+        static bool WasSelectableDescendantHitByMouse(GraphElement currentTarget, MouseDownEvent evt)
+        {
+            VisualElement targetElement = evt.target as VisualElement;
+
+            if (targetElement == null || currentTarget == targetElement)
+                return false;
+
+            VisualElement descendant = targetElement;
+
+            while (descendant != null && currentTarget != descendant)
+            {
+                GraphElement selectableDescendant = descendant as GraphElement;
+
+                if (selectableDescendant != null && selectableDescendant.enabledInHierarchy && selectableDescendant.pickingMode != PickingMode.Ignore && selectableDescendant.IsSelectable())
+                {
+                    Vector2 localMousePosition = currentTarget.ChangeCoordinatesTo(descendant, evt.localMousePosition);
+
+                    if (selectableDescendant.HitTest(localMousePosition))
+                    {
+                        return true;
+                    }
+                }
+                descendant = descendant.parent;
+            }
+            return false;
+        }
+
         public ClickSelector()
         {
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
@@ -29,38 +56,26 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected void OnMouseDown(MouseDownEvent e)
         {
-            if (!(e.currentTarget is ISelectable))
+            var graphElement = e.currentTarget as GraphElement;
+
+            if (graphElement == null)
             {
                 return;
             }
 
-            if (CanStartManipulation(e))
+            if (CanStartManipulation(e) && graphElement.IsSelectable() && graphElement.HitTest(e.localMousePosition) && !WasSelectableDescendantHitByMouse(graphElement, e))
             {
-                if (!(target as ISelectable).HitTest(e.localMousePosition))
-                {
-                    return;
-                }
-                var ge = e.currentTarget as GraphElement;
-                if (ge != null)
-                {
-                    VisualElement c = ge.shadow.parent;
-                    while (c != null && !(c is GraphView))
-                    {
-                        c = c.shadow.parent;
-                    }
+                var gv = graphElement.GetFirstAncestorOfType<GraphView>();
 
-                    var gv = c as GraphView;
-                    if (ge.IsSelected(gv) && e.ctrlKey)
-                    {
-                        ge.Unselect(gv);
-                    }
-                    else
-                    {
-                        ge.Select(gv, e.shiftKey || e.ctrlKey);
-                    }
-
-                    // Do not stop the propagation as it is common case for a parent start to move the selection on a mouse down.
+                if (graphElement.IsSelected(gv) && e.ctrlKey)
+                {
+                    graphElement.Unselect(gv);
                 }
+                else
+                {
+                    graphElement.Select(gv, e.shiftKey || e.ctrlKey);
+                }
+                // Do not stop the propagation as it is common case for a parent start to move the selection on a mouse down.
             }
         }
     }

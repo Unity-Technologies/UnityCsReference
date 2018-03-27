@@ -32,6 +32,11 @@ namespace UnityEditor.StyleSheets
             if (lookForRetinaAssets)
             {
                 resource = EditorGUIUtility.Load(hiResPath);
+                if (resource as Texture2D != null)
+                {
+                    Texture2D tex = (Texture2D)resource;
+                    tex.pixelsPerPoint = 2.0f;
+                }
             }
 
             if (resource == null)

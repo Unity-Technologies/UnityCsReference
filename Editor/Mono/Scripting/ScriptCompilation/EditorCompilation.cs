@@ -397,10 +397,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         }
                     }
 
-                    foreach (var reference in assembly.References)
+                    if (assembly.References != null)
                     {
-                        if (!allCustomScriptAssemblies.Any(a => a.Name == reference))
-                            throw new Compilation.AssemblyDefinitionException(string.Format("Assembly has reference to non-existent assembly '{0}'", reference), assembly.FilePath);
+                        foreach (var reference in assembly.References)
+                        {
+                            if (!allCustomScriptAssemblies.Any(a => a.Name == reference))
+                                throw new Compilation.AssemblyDefinitionException(string.Format("Assembly has reference to non-existent assembly '{0}'", reference), assembly.FilePath);
+                        }
                     }
                 }
                 catch (Exception e)
@@ -469,13 +472,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     exceptions.Add(e);
                 }
 
-                if (!assemblies.Any(a => a.Name.Equals(loadedCustomScriptAssembly.Name, StringComparison.OrdinalIgnoreCase)))
+                if (loadedCustomScriptAssembly != null && !assemblies.Any(a => a.Name.Equals(loadedCustomScriptAssembly.Name, StringComparison.OrdinalIgnoreCase)))
                     assemblies.Add(loadedCustomScriptAssembly);
             }
 
             customScriptAssemblies = assemblies.ToArray();
 
-            UpdateCustomTargetAssemblies();
+            try
+            {
+                UpdateCustomTargetAssemblies();
+            }
+            catch (Exception e)
+            {
+                exceptions.Add(e);
+            }
 
             return exceptions.ToArray();
         }
@@ -623,16 +633,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public CustomScriptAssembly FindCustomScriptAssemblyFromAssemblyName(string assemblyName)
         {
-            List<CustomScriptAssembly> allCustomScriptAssemblies = new List<CustomScriptAssembly>();
+            assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
 
             if (customScriptAssemblies != null)
-                allCustomScriptAssemblies.AddRange(customScriptAssemblies);
+            {
+                var result = customScriptAssemblies.FirstOrDefault(a => AssemblyNameWithSuffix(a.Name) == assemblyName);
+                if (result != null)
+                    return result;
+            }
 
             if (packageCustomScriptAssemblies != null)
-                allCustomScriptAssemblies.AddRange(packageCustomScriptAssemblies);
+                return packageCustomScriptAssemblies.Single(a => AssemblyNameWithSuffix(a.Name) == assemblyName);
 
-            var customScriptAssembly = allCustomScriptAssemblies.Single(a => AssemblyNameWithSuffix(a.Name) == AssetPath.GetAssemblyNameWithoutExtension(assemblyName));
-            return customScriptAssembly;
+            throw new InvalidOperationException();
         }
 
         internal CustomScriptAssembly FindCustomScriptAssemblyFromScriptPath(string scriptPath)

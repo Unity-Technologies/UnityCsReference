@@ -52,18 +52,31 @@ namespace UnityEditor.Experimental.AssetImporters
         // Create a dependency against the contents of the source asset at the provided path
         // * if the asset at the path changes, it will trigger an import
         // * if the asset at the path moves, it will trigger an import
-        internal void DependOnHashOfSourceFile(string path)
+        internal void DependsOnSourceAsset(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
-                throw new ArgumentNullException("path", "Cannot add a null path");
+                throw new ArgumentNullException("path", "Cannot add dependency on invalid path.");
             }
 
-            DependOnHashOfSourceFileInternal(path);
+            DependsOnSourceAssetInternal(path);
         }
 
-        [NativeName("DependOnHashOfSourceFile")]
-        private extern void DependOnHashOfSourceFileInternal(string path);
+        [NativeName("DependsOnSourceAsset")]
+        private extern void DependsOnSourceAssetInternal(string path);
+
+        internal void DependsOnImportedAsset(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentNullException("path", "Cannot add dependency on invalid path.");
+            }
+
+            DependsOnImportedAssetInternal(path);
+        }
+
+        [NativeName("DependsOnImportedAsset")]
+        private extern void DependsOnImportedAssetInternal(string path);
 
         // Internal for now, will be made public once UI/UX for persistent importer logs is implemented.
         public void LogImportError(string msg, UnityEngine.Object obj = null)

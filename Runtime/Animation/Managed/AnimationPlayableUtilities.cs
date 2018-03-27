@@ -14,7 +14,7 @@ namespace UnityEngine.Playables
         {
             AnimationPlayableOutput playableOutput = AnimationPlayableOutput.Create(graph, "AnimationClip", animator);
             playableOutput.SetSourcePlayable(playable);
-            playableOutput.SetSourceInputPort(0);
+            playableOutput.SetSourceOutputPort(0);
             graph.SyncUpdateAndTimeMode(animator);
             graph.Play();
         }

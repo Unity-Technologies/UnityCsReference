@@ -139,6 +139,8 @@ namespace UnityEditor
             new PopupElement("ETCPACK Best"),
         };
 
+        SerializedProperty m_EnableTextureStreamingInPlayMode;
+
         public void OnEnable()
         {
             Plugin[] availvc = Plugin.availablePlugins;
@@ -154,6 +156,8 @@ namespace UnityEditor
 
             DevDeviceList.Changed += OnDeviceListChanged;
             BuildRemoteDeviceList();
+
+            m_EnableTextureStreamingInPlayMode = serializedObject.FindProperty("m_EnableTextureStreamingInPlayMode");
         }
 
         public void OnDisable()
@@ -194,8 +198,15 @@ namespace UnityEditor
             remoteDevicePopupList = popupList.ToArray();
         }
 
+        internal static class Styles
+        {
+            public static readonly GUIContent enableTextureStreamingInPlayMode = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
+        }
+
         public override void OnInspectorGUI()
         {
+            serializedObject.Update();
+
             // GUI.enabled hack because we don't want some controls to be disabled if the EditorSettings.asset is locked
             // since some of the controls are not dependent on the Editor Settings asset. Unfortunately, this assumes
             // that the editor will only be disabled because of version control locking which may change in the future.
@@ -377,6 +388,9 @@ namespace UnityEditor
             DoEtcTextureCompressionSettings();
             DoInternalSettings();
             DoLineEndingsSettings();
+            DoStreamingSettings();
+
+            serializedObject.ApplyModifiedProperties();
         }
 
         private void DoProjectGenerationSettings()
@@ -449,6 +463,14 @@ namespace UnityEditor
 
             int index = (int)EditorSettings.lineEndingsForNewScripts;
             CreatePopupMenu("Mode", lineEndingsPopupList, index, SetLineEndingsForNewScripts);
+        }
+
+        private void DoStreamingSettings()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label("Streaming Settings", EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Styles.enableTextureStreamingInPlayMode);
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)

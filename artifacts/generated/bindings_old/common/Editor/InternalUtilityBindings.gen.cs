@@ -104,6 +104,12 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
         }
     
     
+    public HierarchyProperty(string rootPath, bool forceImport)
+            : this(HierarchyType.Assets, rootPath, forceImport)
+        {
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public HierarchyProperty (HierarchyType hierarchyType, string rootPath, bool forceImport) ;

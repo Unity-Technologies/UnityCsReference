@@ -375,9 +375,15 @@ namespace UnityEditor
 
             private static string NormalizePath(string path)
             {
-                var fullPath = Path.GetFullPath(path);
+                var fullPath = path;
+                if (fullPath.Length > 1 && fullPath[fullPath.Length - 1] == '.' && fullPath[fullPath.Length - 2] != '.')
+                    fullPath = fullPath.Remove(fullPath.Length - 1);
+
                 if (fullPath.EndsWith("/") || fullPath.EndsWith("\\"))
                     fullPath = fullPath.Remove(fullPath.Length - 1);
+
+                fullPath = Path.GetFullPath(fullPath);
+
                 fullPath = fullPath.ToLower();
                 if (Path.DirectorySeparatorChar == '/')
                     return fullPath;

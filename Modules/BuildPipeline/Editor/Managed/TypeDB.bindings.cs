@@ -9,26 +9,13 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.Serialization;
 
-namespace UnityEditor.Experimental.Build.Player
+namespace UnityEditor.Build.Player
 {
     [Serializable]
     [UsedByNativeCode]
     [NativeHeader("Modules/BuildPipeline/Editor/Public/TypeDB.h")]
     public class TypeDB : ISerializable, IDisposable
     {
-        [FreeFunction("TypeDB::Internal_Create")]
-        private static extern IntPtr Internal_Create();
-        [FreeFunction("TypeDB::Internal_Destroy", true)]
-        private static extern void Internal_Destroy(IntPtr ptr);
-
-        [NativeMethod("TypeDB::GetHash")]
-        private extern int GetHash();
-
-        [NativeMethod("SerializeNativeTypeDB")]
-        private extern string SerializeNativeTypeDB();
-        [NativeMethod("DeserializeNativeTypeDB")]
-        private extern void DeserializeNativeTypeDB(string data);
-
         private IntPtr m_Ptr;
 
         internal TypeDB()
@@ -38,10 +25,16 @@ namespace UnityEditor.Experimental.Build.Player
 
         ~TypeDB()
         {
-            Dispose();
+            Dispose(false);
         }
 
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
         {
             if (m_Ptr != IntPtr.Zero)
             {
@@ -50,30 +43,44 @@ namespace UnityEditor.Experimental.Build.Player
             }
         }
 
+        [NativeMethod(IsThreadSafe = true)]
+        private static extern IntPtr Internal_Create();
+
+        [NativeMethod(IsThreadSafe = true)]
+        private static extern void Internal_Destroy(IntPtr ptr);
+
+        public extern Hash128 GetHash128();
+
+        internal extern string SerializeToJson();
+        internal extern void DeserializeFromJson(string data);
+
+        internal extern byte[] SerializeToBinary();
+        internal extern void DeserializeFromBinary([Out] byte[] data);
+
         public override bool Equals(object obj)
         {
             TypeDB other = obj as TypeDB;
             if (other == null)
                 return false;
-            return other.GetHash() == GetHash();
+            return other.GetHash128() == GetHash128();
         }
 
         public override int GetHashCode()
         {
-            return GetHash();
+            return GetHash128().GetHashCode();
         }
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            string text = SerializeNativeTypeDB();
-            info.AddValue("typedb", text);
+            byte[] data = SerializeToBinary();
+            info.AddValue("typedb", data);
         }
 
         protected TypeDB(SerializationInfo info, StreamingContext context)
         {
             m_Ptr = Internal_Create();
-            string serializedTypeDBString = (string)info.GetValue("typedb", typeof(string));
-            DeserializeNativeTypeDB(serializedTypeDBString);
+            byte[] data = (byte[])info.GetValue("typedb", typeof(byte[]));
+            DeserializeFromBinary(data);
         }
     }
 }

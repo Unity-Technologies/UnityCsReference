@@ -97,7 +97,7 @@ namespace UnityEditor
                 editorApplicationQuit();
         }
 
-        internal static bool supportsHiDPI { get { return Application.platform == RuntimePlatform.OSXEditor; } }
+        internal static bool supportsHiDPI { get { return Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.WindowsEditor; } }
 
         // Delegate to be called for every visible list item in the ProjectWindow on every OnGUI event.
         public delegate void ProjectWindowItemCallback(string guid, Rect selectionRect);
@@ -316,7 +316,7 @@ namespace UnityEditor
                 globalEventHandler();
 
             // Ensure this is called last in order to make sure no null current events are passed to other handlers
-            WindowLayout.MaximizeKeyHandler();
+            WindowLayout.MaximizeGestureHandler();
 
             Event.current = null;
         }

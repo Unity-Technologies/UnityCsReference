@@ -115,7 +115,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public override Rect GetPosition()
         {
-            return new Rect(style.positionLeft, style.positionTop, layout.width, layout.height);
+            if (style.positionType == PositionType.Absolute)
+                return new Rect(style.positionLeft, style.positionTop, layout.width, layout.height);
+            return layout;
         }
 
         public override void SetPosition(Rect newPos)
@@ -294,7 +296,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             expanded = !expanded;
         }
 
-        internal void UseDefaultStyling()
+        protected void UseDefaultStyling()
         {
             AddStyleSheetPath("StyleSheets/GraphView/Node.uss");
         }
@@ -364,6 +366,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             UpdateCollapsibleAreaVisibility();
 
             this.AddManipulator(new ContextualMenuManipulator(BuildContextualMenu));
+
+            style.positionType = PositionType.Absolute;
         }
 
         void AddConnectionsToDeleteSet(VisualElement container, ref HashSet<GraphElement> toDelete)

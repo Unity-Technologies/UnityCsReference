@@ -234,27 +234,11 @@ namespace UnityEditor
             LineRendererEditor.inputMode = (LineRendererEditor.InputMode)EditorGUILayout.EnumPopup(s_Styles.inputMode, LineRendererEditor.inputMode);
             if (LineRendererEditor.inputMode == LineRendererEditor.InputMode.PhysicsRaycast)
             {
-                EditorGUILayout.LayerMaskField((uint)LineRendererEditor.raycastMask.value, s_Styles.layerMask, SetRaycastMaskCallback);
+                LineRendererEditor.raycastMask = EditorGUILayout.LayerMaskField(LineRendererEditor.raycastMask, s_Styles.layerMask);
             }
 
             LineRendererEditor.createPointSeparation = EditorGUILayout.FloatField(s_Styles.pointSeparation, LineRendererEditor.createPointSeparation);
             LineRendererEditor.creationOffset = EditorGUILayout.FloatField(s_Styles.normalOffset, LineRendererEditor.creationOffset);
-        }
-
-        static void SetRaycastMaskCallback(object userData, string[] options, int selected)
-        {
-            switch (options[selected])
-            {
-                case "Nothing":
-                    LineRendererEditor.raycastMask = 0;
-                    break;
-                case "Everything":
-                    LineRendererEditor.raycastMask = ~0;
-                    break;
-                default:
-                    LineRendererEditor.raycastMask ^= (1 << LayerMask.NameToLayer(options[selected]));
-                    break;
-            }
         }
 
         Bounds GetBounds()
