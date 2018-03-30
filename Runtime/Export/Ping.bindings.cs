@@ -25,6 +25,10 @@ namespace UnityEngine
         [ThreadAndSerializationSafe]
         public void DestroyPing()
         {
+            if (m_Ptr == IntPtr.Zero)
+            {
+                return;
+            }
             Internal_Destroy(m_Ptr);
             m_Ptr = IntPtr.Zero;
         }

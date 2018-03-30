@@ -29,10 +29,6 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            EditorGUILayout.EnumPopup("Language", NewScriptDropdownItem.Language.CSharp);
-
-            EditorGUILayout.Space();
-
             var canCreate = nsItem.CanCreate();
             if (!canCreate && nsItem.m_ClassName != "")
                 GUILayout.Label(nsItem.GetError(), EditorStyles.helpBox);

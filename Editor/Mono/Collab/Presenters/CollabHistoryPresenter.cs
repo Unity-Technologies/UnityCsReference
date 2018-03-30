@@ -46,12 +46,7 @@ namespace UnityEditor.Collaboration
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             m_Service.FetchRevisionsCallback += OnFetchRevisions;
 
-            if (Collab.instance.IsConnected())
-            {
-                m_ConnectState = UnityConnect.instance.GetConnectInfo();
-                // Copy the initialized fields of the collab info, even if the instance hasn't connected yet.
-            }
-            // Copy the initialized fields of the collab info, even if the instance hasn't connected yet.
+            m_ConnectState = UnityConnect.instance.GetConnectInfo();
             m_CollabState = Collab.instance.GetCollabInfo();
 
             m_Window.revisionActionsEnabled = !EditorApplication.isPlayingOrWillChangePlaymode;
@@ -135,8 +130,7 @@ namespace UnityEditor.Collaboration
 
         private void OnCollabRevisionUpdated(CollabInfo state)
         {
-            if (m_CollabState.tip != state.tip)
-                OnUpdatePage(m_CurrentPage);
+            OnUpdatePage(m_CurrentPage);
         }
 
         private void OnCollabJobsCompleted(CollabInfo state)

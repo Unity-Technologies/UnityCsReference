@@ -1100,7 +1100,7 @@ namespace UnityEditor
             // after that, either Active Editors are fetched again and the count is different OR the material is invalid and crashes the whole app
             // The target is considered invalid if the MonoBehaviour is missing, to ensure that the missing MonoBehaviour field is drawn
             // we only do not draw an editor if the target is invalid and it is not a MonoBehaviour. case: 917810
-            if (!target && target.GetType() != typeof(UnityEngine.MonoBehaviour))
+            if (!target && !(target is MonoBehaviour) && !(target is ScriptableObject))
                 return;
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
             EditorGUIUtility.ResetGUIState();
@@ -1123,7 +1123,7 @@ namespace UnityEditor
 
             rebuildOptimizedGUIBlock |= editor.isInspectorDirty;
 
-            // Reset dirtyness when repainting
+            // Reset dirtiness when repainting
             if (Event.current.type == EventType.Repaint)
             {
                 editor.isInspectorDirty = false;
