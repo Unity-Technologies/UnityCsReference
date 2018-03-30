@@ -104,17 +104,16 @@ namespace UnityEngine
             // Make a vertical group to encompass the whole thing
             if (Event.current.type == EventType.Layout)
             {
-                current.topLevel = cache.topLevel = new GUILayoutGroup();
-                current.layoutGroups.Clear();
-                current.layoutGroups.Push(current.topLevel);
-                current.windows = cache.windows = new GUILayoutGroup();
+                // Make sure to update all the cached values of the LayoutCache when doing a Layout
+                cache.topLevel = new GUILayoutGroup();
+                cache.layoutGroups.Clear();
+                cache.layoutGroups.Push(cache.topLevel);
+                cache.windows = new GUILayoutGroup();
             }
-            else
-            {
-                current.topLevel = cache.topLevel;
-                current.layoutGroups = cache.layoutGroups;
-                current.windows = cache.windows;
-            }
+            // Make sure to use the actual cache.
+            current.topLevel = cache.topLevel;
+            current.layoutGroups = cache.layoutGroups;
+            current.windows = cache.windows;
         }
 
         internal static void BeginWindow(int windowID, GUIStyle style, GUILayoutOption[] options)

@@ -67,7 +67,9 @@ namespace UnityEditor
 
         bool IsMissingMonoBehaviourTarget()
         {
-            return target.GetType() == typeof(MonoBehaviour) || target.GetType() == typeof(ScriptableObject);
+            if (target) // This test for native reference state first.
+                return target.GetType() == typeof(MonoBehaviour) || target.GetType() == typeof(ScriptableObject);
+            return target is MonoBehaviour || target is ScriptableObject;
         }
 
         public override void OnInspectorGUI()
