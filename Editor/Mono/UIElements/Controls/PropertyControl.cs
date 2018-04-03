@@ -3,13 +3,139 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements
 {
+    static class BuiltInTypeConverter
+    {
+        static Dictionary<string, Type> s_TypeDictionary;
+
+        static BuiltInTypeConverter()
+        {
+            if (s_TypeDictionary == null)
+            {
+                s_TypeDictionary = new Dictionary<string, Type>();
+                s_TypeDictionary.Add("bool", typeof(long));
+                s_TypeDictionary.Add("byte", typeof(byte));
+                s_TypeDictionary.Add("sbyte", typeof(sbyte));
+                s_TypeDictionary.Add("char", typeof(char));
+                s_TypeDictionary.Add("decimal", typeof(decimal));
+                s_TypeDictionary.Add("double", typeof(double));
+                s_TypeDictionary.Add("float", typeof(float));
+                s_TypeDictionary.Add("int", typeof(int));
+                s_TypeDictionary.Add("uint", typeof(uint));
+                s_TypeDictionary.Add("long", typeof(long));
+                s_TypeDictionary.Add("ulong", typeof(ulong));
+                s_TypeDictionary.Add("object", typeof(object));
+                s_TypeDictionary.Add("short", typeof(short));
+                s_TypeDictionary.Add("ushort", typeof(ushort));
+                s_TypeDictionary.Add("string", typeof(string));
+            }
+        }
+
+        public static Type GetTypeFromName(string typeName)
+        {
+            Type t;
+            if (!s_TypeDictionary.TryGetValue(typeName, out t))
+            {
+                t = Type.GetType(typeName);
+            }
+
+            return t;
+        }
+    }
     internal class PropertyControl<TType> : BaseControl<TType>
     {
+        public class PropertyControlFactory : UxmlFactory<PropertyControl<TType>, PropertyControlUxmlTraits>
+        {
+            public override string uxmlName
+            {
+                get
+                {
+                    string name = typeof(PropertyControl<TType>).Name;
+                    if (name.Contains("`"))
+                    {
+                        name = name.Substring(0, name.IndexOf("`"));
+                    }
+                    return name;
+                }
+            }
+
+            public override string uxmlQualifiedName
+            {
+                get { return uxmlNamespace + "." + uxmlName; }
+            }
+
+            public override bool AcceptsAttributeBag(IUxmlAttributes bag)
+            {
+                string type = m_Traits.GetValueType(bag);
+                if (BuiltInTypeConverter.GetTypeFromName(type) == typeof(TType))
+                {
+                    return true;
+                }
+
+                return false;
+            }
+        }
+
+        public class PropertyControlUxmlTraits : BaseControlUxmlTraits
+        {
+            UxmlStringAttributeDescription m_TypeOf;
+            UxmlStringAttributeDescription m_Value;
+            UxmlStringAttributeDescription m_Label;
+
+            public PropertyControlUxmlTraits()
+            {
+                m_TypeOf = new UxmlStringAttributeDescription { name = "typeOf", use = UxmlAttributeDescription.Use.Required};
+                UxmlEnumeration typeList = new UxmlEnumeration();
+                typeList.values = new List<string>();
+                foreach (DataType dt in Enum.GetValues(typeof(DataType)))
+                {
+                    if (dt != DataType.Unsupported)
+                    {
+                        typeList.values.Add(dt.ToString());
+                    }
+                }
+                m_TypeOf.restriction = typeList;
+
+                m_Value = new UxmlStringAttributeDescription { name = "value" };
+                m_Label = new UxmlStringAttributeDescription { name = "label" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_TypeOf;
+                    yield return m_Value;
+                    yield return m_Label;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                var initValue = m_Value.GetValueFromBag(bag);
+                var text = m_Label.GetValueFromBag(bag);
+                ((PropertyControl<TType>)ve).value = ((PropertyControl<TType>)ve).StringToValue(initValue);
+                ((PropertyControl<TType>)ve).label = text;
+            }
+
+            public string GetValueType(IUxmlAttributes bag)
+            {
+                return m_TypeOf.GetValueFromBag(bag);
+            }
+        }
+
         enum DataType
         {
             Long,
@@ -37,13 +163,6 @@ namespace UnityEditor.Experimental.UIElements
         public PropertyControl(string labelText)
         {
             Init("", labelText);
-        }
-
-        public PropertyControl(IUxmlAttributes bag)
-        {
-            var initValue = bag?.GetPropertyString("value") ?? "";
-            var text = bag?.GetPropertyString("label") ?? "";
-            Init(initValue, text);
         }
 
         private void Init(string initialValue, string labelText)
@@ -203,29 +322,6 @@ namespace UnityEditor.Experimental.UIElements
             // Delegate focus to the control
             if (evt.GetEventTypeId() == FocusEvent.TypeId())
                 m_Control.Focus();
-        }
-    }
-
-    internal static class PropertyControlFactory
-    {
-        public static VisualElement Create(IUxmlAttributes bag, CreationContext cc)
-        {
-            var type = bag.GetPropertyString("typeOf") ?? "";
-
-            switch (type.ToLower())
-            {
-                case "long":
-                    return new PropertyControl<long>(bag);
-                case "int":
-                    return new PropertyControl<int>(bag);
-                case "float":
-                    return new PropertyControl<float>(bag);
-                case "double":
-                    return new PropertyControl<double>(bag);
-                case "string":
-                    return new PropertyControl<string>(bag);
-            }
-            throw new NotSupportedException($"Unsupported type attribute: {type}");
         }
     }
 }

@@ -2408,9 +2408,6 @@
   <Compile Include="..\..\Editor\Mono\Modules\DefaultPluginImporterExtension.cs">
     <Link>Editor\Mono\Modules\DefaultPluginImporterExtension.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\Modules\DefaultProjectGeneratorExtension.cs">
-    <Link>Editor\Mono\Modules\DefaultProjectGeneratorExtension.cs</Link>
-  </Compile>
   <Compile Include="..\..\Editor\Mono\Modules\DefaultTextureImportSettingsExtension.cs">
     <Link>Editor\Mono\Modules\DefaultTextureImportSettingsExtension.cs</Link>
   </Compile>
@@ -3281,6 +3278,9 @@
   <Compile Include="..\..\Editor\Mono\UIElements\UIElementsViewImporter.cs">
     <Link>Editor\Mono\UIElements\UIElementsViewImporter.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\UXMLSchemaGenerator.cs">
+    <Link>Editor\Mono\UIElements\UXMLSchemaGenerator.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\VisualTreeAssetEditor.cs">
     <Link>Editor\Mono\UIElements\VisualTreeAssetEditor.cs</Link>
   </Compile>
@@ -3367,6 +3367,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Utils\IDeviceUtils.cs">
     <Link>Editor\Mono\Utils\IDeviceUtils.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Utils\IconUtility.bindings.cs">
+    <Link>Editor\Mono\Utils\IconUtility.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Utils\LightProbeGroupSelection.cs">
     <Link>Editor\Mono\Utils\LightProbeGroupSelection.cs</Link>
@@ -3520,9 +3523,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\WebViewEditorWindow\WebViewTestFunctions.cs">
     <Link>Editor\Mono\WebViewEditorWindow\WebViewTestFunctions.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AnimationUtilityBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\AnimationUtilityBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\AssetDatabaseBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\AssetDatabaseBindings.gen.cs</Link>
@@ -3961,6 +3961,9 @@
   </Compile>
   <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Client.cs">
     <Link>Modules\PackageManager\Editor\Managed\Client.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\PackageManager\Editor\Managed\DependencyInfo.cs">
+    <Link>Modules\PackageManager\Editor\Managed\DependencyInfo.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\PackageManager\Editor\Managed\Error.cs">
     <Link>Modules\PackageManager\Editor\Managed\Error.cs</Link>

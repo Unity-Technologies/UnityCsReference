@@ -10,6 +10,8 @@ namespace UnityEditor.Experimental.UIElements
 {
     public abstract class BaseValueField<T> : BaseControl<T>
     {
+        public class BaseValueFieldUxmlTraits : BaseControlUxmlTraits {}
+
         protected T m_Value;
 
         public override T value

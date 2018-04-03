@@ -95,7 +95,7 @@ namespace UnityEditor
             public GUIContent pivot = EditorGUIUtility.TrTextContent("Pivot", "Applies an offset to the pivot of particles, as a multiplier of its size.");
             public GUIContent visualizePivot = EditorGUIUtility.TrTextContent("Visualize Pivot", "Render the pivot positions of the particles.");
             public GUIContent useCustomVertexStreams = EditorGUIUtility.TrTextContent("Custom Vertex Streams", "Choose whether to send custom particle data to the shader.");
-            public GUIContent enableGPUInstancing = EditorGUIUtility.TrTextContent("Enable GPU Instancing", "Use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
+            public GUIContent enableGPUInstancing = EditorGUIUtility.TrTextContent("Enable Mesh GPU Instancing", "When rendering mesh particles, use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
             public GUIContent applyActiveColorSpace = EditorGUIUtility.TrTextContent("Apply Active Color Space", "When using Linear Rendering, particle colors will be converted appropriately before being passed to the GPU.");
 
             // Keep in sync with enum in ParticleSystemRenderer.h

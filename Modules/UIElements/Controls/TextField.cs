@@ -2,12 +2,47 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
     public class TextField : TextInputFieldBase<string>
     {
+        public class TextFieldFactory : UxmlFactory<TextField, TextFieldUxmlTraits> {}
+
+        public class TextFieldUxmlTraits : TextInputFieldBaseUxmlTraits
+        {
+            UxmlBoolAttributeDescription m_Multiline;
+
+            public TextFieldUxmlTraits()
+            {
+                m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Multiline;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                TextField field = ((TextField)ve);
+                field.multiline = m_Multiline.GetValueFromBag(bag);
+                field.value = field.text;
+            }
+        }
+
         // TODO: Switch over to default style properties
 
         // Multiline (lossy behaviour when deactivated)

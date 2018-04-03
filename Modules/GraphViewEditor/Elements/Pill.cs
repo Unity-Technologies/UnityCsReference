@@ -2,16 +2,54 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     public class Pill : VisualElement
     {
+        public class PillFactory : UxmlFactory<Pill, PillUxmTraits> {}
+
+        public class PillUxmTraits : VisualElementUxmlTraits
+        {
+            UxmlBoolAttributeDescription m_Highlighted;
+            UxmlStringAttributeDescription m_Text;
+
+            public PillUxmTraits()
+            {
+                m_Highlighted = new UxmlBoolAttributeDescription { name = "highlighted" };
+                m_Text = new UxmlStringAttributeDescription { name = "text" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Highlighted;
+                    yield return m_Text;
+                }
+            }
+
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                ((Pill)ve).highlighted = m_Highlighted.GetValueFromBag(bag);
+                ((Pill)ve).text = m_Text.GetValueFromBag(bag);
+            }
+        }
+
         private readonly Label m_TitleLabel;
         private readonly Image m_Icon;
         private VisualElement m_Left;

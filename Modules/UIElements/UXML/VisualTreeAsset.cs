@@ -166,8 +166,6 @@ namespace UnityEngine.Experimental.UIElements
                     Debug.LogError("Trying to clone a VisualTreeAsset with a custom content container into a element which is not a template container");
             }
 
-            ve.name = root.name;
-
             // if the current element had a slot-name attribute, put it in the resulting slot mapping
             string slotName;
             if (context.slotInsertionPoints != null && TryGetSlotInsertionPoint(root.id, out slotName))

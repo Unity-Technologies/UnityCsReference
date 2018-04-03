@@ -3,12 +3,66 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Experimental.UIElements.StyleSheets;
+using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
     public class Slider : VisualElement
     {
+        public class SliderFactory : UxmlFactory<Slider, SliderUxmlTraits> {}
+
+        public class SliderUxmlTraits : VisualElementUxmlTraits
+        {
+            UxmlFloatAttributeDescription m_LowValue;
+            UxmlFloatAttributeDescription m_HighValue;
+            UxmlFloatAttributeDescription m_PageSize;
+            UxmlEnumAttributeDescription<Direction> m_Direction;
+            UxmlFloatAttributeDescription m_Value;
+
+            public SliderUxmlTraits()
+            {
+                m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
+                m_HighValue = new UxmlFloatAttributeDescription { name = "highValue" };
+                m_PageSize = new UxmlFloatAttributeDescription { name = "pageSize" };
+                m_Direction = new UxmlEnumAttributeDescription<Slider.Direction> { name = "direction", defaultValue = Direction.Vertical };
+                m_Value = new UxmlFloatAttributeDescription { name = "value" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_LowValue;
+                    yield return m_HighValue;
+                    yield return m_PageSize;
+                    yield return m_Direction;
+                    yield return m_Value;
+                }
+            }
+
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                Slider slider = ((Slider)ve);
+                slider.lowValue = m_LowValue.GetValueFromBag(bag);
+                slider.highValue = m_HighValue.GetValueFromBag(bag);
+                slider.direction = m_Direction.GetValueFromBag(bag);
+                slider.pageSize = m_PageSize.GetValueFromBag(bag);
+                slider.value = m_Value.GetValueFromBag(bag);
+            }
+        }
+
         public enum Direction
         {
             Horizontal,
@@ -115,6 +169,9 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
         }
+
+        public Slider()
+            : this(0, 10.0f, null) {}
 
         public Slider(float start, float end, System.Action<float> valueChanged,
                       Direction direction = Direction.Horizontal, float pageSize = 10f)

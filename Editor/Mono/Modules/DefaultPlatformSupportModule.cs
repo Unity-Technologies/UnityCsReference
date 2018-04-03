@@ -48,8 +48,6 @@ namespace UnityEditor.Modules
 
         public virtual IUserAssembliesValidator CreateUserAssembliesValidatorExtension() { return null; }
 
-        public virtual IProjectGeneratorExtension CreateProjectGeneratorExtension() { return null; }
-
         public virtual IDeploymentTargetsExtension CreateDeploymentTargetsExtension() { return null; }
 
         public virtual void RegisterAdditionalUnityExtensions() {}

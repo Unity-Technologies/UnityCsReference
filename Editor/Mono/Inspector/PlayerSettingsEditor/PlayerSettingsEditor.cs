@@ -148,12 +148,11 @@ namespace UnityEditor
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
-            public static readonly GUIContent skinOnGPUAndroidWarning = EditorGUIUtility.TrTextContent("GPU skinning on Android devices is only enabled in VR builds, and is experimental. Be sure to validate behavior and performance on your target devices.");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics (Pro Only)");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols*");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
-            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent("Legacy (.NET 3.5 Equivalent)");
-            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent("Stable (.NET 4.x Equivalent)");
+            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent");
+            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
@@ -1647,11 +1646,6 @@ namespace UnityEditor
                 }
             }
 
-            if ((targetGroup == BuildTargetGroup.Android) && PlayerSettings.gpuSkinning)
-            {
-                EditorGUILayout.HelpBox(Styles.skinOnGPUAndroidWarning.text, MessageType.Warning);
-            }
-
             if (targetGroup == BuildTargetGroup.XboxOne)
             {
                 // on XBoxOne, we only have kGfxJobModeNative active for Dx12 API and kGfxJobModeLegacy for the DX11 API
@@ -1993,6 +1987,11 @@ namespace UnityEditor
                     newBackend = ScriptingImplementation.IL2CPP;
                     PlayerSettingsEditor.BuildDisabledEnumPopup(Styles.scriptingIL2CPP, Styles.scriptingBackend);
                 }
+                else if (backends.Length == 1)
+                {
+                    newBackend = backends[0];
+                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0]), Styles.scriptingBackend);
+                }
                 else
                 {
                     newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
@@ -2317,6 +2316,12 @@ namespace UnityEditor
 
         private static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends)
         {
+            InitializeNiceScriptingBackendNames();
+            return GetGUIContentsForValues(m_NiceScriptingBackendNames, scriptingBackends);
+        }
+
+        static void InitializeNiceScriptingBackendNames()
+        {
             if (m_NiceScriptingBackendNames == null)
             {
                 m_NiceScriptingBackendNames = new Dictionary<ScriptingImplementation, GUIContent>
@@ -2326,8 +2331,12 @@ namespace UnityEditor
                     { ScriptingImplementation.IL2CPP, Styles.scriptingIL2CPP }
                 };
             }
+        }
 
-            return GetGUIContentsForValues(m_NiceScriptingBackendNames, scriptingBackends);
+        private static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend)
+        {
+            InitializeNiceScriptingBackendNames();
+            return GetGUIContentsForValues(m_NiceScriptingBackendNames, new[] { scriptingBackend }).First();
         }
 
         private static GUIContent[] GetNiceApiCompatibilityLevelNames(ApiCompatibilityLevel[] apiCompatibilityLevels)

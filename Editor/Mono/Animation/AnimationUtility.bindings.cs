@@ -136,11 +136,28 @@ namespace UnityEditor
         extern private static System.Type Internal_GetScriptableObjectEditorCurveValueType([NotNull] ScriptableObject scriptableObject, EditorCurveBinding binding);
 
         extern public static bool GetFloatValue([NotNull] GameObject root, EditorCurveBinding binding, out float data);
-        //extern public static bool GetObjectReferenceValue([NotNull]GameObject root, [NotNull]EditorCurveBinding binding, out Object data);
+        public static bool GetObjectReferenceValue(GameObject root, EditorCurveBinding binding, out Object data)
+        {
+            data = Internal_GetObjectReferenceValue(root, binding);
+            return data != null;
+        }
+
+        extern private static Object Internal_GetObjectReferenceValue([NotNull] GameObject root, EditorCurveBinding binding);
 
         extern public static Object GetAnimatedObject([NotNull] GameObject root, EditorCurveBinding binding);
 
-        //extern public static Type PropertyModificationToEditorCurveBinding(PropertyModification modification, [NotNull]GameObject gameObject, out EditorCurveBinding binding);
+        public static Type PropertyModificationToEditorCurveBinding(PropertyModification modification, GameObject gameObject, out EditorCurveBinding binding)
+        {
+            binding = new EditorCurveBinding();
+            binding.type = typeof(Object); // dummy type to avoid errors while marshalling.
+
+            if (modification == null)
+                return null;
+
+            return Internal_PropertyModificationToEditorCurveBinding(modification, gameObject, out binding);
+        }
+
+        extern private static Type Internal_PropertyModificationToEditorCurveBinding(PropertyModification modification, [NotNull] GameObject gameObject, out EditorCurveBinding binding);
         extern internal static PropertyModification EditorCurveBindingToPropertyModification(EditorCurveBinding binding, [NotNull] GameObject gameObject);
 
         extern public static EditorCurveBinding[] GetCurveBindings([NotNull] AnimationClip clip);

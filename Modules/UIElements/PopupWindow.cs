@@ -2,10 +2,26 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
+
 namespace UnityEngine.Experimental.UIElements
 {
     public class PopupWindow : BaseTextElement
     {
+        public class PopupWindowFactory : UxmlFactory<PopupWindow, PopupWindowUxmlTraits> {}
+
+        public class PopupWindowUxmlTraits : BaseTextElementUxmlTraits
+        {
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get
+                {
+                    yield return new UxmlChildElementDescription(typeof(VisualElement));
+                }
+            }
+        }
+
         private VisualElement m_ContentContainer;
 
         public PopupWindow()

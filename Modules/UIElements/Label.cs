@@ -8,6 +8,10 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class Label : BaseTextElement
     {
+        public class LabelFactory : UxmlFactory<Label, LabelUxmlTraits> {}
+
+        public class LabelUxmlTraits : BaseTextElementUxmlTraits {}
+
         public Label() : this(String.Empty) {}
         public Label(string text)
         {

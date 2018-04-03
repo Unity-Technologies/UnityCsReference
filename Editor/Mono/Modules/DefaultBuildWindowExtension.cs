@@ -27,5 +27,6 @@ namespace UnityEditor.Modules
         public virtual bool ShouldDrawExplicitArrayBoundsCheckbox() { return false; }
         public virtual bool ShouldDrawForceOptimizeScriptsCheckbox() { return false; }
         public virtual bool ShouldDrawWaitForManagedDebugger() { return false; }
+        public virtual bool ShouldDisableManagedDebuggerCheckboxes() { return false; }
     }
 }

@@ -72,7 +72,7 @@ namespace UnityEngine
         internal extern static Sprite CreateSpriteWithoutTextureScripting(Rect rect, Vector2 pivot, float pixelsToUnits, Texture2D texture);
 
         [FreeFunction("SpritesBindings::CreateSprite")]
-        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border);
+        internal extern static Sprite CreateSprite(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape);
 
         public extern Bounds bounds
         {
@@ -243,7 +243,7 @@ namespace UnityEngine
             return CreateSpriteWithoutTextureScripting(rect, pivot, pixelsToUnits, null);
         }
 
-        public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border)
+        public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border, bool generateFallbackPhysicsShape)
         {
             if (texture == null)
                 return null;
@@ -256,7 +256,12 @@ namespace UnityEngine
             if (pixelsPerUnit <= 0)
                 throw new ArgumentException("pixelsPerUnit must be set to a positive non-zero value.");
 
-            return CreateSprite(texture, rect, pivot, pixelsPerUnit, extrude, meshType, border);
+            return CreateSprite(texture, rect, pivot, pixelsPerUnit, extrude, meshType, border, generateFallbackPhysicsShape);
+        }
+
+        public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, Vector4 border)
+        {
+            return Create(texture, rect, pivot, pixelsPerUnit, extrude, meshType, border, false);
         }
 
         public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType)

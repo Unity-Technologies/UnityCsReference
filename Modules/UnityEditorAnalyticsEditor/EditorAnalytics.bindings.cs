@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Analytics;
+using UnityEditor.PackageManager;
 
 namespace UnityEditor
 {
@@ -15,6 +16,14 @@ namespace UnityEditor
     [NativeHeader("Modules/UnityEditorAnalyticsEditor/UnityEditorAnalytics.h")]
     public static class EditorAnalytics
     {
+        [Flags]
+        internal enum SendEventOptions
+        {
+            kAppendNone = 0,
+            kAppendBuildGuid = 1 << 0,
+            kAppendBuildTarget = 1 << 1
+        }
+
         internal static bool SendEventServiceInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("serviceInfo", parameters);
@@ -32,12 +41,18 @@ namespace UnityEditor
 
         internal static bool SendEventBuildTargetDevice(object parameters)
         {
-            return EditorAnalytics.SendEvent("buildTargetDevice", parameters);
+            return EditorAnalytics.SendEvent("buildTargetDevice", parameters, SendEventOptions.kAppendBuildGuid);
         }
 
         internal static bool SendEventSceneViewInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("sceneViewInfo", parameters);
+        }
+
+        internal static bool SendEventBuildTargetPermissions(object parameters)
+        {
+            return EditorAnalytics.SendEvent("buildTargetPermissions", parameters,
+                SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
         }
 
         internal static bool SendCollabUserAction(object parameters)
@@ -50,16 +65,18 @@ namespace UnityEditor
             get;
         }
 
+        extern private static bool SendEvent(string eventName, object parameters, SendEventOptions sendEventOptions = SendEventOptions.kAppendNone);
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey)
         {
-            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, 1, "", Assembly.GetCallingAssembly().FullName);
+            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, 1, "", Assembly.GetCallingAssembly());
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver)
         {
-            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, "", Assembly.GetCallingAssembly().FullName);
+            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, "", Assembly.GetCallingAssembly());
         }
 
         public static AnalyticsResult SendEventWithLimit(string eventName, object parameters)
@@ -72,11 +89,27 @@ namespace UnityEditor
             return SendEventWithLimit(eventName, parameters, ver, "");
         }
 
-        private extern static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo);
+        private static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, Assembly assembly)
+        {
+            string assemblyInfo = null;
+            string packageName = null;
+            string packageVersion = null;
+            if (assembly != null)
+            {
+                assemblyInfo = assembly.FullName;
+                UnityEditor.PackageManager.PackageInfo packageInfo = (UnityEditor.PackageManager.PackageInfo)Packages.GetForAssembly(assembly);
+                if (packageInfo != null)
+                {
+                    packageName = packageInfo.name;
+                    packageVersion = packageInfo.version;
+                }
+            }
+            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, prefix, assemblyInfo, packageName, packageVersion);
+        }
+
+        private extern static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo, string packageName, string packageVersion);
 
         private extern static AnalyticsResult SendEventWithLimit(string eventName, object parameters, int ver, string prefix);
-
-        extern private static bool SendEvent(string eventName, object parameters);
     }
 
     [RequiredByNativeCode]

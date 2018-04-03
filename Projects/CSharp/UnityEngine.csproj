@@ -1640,11 +1640,26 @@
   <Compile Include="..\..\Modules\UIElements\UXML\TemplateAsset.cs">
     <Link>Modules\UIElements\UXML\TemplateAsset.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIElements\UXML\UxmlAttributeDescription.cs">
+    <Link>Modules\UIElements\UXML\UxmlAttributeDescription.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\UXML\UxmlChildElementDescription.cs">
+    <Link>Modules\UIElements\UXML\UxmlChildElementDescription.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\UXML\UxmlFactory.cs">
+    <Link>Modules\UIElements\UXML\UxmlFactory.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\UXML\UxmlRootElement.cs">
+    <Link>Modules\UIElements\UXML\UxmlRootElement.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\UXML\UxmlTypeRestriction.cs">
+    <Link>Modules\UIElements\UXML\UxmlTypeRestriction.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElements\UXML\VisualElementAsset.cs">
     <Link>Modules\UIElements\UXML\VisualElementAsset.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\UIElements\UXML\VisualElementFactory.cs">
-    <Link>Modules\UIElements\UXML\VisualElementFactory.cs</Link>
+  <Compile Include="..\..\Modules\UIElements\UXML\VisualElementFactoryRegistry.cs">
+    <Link>Modules\UIElements\UXML\VisualElementFactoryRegistry.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\UXML\VisualTreeAsset.cs">
     <Link>Modules\UIElements\UXML\VisualTreeAsset.cs</Link>
@@ -1774,6 +1789,15 @@
   </Compile>
   <Compile Include="..\..\Modules\XR\DotNetHelper.cs">
     <Link>Modules\XR\DotNetHelper.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\XR\ScriptBindings\InputTracking.cs">
+    <Link>Modules\XR\ScriptBindings\InputTracking.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\XR\ScriptBindings\VRNode.cs">
+    <Link>Modules\XR\ScriptBindings\VRNode.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\XR\ScriptBindings\VRNodeState.cs">
+    <Link>Modules\XR\ScriptBindings\VRNodeState.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\XR\Subsystems\Camera\XRCameraSubsystem.bindings.cs">
     <Link>Modules\XR\Subsystems\Camera\XRCameraSubsystem.bindings.cs</Link>
@@ -2114,20 +2138,11 @@
   <Compile Include="..\..\Runtime\VR\HoloLens\ScriptBindings\WorldManager.bindings.cs">
     <Link>Runtime\VR\HoloLens\ScriptBindings\WorldManager.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\VR\ScriptBindings\InputTracking.cs">
-    <Link>Runtime\VR\ScriptBindings\InputTracking.cs</Link>
-  </Compile>
   <Compile Include="..\..\Runtime\VR\ScriptBindings\VR.deprecated.cs">
     <Link>Runtime\VR\ScriptBindings\VR.deprecated.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\VR\ScriptBindings\VRNode.cs">
-    <Link>Runtime\VR\ScriptBindings\VRNode.cs</Link>
-  </Compile>
   <Compile Include="..\..\Runtime\VR\ScriptBindings\VRNode.deprecated.cs">
     <Link>Runtime\VR\ScriptBindings\VRNode.deprecated.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\VR\ScriptBindings\VRNodeState.cs">
-    <Link>Runtime\VR\ScriptBindings\VRNodeState.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\VR\ScriptBindings\VRNodeState.deprecated.cs">
     <Link>Runtime\VR\ScriptBindings\VRNodeState.deprecated.cs</Link>
@@ -2194,6 +2209,9 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs</Link>
+  </Compile>
+  <Compile Include="..\..\artifacts\generated\bindings_old\common\XR\XRBindings.gen.cs">
+    <Link>artifacts\generated\bindings_old\common\XR\XRBindings.gen.cs</Link>
   </Compile>
 
   </ItemGroup>

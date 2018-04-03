@@ -3,12 +3,46 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
     public class LongField : TextValueField<long>
     {
+        public class LongFieldFactory : UxmlFactory<LongField, LongFieldUxmlTraits> {}
+
+        public class LongFieldUxmlTraits : TextValueFieldUxmlTraits
+        {
+            UxmlLongAttributeDescription m_Value;
+
+            public LongFieldUxmlTraits()
+            {
+                m_Value = new UxmlLongAttributeDescription { name = "value" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Value;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                ((LongField)ve).value = m_Value.GetValueFromBag(bag);
+            }
+        }
+
         public LongField()
             : this(kMaxLengthNone) {}
 

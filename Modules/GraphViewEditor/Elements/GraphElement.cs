@@ -231,7 +231,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         static void RegisterAll()
         {
-            Factories.RegisterFactory<Pill>((_, __) => new Pill());
+            VisualElementFactoryRegistry.RegisterFactory(new Pill.PillFactory());
         }
     }
 }

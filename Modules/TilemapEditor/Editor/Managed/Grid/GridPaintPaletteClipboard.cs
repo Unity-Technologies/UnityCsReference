@@ -651,6 +651,7 @@ namespace UnityEditor
             Unsupported.SetRenderSettingsUseFogNoDirty(false);
             Handles.DrawCameraImpl(m_GUIRect, previewUtility.camera, DrawCameraMode.Textured, false, new DrawGridParameters(), true, false);
             PreviewRenderUtility.SetEnabledRecursive(paletteInstance, true);
+            previewUtility.AddManagedGO(paletteInstance);
         }
 
         private void EndPreviewInstance()

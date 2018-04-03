@@ -159,7 +159,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         }
 
         ShowIl2CppErrorIfNeeded();
-        ShowIl2CppDebuggerWarningIfNeeded();
     }
 
     private void ShowIl2CppErrorIfNeeded()
@@ -172,15 +171,6 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
             return;
 
         EditorGUILayout.HelpBox(error, MessageType.Error);
-    }
-
-    void ShowIl2CppDebuggerWarningIfNeeded()
-    {
-        if (PlayerSettings.GetScriptingBackend(BuildTargetGroup.Standalone) != ScriptingImplementation.IL2CPP)
-            return;
-
-        if (EditorUserBuildSettings.allowDebugging && EditorApplication.scriptingRuntimeVersion != ScriptingRuntimeVersion.Latest)
-            EditorGUILayout.HelpBox("Script debugging is only supported with IL2CPP on the .NET 4.x scripting runtime.", MessageType.Warning);
     }
 
     public override bool EnabledBuildButton()

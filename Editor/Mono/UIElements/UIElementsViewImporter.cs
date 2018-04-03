@@ -20,14 +20,62 @@ namespace UnityEditor.Experimental.UIElements
     [ScriptedImporter(3, "uxml", 0)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
-        private const string k_XmlTemplate = "<" + k_RootNode + @" xmlns:ui=""UnityEngine.Experimental.UIElements"">
-  <ui:Label text=""New UXML"" />
-</" + k_RootNode + ">";
-
         [MenuItem("Assets/Create/UIElements View")]
         public static void CreateTemplateMenuItem()
         {
-            ProjectWindowUtil.CreateAssetWithContent("New UXML.uxml", k_XmlTemplate, EditorGUIUtility.FindTexture(typeof(VisualTreeAsset)));
+            UxmlSchemaGenerator.UpdateSchemaFiles();
+
+            string folder = ProjectWindowUtil.GetActiveFolderPath();
+            string[] pathComponents = folder.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
+            List<string> backDots = new List<string>();
+            foreach (var s in pathComponents)
+            {
+                if (s == ".")
+                {
+                    continue;
+                }
+                if (s == ".." && backDots.Count > 0)
+                {
+                    backDots.RemoveAt(backDots.Count - 1);
+                }
+                else
+                {
+                    backDots.Add("..");
+                }
+            }
+            backDots.Add(UxmlSchemaGenerator.k_SchemaFolder);
+            string schemaDirectory = string.Join("/", backDots.ToArray());
+
+            string xmlnsList = String.Empty;
+            string schemaLocationList = String.Empty;
+            Dictionary<string, string> namespacePrefix = UxmlSchemaGenerator.GetNamespacePrefixDictionary();
+
+            foreach (var prefix in namespacePrefix)
+            {
+                if (prefix.Key == String.Empty)
+                    continue;
+
+                if (prefix.Value != String.Empty)
+                {
+                    xmlnsList += "    xmlns:" + prefix.Value + "=\"" + prefix.Key + "\"\n";
+                }
+                schemaLocationList += "                        " + prefix.Key + " " + schemaDirectory + "/" + UxmlSchemaGenerator.GetFileNameForNamespace(prefix.Key) + "\n";
+            }
+
+            // The noNamespaceSchemaLocation attribute should be sufficient to reference all namespaces
+            // but Rider does not support it very well, so we add schemaLocation to make it happy.
+            string xmlTemplate = @"<?xml version=""1.0"" encoding=""utf-8""?>
+<engine:" + k_RootNode + @"
+    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
+" + xmlnsList + @"
+    xsi:noNamespaceSchemaLocation=""" + schemaDirectory + @"/UIElements.xsd""
+    xsi:schemaLocation=""
+" + schemaLocationList + @"""
+>
+  <engine:Label text=""Hello World!"" />
+</engine:" + k_RootNode + ">";
+
+            ProjectWindowUtil.CreateAssetWithContent("New UIElements View.uxml", xmlTemplate, EditorGUIUtility.FindTexture(typeof(VisualTreeAsset)));
         }
 
         internal struct Error
@@ -425,12 +473,6 @@ namespace UnityEditor.Experimental.UIElements
                 // start with special cases
                 switch (attrName)
                 {
-                    case "name":
-                        res.name = xattr.Value;
-                        continue;
-                    case "text":
-                        res.text = xattr.Value;
-                        continue;
                     case "class":
                         res.classes = xattr.Value.Split(' ');
                         continue;
@@ -495,14 +537,6 @@ namespace UnityEditor.Experimental.UIElements
                         }
 
                         // Don't call ssb.EndRule() here, it's done in LoadXml to get the rule index at the same time !
-                        continue;
-                    case "pickingMode":
-                        if (!Enum.IsDefined(typeof(PickingMode), xattr.Value))
-                        {
-                            Debug.LogErrorFormat("Could not parse value of '{0}', because it isn't defined in the PickingMode enum.", xattr.Value);
-                            continue;
-                        }
-                        res.pickingMode = (PickingMode)Enum.Parse(typeof(PickingMode), xattr.Value);
                         continue;
                 }
 

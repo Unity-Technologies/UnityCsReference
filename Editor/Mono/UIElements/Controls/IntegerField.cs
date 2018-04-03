@@ -3,12 +3,46 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
     public class IntegerField : TextValueField<int>
     {
+        public class IntegerFieldFactory : UxmlFactory<IntegerField, IntegerFieldUxmlTraits> {}
+
+        public class IntegerFieldUxmlTraits : TextValueFieldUxmlTraits
+        {
+            UxmlIntAttributeDescription m_Value;
+
+            public IntegerFieldUxmlTraits()
+            {
+                m_Value = new UxmlIntAttributeDescription { name = "value" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Value;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                ((IntegerField)ve).value = m_Value.GetValueFromBag(bag);
+            }
+        }
+
         public IntegerField()
             : this(kMaxLengthNone) {}
 

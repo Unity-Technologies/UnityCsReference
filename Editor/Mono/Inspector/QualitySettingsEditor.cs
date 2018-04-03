@@ -22,7 +22,7 @@ namespace UnityEditor
 
             public static readonly GUIContent kPlatformTooltip = EditorGUIUtility.TrTextContent("", "Allow quality setting on platform");
             public static readonly GUIContent kAddQualityLevel = EditorGUIUtility.TrTextContent("Add Quality Level");
-            public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "Must be enabled to use texture streaming at runtime. This is an editor only setting. When disabled all CPU memory overheads of the system are removed.");
+            public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "Enable to use texture mipmap streaming.");
             public static readonly GUIContent kStreamingMipmapsMemoryBudget = EditorGUIUtility.TrTextContent("Memory Budget", "Texture Streaming Budget in MB.");
             public static readonly GUIContent kStreamingMipmapsRenderersPerFrame = EditorGUIUtility.TrTextContent("Renderers Per Frame", "Number of renderers to process each frame. A lower number will decrease the CPU load at the cost of delaying the mipmap loading.");
             public static readonly GUIContent kStreamingMipmapsAddAllCameras = EditorGUIUtility.TrTextContent("Add All Cameras", "Adds all cameras to texture streaming system even if it lacks a StreamingController component. If a camera has the StreamingController component that will control whether its processed or not.");

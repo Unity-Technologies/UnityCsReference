@@ -63,6 +63,7 @@ namespace UnityEditor
             else
                 m_SerializedObject.Update();
 
+            height = 0;
             SerializedProperty property = m_SerializedObject.GetIterator();
             while (property.NextVisible(height <= 0))
             {
@@ -77,8 +78,6 @@ namespace UnityEditor
             // Allocate height for spacing above first control
             if (height > 0)
                 height += EditorGUI.kControlVerticalSpacing;
-            else
-                height = 0;
 
             if (m_OptimizedBlock == null)
                 m_OptimizedBlock = new OptimizedGUIBlock();
@@ -116,10 +115,10 @@ namespace UnityEditor
                 else
                     childrenAreExpanded = property.isExpanded;
 
-                m_LastHeight = contentRect.yMax - contentOffset;
                 contentRect.y += contentRect.height + EditorGUI.kControlVerticalSpacing;
             }
 
+            m_LastHeight = contentRect.y - contentOffset;
             GUI.enabled = wasEnabled;
             return m_SerializedObject.ApplyModifiedProperties();
         }

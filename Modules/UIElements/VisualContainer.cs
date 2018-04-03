@@ -3,16 +3,43 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine.StyleSheets;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
     public class VisualContainer : VisualElement
     {
+        // The VisualContainerFactory creates VisualElements.
+        // The <VisualContainer> can substitutes for <VisualElement>
+        public class VisualContainerFactory : VisualElementFactory
+        {
+            public override string uxmlName
+            {
+                get { return typeof(VisualContainer).Name; }
+            }
+            public override string uxmlNamespace
+            {
+                get { return typeof(VisualContainer).Namespace; }
+            }
+            public override string uxmlQualifiedName
+            {
+                get { return typeof(VisualContainer).FullName; }
+            }
+
+            public override string substituteForTypeName
+            {
+                get { return typeof(VisualElement).Name; }
+            }
+
+            public override string substituteForTypeNamespace
+            {
+                get { return typeof(VisualElement).Namespace; }
+            }
+            public override string substituteForTypeQualifiedName
+            {
+                get { return typeof(VisualElement).FullName; }
+            }
+        }
+
         [Obsolete("VisualContainer.AddChild will be removed. Use VisualElement.Add or VisualElement.shadow.Add instead", false)]
         public void AddChild(VisualElement child)
         {

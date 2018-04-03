@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -10,6 +11,57 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class EnumField : BaseTextControl<Enum>
     {
+        public class EnumFieldFactory : UxmlFactory<EnumField, EnumFieldUxmlTraits> {}
+
+        public class EnumFieldUxmlTraits : BaseTextControlUxmlTraits
+        {
+            UxmlStringAttributeDescription m_Type;
+            UxmlStringAttributeDescription m_Value;
+
+            public EnumFieldUxmlTraits()
+            {
+                m_Type = new UxmlStringAttributeDescription { name = "type", use = UxmlAttributeDescription.Use.Required};
+                m_Value = new UxmlStringAttributeDescription { name = "value" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Type;
+                    yield return m_Value;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                EnumField enumField = (EnumField)ve;
+                // Only works for the currently running assembly
+                enumField.m_EnumType = Type.GetType(m_Type.GetValueFromBag(bag));
+                if (enumField.m_EnumType != null)
+                {
+                    string v = m_Value.GetValueFromBag(bag);
+
+                    if (!Enum.IsDefined(enumField.m_EnumType, v))
+                    {
+                        Debug.LogErrorFormat("Could not parse value of '{0}', because it isn't defined in the {1} enum.", v, enumField.m_EnumType.FullName);
+                        enumField.value = null;
+                    }
+                    else
+                    {
+                        enumField.value = (Enum)Enum.Parse(enumField.m_EnumType, v);
+                    }
+                }
+            }
+        }
+
         private Type m_EnumType;
 
         private Enum m_Value;

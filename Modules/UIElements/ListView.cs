@@ -14,6 +14,42 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class ListView : VisualElement
     {
+        public class ListViewFactory : UxmlFactory<ListView, ListViewUxmlTraits> {}
+
+        public class ListViewUxmlTraits : VisualElementUxmlTraits
+        {
+            UxmlIntAttributeDescription m_ItemHeight;
+
+            public ListViewUxmlTraits()
+            {
+                m_ItemHeight = new UxmlIntAttributeDescription { name = "itemHeight", defaultValue = k_DefaultItemHeight };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_ItemHeight;
+                }
+            }
+
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                ((ListView)ve).itemHeight = m_ItemHeight.GetValueFromBag(bag);
+            }
+        }
+
         private class RecycledItem
         {
             public readonly VisualElement element;

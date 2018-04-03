@@ -169,7 +169,7 @@ namespace UnityEngine
         [FreeFunction("GetBuildSettings().GetHasPROVersion")]
         extern public static bool HasProLicense();
 
-        extern static internal bool isBatchmode
+        extern public static bool isBatchMode
         {
             [FreeFunction("::IsBatchmode")]
             get;

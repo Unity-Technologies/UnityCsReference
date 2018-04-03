@@ -2,12 +2,24 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
     public class Image : VisualElement
     {
+        public class ImageFactory : UxmlFactory<Image, ImageUxmlTraits> {}
+
+        public class ImageUxmlTraits : VisualElementUxmlTraits
+        {
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+        }
+
         private StyleValue<int> m_ScaleMode;
         private StyleValue<Texture> m_Image;
         private Rect m_UV;

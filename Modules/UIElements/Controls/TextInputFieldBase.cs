@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
@@ -23,6 +24,49 @@ namespace UnityEngine.Experimental.UIElements
 
     public abstract class TextInputFieldBase<T> : BaseTextControl<T>, ITextInputField
     {
+        public class TextInputFieldBaseUxmlTraits : BaseTextControlUxmlTraits
+        {
+            UxmlIntAttributeDescription m_MaxLength;
+            UxmlBoolAttributeDescription m_Password;
+            UxmlStringAttributeDescription m_MaskCharacter;
+
+            protected TextInputFieldBaseUxmlTraits()
+            {
+                m_MaxLength = new UxmlIntAttributeDescription { name = "maxLength" };
+                m_Password = new UxmlBoolAttributeDescription { name = "password" };
+                m_MaskCharacter = new UxmlStringAttributeDescription { name = "maskCharacter" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_MaxLength;
+                    yield return m_Password;
+                    yield return m_MaskCharacter;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                TextInputFieldBase<T> field = ((TextInputFieldBase<T>)ve);
+                field.maxLength = m_MaxLength.GetValueFromBag(bag);
+                field.isPasswordField = m_Password.GetValueFromBag(bag);
+                string maskCharacter = m_MaskCharacter.GetValueFromBag(bag);
+                if (maskCharacter != null && maskCharacter.Length > 0)
+                {
+                    field.maskChar = maskCharacter[0];
+                }
+            }
+        }
+
         const string SelectionColorProperty = "selection-color";
         const string CursorColorProperty = "cursor-color";
 

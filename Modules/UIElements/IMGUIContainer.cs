@@ -3,13 +3,28 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-
+using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
     //TODO: rename to IMGUIAdapter or something, as it's NOT a VisualContainer
     public class IMGUIContainer : VisualElement
     {
+        public class IMGUIContainerFactory : UxmlFactory<IMGUIContainer, IMGUIContainerUxmlTraits> {}
+
+        public class IMGUIContainerUxmlTraits : VisualElementUxmlTraits
+        {
+            public IMGUIContainerUxmlTraits()
+            {
+                m_FocusIndex.defaultValue = 0;
+            }
+
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+        }
+
         // Set this delegate to have your IMGUI code execute inside the container
         private readonly Action m_OnGUIHandler;
 
@@ -58,6 +73,9 @@ namespace UnityEngine.Experimental.UIElements
         {
             get { return base.canGrabFocus && hasFocusableControls; }
         }
+
+        public IMGUIContainer()
+            : this(null) {}
 
         public IMGUIContainer(Action onGUIHandler)
         {

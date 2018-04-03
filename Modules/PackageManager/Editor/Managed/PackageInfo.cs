@@ -63,6 +63,14 @@ namespace UnityEditor.PackageManager
         [NativeName("versions")]
         private VersionsInfo m_Versions = new VersionsInfo(null, null, null);
 
+        [SerializeField]
+        [NativeName("dependencies")]
+        private DependencyInfo[] m_Dependencies = new DependencyInfo[0];
+
+        [SerializeField]
+        [NativeName("resolvedDependencies")]
+        private DependencyInfo[] m_ResolvedDependencies = new DependencyInfo[0];
+
         private PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -76,6 +84,8 @@ namespace UnityEditor.PackageManager
         public PackageStatus status { get { return m_Status;  } }
         public Error[] errors { get { return m_Errors;  } }
         public VersionsInfo versions { get { return m_Versions; } }
+        public DependencyInfo[] dependencies { get { return m_Dependencies; } }
+        public DependencyInfo[] resolvedDependencies { get { return m_ResolvedDependencies; } }
     }
 }
 

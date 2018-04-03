@@ -2,12 +2,47 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
     public class DoubleField : TextValueField<double>
     {
+        public class DoubleFieldFactory : UxmlFactory<DoubleField, DoubleFieldUxmlTraits> {}
+
+        public class DoubleFieldUxmlTraits : TextValueFieldUxmlTraits
+        {
+            UxmlDoubleAttributeDescription m_Value;
+
+            public DoubleFieldUxmlTraits()
+            {
+                m_Value = new UxmlDoubleAttributeDescription { name = "value" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Value;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                ((DoubleField)ve).value = m_Value.GetValueFromBag(bag);
+            }
+        }
+
         public DoubleField()
             : this(kMaxLengthNone) {}
 

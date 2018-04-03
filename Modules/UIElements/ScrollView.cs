@@ -3,13 +3,87 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine.Experimental.UIElements.StyleSheets;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
     public class ScrollView : VisualElement
     {
+        public class ScrollViewFactory : UxmlFactory<ScrollView, ScrollViewUxmlTraits> {}
+
+        public class ScrollViewUxmlTraits : VisualElementUxmlTraits
+        {
+            UxmlBoolAttributeDescription m_ShowHorizontal;
+            UxmlBoolAttributeDescription m_ShowVertical;
+
+            UxmlFloatAttributeDescription m_HorizontalLowValue;
+            UxmlFloatAttributeDescription m_HorizontalHighValue;
+            UxmlFloatAttributeDescription m_HorizontalPageSize;
+            UxmlFloatAttributeDescription m_HorizontalValue;
+
+            UxmlFloatAttributeDescription m_VerticalLowValue;
+            UxmlFloatAttributeDescription m_VerticalHighValue;
+            UxmlFloatAttributeDescription m_VerticalPageSize;
+            UxmlFloatAttributeDescription m_VerticalValue;
+
+            public ScrollViewUxmlTraits()
+            {
+                m_ShowHorizontal = new UxmlBoolAttributeDescription { name = "showHorizontalScroller" };
+                m_ShowVertical = new UxmlBoolAttributeDescription { name = "showVerticalScroller" };
+
+                m_HorizontalLowValue = new UxmlFloatAttributeDescription { name = "horizontalLowValue" };
+                m_HorizontalHighValue = new UxmlFloatAttributeDescription { name = "horizontalHighValue" };
+                m_HorizontalPageSize = new UxmlFloatAttributeDescription { name = "horizontalPageSize" };
+                m_HorizontalValue = new UxmlFloatAttributeDescription { name = "horizontalValue" };
+
+                m_VerticalLowValue = new UxmlFloatAttributeDescription { name = "verticalLowValue" };
+                m_VerticalHighValue = new UxmlFloatAttributeDescription { name = "verticalHighValue" };
+                m_VerticalPageSize = new UxmlFloatAttributeDescription { name = "verticalPageSize" };
+                m_VerticalValue = new UxmlFloatAttributeDescription { name = "verticalValue" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_ShowHorizontal;
+                    yield return m_ShowVertical;
+
+                    yield return m_HorizontalLowValue;
+                    yield return m_HorizontalHighValue;
+                    yield return m_HorizontalPageSize;
+                    yield return m_HorizontalValue;
+
+                    yield return m_VerticalLowValue;
+                    yield return m_VerticalHighValue;
+                    yield return m_VerticalPageSize;
+                    yield return m_VerticalValue;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                Vector2 horizontalScrollerValues = new Vector2(m_HorizontalLowValue.GetValueFromBag(bag), m_HorizontalHighValue.GetValueFromBag(bag));
+                Vector2 verticalScrollerValues = new Vector2(m_VerticalLowValue.GetValueFromBag(bag), m_VerticalHighValue.GetValueFromBag(bag));
+
+                ScrollView scrollView = (ScrollView)ve;
+                scrollView.horizontalScrollerValues = horizontalScrollerValues;
+                scrollView.verticalScrollerValues = verticalScrollerValues;
+                scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag);
+                scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag);
+                scrollView.scrollOffset = new Vector2(m_HorizontalValue.GetValueFromBag(bag), m_VerticalValue.GetValueFromBag(bag));
+                scrollView.horizontalScroller.slider.pageSize = m_HorizontalPageSize.GetValueFromBag(bag);
+                scrollView.verticalScroller.slider.pageSize = m_VerticalPageSize.GetValueFromBag(bag);
+            }
+        }
+
         bool m_StretchContentWidth = false;
 
         public bool stretchContentWidth

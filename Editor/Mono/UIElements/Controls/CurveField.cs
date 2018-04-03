@@ -2,15 +2,22 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.UIElements
 {
     public class CurveField : BaseControl<AnimationCurve>
     {
+        public class CurveFieldFactory : UxmlFactory<CurveField, CurveFieldUxmlTraits> {}
+
+        public class CurveFieldUxmlTraits : BaseControlUxmlTraits {}
+
         private const string k_CurveColorProperty = "curve-color";
         public Rect ranges { get; set; }
 

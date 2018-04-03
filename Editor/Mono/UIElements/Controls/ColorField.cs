@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -9,6 +11,50 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class ColorField : BaseControl<Color>
     {
+        public class ColorFieldFactory : UxmlFactory<ColorField, ColorFieldUxmlTraits> {}
+
+        public class ColorFieldUxmlTraits : BaseControlUxmlTraits
+        {
+            UxmlColorAttributeDescription m_Value;
+            UxmlBoolAttributeDescription m_ShowEyeDropper;
+            UxmlBoolAttributeDescription m_ShowAlpha;
+            UxmlBoolAttributeDescription m_Hdr;
+
+            public ColorFieldUxmlTraits()
+            {
+                m_Value = new UxmlColorAttributeDescription { name = "value" };
+                m_ShowEyeDropper = new UxmlBoolAttributeDescription { name = "showEyeDropper", defaultValue = true };
+                m_ShowAlpha = new UxmlBoolAttributeDescription { name = "showAlpha", defaultValue = true };
+                m_Hdr = new UxmlBoolAttributeDescription { name = "hdr" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Value;
+                    yield return m_ShowEyeDropper;
+                    yield return m_ShowAlpha;
+                    yield return m_Hdr;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                ((ColorField)ve).value = m_Value.GetValueFromBag(bag);
+                ((ColorField)ve).showEyeDropper = m_ShowEyeDropper.GetValueFromBag(bag);
+                ((ColorField)ve).showAlpha = m_ShowAlpha.GetValueFromBag(bag);
+                ((ColorField)ve).hdr = m_Hdr.GetValueFromBag(bag);
+            }
+        }
+
         private Color m_Value;
 
         public override Color value

@@ -9,6 +9,19 @@ namespace UnityEngine.Experimental.UIElements
 {
     public abstract class BaseControl<T> : VisualElement, INotifyValueChanged<T>
     {
+        public class BaseControlUxmlTraits : VisualElementUxmlTraits
+        {
+            public BaseControlUxmlTraits()
+            {
+                m_FocusIndex.defaultValue = 0;
+            }
+
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+        }
+
         public BaseControl()
         {
             // Controls are focusable by default
@@ -38,6 +51,14 @@ namespace UnityEngine.Experimental.UIElements
 
     public abstract class BaseTextControl<T> : BaseTextElement, INotifyValueChanged<T>
     {
+        public class BaseTextControlUxmlTraits : BaseTextElementUxmlTraits
+        {
+            public BaseTextControlUxmlTraits()
+            {
+                m_FocusIndex.defaultValue = 0;
+            }
+        }
+
         public BaseTextControl()
         {
             // Controls are focusable by default

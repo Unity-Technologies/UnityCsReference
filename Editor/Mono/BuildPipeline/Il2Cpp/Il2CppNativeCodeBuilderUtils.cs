@@ -12,7 +12,7 @@ namespace UnityEditorInternal
 {
     public static class Il2CppNativeCodeBuilderUtils
     {
-        public static IEnumerable<string> AddBuilderArguments(Il2CppNativeCodeBuilder builder, string outputRelativePath, IEnumerable<string> includeRelativePaths, IEnumerable<string> additionalLibs, bool debugBuild)
+        public static IEnumerable<string> AddBuilderArguments(Il2CppNativeCodeBuilder builder, string outputRelativePath, IEnumerable<string> includeRelativePaths, IEnumerable<string> additionalLibs, Il2CppCompilerConfiguration compilerConfiguration)
         {
             var arguments = new List<string>();
 
@@ -21,11 +21,7 @@ namespace UnityEditorInternal
                 arguments.Add("--libil2cpp-static");
             arguments.Add(FormatArgument("platform", builder.CompilerPlatform));
             arguments.Add(FormatArgument("architecture", builder.CompilerArchitecture));
-
-            if (debugBuild)
-                arguments.Add(FormatArgument("configuration", "Debug"));
-            else
-                arguments.Add(FormatArgument("configuration", "Release"));
+            arguments.Add(FormatArgument("configuration", compilerConfiguration.ToString()));
 
             arguments.Add(FormatArgument("outputpath", builder.ConvertOutputFileToFullPath(outputRelativePath)));
 

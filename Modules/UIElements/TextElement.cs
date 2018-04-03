@@ -3,11 +3,46 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
     public abstract class BaseTextElement : VisualElement
     {
+        public class BaseTextElementUxmlTraits : VisualElementUxmlTraits
+        {
+            UxmlStringAttributeDescription m_Text;
+
+            public BaseTextElementUxmlTraits()
+            {
+                m_Text = new UxmlStringAttributeDescription { name = "text" };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Text;
+                }
+            }
+
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield break; }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                ((BaseTextElement)ve).text = m_Text.GetValueFromBag(bag);
+            }
+        }
+
         internal const string k_TextElementClass = "textElement";
         public BaseTextElement()
         {

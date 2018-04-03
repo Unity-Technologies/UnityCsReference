@@ -121,6 +121,22 @@ namespace UnityEditorInternal
                 EditorApplication.useLibmonoBackendForIl2cpp &&
                 PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
         }
+
+        internal static bool EnableIL2CPPDebugger(BuildTargetGroup targetGroup)
+        {
+            if (!EditorUserBuildSettings.allowDebugging)
+                return false;
+
+            switch (PlayerSettings.GetApiCompatibilityLevel(targetGroup))
+            {
+                case ApiCompatibilityLevel.NET_4_6:
+                case ApiCompatibilityLevel.NET_Standard_2_0:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
     }
 
     internal class IL2CPPBuilder
@@ -190,8 +206,8 @@ namespace UnityEditorInternal
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
 
                 var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
-                var useDebugBuild = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup) == Il2CppCompilerConfiguration.Debug;
-                var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, useDebugBuild).ToList();
+                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
+                var arguments = Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration).ToList();
 
                 arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
                 arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
@@ -292,16 +308,15 @@ namespace UnityEditorInternal
                     break;
             }
 
-            if (EditorUserBuildSettings.allowDebugging && platformSupportsManagedDebugging && EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+            if (IL2CPPUtils.EnableIL2CPPDebugger(buildTargetGroup) && platformSupportsManagedDebugging)
                 arguments.Add("--enable-debugger");
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
             if (il2CppNativeCodeBuilder != null)
             {
-                var useDebugBuild = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup) == Il2CppCompilerConfiguration.Debug;
-
+                var compilerConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(buildTargetGroup);
                 Il2CppNativeCodeBuilderUtils.ClearAndPrepareCacheDirectory(il2CppNativeCodeBuilder);
-                arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, useDebugBuild));
+                arguments.AddRange(Il2CppNativeCodeBuilderUtils.AddBuilderArguments(il2CppNativeCodeBuilder, OutputFileRelativePath(), m_PlatformProvider.includePaths, m_PlatformProvider.libraryPaths, compilerConfiguration));
             }
 
             arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));

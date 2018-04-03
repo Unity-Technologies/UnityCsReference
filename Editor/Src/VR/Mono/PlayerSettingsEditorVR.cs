@@ -243,6 +243,7 @@ namespace UnityEditorInternal.VR
                 case BuildTargetGroup.PS4:
                 case BuildTargetGroup.WSA:
                 case BuildTargetGroup.Android:
+                case BuildTargetGroup.iOS:
                     return true;
                 default:
                     return false;

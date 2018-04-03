@@ -1115,6 +1115,17 @@ namespace UnityEngine.Rendering
             m_DepthSlice = depthSlice;
         }
 
+        public RenderTargetIdentifier(RenderTargetIdentifier renderTargetIdentifier, int mipLevel, CubemapFace cubeFace = CubemapFace.Unknown, int depthSlice = 0)
+        {
+            m_Type = renderTargetIdentifier.m_Type;
+            m_NameID = renderTargetIdentifier.m_NameID;
+            m_InstanceID = renderTargetIdentifier.m_InstanceID;
+            m_BufferPointer = renderTargetIdentifier.m_BufferPointer;
+            m_MipLevel = mipLevel;
+            m_CubeFace = cubeFace;
+            m_DepthSlice = depthSlice;
+        }
+
         public RenderTargetIdentifier(Texture tex)
         {
             if (tex == null)
@@ -1247,7 +1258,61 @@ namespace UnityEngine.Rendering
         #pragma warning restore 0414
     }
 
-    // Keep in sync with ReflectionProbeUsage in Runtime\Camera\ReflectionProbeTypes.h
+    public struct RenderTargetBinding
+    {
+        RenderTargetIdentifier[] m_ColorRenderTargets;
+        RenderTargetIdentifier m_DepthRenderTarget;
+
+        RenderBufferLoadAction[] m_ColorLoadActions;
+        RenderBufferStoreAction[] m_ColorStoreActions;
+
+        RenderBufferLoadAction m_DepthLoadAction;
+        RenderBufferStoreAction m_DepthStoreAction;
+
+        public RenderTargetIdentifier[] colorRenderTargets { get { return m_ColorRenderTargets; } set { m_ColorRenderTargets = value; } }
+        public RenderTargetIdentifier depthRenderTarget { get { return m_DepthRenderTarget; } set { m_DepthRenderTarget = value; } }
+        public RenderBufferLoadAction[] colorLoadActions { get { return m_ColorLoadActions; } set { m_ColorLoadActions = value; } }
+        public RenderBufferStoreAction[] colorStoreActions { get { return m_ColorStoreActions; } set { m_ColorStoreActions = value; } }
+        public RenderBufferLoadAction depthLoadAction { get { return m_DepthLoadAction; } set { m_DepthLoadAction = value; } }
+        public RenderBufferStoreAction depthStoreAction { get { return m_DepthStoreAction; } set { m_DepthStoreAction = value; } }
+
+        public RenderTargetBinding(RenderTargetIdentifier[] colorRenderTargets, RenderBufferLoadAction[] colorLoadActions, RenderBufferStoreAction[] colorStoreActions,
+                                   RenderTargetIdentifier depthRenderTarget, RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction)
+        {
+            m_ColorRenderTargets = colorRenderTargets;
+            m_DepthRenderTarget = depthRenderTarget;
+
+            m_ColorLoadActions = colorLoadActions;
+            m_ColorStoreActions = colorStoreActions;
+
+            m_DepthLoadAction = depthLoadAction;
+            m_DepthStoreAction = depthStoreAction;
+        }
+
+        public RenderTargetBinding(RenderTargetIdentifier colorRenderTarget, RenderBufferLoadAction colorLoadAction, RenderBufferStoreAction colorStoreAction,
+                                   RenderTargetIdentifier depthRenderTarget, RenderBufferLoadAction depthLoadAction, RenderBufferStoreAction depthStoreAction)
+            : this(new RenderTargetIdentifier[] { colorRenderTarget }, new RenderBufferLoadAction[] { colorLoadAction }, new RenderBufferStoreAction[] { colorStoreAction }, depthRenderTarget, depthLoadAction, depthStoreAction)
+        {
+        }
+
+        public RenderTargetBinding(RenderTargetSetup setup)
+        {
+            m_ColorRenderTargets = new RenderTargetIdentifier[setup.color.Length];
+            for (int i = 0; i < m_ColorRenderTargets.Length; ++i)
+                m_ColorRenderTargets[i] = new RenderTargetIdentifier(setup.color[i], setup.mipLevel, setup.cubemapFace, setup.depthSlice);
+
+            m_DepthRenderTarget = setup.depth;
+
+            m_ColorLoadActions = (RenderBufferLoadAction[])setup.colorLoad.Clone();
+            m_ColorStoreActions = (RenderBufferStoreAction[])setup.colorStore.Clone();
+
+            m_DepthLoadAction = setup.depthLoad;
+            m_DepthStoreAction = setup.depthStore;
+        }
+    }
+
+
+// Keep in sync with ReflectionProbeUsage in Runtime\Camera\ReflectionProbeTypes.h
     public enum ReflectionProbeUsage
     {
         Off,

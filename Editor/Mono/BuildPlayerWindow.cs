@@ -689,18 +689,30 @@ namespace UnityEditor
                 GUI.enabled = developmentBuild;
                 if (shouldDrawDebuggingToggle)
                 {
-                    EditorUserBuildSettings.allowDebugging = EditorGUILayout.Toggle(styles.allowDebugging, EditorUserBuildSettings.allowDebugging);
-
-                    // Not all platforms have native dialog implemented in Runtime\Misc\GiveDebuggerChanceToAttachIfRequired.cpp
-                    // Display this option only for developer builds
-                    bool shouldDrawWaitForManagedDebugger = buildWindowExtension != null ? buildWindowExtension.ShouldDrawWaitForManagedDebugger() : false;
-
-                    if (EditorUserBuildSettings.allowDebugging && shouldDrawWaitForManagedDebugger)
+                    using (new EditorGUI.DisabledScope(buildWindowExtension.ShouldDisableManagedDebuggerCheckboxes()))
                     {
-                        var buildTargetName = BuildPipeline.GetBuildTargetName(buildTarget);
+                        EditorUserBuildSettings.allowDebugging = EditorGUILayout.Toggle(styles.allowDebugging, EditorUserBuildSettings.allowDebugging);
 
-                        bool value = EditorGUILayout.Toggle(styles.waitForManagedDebugger, EditorUserBuildSettings.GetPlatformSettings(buildTargetName, kSettingDebuggingWaitForManagedDebugger) == "true");
-                        EditorUserBuildSettings.SetPlatformSettings(buildTargetName, kSettingDebuggingWaitForManagedDebugger, value.ToString().ToLower());
+                        // Not all platforms have native dialog implemented in Runtime\Misc\GiveDebuggerChanceToAttachIfRequired.cpp
+                        // Display this option only for developer builds
+                        bool shouldDrawWaitForManagedDebugger = buildWindowExtension != null ? buildWindowExtension.ShouldDrawWaitForManagedDebugger() : false;
+
+                        if (EditorUserBuildSettings.allowDebugging && shouldDrawWaitForManagedDebugger)
+                        {
+                            var buildTargetName = BuildPipeline.GetBuildTargetName(buildTarget);
+
+                            bool value = EditorGUILayout.Toggle(styles.waitForManagedDebugger, EditorUserBuildSettings.GetPlatformSettings(buildTargetName, kSettingDebuggingWaitForManagedDebugger) == "true");
+                            EditorUserBuildSettings.SetPlatformSettings(buildTargetName, kSettingDebuggingWaitForManagedDebugger, value.ToString().ToLower());
+                        }
+                    }
+
+                    if (EditorUserBuildSettings.allowDebugging && PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.IL2CPP)
+                    {
+                        var apiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup);
+                        bool isDebuggerUsable = apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6 || apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0;
+
+                        if (!isDebuggerUsable)
+                            EditorGUILayout.HelpBox("Script debugging is only supported with IL2CPP on .NET 4.x and .NET Standard 2.0 API Compatibility Levels.", MessageType.Warning);
                     }
                 }
 

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using Object = UnityEngine.Object;
@@ -11,6 +12,38 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class ObjectField : BaseControl<Object>
     {
+        public class ObjectFieldFactory : UxmlFactory<ObjectField, ObjectFieldUxmlTraits> {}
+
+        public class ObjectFieldUxmlTraits : BaseControlUxmlTraits
+        {
+            UxmlBoolAttributeDescription m_AllowSceneObjects;
+
+            public ObjectFieldUxmlTraits()
+            {
+                m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allowSceneObjects", defaultValue = true };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_AllowSceneObjects;
+                }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+
+                ((ObjectField)ve).allowSceneObjects = m_AllowSceneObjects.GetValueFromBag(bag);
+            }
+        }
+
         private Object m_Value;
         public override Object value
         {

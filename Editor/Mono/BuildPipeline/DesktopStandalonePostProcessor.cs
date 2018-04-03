@@ -16,8 +16,23 @@ using UnityEngine;
 
 internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocessor
 {
-    protected DesktopStandalonePostProcessor()
+    readonly bool m_HasIl2CppPlayers;
+
+    protected DesktopStandalonePostProcessor(bool hasIl2CppPlayers)
     {
+        m_HasIl2CppPlayers = hasIl2CppPlayers;
+    }
+
+    public override string PrepareForBuild(BuildOptions options, BuildTarget target)
+    {
+        if (!m_HasIl2CppPlayers)
+        {
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(target);
+            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.IL2CPP)
+                return "Currently selected scripting backend (IL2CPP) is not installed.";
+        }
+
+        return null;
     }
 
     public override void PostProcess(BuildPostProcessArgs args)
@@ -184,9 +199,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
     }
 
-    private void CopyCppPlugins(string cppOutputDir, IEnumerable<string> cppPlugins)
+    private void CopyCppPlugins(BuildPostProcessArgs args, string cppOutputDir, IEnumerable<string> cppPlugins)
     {
-        if (GetCreateSolution())
+        if (GetCreateSolution(args))
             return;
 
         foreach (var plugin in cppPlugins)
@@ -218,15 +233,15 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         {
             CopyVariationFolderIntoStagingArea(args);
 
-            if (GetCreateSolution())
+            if (GetCreateSolution(args))
                 CopyPlayerSolutionIntoStagingArea(args, filesToNotOverwrite);
 
             if (UseIl2Cpp)
             {
                 var il2cppPlatformProvider = GetPlatformProvider(args);
-                IL2CPPUtils.RunIl2Cpp(args.stagingAreaData, il2cppPlatformProvider, (cppOutputDir) => CopyCppPlugins(cppOutputDir, cppPlugins), args.usedClassRegistry);
+                IL2CPPUtils.RunIl2Cpp(args.stagingAreaData, il2cppPlatformProvider, (cppOutputDir) => CopyCppPlugins(args, cppOutputDir, cppPlugins), args.usedClassRegistry);
 
-                if (GetCreateSolution())
+                if (GetCreateSolution(args))
                 {
                     ProcessIl2CppOutputForSolution(args, il2cppPlatformProvider, cppPlugins);
                 }
@@ -466,7 +481,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         }
     }
 
-    protected virtual bool GetCreateSolution() { return false; }
+    protected virtual bool GetCreateSolution(BuildPostProcessArgs args) { return false; }
 
     protected virtual string GetDestinationFolder(BuildPostProcessArgs args)
     {

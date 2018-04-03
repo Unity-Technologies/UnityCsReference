@@ -2,16 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.UIElements
 {
     public class GradientField : BaseControl<Gradient>
     {
+        public class GradientFieldFactory : UxmlFactory<GradientField, GradientFieldUxmlTraits> {}
+
+        public class GradientFieldUxmlTraits : BaseControlUxmlTraits {}
+
         private bool m_ValueNull;
         Gradient m_Value;
         public override Gradient value

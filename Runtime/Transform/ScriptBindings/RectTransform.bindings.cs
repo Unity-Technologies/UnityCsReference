@@ -189,10 +189,10 @@ namespace UnityEngine
             }
 
             GetLocalCorners(fourCornersArray);
-            Transform wt = transform;
 
+            Matrix4x4 mat = transform.localToWorldMatrix;
             for (int i = 0; i < 4; i++)
-                fourCornersArray[i] = wt.TransformPoint(fourCornersArray[i]);
+                fourCornersArray[i] = mat.MultiplyPoint(fourCornersArray[i]);
         }
 
         public void SetInsetAndSizeFromParentEdge(Edge edge, float inset, float size)

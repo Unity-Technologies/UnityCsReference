@@ -66,6 +66,52 @@ namespace UnityEngine.Experimental.UIElements
     }
     public partial class VisualElement : Focusable, ITransform
     {
+        public class VisualElementFactory : UxmlFactory<VisualElement, VisualElementUxmlTraits> {}
+
+        public class VisualElementUxmlTraits : UxmlTraits
+        {
+            UxmlStringAttributeDescription m_Name;
+            UxmlEnumAttributeDescription<PickingMode> m_PickingMode;
+            protected UxmlIntAttributeDescription m_FocusIndex;
+
+            public VisualElementUxmlTraits()
+            {
+                m_Name = new UxmlStringAttributeDescription { name = "name" };
+                m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "pickingMode" };
+                m_FocusIndex = new UxmlIntAttributeDescription { name = "focusIndex", defaultValue = VisualElement.defaultFocusIndex };
+            }
+
+            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
+            {
+                get
+                {
+                    foreach (var attr in base.uxmlAttributesDescription)
+                    {
+                        yield return attr;
+                    }
+
+                    yield return m_Name;
+                    yield return m_PickingMode;
+                    yield return m_FocusIndex;
+                }
+            }
+
+            public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
+            {
+                get { yield return new UxmlChildElementDescription(typeof(VisualElement)); }
+            }
+
+            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
+            {
+                base.Init(ve, bag, cc);
+                ve.name = m_Name.GetValueFromBag(bag);
+                ve.pickingMode = m_PickingMode.GetValueFromBag(bag);
+                ve.focusIndex = m_FocusIndex.GetValueFromBag(bag);
+            }
+        }
+
+        public static readonly int defaultFocusIndex = -1;
+
         private static uint s_NextId;
 
         string m_Name;
@@ -464,7 +510,7 @@ namespace UnityEngine.Experimental.UIElements
             SetEnabled(true);
 
             // Make element non focusable by default.
-            focusIndex = -1;
+            focusIndex = defaultFocusIndex;
 
             name = string.Empty;
             yogaNode = new YogaNode();
@@ -1227,12 +1273,18 @@ namespace UnityEngine.Experimental.UIElements
 
         public static void AddManipulator(this VisualElement ele, IManipulator manipulator)
         {
-            manipulator.target = ele;
+            if (manipulator != null)
+            {
+                manipulator.target = ele;
+            }
         }
 
         public static void RemoveManipulator(this VisualElement ele, IManipulator manipulator)
         {
-            manipulator.target = null;
+            if (manipulator != null)
+            {
+                manipulator.target = null;
+            }
         }
     }
 

@@ -47,7 +47,10 @@ namespace UnityEngine.Experimental
         {
             IntPtr ptr = Internal_SubsystemDescriptors.Create(m_Ptr);
             var instance = (TSubsystem)Internal_SubsystemInstances.Internal_GetInstanceByPtr(ptr);
-            instance.m_subsystemDescriptor = this;
+            if (instance != null)
+            {
+                instance.m_subsystemDescriptor = this;
+            }
             return instance;
         }
     }

@@ -870,7 +870,7 @@ namespace UnityEditor
             if (bundle == null)
             {
                 // If in batch mode, loading any Editor UI items shouldn't be needed
-                if (Application.isBatchmode)
+                if (Application.isBatchMode)
                     return null;
                 throw new NullReferenceException("Failure to load editor resource asset bundle.");
             }

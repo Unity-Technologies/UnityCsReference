@@ -26,6 +26,8 @@ namespace UnityEditor.Experimental.UIElements
     // Implements a control with a value of type T backed by a text.
     public abstract class TextValueField<T> : TextInputFieldBase<T>, IValueField<T>
     {
+        public class TextValueFieldUxmlTraits : TextInputFieldBaseUxmlTraits {}
+
         protected TextValueField(int maxLength)
             : base(maxLength, Char.MinValue)
         {

@@ -2,8 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
@@ -19,24 +17,35 @@ namespace UnityEditor.Experimental.UIElements
 
             s_Registered = true;
 
-            // Primitives
-            Factories.RegisterFactory<FloatField>((bag, __) => new FloatField());
-            Factories.RegisterFactory<DoubleField>((bag, __) => new DoubleField());
-            Factories.RegisterFactory<IntegerField>((bag, __) => new IntegerField());
-            Factories.RegisterFactory<LongField>((bag, __) => new LongField());
-            Factories.RegisterFactory<CurveField>((bag, __) => new CurveField());
-            Factories.RegisterFactory<ObjectField>((bag, __) => new ObjectField());
-            Factories.RegisterFactory<ColorField>((bag, __) => new ColorField());
-            Factories.RegisterFactory<EnumField>((bag, __) => new EnumField());
+            IUxmlFactory[] factories =
+            {
+                // Primitives
+                new FloatField.FloatFieldFactory(),
+                new DoubleField.DoubleFieldFactory(),
+                new IntegerField.IntegerFieldFactory(),
+                new LongField.LongFieldFactory(),
+                new CurveField.CurveFieldFactory(),
+                new ObjectField.ObjectFieldFactory(),
+                new ColorField.ColorFieldFactory(),
+                new EnumField.EnumFieldFactory(),
+                new GradientField.GradientFieldFactory(),
 
-            // Compounds
-            Factories.RegisterFactory<RectField>((bag, __) => new RectField());
-            Factories.RegisterFactory<Vector2Field>((bag, __) => new Vector2Field());
-            Factories.RegisterFactory<Vector3Field>((bag, __) => new Vector3Field());
-            Factories.RegisterFactory<Vector4Field>((bag, __) => new Vector4Field());
-            Factories.RegisterFactory<BoundsField>((bag, __) => new BoundsField());
-
-            Factories.RegisterFactory("UnityEditor.Experimental.UIElements.PropertyControl", (bag, cc) => PropertyControlFactory.Create(bag, cc));
+                // Compounds
+                new RectField.RectFieldFactory(),
+                new Vector2Field.Vector2FieldFactory(),
+                new Vector3Field.Vector3FieldFactory(),
+                new Vector4Field.Vector4FieldFactory(),
+                new BoundsField.BoundsFieldFactory(),
+                new PropertyControl<int>.PropertyControlFactory(),
+                new PropertyControl<long>.PropertyControlFactory(),
+                new PropertyControl<float>.PropertyControlFactory(),
+                new PropertyControl<double>.PropertyControlFactory(),
+                new PropertyControl<string>.PropertyControlFactory(),
+            };
+            foreach (IUxmlFactory factory in factories)
+            {
+                VisualElementFactoryRegistry.RegisterFactory(factory);
+            }
         }
     }
 }

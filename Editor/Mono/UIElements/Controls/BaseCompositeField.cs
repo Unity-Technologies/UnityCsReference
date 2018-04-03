@@ -11,6 +11,8 @@ namespace UnityEditor.Experimental.UIElements
 {
     public abstract class BaseCompoundField<T> : BaseValueField<T>
     {
+        public class BaseCompoundFieldUxmlTraits : BaseValueFieldUxmlTraits {}
+
         public class FieldDescription
         {
             public delegate void WriteDelegate(ref T val, float fieldValue);

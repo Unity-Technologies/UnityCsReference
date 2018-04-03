@@ -76,8 +76,6 @@ namespace UnityEditor.Modules
         // Return an instance of IUserAssembliesValidator or null if not used
         IUserAssembliesValidator CreateUserAssembliesValidatorExtension();
 
-        IProjectGeneratorExtension CreateProjectGeneratorExtension();
-
         // Register platform specific Unity extensions
         // For ex., Metro specifc UnityEngine.Networking.dll which is different from the generic UnityEngine.Networking.dll
         void RegisterAdditionalUnityExtensions();
@@ -278,6 +276,9 @@ namespace UnityEditor.Modules
 
         // Enables a dialog "Wait For Managed debugger", which halts program execution until managed debugger is connected
         bool ShouldDrawWaitForManagedDebugger();
+
+        // Grays out managed debugger options
+        bool ShouldDisableManagedDebuggerCheckboxes();
     }
 
     internal interface IBuildAnalyzer
@@ -418,15 +419,5 @@ namespace UnityEditor.Modules
     {
         public string Path { get; set; }
         public Guid Guid { get; set; }
-    }
-
-    /// <summary>
-    /// Generates platform dependent projects
-    /// For ex., Windows Store Apps would generate Assembly-CSharp* projects targeting .NET Core which.
-    /// Currently this interface is used by Visual Studio Unity Tools project generator, which includes these projects into their main solution
-    /// </summary>
-    internal interface IProjectGeneratorExtension
-    {
-        void GenerateCSharpProject(CSharpProject project, string assemblyName, IEnumerable<string> sourceFiles, IEnumerable<string> defines, IEnumerable<CSharpProject> additionalProjectReferences);
     }
 }

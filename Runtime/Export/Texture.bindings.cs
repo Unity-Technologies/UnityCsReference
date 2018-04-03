@@ -66,6 +66,12 @@ namespace UnityEngine
             get;
         }
 
+        extern public static ulong targetTextureMemory
+        {
+            [FreeFunction("GetTextureStreamingManager().GetTargetTextureMemory")]
+            get;
+        }
+
         extern public static ulong currentTextureMemory
         {
             [FreeFunction("GetTextureStreamingManager().GetCurrentTextureMemory")]
@@ -208,8 +214,6 @@ namespace UnityEngine
         [FreeFunction(Name = "GetTextureStreamingManager().IsRequestedMipmapLevelLoaded", HasExplicitThis = true)]
         extern public bool IsRequestedMipmapLevelLoaded();
 
-        [FreeFunction(Name = "GetTextureStreamingManager().WaitForMipmapLoading", HasExplicitThis = true)]
-        extern public void WaitForMipmapLoading();
     }
 
     [NativeHeader("Runtime/Graphics/CubemapTexture.h")]
