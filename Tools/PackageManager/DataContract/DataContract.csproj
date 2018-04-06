@@ -16,7 +16,7 @@
     <DebugType>full</DebugType>
     <Optimize>False</Optimize>
     <OutputPath>bin\Debug</OutputPath>
-    <DefineConstants>DEBUG;</DefineConstants>
+    <DefineConstants>DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <ConsolePause>False</ConsolePause>
@@ -51,9 +51,9 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
+    <Compile Include="IEditorModule.cs" />
+    <Compile Include="PackageInfo.cs" />
     <Compile Include="PackageVersion.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="PackageInfo.cs" />
-    <Compile Include="IEditorModule.cs" />
   </ItemGroup>
 </Project>

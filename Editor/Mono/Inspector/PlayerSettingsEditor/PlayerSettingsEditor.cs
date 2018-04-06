@@ -1855,7 +1855,7 @@ namespace UnityEditor
             if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
                 return only_4_x_profiles;
 
-            if (activeBuildTargetGroup == BuildTargetGroup.WSA || activeBuildTargetGroup == BuildTargetGroup.XboxOne)
+            if (activeBuildTargetGroup == BuildTargetGroup.WSA)
                 return allProfiles;
 
             return only_2_0_profiles;
