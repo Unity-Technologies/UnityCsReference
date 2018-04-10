@@ -32,7 +32,7 @@ namespace UnityEngine.Experimental.UIElements
 
             protected TextInputFieldBaseUxmlTraits()
             {
-                m_MaxLength = new UxmlIntAttributeDescription { name = "maxLength" };
+                m_MaxLength = new UxmlIntAttributeDescription { name = "maxLength", defaultValue = kMaxLengthNone };
                 m_Password = new UxmlBoolAttributeDescription { name = "password" };
                 m_MaskCharacter = new UxmlStringAttributeDescription { name = "maskCharacter" };
             }

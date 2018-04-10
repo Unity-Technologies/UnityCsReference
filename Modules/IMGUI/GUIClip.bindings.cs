@@ -81,6 +81,10 @@ namespace UnityEngine
         internal static extern void SetMatrix(Matrix4x4 m);
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [FreeFunction("GetGUIState().m_CanvasGUIState.m_GUIClipState.GetParentTransform")]
+        internal static extern Matrix4x4 GetParentMatrix();
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern void Internal_PushParentClip(Matrix4x4 objectTransform, Rect clipRect);
 
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]

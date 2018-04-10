@@ -854,9 +854,13 @@ namespace UnityEditor
             // Compensate spatial quality zooming, if any.
             float previewWidth = image.width;
             float previewHeight = image.height;
-            if (importer.defaultTargetSettings.enableTranscoding)
+            var activeSettings =
+                importer.GetTargetSettings(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget).ToString());
+            if (activeSettings == null)
+                activeSettings = importer.defaultTargetSettings;
+            if (activeSettings.enableTranscoding)
             {
-                VideoResizeMode resizeMode = importer.defaultTargetSettings.resizeMode;
+                VideoResizeMode resizeMode = activeSettings.resizeMode;
                 previewWidth = importer.GetResizeWidth(resizeMode);
                 previewHeight = importer.GetResizeHeight(resizeMode);
             }

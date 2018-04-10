@@ -64,6 +64,9 @@ namespace UnityEditor
 
         // Android 8.0, "Oreo", API level 26
         AndroidApiLevel26 = 26,
+
+        // Android 8.1, "Oreo", API level 27
+        AndroidApiLevel27 = 27,
     }
 
     // Preferred application install location

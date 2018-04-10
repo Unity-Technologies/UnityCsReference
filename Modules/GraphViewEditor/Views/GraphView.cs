@@ -173,8 +173,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Add(contentViewContainer);
 
             AddStyleSheetPath("StyleSheets/GraphView/GraphView.uss");
-            graphElements = contentViewContainer.Query().Children<Layer>().Children<GraphElement>().Build();
-            nodes = this.Query<Layer>().Children<Node>().Build();
+            graphElements = contentViewContainer.Query<GraphElement>().Where(e => !(e is Port)).Build();
+            nodes = contentViewContainer.Query<Node>().Build();
             edges = this.Query<Layer>().Children<Edge>().Build();
             ports = contentViewContainer.Query().Children<Layer>().Descendents<Port>().Build();
 
@@ -280,7 +280,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             selectionObjectToSync.selectedElements.AddRange(graphViewSelection.selectedElements);
         }
 
-        private void RestorePersistedSelection()
+        internal void RestorePersistedSelection()
         {
             if (m_PersistedSelection != null)
                 RestoreSavedSelection(m_PersistedSelection);
@@ -1236,10 +1236,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 var graphElement = selection[0] as GraphElement;
                 if (graphElement != null)
-                    rectToFit = graphElement.localBound;
+                    rectToFit = graphElement.ChangeCoordinatesTo(contentViewContainer, graphElement.rect);
 
                 rectToFit = selection.OfType<GraphElement>()
-                    .Aggregate(rectToFit, (current, e) => RectUtils.Encompass(current, e.localBound));
+                    .Aggregate(rectToFit, (current, e) => RectUtils.Encompass(current, e.ChangeCoordinatesTo(contentViewContainer, e.rect)));
                 CalculateFrameTransform(rectToFit, layout, k_FrameBorder, out frameTranslation, out frameScaling);
             }
             else if (frameType == FrameType.All)
@@ -1278,19 +1278,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             graphElements.ForEach(ge =>
                 {
-                    if (ge is Edge)
+                    if (ge is Edge || ge is Port)
                     {
                         return;
                     }
 
                     if (!reachedFirstChild)
                     {
-                        rectToFit = ge.localBound;
+                        rectToFit = ge.ChangeCoordinatesTo(contentViewContainer, ge.rect);
                         reachedFirstChild = true;
                     }
                     else
                     {
-                        rectToFit = RectUtils.Encompass(rectToFit, ge.localBound);
+                        rectToFit = RectUtils.Encompass(rectToFit, ge.ChangeCoordinatesTo(contentViewContainer, ge.rect));
                     }
                 });
 

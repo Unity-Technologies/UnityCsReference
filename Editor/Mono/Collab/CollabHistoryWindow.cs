@@ -161,6 +161,7 @@ namespace UnityEditor
             if (state == m_State && !force)
                 return;
 
+            m_State = state;
             switch (state)
             {
                 case HistoryState.Ready:
@@ -171,7 +172,6 @@ namespace UnityEditor
                     return;
             }
 
-            m_State = state;
             m_Container.Clear();
             m_Container.Add(m_Views[m_State]);
         }

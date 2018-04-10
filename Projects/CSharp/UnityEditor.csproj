@@ -1550,6 +1550,9 @@
   <Compile Include="..\..\Editor\Mono\Graphics\EditorMaterialUtility.bindings.cs">
     <Link>Editor\Mono\Graphics\EditorMaterialUtility.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Graphics\ShaderCompilerData.cs">
+    <Link>Editor\Mono\Graphics\ShaderCompilerData.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Grid\GridSnapping.cs">
     <Link>Editor\Mono\Grid\GridSnapping.cs</Link>
   </Compile>

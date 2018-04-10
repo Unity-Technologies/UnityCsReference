@@ -11,7 +11,7 @@ namespace UnityEditor.PackageManager.Requests
     /// <summary>
     /// Tracks the state of an asynchronous Upm server operation
     /// </summary>
-    public abstract class Request
+    public abstract class Request : ISerializationCallbackReceiver
     {
         /// <summary>
         /// Note: This property is there to workaround the serializer
@@ -28,23 +28,6 @@ namespace UnityEditor.PackageManager.Requests
 
         [SerializeField]
         private long m_Id;
-
-        private void AssertNativeRequestReleased()
-        {
-            Debug.AssertFormat(NativeClient.GetOperationStatus(Id) == NativeStatusCode.NotFound, "Packman operation [{0}] was not released by native code", m_Id);
-        }
-
-        private void ReleaseNativeRequest()
-        {
-            if (m_Id == 0)
-            {
-                return;
-            }
-
-            NativeClient.GetOperationError(Id);
-            AssertNativeRequestReleased();
-            m_Id = 0;
-        }
 
         internal NativeStatusCode NativeStatus
         {
@@ -129,11 +112,15 @@ namespace UnityEditor.PackageManager.Requests
         protected virtual void FetchNativeData()
         {
             FetchError();
+        }
 
-            if (NativeStatus.IsCompleted())
-            {
-                ReleaseNativeRequest();
-            }
+        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        {
+            FetchNativeData();
+        }
+
+        void ISerializationCallbackReceiver.OnAfterDeserialize()
+        {
         }
 
         ~Request()
@@ -141,7 +128,7 @@ namespace UnityEditor.PackageManager.Requests
             // Do our best to release the native request if it has not been already.
             // The only limitation left is an in-progress request that has not been
             // serialized during domain unload.
-            FetchNativeData();
+            NativeClient.ReleaseCompletedOperation(Id);
         }
 
         /// <summary>

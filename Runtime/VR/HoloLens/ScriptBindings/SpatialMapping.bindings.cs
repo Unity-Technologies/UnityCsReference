@@ -105,7 +105,7 @@ namespace UnityEngine.XR.WSA
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
         [NativeName("Create")]
-        private extern IntPtr Internal_Create(SurfaceObserver surfaceObserver);
+        private static extern IntPtr Internal_Create(System.Object surfaceObserver);
 
         ~SurfaceObserver()
         {

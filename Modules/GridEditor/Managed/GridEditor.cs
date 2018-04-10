@@ -21,7 +21,6 @@ namespace UnityEditor
             m_CellGap = serializedObject.FindProperty("m_CellGap");
             m_CellLayout = serializedObject.FindProperty("m_CellLayout");
             m_CellSwizzle = serializedObject.FindProperty("m_CellSwizzle");
-            SceneViewGridManager.FlushCachedGridProxy();
         }
 
         public override void OnInspectorGUI()
@@ -29,12 +28,12 @@ namespace UnityEditor
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(m_CellSize);
-            EditorGUILayout.PropertyField(m_CellGap);
+            using (new EditorGUI.DisabledGroupScope(m_CellLayout.enumValueIndex == (int)Grid.CellLayout.Hexagon))
+                EditorGUILayout.PropertyField(m_CellGap);
             EditorGUILayout.PropertyField(m_CellLayout);
             EditorGUILayout.PropertyField(m_CellSwizzle);
 
-            if (serializedObject.ApplyModifiedProperties())
-                SceneViewGridManager.FlushCachedGridProxy();
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }

@@ -997,7 +997,9 @@ namespace UnityEngine.Rendering
         // ShadowCollector = 9 -- not needed starting with 5.0
         Deferred = 10,
         Meta = 11,
-        MotionVectors = 12
+        MotionVectors = 12,
+        ScriptableRenderPipeline = 13,
+        ScriptableRenderPipelineDefaultUnlit = 14
     }
 
     // Match ShadowCastingMode enum on C++ side

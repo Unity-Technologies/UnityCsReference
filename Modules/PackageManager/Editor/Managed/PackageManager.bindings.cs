@@ -33,23 +33,20 @@ namespace UnityEditor.PackageManager
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
         extern public static NativeStatusCode ResetToEditorDefaults([Out] out long operationId);
 
-        [ThreadAndSerializationSafe]
         [StaticAccessor("PackageManager::Api::GetInstance()", StaticAccessorType.Arrow)]
         extern public static NativeStatusCode GetOperationStatus(long operationId);
 
         [ThreadAndSerializationSafe]
+        extern public static void ReleaseCompletedOperation(long operationId);
+
         extern public static Error GetOperationError(long operationId);
 
-        [ThreadAndSerializationSafe]
         extern public static OperationStatus GetListOperationData(long operationId);
 
-        [ThreadAndSerializationSafe]
         extern public static PackageInfo GetAddOperationData(long operationId);
 
-        [ThreadAndSerializationSafe]
         extern public static string GetRemoveOperationData(long operationId);
 
-        [ThreadAndSerializationSafe]
         extern public static PackageInfo[] GetSearchOperationData(long operationId);
     }
 

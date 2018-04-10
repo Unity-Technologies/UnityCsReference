@@ -608,6 +608,12 @@ namespace UnityEditor
             {
                 icon = InnerLoadGeneratedIconOrNormalIcon(name);
             }
+
+            if (icon != null && !Mathf.Approximately(icon.pixelsPerPoint, GUIUtility.pixelsPerPoint))
+            {
+                icon.filterMode = FilterMode.Bilinear;
+            }
+
             return icon;
         }
 

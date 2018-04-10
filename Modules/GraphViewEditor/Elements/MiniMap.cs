@@ -206,12 +206,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             // TODO: Should Edges be displayed at all?
             // TODO: Maybe edges need their own capabilities flag.
-            if (elem is Edge)
+            if (elem is Edge || elem is Port)
             {
                 return new Rect(0, 0, 0, 0);
             }
 
-            Rect rect = elem.localBound;
+            Rect rect = elem.ChangeCoordinatesTo(graphView.contentViewContainer, elem.rect);
             rect.x = m_ContentRect.x + ((rect.x - m_ContentRectLocal.x) * m_ContentRect.width / m_ContentRectLocal.width);
             rect.y = m_ContentRect.y + ((rect.y - m_ContentRectLocal.y) * m_ContentRect.height / m_ContentRectLocal.height);
             rect.width *= m_ContentRect.width / m_ContentRectLocal.width;
@@ -287,7 +287,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Color currentColor = Handles.color;
             gView.graphElements.ForEach(elem =>
                 {
-                    if (elem is Edge)
+                    if (elem is Edge || elem is Port)
                         return;
 
                     var rect = CalculateElementRect(elem);

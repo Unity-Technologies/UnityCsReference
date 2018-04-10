@@ -118,6 +118,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             bool startFromOutput = (draggedPort.direction == Direction.Output);
 
             edgeCandidate.candidatePosition = mousePosition;
+            edgeCandidate.SetEnabled(false);
 
             if (startFromOutput)
             {
@@ -204,6 +205,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     m_GhostEdge = new TEdge();
                     m_GhostEdge.isGhostEdge = true;
+                    m_GhostEdge.pickingMode = PickingMode.Ignore;
                     m_GraphView.AddElement(m_GhostEdge);
                 }
 
@@ -278,6 +280,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 m_Listener.OnDropOutsidePort(edgeCandidate, mousePosition);
             }
+
+            edgeCandidate.SetEnabled(true);
 
             if (edgeCandidate.input != null)
                 edgeCandidate.input.portCapLit = false;

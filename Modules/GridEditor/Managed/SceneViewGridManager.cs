@@ -15,7 +15,7 @@ namespace UnityEditor
 
         private static Mesh s_GridProxyMesh;
         private static Material s_GridProxyMaterial;
-        private static Color s_LastGridProxyColor;
+        private static int s_LastGridProxyHash;
         [SerializeField] private GridLayout m_ActiveGridProxy;
 
         private bool m_RegisteredEventHandlers;
@@ -46,7 +46,6 @@ namespace UnityEditor
             EditMode.editModeEnded += OnEditModeEnd;
             GridPaintingState.brushChanged += OnBrushChanged;
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
-            Undo.undoRedoPerformed += OnUndoRedoPerformed;
             GridSnapping.snapPosition = OnSnapPosition;
             GridSnapping.activeFunc = GetActive;
 
@@ -73,11 +72,6 @@ namespace UnityEditor
             UpdateCache();
         }
 
-        private void OnUndoRedoPerformed()
-        {
-            FlushCachedGridProxy();
-        }
-
         void OnDisable()
         {
             FlushCachedGridProxy();
@@ -88,7 +82,6 @@ namespace UnityEditor
             EditMode.editModeEnded -= OnEditModeEnd;
             GridPaintingState.brushChanged -= OnBrushChanged;
             GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;
-            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
             GridSnapping.snapPosition = null;
             GridSnapping.activeFunc = null;
             m_RegisteredEventHandlers = false;
@@ -116,14 +109,26 @@ namespace UnityEditor
                 DrawGrid(activeGridProxy);
         }
 
+        private static int GenerateHash(GridLayout layout, Color color)
+        {
+            int hash = 0x7ed55d16;
+            hash ^= layout.cellSize.GetHashCode();
+            hash ^= layout.cellLayout.GetHashCode() << 23;
+            hash ^= layout.cellGap.GetHashCode() << 4 + 0x165667b1;
+            hash ^= layout.cellSwizzle.GetHashCode() << 7;
+            hash ^= color.GetHashCode();
+            return hash;
+        }
+
         private static void DrawGrid(GridLayout gridLayout)
         {
-            if (sceneViewGridComponentGizmo.Color != s_LastGridProxyColor)
+            int gridHash = GenerateHash(gridLayout, sceneViewGridComponentGizmo.Color);
+            if (s_LastGridProxyHash != gridHash)
             {
                 FlushCachedGridProxy();
-                s_LastGridProxyColor = sceneViewGridComponentGizmo.Color;
+                s_LastGridProxyHash = gridHash;
             }
-            GridEditorUtility.DrawGridGizmo(gridLayout, gridLayout.transform, s_LastGridProxyColor, ref s_GridProxyMesh, ref s_GridProxyMaterial);
+            GridEditorUtility.DrawGridGizmo(gridLayout, gridLayout.transform, sceneViewGridComponentGizmo.Color, ref s_GridProxyMesh, ref s_GridProxyMaterial);
         }
 
         private void ShowGlobalGrid(bool value)

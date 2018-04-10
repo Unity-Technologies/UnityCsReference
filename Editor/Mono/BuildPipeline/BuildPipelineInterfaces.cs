@@ -8,7 +8,8 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Build.Reporting;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+using UnityEditor.Rendering;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Build
 {
@@ -60,6 +61,11 @@ namespace UnityEditor.Build
         void OnActiveBuildTargetChanged(BuildTarget previousTarget, BuildTarget newTarget);
     }
 
+    public interface IPreprocessShaders : IOrderedCallback
+    {
+        void OnProcessShader(Shader shader, ShaderSnippetData snippet, IList<ShaderCompilerData> data);
+    }
+
     internal static class BuildPipelineInterfaces
     {
         internal class Processors
@@ -76,6 +82,7 @@ namespace UnityEditor.Build
 
             public List<IFilterBuildAssemblies> filterBuildAssembliesProcessor;
             public List<IActiveBuildTargetChanged> buildTargetProcessors;
+            public List<IPreprocessShaders> shaderProcessors;
         }
 
         private static Processors m_Processors;
@@ -97,6 +104,7 @@ namespace UnityEditor.Build
             SceneProcessors = 2,
             BuildTargetProcessors = 4,
             FilterAssembliesProcessors = 8,
+            ShaderProcessors = 16
         }
 
         //common comparer for all callback types
@@ -168,6 +176,8 @@ namespace UnityEditor.Build
             bool findSceneProcessors = (findFlags & BuildCallbacks.SceneProcessors) == BuildCallbacks.SceneProcessors;
             bool findTargetProcessors = (findFlags & BuildCallbacks.BuildTargetProcessors) == BuildCallbacks.BuildTargetProcessors;
             bool findFilterProcessors = (findFlags & BuildCallbacks.FilterAssembliesProcessors) == BuildCallbacks.FilterAssembliesProcessors;
+            bool findShaderProcessors = (findFlags & BuildCallbacks.ShaderProcessors) == BuildCallbacks.ShaderProcessors;
+
             var postProcessBuildAttributeParams = new Type[] { typeof(BuildTarget), typeof(string) };
             foreach (var t in EditorAssemblies.GetAllTypesWithInterface<IOrderedCallback>())
             {
@@ -199,6 +209,11 @@ namespace UnityEditor.Build
                 if (findFilterProcessors)
                 {
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.filterBuildAssembliesProcessor);
+                }
+
+                if (findShaderProcessors)
+                {
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref processors.shaderProcessors);
                 }
             }
 
@@ -232,6 +247,8 @@ namespace UnityEditor.Build
                 processors.sceneProcessorsWithReport.Sort(CompareICallbackOrder);
             if (processors.filterBuildAssembliesProcessor != null)
                 processors.filterBuildAssembliesProcessor.Sort(CompareICallbackOrder);
+            if (processors.shaderProcessors != null)
+                processors.shaderProcessors.Sort(CompareICallbackOrder);
         }
 
         internal static bool ValidateType<T>(Type t)
@@ -392,6 +409,27 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
+        internal static ShaderCompilerData[] OnPreprocessShaders(Shader shader, ShaderSnippetData snippet, ShaderCompilerData[] data)
+        {
+            var dataList = data.ToList();
+            if (processors.shaderProcessors != null)
+            {
+                foreach (IPreprocessShaders abtc in processors.shaderProcessors)
+                {
+                    try
+                    {
+                        abtc.OnProcessShader(shader, snippet, dataList);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                    }
+                }
+            }
+            return dataList.ToArray();
+        }
+
+        [RequiredByNativeCode]
         internal static string[] FilterAssembliesIncludedInBuild(BuildOptions buildOptions, string[] assemblies)
         {
             if (processors.filterBuildAssembliesProcessor == null)
@@ -432,6 +470,7 @@ namespace UnityEditor.Build
             processors.buildPostprocessorsWithReport = null;
             processors.sceneProcessorsWithReport = null;
             processors.filterBuildAssembliesProcessor = null;
+            processors.shaderProcessors = null;
             previousFlags = BuildCallbacks.None;
         }
     }

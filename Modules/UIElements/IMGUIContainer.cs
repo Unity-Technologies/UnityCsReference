@@ -137,7 +137,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private void DoOnGUI(Event evt)
+        private void DoOnGUI(Event evt, bool isComputingLayout = false)
         {
             if (m_OnGUIHandler == null
                 || panel == null)
@@ -208,8 +208,9 @@ namespace UnityEngine.Experimental.UIElements
 
             try
             {
-                // On a layout event, we should not try to get the worldTransform... it is dependant on the layout, which is being calculated (thus, not good)
-                if (originalEventType != EventType.Layout)
+                // If we are computing the layout, we should not try to get the worldTransform...
+                // it is dependant on the layout, which is being calculated (thus, not good)
+                if (!isComputingLayout)
                 {
                     Matrix4x4 currentTransform;
                     Rect clippingRect;
@@ -473,7 +474,7 @@ namespace UnityEngine.Experimental.UIElements
             float measuredHeight = float.NaN;
             if (widthMode != MeasureMode.Exactly || heightMode != MeasureMode.Exactly)
             {
-                DoOnGUI(new Event { type = EventType.Layout });
+                DoOnGUI(new Event { type = EventType.Layout }, true);
                 measuredWidth = m_Cache.topLevel.minWidth;
                 measuredHeight = m_Cache.topLevel.minHeight;
             }

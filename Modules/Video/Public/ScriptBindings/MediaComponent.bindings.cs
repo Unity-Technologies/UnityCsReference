@@ -29,6 +29,15 @@ namespace UnityEngineInternal.Video
     }
 
     [UsedByNativeCode]
+    internal enum VideoPixelFormat
+    {
+        RGB  = 0,
+        RGBA = 1,
+        YUV  = 2,
+        YUVA = 3
+    }
+
+    [UsedByNativeCode]
     [NativeHeader("Modules/Video/Public/Base/MediaComponent.h")]
     internal class VideoPlayback
     {
@@ -42,6 +51,7 @@ namespace UnityEngineInternal.Video
 
         extern public VideoError GetStatus();
         extern public bool IsReady();
+        extern public bool IsPlaying();
 
         extern public void Step();
         extern public bool CanStep();
@@ -53,9 +63,15 @@ namespace UnityEngineInternal.Video
         extern public ulong GetNumFrames();
         extern public uint GetPixelAspectRatioNumerator();
         extern public uint GetPixelAspectRatioDenominator();
+        extern public VideoPixelFormat GetPixelFormat();
 
         extern public bool CanNotSkipOnDrop();
         extern public bool GetImage(Texture texture, bool skipOnDrop, out long outputFrameNum);
+
+        extern public float GetPlaybackSpeed();
+        extern public void SetPlaybackSpeed(float value);
+        extern public bool GetLoop();
+        extern public void SetLoop(bool value);
     }
 }
 

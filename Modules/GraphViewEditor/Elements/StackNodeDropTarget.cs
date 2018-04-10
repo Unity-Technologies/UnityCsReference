@@ -114,6 +114,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_CurrentPreview == null || m_RemovedPreview != null)
                 return;
 
+            m_AddAnimation.Stop();
+
             m_RemovedPreview = m_CurrentPreview;
 
             if (animated)

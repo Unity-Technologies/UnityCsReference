@@ -8,6 +8,8 @@ using UnityEngine;
 using uei = UnityEngine.Internal;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Scripting;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 
 namespace UnityEngine
@@ -405,6 +407,23 @@ namespace UnityEngine
             if (data == null || data.Length == 0) { Debug.LogError("No texture data provided to LoadRawTextureData", this); return; }
             if (!LoadRawTextureDataImplArray(data))
                 throw new UnityException("LoadRawTextureData: not enough data provided (will result in overread).");
+        }
+
+        unsafe public void LoadRawTextureData<T>(NativeArray<T> data) where T : struct
+        {
+            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to LoadRawTextureData");
+            if (!LoadRawTextureDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length * UnsafeUtility.SizeOf<T>()))
+                throw new UnityException("LoadRawTextureData: not enough data provided (will result in overread).");
+        }
+
+        public unsafe NativeArray<T> GetRawTextureData<T>() where T : struct
+        {
+            if (!IsReadable()) throw CreateNonReadableException(this);
+
+            int stride = UnsafeUtility.SizeOf<T>();
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)GetWritableImageData(0), (int)(GetRawImageDataSize() / stride), Allocator.None);
+            return array;
         }
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)

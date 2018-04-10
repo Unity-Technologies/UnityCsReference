@@ -154,12 +154,10 @@ namespace UnityEditor.Presets
                     };
                     if (reference.reference == null)
                     {
-                        // fast exit on NULL targets as we do not support their inspector in Preset yet.
+                        // fast exit on NULL targets as we do not support their inspector in Preset.
                         m_NotSupportedEditorName = p.GetTargetTypeName();
                         return;
                     }
-
-                    //reference.reference.name = p.name;
                     s_References.Add(p.GetInstanceID(), reference);
                 }
                 reference.count++;
@@ -198,7 +196,7 @@ namespace UnityEditor.Presets
             using (var change = new EditorGUI.ChangeCheckScope())
             {
                 for (int i = 0; i < m_InternalEditor.targets.Length; i++)
-                    m_InternalEditor.targets[i].hideFlags = HideFlags.None;
+                    m_InternalEditor.targets[i].hideFlags &= ~HideFlags.NotEditable;
                 if (m_InternalEditor.target is Component)
                 {
                     bool wasVisible = InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target);
@@ -219,7 +217,7 @@ namespace UnityEditor.Presets
                     EditorGUI.indentLevel--;
                 }
                 for (int i = 0; i < m_InternalEditor.targets.Length; i++)
-                    m_InternalEditor.targets[i].hideFlags = HideFlags.NotEditable;
+                    m_InternalEditor.targets[i].hideFlags |= HideFlags.NotEditable;
                 if (change.changed || m_InternalEditor.isInspectorDirty)
                 {
                     for (int i = 0; i < m_InternalEditor.targets.Length; i++)

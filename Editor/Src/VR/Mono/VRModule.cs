@@ -30,21 +30,9 @@ namespace UnityEditorInternal.VR
             if (!PlayerSettings.virtualRealitySupported)
                 return false;
 
-            bool shouldInjectForTarget = false;
-            var targetGroup = UnityEditor.BuildPipeline.GetBuildTargetGroup(target);
+            VRDeviceInfoEditor[] enabledVRDevices = VREditor.GetEnabledVRDeviceInfo(target);
 
-            switch (targetGroup)
-            {
-                case BuildTargetGroup.iOS:
-                    shouldInjectForTarget = VREditor.IsVRDeviceEnabledForBuildTarget(target, "cardboard");
-                    break;
-
-                default:
-                    shouldInjectForTarget = false;
-                    break;
-            }
-
-            return shouldInjectForTarget;
+            return (enabledVRDevices.Length > 0);
         }
     }
 }

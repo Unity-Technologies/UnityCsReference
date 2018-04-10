@@ -136,11 +136,8 @@ namespace UnityEditorInternal
                         // Cancel dragging on ESC
                         if (evt.keyCode == KeyCode.Escape)
                         {
-                            value = s_StartScale;
                             s_ScaleDrawLength = 1.0f;
-                            GUIUtility.hotControl = 0;
-                            GUI.changed = true;
-                            evt.Use();
+                            // We do not use the event nor clear hotcontrol to ensure auto revert value kicks in from native side
                         }
                     }
                     break;
@@ -188,6 +185,7 @@ namespace UnityEditorInternal
                     if (HandleUtility.nearestControl == id && evt.button == 0)
                     {
                         GUIUtility.hotControl = id;     // Grab mouse focus
+                        Tools.LockHandlePosition();
                         s_StartScale = value;
                         s_ValueDrag = 0;
                         evt.Use();
@@ -210,11 +208,7 @@ namespace UnityEditorInternal
                         // Cancel dragging on ESC
                         if (evt.keyCode == KeyCode.Escape)
                         {
-                            value = s_StartScale;
                             s_ScaleDrawLength = 1.0f;
-                            GUIUtility.hotControl = 0;
-                            GUI.changed = true;
-                            evt.Use();
                         }
                     }
                     break;

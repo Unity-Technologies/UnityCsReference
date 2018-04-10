@@ -46,11 +46,7 @@ namespace UnityEditor.Collaboration
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             m_Service.FetchRevisionsCallback += OnFetchRevisions;
 
-            if (Collab.instance.IsConnected())
-            {
-                m_ConnectState = UnityConnect.instance.GetConnectInfo();
-            }
-            // Copy the initialized fields of the collab info, even if the instance hasn't connected yet.
+            m_ConnectState = UnityConnect.instance.GetConnectInfo();
             m_CollabState = Collab.instance.GetCollabInfo();
 
             m_Window.revisionActionsEnabled = !EditorApplication.isPlayingOrWillChangePlaymode;

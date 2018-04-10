@@ -76,7 +76,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private bool AcceptsElementInternal(GraphElement element, ref int proposedIndex, int maxIndex)
         {
-            return element != null && !(element is Group)
+            return element != null && !(element is Scope)
                 && !(element is StackNode) && !(element is TokenNode)
                 && (element.GetContainingScope() as Group) == null
                 && AcceptsElement(element, ref proposedIndex, maxIndex);
@@ -101,6 +101,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             Insert(index, element);
             OnChildAdded(element);
+
+            if (graphView != null)
+            {
+                graphView.RestorePersistedSelection();
+            }
         }
 
         public void RemoveElement(GraphElement element)

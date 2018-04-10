@@ -20,7 +20,7 @@ namespace UnityEditor.StyleSheets
             string hiResPath = string.Empty;
 
             lookForRetinaAssets &= (type == typeof(Texture2D));
-
+            bool assetIsRetinaTexture = false;
             if (lookForRetinaAssets)
             {
                 string ext = Path.GetExtension(pathName);
@@ -32,11 +32,7 @@ namespace UnityEditor.StyleSheets
             if (lookForRetinaAssets)
             {
                 resource = EditorGUIUtility.Load(hiResPath);
-                if (resource as Texture2D != null)
-                {
-                    Texture2D tex = (Texture2D)resource;
-                    tex.pixelsPerPoint = 2.0f;
-                }
+                assetIsRetinaTexture = (resource as Texture2D != null);
             }
 
             if (resource == null)
@@ -47,6 +43,7 @@ namespace UnityEditor.StyleSheets
             if (resource == null && lookForRetinaAssets)
             {
                 resource = Resources.Load(hiResPath, type);
+                assetIsRetinaTexture = (resource as Texture2D != null);
             }
 
             if (resource == null)
@@ -57,6 +54,7 @@ namespace UnityEditor.StyleSheets
             if (resource == null && lookForRetinaAssets)
             {
                 resource = AssetDatabase.LoadMainAssetAtPath(hiResPath);
+                assetIsRetinaTexture = (resource as Texture2D != null);
             }
 
             if (resource == null)
@@ -74,6 +72,12 @@ namespace UnityEditor.StyleSheets
                 {
                     StyleSheetAssetPostprocessor.AddReferencedAssetPath(absoluteAssetPath);
                 }
+            }
+
+            if (assetIsRetinaTexture)
+            {
+                Texture2D tex = (Texture2D)resource;
+                tex.pixelsPerPoint = 2.0f;
             }
 
             return resource;

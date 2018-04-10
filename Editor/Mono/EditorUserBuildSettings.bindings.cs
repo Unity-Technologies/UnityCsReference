@@ -74,6 +74,7 @@ namespace UnityEditor
         // copies files to the kit
         Push = 0,
         // run and load files from a connected PC
+        [Obsolete("Enum member XboxOneDeployMethod.Pull has been deprecated. Use XboxOneDeployMethod.RunFromPC instead (UnityUpgradable) -> RunFromPC", true)]
         Pull = 1,
         // PC network share loose files to the kit
         RunFromPC = 2,
@@ -81,6 +82,21 @@ namespace UnityEditor
         Package = 3,
         // Build Xbox One Package - if installed only install launch chunk for testing
         PackageStreaming = 4,
+    }
+
+    [NativeType(Header = "Runtime/Serialize/BuildTarget.h")]
+    public enum XboxOneDeployDrive
+    {
+        Default = 0,
+        Retail = 1,
+        Development = 2,
+        Ext1 = 3,
+        Ext2 = 4,
+        Ext3 = 5,
+        Ext4 = 6,
+        Ext5 = 7,
+        Ext6 = 8,
+        Ext7 = 9
     }
 
     [EditorBrowsable(EditorBrowsableState.Never)]
@@ -348,6 +364,16 @@ namespace UnityEditor
             [NativeMethod("SetSelectedXboxOneDeployMethod")]
             set;
         }
+
+        //selected Xbox One Deployment Drive
+        public static extern XboxOneDeployDrive xboxOneDeployDrive
+        {
+            [NativeMethod("GetSelectedXboxOneDeployDrive")]
+            get;
+            [NativeMethod("SetSelectedXboxOneDeployDrive")]
+            set;
+        }
+
 
         public static extern string xboxOneUsername { get; set; }
 

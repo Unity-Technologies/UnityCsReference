@@ -8,6 +8,7 @@ using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
 using UnityEngine.Experimental.Rendering;
+using Unity.Collections.LowLevel.Unsafe;
 
 using TextureDimension = UnityEngine.Rendering.TextureDimension;
 
@@ -177,6 +178,9 @@ namespace UnityEngine
 
         [FreeFunction(Name = "Texture2DScripting::LoadRawData", HasExplicitThis = true)]
         extern private bool LoadRawTextureDataImplArray(byte[] data);
+
+        extern private IntPtr GetWritableImageData(int frame);
+        extern private long GetRawImageDataSize();
 
 
         [FreeFunction("Texture2DScripting::GenerateAtlas")]

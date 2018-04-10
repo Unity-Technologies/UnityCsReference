@@ -95,10 +95,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void RegisterCallbacks()
         {
-            if (m_WatchedObjects != null && m_WatchedObjects.Count > 0)
-            {
-                UnregisterCallbacks();
-            }
+            UnregisterCallbacks();
 
             VisualElement commonAncestor = target.FindCommonAncestor(element);
 
@@ -141,6 +138,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void UnregisterCallbacks()
         {
+            if (m_WatchedObjects == null || m_WatchedObjects.Count == 0)
+                return;
+
             foreach (VisualElement v in m_WatchedObjects)
             {
                 v.UnregisterCallback<GeometryChangedEvent>(OnTargetLayout);

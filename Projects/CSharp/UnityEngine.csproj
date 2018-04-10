@@ -506,6 +506,9 @@
   <Compile Include="..\..\Runtime\Export\Plane.cs">
     <Link>Runtime\Export\Plane.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\PlatformKeywordSet.cs">
+    <Link>Runtime\Export\PlatformKeywordSet.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\PlayerLoop.bindings.cs">
     <Link>Runtime\Export\PlayerLoop.bindings.cs</Link>
   </Compile>
@@ -742,6 +745,12 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\Shader.cs">
     <Link>Runtime\Export\Shader.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\ShaderKeyword.bindings.cs">
+    <Link>Runtime\Export\ShaderKeyword.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\ShaderKeywordSet.cs">
+    <Link>Runtime\Export\ShaderKeywordSet.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\SortingLayer.bindings.cs">
     <Link>Runtime\Export\SortingLayer.bindings.cs</Link>

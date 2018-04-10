@@ -62,9 +62,20 @@ namespace UnityEditor
                 Texture2D loadedResource =
                     StyleSheetResourceUtil.LoadResource(resourcePath, typeof(Texture2D), false) as Texture2D;
                 loadedResource.pixelsPerPoint = resourceDpi;
+
                 gc.m_GuiContent.image = loadedResource;
                 gc.m_CurrentResourcePath = resourcePath;
             }
+
+            if (resourceDpi != GUIUtility.pixelsPerPoint)
+            {
+                Texture2D image = gc.m_GuiContent.image as Texture2D;
+                if (image != null)
+                {
+                    image.filterMode = FilterMode.Bilinear;
+                }
+            }
+
             return gc.m_GuiContent;
         }
     }

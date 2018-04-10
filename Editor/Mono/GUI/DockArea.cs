@@ -332,18 +332,22 @@ namespace UnityEditor
             r.x = background.margin.left;
             r.y = background.margin.top;
             Rect wPos = windowPosition;
+            Rect containerWindowPosition = window.position;
+            containerWindowPosition.width = Mathf.FloorToInt(containerWindowPosition.width);
+            containerWindowPosition.height = Mathf.FloorToInt(containerWindowPosition.height);
+
             float sideBorder = kSideBorders;
             if (wPos.x == 0)
             {
                 r.x -= sideBorder;
                 r.width += sideBorder;
             }
-            if (wPos.xMax == window.position.width)
+            if (wPos.xMax == containerWindowPosition.width)
             {
                 r.width += sideBorder;
             }
 
-            if (wPos.yMax == window.position.height)
+            if (wPos.yMax == containerWindowPosition.height)
             {
                 r.height += customBorder ? 2f : kBottomBorders;
             }
@@ -756,7 +760,7 @@ namespace UnityEditor
             Rect r = windowPosition;
             if (r.xMin != 0)
                 m_BorderSize.left += (int)kSideBorders;
-            if (r.xMax != window.position.width)
+            if (r.xMax != Mathf.FloorToInt(window.position.width))
             {
                 m_BorderSize.right += (int)kSideBorders;
             }

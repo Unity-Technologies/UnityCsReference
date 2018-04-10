@@ -85,18 +85,53 @@ namespace UnityEditor.Scripting.Compilers
             foreach (string f in files)
                 assetList.Add(Provider.GetAssetByPath(f.Replace(tempOutputPath, "")));
 
+            // Verify that all the files are also in assetList
+            foreach (var f in files)
+            {
+                var assetPath = f.Replace(tempOutputPath, "");
+                var foundAsset = assetList.Where(asset => (asset.path == assetPath));
+                if (!foundAsset.Any())
+                {
+                    Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to add file to list): {0}", assetPath);
+                    ScriptUpdatingManager.ReportExpectedUpdateFailure();
+                    return;
+                }
+            }
+
             var checkoutTask = Provider.Checkout(assetList, CheckoutMode.Exact);
             checkoutTask.Wait();
 
-            var failedToCheckout = checkoutTask.assetList.Where(a => (a.state & Asset.States.ReadOnly) == Asset.States.ReadOnly);
-            if (!checkoutTask.success || failedToCheckout.Any())
+            // Verify that all the files we need to operate on are now editable according to version control
+            // One of these states:
+            // 1) UnderVersionControl & CheckedOutLocal
+            // 2) UnderVersionControl & AddedLocal
+            // 3) !UnderVersionControl
+            var notEditable = assetList.Where(asset => asset.IsUnderVersionControl && !asset.IsState(Asset.States.CheckedOutLocal) && !asset.IsState(Asset.States.AddedLocal));
+            if (!checkoutTask.success || notEditable.Any())
             {
-                Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to check out): {0}", failedToCheckout.Select(a => a.fullName + " (" + a.state + ")").Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
+                Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to check out): {0}", notEditable.Select(a => a.fullName + " (" + a.state + ")").Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
                 ScriptUpdatingManager.ReportExpectedUpdateFailure();
                 return;
             }
 
-            FileUtil.CopyDirectoryRecursive(tempOutputPath, ".", true);
+            // Verify that all the files we need to copy are now writable
+            // Problems after API updating during ScriptCompilation if the files are not-writable
+            notEditable = assetList.Where(asset => ((File.GetAttributes(asset.path) & FileAttributes.ReadOnly) == FileAttributes.ReadOnly));
+            if (notEditable.Any())
+            {
+                Debug.LogErrorFormat("[API Updater] Files cannot be updated (files not writable): {0}", notEditable.Select(a => a.fullName).Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
+                ScriptUpdatingManager.ReportExpectedUpdateFailure();
+                return;
+            }
+
+            // Copy the temp files to the destination : note this operates on "files"
+            // Earlier have verified a one-to-one correspondence between assetList and "files"
+            foreach (var f in files)
+            {
+                var sourceFileName = f;
+                var destFileName = f.Replace(tempOutputPath, "");
+                File.Copy(sourceFileName,  destFileName, true);
+            }
             FileUtil.DeleteFileOrDirectory(tempOutputPath);
         }
 
