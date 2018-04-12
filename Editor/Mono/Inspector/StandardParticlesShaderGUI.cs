@@ -526,7 +526,11 @@ namespace UnityEditor
             {
                 foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial)
                 {
-                    renderer.SetActiveVertexStreams(streams);
+                    if (renderer != null)
+                    {
+                        if (renderer != null)
+                            renderer.SetActiveVertexStreams(streams);
+                    }
                 }
             }
 
@@ -535,9 +539,15 @@ namespace UnityEditor
             List<ParticleSystemVertexStream> rendererStreams = new List<ParticleSystemVertexStream>();
             foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial)
             {
-                renderer.GetActiveVertexStreams(rendererStreams);
-                if (!rendererStreams.SequenceEqual(streams))
-                    Warnings += "  " + renderer.name + "\n";
+                if (renderer != null)
+                {
+                    renderer.GetActiveVertexStreams(rendererStreams);
+
+                    bool streamsValid = rendererStreams.SequenceEqual(streams);
+
+                    if (!streamsValid)
+                        Warnings += "  " + renderer.name + "\n";
+                }
             }
             if (Warnings != "")
             {

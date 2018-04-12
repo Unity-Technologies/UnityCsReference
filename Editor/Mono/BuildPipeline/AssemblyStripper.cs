@@ -290,9 +290,9 @@ namespace UnityEditorInternal
                 var assemblyName = assembly.Key;
                 // Convert assembly names to monolithic Unity Engine if target platform requires it.
                 if (AssemblyHelper.IsUnityEngineModule(assemblyName) && !BuildPipeline.IsFeatureSupported("ENABLE_MODULAR_UNITYENGINE_ASSEMBLIES", target))
-                    sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\">", "UnityEngine"));
+                    sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\" ignoreIfMissing=\"1\">", "UnityEngine"));
                 else
-                    sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\">", assemblyName));
+                    sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\" ignoreIfMissing=\"1\">", assemblyName));
                 var groupedByType = assembly.GroupBy(m => m.fullTypeName);
                 foreach (var type in groupedByType)
                 {

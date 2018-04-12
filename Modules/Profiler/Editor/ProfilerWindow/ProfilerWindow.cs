@@ -20,24 +20,27 @@ namespace UnityEditor
     {
         internal static class Styles
         {
-            public static readonly GUIContent addArea = EditorGUIUtility.TextContent("Add Profiler|Add a profiler area");
-            public static readonly GUIContent deepProfile = EditorGUIUtility.TextContent("Deep Profile|Instrument all mono calls to investigate scripts");
-            public static readonly GUIContent profileEditor = EditorGUIUtility.TextContent("Profile Editor|Enable profiling of the editor");
-            public static readonly GUIContent noData = EditorGUIUtility.TextContent("No frame data available");
-            public static readonly GUIContent frameDebugger = EditorGUIUtility.TextContent("Open Frame Debugger|Frame Debugger for current game view");
-            public static readonly GUIContent noFrameDebugger = EditorGUIUtility.TextContent("Frame Debugger|Open Frame Debugger (Current frame needs to be selected)");
-            public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TextContent("Gather object references|Collect reference information to see where objects are referenced from. Disable this to save memory");
+            public static readonly GUIContent addArea = EditorGUIUtility.TrTextContent("Add Profiler", "Add a profiler area");
+            public static readonly GUIContent deepProfile = EditorGUIUtility.TrTextContent("Deep Profile", "Instrument all mono calls to investigate scripts");
+            public static readonly GUIContent profileEditor = EditorGUIUtility.TrTextContent("Profile Editor", "Enable profiling of the editor");
+            public static readonly GUIContent noData = EditorGUIUtility.TrTextContent("No frame data available");
+            public static readonly GUIContent frameDebugger = EditorGUIUtility.TrTextContent("Open Frame Debugger", "Frame Debugger for current game view");
+            public static readonly GUIContent noFrameDebugger = EditorGUIUtility.TrTextContent("Frame Debugger", "Open Frame Debugger (Current frame needs to be selected)");
+            public static readonly GUIContent gatherObjectReferences = EditorGUIUtility.TrTextContent("Gather object references", "Collect reference information to see where objects are referenced from. Disable this to save memory");
 
-            public static readonly GUIContent memRecord = EditorGUIUtility.TextContent("Mem Record|Record activity in the native memory system");
-            public static readonly GUIContent profilerRecord = EditorGUIUtility.TextContentWithIcon("Record|Record profiling information", "Profiler.Record");
-            public static readonly GUIContent profilerInstrumentation = EditorGUIUtility.TextContent("Instrumentation|Add Profiler Instrumentation to selected functions");
-            public static readonly GUIContent prevFrame = EditorGUIUtility.IconContent("Profiler.PrevFrame", "|Go back one frame");
-            public static readonly GUIContent nextFrame = EditorGUIUtility.IconContent("Profiler.NextFrame", "|Go one frame forwards");
-            public static readonly GUIContent currentFrame = EditorGUIUtility.TextContent("Current|Go to current frame");
-            public static readonly GUIContent frame = EditorGUIUtility.TextContent("Frame: ");
-            public static readonly GUIContent clearData = EditorGUIUtility.TextContent("Clear");
-            public static readonly GUIContent saveProfilingData = EditorGUIUtility.TextContent("Save|Save current profiling information to a binary file");
-            public static readonly GUIContent loadProfilingData = EditorGUIUtility.TextContent("Load|Load binary profiling information from a file. Shift click to append to the existing data");
+            public static readonly GUIContent memRecord = EditorGUIUtility.TrTextContent("Mem Record", "Record activity in the native memory system");
+            public static readonly GUIContent profilerRecord = EditorGUIUtility.TrTextContentWithIcon("Record", "Record profiling information", "Profiler.Record");
+            public static readonly GUIContent profilerInstrumentation = EditorGUIUtility.TrTextContent("Instrumentation", "Add Profiler Instrumentation to selected functions");
+            public static readonly GUIContent prevFrame = EditorGUIUtility.TrIconContent("Profiler.PrevFrame", "Go back one frame");
+            public static readonly GUIContent nextFrame = EditorGUIUtility.TrIconContent("Profiler.NextFrame", "Go one frame forwards");
+            public static readonly GUIContent currentFrame = EditorGUIUtility.TrTextContent("Current", "Go to current frame");
+            public static readonly GUIContent frame = EditorGUIUtility.TrTextContent("Frame: ");
+            public static readonly GUIContent clearData = EditorGUIUtility.TrTextContent("Clear");
+            public static readonly GUIContent saveWindowTitle = EditorGUIUtility.TrTextContent("Save Window");
+            public static readonly GUIContent saveProfilingData = EditorGUIUtility.TrTextContent("Save", "Save current profiling information to a binary file");
+            public static readonly GUIContent loadWindowTitle = EditorGUIUtility.TrTextContent("Load Window");
+            public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrTextContent("Load", "Load binary profiling information from a file. Shift click to append to the existing data");
+            public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
             public static readonly GUIContent[] detailedPaneTypes = GetLocalizedDetailedPaneTypes();
 
@@ -1445,12 +1448,11 @@ namespace UnityEditor
 
         void SaveProfilingData()
         {
-            string title = EditorGUIUtility.TempContent("Save profile").text;
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
             string directory = string.IsNullOrEmpty(recent) ? "" : System.IO.Path.GetDirectoryName(recent);
             string filename = string.IsNullOrEmpty(recent) ? "" : System.IO.Path.GetFileName(recent);
 
-            string selected = EditorUtility.SaveFilePanel(title, directory, filename, "data");
+            string selected = EditorUtility.SaveFilePanel(Styles.saveWindowTitle.text, directory, filename, "data");
             if (selected.Length != 0)
             {
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
@@ -1463,9 +1465,8 @@ namespace UnityEditor
 
         void LoadProfilingData(bool keepExistingData)
         {
-            string title = EditorGUIUtility.TempContent("Load profile").text;
             string recent = EditorPrefs.GetString(kProfilerRecentSaveLoadProfilePath);
-            string selected = EditorUtility.OpenFilePanel(title, recent, "data");
+            string selected = EditorUtility.OpenFilePanelWithFilters(Styles.loadWindowTitle.text, recent, Styles.loadProfilingDataFileFilters);
             if (selected.Length != 0)
             {
                 EditorPrefs.SetString(kProfilerRecentSaveLoadProfilePath, selected);
