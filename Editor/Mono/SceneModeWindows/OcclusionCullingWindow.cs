@@ -8,6 +8,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using System.IO;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -101,7 +102,7 @@ namespace UnityEditor
                 ms_OcclusionCullingWindow.Repaint();
         }
 
-        [MenuItem("Window/Occlusion Culling", false, 2099)]
+        [MenuItem("Window/Rendering/Occlusion Culling", false, 101)]
         static void GenerateWindow()
         {
             var window = GetWindow<OcclusionCullingWindow>(typeof(InspectorWindow));
@@ -218,6 +219,7 @@ namespace UnityEditor
             float buttonWidth = 150;
             if (GUILayout.Button("Set default parameters", GUILayout.Width(buttonWidth)))
             {
+                Undo.RegisterCompleteObjectUndo(StaticOcclusionCulling.occlusionCullingSettings, "Set Default Parameters");
                 GUIUtility.keyboardControl = 0; // Force focus out from potentially selected field for default parameters setting
                 StaticOcclusionCulling.SetDefaultOcclusionBakeSettings();
             }
@@ -230,6 +232,7 @@ namespace UnityEditor
             float smallestOccluder = EditorGUILayout.FloatField(s_Styles.smallestOccluder, StaticOcclusionCulling.smallestOccluder);
             if (EditorGUI.EndChangeCheck())
             {
+                Undo.RegisterCompleteObjectUndo(StaticOcclusionCulling.occlusionCullingSettings, "Change Smallest Occluder");
                 StaticOcclusionCulling.smallestOccluder = smallestOccluder;
             }
 
@@ -238,6 +241,7 @@ namespace UnityEditor
             float smallestHole = EditorGUILayout.FloatField(s_Styles.smallestHole, StaticOcclusionCulling.smallestHole);
             if (EditorGUI.EndChangeCheck())
             {
+                Undo.RegisterCompleteObjectUndo(StaticOcclusionCulling.occlusionCullingSettings, "Change Smallest Hole");
                 StaticOcclusionCulling.smallestHole = smallestHole;
             }
 
@@ -246,6 +250,7 @@ namespace UnityEditor
             float backfaceThreshold = EditorGUILayout.Slider(s_Styles.backfaceThreshold, StaticOcclusionCulling.backfaceThreshold, 5.0F, 100.0F);
             if (EditorGUI.EndChangeCheck())
             {
+                Undo.RegisterCompleteObjectUndo(StaticOcclusionCulling.occlusionCullingSettings, "Change Backface Threshold");
                 StaticOcclusionCulling.backfaceThreshold = backfaceThreshold;
             }
         }

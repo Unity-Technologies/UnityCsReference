@@ -210,11 +210,7 @@ namespace UnityEditor
             PrefabType prefabType = GetPrefabType(target);
             bool isDisconnected = (prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.DisconnectedPrefabInstance);
 
-            GameObject root = null;
-            if (isDisconnected)
-                root = FindRootGameObjectWithSameParentPrefab(target);
-            else
-                root = FindValidUploadPrefabInstanceRoot(target);
+            GameObject root = FindRootGameObjectWithSameParentPrefab(target);
 
             List<Object> hierarchy = new List<Object>();
             GetObjectListFromHierarchy(hierarchy, root);

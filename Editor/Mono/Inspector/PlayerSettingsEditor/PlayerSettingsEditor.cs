@@ -366,6 +366,9 @@ namespace UnityEditor
 
         private bool ShouldShowVulkanSettings(BuildTargetGroup targetGroup)
         {
+            if (targetGroup == BuildTargetGroup.XboxOne)
+                return false;
+
             // Always show settings on Windows and Linux editors, as the editor may be running on it
             if (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.LinuxEditor)
                 return true;
@@ -1060,6 +1063,8 @@ namespace UnityEditor
                     if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                         doChange = doReload = true;
                 }
+                else
+                    doChange = doReload = false;
             }
             return new ChangeGraphicsApiAction(doChange, doReload);
         }
@@ -1815,7 +1820,16 @@ namespace UnityEditor
                         // HACK: but we dont really change api list (as we will simply set bool checked from native code)
                         action = new ChangeGraphicsApiAction(false, action.reloadGfx);
                     }
+                    else
+                    {
+                        // User clicked cancel, reset toggle value
+                        m_VulkanEditorSupport.boolValue = curVulkanSupport;
+                        serializedObject.ApplyModifiedProperties();
+                    }
                     ApplyChangeGraphicsApiAction(tgt, api, action);
+
+                    // Need to do this when we trigger a dialog (CheckApplyGraphicsAPIList)
+                    EditorGUIUtility.ExitGUI();
                 }
             }
 

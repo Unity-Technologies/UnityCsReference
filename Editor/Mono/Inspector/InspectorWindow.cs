@@ -70,8 +70,6 @@ namespace UnityEditor
 
         private EditorDragging editorDragging;
 
-        [SerializeField]
-        InspectorHistory m_History = null;
 
         internal class Styles
         {
@@ -144,18 +142,6 @@ namespace UnityEditor
             }
             m_LockTracker.tracker = tracker;
             m_LockTracker.lockStateChanged.AddListener(LockStateChanged);
-
-            if (m_History == null)
-            {
-                if (isLocked)
-                {
-                    m_History = InspectorHistory.CreateInstance(this);
-                }
-                else
-                {
-                    m_History = InspectorHistory.globalHistory;
-                }
-            }
 
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
@@ -432,19 +418,6 @@ namespace UnityEditor
         private void LockStateChanged(bool lockeState)
         {
             tracker.RebuildIfNecessary();
-
-            if (isLocked)
-            {
-                m_History = InspectorHistory.CreateInstance(this);
-            }
-            else
-            {
-                if (m_History != null && m_History != InspectorHistory.globalHistory)
-                {
-                    DestroyImmediate(m_History);
-                }
-                m_History = InspectorHistory.globalHistory;
-            }
         }
 
 
@@ -458,7 +431,6 @@ namespace UnityEditor
             CreatePreviewables();
             FlushAllOptimizedGUIBlocksIfNeeded();
 
-            m_History.OnHistoryGUI(this);
             ResetKeyboardControl();
             m_ScrollPosition = EditorGUILayout.BeginVerticalScrollView(m_ScrollPosition);
             {

@@ -72,18 +72,16 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]
         extern private static bool GetGUIDAndLocalIdentifierInFile(int instanceID, out GUID outGuid, out long outLocalId);
 
-        public static bool TryGetGUIDAndLocalFileIdentifier(UnityEngine.Object obj, out string guid, out int localId)
+        public static bool TryGetGUIDAndLocalFileIdentifier(UnityEngine.Object obj, out string guid, out long localId)
         {
             return TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guid, out localId);
         }
 
-        public static bool TryGetGUIDAndLocalFileIdentifier(int instanceID, out string guid, out int localId)
+        public static bool TryGetGUIDAndLocalFileIdentifier(int instanceID, out string guid, out long localId)
         {
             GUID uguid;
-            long fileid;
-            bool res = GetGUIDAndLocalIdentifierInFile(instanceID, out uguid, out fileid);
+            bool res = GetGUIDAndLocalIdentifierInFile(instanceID, out uguid, out localId);
             guid = uguid.ToString();
-            localId = (int)fileid;
             return res;
         }
 

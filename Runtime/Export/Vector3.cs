@@ -222,7 +222,11 @@ namespace UnityEngine
         // Returns the angle in degrees between /from/ and /to/. This is always the smallest
         public static float Angle(Vector3 from, Vector3 to)
         {
-            return Mathf.Acos(Mathf.Clamp(Vector3.Dot(from.normalized, to.normalized), -1F, 1F)) * Mathf.Rad2Deg;
+            float dot = Mathf.Clamp(Dot(from.normalized, to.normalized), -1F, 1F);
+            if (Mathf.Abs(dot) > (1F - kEpsilon))
+                return dot > 0F ? 0F : 180F;
+
+            return Mathf.Acos(dot) * Mathf.Rad2Deg;
         }
 
         // The smaller of the two possible angles between the two vectors is returned, therefore the result will never be greater than 180 degrees or smaller than -180 degrees.
@@ -230,9 +234,8 @@ namespace UnityEngine
         // The measured angle between the two vectors would be positive in a clockwise direction and negative in an anti-clockwise direction.
         public static float SignedAngle(Vector3 from, Vector3 to, Vector3 axis)
         {
-            Vector3 fromNorm = from.normalized, toNorm = to.normalized;
-            float unsignedAngle = Mathf.Acos(Mathf.Clamp(Vector3.Dot(fromNorm, toNorm), -1F, 1F)) * Mathf.Rad2Deg;
-            float sign = Mathf.Sign(Vector3.Dot(axis, Vector3.Cross(fromNorm, toNorm)));
+            float unsignedAngle = Angle(from, to);
+            float sign = Mathf.Sign(Dot(axis, Cross(from, to)));
             return unsignedAngle * sign;
         }
 

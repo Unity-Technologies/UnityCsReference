@@ -889,37 +889,37 @@ namespace UnityEditor
 
     internal class CreateBuiltinWindows
     {
-        [MenuItem("Window/Scene %1", false, 2000)]
+        [MenuItem("Window/General/Scene %1", false, 5)]
         static void ShowSceneView()
         {
             EditorWindow.GetWindow<SceneView>();
         }
 
-        [MenuItem("Window/Game %2", false, 2001)]
+        [MenuItem("Window/General/Game %2", false, 1)]
         static void ShowGameView()
         {
             EditorWindow.GetWindow<GameView>();
         }
 
-        [MenuItem("Window/Inspector %3", false, 2002)]
+        [MenuItem("Window/General/Inspector %3", false, 3)]
         static void ShowInspector()
         {
             EditorWindow.GetWindow<InspectorWindow>();
         }
 
-        [MenuItem("Window/Hierarchy %4", false, 2003)]
+        [MenuItem("Window/General/Hierarchy %4", false, 2)]
         static void ShowNewHierarchy()
         {
             EditorWindow.GetWindow<SceneHierarchyWindow>();
         }
 
-        [MenuItem("Window/Project %5", false, 2004)]
+        [MenuItem("Window/General/Project %5", false, 4)]
         static void ShowProject()
         {
             EditorWindow.GetWindow<ProjectBrowser>();
         }
 
-        [MenuItem("Window/Animation %6", false, 2006)]
+        [MenuItem("Window/Animation/Animation %6", false, 1)]
         static void ShowAnimationWindow()
         {
             EditorWindow.GetWindow<AnimationWindow>();
@@ -932,7 +932,7 @@ namespace UnityEditor
             EditorWindow.GetWindow<ProfilerWindow>();
         }
 
-        [MenuItem("Window/Audio Mixer %8", false, 2008)]
+        [MenuItem("Window/Audio/Audio Mixer %8", false, 1)]
         static void ShowAudioMixer()
         {
             AudioMixerWindow.CreateAudioMixerWindow();
@@ -945,19 +945,19 @@ namespace UnityEditor
             EditorWindow.GetWindow<WindowPending>();
         }
 
-        [MenuItem("Window/Sprite Packer", false, 2014)]
+        [MenuItem("Window/2D/Sprite Packer", false, 1)]
         static void ShowSpritePackerWindow()
         {
             EditorWindow.GetWindow<Sprites.PackerWindow>();
         }
 
-        [MenuItem("Window/Console %#c", false, 2200)]
+        [MenuItem("Window/General/Console %#c", false, 6)]
         static void ShowConsole()
         {
             EditorWindow.GetWindow<ConsoleWindow>();
         }
 
-        [MenuItem("Window/Experimental/Look Dev", false, 2015)]
+        [MenuItem("Window/Experimental/Look Dev", false, 1)]
         static void ShowLookDevTool()
         {
             EditorWindow.GetWindow<LookDevView>();

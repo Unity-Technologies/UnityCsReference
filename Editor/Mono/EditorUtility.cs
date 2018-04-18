@@ -317,7 +317,7 @@ namespace UnityEditor
 
         internal static void InitInstantiatedPreviewRecursive(GameObject go)
         {
-            go.hideFlags = HideFlags.HideAndDontSave;
+            go.hideFlags = HideFlags.DontSave;
             go.layer = Camera.PreviewCullingLayer;
             foreach (Transform c in go.transform)
                 InitInstantiatedPreviewRecursive(c.gameObject);

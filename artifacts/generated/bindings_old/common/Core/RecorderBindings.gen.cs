@@ -34,11 +34,18 @@ public sealed partial class Recorder
     
     public static Recorder Get(string samplerName)
         {
-            var sampler = Sampler.Get(samplerName);
-            return sampler.GetRecorder();
+            var recorder = GetInternal(samplerName);
+            if (recorder == null)
+                return s_InvalidRecorder;
+
+            return recorder;
         }
     
     
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private static  Recorder GetInternal (string samplerName) ;
+
     public bool isValid
         {
             get { return m_Ptr != IntPtr.Zero; }

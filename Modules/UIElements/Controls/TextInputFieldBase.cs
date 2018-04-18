@@ -34,7 +34,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 m_MaxLength = new UxmlIntAttributeDescription { name = "maxLength", defaultValue = kMaxLengthNone };
                 m_Password = new UxmlBoolAttributeDescription { name = "password" };
-                m_MaskCharacter = new UxmlStringAttributeDescription { name = "maskCharacter" };
+                m_MaskCharacter = new UxmlStringAttributeDescription { name = "maskCharacter", defaultValue = "*"};
             }
 
             public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription

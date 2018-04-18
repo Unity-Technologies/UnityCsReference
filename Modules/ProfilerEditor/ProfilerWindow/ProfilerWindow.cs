@@ -304,8 +304,14 @@ namespace UnityEditor
 
         public ProfilerProperty CreateProperty(ProfilerColumn sortType)
         {
+            int targetedFrame = GetActiveVisibleFrameIndex();
+            if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerDriver.maxHistoryLength)
+            {
+                return null;
+            }
+
             var property = new ProfilerProperty();
-            property.SetRoot(GetActiveVisibleFrameIndex(), sortType, m_ViewType);
+            property.SetRoot(targetedFrame, sortType, m_ViewType);
             property.onlyShowGPUSamples = m_CurrentArea == ProfilerArea.GPU;
             return property;
         }
@@ -558,6 +564,7 @@ namespace UnityEditor
                 : ColorBlindCondition.Default;
         }
 
+        [MenuItem("Window/Debug/Profiler %7", false, 1)]
         static void ShowProfilerWindow()
         {
             EditorWindow.GetWindow<ProfilerWindow>(false);
@@ -655,7 +662,7 @@ namespace UnityEditor
 
         private static bool CheckFrameData(ProfilerProperty property)
         {
-            return property.frameDataReady;
+            return property != null && property.frameDataReady;
         }
 
         private void DrawCPUOrGPUPane(ProfilerFrameDataHierarchyView hierarchyView, ProfilerTimelineGUI timelinePane)
@@ -875,7 +882,8 @@ namespace UnityEditor
                 {
                     m_AudioProfilerDSPView.OnGUI(clippingRect, property, m_ShowInactiveDSPChains, m_HighlightAudibleDSPChains, ref m_DSPGraphZoomFactor, ref m_PaneScroll_AudioDSP);
                 }
-                property.Cleanup();
+                if (property != null)
+                    property.Dispose();
 
                 GUI.EndScrollView();
 
@@ -932,7 +940,8 @@ namespace UnityEditor
                     if (m_AudioProfilerClipView != null)
                         m_AudioProfilerClipView.OnGUI(treeRect);
                 }
-                property.Cleanup();
+                if (property != null)
+                    property.Dispose();
             }
             else
             {
@@ -1002,7 +1011,8 @@ namespace UnityEditor
                     if (m_AudioProfilerGroupView != null)
                         m_AudioProfilerGroupView.OnGUI(treeRect, m_ShowDetailedAudioPane == ProfilerAudioView.Channels);
                 }
-                property.Cleanup();
+                if (property != null)
+                    property.Dispose();
             }
         }
 

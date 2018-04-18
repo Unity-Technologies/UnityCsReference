@@ -18,7 +18,7 @@ namespace UnityEngine.Experimental.UIElements
 
         // See http://w3c.github.io/html/editing.html#the-tabindex-attribute
         private int m_FocusIndex;
-        public int focusIndex
+        public virtual int focusIndex
         {
             get { return m_FocusIndex; }
             set { m_FocusIndex = value; }

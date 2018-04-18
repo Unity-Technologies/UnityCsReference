@@ -97,7 +97,7 @@ namespace UnityEditor
             };
         };
 
-        [MenuItem("Window/Navigation", false, 2100)]
+        [MenuItem("Window/AI/Navigation", false, 1)]
         public static void SetupWindow()
         {
             var window = GetWindow<NavMeshEditorWindow>(typeof(InspectorWindow));

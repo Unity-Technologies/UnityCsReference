@@ -342,7 +342,7 @@ namespace UnityEditor
 
         private AttachProfilerUI m_AttachProfilerUI = new AttachProfilerUI();
 
-        [MenuItem("Window/Frame Debugger", false, 2100)]
+        [MenuItem("Window/Debug/Frame Debugger", false, 4)]
         public static FrameDebuggerWindow ShowFrameDebuggerWindow()
         {
             var wnd = GetWindow(typeof(FrameDebuggerWindow)) as FrameDebuggerWindow;

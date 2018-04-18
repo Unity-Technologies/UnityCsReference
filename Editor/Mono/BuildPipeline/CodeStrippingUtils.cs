@@ -180,6 +180,9 @@ namespace UnityEditor
                 }
             }
 
+            if (nativeClasses != null)
+                RemoveClassesFromRemovedModules(nativeClasses, nativeModules);
+
             AssemblyReferenceChecker checker = new AssemblyReferenceChecker();
             checker.CollectReferencesFromRoots(strippedAssemblyDir, userAssemblies, true, 0.0f, true);
 
@@ -226,23 +229,22 @@ namespace UnityEditor
                     {
                         nativeModules.Remove(module);
 
-                        if (nativeClasses != null)
-                        {
-                            var moduleClasses = ModuleMetadata.GetModuleTypes(module);
-                            foreach (var klass in moduleClasses)
-                            {
-                                if (nativeClasses.Contains(klass))
-                                {
-                                    nativeClasses.Remove(klass);
-                                }
-                            }
-                        }
-
                         if (strippingInfo != null)
                             strippingInfo.modules.Remove(StrippingInfo.ModuleName(module));
                     }
                 }
             }
+        }
+
+        static void RemoveClassesFromRemovedModules(HashSet<UnityType> nativeClasses, HashSet<string> nativeModules)
+        {
+            HashSet<UnityType> allModuleClasses = new HashSet<UnityType>();
+            foreach (var module in nativeModules)
+            {
+                foreach (var klass in ModuleMetadata.GetModuleTypes(module))
+                    allModuleClasses.Add(klass);
+            }
+            nativeClasses.RemoveWhere(klass => !allModuleClasses.Contains(klass));
         }
 
         public static string GetModuleWhitelist(string module, string moduleStrippingInformationFolder)

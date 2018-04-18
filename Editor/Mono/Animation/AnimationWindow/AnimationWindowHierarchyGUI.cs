@@ -32,8 +32,8 @@ namespace UnityEditorInternal
 
         private const float k_RowRightOffset = 10;
         private const float k_ValueFieldDragWidth = 15;
-        private const float k_ValueFieldWidth = 50;
-        private const float k_ValueFieldOffsetFromRightSide = 75;
+        private const float k_ValueFieldWidth = 80;
+        private const float k_ValueFieldOffsetFromRightSide = 90;
         private const float k_ColorIndicatorTopMargin = 3;
         public const float k_DopeSheetRowHeight = EditorGUI.kSingleLineHeight;
         public const float k_DopeSheetRowHeightTall = k_DopeSheetRowHeight * 2f;
@@ -265,16 +265,6 @@ namespace UnityEditorInternal
                     if (node.curves.Length > 0)
                     {
                         AnimationWindowSelectionItem selectionBinding = node.curves[0].selectionBinding;
-                        if (selectionBinding != null)
-                        {
-                            if (selectionBinding.rootGameObject != null)
-                            {
-                                Transform transform = selectionBinding.rootGameObject.transform.Find(node.path);
-                                if (transform == null)
-                                    isLeftOverCurve = true;
-                            }
-                        }
-
                         string gameObjectName = GetGameObjectName(selectionBinding != null ? selectionBinding.rootGameObject : null, node.path);
                         nodePrefix = string.IsNullOrEmpty(gameObjectName) ? "" : gameObjectName + " : ";
                     }
@@ -373,7 +363,7 @@ namespace UnityEditorInternal
                                 valueFieldDragRect,
                                 id,
                                 value,
-                                EditorGUI.kFloatFieldFormatString,
+                                "g5",
                                 m_AnimationSelectionTextField,
                                 true);
                         if (enterInTextField)

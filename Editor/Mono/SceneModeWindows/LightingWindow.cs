@@ -527,7 +527,7 @@ namespace UnityEditor
             GUILayout.EndVertical();
         }
 
-        [MenuItem("Window/Lighting/Settings", false, 2098)]
+        [MenuItem("Window/Rendering/Lighting Settings", false, 1)]
         static void CreateLightingWindow()
         {
             LightingWindow window = EditorWindow.GetWindow<LightingWindow>();

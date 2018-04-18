@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 
 namespace UnityEngine.Experimental.Rendering
@@ -20,6 +21,8 @@ namespace UnityEngine.Experimental.Rendering
                 s_CurrentPipelineAsset.DestroyCreatedInstances();
             s_CurrentPipelineAsset = null;
             currentPipeline = null;
+
+            SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
         }
 
         [RequiredByNativeCode]

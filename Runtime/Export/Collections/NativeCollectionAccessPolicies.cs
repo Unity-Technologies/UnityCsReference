@@ -50,6 +50,11 @@ namespace Unity.Collections.LowLevel.Unsafe
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
+    public sealed class NativeContainerIsReadOnlyAttribute : Attribute
+    {}
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Struct)]
     public sealed class NativeContainerIsAtomicWriteOnlyAttribute : Attribute
     {}
 
@@ -65,8 +70,20 @@ namespace Unity.Collections.LowLevel.Unsafe
 
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Struct)]
+    public sealed class NativeContainerSupportsDeferredConvertListToArray : Attribute
+    {}
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class NativeSetThreadIndexAttribute : Attribute
+    {}
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Struct)]
+    [Obsolete("Use NativeSetThreadIndexAttribute instead")]
     public sealed class NativeContainerNeedsThreadIndexAttribute : Attribute
     {}
+
 
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Method)]
     public class WriteAccessRequiredAttribute : Attribute
@@ -75,6 +92,11 @@ namespace Unity.Collections.LowLevel.Unsafe
     [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class NativeDisableUnsafePtrRestrictionAttribute : Attribute
+    {}
+
+    [RequiredByNativeCode]
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class NativeDisableContainerSafetyRestrictionAttribute : Attribute
     {}
 
     [RequiredByNativeCode]

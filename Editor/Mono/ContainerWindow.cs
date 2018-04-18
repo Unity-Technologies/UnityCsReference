@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -49,7 +50,7 @@ namespace UnityEditor
             m_PixelRect = new Rect(0, 0, 400, 300);
         }
 
-        private void __internalAwake()
+        internal void __internalAwake()
         {
             hideFlags = HideFlags.DontSave;
         }
@@ -109,7 +110,7 @@ namespace UnityEditor
             Internal_BringLiveAfterCreation(displayImmediately, true);
 
             // Window could be killed by now in user callbacks...
-            if (this == null)
+            if (!this)
                 return;
 
             // Fit window to screen - needs to be done after bringing the window live
@@ -158,13 +159,15 @@ namespace UnityEditor
         public void Close()
         {
             Save();
-            InternalClose();
-            DestroyImmediate(this, true);
+
+            // Guard against destroy window or window in the process of being destroyed.
+            if (this && m_WindowPtr.m_IntPtr != IntPtr.Zero)
+                InternalClose();
         }
 
         internal bool IsNotDocked()
         {
-            return ( // halleluja
+            return ( // hallelujah
 
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
 
@@ -193,8 +196,8 @@ namespace UnityEditor
                 return (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ? v.actualView.GetType().ToString()
                     : ((DockArea)rootView.children[0]).m_Panes[0].GetType().ToString();
             }
-            else
-                return null;
+
+            return null;
         }
 
         public void Save()

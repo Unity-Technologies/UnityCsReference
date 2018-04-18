@@ -208,11 +208,6 @@ namespace UnityEditor
 
             //Add a spacer line to separate the levels from the defaults
             GUILayout.BeginHorizontal();
-            GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle,
-                GUILayout.MinWidth(Styles.kMinToggleWidth),
-                GUILayout.MaxWidth(Styles.kMaxToggleWidth),
-                GUILayout.Height(1));
-
             DrawHorizontalDivider();
             GUILayout.EndHorizontal();
 
@@ -245,12 +240,6 @@ namespace UnityEditor
 
             //Add an extra row for 'Add' button
             GUILayout.BeginHorizontal();
-
-            GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle,
-                GUILayout.MinWidth(Styles.kMinToggleWidth),
-                GUILayout.MaxWidth(Styles.kMaxToggleWidth),
-                GUILayout.Height(Styles.kHeaderRowHeight));
-
             var addButtonRect = GUILayoutUtility.GetRect(Styles.kAddQualityLevel, Styles.kToggle, GUILayout.ExpandWidth(true));
 
             if (GUI.Button(addButtonRect, Styles.kAddQualityLevel))

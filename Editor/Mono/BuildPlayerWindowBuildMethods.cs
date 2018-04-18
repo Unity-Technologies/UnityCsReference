@@ -2,17 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditor;
 using UnityEditor.Modules;
 using UnityEditor.Build;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
+using UnityEditor.Scripting.ScriptCompilation;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System;
-using UnityEditor.Build.Reporting;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -72,6 +70,12 @@ namespace UnityEditor
         /// <param name="defaultBuildOptions"></param>
         static void CallBuildMethods(bool askForBuildLocation, BuildOptions defaultBuildOptions)
         {
+            if (EditorCompilationInterface.IsCompiling())
+            {
+                Debug.LogWarning("Cannot build player while editor is compiling scripts.");
+                return;
+            }
+
             // One build at a time!
             if (m_Building)
                 return;

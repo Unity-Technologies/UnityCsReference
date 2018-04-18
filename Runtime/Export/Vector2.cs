@@ -155,14 +155,20 @@ namespace UnityEngine
         public float sqrMagnitude { get { return x * x + y * y; } }
 
         // Returns the angle in degrees between /from/ and /to/.
-        public static float Angle(Vector2 from, Vector2 to) { return Mathf.Acos(Mathf.Clamp(Dot(from.normalized, to.normalized), -1F, 1F)) * Mathf.Rad2Deg; }
+        public static float Angle(Vector2 from, Vector2 to)
+        {
+            float dot = Mathf.Clamp(Dot(from.normalized, to.normalized), -1F, 1F);
+            if (Mathf.Abs(dot) > (1F - kEpsilon))
+                return dot > 0F ? 0F : 180F;
+
+            return Mathf.Acos(dot) * Mathf.Rad2Deg;
+        }
 
         // Returns the signed angle in degrees between /from/ and /to/. Always returns the smallest possible angle
         public static float SignedAngle(Vector2 from, Vector2 to)
         {
-            Vector2 from_norm = from.normalized, to_norm = to.normalized;
-            float unsigned_angle = Mathf.Acos(Mathf.Clamp(Vector2.Dot(from_norm, to_norm), -1F, 1F)) * Mathf.Rad2Deg;
-            float sign = Mathf.Sign(from_norm.x * to_norm.y - from_norm.y * to_norm.x);
+            float unsigned_angle = Angle(from, to);
+            float sign = Mathf.Sign(from.x * to.y - from.y * to.x);
             return unsigned_angle * sign;
         }
 

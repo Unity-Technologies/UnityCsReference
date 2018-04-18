@@ -141,9 +141,9 @@ namespace UnityEditor
             public GUIContent textureBilinearFiltering = EditorGUIUtility.TrTextContent("Bilinear Filtering", "Blend between pixels on the texture.");
             public GUIContent textureUVChannel = EditorGUIUtility.TrTextContent("UV Channel", "Use the selected UV channel from the source mesh, for reading the texture.");
             public GUIContent alignToDirection = EditorGUIUtility.TrTextContent("Align To Direction", "Automatically align particles based on their initial direction of travel.");
-            public GUIContent randomDirectionAmount = EditorGUIUtility.TrTextContent("Randomize Direction", "Randomize the emission direction.");
-            public GUIContent sphericalDirectionAmount = EditorGUIUtility.TrTextContent("Spherize Direction", "Spherize the emission direction.");
-            public GUIContent randomPositionAmount = EditorGUIUtility.TrTextContent("Randomize Position", "Randomize the starting positions.");
+            public GUIContent randomDirectionAmount = EditorGUIUtility.TrTextContent("Randomize Direction", "Override the initial direction of travel with a random direction.");
+            public GUIContent sphericalDirectionAmount = EditorGUIUtility.TrTextContent("Spherize Direction", "Override the initial direction of travel with a direction that projects particles outwards from the center of the Shape Transform.");
+            public GUIContent randomPositionAmount = EditorGUIUtility.TrTextContent("Randomize Position", "Move the starting positions by a random amount, up to this maximum value.");
             public GUIContent emitFrom = EditorGUIUtility.TrTextContent("Emit from:", "Specifies from where particles are emitted.");
             public GUIContent donutRadius = EditorGUIUtility.TrTextContent("Donut Radius", "The radius of the donut. Used to control the thickness of the ring.");
             public GUIContent position = EditorGUIUtility.TrTextContent("Position", "Translate the emission shape.");

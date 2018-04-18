@@ -100,7 +100,7 @@ namespace UnityEditor
                 Close();
             }
 
-            using (new EditorGUI.DisabledScope(String.IsNullOrEmpty(m_Name)))
+            using (new EditorGUI.DisabledScope(!Utils.Paths.IsValidAssetPath(m_Name)))
             {
                 if (GUILayout.Button(Styles.ok))
                 {
@@ -114,7 +114,6 @@ namespace UnityEditor
                         m_Owner.palette = go;
                         m_Owner.Repaint();
                     }
-                    Close();
                     GUIUtility.ExitGUI();
                 }
             }

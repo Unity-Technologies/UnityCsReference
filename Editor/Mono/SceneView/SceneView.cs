@@ -1217,7 +1217,8 @@ namespace UnityEditor
                 }
                 Handles.SetCamera(cameraRect, m_Camera);
 
-                HandleSelectionAndOnSceneGUI();
+                using (var sRGBScope = new GUIUtility.ManualTex2SRGBScope(SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal ? true : false))
+                    HandleSelectionAndOnSceneGUI();
             }
             else
             {
@@ -1750,7 +1751,8 @@ namespace UnityEditor
                 // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
                 // view won't be able to properly render to the rendertexture as needed.
                 // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
-                HandleSelectionAndOnSceneGUI();
+                using (var sRGBScope = new GUIUtility.ManualTex2SRGBScope(false))
+                    HandleSelectionAndOnSceneGUI();
             }
 
             // Handle commands

@@ -191,7 +191,6 @@ namespace UnityEditor
                 m_State.m_CurrrentLibrary = Path.ChangeExtension(value, null); // ensure no extension
                 m_PresetLibraryFileLocation = PresetLibraryLocations.GetFileLocationFromPath(m_State.m_CurrrentLibrary);
                 OnLayoutChanged();
-                Repaint();
             }
         }
 
@@ -217,7 +216,6 @@ namespace UnityEditor
             set
             {
                 m_State.m_PreviewHeight = Mathf.Clamp(value, minMaxPreviewHeight.x, minMaxPreviewHeight.y);
-                Repaint();
             }
         }
 
@@ -228,7 +226,6 @@ namespace UnityEditor
             {
                 m_State.itemViewMode = value;
                 OnLayoutChanged();
-                Repaint();
             }
         }
 

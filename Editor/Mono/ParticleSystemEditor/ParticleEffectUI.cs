@@ -27,13 +27,12 @@ namespace UnityEditor
         bool m_EmittersActiveInHierarchy;
         ParticleSystemCurveEditor m_ParticleSystemCurveEditor; // The curve editor used by ParticleSystem modules
         List<ParticleSystem> m_SelectedParticleSystems;     // This is the array of selected particle systems and used to find the root ParticleSystem and for the inspector
-        bool m_ShowOnlySelectedMode;
         TimeHelper m_TimeHelper = new TimeHelper();
         public static ParticleSystem m_MainPlaybackSystem;
         public static bool m_ShowBounds = false;
+        public static bool m_ShowOnlySelected = false;
         public static bool m_VerticalLayout;
         const string k_SimulationStateId = "SimulationState";
-        const string k_ShowSelectedId = "ShowSelected";
         enum PlayState { Stopped = 0, Playing = 1, Paused = 2 };
 
         // ParticleSystemWindow Layout
@@ -62,6 +61,7 @@ namespace UnityEditor
             public GUIContent restart = EditorGUIUtility.TrTextContent("Restart");
             public GUIContent addParticleSystem = EditorGUIUtility.TrTextContent("", "Create Particle System");
             public GUIContent showBounds = EditorGUIUtility.TrTextContent("Show Bounds", "Show world space bounding boxes.");
+            public GUIContent showOnlySelected = EditorGUIUtility.TrTextContent("Show Only Selected", "Hide all unselected Particle Systems in the current Effect.");
             public GUIContent resimulation = EditorGUIUtility.TrTextContent("Resimulate", "If resimulate is enabled, the Particle System will show changes made to the system immediately (including changes made to the Particle System Transform).");
             public GUIContent previewLayers = EditorGUIUtility.TrTextContent("Simulate Layers", "Automatically preview all looping Particle Systems on the chosen layers, in addition to the selected Game Objects.");
             public string secondsFloatFieldFormatString = "f2";
@@ -205,8 +205,8 @@ namespace UnityEditor
                                 m_SelectedParticleSystems = new List<ParticleSystem>();
                                 m_SelectedParticleSystems.Add(shuriken);
 
-                                if (IsShowOnlySelectedMode())
-                                    RefreshShowOnlySelected(); // always refresh
+                                if (ParticleEffectUI.m_ShowOnlySelected)
+                                    SetShowOnlySelectedMode(ParticleEffectUI.m_ShowOnlySelected); // always refresh
 
                                 continue;
                             }
@@ -288,8 +288,7 @@ namespace UnityEditor
                 m_EmitterAreaWidth = EditorPrefs.GetFloat("ParticleSystemEmitterAreaWidth", k_MinEmitterAreaSize.x);
                 m_CurveEditorAreaHeight = EditorPrefs.GetFloat("ParticleSystemCurveEditorAreaHeight", k_MinCurveAreaSize.y);
 
-                // For now only allow ShowOnlySelectedMode for ParticleSystemWindow
-                SetShowOnlySelectedMode((m_Owner is ParticleSystemWindow) ? SessionState.GetBool(k_ShowSelectedId + mainSystem.GetInstanceID(), false) : false);
+                SetShowOnlySelectedMode(ParticleEffectUI.m_ShowOnlySelected);
 
                 m_EmitterAreaScrollPos.x = SessionState.GetFloat("CurrentEmitterAreaScroll", 0.0f);
 
@@ -302,8 +301,9 @@ namespace UnityEditor
                         float lastPlayBackTime = simulationState.z;
                         if (lastPlayBackTime > 0f)
                         {
+                            if (m_MainPlaybackSystem != mainSystem || ParticleSystemEditorUtils.playbackTime != lastPlayBackTime)
+                                ParticleSystemEditorUtils.PerformCompleteResimulation();
                             ParticleSystemEditorUtils.playbackTime = lastPlayBackTime;
-                            ParticleSystemEditorUtils.PerformCompleteResimulation();
                         }
                     }
 
@@ -364,8 +364,6 @@ namespace UnityEditor
             m_ParticleSystemCurveEditor.OnDisable();
             Tools.s_Hidden = false; // The collisionmodule might have hidden the tools
 
-            if (root != null)
-                SessionState.SetBool(k_ShowSelectedId + root.GetInstanceID(), m_ShowOnlySelectedMode);
             SetShowOnlySelectedMode(false);
 
             GameView.RepaintAll();
@@ -592,6 +590,11 @@ namespace UnityEditor
             }
 
             ParticleEffectUI.m_ShowBounds = GUILayout.Toggle(ParticleEffectUI.m_ShowBounds, ParticleEffectUI.texts.showBounds, EditorStyles.toggle);
+
+            EditorGUI.BeginChangeCheck();
+            ParticleEffectUI.m_ShowOnlySelected = GUILayout.Toggle(ParticleEffectUI.m_ShowOnlySelected, ParticleEffectUI.texts.showOnlySelected, EditorStyles.toggle);
+            if (EditorGUI.EndChangeCheck())
+                SetShowOnlySelectedMode(ParticleEffectUI.m_ShowOnlySelected);
 
             EditorGUIUtility.labelWidth = 0.0f;
         }
@@ -888,7 +891,7 @@ namespace UnityEditor
                     // Draw Emitters
                     Color orgColor = GUI.color;
                     bool isRepaintEvent = Event.current.type == EventType.Repaint;
-                    bool isShowOnlySelected = IsShowOnlySelectedMode();
+                    bool isShowOnlySelected = ParticleEffectUI.m_ShowOnlySelected;
                     List<ParticleSystemUI> selectedSystems = GetSelectedParticleSystemUIs();
 
                     for (int i = 0; i < m_Emitters.Length; ++i)
@@ -1120,31 +1123,32 @@ namespace UnityEditor
             }
         }
 
-        internal bool IsShowOnlySelectedMode()
-        {
-            return m_ShowOnlySelectedMode;
-        }
-
-        internal void SetShowOnlySelectedMode(bool enable)
-        {
-            m_ShowOnlySelectedMode = enable;
-            RefreshShowOnlySelected();
-        }
-
-        internal void RefreshShowOnlySelected()
+        internal void SetShowOnlySelectedMode(bool enabled)
         {
             int[] selectedInstanceIDs = Selection.instanceIDs;
+
             foreach (ParticleSystemUI psUI in m_Emitters)
             {
-                if (psUI.m_ParticleSystems[0] != null)
+                foreach (ParticleSystem selected in psUI.m_ParticleSystems)
                 {
-                    ParticleSystemRenderer psRenderer = psUI.m_ParticleSystems[0].GetComponent<ParticleSystemRenderer>();
-                    if (psRenderer != null)
+                    if (selected != null)
                     {
-                        if (IsShowOnlySelectedMode())
-                            psRenderer.editorEnabled = selectedInstanceIDs.Contains(psRenderer.gameObject.GetInstanceID());
-                        else
-                            psRenderer.editorEnabled = true;
+                        ParticleSystem root = ParticleSystemEditorUtils.GetRoot(selected);
+                        if (root == null)
+                            continue;
+
+                        ParticleSystem[] allSystems = GetParticleSystems(root);
+                        foreach (ParticleSystem ps in allSystems)
+                        {
+                            ParticleSystemRenderer psRenderer = ps.GetComponent<ParticleSystemRenderer>();
+                            if (psRenderer != null)
+                            {
+                                if (enabled)
+                                    psRenderer.editorEnabled = selectedInstanceIDs.Contains(psRenderer.gameObject.GetInstanceID());
+                                else
+                                    psRenderer.editorEnabled = true;
+                            }
+                        }
                     }
                 }
             }

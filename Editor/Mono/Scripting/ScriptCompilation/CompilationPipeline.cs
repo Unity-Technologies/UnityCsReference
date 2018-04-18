@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEditor.Scripting.ScriptCompilation;
 using System.Linq;
 using sc = UnityEditor.Scripting.ScriptCompilation;
+using UnityEditorInternal;
 
 namespace UnityEditor.Compilation
 {
@@ -25,6 +26,12 @@ namespace UnityEditor.Compilation
         {
             AllowUnsafeCode = false;
         }
+    }
+
+    public enum AssembliesType
+    {
+        Editor = 0,
+        Player = 1
     }
 
     public class Assembly
@@ -135,8 +142,22 @@ namespace UnityEditor.Compilation
 
         public static Assembly[] GetAssemblies()
         {
+            return GetAssemblies(AssembliesType.Editor);
+        }
+
+        public static Assembly[] GetAssemblies(AssembliesType assembliesType)
+        {
             var options = EditorCompilationInterface.GetAdditionalEditorScriptCompilationOptions();
-            return GetAssemblies(EditorCompilationInterface.Instance, options);
+
+            switch (assembliesType)
+            {
+                case AssembliesType.Editor:
+                    return GetEditorAssemblies(EditorCompilationInterface.Instance, options);
+                case AssembliesType.Player:
+                    return GetPlayerAssemblies(EditorCompilationInterface.Instance, options);
+                default:
+                    throw new ArgumentOutOfRangeException("assembliesType");
+            }
         }
 
         public static string GetAssemblyNameFromScriptPath(string sourceFilePath)
@@ -165,9 +186,26 @@ namespace UnityEditor.Compilation
             return assemblyDefinitionPlatforms;
         }
 
-        internal static Assembly[] GetAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions)
+        internal static Assembly[] GetEditorAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions)
         {
             var scriptAssemblies = editorCompilation.GetAllEditorScriptAssemblies(additionalOptions);
+            return ToAssemblies(scriptAssemblies);
+        }
+
+        internal static Assembly[] GetPlayerAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions options)
+        {
+            var group = EditorUserBuildSettings.activeBuildTargetGroup;
+            var target = EditorUserBuildSettings.activeBuildTarget;
+
+            PrecompiledAssembly[] unityAssemblies = InternalEditorUtility.GetUnityAssemblies(false, group, target);
+            PrecompiledAssembly[] precompiledAssemblies = InternalEditorUtility.GetPrecompiledAssemblies(false, group, target);
+
+            var scriptAssemblies = editorCompilation.GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies);
+            return ToAssemblies(scriptAssemblies);
+        }
+
+        internal static Assembly[] ToAssemblies(ScriptAssembly[] scriptAssemblies)
+        {
             var assemblies = new Assembly[scriptAssemblies.Length];
 
             for (int i = 0; i < scriptAssemblies.Length; ++i)

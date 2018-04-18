@@ -79,8 +79,9 @@ namespace UnityEditor
 
 
             public static readonly GUIContent emptyProjectInfo = EditorGUIUtility.TrTextContent("Create a new palette in the dropdown above.");
-            public static readonly GUIContent emptyClipboardInfo = EditorGUIUtility.TrTextContent("Drag Tile, Sprite or Sprite Texture assets here.");
-            public static readonly GUIContent invalidClipboardInfo = EditorGUIUtility.TrTextContent("This is an invalid clipboard. Did you delete the clipboard asset?");
+            public static readonly GUIContent emptyPaletteInfo = EditorGUIUtility.TrTextContent("Drag Tile, Sprite or Sprite Texture assets here.");
+            public static readonly GUIContent invalidPaletteInfo = EditorGUIUtility.TrTextContent("This is an invalid palette. Did you delete the palette asset?");
+            public static readonly GUIContent invalidGridInfo = EditorGUIUtility.TrTextContent("The palette has an invalid Grid. Did you add a Grid to the palette asset?");
             public static readonly GUIContent selectPaintTarget = EditorGUIUtility.TrTextContent("Select Paint Target");
             public static readonly GUIContent selectPalettePrefab = EditorGUIUtility.TrTextContent("Select Palette Prefab");
             public static readonly GUIContent selectTileAsset = EditorGUIUtility.TrTextContent("Select Tile Asset");
@@ -864,19 +865,25 @@ namespace UnityEditor
                 SceneView.RepaintAll();
             }
 
+            // Validate palette (case 1017965)
+            GUIContent paletteError = null;
             if (palette == null)
+            {
+                if (GridPalettes.palettes.Count == 0)
+                    paletteError = Styles.emptyProjectInfo;
+                else
+                    paletteError = Styles.invalidPaletteInfo;
+            }
+            else if (palette.GetComponent<Grid>() == null)
+            {
+                paletteError = Styles.invalidGridInfo;
+            }
+
+            if (paletteError != null)
             {
                 Color old = GUI.color;
                 GUI.color = Color.gray;
-
-                if (GridPalettes.palettes.Count == 0)
-                {
-                    GUI.Label(new Rect(position.center.x - GUI.skin.label.CalcSize(Styles.emptyProjectInfo).x * .5f, position.center.y, 500, 100), Styles.emptyProjectInfo);
-                }
-                else
-                {
-                    GUI.Label(new Rect(position.center.x - GUI.skin.label.CalcSize(Styles.invalidClipboardInfo).x * .5f, position.center.y, 500, 100), Styles.invalidClipboardInfo);
-                }
+                GUI.Label(new Rect(position.center.x - GUI.skin.label.CalcSize(paletteError).x * .5f, position.center.y, 500, 100), paletteError);
                 GUI.color = old;
                 return;
             }
@@ -898,8 +905,8 @@ namespace UnityEditor
             {
                 Color old = GUI.color;
                 GUI.color = Color.gray;
-                Rect rect = new Rect(position.center.x - GUI.skin.label.CalcSize(Styles.emptyClipboardInfo).x * .5f, position.center.y, 500, 100);
-                GUI.Label(rect, Styles.emptyClipboardInfo);
+                Rect rect = new Rect(position.center.x - GUI.skin.label.CalcSize(Styles.emptyPaletteInfo).x * .5f, position.center.y, 500, 100);
+                GUI.Label(rect, Styles.emptyPaletteInfo);
                 GUI.color = old;
             }
         }
@@ -968,7 +975,7 @@ namespace UnityEditor
                 SceneView.lastActiveSceneView.SetSceneViewFiltering(false);
         }
 
-        [MenuItem("Window/Tile Palette", false, 2015)]
+        [MenuItem("Window/2D/Tile Palette", false, 2)]
         public static void OpenTilemapPalette()
         {
             GridPaintPaletteWindow w = GetWindow<GridPaintPaletteWindow>();

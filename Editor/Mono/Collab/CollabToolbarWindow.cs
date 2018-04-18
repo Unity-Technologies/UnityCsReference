@@ -57,14 +57,14 @@ namespace UnityEditor
                 window.Close();
         }
 
-        [MenuItem("Window/Collab Toolbar", false /*IsValidateFunction*/, 2011, true /* IsInternalMenu */)]
+        [MenuItem("Window/Asset Management/Collab Toolbar", false /*IsValidateFunction*/, 2, true /* IsInternalMenu */)]
         public static CollabToolbarWindow ShowToolbarWindow()
         {
             //Create a new window if it do not exist
             return GetWindow<CollabToolbarWindow>(false, kWindowName) as CollabToolbarWindow;
         }
 
-        [MenuItem("Window/Collab Toolbar", true /*IsValidateFunction*/)]
+        [MenuItem("Window/Asset Management/Collab Toolbar", true /*IsValidateFunction*/)]
         public static bool ValidateShowToolbarWindow()
         {
             return true;

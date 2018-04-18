@@ -1148,7 +1148,7 @@ namespace UnityEditor
 
                 EditorGUILayout.IntSlider(m_SpriteExtrude, 0, 32, s_Styles.spriteExtrude);
 
-                if (m_SpriteMode.intValue == (int)SpriteImportMode.Multiple)
+                if (m_SpriteMode.intValue == (int)SpriteImportMode.Single)
                 {
                     EditorGUILayout.Popup(m_Alignment, s_Styles.spriteAlignmentOptions, s_Styles.spriteAlignment);
 

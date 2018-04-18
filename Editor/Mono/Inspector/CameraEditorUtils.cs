@@ -131,7 +131,7 @@ namespace UnityEditor
                 far[2] = new Vector3(1, 1, camera.farClipPlane); // rightTopFar
                 far[3] = new Vector3(1, 0, camera.farClipPlane); // rightBottomFar
                 for (int i = 0; i < 4; ++i)
-                    far[i] = camera.ViewportToWorldPoint(far[i]);
+                    far[i] = camera.ViewportToWorldPointWithoutGateFit(far[i]);
             }
 
             if (near != null)
@@ -141,7 +141,7 @@ namespace UnityEditor
                 near[2] = new Vector3(1, 1, camera.nearClipPlane); // rightTopNear
                 near[3] = new Vector3(1, 0, camera.nearClipPlane); // rightBottomNear
                 for (int i = 0; i < 4; ++i)
-                    near[i] = camera.ViewportToWorldPoint(near[i]);
+                    near[i] = camera.ViewportToWorldPointWithoutGateFit(near[i]);
             }
             return true;
         }
@@ -163,8 +163,8 @@ namespace UnityEditor
             if (normalizedViewPortRect.width <= 0f || normalizedViewPortRect.height <= 0f)
                 return -1f;
 
-            var viewportAspect = normalizedViewPortRect.width / normalizedViewPortRect.height;
-            return GameViewAspectRatio * viewportAspect;
+            return camera.usePhysicalProperties ?
+                camera.sensorSize.x / camera.sensorSize.y : GameViewAspectRatio * normalizedViewPortRect.width / normalizedViewPortRect.height;
         }
 
         public static Vector3 PerspectiveClipToWorld(Matrix4x4 clipToWorld, Vector3 viewPositionWS, Vector3 positionCS)

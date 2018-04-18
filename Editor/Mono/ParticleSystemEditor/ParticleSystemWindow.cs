@@ -231,11 +231,6 @@ namespace UnityEditor
 
                 GUILayout.FlexibleSpace();
 
-                bool isShowOnlySelected = m_ParticleEffectUI != null ? m_ParticleEffectUI.IsShowOnlySelectedMode() : false;
-                bool newState = GUILayout.Toggle(isShowOnlySelected, isShowOnlySelected ? "Show: Selected" : "Show: All", ParticleSystemStyles.Get().toolbarButtonLeftAlignText, GUILayout.Width(100));
-                if (newState != isShowOnlySelected && m_ParticleEffectUI != null)
-                    m_ParticleEffectUI.SetShowOnlySelectedMode(newState);
-
                 // Resimulation toggle
                 ParticleSystemEditorUtils.resimulation = GUILayout.Toggle(ParticleSystemEditorUtils.resimulation, ParticleEffectUI.texts.resimulation, "ToolbarButton");
 

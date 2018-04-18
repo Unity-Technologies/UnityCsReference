@@ -223,6 +223,19 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public override int focusIndex
+        {
+            get { return base.focusIndex; }
+            set
+            {
+                base.focusIndex = value;
+                if (m_ObjectFieldDisplay != null)
+                {
+                    m_ObjectFieldDisplay.focusIndex = value;
+                }
+            }
+        }
+
         private readonly ObjectFieldDisplay m_ObjectFieldDisplay;
 
         public ObjectField()

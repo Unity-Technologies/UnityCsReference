@@ -633,7 +633,8 @@ namespace UnityEditor
 
         private void AddKeyframeButtonOnGUI()
         {
-            using (new EditorGUI.DisabledScope(!selection.animationIsEditable))
+            bool canAddKey = selection.animationIsEditable && m_State.allCurves.Count != 0;
+            using (new EditorGUI.DisabledScope(!canAddKey))
             {
                 if (GUILayout.Button(AnimationWindowStyles.addKeyframeContent, EditorStyles.toolbarButton))
                 {

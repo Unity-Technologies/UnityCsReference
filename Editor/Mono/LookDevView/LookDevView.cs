@@ -290,7 +290,7 @@ namespace UnityEditor
                     Debug.LogWarning("Look Dev is designed for linear color space. Currently project is set to gamma color space. This can be changed in player settings.");
                 if (Rendering.EditorGraphicsSettings.GetCurrentTierSettings().renderingPath != RenderingPath.DeferredShading)
                     Debug.LogWarning("Look Dev switched rendering mode to deferred shading for display.");
-                if (Camera.main.allowHDR == false)
+                if (Camera.main != null && !Camera.main.allowHDR)
                     Debug.LogWarning("Look Dev switched HDR mode on for display.");
 
                 for (int i = 0; i < 2; ++i)

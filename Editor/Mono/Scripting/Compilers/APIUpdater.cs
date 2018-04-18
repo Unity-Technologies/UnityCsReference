@@ -86,6 +86,8 @@ namespace UnityEditor.Scripting.Compilers
                 assetList.Add(Provider.GetAssetByPath(f.Replace(tempOutputPath, "")));
 
             // Verify that all the files are also in assetList
+            // This is required to ensure the copy temp files to destination loop is only working on version controlled files
+            // Provider.GetAssetByPath() can fail i.e. the asset database GUID can not be found for the input asset path
             foreach (var f in files)
             {
                 var assetPath = f.Replace(tempOutputPath, "");
@@ -126,10 +128,9 @@ namespace UnityEditor.Scripting.Compilers
 
             // Copy the temp files to the destination : note this operates on "files"
             // Earlier have verified a one-to-one correspondence between assetList and "files"
-            foreach (var f in files)
+            foreach (var sourceFileName in files)
             {
-                var sourceFileName = f;
-                var destFileName = f.Replace(tempOutputPath, "");
+                var destFileName = sourceFileName.Replace(tempOutputPath, "");
                 File.Copy(sourceFileName,  destFileName, true);
             }
             FileUtil.DeleteFileOrDirectory(tempOutputPath);

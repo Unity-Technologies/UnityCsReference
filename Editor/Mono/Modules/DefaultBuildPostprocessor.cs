@@ -73,6 +73,18 @@ namespace UnityEditor.Modules
 
             if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
                 config.Set("scripting-runtime-version", "latest");
+
+            bool isVrEnabled = UnityEditorInternal.VR.VREditor.GetVREnabledOnTargetGroup(BuildPipeline.GetBuildTargetGroup(target));
+            config.Set("vr-enabled", isVrEnabled ? "1" : "0");
+            if (isVrEnabled)
+            {
+                string[] vrDevices = UnityEditorInternal.VR.VREditor.GetVREnabledDevicesOnTarget(target);
+                if (vrDevices.Length > 0)
+                {
+                    string vrDeviceList = String.Join(",", vrDevices);
+                    config.Set("vr-device-list", vrDeviceList);
+                }
+            }
         }
 
         public virtual string GetExtension(BuildTarget target, BuildOptions options)

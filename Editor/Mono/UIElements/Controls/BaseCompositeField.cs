@@ -29,6 +29,21 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public override int focusIndex
+        {
+            get { return base.focusIndex; }
+            set
+            {
+                base.focusIndex = value;
+                if ((m_Fields != null) && (m_Fields.Count > 0))
+                {
+                    foreach (FloatField field in m_Fields)
+                    {
+                        field.focusIndex = value;
+                    }
+                }
+            }
+        }
         protected static FieldDescription[] s_FieldDescriptions;
         protected List<FloatField> m_Fields;
 

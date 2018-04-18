@@ -14,21 +14,21 @@ namespace UnityEditor
         public static Color kWindowBorderColor = new Color(0.51f, 0.51f, 0.51f, 1f);
         public static bool s_TakeComponentScreenshot = false;
 
-        [MenuItem("Window/Screenshot/Set Window Size %&l", false, 1000, true)]
+        [MenuItem("Window/Internal/Screenshot/Set Window Size %&l", false, 1000, true)]
         public static void SetMainWindowSize()
         {
             var main = Resources.FindObjectsOfTypeAll<MainView>()[0];
             main.window.position = new Rect(0, 0, 1024, 768);
         }
 
-        [MenuItem("Window/Screenshot/Set Window Size Small", false, 1000, true)]
+        [MenuItem("Window/Internal/Screenshot/Set Window Size Small", false, 1000, true)]
         public static void SetMainWindowSizeSmall()
         {
             var main = Resources.FindObjectsOfTypeAll<MainView>()[0];
             main.window.position = new Rect(0, 0, 800 - 38, 600);
         }
 
-        [MenuItem("Window/Screenshot/Snap View %&j", false, 1000, true)]
+        [MenuItem("Window/Internal/Screenshot/Snap View %&j", false, 1000, true)]
         public static void Screenshot()
         {
             GUIView v = GetMouseOverView();
@@ -42,7 +42,7 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("Window/Screenshot/Snap View Toolbar", false, 1000, true)]
+        [MenuItem("Window/Internal/Screenshot/Snap View Toolbar", false, 1000, true)]
         public static void ScreenshotToolbar()
         {
             GUIView v = GetMouseOverView();
@@ -57,7 +57,7 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("Window/Screenshot/Snap View Extended Right %&k", false, 1000, true)]
+        [MenuItem("Window/Internal/Screenshot/Snap View Extended Right %&k", false, 1000, true)]
         public static void ScreenshotExtendedRight()
         {
             GUIView v = GetMouseOverView();
@@ -73,7 +73,7 @@ namespace UnityEditor
             }
         }
 
-        [MenuItem("Window/Screenshot/Snap Component", false, 1000, true)]
+        [MenuItem("Window/Internal/Screenshot/Snap Component", false, 1000, true)]
         public static void ScreenShotComponent()
         {
             s_TakeComponentScreenshot = true;
@@ -88,7 +88,7 @@ namespace UnityEditor
             ScreenShots.SaveScreenShotWithBorder(contentRect, kWindowBorderColor, target.GetType().Name + "Inspector");
         }
 
-        [MenuItem("Window/Screenshot/Snap Game View Content", false, 1000, true)]
+        [MenuItem("Window/Internal/Screenshot/Snap Game View Content", false, 1000, true)]
         public static void ScreenGameViewContent()
         {
             string path = GetUniquePathForName("ContentExample");

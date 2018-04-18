@@ -213,9 +213,14 @@ namespace UnityEngine.Experimental.AI
         [ThreadSafe]
         static extern bool IsPositionInPolygon(IntPtr navMeshQuery, Vector3 position, PolygonId polygon);
 
+        [ThreadSafe]
+        static extern PathQueryStatus GetClosestPointOnPoly(IntPtr navMeshQuery, PolygonId polygon, Vector3 position, out Vector3 nearest);
+
         public NavMeshLocation CreateLocation(Vector3 position, PolygonId polygon)
         {
-            return new NavMeshLocation(position, polygon);
+            Vector3 nearest;
+            var status = GetClosestPointOnPoly(m_NavMeshQuery, polygon, position, out nearest);
+            return (status & PathQueryStatus.Success) != 0 ? new NavMeshLocation(nearest, polygon) : new NavMeshLocation();
         }
 
         [ThreadSafe]

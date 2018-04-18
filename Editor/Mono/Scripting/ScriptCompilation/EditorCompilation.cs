@@ -1133,7 +1133,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies);
         }
 
-        ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg)
+        public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options, PrecompiledAssembly[] unityAssembliesArg, PrecompiledAssembly[] precompiledAssembliesArg)
         {
             ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(options);
 

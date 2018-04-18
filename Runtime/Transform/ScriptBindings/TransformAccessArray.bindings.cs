@@ -89,7 +89,7 @@ namespace UnityEngine.Jobs
 
         }
 
-        public bool IsCreated
+        public bool isCreated
         {
             get { return m_TransformArray != IntPtr.Zero; }
         }
@@ -121,7 +121,7 @@ namespace UnityEngine.Jobs
             }
         }
 
-        public int Capacity
+        public int capacity
         {
             get
             {
@@ -135,7 +135,7 @@ namespace UnityEngine.Jobs
             }
         }
 
-        public int Length
+        public int length
         {
             get
             {

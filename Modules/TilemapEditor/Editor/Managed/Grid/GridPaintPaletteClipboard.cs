@@ -336,13 +336,14 @@ namespace UnityEditor
 
         protected override void OnDisable()
         {
-            if (m_Owner)
+            if (m_Owner && previewUtility != null && previewUtility.camera != null)
             {
+                // Save Preview camera coordinates
                 m_CameraPosition = previewUtility.camera.transform.position;
                 m_CameraOrthographicSize = previewUtility.camera.orthographicSize;
-                previewUtility.Cleanup();
+                m_CameraPositionSaved = true;
             }
-            m_CameraPositionSaved = true;
+
             SavePaletteIfNecessary();
             DestroyPreviewInstance();
             Undo.undoRedoPerformed -= UndoRedoPerformed;
@@ -895,7 +896,9 @@ namespace UnityEditor
 
         protected override Grid.CellLayout CellLayout()
         {
-            return grid.cellLayout;
+            if (grid != null)
+                return grid.cellLayout;
+            return Grid.CellLayout.Rectangle;
         }
 
         protected override Vector2Int ScreenToGrid(Vector2 screenPosition)

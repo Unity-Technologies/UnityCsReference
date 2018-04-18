@@ -44,25 +44,30 @@ namespace UnityEditor
 
             var treeRect = EditorGUILayout.GetControlRect(GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             treeRect.yMin -= EditorGUIUtility.standardVerticalSpacing;
-            m_TreeViewControl.property = win.CreateProperty();
 
-            if (!m_TreeViewControl.property.frameDataReady)
+            var newVisibleFrame = win.GetActiveVisibleFrameIndex();
+            if (m_TreeViewControl.property == null || (m_UGUIProfilerTreeViewState != null && m_UGUIProfilerTreeViewState.lastFrame != newVisibleFrame))
             {
-                m_TreeViewControl.property.Cleanup();
+                if (m_TreeViewControl.property != null)
+                {
+                    m_TreeViewControl.property.Dispose();
+                }
+                m_TreeViewControl.property = win.CreateProperty();
+                m_UGUIProfilerTreeViewState.lastFrame = newVisibleFrame;
+
+                currentFrame = ProfilerDriver.lastFrameIndex - newVisibleFrame;
+                m_TreeViewControl.Reload();
+            }
+
+            if (m_TreeViewControl.property != null && !m_TreeViewControl.property.frameDataReady)
+            {
+                m_TreeViewControl.property.Dispose();
                 m_TreeViewControl.property = null;
                 GUI.Label(treeRect, Styles.noData);
             }
             else
             {
-                var newVisibleFrame = win.GetActiveVisibleFrameIndex();
-                if (m_UGUIProfilerTreeViewState != null && m_UGUIProfilerTreeViewState.lastFrame != newVisibleFrame)
-                {
-                    currentFrame = ProfilerDriver.lastFrameIndex - newVisibleFrame;
-
-                    m_TreeViewControl.Reload();
-                }
                 m_TreeViewControl.OnGUI(treeRect);
-                m_TreeViewControl.property.Cleanup();
             }
 
             if (!detachPreview)

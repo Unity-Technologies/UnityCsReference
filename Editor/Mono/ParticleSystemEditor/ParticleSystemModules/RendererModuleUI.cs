@@ -551,8 +551,13 @@ namespace UnityEditor
             string instancedName = isWindowView ? "INST" : "INSTANCED";
 
             int numChannels = s_Texts.vertexStreamTexCoordChannels[vertexStreamValue];
-            if (m_HasGPUInstancing && vertexStreamValue >= s_Texts.vertexStreamsInstancedStart)
+            if (m_HasGPUInstancing && (vertexStreamValue >= s_Texts.vertexStreamsInstancedStart || s_Texts.vertexStreamsPacked[vertexStream.intValue] == "Color"))
             {
+                if (s_Texts.vertexStreamsPacked[vertexStream.intValue] == "Color")
+                {
+                    numChannels = 4;
+                    m_HasColor = true;
+                }
                 string swizzle = s_Texts.channels.Substring(0, numChannels);
                 GUI.Label(rect, s_Texts.vertexStreamsPacked[vertexStreamValue] + " (" + instancedName + m_NumInstancedStreams + "." + swizzle + ")", ParticleSystemStyles.Get().label);
                 m_NumInstancedStreams++;

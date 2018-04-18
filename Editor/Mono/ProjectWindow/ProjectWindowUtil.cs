@@ -102,7 +102,7 @@ namespace UnityEditor
                     ProjectWindowUtil.CreateScriptAssetFromTemplate(Path.Combine(pathName, fileName + templateExtension), Path.Combine(basePath, template));
                 }
 
-                UnityEngine.Object o = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(guid), typeof(UnityEngine.Object));
+                Object o = AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(guid), typeof(Object));
                 ProjectWindowUtil.ShowCreatedAsset(o);
             }
         }
@@ -239,7 +239,7 @@ namespace UnityEditor
         {
             var endNameEditAction = ScriptableObject.CreateInstance<DoCreateFolderWithTemplates>();
             endNameEditAction.templates = templates;
-            ProjectWindowUtil.StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
+            StartNameEditingIfProjectWindowExists(0, endNameEditAction, defaultName, EditorGUIUtility.IconContent(EditorResources.emptyFolderIconName).image as Texture2D, null);
         }
 
         public static void CreateScene()
@@ -436,7 +436,7 @@ namespace UnityEditor
             }
             else
             {
-                if (!pathName.StartsWith("assets/", System.StringComparison.CurrentCultureIgnoreCase))
+                if (!pathName.StartsWith("assets/", StringComparison.CurrentCultureIgnoreCase))
                     pathName = "Assets/" + pathName;
                 EndNameEditAction(endAction, instanceID, pathName, resourceFile);
                 Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);

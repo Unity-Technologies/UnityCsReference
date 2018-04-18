@@ -101,6 +101,7 @@ namespace UnityEditor
         internal const int kInspTitlebarIconWidth = 16;
         internal const int kWindowToolbarHeight = 17;
         private const string kEnabledPropertyName = "m_Enabled";
+        private const string k_MultiEditValueString = "<multi>";
 
         private static readonly float[] s_Vector2Floats = {0, 0};
         private static readonly int[] s_Vector2Ints = { 0, 0 };
@@ -459,7 +460,10 @@ namespace UnityEditor
                     m_CommitCommandSentOnLostFocus = false;
                     // Only set changed to true if the value has actually changed. Otherwise EditorGUI.EndChangeCheck will report false positives,
                     // which could for example cause unwanted undo's to be registered (in the case of e.g. editing terrain resolution, this can cause several seconds of delay)
-                    changed = value != controlThatHadFocusValue;
+                    if (!showMixedValue || controlThatHadFocusValue != k_MultiEditValueString)
+                        changed = value != controlThatHadFocusValue;
+                    else
+                        changed = false;
                     evt.Use();
                     messageControl = 0;
                     return controlThatHadFocusValue;
@@ -645,7 +649,7 @@ namespace UnityEditor
 
             if (showMixedValue)
             {
-                text = string.Empty;
+                text = k_MultiEditValueString;
             }
 
             // If we have keyboard control and our window have focus, we need to sync up the editor.
@@ -980,7 +984,10 @@ namespace UnityEditor
                     string drawText;
                     if (editor.IsEditingControl(id))
                     {
-                        drawText = passwordField ? "".PadRight(editor.text.Length, '*') : editor.text;
+                        if (showMixedValue && editor.text == k_MultiEditValueString)
+                            drawText = string.Empty;
+                        else
+                            drawText = passwordField ? "".PadRight(editor.text.Length, '*') : editor.text;
                     }
                     else if (showMixedValue)
                     {
@@ -4030,6 +4037,7 @@ namespace UnityEditor
 
                                 var names = new[] {"Copy", "Paste"};
                                 var enabled = new[] {true, ColorClipboard.HasColor()};
+                                var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
                                 position,
@@ -4041,12 +4049,12 @@ namespace UnityEditor
                                 if (selected == 0)
                                 {
                                     Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
-                                    GUIView.current.SendEvent(e);
+                                    currentView.SendEvent(e);
                                 }
                                 else if (selected == 1)
                                 {
                                     Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
-                                    GUIView.current.SendEvent(e);
+                                    currentView.SendEvent(e);
                                 }
                             },
                                 null);

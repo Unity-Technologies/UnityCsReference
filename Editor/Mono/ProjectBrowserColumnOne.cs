@@ -246,7 +246,15 @@ namespace UnityEditor
             if (IsVisibleRootNode(item))
                 return false;
 
-            return InternalEditorUtility.CanRenameAsset(item.id);
+            switch (ProjectBrowser.GetItemType(item.id))
+            {
+                case ProjectBrowser.ItemType.Asset:
+                    return InternalEditorUtility.CanRenameAsset(item.id);
+                case ProjectBrowser.ItemType.SavedFilter:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         public static int GetAssetsFolderInstanceID()

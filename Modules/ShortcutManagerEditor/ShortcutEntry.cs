@@ -263,13 +263,35 @@ namespace UnityEditor.ShortcutManagement
 
         public override string ToString()
         {
-            return $"{VisualizeModifiers(modifiers)}{VisualizeKeyCode(keyCode)}";
+            var builder = new StringBuilder();
+            VisualizeModifiers(modifiers, builder);
+            VisualizeKeyCode(keyCode, builder);
+            return builder.ToString();
         }
 
-        static string VisualizeModifiers(ShortcutModifiers modifiers)
+        public string ToMenuShortcutString()
         {
-            var builder = new StringBuilder();
+            if (keyCode == KeyCode.None)
+                return string.Empty;
 
+            var builder = new StringBuilder();
+            builder.Append("_");
+
+            if ((modifiers & ShortcutModifiers.Alt) != 0)
+                builder.Append("&");
+            if ((modifiers & ShortcutModifiers.Shift) != 0)
+                builder.Append("#");
+            if ((modifiers & ShortcutModifiers.ControlOrCommand) != 0)
+                builder.Append("%");
+
+            if (!TryFormatKeycode(keyCode, builder))
+                builder.Append((char)keyCode);
+
+            return builder.ToString();
+        }
+
+        static void VisualizeModifiers(ShortcutModifiers modifiers, StringBuilder builder)
+        {
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
                 if ((modifiers & ShortcutModifiers.Alt) != 0)
@@ -288,33 +310,91 @@ namespace UnityEditor.ShortcutManagement
                 if ((modifiers & ShortcutModifiers.Shift) != 0)
                     builder.Append("Shift+");
             }
-
-            return builder.ToString();
         }
 
-        static string VisualizeKeyCode(KeyCode keyCode)
+        static void VisualizeKeyCode(KeyCode keyCode, StringBuilder builder)
+        {
+            if (!TryFormatKeycode(keyCode, builder))
+                builder.Append(keyCode.ToString());
+        }
+
+        static bool TryFormatKeycode(KeyCode code, StringBuilder builder)
         {
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
-                switch (keyCode)
+                switch (code)
                 {
-                    case KeyCode.Return: return "↩";
-                    case KeyCode.Backspace: return "⌫";
-                    case KeyCode.Delete: return "⌦";
-                    case KeyCode.Escape: return "⎋";
-                    case KeyCode.RightArrow: return "→";
-                    case KeyCode.LeftArrow: return "←";
-                    case KeyCode.UpArrow: return "↑";
-                    case KeyCode.DownArrow: return "↓";
-                    case KeyCode.PageUp: return "⇞";
-                    case KeyCode.PageDown: return "⇟";
-                    case KeyCode.Home: return "↖";
-                    case KeyCode.End: return "↘";
-                    case KeyCode.Tab: return "⇥";
+                    case KeyCode.Return:
+                        builder.Append("↩");
+                        break;
+                    case KeyCode.Backspace:
+                        builder.Append("⌫");
+                        break;
+                    case KeyCode.Delete:
+                        builder.Append("⌦");
+                        break;
+                    case KeyCode.Escape:
+                        builder.Append("⎋");
+                        break;
+                    case KeyCode.RightArrow:
+                        builder.Append("→");
+                        break;
+                    case KeyCode.LeftArrow:
+                        builder.Append("←");
+                        break;
+                    case KeyCode.UpArrow:
+                        builder.Append("↑");
+                        break;
+                    case KeyCode.DownArrow:
+                        builder.Append("↓");
+                        break;
+                    case KeyCode.PageUp:
+                        builder.Append("⇞");
+                        break;
+                    case KeyCode.PageDown:
+                        builder.Append("⇟");
+                        break;
+                    case KeyCode.Home:
+                        builder.Append("↖");
+                        break;
+                    case KeyCode.End:
+                        builder.Append("↘");
+                        break;
+                    case KeyCode.Tab:
+                        builder.Append("⇥");
+                        break;
+                    default:
+                        return false;
+                }
+            }
+            else
+            {
+                switch (code)
+                {
+                    case KeyCode.Delete:
+                        builder.Append("DEL");
+                        break;
+                    case KeyCode.Backspace:
+                        builder.Append("BACKSPACE");
+                        break;
+                    case KeyCode.LeftArrow:
+                        builder.Append("LEFT");
+                        break;
+                    case KeyCode.RightArrow:
+                        builder.Append("RIGHT");
+                        break;
+                    case KeyCode.UpArrow:
+                        builder.Append("UP");
+                        break;
+                    case KeyCode.DownArrow:
+                        builder.Append("DOWN");
+                        break;
+                    default:
+                        return false;
                 }
             }
 
-            return keyCode.ToString();
+            return true;
         }
     }
 }

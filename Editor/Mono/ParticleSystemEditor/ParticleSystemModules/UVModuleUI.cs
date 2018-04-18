@@ -41,7 +41,7 @@ namespace UnityEditor
             public GUIContent sprites = EditorGUIUtility.TrTextContent("Sprites", "The list of Sprites to be played.");
             public GUIContent frame = EditorGUIUtility.TrTextContent("Frame", "The frame in the sheet which will be used.");
             public GUIContent cycles = EditorGUIUtility.TrTextContent("Cycles", "Specifies how many times the animation will loop during the lifetime of the particle.");
-            public GUIContent uvChannelMask = EditorGUIUtility.TrTextContent("Enabled UV Channels", "Specifies which UV channels will be animated.");
+            public GUIContent uvChannelMask = EditorGUIUtility.TrTextContent("Affected UV Channels", "Specifies which UV channels will be animated.");
             public GUIContent flipU = EditorGUIUtility.TrTextContent("Flip U", "Cause some particle texture mapping to be flipped horizontally. (Set between 0 and 1, where a higher value causes more to flip)");
             public GUIContent flipV = EditorGUIUtility.TrTextContent("Flip V", "Cause some particle texture mapping to be flipped vertically. (Set between 0 and 1, where a higher value causes more to flip)");
 

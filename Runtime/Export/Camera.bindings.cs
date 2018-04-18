@@ -132,6 +132,7 @@ namespace UnityEngine
         public Vector3 ViewportToWorldPoint(Vector3 position) { return ViewportToWorldPoint(position, MonoOrStereoscopicEye.Mono); }
         public Vector3 ScreenToWorldPoint(Vector3 position) { return ScreenToWorldPoint(position, MonoOrStereoscopicEye.Mono); }
         extern public Vector3 ScreenToViewportPoint(Vector3 position);
+        extern internal Vector3 ViewportToWorldPointWithoutGateFit(Vector3 position);
         extern public Vector3 ViewportToScreenPoint(Vector3 position);
 
         extern private Ray ViewportPointToRay(Vector2 pos, MonoOrStereoscopicEye eye);
@@ -239,18 +240,24 @@ namespace UnityEngine
 
         public void AddCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
+            if (!Enum.IsDefined(typeof(CameraEvent), evt))
+                throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             AddCommandBufferImpl(evt, buffer);
         }
 
         public void AddCommandBufferAsync(CameraEvent evt, CommandBuffer buffer, ComputeQueueType queueType)
         {
+            if (!Enum.IsDefined(typeof(CameraEvent), evt))
+                throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             AddCommandBufferAsyncImpl(evt, buffer, queueType);
         }
 
         public void RemoveCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
+            if (!Enum.IsDefined(typeof(CameraEvent), evt))
+                throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             RemoveCommandBufferImpl(evt, buffer);
         }

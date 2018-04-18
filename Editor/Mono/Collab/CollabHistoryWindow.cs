@@ -20,13 +20,13 @@ namespace UnityEditor
         const string kWindowTitle = "Collab History";
         const string kServiceUrl = "developer.cloud.unity3d.com";
 
-        [MenuItem("Window/Collab History", false, 2011)]
+        [MenuItem("Window/Asset Management/Collab History", false, 1)]
         public static void ShowHistoryWindow()
         {
             EditorWindow.GetWindow<CollabHistoryWindow>(kWindowTitle);
         }
 
-        [MenuItem("Window/Collab History", true)]
+        [MenuItem("Window/Asset Management/Collab History", true)]
         public static bool ValidateShowHistoryWindow()
         {
             return Collab.instance.IsCollabEnabledForCurrentProject();

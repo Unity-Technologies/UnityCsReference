@@ -57,54 +57,31 @@ namespace UnityEngine.Experimental.UIElements
 
         List<FocusRingRecord> m_FocusRing;
 
-        int FocusRingSort(FocusRingRecord a, FocusRingRecord b)
+        int FocusRingAutoIndexSort(FocusRingRecord a, FocusRingRecord b)
         {
             // FIXME: Write specialized methods for each defaultFocusOrder.
-            if (a.m_Focusable.focusIndex == 0 && b.m_Focusable.focusIndex == 0)
+            switch (defaultFocusOrder)
             {
-                switch (defaultFocusOrder)
+                case DefaultFocusOrder.ChildOrder:
+                default:
+                    return Comparer<int>.Default.Compare(a.m_AutoIndex, b.m_AutoIndex);
+
+                case DefaultFocusOrder.PositionXY:
                 {
-                    case DefaultFocusOrder.ChildOrder:
-                    default:
-                        return Comparer<int>.Default.Compare(a.m_AutoIndex, b.m_AutoIndex);
+                    VisualElement ave = a.m_Focusable as VisualElement;
+                    VisualElement bve = b.m_Focusable as VisualElement;
 
-                    case DefaultFocusOrder.PositionXY:
+                    if (ave != null && bve != null)
                     {
-                        VisualElement ave = a.m_Focusable as VisualElement;
-                        VisualElement bve = b.m_Focusable as VisualElement;
-
-                        if (ave != null && bve != null)
+                        if (ave.layout.position.x < bve.layout.position.x)
                         {
-                            if (ave.layout.position.x < bve.layout.position.x)
-                            {
-                                return -1;
-                            }
-                            else if (ave.layout.position.x > bve.layout.position.x)
-                            {
-                                return 1;
-                            }
-                            else
-                            {
-                                if (ave.layout.position.y < bve.layout.position.y)
-                                {
-                                    return -1;
-                                }
-                                else if (ave.layout.position.y > bve.layout.position.y)
-                                {
-                                    return 1;
-                                }
-                            }
+                            return -1;
                         }
-
-                        // a and b should be ordered using their order of appearance.
-                        return Comparer<int>.Default.Compare(a.m_AutoIndex, b.m_AutoIndex);
-                    }
-                    case DefaultFocusOrder.PositionYX:
-                    {
-                        VisualElement ave = a.m_Focusable as VisualElement;
-                        VisualElement bve = b.m_Focusable as VisualElement;
-
-                        if (ave != null && bve != null)
+                        else if (ave.layout.position.x > bve.layout.position.x)
+                        {
+                            return 1;
+                        }
+                        else
                         {
                             if (ave.layout.position.y < bve.layout.position.y)
                             {
@@ -114,23 +91,51 @@ namespace UnityEngine.Experimental.UIElements
                             {
                                 return 1;
                             }
-                            else
+                        }
+                    }
+
+                    // a and b should be ordered using their order of appearance.
+                    return Comparer<int>.Default.Compare(a.m_AutoIndex, b.m_AutoIndex);
+                }
+                case DefaultFocusOrder.PositionYX:
+                {
+                    VisualElement ave = a.m_Focusable as VisualElement;
+                    VisualElement bve = b.m_Focusable as VisualElement;
+
+                    if (ave != null && bve != null)
+                    {
+                        if (ave.layout.position.y < bve.layout.position.y)
+                        {
+                            return -1;
+                        }
+                        else if (ave.layout.position.y > bve.layout.position.y)
+                        {
+                            return 1;
+                        }
+                        else
+                        {
+                            if (ave.layout.position.x < bve.layout.position.x)
                             {
-                                if (ave.layout.position.x < bve.layout.position.x)
-                                {
-                                    return -1;
-                                }
-                                else if (ave.layout.position.x > bve.layout.position.x)
-                                {
-                                    return 1;
-                                }
+                                return -1;
+                            }
+                            else if (ave.layout.position.x > bve.layout.position.x)
+                            {
+                                return 1;
                             }
                         }
-
-                        // a and b should be ordered using their order of appearance.
-                        return Comparer<int>.Default.Compare(a.m_AutoIndex, b.m_AutoIndex);
                     }
+
+                    // a and b should be ordered using their order of appearance.
+                    return Comparer<int>.Default.Compare(a.m_AutoIndex, b.m_AutoIndex);
                 }
+            }
+        }
+
+        int FocusRingSort(FocusRingRecord a, FocusRingRecord b)
+        {
+            if (a.m_Focusable.focusIndex == 0 && b.m_Focusable.focusIndex == 0)
+            {
+                return FocusRingAutoIndexSort(a, b);
             }
             else if (a.m_Focusable.focusIndex == 0)
             {
@@ -145,7 +150,13 @@ namespace UnityEngine.Experimental.UIElements
             else
             {
                 // a and b should be ordered using their focus index.
-                return Comparer<int>.Default.Compare(a.m_Focusable.focusIndex, b.m_Focusable.focusIndex);
+                int result = Comparer<int>.Default.Compare(a.m_Focusable.focusIndex, b.m_Focusable.focusIndex);
+                // but if the focus index result is being equal, we need to fallback with their automatic index
+                if (result == 0)
+                {
+                    result = FocusRingAutoIndexSort(a, b);
+                }
+                return result;
             }
         }
 

@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.Bindings;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -39,7 +40,12 @@ namespace UnityEditor
         [NativeName("ClearUmbraTome")]
         public static extern void Clear();
 
-        /// Getter for the default smallest occluder computation parameter value
+        // Get the OcclusionCullingSettings
+        internal static extern Object occlusionCullingSettings
+        {
+            [FreeFunction]
+            get;
+        }
 
         [StaticAccessor("GetOcclusionCullingSettings()", StaticAccessorType.Dot)]
         [NativeProperty(TargetType = TargetType.Field)]

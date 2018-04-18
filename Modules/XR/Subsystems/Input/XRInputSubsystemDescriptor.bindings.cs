@@ -11,8 +11,13 @@ using UnityEngine.Experimental;
 
 namespace UnityEngine.Experimental.XR
 {
+    [NativeHeader("Modules/XR/XRPrefix.h")]
     [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystemDescriptor.h")]
     [UsedByNativeCode]
+    [NativeConditional("ENABLE_XR")]
     public class XRInputSubsystemDescriptor : SubsystemDescriptor<XRInputSubsystem>
-    {}
+    {
+        [NativeConditional("ENABLE_XR")]
+        public extern bool disablesLegacyInput { get; }
+    }
 }

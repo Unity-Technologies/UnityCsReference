@@ -36,7 +36,7 @@ namespace UnityEditor
             Count
         }
 
-        [MenuItem("Window/Lighting/Light Explorer", false, 2099)]
+        [MenuItem("Window/Rendering/Light Explorer", false, 2)]
         static void CreateLightingExplorerWindow()
         {
             LightingExplorerWindow window = EditorWindow.GetWindow<LightingExplorerWindow>();
