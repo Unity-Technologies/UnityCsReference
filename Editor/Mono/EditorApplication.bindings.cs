@@ -105,7 +105,15 @@ namespace UnityEditor
 
         // Prevents loading of assemblies when it is inconvenient.
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        public static extern  void LockReloadAssemblies();
+        public static extern void LockReloadAssemblies();
+
+        //  Must be called after LockReloadAssemblies, to reenable loading of assemblies.
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        public static extern void UnlockReloadAssemblies();
+
+        //  Check if assemblies are unlocked.
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        internal static extern bool CanReloadAssemblies();
 
         // Invokes the menu item in the specified path.
         public static extern  bool ExecuteMenuItem(string menuItemPath);
@@ -115,10 +123,6 @@ namespace UnityEditor
 
         // Like ExecuteMenuItem, but applies action to specified GameObjects if the menu action supports it.
         internal static extern  bool ExecuteMenuItemWithTemporaryContext(string menuItemPath, Object[] objects);
-
-        //  Must be called after LockReloadAssemblies, to reenable loading of assemblies.
-        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        public static extern  void UnlockReloadAssemblies();
 
         // Path to the Unity editor contents folder (RO)
         [ThreadAndSerializationSafe]

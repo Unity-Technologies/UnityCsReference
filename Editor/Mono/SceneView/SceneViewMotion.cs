@@ -28,109 +28,6 @@ namespace UnityEditor
 
         static readonly CameraFlyModeContext s_CameraFlyModeContext = new CameraFlyModeContext();
 
-        // CURSOR KEYS
-        public static void ArrowKeys(SceneView sv)
-        {
-            Event evt = Event.current;
-            int id = GUIUtility.GetControlID(FocusType.Passive);
-            if (GUIUtility.hotControl == 0 || GUIUtility.hotControl == id)
-            {
-                if (EditorGUI.actionKey)
-                    return;
-                switch (evt.GetTypeForControl(id))
-                {
-                    case EventType.KeyDown:
-                        switch (evt.keyCode)
-                        {
-                            case KeyCode.UpArrow:
-                                sv.viewIsLockedToObject = false;
-                                if (sv.m_Ortho.value)
-                                    s_Motion.y = 1;
-                                else
-                                    s_Motion.z = 1;
-                                GUIUtility.hotControl = id;
-                                evt.Use();
-                                break;
-                            case KeyCode.DownArrow:
-                                sv.viewIsLockedToObject = false;
-                                if (sv.m_Ortho.value)
-                                    s_Motion.y = -1;
-                                else
-                                    s_Motion.z = -1;
-                                GUIUtility.hotControl = id;
-                                evt.Use();
-                                break;
-                            case KeyCode.LeftArrow:
-                                sv.viewIsLockedToObject = false;
-                                s_Motion.x = -1;
-                                GUIUtility.hotControl = id;
-                                evt.Use();
-                                break;
-                            case KeyCode.RightArrow:
-                                sv.viewIsLockedToObject = false;
-                                s_Motion.x = 1;
-                                GUIUtility.hotControl = id;
-                                evt.Use();
-                                break;
-                        }
-                        break;
-
-                    case EventType.KeyUp:
-                        if (GUIUtility.hotControl == id)
-                        {
-                            switch (evt.keyCode)
-                            {
-                                case KeyCode.UpArrow:
-                                case KeyCode.DownArrow:
-                                    s_Motion.z = 0;
-                                    s_Motion.y = 0;
-                                    evt.Use();
-                                    break;
-                                case KeyCode.LeftArrow:
-                                case KeyCode.RightArrow:
-                                    s_Motion.x = 0;
-                                    evt.Use();
-                                    break;
-                            }
-                        }
-
-                        break;
-
-                    case EventType.Layout:
-                        if (GUIUtility.hotControl == id)
-                        {
-                            Vector3 fwd;
-                            if (!sv.m_Ortho.value)
-                            {
-                                fwd = Camera.current.transform.forward + Camera.current.transform.up * .3f;
-                                fwd.y = 0;
-                                fwd.Normalize();
-                            }
-                            else
-                            {
-                                fwd = Camera.current.transform.forward;
-                            }
-                            Vector3 motion = GetMovementDirection();
-                            sv.LookAtDirect(sv.pivot + Quaternion.LookRotation(fwd) * motion, sv.rotation);
-
-                            // If we're done, stop animating
-                            if (s_Motion.sqrMagnitude == 0)
-                            {
-                                sv.pivot = sv.pivot;
-                                s_FlySpeed = 0;
-                                GUIUtility.hotControl = 0;
-                            }
-                            else
-                            {
-                                sv.Repaint();
-                            }
-                        }
-                        break;
-                }
-            }
-        }
-
-        // HANDLE THE VIEW TOOL & ALT COMBOS
         public static void DoViewTool(SceneView view)
         {
             Event evt = Event.current;
@@ -147,7 +44,7 @@ namespace UnityEditor
             }
 
             s_CameraFlyModeContext.active = Tools.viewTool == ViewTool.FPS;
-            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(s_CameraFlyModeContext))
+            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(s_CameraFlyModeContext, id, view.orthographic))
             {
                 if (inputSamplingScope.currentlyMoving)
                     view.viewIsLockedToObject = false;
@@ -435,10 +332,6 @@ namespace UnityEditor
                         }
                     }
                     break;
-
-                    default:
-                        Debug.Log("Enum value Tools.s_LockViewTool not handled");
-                        break;
                 }
                 evt.Use();
             }

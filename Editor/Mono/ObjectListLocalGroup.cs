@@ -1254,10 +1254,10 @@ namespace UnityEditor
                 if (string.IsNullOrEmpty(path))
                     return DragAndDropVisualMode.Rejected;
 
-                var pathComponents = path.Split('/');
-                if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
+                var packageInfo = PackageManager.Packages.GetForAssetPath(path);
+                if (packageInfo != null)
                 {
-                    search = new HierarchyProperty(pathComponents[0] + "/" + pathComponents[1]);
+                    search = new HierarchyProperty(packageInfo.assetPath);
                     if (search.Find(dragToInstanceID, null))
                         return InternalEditorUtility.ProjectWindowDrag(search, perform);
                 }

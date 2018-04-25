@@ -119,10 +119,10 @@ namespace UnityEditor
                     var rootPath = "Assets";
 
                     var path = AssetDatabase.GetAssetPath(instanceIDs[i]);
-                    var pathComponents = path.Split('/');
+                    var packageInfo = PackageManager.Packages.GetForAssetPath(path);
                     // Find the right rootPath if folderPath is part of a package
-                    if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
-                        rootPath = pathComponents[0] + "/" + pathComponents[1];
+                    if (packageInfo != null)
+                        rootPath = packageInfo.assetPath;
 
                     rootPaths[i] = rootPath;
                 }
@@ -215,7 +215,20 @@ namespace UnityEditor
         void SearchInFolders()
         {
             List<FilterResult> list = new List<FilterResult>();
-            string[] baseFolders = ProjectWindowUtil.GetBaseFolders(m_SearchFilter.folders);
+            List<string> baseFolders = new List<string>();
+            baseFolders.AddRange(ProjectWindowUtil.GetBaseFolders(m_SearchFilter.folders));
+            if (baseFolders.Remove(PackageManager.Folders.GetPackagesMountPoint()))
+            {
+                var packages = PackageManager.Packages.GetAll();
+                foreach (var package in packages)
+                {
+                    if (package.source == PackageManager.PackageSource.BuiltIn)
+                        continue;
+
+                    if (!baseFolders.Contains(package.assetPath))
+                        baseFolders.Add(package.assetPath);
+                }
+            }
 
             foreach (string folderPath in baseFolders)
             {
@@ -241,10 +254,32 @@ namespace UnityEditor
             // We are not concerned with assets being added multiple times as we only show the contents
             // of each selected folder. This is an issue when searching recursively into child folders.
             List<FilterResult> list = new List<FilterResult>();
+            HierarchyProperty property;
             foreach (string folderPath in m_SearchFilter.folders)
             {
+                if (folderPath == PackageManager.Folders.GetPackagesMountPoint())
+                {
+                    var packages = PackageManager.Packages.GetAll();
+                    foreach (var package in packages)
+                    {
+                        if (package.source == PackageManager.PackageSource.BuiltIn)
+                            continue;
+
+                        var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
+                        property = new HierarchyProperty(package.assetPath);
+                        if (property.Find(packageFolderInstanceId, null))
+                        {
+                            FilterResult result = new FilterResult();
+                            CopyPropertyData(ref result, property);
+                            result.name = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
+                            list.Add(result);
+                        }
+                    }
+                    continue;
+                }
+
                 int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
-                HierarchyProperty property = new HierarchyProperty(folderPath);
+                property = new HierarchyProperty(folderPath);
                 property.SetSearchFilter(m_SearchFilter);
 
                 int folderDepth = property.depth;

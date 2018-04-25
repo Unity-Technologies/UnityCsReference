@@ -678,6 +678,12 @@ namespace UnityEngine
             EveryFrame = 1,
             ViaScripting = 2,
         }
+
+        public enum QualityMode
+        {
+            Low = 0,
+            Normal = 1,
+        }
     }
 
     public enum CustomRenderTextureInitializationSource

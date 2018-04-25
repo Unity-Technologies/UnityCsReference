@@ -21,6 +21,8 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Project", icon = "Project")]
     internal class ProjectBrowser : EditorWindow, IHasCustomMenu
     {
+        public const int kPackagesFolderInstanceId = int.MaxValue;
+
         // Alive ProjectBrowsers
         private static List<ProjectBrowser> s_ProjectBrowsers = new List<ProjectBrowser>();
         public static List<ProjectBrowser> GetAllProjectBrowsers()
@@ -174,7 +176,7 @@ namespace UnityEditor
 
         // Used by search menu bar
         [NonSerialized]
-        public GUIContent m_SearchAllAssets = EditorGUIUtility.TrTextContent("Assets"); // do not localize this: Assets=folder name
+        public GUIContent m_SearchAllAssets = EditorGUIUtility.TrTextContent("All Assets"); // do not localize this: Assets=folder name
         [NonSerialized]
         public GUIContent m_SearchInFolders = new GUIContent(""); // updated when needed
         [NonSerialized]
@@ -306,6 +308,11 @@ namespace UnityEditor
             HashSet<string> validFolders = new HashSet<string>();
             foreach (string folder in m_SearchFilter.folders)
             {
+                if (folder == PackageManager.Folders.GetPackagesMountPoint())
+                {
+                    validFolders.Add(folder);
+                    continue;
+                }
                 if (AssetDatabase.IsValidFolder(folder))
                 {
                     validFolders.Add(folder);
@@ -568,13 +575,17 @@ namespace UnityEditor
                 int maxShow = 3;
                 for (int i = 0; i < baseFolders.Length && i < maxShow; ++i)
                 {
+                    var baseFolder = baseFolders[i];
+                    var packageInfo = PackageManager.Packages.GetForAssetPath(baseFolder);
+                    if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.displayName))
+                        baseFolder = Regex.Replace(baseFolder, @"^" + packageInfo.assetPath, PackageManager.Folders.GetPackagesMountPoint() + "/" + packageInfo.displayName);
                     if (i > 0)
                         folderText += ", ";
-                    string folderName = Path.GetFileName(baseFolders[i]);
+                    string folderName = Path.GetFileName(baseFolder);
                     folderText += "'" + folderName + "'";
 
-                    if (i == 0 && folderName != "Assets") // We dont show tooltip for the root folder: Assets
-                        toolTip = baseFolders[i];
+                    if (i == 0 && folderName != "Assets" && folderName != PackageManager.Folders.GetPackagesMountPoint())
+                        toolTip = baseFolder;
                 }
                 if (baseFolders.Length > maxShow)
                     folderText += " +";
@@ -651,7 +662,22 @@ namespace UnityEditor
                 m_AssetTree.onGUIRowCallback += OnGUIAssetCallback;
                 m_AssetTree.dragEndedCallback += AssetTreeDragEnded;
 
-                var data = new AssetsTreeViewDataSource(m_AssetTree, AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets"), false, false);
+                var assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
+                var roots = new List<AssetsTreeViewDataSource.RootItem>();
+                var packagesMountPoint = PackageManager.Folders.GetPackagesMountPoint();
+
+                roots.Add(new AssetsTreeViewDataSource.RootItem(assetsFolderInstanceID, null, null));
+                roots.Add(new AssetsTreeViewDataSource.RootItem(kPackagesFolderInstanceId, packagesMountPoint, packagesMountPoint, true));
+                foreach (var package in PackageManager.Packages.GetAll())
+                {
+                    if (package.source == PackageManager.PackageSource.BuiltIn)
+                        continue;
+
+                    var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
+                    roots.Add(new AssetsTreeViewDataSource.RootItem(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath), displayName, package.assetPath));
+                }
+
+                var data = new AssetsTreeViewDataSource(m_AssetTree, roots);
                 data.foldersFirst = GetShouldShowFoldersFirst();
 
                 m_AssetTree.Init(m_TreeViewRect,
@@ -878,6 +904,8 @@ namespace UnityEditor
                 return;
 
             string folderPath = AssetDatabase.GetAssetPath(folderInstanceID);
+            if (folderInstanceID == kPackagesFolderInstanceId)
+                folderPath = PackageManager.Folders.GetPackagesMountPoint();
             m_SearchFilter.ClearSearch();
             m_SearchFilter.folders = new[] {folderPath};
             m_FolderTree.SetSelection(new[] {folderInstanceID}, revealAndFrameInFolderTree);
@@ -953,7 +981,7 @@ namespace UnityEditor
                 if (selectedFolderInstanceIDs.Length == 1)
                 {
                     TreeViewItem item = m_FolderTree.FindItem(selectedFolderInstanceIDs[0]);
-                    if (item != null && item.parent != null && item.id != ProjectBrowserColumnOneTreeViewDataSource.GetAssetsFolderInstanceID())
+                    if (item != null && item.parent != null && item.id != AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets"))
                     {
                         SetFolderSelection(new[] {item.parent.id}, true);
                         m_ListArea.Frame(item.id, true, false);
@@ -1069,7 +1097,21 @@ namespace UnityEditor
         bool ShouldFrameAsset(int instanceID)
         {
             HierarchyProperty h = new HierarchyProperty(HierarchyType.Assets, false);
-            return h.Find(instanceID, null);
+            if (h.Find(instanceID, null))
+                return true;
+
+            var path = AssetDatabase.GetAssetPath(instanceID);
+            if (string.IsNullOrEmpty(path))
+                return false;
+
+            var packageInfo = PackageManager.Packages.GetForAssetPath(path);
+            if (packageInfo != null)
+            {
+                h = new HierarchyProperty(packageInfo.assetPath, false);
+                if (h.Find(instanceID, null))
+                    return true;
+            }
+            return false;
         }
 
         void OnSelectionChange()
@@ -1196,6 +1238,12 @@ namespace UnityEditor
 
             foreach (int instanceID in Selection.instanceIDs)
             {
+                if (instanceID == kPackagesFolderInstanceId)
+                {
+                    folders.Add(PackageManager.Folders.GetPackagesMountPoint());
+                    continue;
+                }
+
                 if (!AssetDatabase.Contains(instanceID))
                     continue;
 
@@ -1361,7 +1409,7 @@ namespace UnityEditor
 
             List<string> copiedPaths = new List<string>();
             bool failed = false;
-            int asssetsFolderInstanceID = ProjectBrowserColumnOneTreeViewDataSource.GetAssetsFolderInstanceID();
+            int asssetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
 
             foreach (int instanceID in instanceIDs)
             {
@@ -1411,6 +1459,50 @@ namespace UnityEditor
             }
         }
 
+        // Also called from C++ (used for AssetsMenu check if selection is Packages folder)
+        [UsedByNativeCode]
+        internal static bool SelectionIsPackagesRootFolder()
+        {
+            if (s_LastInteractedProjectBrowser == null)
+                return false;
+
+            if (s_LastInteractedProjectBrowser.m_ViewMode == ViewMode.OneColumn &&
+                s_LastInteractedProjectBrowser.m_AssetTree != null &&
+                s_LastInteractedProjectBrowser.m_AssetTree.IsSelected(kPackagesFolderInstanceId))
+            {
+                return true;
+            }
+
+            if (s_LastInteractedProjectBrowser.m_ViewMode == ViewMode.TwoColumns &&
+                s_LastInteractedProjectBrowser.m_FolderTree != null &&
+                s_LastInteractedProjectBrowser.m_FolderTree.IsSelected(kPackagesFolderInstanceId))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        private bool ShouldDiscardCommandsEventsForImmmutablePackages()
+        {
+            if ((Event.current.type == EventType.ExecuteCommand || Event.current.type == EventType.ValidateCommand) &&
+                (Event.current.commandName == EventCommandNames.Cut ||
+                 Event.current.commandName == EventCommandNames.Paste ||
+                 Event.current.commandName == EventCommandNames.Delete ||
+                 Event.current.commandName == EventCommandNames.SoftDelete ||
+                 Event.current.commandName == EventCommandNames.Duplicate))
+            {
+                if (AssetsMenuUtility.SelectionHasImmutable())
+                    return true;
+
+                if (SelectionIsPackagesRootFolder())
+                    return true;
+            }
+
+            return false;
+        }
+
+
         // Returns true if we should early out of OnGUI
         bool HandleCommandEventsForTreeView()
         {
@@ -1426,6 +1518,15 @@ namespace UnityEditor
 
                 // Only one type can be selected at a time (and savedfilters can only be single-selected)
                 ItemType itemType = GetItemType(instanceIDs[0]);
+
+                // Check if event made on immutable package
+                if (itemType == ItemType.Asset)
+                {
+                    if (ShouldDiscardCommandsEventsForImmmutablePackages())
+                    {
+                        return false;
+                    }
+                }
 
                 if (Event.current.commandName == EventCommandNames.Delete || Event.current.commandName == EventCommandNames.SoftDelete)
                 {
@@ -1478,6 +1579,12 @@ namespace UnityEditor
         // Returns true if we should early out of OnGUI
         bool HandleCommandEvents()
         {
+            // Check if event made on immutable package
+            if (ShouldDiscardCommandsEventsForImmmutablePackages())
+            {
+                return false;
+            }
+
             EventType eventType = Event.current.type;
             if (eventType == EventType.ExecuteCommand || eventType == EventType.ValidateCommand)
             {
@@ -1590,12 +1697,22 @@ namespace UnityEditor
             else
             {
                 string displayPath = m_SelectedPath;
-                if (m_SelectedPath.StartsWith("assets/", StringComparison.CurrentCultureIgnoreCase))
-                    displayPath = m_SelectedPath.Substring("assets/".Length);
+                string rootPath = "Assets/";
+                if (m_SelectedPath.StartsWith(rootPath, StringComparison.CurrentCultureIgnoreCase))
+                    displayPath = m_SelectedPath.Substring(rootPath.Length);
+                else if (m_SelectedPath.StartsWith(PackageManager.Folders.GetPackagesMountPoint() + "/", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    rootPath = PackageManager.Folders.GetPackagesMountPoint() + "/";
+                    var packageInfo = PackageManager.Packages.GetForAssetPath(m_SelectedPath);
+                    if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.displayName))
+                        displayPath = Regex.Replace(m_SelectedPath, @"^" + packageInfo.assetPath, packageInfo.displayName);
+                    else
+                        displayPath = m_SelectedPath.Substring(rootPath.Length);
+                }
 
                 if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing)
                 {
-                    m_SelectedPathSplitted.Add(new GUIContent(Path.GetFileName(m_SelectedPath), AssetDatabase.GetCachedIcon(m_SelectedPath)));
+                    m_SelectedPathSplitted.Add(new GUIContent(rootPath + displayPath, AssetDatabase.GetCachedIcon(m_SelectedPath)));
                 }
                 else
                 {
@@ -1616,10 +1733,11 @@ namespace UnityEditor
                          */
 
                         string[] split = displayPath.Split('/');
-                        string curPath = "Assets/";
-                        for (int i = 0; i < split.Length; ++i)
+                        string[] splitPath = m_SelectedPath.Split('/');
+                        string curPath = rootPath;
+                        for (int i = 0, j = 1; i < split.Length; ++i, ++j)
                         {
-                            curPath += split[i];
+                            curPath += splitPath[j];
                             Texture icon = AssetDatabase.GetCachedIcon(curPath);
 
                             m_SelectedPathSplitted.Add(new GUIContent(split[i], icon));
@@ -1968,14 +2086,6 @@ namespace UnityEditor
             InternalEditorUtility.RequestScriptReload();
         }
 
-        void ToggleShowPackagesInAssetsFolder()
-        {
-            bool showPackagesInAssetsFolder = EditorPrefs.GetBool("ShowPackagesFolder", false);
-            EditorPrefs.SetBool("ShowPackagesFolder", !showPackagesInAssetsFolder);
-            OnProjectChanged();
-        }
-
-
         public virtual void AddItemsToMenu(GenericMenu menu)
         {
             if (m_EnableOldAssetTree)
@@ -2069,6 +2179,8 @@ namespace UnityEditor
         void CreateDropdown()
         {
             var isInReadOnlyContext = AssetsMenuUtility.SelectionHasImmutable();
+            if (!isInReadOnlyContext)
+                isInReadOnlyContext = SelectionIsPackagesRootFolder();
             EditorGUI.BeginDisabledGroup(isInReadOnlyContext);
             Rect r = GUILayoutUtility.GetRect(s_Styles.m_CreateDropdownContent, EditorStyles.toolbarDropDown);
             if (EditorGUI.DropdownButton(r, s_Styles.m_CreateDropdownContent, FocusType.Passive, EditorStyles.toolbarDropDown))
@@ -2176,8 +2288,16 @@ namespace UnityEditor
         static int[] GetFolderInstanceIDs(string[] folders)
         {
             int[] folderInstanceIDs = new int[folders.Length];
+
             for (int i = 0; i < folders.Length; ++i)
+            {
+                if (folders[i] == PackageManager.Folders.GetPackagesMountPoint())
+                {
+                    folderInstanceIDs[i] = kPackagesFolderInstanceId;
+                    continue;
+                }
                 folderInstanceIDs[i] = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folders[i]);
+            }
             return folderInstanceIDs;
         }
 
@@ -2186,6 +2306,11 @@ namespace UnityEditor
             List<string> paths = new List<string>();
             foreach (int instanceID in instanceIDs)
             {
+                if (instanceID == kPackagesFolderInstanceId)
+                {
+                    paths.Add(PackageManager.Folders.GetPackagesMountPoint());
+                    continue;
+                }
                 string path = AssetDatabase.GetAssetPath(instanceID);
                 if (!String.IsNullOrEmpty(path))
                     paths.Add(path);
@@ -2281,27 +2406,63 @@ namespace UnityEditor
 
             if (m_BreadCrumbs.Count == 0)
             {
-                string path = m_SearchFilter.folders[0];
+                var path = m_SearchFilter.folders[0];
 
-                string[] folderNames = path.Split('/');
-                var packagesRoot = UnityEditor.PackageManager.Folders.GetPackagesMountPoint();
-                if (path.StartsWith(packagesRoot))
+                var folderNames = new List<string>();
+                var folderDisplayNames = new List<string>();
+                var packagesMountPoint = PackageManager.Folders.GetPackagesMountPoint();
+                var packageInfo = PackageManager.Packages.GetForAssetPath(path);
+                if (packageInfo != null)
                 {
-                    // Translate the packages root mount point
-                    folderNames = Regex.Replace(path, "^" + packagesRoot, PackageManager.Folders.GetPackagesMountPoint()).Split('/');
+                    // Packages root
+                    folderNames.Add(packagesMountPoint);
+                    folderDisplayNames.Add(packagesMountPoint);
+
+                    // Package name/displayname
+                    folderNames.Add(packageInfo.name);
+                    folderDisplayNames.Add(packageInfo.displayName ?? packageInfo.name);
+
+                    // Rest of the path;
+                    if (path != packageInfo.assetPath)
+                    {
+                        var subpaths = Regex.Replace(path, @"^" + packageInfo.assetPath + "/", "").Split('/');
+                        folderNames.AddRange(subpaths);
+                        folderDisplayNames.AddRange(subpaths);
+                    }
                 }
-                string folderPath = "";
-
-                foreach (string folderName in folderNames)
+                else
                 {
-                    if (!String.IsNullOrEmpty(folderPath))
+                    folderNames.AddRange(path.Split('/'));
+                    folderDisplayNames = folderNames;
+                }
+
+                var folderPath = "";
+                var i = 0;
+                foreach (var folderName in folderNames)
+                {
+                    if (!string.IsNullOrEmpty(folderPath))
                         folderPath += "/";
                     folderPath += folderName;
 
-                    m_BreadCrumbs.Add(new KeyValuePair<GUIContent, string>(new GUIContent(folderName), folderPath));
+                    m_BreadCrumbs.Add(new KeyValuePair<GUIContent, string>(new GUIContent(folderDisplayNames[i++]), folderPath));
                 }
 
-                m_BreadCrumbLastFolderHasSubFolders = AssetDatabase.GetSubFolders(path).Length > 0;
+                if (path == packagesMountPoint)
+                {
+                    m_BreadCrumbLastFolderHasSubFolders = false;
+                    foreach (var package in PackageManager.Packages.GetAll())
+                    {
+                        if (package.source == PackageManager.PackageSource.BuiltIn)
+                            continue;
+
+                        m_BreadCrumbLastFolderHasSubFolders = true;
+                        break;
+                    }
+                }
+                else
+                {
+                    m_BreadCrumbLastFolderHasSubFolders = AssetDatabase.GetSubFolders(path).Length > 0;
+                }
             }
 
             // Background
@@ -2323,6 +2484,11 @@ namespace UnityEditor
                     rect.width = size.x;
                     if (GUI.Button(rect, folderContent, style))
                     {
+                        if (folderPath == PackageManager.Folders.GetPackagesMountPoint())
+                        {
+                            ShowFolderContents(kPackagesFolderInstanceId, false);
+                            continue;
+                        }
                         ShowFolderContents(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath), false);
                     }
 
@@ -2378,7 +2544,7 @@ namespace UnityEditor
 
         void SelectAssetsFolder()
         {
-            ShowFolderContents(ProjectBrowserColumnOneTreeViewDataSource.GetAssetsFolderInstanceID(), true);
+            ShowFolderContents(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets"), true);
         }
 
         string ValidateCreateNewAssetPath(string pathName)
@@ -2490,7 +2656,7 @@ namespace UnityEditor
                     folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(containingFolder);
 
                 if (folderInstanceID == 0)
-                    folderInstanceID = ProjectBrowserColumnOneTreeViewDataSource.GetAssetsFolderInstanceID();
+                    folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
             }
 
             // Could be a scene gameobject
@@ -2504,7 +2670,8 @@ namespace UnityEditor
         }
 
         // Also called from C++ (used for AssetSelection overriding)
-        static int[] GetTreeViewFolderSelection(bool forceUseTreeViewSelection = false)
+        [UsedByNativeCode]
+        internal static int[] GetTreeViewFolderSelection(bool forceUseTreeViewSelection = false)
         {
             // Since we can delete entire folder hierarchies with the returned selection we need to be very careful. We therefore require the following:
             // - The folder/favorite tree view must have keyboard focus
@@ -2661,15 +2828,34 @@ namespace UnityEditor
                 m_Caller = caller;
 
                 // List of sub folders
-                string[] subFolders = AssetDatabase.GetSubFolders(folder);
-                GenericMenu menu = new GenericMenu();
-                if (subFolders.Length >= 0)
+                var subFolders = new List<string>();
+                var subFolderDisplayNames = new List<string>();
+                if (folder == PackageManager.Folders.GetPackagesMountPoint())
                 {
-                    currentSubFolder = Path.GetFileName(currentSubFolder);
-                    foreach (string subFolderPath in subFolders)
+                    foreach (var package in PackageManager.Packages.GetAll())
                     {
-                        string subFolderName = Path.GetFileName(subFolderPath);
-                        menu.AddItem(new GUIContent(subFolderName), subFolderName == currentSubFolder, new BreadCrumbListMenu(subFolderPath).SelectSubFolder);
+                        if (package.source == PackageManager.PackageSource.BuiltIn)
+                            continue;
+
+                        subFolders.Add(package.assetPath);
+                        var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
+                        subFolderDisplayNames.Add(displayName);
+                    }
+                }
+                else
+                {
+                    subFolders.AddRange(AssetDatabase.GetSubFolders(folder));
+                    foreach (var subFolderPath in subFolders)
+                        subFolderDisplayNames.Add(Path.GetFileName(subFolderPath));
+                }
+
+                GenericMenu menu = new GenericMenu();
+                if (subFolders.Count >= 0)
+                {
+                    var i = 0;
+                    foreach (var subFolderPath in subFolders)
+                    {
+                        menu.AddItem(new GUIContent(subFolderDisplayNames[i++]), subFolderPath == currentSubFolder, new BreadCrumbListMenu(subFolderPath).SelectSubFolder);
                         menu.ShowAsContext();
                     }
                 }

@@ -626,6 +626,58 @@ namespace UnityEditor
             style.Draw(position, content, false, false, false, false);
         }
 
+        static bool MightBePrintableKey(Event evt)
+        {
+            if (evt.command || evt.control)
+                return false;
+            if (evt.keyCode >= KeyCode.Mouse0 && evt.keyCode <= KeyCode.Mouse6)
+                return false;
+            if (evt.keyCode >= KeyCode.JoystickButton0 && evt.keyCode <= KeyCode.Joystick8Button19)
+                return false;
+            if (evt.keyCode >= KeyCode.F1 && evt.keyCode <= KeyCode.F15)
+                return false;
+            switch (evt.keyCode)
+            {
+                case KeyCode.AltGr:
+                case KeyCode.Backspace:
+                case KeyCode.CapsLock:
+                case KeyCode.Clear:
+                case KeyCode.Delete:
+                case KeyCode.DownArrow:
+                case KeyCode.End:
+                case KeyCode.Escape:
+                case KeyCode.Help:
+                case KeyCode.Home:
+                case KeyCode.Insert:
+                case KeyCode.LeftAlt:
+                case KeyCode.LeftArrow:
+                case KeyCode.LeftCommand: // same as LeftApple
+                case KeyCode.LeftControl:
+                case KeyCode.LeftShift:
+                case KeyCode.LeftWindows:
+                case KeyCode.Menu:
+                case KeyCode.Numlock:
+                case KeyCode.PageDown:
+                case KeyCode.PageUp:
+                case KeyCode.Pause:
+                case KeyCode.Print:
+                case KeyCode.RightAlt:
+                case KeyCode.RightArrow:
+                case KeyCode.RightCommand: // same as RightApple
+                case KeyCode.RightControl:
+                case KeyCode.RightShift:
+                case KeyCode.RightWindows:
+                case KeyCode.ScrollLock:
+                case KeyCode.SysReq:
+                case KeyCode.UpArrow:
+                    return false;
+                case KeyCode.None:
+                    return evt.character != 0;
+                default:
+                    return true;
+            }
+        }
+
         // Should we select all text from the current field when the mouse goes up?
         // (We need to keep track of this to support both SwipeSelection & initial click selects all)
         internal static string DoTextField(RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField)
@@ -889,6 +941,7 @@ namespace UnityEditor
 
                     break;
                 case EventType.KeyDown:
+                    var nonPrintableTab = false;
                     if (GUIUtility.keyboardControl == id)
                     {
                         char c = evt.character;
@@ -951,6 +1004,10 @@ namespace UnityEditor
                                     mayHaveChanged = true;
                                 }
                             }
+                            else
+                            {
+                                nonPrintableTab = true;
+                            }
                         }
                         else if (c == 25 || c == 27)
                         {
@@ -976,6 +1033,15 @@ namespace UnityEditor
                                     mayHaveChanged = true;
                                 }
                             }
+                        }
+                        // consume Keycode events that might result in a printable key so they aren't passed on to other controls or shortcut manager later
+                        if (
+                            editor.IsEditingControl(id) &&
+                            MightBePrintableKey(evt) &&
+                            !nonPrintableTab // only consume tabs that actually result in a character (above) so we don't disable tabbing between keyboard controls
+                            )
+                        {
+                            evt.Use();
                         }
                     }
 

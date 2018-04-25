@@ -106,6 +106,9 @@ namespace UnityEditor
         [SerializeField]
         int m_SingleChannelComponent;
 
+        [SerializeField]
+        int m_PushPullDilation;
+
         // memory layout of these is in TextureSettings.h
         [SerializeField]
         [NativeName("m_TextureSettings.m_FilterMode")]
@@ -255,6 +258,13 @@ namespace UnityEditor
             get {return (TextureImporterSingleChannelComponent)m_SingleChannelComponent; }
             set { m_SingleChannelComponent = (int)value; }
         }
+
+        public bool pushPullDilation
+        {
+            get { return m_PushPullDilation != 0; }
+            set { m_PushPullDilation = value ? 1 : 0; }
+        }
+
         public bool readable
         {
             get {return m_IsReadable != 0; }

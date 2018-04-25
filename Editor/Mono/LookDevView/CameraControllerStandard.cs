@@ -191,7 +191,8 @@ namespace UnityEditor
             }
 
             m_CameraFlyModeContext.active = m_CurrentViewTool == ViewTool.FPS;
-            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(m_CameraFlyModeContext))
+            var id = GUIUtility.GetControlID(FocusType.Passive);
+            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(m_CameraFlyModeContext, id))
             {
                 if (inputSamplingScope.inputVectorChanged)
                     m_FlySpeed = 0;

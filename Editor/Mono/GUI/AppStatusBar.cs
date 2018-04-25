@@ -13,6 +13,7 @@ namespace UnityEditor
     {
         static AppStatusBar s_AppStatusBar;
         static GUIContent[] s_StatusWheel;
+        static GUIContent s_AssemblyLock;
         string m_LastMiniMemoryOverview = "";
 
         protected override void OnEnable()
@@ -24,6 +25,7 @@ namespace UnityEditor
             s_StatusWheel = new GUIContent[12];
             for (int i = 0; i < 12; i++)
                 s_StatusWheel[i] = EditorGUIUtility.IconContent("WaitSpin" + i.ToString("00"));
+            s_AssemblyLock = EditorGUIUtility.IconContent("AssemblyLock", "|Assemblies are currently locked. Compilation will resume once they are unlocked");
         }
 
         [RequiredByNativeCode]
@@ -57,7 +59,8 @@ namespace UnityEditor
             if (Event.current.type == EventType.Repaint)
                 background.Draw(new Rect(0, 0, position.width, position.height), false, false, false, false);
 
-            bool compiling = EditorApplication.isCompiling;
+            var compiling = EditorApplication.isCompiling;
+            var assembliesLocked = !EditorApplication.CanReloadAssemblies();
 
             GUILayout.Space(2);
             GUILayout.BeginHorizontal();
@@ -110,8 +113,15 @@ namespace UnityEditor
 
                 if (compiling)
                 {
-                    int frame = (int)Mathf.Repeat(Time.realtimeSinceStartup * 10, 11.99f);
-                    GUI.Label(new Rect(position.width - statusWheelWidth, 0, s_StatusWheel[frame].image.width, s_StatusWheel[frame].image.height), s_StatusWheel[frame], GUIStyle.none);
+                    if (assembliesLocked)
+                    {
+                        GUI.Label(new Rect(position.width - statusWheelWidth, 0, s_AssemblyLock.image.width, s_AssemblyLock.image.height), s_AssemblyLock, GUIStyle.none);
+                    }
+                    else
+                    {
+                        int frame = (int)Mathf.Repeat(Time.realtimeSinceStartup * 10, 11.99f);
+                        GUI.Label(new Rect(position.width - statusWheelWidth, 0, s_StatusWheel[frame].image.width, s_StatusWheel[frame].image.height), s_StatusWheel[frame], GUIStyle.none);
+                    }
                 }
 
                 if (Unsupported.IsBleedingEdgeBuild())

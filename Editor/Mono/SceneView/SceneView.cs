@@ -1805,7 +1805,6 @@ namespace UnityEditor
                 // Do not pass the camera transform to the SceneViewMotion calculations.
                 // The camera transform is calculation *output* not *input*.
                 // Avoiding using it as input too avoids errors accumulating.
-                SceneViewMotion.ArrowKeys(this);
                 SceneViewMotion.DoViewTool(this);
             }
 

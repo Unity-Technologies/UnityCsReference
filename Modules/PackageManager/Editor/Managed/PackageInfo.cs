@@ -36,6 +36,10 @@ namespace UnityEditor.PackageManager
         private string m_ResolvedPath = "";
 
         [SerializeField]
+        [NativeName("assetPath")]
+        private string m_AssetPath = "";
+
+        [SerializeField]
         [NativeName("name")]
         private string m_Name = "";
 
@@ -77,6 +81,7 @@ namespace UnityEditor.PackageManager
         public string version { get { return m_Version;  } }
         public PackageSource source { get { return m_Source;  } }
         public string resolvedPath { get { return m_ResolvedPath;  } }
+        public string assetPath { get { return m_AssetPath;  } }
         public string name { get { return m_Name;  } }
         public string displayName { get { return m_DisplayName;  } }
         public string category { get { return m_Category;  } }

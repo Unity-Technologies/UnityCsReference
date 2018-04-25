@@ -18,11 +18,9 @@ namespace UnityEditor.PackageManager
             if (assetPath == string.Empty)
                 throw new ArgumentException("Asset path cannot be empty.", "assetPath");
 
-            var mountPoint = Folders.GetPackagesMountPoint();
             foreach (var package in Packages.GetAll())
             {
-                var logicalPath = mountPoint + '/' + package.name;
-                if (assetPath.StartsWith(logicalPath + '/'))
+                if (assetPath == package.assetPath || assetPath.StartsWith(package.assetPath + '/'))
                     return package;
             }
 
