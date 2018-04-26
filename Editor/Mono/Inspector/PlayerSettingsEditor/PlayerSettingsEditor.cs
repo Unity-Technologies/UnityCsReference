@@ -144,12 +144,11 @@ namespace UnityEditor
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
-            public static readonly GUIContent skinOnGPUAndroidWarning = EditorGUIUtility.TrTextContent("GPU skinning on Android devices is only enabled in VR builds, and is experimental. Be sure to validate behavior and performance on your target devices.");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics (Pro Only)");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols*");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
-            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent("Legacy (.NET 3.5 Equivalent)");
-            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent("Stable (.NET 4.x Equivalent)");
+            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent");
+            public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
@@ -1632,11 +1631,6 @@ namespace UnityEditor
                 {
                     ShaderUtil.RecreateSkinnedMeshResources();
                 }
-            }
-
-            if ((targetGroup == BuildTargetGroup.Android) && PlayerSettings.gpuSkinning)
-            {
-                EditorGUILayout.HelpBox(Styles.skinOnGPUAndroidWarning.text, MessageType.Warning);
             }
 
             if (targetGroup == BuildTargetGroup.XboxOne)

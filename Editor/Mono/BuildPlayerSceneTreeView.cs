@@ -36,13 +36,12 @@ namespace UnityEditor
             }
         }
 
-        public BuildPlayerSceneTreeViewItem(int id, int depth, string path, bool state) : base(id, depth)
+        public BuildPlayerSceneTreeViewItem(int id, int depth, GUID g, bool state) : base(id, depth)
         {
             active = state;
             counter = kInvalidCounter;
-            guid = new GUID(AssetDatabase.AssetPathToGUID(path));
+            guid = g;
             fullName = "";
-            displayName = path;
             UpdateName();
         }
     }
@@ -72,7 +71,7 @@ namespace UnityEditor
             List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
             foreach (var sc in scenes)
             {
-                var item = new BuildPlayerSceneTreeViewItem(sc.guid.GetHashCode(), 0, sc.path, sc.enabled);
+                var item = new BuildPlayerSceneTreeViewItem(sc.guid.GetHashCode(), 0, sc.guid, sc.enabled);
                 root.AddChild(item);
             }
             return root;

@@ -18,6 +18,7 @@ namespace UnityEditor.Presets
         {
             public static GUIContent managerIcon = EditorGUIUtility.IconContent("GameManager Icon");
             public static GUIStyle centerStyle = new GUIStyle() {alignment = TextAnchor.MiddleCenter};
+            public static GUIContent dropIcon = EditorGUIUtility.IconContent("Icon Dropdown");
         }
 
         new PresetManager target { get {return base.target as PresetManager; } }
@@ -29,8 +30,6 @@ namespace UnityEditor.Presets
 
         ReorderableList m_List;
         GenericMenu m_AddingMenu;
-
-        static GUIContent s_DropIcon = null;
 
         internal override void OnHeaderIconGUI(Rect iconRect)
         {
@@ -176,7 +175,7 @@ namespace UnityEditor.Presets
                 buttonRect.width = 9f;
                 buttonRect.height = 10f;
                 buttonRect.y += 11f;
-                EditorGUI.LabelField(buttonRect, s_DropIcon);
+                EditorGUI.LabelField(buttonRect, Style.dropIcon);
             }
         }
 
@@ -204,8 +203,6 @@ namespace UnityEditor.Presets
                 RefreshAddList();
                 return;
             }
-            if (s_DropIcon == null)
-                s_DropIcon = EditorGUIUtility.IconContent("Icon Dropdown");
 
             serializedObject.Update();
 
@@ -217,7 +214,8 @@ namespace UnityEditor.Presets
         [MenuItem("Edit/Project Settings/Preset Manager", false, 300)]
         static void ShowManagerInspector()
         {
-            Selection.activeObject = Resources.FindObjectsOfTypeAll<PresetManager>().First();
+            Selection.activeObject = Resources.FindObjectsOfTypeAll<PresetManager>()
+                .First(p => AssetDatabase.GetAssetPath(p) == "ProjectSettings/PresetManager.asset");
         }
     }
 }

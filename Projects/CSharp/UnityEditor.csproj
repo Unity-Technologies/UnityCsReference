@@ -2432,6 +2432,12 @@
 <Compile Include="..\..\Editor\Mono\PlatformSupport\PlayerSettingsPlatformIcons.bindings.cs" >
 <Link>Editor\Mono\PlatformSupport\PlayerSettingsPlatformIcons.bindings.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\PlatformSupport\ProvisioningProfile.cs" >
+<Link>Editor\Mono\PlatformSupport\ProvisioningProfile.cs</Link>
+</Compile>
+<Compile Include="..\..\Editor\Mono\PlatformSupport\ProvisioningProfileGUI.cs" >
+<Link>Editor\Mono\PlatformSupport\ProvisioningProfileGUI.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\PlatformSupport\ReorderableTextureList.cs" >
 <Link>Editor\Mono\PlatformSupport\ReorderableTextureList.cs</Link>
 </Compile>
@@ -2557,12 +2563,6 @@
 </Compile>
 <Compile Include="..\..\Editor\Mono\ProjectWindow\SearchableEditorWindow.cs" >
 <Link>Editor\Mono\ProjectWindow\SearchableEditorWindow.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\ProvisioningProfile.cs" >
-<Link>Editor\Mono\ProvisioningProfile.cs</Link>
-</Compile>
-<Compile Include="..\..\Editor\Mono\ProvisioningProfileGUI.cs" >
-<Link>Editor\Mono\ProvisioningProfileGUI.cs</Link>
 </Compile>
 <Compile Include="..\..\Editor\Mono\RagdollBuilder.cs" >
 <Link>Editor\Mono\RagdollBuilder.cs</Link>

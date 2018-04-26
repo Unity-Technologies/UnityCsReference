@@ -4149,6 +4149,7 @@ namespace UnityEditor
 
                                 var names = new[] {"Copy", "Paste"};
                                 var enabled = new[] {true, ColorClipboard.HasColor()};
+                                var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
                                 position,
@@ -4160,12 +4161,12 @@ namespace UnityEditor
                                 if (selected == 0)
                                 {
                                     Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
-                                    GUIView.current.SendEvent(e);
+                                    currentView.SendEvent(e);
                                 }
                                 else if (selected == 1)
                                 {
                                     Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
-                                    GUIView.current.SendEvent(e);
+                                    currentView.SendEvent(e);
                                 }
                             },
                                 null);

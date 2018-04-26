@@ -6,6 +6,7 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using System.Diagnostics;
 
 namespace Unity.Jobs.LowLevel.Unsafe
 {
@@ -22,14 +23,14 @@ namespace Unity.Jobs.LowLevel.Unsafe
 
     public unsafe struct JobRanges
     {
-        public int  batchSize;
-        public int  numJobs;
-        public int  totalIterationCount;
-        public int  numPhases;
-        public int  indicesPerPhase;
+        public int  BatchSize;
+        public int  NumJobs;
+        public int  TotalIterationCount;
+        public int  NumPhases;
+        public int  IndicesPerPhase;
 
-        public IntPtr startEndIndex;
-        public IntPtr phaseData;
+        public IntPtr StartEndIndex;
+        public IntPtr PhaseData;
     }
 
     public enum ScheduleMode
@@ -50,23 +51,23 @@ namespace Unity.Jobs.LowLevel.Unsafe
         [StructLayout(LayoutKind.Sequential)]
         public struct JobScheduleParameters
         {
-            public JobHandle    dependency;
-            public int          scheduleMode;
-            public IntPtr       reflectionData;
-            public IntPtr       jobDataPtr;
+            public JobHandle    Dependency;
+            public int          ScheduleMode;
+            public IntPtr       ReflectionData;
+            public IntPtr       JobDataPtr;
 
             unsafe public JobScheduleParameters(void* i_jobData, IntPtr i_reflectionData, JobHandle i_dependency, ScheduleMode i_scheduleMode)
             {
-                dependency = i_dependency;
-                jobDataPtr = (IntPtr)i_jobData;
-                reflectionData = i_reflectionData;
-                scheduleMode = (int)i_scheduleMode;
+                Dependency = i_dependency;
+                JobDataPtr = (IntPtr)i_jobData;
+                ReflectionData = i_reflectionData;
+                ScheduleMode = (int)i_scheduleMode;
             }
         }
 
         public static unsafe void GetJobRange(ref JobRanges ranges, int jobIndex, out int beginIndex, out int endIndex)
         {
-            int* startEndIndices = (int*)ranges.startEndIndex;
+            int* startEndIndices = (int*)ranges.StartEndIndex;
             beginIndex = startEndIndices[jobIndex * 2];
             endIndex = startEndIndices[jobIndex * 2 + 1];
         }
@@ -80,10 +81,14 @@ namespace Unity.Jobs.LowLevel.Unsafe
         [FreeFunction("ScheduleManagedJobParallelFor")]
         public static extern JobHandle ScheduleParallelFor(ref JobScheduleParameters parameters, int arrayLength, int innerloopBatchCount);
 
+        [FreeFunction("ScheduleManagedJobParallelForDeferArraySize")]
+        unsafe public static extern JobHandle ScheduleParallelForDeferArraySize(ref JobScheduleParameters parameters, int innerloopBatchCount, void* listData, void* listDataAtomicSafetyHandle);
+
         [FreeFunction("ScheduleManagedJobParallelForTransform")]
         public static extern JobHandle ScheduleParallelForTransform(ref JobScheduleParameters parameters, IntPtr transfromAccesssArray);
 
         [NativeMethod(IsThreadSafe = true, IsFreeFunction = true)]
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
         unsafe public static extern void PatchBufferMinMaxRanges(IntPtr bufferRangePatchData, void* jobdata, int startIndex, int rangeSize);
 
         [FreeFunction]
