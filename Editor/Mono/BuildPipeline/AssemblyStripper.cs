@@ -285,7 +285,7 @@ namespace UnityEditorInternal
             foreach (var assembly in groupedByAssembly)
             {
                 var assemblyName = assembly.Key;
-                sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\">", assemblyName));
+                sb.AppendLine(string.Format("\t<assembly fullname=\"{0}\" ignoreIfMissing=\"1\">", assemblyName));
                 var groupedByType = assembly.GroupBy(m => m.fullTypeName);
                 foreach (var type in groupedByType)
                 {

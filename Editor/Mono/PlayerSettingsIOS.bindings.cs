@@ -9,6 +9,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 using UnityEditorInternal;
+using UnityEditor.PlatformSupport;
 using UnityEngine.Bindings;
 
 using UnityEngine;
@@ -122,6 +123,13 @@ namespace UnityEditor
         AutomaticallySignValueNotSet = 0,
         AutomaticallySignValueTrue  = 1,
         AutomaticallySignValueFalse = 2
+    }
+
+    public enum ProvisioningProfileType
+    {
+        Automatic,
+        Development,
+        Distribution
     }
 
     public class iOSDeviceRequirement
@@ -396,7 +404,10 @@ namespace UnityEditor
                     return String.IsNullOrEmpty(iOSManualProvisioningProfileIDInternal) ?
                         EditorPrefs.GetString("DefaultiOSProvisioningProfileUUID") : iOSManualProvisioningProfileIDInternal;
                 }
-                set { iOSManualProvisioningProfileIDInternal = value; }
+                set
+                {
+                    iOSManualProvisioningProfileIDInternal = value;
+                }
             }
 
 
@@ -416,9 +427,30 @@ namespace UnityEditor
                     return String.IsNullOrEmpty(tvOSManualProvisioningProfileIDInternal) ?
                         EditorPrefs.GetString("DefaulttvOSProvisioningProfileUUID") : tvOSManualProvisioningProfileIDInternal;
                 }
-                set { tvOSManualProvisioningProfileIDInternal = value; }
+                set
+                {
+                    tvOSManualProvisioningProfileIDInternal = value;
+                }
             }
 
+
+            [NativeProperty("tvOSManualProvisioningProfileType")]
+            public static extern ProvisioningProfileType tvOSManualProvisioningProfileType
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
+            [NativeProperty("iOSManualProvisioningProfileType")]
+            public static extern ProvisioningProfileType iOSManualProvisioningProfileType
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
 
             [NativeProperty("AppleEnableAutomaticSigning")]
             private extern static int appleEnableAutomaticSigningInternal

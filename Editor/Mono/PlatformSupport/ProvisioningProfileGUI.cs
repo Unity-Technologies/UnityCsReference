@@ -8,20 +8,20 @@ using UnityEditor;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 
-namespace UnityEditorInternal
+namespace UnityEditor.PlatformSupport
 {
     internal class ProvisioningProfileGUI
     {
         internal delegate void ProvisioningProfileChangedDelegate(ProvisioningProfile profile);
 
-        internal static void ShowProvisioningProfileUIWithProperty(GUIContent titleWithToolTip, ProvisioningProfile profile, SerializedProperty prop)
+        internal static void ShowProvisioningProfileUIWithProperty(GUIContent titleWithToolTip, ProvisioningProfile profile, SerializedProperty profileIDProp, SerializedProperty profileTypeProp)
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label(titleWithToolTip, EditorStyles.label);
 
             Rect controlRect = EditorGUILayout.GetControlRect(false, 0);
-            GUIContent label = EditorGUIUtility.TrTextContent("Profile ID:");
-            EditorGUI.BeginProperty(controlRect, label, prop);
+            GUIContent labelID = EditorGUIUtility.TrTextContent("Profile ID:");
+            EditorGUI.BeginProperty(controlRect, labelID, profileIDProp);
 
             if (GUILayout.Button("Browse", EditorStyles.miniButton))
             {
@@ -29,8 +29,10 @@ namespace UnityEditorInternal
                 if (provisioningProfile != null && !string.IsNullOrEmpty(provisioningProfile.UUID))
                 {
                     profile = provisioningProfile;
-                    prop.stringValue = profile.UUID;
-                    prop.serializedObject.ApplyModifiedProperties();
+                    profileIDProp.stringValue = profile.UUID;
+                    profileTypeProp.intValue = (int)profile.type;
+                    profileIDProp.serializedObject.ApplyModifiedProperties();
+                    profileTypeProp.serializedObject.ApplyModifiedProperties();
                     GUI.FocusControl("");
                 }
                 GUIUtility.ExitGUI();
@@ -42,16 +44,22 @@ namespace UnityEditorInternal
             EditorGUI.BeginChangeCheck();
             EditorGUI.indentLevel++;
 
-            controlRect = EditorGUILayout.GetControlRect(true, 0);
-            label = EditorGUIUtility.TrTextContent("Profile ID:");
+            EditorGUI.BeginProperty(controlRect, labelID, profileIDProp);
+            profile.UUID = EditorGUILayout.TextField(labelID, profile.UUID);
+            EditorGUI.EndProperty();
 
-            EditorGUI.BeginProperty(controlRect, label, prop);
-            profile.UUID = EditorGUILayout.TextField(label, profile.UUID);
+            GUIContent labelType = EditorGUIUtility.TrTextContent("Profile Type:");
+
+            EditorGUI.BeginProperty(controlRect, labelType, profileTypeProp);
+            profile.type = (ProvisioningProfileType)EditorGUILayout.EnumPopup(labelType, profile.type);
+            EditorGUI.EndProperty();
 
             if (EditorGUI.EndChangeCheck())
-                prop.stringValue = profile.UUID;
+            {
+                profileIDProp.stringValue = profile.UUID;
+                profileTypeProp.intValue = (int)profile.type;
+            }
 
-            EditorGUI.EndProperty();
             EditorGUI.indentLevel--;
         }
 
@@ -78,13 +86,18 @@ namespace UnityEditorInternal
             EditorGUI.BeginChangeCheck();
             EditorGUI.indentLevel++;
 
-            GUIContent label = EditorGUIUtility.TrTextContent("Profile ID:");
-            profile.UUID = EditorGUILayout.TextField(label, profile.UUID);
-            EditorGUI.indentLevel--;
+            GUIContent labelID = EditorGUIUtility.TrTextContent("Profile ID:");
+            GUIContent labelType = EditorGUIUtility.TrTextContent("Profile Type:");
+
+            profile.UUID = EditorGUILayout.TextField(labelID, profile.UUID);
+            profile.type = (ProvisioningProfileType)EditorGUILayout.EnumPopup(labelType, profile.type);
+
             if (EditorGUI.EndChangeCheck())
             {
                 callback(profile);
             }
+
+            EditorGUI.indentLevel--;
         }
 
         internal static ProvisioningProfile Browse(string path)
@@ -119,7 +132,7 @@ namespace UnityEditorInternal
             return profile.UUID != null;
         }
 
-        internal static void ShowUIWithDefaults(string provisioningPrefKey, SerializedProperty enableAutomaticSigningProp, GUIContent automaticSigningGUI, SerializedProperty manualSigningIDProp, GUIContent manualSigningProfileGUI, SerializedProperty appleDevIDProp, GUIContent teamIDGUIContent)
+        internal static void ShowUIWithDefaults(string provisioningPrefUUIDKey, string provisioningPrefTypeKey, SerializedProperty enableAutomaticSigningProp, GUIContent automaticSigningGUI, SerializedProperty manualSigningIDProp, SerializedProperty manualSigningProfileTypeProp, GUIContent manualSigningProfileGUI, SerializedProperty appleDevIDProp, GUIContent teamIDGUIContent)
         {
             string oldTeamID = GetDefaultStringValue(appleDevIDProp, iOSEditorPrefKeys.kDefaultiOSAutomaticSignTeamId);
             string newTeamID = null;
@@ -147,18 +160,21 @@ namespace UnityEditorInternal
 
             if (!newValue)
             {
-                ShowProvisioningProfileUIWithDefaults(provisioningPrefKey, manualSigningIDProp, manualSigningProfileGUI);
+                ShowProvisioningProfileUIWithDefaults(provisioningPrefUUIDKey, provisioningPrefTypeKey, manualSigningIDProp, manualSigningProfileTypeProp, manualSigningProfileGUI);
             }
         }
 
-        private static void ShowProvisioningProfileUIWithDefaults(string defaultPreferenceKey, SerializedProperty uuidProp, GUIContent title)
+        private static void ShowProvisioningProfileUIWithDefaults(string defaultPreferenceKey, string provisioningPrefTypeKey, SerializedProperty uuidProp, SerializedProperty typeProp, GUIContent title)
         {
-            string val = uuidProp.stringValue;
-            if (string.IsNullOrEmpty(val))
+            string uuidVal = uuidProp.stringValue;
+            ProvisioningProfileType typeVal = (ProvisioningProfileType)typeProp.intValue;
+            if (string.IsNullOrEmpty(uuidVal))
             {
-                val = EditorPrefs.GetString(defaultPreferenceKey);
+                uuidVal = EditorPrefs.GetString(defaultPreferenceKey);
+                typeVal = string.IsNullOrEmpty(uuidVal) ? typeVal : (ProvisioningProfileType)EditorPrefs.GetInt(provisioningPrefTypeKey);
             }
-            ProvisioningProfileGUI.ShowProvisioningProfileUIWithProperty(title, new ProvisioningProfile(val), uuidProp);
+
+            ProvisioningProfileGUI.ShowProvisioningProfileUIWithProperty(title, new ProvisioningProfile(uuidVal, typeVal), uuidProp, typeProp);
         }
 
         private static bool GetBoolForAutomaticSigningValue(int signingValue)

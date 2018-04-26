@@ -194,6 +194,8 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct PlayerSendFrameStarted {}
         [RequiredByNativeCode]
+        public struct UpdateRectTransform {}
+        [RequiredByNativeCode]
         public struct UpdateCanvasRectTransform {}
         [RequiredByNativeCode]
         public struct PlayerUpdateCanvases {}

@@ -14,7 +14,7 @@ namespace UnityEngine.Assertions
     {
         internal const string UNITY_ASSERTIONS = "UNITY_ASSERTIONS";
 
-        public static bool raiseExceptions;
+        public static bool raiseExceptions = false;
 
         static void Fail(string message, string userMessage)
         {

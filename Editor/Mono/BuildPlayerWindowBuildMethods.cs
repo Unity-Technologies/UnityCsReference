@@ -329,14 +329,14 @@ namespace UnityEditor
                 string title = "Build " + BuildPlatforms.instance.GetBuildTargetDisplayName(targetGroup, target);
                 string path = EditorUtility.SaveBuildPanel(target, title, defaultFolder, defaultName, extension, out updateExistingBuild);
 
+                if (path == string.Empty)
+                    return false;
+
                 if (isWindowsStandalone)
                 {
                     extension = realExtension;
                     path = Path.Combine(path, Path.GetFileName(path) + '.' + extension);
                 }
-
-                if (path == string.Empty)
-                    return false;
 
                 // Enforce extension if needed
                 if (extension != string.Empty && FileUtil.GetPathExtension(path).ToLower() != extension)

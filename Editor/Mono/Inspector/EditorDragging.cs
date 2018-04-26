@@ -207,7 +207,7 @@ namespace UnityEditor
                                 {
                                     var gameObject = targetComponent.gameObject;
                                     foreach (var script in scripts)
-                                        addedComponents[index++] = Undo.AddComponent(gameObject, script.GetClass());
+                                        addedComponents[index++] = ObjectFactory.AddComponent(gameObject, script.GetClass());
                                 }
 
                                 // Move added components relative to target components

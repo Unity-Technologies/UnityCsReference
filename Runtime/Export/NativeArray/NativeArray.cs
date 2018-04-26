@@ -23,6 +23,7 @@ namespace Unity.Collections
     [NativeContainer]
     [NativeContainerSupportsMinMaxWriteRestriction]
     [NativeContainerSupportsDeallocateOnJobCompletion]
+    [NativeContainerSupportsDeferredConvertListToArray]
     [DebuggerDisplay("Length = {Length}")]
     [DebuggerTypeProxy(typeof(NativeArrayDebugView < >))]
     unsafe public struct NativeArray<T> : IDisposable, IEnumerable<T> where T : struct
