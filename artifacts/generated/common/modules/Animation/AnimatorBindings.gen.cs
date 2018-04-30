@@ -212,7 +212,6 @@ public partial struct AnimatorTransitionInfo
     internal bool exit                    { get { return (m_TransitionType & (int)TransitionType.Exit) != 0; }}
     
     
-    
     private int   m_FullPath;
     private int   m_UserName;
     private int   m_Name;
@@ -763,9 +762,17 @@ public void SetLookAtWeight(float weight, [uei.DefaultValue("0.00f")]  float bod
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern public AnimatorStateInfo GetNextAnimatorStateInfo (int layerIndex) ;
 
+    public AnimatorTransitionInfo GetAnimatorTransitionInfo(int layerIndex)
+        {
+            AnimatorTransitionInfo  info;
+            GetAnimatorTransitionInfo(layerIndex, out info);
+            return info;
+        }
+    
+    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public AnimatorTransitionInfo GetAnimatorTransitionInfo (int layerIndex) ;
+    extern private void GetAnimatorTransitionInfo (int layerIndex, out AnimatorTransitionInfo info) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

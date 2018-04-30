@@ -70,43 +70,53 @@ public enum SpriteMaskInteraction
 
 public sealed partial class Sprite : Object
 {
-    public static Sprite Create (Texture2D texture, Rect rect, Vector2 pivot, [uei.DefaultValue("100.0f")]  float pixelsPerUnit , [uei.DefaultValue("0")]  uint extrude , [uei.DefaultValue("SpriteMeshType.Tight")]  SpriteMeshType meshType , [uei.DefaultValue("Vector4.zero")]  Vector4 border ) {
-        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border );
+    public static Sprite Create (Texture2D texture, Rect rect, Vector2 pivot, [uei.DefaultValue("100.0f")]  float pixelsPerUnit , [uei.DefaultValue("0")]  uint extrude , [uei.DefaultValue("SpriteMeshType.Tight")]  SpriteMeshType meshType , [uei.DefaultValue("Vector4.zero")]  Vector4 border , [uei.DefaultValue("false")]  bool generateFallbackPhysicsShape ) {
+        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border, generateFallbackPhysicsShape );
+    }
+
+    [uei.ExcludeFromDocs]
+    public static Sprite Create (Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit , uint extrude , SpriteMeshType meshType , Vector4 border ) {
+        bool generateFallbackPhysicsShape = false;
+        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border, generateFallbackPhysicsShape );
     }
 
     [uei.ExcludeFromDocs]
     public static Sprite Create (Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit , uint extrude , SpriteMeshType meshType ) {
+        bool generateFallbackPhysicsShape = false;
         Vector4 border = Vector4.zero;
-        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border );
+        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border, generateFallbackPhysicsShape );
     }
 
     [uei.ExcludeFromDocs]
     public static Sprite Create (Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit , uint extrude ) {
+        bool generateFallbackPhysicsShape = false;
         Vector4 border = Vector4.zero;
         SpriteMeshType meshType = SpriteMeshType.Tight;
-        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border );
+        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border, generateFallbackPhysicsShape );
     }
 
     [uei.ExcludeFromDocs]
     public static Sprite Create (Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit ) {
+        bool generateFallbackPhysicsShape = false;
         Vector4 border = Vector4.zero;
         SpriteMeshType meshType = SpriteMeshType.Tight;
         uint extrude = 0;
-        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border );
+        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border, generateFallbackPhysicsShape );
     }
 
     [uei.ExcludeFromDocs]
     public static Sprite Create (Texture2D texture, Rect rect, Vector2 pivot) {
+        bool generateFallbackPhysicsShape = false;
         Vector4 border = Vector4.zero;
         SpriteMeshType meshType = SpriteMeshType.Tight;
         uint extrude = 0;
         float pixelsPerUnit = 100.0f;
-        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border );
+        return INTERNAL_CALL_Create ( texture, ref rect, ref pivot, pixelsPerUnit, extrude, meshType, ref border, generateFallbackPhysicsShape );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static Sprite INTERNAL_CALL_Create (Texture2D texture, ref Rect rect, ref Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, ref Vector4 border);
+    private extern static Sprite INTERNAL_CALL_Create (Texture2D texture, ref Rect rect, ref Vector2 pivot, float pixelsPerUnit, uint extrude, SpriteMeshType meshType, ref Vector4 border, bool generateFallbackPhysicsShape);
     public  Bounds bounds
     {
         get { Bounds tmp; INTERNAL_get_bounds(out tmp); return tmp;  }

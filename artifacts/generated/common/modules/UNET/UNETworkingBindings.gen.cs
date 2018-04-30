@@ -15,6 +15,7 @@ using System.Runtime.InteropServices;
 using UnityEngineInternal;
 using UnityEngine.Networking.Types;
 using System.Collections.Generic;
+using System.Net.Sockets;
 
 namespace UnityEngine.Networking
 {
@@ -654,6 +655,34 @@ public sealed partial class NetworkTransport
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private static  int AddWsHostWrapperWithoutIp (HostTopologyInternal topologyInt, int port) ;
 
+    
+    private static bool IsPortOpen(string ip, int port)
+        {
+            TimeSpan timeout = TimeSpan.FromMilliseconds(500);
+            string testedEndpoint = (ip == null) ? "127.0.0.1" : ip;
+            try
+            {
+                using (var client = new TcpClient())
+                {
+                    var result = client.BeginConnect(testedEndpoint, port, null, null);
+                    var success = result.AsyncWaitHandle.WaitOne(timeout);
+
+                    if (!success)
+                    {
+                        return false;
+                    }
+                    client.EndConnect(result);
+                }
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
+        }
+    
+    
+    
     [uei.ExcludeFromDocs]
 public static int AddWebsocketHost (HostTopology topology, int port) {
     string ip = null;
@@ -662,6 +691,11 @@ public static int AddWebsocketHost (HostTopology topology, int port) {
 
 public static int AddWebsocketHost(HostTopology topology, int port, [uei.DefaultValue("null")]  string ip )
         {
+            if (port != 0)
+            {
+                if (IsPortOpen(ip, port))
+                    throw new InvalidOperationException("Cannot open web socket on port " + port + " It has been already occupied.");
+            }
             if (topology == null)
                 throw new NullReferenceException("topology is not defined");
             CheckTopology(topology);

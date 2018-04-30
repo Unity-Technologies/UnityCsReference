@@ -21,6 +21,7 @@ namespace UnityEngine.Analytics
     }
 
     [RequiredByNativeCode]
+    [NativeHeader("UnityConnectScriptingClasses.h")]
     [NativeHeader("Runtime/UnityConnect/UnityConnectClient.h")]
     public static class AnalyticsSessionInfo
     {
