@@ -1088,6 +1088,21 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return targetAssemblyInfo;
         }
 
+        public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(EditorScriptCompilationOptions options)
+        {
+            var scriptAssemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | options);
+            var targetAssemblies = new TargetAssemblyInfo[scriptAssemblies.Length];
+
+            for (int i = 0; i < scriptAssemblies.Length; ++i)
+            {
+                var scriptAssembly = scriptAssemblies[i];
+                targetAssemblies[i].Name = scriptAssembly.Filename;
+                targetAssemblies[i].Flags = scriptAssembly.Flags;
+            }
+
+            return targetAssemblies;
+        }
+
         public ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>(EditorScriptCompilationOptions additionalOptions) where T : SupportedLanguage
         {
             var assemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor).Where(a => a.Language.GetType() == typeof(T)).ToArray();

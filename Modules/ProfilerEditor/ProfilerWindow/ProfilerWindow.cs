@@ -109,7 +109,7 @@ namespace UnityEditor
         private Vector2 m_PaneScroll_AudioClips = Vector2.zero;
 
         [SerializeField]
-        string m_ActiveNativePlatformSupportModule;
+        string m_ActiveNativePlatformSupportModule = null;
 
         static List<ProfilerWindow> m_ProfilerWindows = new List<ProfilerWindow>();
 
@@ -480,6 +480,13 @@ namespace UnityEditor
 
         void CheckForPlatformModuleChange()
         {
+            if (m_ActiveNativePlatformSupportModule == null)
+            {
+                m_ActiveNativePlatformSupportModule = EditorUtility.GetActiveNativePlatformSupportModuleName();
+                return;
+            }
+
+
             if (m_ActiveNativePlatformSupportModule != EditorUtility.GetActiveNativePlatformSupportModuleName())
             {
                 ProfilerDriver.ResetHistory();
@@ -1304,7 +1311,8 @@ namespace UnityEditor
 
             if (wasProfilingEditor != ProfilerDriver.profileEditor)
             {
-                m_CPUFrameDataHierarchyView.treeView.Clear();
+                // Clear the hierarchy view to force a rebuilding of the tree
+                m_CPUFrameDataHierarchyView.Clear();
             }
 
 

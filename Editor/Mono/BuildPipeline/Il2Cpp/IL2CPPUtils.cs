@@ -124,7 +124,7 @@ namespace UnityEditorInternal
 
         internal static bool EnableIL2CPPDebugger(BuildTargetGroup targetGroup)
         {
-            if (!EditorUserBuildSettings.allowDebugging)
+            if (!EditorUserBuildSettings.allowDebugging || !EditorUserBuildSettings.development)
                 return false;
 
             switch (PlayerSettings.GetApiCompatibilityLevel(targetGroup))

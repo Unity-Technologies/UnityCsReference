@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEngine.Advertisements")]
@@ -51,6 +52,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.AllIn1Runner")]
 [assembly: InternalsVisibleTo("UnityEngine.SpatialTracking")]
 [assembly: InternalsVisibleTo("GoogleAR.UnityNative")]
+[assembly: InternalsVisibleTo("Unity.WindowsMRAutomation")]
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")]

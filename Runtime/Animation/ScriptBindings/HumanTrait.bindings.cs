@@ -26,6 +26,7 @@ namespace UnityEngine
         // Muscle's name
         extern public static string[] MuscleName
         {
+            [NativeMethod("GetMuscleNames")]
             get;
         }
 
@@ -38,7 +39,7 @@ namespace UnityEngine
         // Bone's name
         extern public static string[] BoneName
         {
-            [NativeMethod("MonoBoneName")]
+            [NativeMethod("MonoBoneNames")]
             get;
         }
 

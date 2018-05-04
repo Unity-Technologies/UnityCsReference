@@ -122,8 +122,6 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct ScriptRunDelayedFixedFrameRate {}
         [RequiredByNativeCode]
-        public struct ScriptRunDelayedTasks {}
-        [RequiredByNativeCode]
         public struct NewInputFixedUpdate {}
     }
     [RequiredByNativeCode]
@@ -157,6 +155,8 @@ namespace UnityEngine.Experimental.PlayerLoop
         public struct DirectorUpdate {}
         [RequiredByNativeCode]
         public struct ScriptRunDelayedDynamicFrameRate {}
+        [RequiredByNativeCode]
+        public struct ScriptRunDelayedTasks {}
     }
     [RequiredByNativeCode]
     public struct PreLateUpdate

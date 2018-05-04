@@ -26,15 +26,14 @@ namespace UnityEditor
             public static GUIContent clearFlags = EditorGUIUtility.TrTextContent("Clear Flags", "What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas.");
             public static GUIContent background = EditorGUIUtility.TrTextContent("Background", "The Camera clears the screen to this color before rendering.");
             public static GUIContent projection = EditorGUIUtility.TrTextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective.");
-            public static GUIContent size = EditorGUIUtility.TrTextContent("Size");
-            public static GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The width of the Camera’s view angle, measured in degrees along the local Y axis.");
+            public static GUIContent size = EditorGUIUtility.TrTextContent("Size", "The vertical size of the camera view.");
+            public static GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the camera’s view angle, measured in degrees vertically, or along the local Y axis.");
             public static GUIContent viewportRect = EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1).");
-            public static GUIContent cameraPreview = EditorGUIUtility.TrTextContent("Camera Preview");
-            public static GUIContent sensorSize = EditorGUIUtility.TrTextContent("Sensor Size");
-            public static GUIContent lensShift = EditorGUIUtility.TrTextContent("Lens Shift");
-            public static GUIContent physicalCamera = EditorGUIUtility.TrTextContent("Physical Camera");
-            public static GUIContent cameraType = EditorGUIUtility.TrTextContent("Camera Type");
-            public static GUIContent focalLength = EditorGUIUtility.TrTextContent("Focal Length");
+            public static GUIContent sensorSize = EditorGUIUtility.TrTextContent("Sensor Size", "The size of the camera sensor in millimeters.");
+            public static GUIContent lensShift = EditorGUIUtility.TrTextContent("Lens Shift", "Offset from the camera sensor. Use these properties to simulate a shift lens. Measured as a multiple of the sensor size.");
+            public static GUIContent physicalCamera = EditorGUIUtility.TrTextContent("Physical Camera", "Enables Physical camera mode. When checked, the field of view is calculated from properties for simulating physical attributes (focal length, sensor size, and lens shift).");
+            public static GUIContent cameraType = EditorGUIUtility.TrTextContent("Sensor Type", "Common sensor sizes. Choose an item to set Sensor Size, or edit Sensor Size for your custom settings.");
+            public static GUIContent focalLength = EditorGUIUtility.TrTextContent("Focal Length", "The camera focal length in millimeters.");
             public static GUIStyle invisibleButton = "InvisibleButton";
         }
         public sealed class Settings

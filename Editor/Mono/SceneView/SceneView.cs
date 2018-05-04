@@ -2092,6 +2092,14 @@ namespace UnityEditor
             m_Camera.nearClipPlane = farClip * 0.000005f;
             m_Camera.farClipPlane = farClip;
 
+            // In 2D mode, camera position z should not go to positive value.
+            if (m_2DMode && m_Camera.transform.position.z >= 0)
+            {
+                var p = m_Camera.transform.position;
+                p.z = -(m_Camera.nearClipPlane + 0.01f);
+                m_Camera.transform.position = p;
+            }
+
             m_Camera.renderingPath = GetSceneViewRenderingPath();
             if (!CheckDrawModeForRenderingPath(m_CameraMode.drawMode))
                 m_CameraMode = GetBuiltinCameraMode(DrawCameraMode.Textured);

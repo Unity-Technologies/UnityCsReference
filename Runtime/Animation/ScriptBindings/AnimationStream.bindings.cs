@@ -44,21 +44,24 @@ namespace UnityEngine.Experimental.Animations
             get { return m_AnimatorBindingsVersion; }
         }
 
-        public bool IsValid()
+        public bool isValid
         {
-            return m_AnimatorBindingsVersion >= (UInt32)AnimatorBindingsVersion.kValidMinVersion &&
-                constant != System.IntPtr.Zero &&
-                input != System.IntPtr.Zero &&
-                output != System.IntPtr.Zero &&
-                workspace != System.IntPtr.Zero &&
-                streamHandles != System.IntPtr.Zero &&
-                transformSceneHandles != System.IntPtr.Zero &&
-                propertySceneHandles != System.IntPtr.Zero;
+            get
+            {
+                return m_AnimatorBindingsVersion >= (UInt32)AnimatorBindingsVersion.kValidMinVersion &&
+                    constant != System.IntPtr.Zero &&
+                    input != System.IntPtr.Zero &&
+                    output != System.IntPtr.Zero &&
+                    workspace != System.IntPtr.Zero &&
+                    streamHandles != System.IntPtr.Zero &&
+                    transformSceneHandles != System.IntPtr.Zero &&
+                    propertySceneHandles != System.IntPtr.Zero;
+            }
         }
 
         internal void CheckIsValid()
         {
-            if (!IsValid())
+            if (!isValid)
                 throw new InvalidOperationException("The AnimationStream is invalid.");
         }
 
@@ -94,21 +97,18 @@ namespace UnityEngine.Experimental.Animations
             get { CheckIsValid(); return GetIsHumanStream(); }
         }
 
-        public AnimationHumanStream humanStream
+        public AnimationHumanStream AsHuman()
         {
-            get
-            {
-                CheckIsValid();
-                if (!GetIsHumanStream())
-                    throw new InvalidOperationException("Cannot create an AnimationHumanStream for a generic rig.");
+            CheckIsValid();
+            if (!GetIsHumanStream())
+                throw new InvalidOperationException("Cannot create an AnimationHumanStream for a generic rig.");
 
-                return GetHumanStream();
-            }
+            return GetHumanStream();
         }
 
-        public int inputCount
+        public int inputStreamCount
         {
-            get { CheckIsValid(); return GetInputCount(); }
+            get { CheckIsValid(); return GetInputStreamCount(); }
         }
 
         public AnimationStream GetInputStream(int index)
@@ -146,7 +146,7 @@ namespace UnityEngine.Experimental.Animations
         private extern Quaternion GetRootMotionRotation();
 
         [NativeMethod(IsThreadSafe = true)]
-        private extern int GetInputCount();
+        private extern int GetInputStreamCount();
 
         [NativeMethod(Name = "GetInputStream", IsThreadSafe = true)]
         private extern AnimationStream InternalGetInputStream(int index);

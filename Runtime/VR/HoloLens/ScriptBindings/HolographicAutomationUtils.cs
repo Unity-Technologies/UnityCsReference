@@ -2,125 +2,93 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Diagnostics;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEngine.XR.WSA
 {
     internal class SimulatedBody
     {
         // Require use of HolographicEmulation.simulatedBody to get instance
-        internal SimulatedBody() {}
+        public SimulatedBody() {}
 
         public Vector3 position
         {
-            get
-            {
-                return Vector3.zero;
-            }
-            set
-            {
-            }
+            get { return HolographicAutomation.GetBodyPosition(); }
+            set { HolographicAutomation.SetBodyPosition(value); }
         }
 
         public float rotation
         {
-            get
-            {
-                return 0;
-            }
-            set
-            {
-            }
+            get { return HolographicAutomation.GetBodyRotation(); }
+            set { HolographicAutomation.SetBodyRotation(value); }
         }
 
         public float height
         {
-            get
-            {
-                return 0;
-            }
-            set
-            {
-            }
+            get { return HolographicAutomation.GetBodyHeight(); }
+            set { HolographicAutomation.SetBodyHeight(value); }
         }
     }
 
     internal class SimulatedHead
     {
         // Require use of HolographicEmulation.simulatedHead to get instance
-        internal SimulatedHead() {}
+        public SimulatedHead() {}
 
         public float diameter
         {
-            get
-            {
-                return 0;
-            }
-            set
-            {
-            }
+            get { return HolographicAutomation.GetHeadDiameter(); }
+            set { HolographicAutomation.SetHeadDiameter(value); }
         }
 
         public Vector3 eulerAngles
         {
-            get
-            {
-                return Vector3.zero;
-            }
-            set
-            {
-            }
+            get { return HolographicAutomation.GetHeadRotation(); }
+            set { HolographicAutomation.SetHeadRotation(value); }
         }
     }
 
     internal class SimulatedHand
     {
+        public GestureHand m_Hand;
 
         // Require use of HolographicEmulation.simulatedLeftHand or HolographicEmulation.simulatedRightHand to get instance
         internal SimulatedHand(GestureHand hand)
         {
+            m_Hand = hand;
         }
 
         public Vector3 position
         {
-            get
-            {
-                return Vector3.zero;
-            }
-            set
-            {
-            }
+            get { return HolographicAutomation.GetHandPosition(m_Hand); }
+            set { HolographicAutomation.SetHandPosition(m_Hand, value); }
         }
 
         public bool activated
         {
-            get
-            {
-                return false;
-            }
-            set
-            {
-            }
+            get { return HolographicAutomation.GetHandActivated(m_Hand); }
+            set { HolographicAutomation.SetHandActivated(m_Hand, value); }
         }
 
         public bool visible
         {
-            get
-            {
-                return false;
-            }
+            get { return HolographicAutomation.GetHandVisible(m_Hand); }
         }
 
         public void EnsureVisible()
         {
+            HolographicAutomation.EnsureHandVisible(m_Hand);
         }
 
         public void PerformGesture(SimulatedGesture gesture)
         {
+            HolographicAutomation.PerformGesture(m_Hand, gesture);
         }
     }
 
-    internal sealed partial class HolographicEmulation
+    internal partial class HolographicAutomation
     {
         static SimulatedBody s_Body = new SimulatedBody();
         static SimulatedHead s_Head = new SimulatedHead();

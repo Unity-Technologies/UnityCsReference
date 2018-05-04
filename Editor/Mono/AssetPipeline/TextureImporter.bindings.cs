@@ -209,7 +209,6 @@ namespace UnityEditor
         public extern int mipmapFadeDistanceStart { get; set; }
         // Mip level where texture is faded out completely.
         public extern int mipmapFadeDistanceEnd { get; set; }
-        public extern bool pushPullDilation { get; set; }
 
         // Should mip maps be generated with gamma correction?
         [Obsolete("generateMipsInLinearSpace Property deprecated. Mipmaps are always generated in linear space.")]

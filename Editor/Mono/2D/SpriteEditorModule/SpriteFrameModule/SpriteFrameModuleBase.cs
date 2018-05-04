@@ -28,6 +28,14 @@ namespace UnityEditor
         protected ISpriteEditorDataProvider m_SpriteDataProvider;
         string m_ModuleName;
 
+        internal enum PivotUnitMode
+        {
+            Normalized,
+            Pixels
+        }
+
+        private PivotUnitMode m_PivotUnitMode = PivotUnitMode.Normalized;
+
         protected SpriteFrameModuleBase(string name, ISpriteEditor sw, IEventSystem es, IUndoSystem us, IAssetDatabase ad)
         {
             spriteEditor = sw;
@@ -169,6 +177,16 @@ namespace UnityEditor
             get { return selected.pivot; }
         }
 
+        private Vector2 selectedSpritePivotInCurUnitMode
+        {
+            get
+            {
+                return m_PivotUnitMode == PivotUnitMode.Pixels
+                    ? ConvertFromNormalizedToRectSpace(selectedSpritePivot, selectedSpriteRect)
+                    : selectedSpritePivot;
+            }
+        }
+
         public int CurrentSelectedSpriteIndex()
         {
             if (m_RectsCache != null && selected != null)
@@ -261,7 +279,7 @@ namespace UnityEditor
             get { return spriteImportMode == SpriteImportMode.Multiple; }
         }
 
-        protected void SnapPivot(Vector2 pivot, out Vector2 outPivot, out SpriteAlignment outAlignment)
+        protected void SnapPivotToSnapPoints(Vector2 pivot, out Vector2 outPivot, out SpriteAlignment outAlignment)
         {
             Rect rect = selectedSpriteRect;
 
@@ -285,6 +303,17 @@ namespace UnityEditor
 
             outAlignment = snappedAlignment;
             outPivot = ConvertFromTextureToNormalizedSpace(snapPoints[(int)snappedAlignment], rect);
+        }
+
+        protected void SnapPivotToPixels(Vector2 pivot, out Vector2 outPivot, out SpriteAlignment outAlignment)
+        {
+            outAlignment = SpriteAlignment.Custom;
+
+            Rect rect = selectedSpriteRect;
+            float unitsPerPixelX = 1.0f / rect.width;
+            float unitsPerPixelY = 1.0f / rect.height;
+            outPivot.x = Mathf.Round(pivot.x / unitsPerPixelX) * unitsPerPixelX;
+            outPivot.y = Mathf.Round(pivot.y / unitsPerPixelY) * unitsPerPixelY;
         }
 
         private void UndoCallback()

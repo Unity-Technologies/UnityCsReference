@@ -192,6 +192,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssembliesWithScripts()
+        {
+            var options = GetAdditionalEditorScriptCompilationOptions();
+            return Instance.GetTargetAssembliesWithScripts(options);
+        }
+
+        [RequiredByNativeCode]
         public static bool HaveSetupErrors()
         {
             return Instance.HaveSetupErrors();

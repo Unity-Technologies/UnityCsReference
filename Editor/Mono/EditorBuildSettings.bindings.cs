@@ -76,7 +76,19 @@ namespace UnityEditor
         {
             get
             {
-                return GetEditorBuildSettingsScenes();
+                var result = GetEditorBuildSettingsScenes();
+                foreach (var scene in result)
+                {
+                    if (scene.guid.Empty())
+                    {
+                        scene.guid = new GUID(AssetDatabase.AssetPathToGUID(scene.path));
+                    }
+                    else
+                    {
+                        scene.path = AssetDatabase.GUIDToAssetPath(scene.guid.ToString());
+                    }
+                }
+                return result;
             }
             set
             {

@@ -513,7 +513,7 @@ namespace UnityEditor
                 var newZoom = Mathf.Pow(10f, logScale);
                 SnapZoom(newZoom);
             }
-            var scaleContent = EditorGUIUtility.TempContent(string.Format("{0}x", (m_ZoomArea.scale.y).ToString("G2")));
+            var scaleContent = EditorGUIUtility.TempContent(string.Format("{0}x", (m_ZoomArea.scale.y).ToString("G3")));
             scaleContent.tooltip = Styles.zoomSliderContent.tooltip;
             GUILayout.Label(scaleContent, EditorStyles.miniLabel, GUILayout.Width(kScaleLabelWidth));
             scaleContent.tooltip = string.Empty;

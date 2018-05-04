@@ -37,6 +37,12 @@ namespace UnityEditor
             spriteEditor.enableMouseMoveEvent = true;
         }
 
+        public override void OnModuleDeactivate()
+        {
+            base.OnModuleDeactivate();
+            m_AlphaPixelCache = null;
+        }
+
         public override bool CanBeActivated()
         {
             return SpriteUtility.GetSpriteImportMode(spriteEditor.GetDataProvider<ISpriteEditorDataProvider>()) != SpriteImportMode.Polygon;

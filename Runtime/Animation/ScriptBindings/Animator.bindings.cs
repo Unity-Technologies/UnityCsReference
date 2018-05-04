@@ -966,7 +966,13 @@ namespace UnityEngine
             get;
         }
 
-        public Transform GetBoneTransform(HumanBodyBones humanBoneId) {return GetBoneTransformInternal(HumanTrait.GetBoneIndexFromMono((int)humanBoneId)); }
+        public Transform GetBoneTransform(HumanBodyBones humanBoneId)
+        {
+            if (humanBoneId < 0 || humanBoneId >= HumanBodyBones.LastBone)
+                throw new IndexOutOfRangeException("humanBoneId must be between 0 and " + HumanBodyBones.LastBone);
+
+            return GetBoneTransformInternal(HumanTrait.GetBoneIndexFromMono((int)humanBoneId));
+        }
 
         [NativeMethod("GetBoneTransform")]
         extern internal Transform GetBoneTransformInternal(int humanBoneId);

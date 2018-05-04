@@ -24,6 +24,11 @@ namespace UnityEditor
             kAppendBuildTarget = 1 << 1
         }
 
+        internal static bool SendEventScriptableBuildPipelineInfo(object parameters)
+        {
+            return EditorAnalytics.SendEvent("scriptableBuildPipeline", parameters);
+        }
+
         internal static bool SendEventServiceInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("serviceInfo", parameters);

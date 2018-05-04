@@ -63,6 +63,7 @@ namespace UnityEditor
 
         private const float kInspectorWidth = 330f;
         private const float kInspectorHeight = 170;
+        private const float kPivotFieldPrecision = 0.0001f;
         private float m_Zoom = 1.0f;
         private GizmoMode m_GizmoMode;
 
@@ -78,6 +79,7 @@ namespace UnityEditor
         private PropertyControl<long> m_BorderFieldR;
         private PropertyControl<long> m_BorderFieldB;
         private EnumField m_PivotField;
+        private EnumField m_PivotUnitModeField;
         private VisualElement m_CustomPivotElement;
         private PropertyControl<double> m_CustomPivotFieldX;
         private PropertyControl<double> m_CustomPivotFieldY;
@@ -221,8 +223,25 @@ namespace UnityEditor
                         SpriteAlignment alignment = (SpriteAlignment)evt.newValue;
                         SetSpritePivotAndAlignment(selectedSpritePivot, alignment);
                         m_CustomPivotElement.SetEnabled(selectedSpriteAlignment == SpriteAlignment.Custom);
-                        m_CustomPivotFieldX.value = selectedSpritePivot.x;
-                        m_CustomPivotFieldY.value = selectedSpritePivot.y;
+
+                        Vector2 pivot = selectedSpritePivotInCurUnitMode;
+                        m_CustomPivotFieldX.value = pivot.x;
+                        m_CustomPivotFieldY.value = pivot.y;
+                    }
+                });
+
+
+            m_PivotUnitModeField = m_SelectedFrameInspector.Q<EnumField>("pivotUnitModeField");
+            m_PivotUnitModeField.Init(PivotUnitMode.Normalized);
+            m_PivotUnitModeField.OnValueChanged((evt) =>
+                {
+                    if (hasSelected)
+                    {
+                        m_PivotUnitMode = (PivotUnitMode)evt.newValue;
+
+                        Vector2 pivot = selectedSpritePivotInCurUnitMode;
+                        m_CustomPivotFieldX.value = pivot.x;
+                        m_CustomPivotFieldY.value = pivot.y;
                     }
                 });
 
@@ -233,8 +252,13 @@ namespace UnityEditor
                 {
                     if (hasSelected)
                     {
+                        float newValue = (float)evt.newValue;
+                        float pivotX = m_PivotUnitMode == PivotUnitMode.Pixels
+                            ? ConvertFromRectToNormalizedSpace(new Vector2(newValue, 0.0f), selectedSpriteRect).x
+                            : newValue;
+
                         var pivot = selectedSpritePivot;
-                        pivot.x = (float)evt.newValue;
+                        pivot.x = pivotX;
                         SetSpritePivotAndAlignment(pivot, selectedSpriteAlignment);
                     }
                 });
@@ -244,8 +268,13 @@ namespace UnityEditor
                 {
                     if (hasSelected)
                     {
+                        float newValue = (float)evt.newValue;
+                        float pivotY = m_PivotUnitMode == PivotUnitMode.Pixels
+                            ? ConvertFromRectToNormalizedSpace(new Vector2(0.0f, newValue), selectedSpriteRect).y
+                            : newValue;
+
                         var pivot = selectedSpritePivot;
-                        pivot.y = (float)evt.newValue;
+                        pivot.y = pivotY;
                         SetSpritePivotAndAlignment(pivot, selectedSpriteAlignment);
                     }
                 });
@@ -294,8 +323,12 @@ namespace UnityEditor
             m_BorderFieldR.value = Mathf.RoundToInt(spriteBorder.z);
             m_BorderFieldB.value = Mathf.RoundToInt(spriteBorder.w);
             m_PivotField.value = selectedSpriteAlignment;
-            m_CustomPivotFieldX.value = (selectedSpritePivot.x);
-            m_CustomPivotFieldY.value = (selectedSpritePivot.y);
+            m_PivotUnitModeField.value = m_PivotUnitMode;
+
+            Vector2 pivot = selectedSpritePivotInCurUnitMode;
+            m_CustomPivotFieldX.value = pivot.x;
+            m_CustomPivotFieldY.value = pivot.y;
+
             m_CustomPivotElement.SetEnabled(hasSelected && selectedSpriteAlignment == SpriteAlignment.Custom);
         }
 
@@ -313,6 +346,22 @@ namespace UnityEditor
         private static Vector2 ConvertFromTextureToNormalizedSpace(Vector2 texturePos, Rect rect)
         {
             return new Vector2((texturePos.x - rect.xMin) / rect.width, (texturePos.y - rect.yMin) / rect.height);
+        }
+
+        private static Vector2 ConvertFromNormalizedToRectSpace(Vector2 normalizedPos, Rect rect)
+        {
+            Vector2 rectPos = new Vector2(rect.width * normalizedPos.x, rect.height * normalizedPos.y);
+
+            // This is to combat the lack of precision formating on the UI controls.
+            rectPos.x = Mathf.Round(rectPos.x / kPivotFieldPrecision) * kPivotFieldPrecision;
+            rectPos.y = Mathf.Round(rectPos.y / kPivotFieldPrecision) * kPivotFieldPrecision;
+
+            return rectPos;
+        }
+
+        private static Vector2 ConvertFromRectToNormalizedSpace(Vector2 rectPos, Rect rect)
+        {
+            return new Vector2(rectPos.x / rect.width, rectPos.y / rect.height);
         }
 
         private static Vector2[] GetSnapPointsArray(Rect rect)
@@ -375,7 +424,9 @@ namespace UnityEditor
             {
                 // Pivot snapping only happen when ctrl is press. Same as scene view snapping move
                 if (eventSystem.current.control)
-                    SnapPivot(pivotHandlePosition, out pivot, out alignment);
+                    SnapPivotToSnapPoints(pivotHandlePosition, out pivot, out alignment);
+                else if (m_PivotUnitMode == PivotUnitMode.Pixels)
+                    SnapPivotToPixels(pivotHandlePosition, out pivot, out alignment);
                 else
                 {
                     pivot = pivotHandlePosition;
