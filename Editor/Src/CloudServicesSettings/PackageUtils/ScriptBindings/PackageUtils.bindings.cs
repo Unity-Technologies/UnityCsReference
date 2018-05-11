@@ -22,6 +22,7 @@ namespace UnityEditor.Connect
         private Dictionary<string, UpmPackageInfo> m_outdatedPackages = new Dictionary<string, UpmPackageInfo>();
 
         extern private static bool WaitForPackageManagerOperation(long operationId, string progressBarText);
+        extern private static bool IsPackageManagerDisabled();
 
         public static PackageUtils instance
         {
@@ -38,6 +39,9 @@ namespace UnityEditor.Connect
 
         public void RetrievePackageInfo()
         {
+            if (IsPackageManagerDisabled())
+                return;
+
             if (NativeClient.List(out m_listOperationId) == NativeClient.StatusCode.Error)
             {
                 Debug.LogWarning("Failed to call list packages!");

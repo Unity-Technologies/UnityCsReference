@@ -14,8 +14,8 @@ namespace UnityEditor
     /// Remap Viewed type to inspector type
     internal class CustomEditorAttributes
     {
-        private static readonly List<MonoEditorType> kSCustomEditors = new List<MonoEditorType>();
-        private static readonly List<MonoEditorType> kSCustomMultiEditors = new List<MonoEditorType>();
+        private static readonly Dictionary<Type, List<MonoEditorType>> kSCustomEditors = new Dictionary<Type, List<MonoEditorType>>();
+        private static readonly Dictionary<Type, List<MonoEditorType>> kSCustomMultiEditors = new Dictionary<Type, List<MonoEditorType>>();
         private static bool s_Initialized;
 
         class MonoEditorType
@@ -32,7 +32,8 @@ namespace UnityEditor
             return FindCustomEditorTypeByType(o.GetType(), multiEdit);
         }
 
-        internal static Type FindCustomEditorTypeByType(System.Type type, bool multiEdit)
+        private static List<MonoEditorType> s_SearchCache = new List<MonoEditorType>();
+        internal static Type FindCustomEditorTypeByType(Type type, bool multiEdit)
         {
             if (!s_Initialized)
             {
@@ -51,28 +52,60 @@ namespace UnityEditor
             {
                 for (Type inspected = type; inspected != null; inspected = inspected.BaseType)
                 {
-                    // Capture for closure
-                    var inspected1 = inspected;
-                    var pass1 = pass;
+                    List<MonoEditorType> foundEditors;
+                    if (!editors.TryGetValue(inspected, out foundEditors))
+                    {
+                        if (!inspected.IsGenericType)
+                            continue;
 
-                    var validEditors = editors.Where(x => IsAppropriateEditor(x, inspected1, type != inspected1, pass1 == 1));
+                        inspected = inspected.GetGenericTypeDefinition();
+
+                        if (!editors.TryGetValue(inspected, out foundEditors))
+                            continue;
+                    }
+
+                    s_SearchCache.Clear();
+                    foreach (var result in foundEditors)
+                    {
+                        if (!IsAppropriateEditor(result, inspected, type != inspected, pass == 1))
+                            continue;
+
+                        s_SearchCache.Add(result);
+                    }
+
+                    Type toUse = null;
 
                     // we have a render pipeline...
                     // we need to select the one with the correct RP asset
                     if (GraphicsSettings.renderPipelineAsset != null)
                     {
                         var rpType = GraphicsSettings.renderPipelineAsset.GetType();
-                        foreach (var editor in validEditors)
+                        foreach (var editor in s_SearchCache)
                         {
                             if (editor.m_RenderPipelineType == rpType)
-                                return editor.m_InspectorType;
+                            {
+                                toUse = editor.m_InspectorType;
+                                break;
+                            }
                         }
                     }
 
                     // no RP, fallback!
-                    var found = validEditors.FirstOrDefault(x => x.m_RenderPipelineType == null);
-                    if (found != null)
-                        return found.m_InspectorType;
+                    if (toUse == null)
+                    {
+                        foreach (var editor in s_SearchCache)
+                        {
+                            if (editor.m_RenderPipelineType == null)
+                            {
+                                toUse = editor.m_InspectorType;
+                                break;
+                            }
+                        }
+                    }
+
+                    s_SearchCache.Clear();
+                    if (toUse != null)
+                        return toUse;
                 }
             }
             return null;
@@ -106,10 +139,13 @@ namespace UnityEditor
                     {
                         // Suppress a warning on TweakMode, we did this bad in the default project folder
                         // and it's going to be too hard for customers to figure out how to fix it and also quite pointless.
-                        if (type.FullName == "TweakMode" && type.IsEnum && inspectAttr.m_InspectedType.FullName == "BloomAndFlares")
+                        if (type.FullName == "TweakMode" && type.IsEnum &&
+                            inspectAttr.m_InspectedType.FullName == "BloomAndFlares")
                             continue;
 
-                        Debug.LogWarning(type.Name + " uses the CustomEditor attribute but does not inherit from Editor.\nYou must inherit from Editor. See the Editor class script documentation.");
+                        Debug.LogWarning(
+                            type.Name +
+                            " uses the CustomEditor attribute but does not inherit from Editor.\nYou must inherit from Editor. See the Editor class script documentation.");
                     }
                     else
                     {
@@ -120,9 +156,25 @@ namespace UnityEditor
                         var attr = inspectAttr as CustomEditorForRenderPipelineAttribute;
                         if (attr != null)
                             t.m_RenderPipelineType = attr.renderPipelineType;
-                        kSCustomEditors.Add(t);
+
+                        List<MonoEditorType> editors;
+                        if (!kSCustomEditors.TryGetValue(inspectAttr.m_InspectedType, out editors))
+                        {
+                            editors = new List<MonoEditorType>();
+                            kSCustomEditors[inspectAttr.m_InspectedType] = editors;
+                        }
+                        editors.Add(t);
+
                         if (type.GetCustomAttributes(typeof(CanEditMultipleObjects), false).Length > 0)
-                            kSCustomMultiEditors.Add(t);
+                        {
+                            List<MonoEditorType> multiEditors;
+                            if (!kSCustomMultiEditors.TryGetValue(inspectAttr.m_InspectedType, out multiEditors))
+                            {
+                                multiEditors = new List<MonoEditorType>();
+                                kSCustomMultiEditors[inspectAttr.m_InspectedType] = multiEditors;
+                            }
+                            multiEditors.Add(t);
+                        }
                     }
                 }
             }

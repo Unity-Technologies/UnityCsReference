@@ -648,7 +648,7 @@ namespace UnityEditor
                 mainFloorAlpha = is2D ? 0.5f : 1;
             }
 
-            Quaternion floorRot = is2D ? Quaternion.Euler(0, -90, 90) : Quaternion.identity;
+            Quaternion floorRot = is2D ? Quaternion.Euler(-90, 0, 0) : Quaternion.identity;
             Vector3 floorPos = new Vector3(0, 0, 0);
             floorPos = m_ReferenceInstance.transform.position;
             floorPos.y = mainFloorHeight;
@@ -669,6 +669,9 @@ namespace UnityEditor
             previewUtility.camera.transform.position = camPos;
             previewUtility.camera.transform.rotation = camRot;
 
+            // Texture offset - negative in order to compensate the floor movement.
+            Vector2 textureOffset = -new Vector2(floorPos.x, is2D ? floorPos.y : floorPos.z);
+
             if (is2D)
                 previewUtility.camera.orthographicSize = 2.0f * m_ZoomFactor;
             // Render main floor
@@ -679,7 +682,7 @@ namespace UnityEditor
                 Material mat = m_FloorMaterial;
                 Matrix4x4 matrix = Matrix4x4.TRS(floorPos, floorRot, Vector3.one * kFloorScale * m_AvatarScale);
 
-                mat.mainTextureOffset = -new Vector2(floorPos.x, floorPos.z) * kFloorScale * 0.08f * (1.0f / m_AvatarScale);
+                mat.mainTextureOffset = textureOffset * kFloorScale * 0.08f * (1.0f / m_AvatarScale);
                 mat.SetTexture("_ShadowTexture", shadowMap);
                 mat.SetMatrix("_ShadowTextureMatrix", shadowMatrix);
                 mat.SetVector("_Alphas", new Vector4(kFloorAlpha * mainFloorAlpha, kFloorShadowAlpha * mainFloorAlpha, 0, 0));
@@ -698,7 +701,7 @@ namespace UnityEditor
                 floorPos.y = floorHeight;
 
                 Material mat = m_FloorMaterialSmall;
-                mat.mainTextureOffset = -new Vector2(floorPos.x, floorPos.z) * kFloorScaleSmall * 0.08f;
+                mat.mainTextureOffset = textureOffset * kFloorScaleSmall * 0.08f;
                 mat.SetTexture("_ShadowTexture", shadowMap);
                 mat.SetMatrix("_ShadowTextureMatrix", shadowMatrix);
                 mat.SetVector("_Alphas", new Vector4(kFloorAlpha * floorAlpha, 0, 0, 0));
