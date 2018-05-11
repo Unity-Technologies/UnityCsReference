@@ -61,7 +61,6 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public ContextType contextType { get; set; }
-        internal int GUIDepth { get; private set; }
 
         bool lostFocus = false;
         bool receivedFocus = false;
@@ -200,8 +199,6 @@ namespace UnityEngine.Experimental.UIElements
                 // We intentionally don't send the NewKeuboardFocus command here since it creates an issue with the AutomatedWindow
                 // newKeyboardFocusControlID = GUIUtility.keyboardControl;
             }
-
-            GUIDepth = GUIUtility.guiDepth;
             EventType originalEventType = Event.current.type;
 
             bool isExitGUIException = false;

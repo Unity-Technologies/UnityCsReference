@@ -340,17 +340,17 @@ namespace UnityEditor
                 MaximizeKeyHandler(args);
         }
 
-        [Shortcut("Window/Maximize View", null, "# ")]
+        [Shortcut("Window/Maximize View", typeof(EditorWindow), "# ")]
         [FormerlyPrefKeyAs("Window/Maximize View", "# ")]
         internal static void MaximizeKeyHandler(ShortcutArguments args)
         {
             if (args.context == null || args.context is PreviewWindow)
                 return;
 
-            if (IsMaximized(args.context))
-                Unmaximize(args.context);
+            if (IsMaximized(args.context as EditorWindow))
+                Unmaximize(args.context as EditorWindow);
             else
-                Maximize(args.context);
+                Maximize(args.context as EditorWindow);
         }
 
         public static void AddSplitViewAndChildrenRecurse(View splitview, ArrayList list)

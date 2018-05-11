@@ -54,6 +54,13 @@ namespace UnityEditor
         public float[] sizes;
     }
 
+    internal struct GeoMemLabels
+    {
+        public string[] labels;
+        public float[] sizes;
+        public UInt64[] triCounts;
+    }
+
     [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
     internal struct LightingStats
     {
@@ -218,18 +225,9 @@ namespace UnityEditor
         [StaticAccessor("PVRMemoryLabelTracker::Get()", StaticAccessorType.Arrow)]
         internal static extern void ResetExplicitlyShownMemLabels();
 
-        internal static void GetGeometryMemory(out string[] labels, out float[] sizes, out UInt64[] triCounts)
-        {
-            labels = new string[0];
-            sizes = new float[0];
-            triCounts = new UInt64[0];
-
-            GetGeometryMemoryInternal(labels, sizes, triCounts);
-        }
-
         [StaticAccessor("PVROpenRLMemoryTracker::Get()", StaticAccessorType.Arrow)]
         [NativeName("GetGeometryMemory")]
-        internal static extern void GetGeometryMemoryInternal([Out] string[] labels, [Out] float[] sizes, [Out] UInt64[] triCounts);
+        internal static extern GeoMemLabels GetGeometryMemory();
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float ComputeTotalMemoryUsageInMB();
@@ -362,7 +360,8 @@ namespace UnityEditor
             OnBakeFinish = () =>
                 {
                     EditorSceneManager.SaveOpenScenes();
-                    EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
+                    if (sceneSetup.Length > 0)
+                        EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
                     Lightmapping.completed -= OnBakeFinish;
                 };
 

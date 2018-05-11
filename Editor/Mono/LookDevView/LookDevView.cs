@@ -279,6 +279,8 @@ namespace UnityEditor
             {
                 m_LookDevEnvWindow = new LookDevEnvironmentWindow(this);
             }
+
+            m_CameraController.ActivateFlyModeContext();
         }
 
         void InitializePreviewUtilities()

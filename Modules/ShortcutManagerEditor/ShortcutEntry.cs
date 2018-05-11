@@ -20,7 +20,7 @@ namespace UnityEditor.ShortcutManagement
 
     struct ShortcutArguments
     {
-        public EditorWindow context;
+        public object context;
         public ShortcutState state;
     }
 
@@ -75,7 +75,7 @@ namespace UnityEditor.ShortcutManagement
         {
             m_Identifier = id;
             m_DefaultCombinations = new List<KeyCombination>(defaultCombination);
-            m_Context = context;
+            m_Context = context ?? ContextManager.globalContextType;
             m_Action = action;
             m_Type = type;
             this.prefKeyMigratedValue = prefKeyMigratedValue;

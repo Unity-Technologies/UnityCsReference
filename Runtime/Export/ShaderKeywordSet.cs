@@ -4,6 +4,7 @@
 
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
+using System;
 
 namespace UnityEngine.Rendering
 {
@@ -55,6 +56,23 @@ namespace UnityEngine.Rendering
             {
                 bits[slice] &= ~mask;
             }
+        }
+
+        public ShaderKeyword[] GetShaderKeywords()
+        {
+            ShaderKeyword[] shaderKeywords = new ShaderKeyword[ShaderKeyword.k_MaxShaderKeywords];
+            int keywordCount = 0;
+            for (int keywordIndex = 0; keywordIndex < ShaderKeyword.k_MaxShaderKeywords; ++keywordIndex)
+            {
+                ShaderKeyword keyword = new ShaderKeyword(keywordIndex);
+                if (IsEnabled(keyword))
+                {
+                    shaderKeywords[keywordCount] = keyword;
+                    ++keywordCount;
+                }
+            }
+            Array.Resize<ShaderKeyword>(ref shaderKeywords, keywordCount);
+            return shaderKeywords;
         }
 
         const int k_SizeInBits = sizeof(uint) * 8;

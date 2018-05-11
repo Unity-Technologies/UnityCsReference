@@ -812,7 +812,7 @@ namespace UnityEditor
             }
             else if (type != EventType.Layout && type != EventType.Used)
             {
-                if (!EditorApplication.isPlaying || EditorApplication.isPaused)
+                if (Event.current.isKey && (!EditorApplication.isPlaying || EditorApplication.isPaused))
                     return;
 
                 bool mousePosInGameViewRect = viewInWindow.Contains(Event.current.mousePosition);

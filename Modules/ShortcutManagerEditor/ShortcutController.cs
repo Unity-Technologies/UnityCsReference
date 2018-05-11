@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -20,7 +21,8 @@ namespace UnityEditor.ShortcutManagement
 
         static void EventHandler()
         {
-            instance.HandleKeyEventForContext(Event.current, EditorWindow.focusedWindow);
+            instance.contextManager.SetFocusedWindow(EditorWindow.focusedWindow);
+            instance.HandleKeyEvent(Event.current);
         }
     }
 
@@ -31,11 +33,7 @@ namespace UnityEditor.ShortcutManagement
         public IShortcutProfileManager profileManager { get; }
         public IDirectory directory { get; private set; }
 
-        public static IShortcutPriorityContext priorityContext
-        {
-            get { return ShortcutIntegration.instance.m_Trigger.priorityContext; }
-            set { ShortcutIntegration.instance.m_Trigger.priorityContext = value; }
-        }
+        public ContextManager contextManager = new ContextManager();
 
         public ShortcutController(IDiscovery discovery)
         {
@@ -50,9 +48,39 @@ namespace UnityEditor.ShortcutManagement
             m_Trigger = new Trigger(directory, new ConflictResolver());
         }
 
-        internal void HandleKeyEventForContext(Event evt, object context)
+        internal void HandleKeyEvent(Event evt)
         {
-            m_Trigger.HandleKeyEventForContext(evt, context);
+            if (contextManager.priorityContext != null && contextManager.priorityContext.active)
+            {
+                // For now the ReserveModifiersAttribute only works with priority context.
+                // Making it working with any contex will require changing how Directory works
+                var contextType = contextManager.priorityContext.GetType();
+                var attributes = contextType.GetCustomAttributes(typeof(ReserveModifiersAttribute), true);
+
+                foreach (var attribue in attributes)
+                {
+                    var modifier = (attribue as ReserveModifiersAttribute).modifier;
+                    if ((modifier & ShortcutModifiers.Shift) == ShortcutModifiers.Shift)
+                    {
+                        evt.shift = false;
+                    }
+                    if ((modifier & ShortcutModifiers.Alt) == ShortcutModifiers.Alt)
+                    {
+                        evt.alt = false;
+                    }
+                    if ((modifier & ShortcutModifiers.ControlOrCommand) == ShortcutModifiers.ControlOrCommand)
+                    {
+                        evt.control = evt.command = false;
+                    }
+                }
+            }
+
+            HandleInTrigger(evt, contextManager);
+        }
+
+        internal virtual void HandleInTrigger(Event evt, IContextManager contextManager)
+        {
+            m_Trigger.HandleKeyEvent(evt, contextManager);
         }
     }
 }

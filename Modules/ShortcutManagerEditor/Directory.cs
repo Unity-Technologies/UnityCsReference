@@ -38,9 +38,38 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
+        public void FindShortcutEntries(List<KeyCombination> combinationSequence, IContextManager contextManager, List<ShortcutEntry> outputShortcuts)
+        {
+            outputShortcuts.Clear();
+
+            Assert.IsNotNull(combinationSequence);
+            Assert.IsTrue(combinationSequence.Count > 0, "Sequence can not be empty");
+
+            foreach (var shortcutEntry in m_ShortcutEntries)
+            {
+                if (shortcutEntry.StartsWith(combinationSequence))
+                {
+                    if (contextManager != null && !contextManager.HasAnyActiveContextOfType(shortcutEntry.context))
+                        continue;
+                    outputShortcuts.Add(shortcutEntry);
+                }
+            }
+        }
+
         public void FindShortcutEntries(List<KeyCombination> combinationSequence, List<ShortcutEntry> outputShortcuts)
         {
-            FindShortcutEntries(combinationSequence, null, outputShortcuts);
+            outputShortcuts.Clear();
+
+            Assert.IsNotNull(combinationSequence);
+            Assert.IsTrue(combinationSequence.Count > 0, "Sequence can not be empty");
+
+            foreach (var shortcutEntry in m_ShortcutEntries)
+            {
+                if (shortcutEntry.StartsWith(combinationSequence))
+                {
+                    outputShortcuts.Add(shortcutEntry);
+                }
+            }
         }
 
         public ShortcutEntry FindShortcutEntry(Identifier identifier)

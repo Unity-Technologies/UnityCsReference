@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using UnityEditor.Modules;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
@@ -63,6 +64,82 @@ namespace UnityEditor.Scripting.ScriptCompilation
             none = 0,
             cyclicReferences = (1 << 0),
             loadError = (1 << 0)
+        }
+
+        abstract class UnitySpecificCompilerMessageProcessor
+        {
+            public abstract bool IsInterestedInMessage(CompilerMessage m);
+            public abstract void PostprocessMessage(ref CompilerMessage m);
+        }
+
+        class UnsafeErrorProcessor : UnitySpecificCompilerMessageProcessor
+        {
+            string unityUnsafeMessage;
+
+            public UnsafeErrorProcessor(ScriptAssembly assembly, EditorCompilation editorCompilation)
+            {
+                var assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assembly.Filename);
+
+                try
+                {
+                    var customScriptAssembly = editorCompilation.FindCustomScriptAssemblyFromAssemblyName(assemblyName);
+                    unityUnsafeMessage = string.Format("Enable \"Allow 'unsafe' code\" in the inspector for '{0}' to fix this error.", customScriptAssembly.FilePath);
+                }
+                catch
+                {
+                    unityUnsafeMessage = "Enable \"Allow 'unsafe' code\" in Player Settings to fix this error.";
+                }
+            }
+
+            public override bool IsInterestedInMessage(CompilerMessage m)
+            {
+                return m.type == CompilerMessageType.Error && m.message.Contains("CS0227");
+            }
+
+            public override void PostprocessMessage(ref CompilerMessage m)
+            {
+                m.message += ". " + unityUnsafeMessage;
+            }
+        }
+
+        class ModuleReferenceErrorProcessor : UnitySpecificCompilerMessageProcessor
+        {
+            Regex messageRegex;
+
+            public ModuleReferenceErrorProcessor()
+            {
+                messageRegex = new Regex("`UnityEngine.(\\w*)Module,");
+            }
+
+            public override bool IsInterestedInMessage(CompilerMessage m)
+            {
+                return m.type == CompilerMessageType.Error && (m.message.Contains("CS1069") || m.message.Contains("CS1070"));
+            }
+
+            private static string GetNiceDisplayNameForModule(string name)
+            {
+                for (int i = 1; i < name.Length; i++)
+                    if (char.IsLower(name[i - 1]) && !char.IsLower(name[i]))
+                    {
+                        name = name.Insert(i, " ");
+                        i++;
+                    }
+                return name;
+            }
+
+            public override void PostprocessMessage(ref CompilerMessage message)
+            {
+                var match = messageRegex.Match(message.message);
+                if (match.Success)
+                {
+                    var index = message.message.IndexOf("Consider adding a reference to assembly");
+                    if (index != -1)
+                        message.message = message.message.Substring(0, index);
+                    var moduleName = GetNiceDisplayNameForModule(match.Groups[1].Value);
+
+                    message.message += string.Format("Enable the built in package '{0}' in the Package Manager window to fix this error.", moduleName);
+                }
+            }
         }
 
         bool areAllScriptsDirty;
@@ -817,38 +894,26 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         void AddUnitySpecificErrorMessages(ScriptAssembly assembly, List<CompilerMessage> messages)
         {
-            // error CS0227: Unsafe code requires the `unsafe' command line option to be specified
-            if (!messages.Any(m => m.type == CompilerMessageType.Error && m.message.Contains("CS0227")))
+            var processors = new List<UnitySpecificCompilerMessageProcessor>()
+            {
+                new UnsafeErrorProcessor(assembly, this),
+                new ModuleReferenceErrorProcessor()
+            };
+
+            if (!messages.Any(m => processors.Any(p => p.IsInterestedInMessage(m))))
                 return;
-
-            var assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assembly.Filename);
-
-            string unityUnsafeMessage;
-
-            try
-            {
-                var customScriptAssembly = FindCustomScriptAssemblyFromAssemblyName(assemblyName);
-                unityUnsafeMessage = string.Format("Enable \"Allow 'unsafe' code\" in the inspector for '{0}' to fix this error.", customScriptAssembly.FilePath);
-            }
-            catch
-            {
-                unityUnsafeMessage = "Enable \"Allow 'unsafe' code\" in Player Settings to fix this error.";
-            }
 
             List<CompilerMessage> newMessages = new List<CompilerMessage>();
 
             foreach (var message in messages)
             {
-                if (message.type == CompilerMessageType.Error && message.message.Contains("CS0227"))
+                var newMessage = new CompilerMessage(message);
+                foreach (var processor in processors)
                 {
-                    var newMessage = new CompilerMessage(message);
-                    newMessage.message += ". " + unityUnsafeMessage;
-                    newMessages.Add(newMessage);
+                    if (processor.IsInterestedInMessage(message))
+                        processor.PostprocessMessage(ref newMessage);
                 }
-                else
-                {
-                    newMessages.Add(message);
-                }
+                newMessages.Add(newMessage);
             }
 
             messages.Clear();

@@ -429,11 +429,8 @@ namespace UnityEditor
             }
 
             {
-                string[] objectNames;
-                float[] sizes;
-                System.UInt64[] triCounts;
-                Lightmapping.GetGeometryMemory(out objectNames, out sizes, out triCounts);
-                ShowObjectNamesSizesAndCounts("Geometry data", kEditorPrefsGeometryData, objectNames, sizes, triCounts, Precision.Hundredths);
+                GeoMemLabels labels = Lightmapping.GetGeometryMemory();
+                ShowObjectNamesSizesAndCounts("Geometry data", kEditorPrefsGeometryData, labels.labels, labels.sizes, labels.triCounts, Precision.Hundredths);
             }
 
             {

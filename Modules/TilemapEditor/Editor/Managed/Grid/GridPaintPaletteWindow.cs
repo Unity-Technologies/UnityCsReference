@@ -138,7 +138,7 @@ namespace UnityEditor
                 EditMode.QuitEditMode();
         }
 
-        class ShortcutContext : IShortcutPriorityContext
+        class ShortcutContext : IShortcutToolContext
         {
             public bool active { get; set; }
         }
@@ -626,7 +626,7 @@ namespace UnityEditor
 
             Tools.onToolChanged += ToolChanged;
 
-            ShortcutController.priorityContext = m_ShortcutContext;
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
         }
 
         private void PrefabInstanceUpdated(GameObject updatedPrefab)
@@ -687,7 +687,7 @@ namespace UnityEditor
             GridPaintingState.UnregisterPainterInterest(this);
             PrefabUtility.prefabInstanceUpdated -= PrefabInstanceUpdated;
 
-            m_ShortcutContext.active = false;
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_ShortcutContext);
         }
 
         private void OnScenePaintTargetChanged(GameObject scenePaintTarget)

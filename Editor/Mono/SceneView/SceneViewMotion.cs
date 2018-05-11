@@ -3,12 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.AnimatedValues;
+using UnityEditor.ShortcutManagement;
 using UnityEngine;
 using UnityEngine.Profiling;
 
 namespace UnityEditor
 {
-    internal class SceneViewMotion
+    internal static class SceneViewMotion
     {
         static Vector3 s_Motion;
         static float s_FlySpeed = 0;
@@ -43,7 +44,6 @@ namespace UnityEditor
                 view.FixNegativeSize();
             }
 
-            s_CameraFlyModeContext.active = Tools.viewTool == ViewTool.FPS;
             using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(s_CameraFlyModeContext, id, view.orthographic))
             {
                 if (inputSamplingScope.currentlyMoving)
@@ -382,9 +382,14 @@ namespace UnityEditor
             s_Motion = Vector3.zero;
         }
 
+        public static void ActivateFlyModeContext()
+        {
+            ShortcutIntegration.instance.contextManager.SetPriorityContext(s_CameraFlyModeContext);
+        }
+
         public static void DeactivateFlyModeContext()
         {
-            s_CameraFlyModeContext.active = false;
+            ShortcutIntegration.instance.contextManager.ClearPriorityContext();
         }
     }
 

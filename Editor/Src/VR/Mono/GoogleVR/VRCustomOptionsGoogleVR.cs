@@ -28,7 +28,7 @@ namespace UnityEditorInternal.VR
             m_DepthFormat = FindPropertyAssert("depthFormat");
         }
 
-        public override Rect Draw(Rect rect)
+        public override Rect Draw(BuildTargetGroup target, Rect rect)
         {
             rect.y += EditorGUIUtility.standardVerticalSpacing;
             rect.height = EditorGUIUtility.singleLineHeight;
@@ -69,9 +69,9 @@ namespace UnityEditorInternal.VR
             m_EnableTransitionView = FindPropertyAssert("enableTransitionView");
         }
 
-        public override Rect Draw(Rect rect)
+        public override Rect Draw(BuildTargetGroup target, Rect rect)
         {
-            rect = base.Draw(rect);
+            rect = base.Draw(target, rect);
 
             rect.height = EditorGUIUtility.singleLineHeight;
             GUIContent label = EditorGUI.BeginProperty(rect, s_EnableTransitionViewLabel, m_EnableTransitionView);
@@ -202,9 +202,9 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        public override Rect Draw(Rect rect)
+        public override Rect Draw(BuildTargetGroup target, Rect rect)
         {
-            rect = base.Draw(rect);
+            rect = base.Draw(target, rect);
 
             rect = DrawTextureUI(rect, s_ForegroundIconLabel, m_DaydreamIcon);
             rect = DrawTextureUI(rect, s_BackgroundIconLabel, m_DaydreamIconBackground);

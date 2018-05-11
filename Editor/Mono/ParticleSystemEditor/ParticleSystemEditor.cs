@@ -20,7 +20,7 @@ namespace UnityEditor
         GUIContent hideWindowText = EditorGUIUtility.TrTextContent("Hide Editor");
         static GUIContent m_PlayBackTitle;
 
-        public class ShortcutContext : IShortcutPriorityContext
+        public class ShortcutContext : IShortcutToolContext
         {
             public bool active { get; set; }
         }
@@ -64,7 +64,7 @@ namespace UnityEditor
             SceneView.onSceneGUIDelegate += OnSceneViewGUI;
             Undo.undoRedoPerformed += UndoRedoPerformed;
 
-            ShortcutController.priorityContext = m_ShortcutContext;
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
         }
 
         public void OnDisable()
@@ -77,7 +77,7 @@ namespace UnityEditor
             if (m_ParticleEffectUI != null)
                 m_ParticleEffectUI.Clear();
 
-            m_ShortcutContext.active = false;
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_ShortcutContext);
         }
 
         private void HierarchyOrProjectWindowWasChanged()

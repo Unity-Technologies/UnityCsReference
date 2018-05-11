@@ -4166,6 +4166,9 @@
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ConflictResolver.cs">
     <Link>Modules\ShortcutManagerEditor\ConflictResolver.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ContextManager.cs">
+    <Link>Modules\ShortcutManagerEditor\ContextManager.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\Directory.cs">
     <Link>Modules\ShortcutManagerEditor\Directory.cs</Link>
   </Compile>
@@ -4186,6 +4189,9 @@
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\IShortcutPriorityContext.cs">
     <Link>Modules\ShortcutManagerEditor\IShortcutPriorityContext.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ReserveModifiersAttribute.cs">
+    <Link>Modules\ShortcutManagerEditor\ReserveModifiersAttribute.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutAttribute.cs">
     <Link>Modules\ShortcutManagerEditor\ShortcutAttribute.cs</Link>

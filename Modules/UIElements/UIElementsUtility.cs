@@ -51,9 +51,6 @@ namespace UnityEngine.Experimental.UIElements
             {
                 var topmostContainer = s_ContainerStack.Peek();
 
-                if (topmostContainer.GUIDepth != GUIUtility.guiDepth)
-                    return;
-
                 if (MouseCaptureController.IsMouseCaptureTaken() && !topmostContainer.HasMouseCapture())
                 {
                     Debug.Log("Should not grab hot control with an active capture");

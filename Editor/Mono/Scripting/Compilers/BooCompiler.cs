@@ -11,6 +11,8 @@ namespace UnityEditor.Scripting.Compilers
 {
     class BooCompiler : MonoScriptCompilerBase
     {
+        const string k_UnityScriptProfileDirectory = "unityscript";
+
         public BooCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
         }
@@ -32,13 +34,29 @@ namespace UnityEditor.Scripting.Compilers
             foreach (string source in _island._files)
                 arguments.Add(PrepareFileName(source));
 
-            string compilerPath = Path.Combine(GetMonoProfileLibDirectory(), "booc.exe");
-            return StartCompiler(_island._target, compilerPath, arguments);
+            string compilerPath = Path.Combine(GetBooCompilerDirectory(), "booc.exe");
+            return StartCompiler(_island._target, compilerPath, arguments, GetBooProfileDirectory());
         }
 
         protected override CompilerOutputParserBase CreateOutputParser()
         {
             return new BooCompilerOutputParser();
+        }
+
+        string GetBooCompilerDirectory()
+        {
+            if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+                return GetMonoProfileLibDirectory();
+
+            return Path.Combine(MonoInstallationFinder.GetProfilesDirectory(MonoInstallationFinder.MonoBleedingEdgeInstallation), k_UnityScriptProfileDirectory);
+        }
+
+        string GetBooProfileDirectory()
+        {
+            if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+                return BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
+
+            return k_UnityScriptProfileDirectory;
         }
     }
 }

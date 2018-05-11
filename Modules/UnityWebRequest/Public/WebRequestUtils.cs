@@ -556,11 +556,7 @@ namespace UnityEngineInternal
                     return targetUri.OriginalString;
                 string path = targetUri.AbsolutePath;
                 if (path.Contains("%"))
-                {
-                    var urlBytes = Encoding.UTF8.GetBytes(path);
-                    var decodedBytes = UnityEngine.WWWTranscoder.URLDecode(urlBytes);
-                    path = Encoding.UTF8.GetString(decodedBytes);
-                }
+                    path = URLDecode(path);
                 if (path.Length > 0 && path[0] != '/')
                     path = '/' + path;
                 return "file://" + path;
@@ -580,12 +576,29 @@ namespace UnityEngineInternal
             {
                 StringBuilder sb = new StringBuilder(scheme, targetUrl.Length);
                 sb.Append(':');
-                sb.Append(targetUri.PathAndQuery);  // for these spec URIs path also has the part of URI to right of colon
+                // for these spec URIs path also has the part of URI to right of colon
+                // jar:file URIs should be treated like file URIs (unescaped and stripped of query&fragment)
+                if (scheme == "jar")
+                {
+                    string path = targetUri.AbsolutePath;
+                    if (path.Contains("%"))
+                        path = URLDecode(path);
+                    sb.Append(path);
+                    return sb.ToString();
+                }
+                sb.Append(targetUri.PathAndQuery);
                 sb.Append(targetUri.Fragment);
                 return sb.ToString();
             }
 
             return targetUri.AbsoluteUri;
+        }
+
+        static string URLDecode(string encoded)
+        {
+            var urlBytes = Encoding.UTF8.GetBytes(encoded);
+            var decodedBytes = UnityEngine.WWWTranscoder.URLDecode(urlBytes);
+            return Encoding.UTF8.GetString(decodedBytes);
         }
     }
 }

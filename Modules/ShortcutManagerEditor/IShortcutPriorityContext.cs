@@ -4,7 +4,7 @@
 
 namespace UnityEditor.ShortcutManagement
 {
-    internal interface IShortcutPriorityContext
+    internal interface IShortcutToolContext
     {
         bool active { get; }
     }

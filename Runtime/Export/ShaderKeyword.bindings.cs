@@ -16,30 +16,37 @@ namespace UnityEngine.Rendering
         [NativeMethod("keywords::Find", true)]
         extern internal static int GetShaderKeywordIndex(string keywordName);
 
-        private const int k_MaxShaderKeywords = 256; // Keep in sync with kMaxShaderKeywords in ShaderKeywordSet.h
+        [NativeMethod("keywords::GetKeywordName", true)]
+        extern internal static string GetShaderKeywordName(int keywordIndex);
+
+        internal const int k_MaxShaderKeywords = 256; // Keep in sync with kMaxShaderKeywords in ShaderKeywordSet.h
         private const int k_InvalidKeyword = -1; // Keep in sync with keywords::kInvalidKeyword in ShaderKeywords.h
+
+        internal ShaderKeyword(int keywordIndex)
+        {
+            m_KeywordIndex = keywordIndex;
+        }
 
         public ShaderKeyword(string keywordName)
         {
-            m_Keyword = keywordName;
+            m_KeywordIndex = GetShaderKeywordIndex(keywordName);
         }
 
         public bool IsValid()
         {
-            var index = GetShaderKeywordIndex(m_Keyword);
-            return index >= 0 && index < k_MaxShaderKeywords && index != k_InvalidKeyword;
+            return m_KeywordIndex >= 0 && m_KeywordIndex < k_MaxShaderKeywords && m_KeywordIndex != k_InvalidKeyword;
         }
 
         public string GetName()
         {
-            return m_Keyword;
+            return GetShaderKeywordName(m_KeywordIndex);
         }
 
         internal int GetIndex()
         {
-            return GetShaderKeywordIndex(m_Keyword);
+            return m_KeywordIndex;
         }
 
-        internal string m_Keyword;
+        internal int m_KeywordIndex;
     }
 }

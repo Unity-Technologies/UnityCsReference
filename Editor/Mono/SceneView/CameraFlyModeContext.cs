@@ -9,7 +9,8 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    class CameraFlyModeContext : IShortcutPriorityContext
+    [ReserveModifiers(ShortcutModifiers.Shift)]
+    class CameraFlyModeContext : IShortcutToolContext
     {
         public struct InputSamplingScope : IDisposable
         {
@@ -35,8 +36,6 @@ namespace UnityEditor
 
                 if (!context.active)
                     m_ArrowKeysActive = DoArrowKeys(controlID, orthographic);
-                else
-                    ShortcutController.priorityContext = context;
 
                 if (currentlyMoving && Mathf.Approximately(m_Context.m_PreviousVector.sqrMagnitude, 0f))
                     s_Timer.Begin();
@@ -94,7 +93,7 @@ namespace UnityEditor
             }
         }
 
-        public bool active { get; set; }
+        public bool active => Tools.viewTool == ViewTool.FPS;
 
         Vector3 m_PreviousVector;
 

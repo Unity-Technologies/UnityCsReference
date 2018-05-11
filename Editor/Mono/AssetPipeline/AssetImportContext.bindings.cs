@@ -52,7 +52,7 @@ namespace UnityEditor.Experimental.AssetImporters
         // Create a dependency against the contents of the source asset at the provided path
         // * if the asset at the path changes, it will trigger an import
         // * if the asset at the path moves, it will trigger an import
-        internal void DependsOnSourceAsset(string path)
+        public void DependsOnSourceAsset(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
