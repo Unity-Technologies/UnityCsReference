@@ -9,6 +9,7 @@ using UnityEngine;
 namespace UnityEditor
 {
     [AssetFileNameExtension("curves", "curvesNormalized", "particleCurves", "particleCurvesSigned", "particleDoubleCurves", "particleDoubleCurvesSigned")]
+    [ExcludeFromPreset]
     class CurvePresetLibrary : PresetLibrary
     {
         [SerializeField]

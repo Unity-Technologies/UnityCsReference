@@ -8,6 +8,7 @@ using UnityEngine;
 namespace UnityEditor
 {
     [AssetFileNameExtension("gradients")]
+    [ExcludeFromPreset]
     class GradientPresetLibrary : PresetLibrary
     {
         [SerializeField]

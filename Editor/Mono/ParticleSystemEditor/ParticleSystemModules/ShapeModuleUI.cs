@@ -770,7 +770,24 @@ namespace UnityEditor
         {
             Init();
 
-            if (m_Arc.m_Mode.intValue != (int)MultiModeParameter.ValueMode.Random || m_Radius.m_Mode.intValue != (int)MultiModeParameter.ValueMode.Random)
+            bool animatedShape = false;
+            ParticleSystemShapeType shapeType = (ParticleSystemShapeType)m_Type.intValue;
+            switch (shapeType)
+            {
+                case ParticleSystemShapeType.Cone:
+                case ParticleSystemShapeType.ConeVolume:
+                case ParticleSystemShapeType.Donut:
+                case ParticleSystemShapeType.Circle:
+                    animatedShape = (m_Arc.m_Mode.intValue != (int)MultiModeParameter.ValueMode.Random);
+                    break;
+                case ParticleSystemShapeType.SingleSidedEdge:
+                    animatedShape = (m_Radius.m_Mode.intValue != (int)MultiModeParameter.ValueMode.Random);
+                    break;
+                default:
+                    break;
+            }
+
+            if (animatedShape)
                 text += "\n\tAnimated shape emission is enabled.";
         }
     }

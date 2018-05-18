@@ -67,6 +67,7 @@ namespace UnityEditor
         }
     }
 
+    [ExcludeFromPreset]
     class DoubleCurvePresetLibrary : PresetLibrary
     {
         [SerializeField]
