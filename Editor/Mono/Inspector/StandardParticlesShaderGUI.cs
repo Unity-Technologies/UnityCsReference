@@ -532,10 +532,13 @@ namespace UnityEditor
             {
                 foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial)
                 {
-                    if (useGPUInstancing && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.supportsMeshInstancing)
-                        renderer.SetActiveVertexStreams(instancedStreams);
-                    else
-                        renderer.SetActiveVertexStreams(streams);
+                    if (renderer != null)
+                    {
+                        if (useGPUInstancing && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.supportsMeshInstancing)
+                            renderer.SetActiveVertexStreams(instancedStreams);
+                        else
+                            renderer.SetActiveVertexStreams(streams);
+                    }
                 }
             }
 
@@ -544,16 +547,19 @@ namespace UnityEditor
             List<ParticleSystemVertexStream> rendererStreams = new List<ParticleSystemVertexStream>();
             foreach (ParticleSystemRenderer renderer in m_RenderersUsingThisMaterial)
             {
-                renderer.GetActiveVertexStreams(rendererStreams);
+                if (renderer != null)
+                {
+                    renderer.GetActiveVertexStreams(rendererStreams);
 
-                bool streamsValid;
-                if (useGPUInstancing && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.supportsMeshInstancing)
-                    streamsValid = rendererStreams.SequenceEqual(instancedStreams);
-                else
-                    streamsValid = rendererStreams.SequenceEqual(streams);
+                    bool streamsValid;
+                    if (useGPUInstancing && renderer.renderMode == ParticleSystemRenderMode.Mesh && renderer.supportsMeshInstancing)
+                        streamsValid = rendererStreams.SequenceEqual(instancedStreams);
+                    else
+                        streamsValid = rendererStreams.SequenceEqual(streams);
 
-                if (!streamsValid)
-                    Warnings += "  " + renderer.name + "\n";
+                    if (!streamsValid)
+                        Warnings += "  " + renderer.name + "\n";
+                }
             }
             if (Warnings != "")
             {

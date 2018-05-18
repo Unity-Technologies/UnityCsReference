@@ -392,6 +392,7 @@ namespace UnityEditor.Presets
                     AssetDatabase.CreateAsset(preset, path);
                 }
             }
+            GUIUtility.ExitGUI();
         }
     }
 }
