@@ -114,7 +114,7 @@ namespace UnityEditor.CrashReporting
             }
             catch (Exception ex)
             {
-                Debug.LogException(ex);
+                Debug.LogWarningFormat("Exception occurred attempting to connect to Unity Performance Reporting service.  Native symbols will not be uploaded for this build. Exception details:\n{0}\n{1}", ex.ToString(), ex.StackTrace);
             }
 
             ServicePointManager.ServerCertificateValidationCallback = originalCallback;
@@ -157,31 +157,39 @@ namespace UnityEditor.CrashReporting
 
         public static void UploadSymbolsInPath(string authToken, string symbolPath, string includeFilter, string excludeFilter, bool waitForExit)
         {
-            UploadPlatformConfig platformConfig = GetUploadPlatformConfig();
-
-            string args = string.Format("-symbolPath \"{0}\" -log \"{1}\" -filter \"{2}\" -excludeFilter \"{3}\"", symbolPath, platformConfig.LogFilePath, includeFilter, excludeFilter);
-
-            System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
+            try
             {
-                Arguments = args,
-                CreateNoWindow = true,
-                FileName = platformConfig.UsymtoolPath,
-                WorkingDirectory = Directory.GetParent(Application.dataPath).FullName,
-                UseShellExecute = false
-            };
+                UploadPlatformConfig platformConfig = GetUploadPlatformConfig();
 
-            psi.EnvironmentVariables["USYM_UPLOAD_AUTH_TOKEN"] = authToken;
-            psi.EnvironmentVariables["USYM_UPLOAD_URL_SOURCE"] = SignedUrlSourceUrl;
-            psi.EnvironmentVariables["LZMA_PATH"] = platformConfig.LzmaPath;
+                string args = string.Format("-symbolPath \"{0}\" -log \"{1}\" -filter \"{2}\" -excludeFilter \"{3}\"",
+                        symbolPath, platformConfig.LogFilePath, includeFilter, excludeFilter);
 
-            System.Diagnostics.Process nativeProgram = new System.Diagnostics.Process();
-            nativeProgram.StartInfo = psi;
+                System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
+                {
+                    Arguments = args,
+                    CreateNoWindow = true,
+                    FileName = platformConfig.UsymtoolPath,
+                    WorkingDirectory = Directory.GetParent(Application.dataPath).FullName,
+                    UseShellExecute = false
+                };
 
-            nativeProgram.Start();
+                psi.EnvironmentVariables["USYM_UPLOAD_AUTH_TOKEN"] = authToken;
+                psi.EnvironmentVariables["USYM_UPLOAD_URL_SOURCE"] = SignedUrlSourceUrl;
+                psi.EnvironmentVariables["LZMA_PATH"] = platformConfig.LzmaPath;
 
-            if (waitForExit)
+                System.Diagnostics.Process nativeProgram = new System.Diagnostics.Process();
+                nativeProgram.StartInfo = psi;
+
+                nativeProgram.Start();
+
+                if (waitForExit)
+                {
+                    nativeProgram.WaitForExit();
+                }
+            }
+            catch (Exception ex)
             {
-                nativeProgram.WaitForExit();
+                Debug.LogWarningFormat("Exception occurred attempting to upload symbols to Unity Performance Reporting service.  Native symbols will not be available for this build. Exception details:\n{0}\n{1}", ex.ToString(), ex.StackTrace);
             }
         }
     }

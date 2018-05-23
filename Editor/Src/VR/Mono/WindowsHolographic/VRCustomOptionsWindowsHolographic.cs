@@ -31,7 +31,7 @@ namespace UnityEditorInternal.VR
             m_DepthBufferSharingEnabled = FindPropertyAssert("depthBufferSharingEnabled");
         }
 
-        public override Rect Draw(Rect rect)
+        public override Rect Draw(BuildTargetGroup target, Rect rect)
         {
             rect.y += EditorGUIUtility.standardVerticalSpacing;
             rect.height = EditorGUIUtility.singleLineHeight;
