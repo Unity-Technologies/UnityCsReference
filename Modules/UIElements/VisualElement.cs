@@ -426,7 +426,14 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 if (string.IsNullOrEmpty(m_TypeName))
-                    m_TypeName = GetType().Name;
+                {
+                    var type = GetType();
+                    bool isGeneric = false;
+                    isGeneric = type.IsGenericType;
+
+                    m_TypeName = isGeneric ? type.Name.Remove(type.Name.IndexOf('`')) : type.Name;
+                }
+
                 return m_TypeName;
             }
         }

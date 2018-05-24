@@ -2420,7 +2420,7 @@ namespace UnityEditor
 
                     // Package name/displayname
                     folderNames.Add(packageInfo.name);
-                    folderDisplayNames.Add(packageInfo.displayName ?? packageInfo.name);
+                    folderDisplayNames.Add(string.IsNullOrEmpty(packageInfo.displayName) ? packageInfo.name : packageInfo.displayName);
 
                     // Rest of the path;
                     if (path != packageInfo.assetPath)

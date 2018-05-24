@@ -22,8 +22,8 @@ namespace UnityEngine.Experimental.UIElements
             public SliderUxmlTraits()
             {
                 m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
-                m_HighValue = new UxmlFloatAttributeDescription { name = "highValue" };
-                m_PageSize = new UxmlFloatAttributeDescription { name = "pageSize" };
+                m_HighValue = new UxmlFloatAttributeDescription { name = "highValue", defaultValue = kDefaultHighValue };
+                m_PageSize = new UxmlFloatAttributeDescription { name = "pageSize", defaultValue = kDefaultPageSize};
                 m_Direction = new UxmlEnumAttributeDescription<Slider.Direction> { name = "direction", defaultValue = Direction.Vertical };
                 m_Value = new UxmlFloatAttributeDescription { name = "value" };
             }
@@ -102,6 +102,7 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public float range { get { return Math.Abs(highValue - lowValue); } }
+
         public float pageSize { get; set; }
 
         public event System.Action<float> valueChanged;
@@ -170,11 +171,14 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal const float kDefaultHighValue = 10.0f;
+        internal const float kDefaultPageSize = 10.0f;
+
         public Slider()
-            : this(0, 10.0f, null) {}
+            : this(0, kDefaultHighValue, null) {}
 
         public Slider(float start, float end, System.Action<float> valueChanged,
-                      Direction direction = Direction.Horizontal, float pageSize = 10f)
+                      Direction direction = Direction.Horizontal, float pageSize = kDefaultPageSize)
         {
             this.direction = direction;
             this.pageSize = pageSize;

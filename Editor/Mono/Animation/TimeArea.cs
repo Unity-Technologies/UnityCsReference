@@ -57,7 +57,11 @@ namespace UnityEditor
                 timeAreaStyles = new Styles2();
         }
 
-        public TimeArea(bool minimalGUI) : base(minimalGUI)
+        public TimeArea(bool minimalGUI) : this(minimalGUI, true, true) {}
+
+        public TimeArea(bool minimalGUI, bool enableSliderZoom) : this(minimalGUI, enableSliderZoom, enableSliderZoom) {}
+
+        public TimeArea(bool minimalGUI, bool enableSliderZoomHorizontal, bool enableSliderZoomVertical) : base(minimalGUI, enableSliderZoomHorizontal, enableSliderZoomVertical)
         {
             float[] modulos = new float[]
             {
@@ -529,7 +533,7 @@ namespace UnityEditor
                 return;
 
             if (styles.horizontalScrollbar == null)
-                styles.InitGUIStyles(false, true);
+                styles.InitGUIStyles(false, allowSliderZoomHorizontal, allowSliderZoomVertical);
 
             var inMin = TimeToPixel(0, rect); // Assume 0 minTime
             var inMax = TimeToPixel(maxTime, rect);

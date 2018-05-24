@@ -10,7 +10,7 @@ namespace UnityEngine.XR.WSA
 {
     public partial class HolographicRemoting
     {
-        public HolographicStreamerConnectionState ConnectionState
+        public static HolographicStreamerConnectionState ConnectionState
         {
             get
             {

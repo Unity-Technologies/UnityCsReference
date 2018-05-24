@@ -629,11 +629,26 @@ namespace UnityEditor
             }
         }
         static Material s_HandleMaterial;
+        static bool s_CallbackRegistered = false;
+
+        // Called by native code
+        [RequiredByNativeCode]
+        static void CleanupHandleMaterials()
+        {
+            // This is enough for all of them to get re-fetched in next call to InitHandleMaterials()
+            s_HandleWireMaterial = null;
+        }
 
         static void InitHandleMaterials()
         {
             if (!s_HandleWireMaterial)
             {
+                if (!s_CallbackRegistered)
+                {
+                    RegisterGfxDeviceCleanup();
+                    s_CallbackRegistered = true;
+                }
+
                 s_HandleWireMaterial = (Material)EditorGUIUtility.LoadRequired("SceneView/HandleLines.mat");
                 s_HandleWireMaterial2D = (Material)EditorGUIUtility.LoadRequired("SceneView/2DHandleLines.mat");
                 s_HandleWireTextureIndex = ShaderUtil.GetTextureBindingIndex(s_HandleWireMaterial.shader, Shader.PropertyToID("_MainTex"));

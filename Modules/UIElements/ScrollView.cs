@@ -33,12 +33,12 @@ namespace UnityEngine.Experimental.UIElements
 
                 m_HorizontalLowValue = new UxmlFloatAttributeDescription { name = "horizontalLowValue" };
                 m_HorizontalHighValue = new UxmlFloatAttributeDescription { name = "horizontalHighValue" };
-                m_HorizontalPageSize = new UxmlFloatAttributeDescription { name = "horizontalPageSize" };
+                m_HorizontalPageSize = new UxmlFloatAttributeDescription { name = "horizontalPageSize", defaultValue = Slider.kDefaultPageSize};
                 m_HorizontalValue = new UxmlFloatAttributeDescription { name = "horizontalValue" };
 
                 m_VerticalLowValue = new UxmlFloatAttributeDescription { name = "verticalLowValue" };
                 m_VerticalHighValue = new UxmlFloatAttributeDescription { name = "verticalHighValue" };
-                m_VerticalPageSize = new UxmlFloatAttributeDescription { name = "verticalPageSize" };
+                m_VerticalPageSize = new UxmlFloatAttributeDescription { name = "verticalPageSize", defaultValue = Slider.kDefaultPageSize};
                 m_VerticalValue = new UxmlFloatAttributeDescription { name = "verticalValue" };
             }
 
