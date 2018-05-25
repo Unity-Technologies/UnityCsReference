@@ -563,7 +563,7 @@ namespace UnityEngine
         public static string TextArea(Rect position, string text, int maxLength, GUIStyle style)
         {
             GUIContent t = GUIContent.Temp(text);
-            DoTextField(position, GUIUtility.GetControlID(FocusType.Keyboard, position), t, false, maxLength, style);
+            DoTextField(position, GUIUtility.GetControlID(FocusType.Keyboard, position), t, true, maxLength, style);
             return t.text;
         }
 
@@ -571,7 +571,7 @@ namespace UnityEngine
         private static string TextArea(Rect position, GUIContent content, int maxLength, GUIStyle style)
         {
             GUIContent t = GUIContent.Temp(content.text, content.image);
-            DoTextField(position, GUIUtility.GetControlID(FocusType.Keyboard, position), t, false, maxLength, style);
+            DoTextField(position, GUIUtility.GetControlID(FocusType.Keyboard, position), t, true, maxLength, style);
             return t.text;
         }
 

@@ -98,19 +98,55 @@ namespace UnityEngine
                     if (camera == null || skipRTCameras != 0 && camera.targetTexture != null)
                         continue;
 
-                    // Is the mouse inside the cameras viewport?
-                    var rect = camera.pixelRect;
-                    if (!rect.Contains(mousePosition))
-                        continue;
+                    int displayIndex = camera.targetDisplay;
 
-                    HitTestLegacyGUI(camera, mousePosition, ref m_CurrentHit[m_HitIndexGUI]);
+                    var eventPosition = Display.RelativeMouseAt(mousePosition);
+                    if (eventPosition != Vector3.zero)
+                    {
+                        // We support multiple display and display identification based on event position.
+                        int eventDisplayIndex = (int)eventPosition.z;
+
+                        // Discard events that are not part of this display so the user does not interact with multiple displays at once.
+                        if (eventDisplayIndex != displayIndex)
+                            continue;
+
+                        // Multiple display support only when not the main display. For display 0 the reported
+                        // resolution is always the desktop resolution since it's part of the display API,
+                        // so we use the standard non multiple display method.
+                        float w = Screen.width;
+                        float h = Screen.height;
+                        if (displayIndex > 0 && displayIndex < Display.displays.Length)
+                        {
+                            w = Display.displays[displayIndex].systemWidth;
+                            h = Display.displays[displayIndex].systemHeight;
+                        }
+
+                        Vector2 pos = new Vector2(eventPosition.x / w, eventPosition.y / h);
+
+                        // If it's outside the camera's viewport, do nothing
+                        if (pos.x < 0f || pos.x > 1f || pos.y < 0f || pos.y > 1f)
+                            continue;
+                    }
+                    else
+                    {
+                        // The multiple display system is not supported on all platforms, when it is not supported the returned position
+                        // will be all zeros so when the returned index is 0 we will default to the mouse position to be safe.
+                        eventPosition = mousePosition;
+
+                        // Is the mouse inside the cameras viewport?
+                        var rect = camera.pixelRect;
+                        if (!rect.Contains(eventPosition))
+                            continue;
+                    }
+
+                    HitTestLegacyGUI(camera, eventPosition, ref m_CurrentHit[m_HitIndexGUI]);
 
                     // There is no need to continue if the camera shouldn't be sending out events
                     if (camera.eventMask == 0)
                         continue;
 
                     // Calculate common physics projection and distance.
-                    var screenProjectionRay  = camera.ScreenPointToRay(mousePosition);
+                    var screenProjectionRay = camera.ScreenPointToRay(eventPosition);
                     var projectionDirection = screenProjectionRay.direction.z;
                     var distanceToClipPlane = Mathf.Approximately(0.0f, projectionDirection) ? Mathf.Infinity : Mathf.Abs((camera.farClipPlane - camera.nearClipPlane) / projectionDirection);
 

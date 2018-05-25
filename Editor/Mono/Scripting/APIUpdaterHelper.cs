@@ -61,6 +61,15 @@ namespace UnityEditor.Scripting
         public static void Run(string commaSeparatedListOfAssemblies)
         {
             var assemblies = commaSeparatedListOfAssemblies.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var assemblyPath in assemblies)
+            {
+                if ((File.GetAttributes(assemblyPath) & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                {
+                    APIUpdaterLogger.WriteErrorToConsole("Error can't update assembly {0} the file is read-only", assemblyPath);
+                    return;
+                }
+            }
+
             APIUpdaterLogger.WriteToFile("Started to update {0} assemblie(s)", assemblies.Count());
 
             var sw = new Stopwatch();

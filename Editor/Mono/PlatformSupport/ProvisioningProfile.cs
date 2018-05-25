@@ -38,7 +38,7 @@ namespace UnityEditor.PlatformSupport
         // regex patterns used for finding specific parts of data from a provisioning profile
         static readonly string s_PatternUUID   = "<key>UUID<\\/key>[\n\t]*<string>((\\w*\\-?){5})";
         private static readonly string s_PatternDeveloperCertificates =
-            "<key>DeveloperCertificates<\\/key>[\n\t]*<array>[\n\t]*<data>([\\w\\/+=\\.\\_]+)<\\/data>";
+            "<key>DeveloperCertificates<\\/key>[\n\t]*<array>[\n\t]*<data>([\\w\\/+=]+)<\\/data>";
         static readonly string s_DistributionPattern = "iPhone Distribution: ";
 
         internal static ProvisioningProfile ParseProvisioningProfileAtPath(string pathToFile)
