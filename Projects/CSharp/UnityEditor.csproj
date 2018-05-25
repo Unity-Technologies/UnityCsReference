@@ -2465,6 +2465,9 @@
 <Compile Include="..\..\Editor\Mono\PlayerSettingsSplashScreen.cs" >
 <Link>Editor\Mono\PlayerSettingsSplashScreen.cs</Link>
 </Compile>
+<Compile Include="..\..\Editor\Mono\PlayerSettingsSwitch.bindings.cs" >
+<Link>Editor\Mono\PlayerSettingsSwitch.bindings.cs</Link>
+</Compile>
 <Compile Include="..\..\Editor\Mono\PlayerSettingsTVOS.bindings.cs" >
 <Link>Editor\Mono\PlayerSettingsTVOS.bindings.cs</Link>
 </Compile>

@@ -323,7 +323,7 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, 0, 1, 1);
             keys[1] = new Keyframe(1, 1, 1, 1);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Auto);
             return keys;
         }
 
@@ -332,7 +332,7 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, 1, -1, -1);
             keys[1] = new Keyframe(1, 0, -1, -1);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Auto);
             return keys;
         }
 
@@ -341,7 +341,7 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, 0, 0, 0);
             keys[1] = new Keyframe(1, 1, 2, 2);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Free);
             return keys;
         }
 
@@ -350,7 +350,7 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, 1, -2, -2);
             keys[1] = new Keyframe(1, 0, 0, 0);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Free);
             return keys;
         }
 
@@ -359,7 +359,7 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, 0, 2, 2);
             keys[1] = new Keyframe(1, 1, 0, 0);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Free);
             return keys;
         }
 
@@ -368,7 +368,7 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, 1, 0, 0);
             keys[1] = new Keyframe(1, 0, -2, -2);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Free);
             return keys;
         }
 
@@ -377,7 +377,7 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, 0, 0, 0);
             keys[1] = new Keyframe(1, 1, 0, 0);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Free);
             return keys;
         }
 
@@ -386,7 +386,7 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, 1, 0, 0);
             keys[1] = new Keyframe(1, 0, 0, 0);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Free);
             return keys;
         }
 
@@ -395,17 +395,17 @@ namespace UnityEditor
             Keyframe[] keys = new Keyframe[2];
             keys[0] = new Keyframe(0, value, 0, 0);
             keys[1] = new Keyframe(1, value, 0, 0);
-            SetSmoothEditable(ref keys);
+            SetSmoothEditable(ref keys, TangentMode.Auto);
             return keys;
         }
 
-        static internal void SetSmoothEditable(ref Keyframe[] keys)
+        static internal void SetSmoothEditable(ref Keyframe[] keys, TangentMode tangentMode)
         {
             for (int i = 0; i < keys.Length; i++)
             {
                 AnimationUtility.SetKeyBroken(ref keys[i], false);
-                AnimationUtility.SetKeyLeftTangentMode(ref keys[i], TangentMode.Free);
-                AnimationUtility.SetKeyRightTangentMode(ref keys[i], TangentMode.Free);
+                AnimationUtility.SetKeyLeftTangentMode(ref keys[i], tangentMode);
+                AnimationUtility.SetKeyRightTangentMode(ref keys[i], tangentMode);
             }
         }
 
