@@ -645,6 +645,12 @@ namespace UnityEditor
                 arguments.AddRange(files.Select(f => Path.GetFileName(f)));
             }
 
+            // Workaround: if there are no user assemblies (because the project does not contain scripts), add
+            // UnityEngine, to makes sure we pick up types required by core module. Need to remove this once
+            // we want to be able to strip core module for ECS only players.
+            if (arguments.Count == 0)
+                arguments.Add("UnityEngine.dll");
+
             return arguments.ToArray();
         }
     } //CodeStrippingUtils

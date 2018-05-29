@@ -66,6 +66,9 @@ namespace UnityEngine
         [FreeFunction("Hash128ToString")]
         internal static extern string Internal_Hash128ToString(Hash128 hash128);
 
+        [FreeFunction("ComputeHash128FromString")]
+        public static extern Hash128 Compute(string hashString);
+
         public override bool Equals(object obj)
         {
             return obj is Hash128 && this == (Hash128)obj;

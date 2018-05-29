@@ -15,6 +15,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
 [assembly: InternalsVisibleTo("UnityEditor.XboxOne.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WSA.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]

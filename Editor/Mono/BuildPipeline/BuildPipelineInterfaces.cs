@@ -45,6 +45,11 @@ namespace UnityEditor.Build
         void OnPostprocessBuild(BuildReport report);
     }
 
+    public interface IPostBuildPlayerScriptDLLs : IOrderedCallback
+    {
+        void OnPostBuildPlayerScriptDLLs(BuildReport report);
+    }
+
     [Obsolete("Use IProcessSceneWithReport instead")]
     public interface IProcessScene : IOrderedCallback
     {
@@ -83,6 +88,7 @@ namespace UnityEditor.Build
             public List<IFilterBuildAssemblies> filterBuildAssembliesProcessor;
             public List<IActiveBuildTargetChanged> buildTargetProcessors;
             public List<IPreprocessShaders> shaderProcessors;
+            public List<IPostBuildPlayerScriptDLLs> buildPlayerScriptDLLProcessors;
         }
 
         private static Processors m_Processors;
@@ -104,7 +110,8 @@ namespace UnityEditor.Build
             SceneProcessors = 2,
             BuildTargetProcessors = 4,
             FilterAssembliesProcessors = 8,
-            ShaderProcessors = 16
+            ShaderProcessors = 16,
+            BuildPlayerScriptDLLProcessors = 32
         }
 
         //common comparer for all callback types
@@ -177,6 +184,7 @@ namespace UnityEditor.Build
             bool findTargetProcessors = (findFlags & BuildCallbacks.BuildTargetProcessors) == BuildCallbacks.BuildTargetProcessors;
             bool findFilterProcessors = (findFlags & BuildCallbacks.FilterAssembliesProcessors) == BuildCallbacks.FilterAssembliesProcessors;
             bool findShaderProcessors = (findFlags & BuildCallbacks.ShaderProcessors) == BuildCallbacks.ShaderProcessors;
+            bool findBuildPlayerScriptDLLsProcessors = (findFlags & BuildCallbacks.BuildPlayerScriptDLLProcessors) == BuildCallbacks.BuildPlayerScriptDLLProcessors;
 
             var postProcessBuildAttributeParams = new Type[] { typeof(BuildTarget), typeof(string) };
             foreach (var t in EditorAssemblies.GetAllTypesWithInterface<IOrderedCallback>())
@@ -215,6 +223,11 @@ namespace UnityEditor.Build
                 {
                     AddToListIfTypeImplementsInterface(t, ref instance, ref processors.shaderProcessors);
                 }
+
+                if (findBuildPlayerScriptDLLsProcessors)
+                {
+                    AddToListIfTypeImplementsInterface(t, ref instance, ref processors.buildPlayerScriptDLLProcessors);
+                }
             }
 
             if (findBuildProcessors)
@@ -249,6 +262,8 @@ namespace UnityEditor.Build
                 processors.filterBuildAssembliesProcessor.Sort(CompareICallbackOrder);
             if (processors.shaderProcessors != null)
                 processors.shaderProcessors.Sort(CompareICallbackOrder);
+            if (processors.buildPlayerScriptDLLProcessors != null)
+                processors.buildPlayerScriptDLLProcessors.Sort(CompareICallbackOrder);
         }
 
         internal static bool ValidateType<T>(Type t)
@@ -430,6 +445,27 @@ namespace UnityEditor.Build
         }
 
         [RequiredByNativeCode]
+        internal static void OnPostBuildPlayerScriptDLLs(BuildReport report)
+        {
+            if (processors.buildPlayerScriptDLLProcessors != null)
+            {
+                foreach (var step in processors.buildPlayerScriptDLLProcessors)
+                {
+                    try
+                    {
+                        step.OnPostBuildPlayerScriptDLLs(report);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.LogException(e);
+                        if ((report.summary.options & BuildOptions.StrictMode) != 0 || (report.summary.assetBundleOptions & BuildAssetBundleOptions.StrictMode) != 0)
+                            return;
+                    }
+                }
+            }
+        }
+
+        [RequiredByNativeCode]
         internal static string[] FilterAssembliesIncludedInBuild(BuildOptions buildOptions, string[] assemblies)
         {
             if (processors.filterBuildAssembliesProcessor == null)
@@ -471,6 +507,7 @@ namespace UnityEditor.Build
             processors.sceneProcessorsWithReport = null;
             processors.filterBuildAssembliesProcessor = null;
             processors.shaderProcessors = null;
+            processors.buildPlayerScriptDLLProcessors = null;
             previousFlags = BuildCallbacks.None;
         }
     }

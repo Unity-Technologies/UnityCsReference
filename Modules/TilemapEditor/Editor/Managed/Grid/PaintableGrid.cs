@@ -13,6 +13,8 @@ namespace UnityEditor
 {
     internal abstract class PaintableGrid : ScriptableObject
     {
+        private const int k_MaxMouseCellDelta = 500;
+
         public enum MarqueeType { None = 0, Pick, Box, Select }
         private int m_PermanentControlID;
 
@@ -108,6 +110,12 @@ namespace UnityEditor
                 Vector2Int newGridPosition = ScreenToGrid(Event.current.mousePosition);
                 if (newGridPosition != m_MouseGridPosition)
                 {
+                    var delta = newGridPosition - m_MouseGridPosition;
+                    // Case 1024422: Limit mouse cell delta changes for Grid/Tilemap input handling due to camera changes when switching modes/axis views
+                    if (Mathf.Abs(delta.x) > k_MaxMouseCellDelta)
+                        newGridPosition.x = m_MouseGridPosition.x + Math.Sign(delta.x) * k_MaxMouseCellDelta;
+                    if (Mathf.Abs(delta.y) > k_MaxMouseCellDelta)
+                        newGridPosition.y = m_MouseGridPosition.y + Math.Sign(delta.y) * k_MaxMouseCellDelta;
                     m_PreviousMouseGridPosition = m_MouseGridPosition;
                     m_MouseGridPosition = newGridPosition;
                     m_MouseGridPositionChanged = true;

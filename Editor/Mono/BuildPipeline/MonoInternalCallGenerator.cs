@@ -102,7 +102,7 @@ namespace UnityEditor
 
             HashSet<UnityType> nativeClasses;
             HashSet<string> nativeModules;
-            CodeStrippingUtils.GenerateDependencies(Path.GetDirectoryName(stagingAreaDataManaged), icallSummaryPath, usedClassRegistry, stripping, out nativeClasses, out nativeModules, platformProvider);
+            CodeStrippingUtils.GenerateDependencies(stagingAreaDataManaged, icallSummaryPath, usedClassRegistry, stripping, out nativeClasses, out nativeModules, platformProvider);
 
             using (TextWriter w = new StreamWriter(file))
             {
