@@ -46,11 +46,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             this.maxConcurrentCompilers = maxConcurrentCompilers;
         }
 
-        ~CompilationTask()
-        {
-            Stop();
-        }
-
         public bool IsCompiling
         {
             get { return pendingAssemblies.Count > 0 || compilerTasks.Count > 0; }

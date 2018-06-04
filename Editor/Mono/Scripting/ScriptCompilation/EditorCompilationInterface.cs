@@ -73,6 +73,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        static void EmitExceptionsAsErrors(Exception[] exceptions)
+        {
+            if (exceptions == null || exceptions.Length == 0)
+                return;
+
+            foreach (var exception in exceptions)
+                LogException(exception);
+        }
+
         static T EmitExceptionAsError<T>(Func<T> func, T returnValue)
         {
             try
@@ -167,7 +176,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static void SetAllCustomScriptAssemblyJsons(string[] allAssemblyJsons)
         {
-            EmitExceptionAsError(() => Instance.SetAllCustomScriptAssemblyJsons(allAssemblyJsons));
+            EmitExceptionsAsErrors(Instance.SetAllCustomScriptAssemblyJsons(allAssemblyJsons));
         }
 
         [RequiredByNativeCode]
