@@ -397,10 +397,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         }
                     }
 
-                    foreach (var reference in assembly.References)
+                    if (assembly.References != null)
                     {
-                        if (!allCustomScriptAssemblies.Any(a => a.Name == reference))
-                            throw new Compilation.AssemblyDefinitionException(string.Format("Assembly has reference to non-existent assembly '{0}'", reference), assembly.FilePath);
+                        foreach (var reference in assembly.References)
+                        {
+                            if (!allCustomScriptAssemblies.Any(a => a.Name == reference))
+                                throw new Compilation.AssemblyDefinitionException(string.Format("Assembly has reference to non-existent assembly '{0}'", reference), assembly.FilePath);
+                        }
                     }
                 }
                 catch (Exception e)
@@ -414,9 +417,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags.cyclicReferences);
         }
 
-        public void SetAllCustomScriptAssemblyJsons(string[] paths)
+        public Exception[] SetAllCustomScriptAssemblyJsons(string[] paths)
         {
             var assemblies = new List<CustomScriptAssembly>();
+            var exceptions = new List<Exception>();
 
             ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags.loadError);
 
@@ -453,20 +457,37 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         loadedCustomScriptAssembly.References = new string[0];
 
                     if (loadedCustomScriptAssembly.References.Length != loadedCustomScriptAssembly.References.Distinct().Count())
-                        throw new Compilation.AssemblyDefinitionException("Assembly has duplicate references", loadedCustomScriptAssembly.FilePath);
+                    {
+                        var duplicateRefs = loadedCustomScriptAssembly.References.GroupBy(r => r).Where(g => g.Count() > 0).Select(g => g.Key).ToArray();
+                        var duplicateRefsString = string.Join(",", duplicateRefs);
+
+                        throw new Compilation.AssemblyDefinitionException(string.Format("Assembly has duplicate references: {0}",
+                                duplicateRefsString),
+                            loadedCustomScriptAssembly.FilePath);
+                    }
                 }
                 catch (Exception e)
                 {
                     SetCompilationSetupErrorFlags(CompilationSetupErrorFlags.loadError);
-                    throw e;
+                    exceptions.Add(e);
                 }
 
-                assemblies.Add(loadedCustomScriptAssembly);
+                if (loadedCustomScriptAssembly != null && !assemblies.Any(a => a.Name.Equals(loadedCustomScriptAssembly.Name, StringComparison.OrdinalIgnoreCase)))
+                    assemblies.Add(loadedCustomScriptAssembly);
             }
 
             customScriptAssemblies = assemblies.ToArray();
 
-            UpdateCustomTargetAssemblies();
+            try
+            {
+                UpdateCustomTargetAssemblies();
+            }
+            catch (Exception e)
+            {
+                exceptions.Add(e);
+            }
+
+            return exceptions.ToArray();
         }
 
         public void SetAllPackageAssemblies(PackageAssembly[] packageAssemblies)
