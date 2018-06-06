@@ -28,14 +28,22 @@ namespace UnityEditor
 
             // controlID will get hotControl if using arrow keys while shortcut context is not active
             // passing a value of zero disables the arrow keys
-            public InputSamplingScope(CameraFlyModeContext context, int controlID, bool orthographic = false)
+            public InputSamplingScope(CameraFlyModeContext context, ViewTool currentViewTool, int controlID, bool orthographic = false)
             {
                 m_ArrowKeysActive = false;
                 m_Disposed = false;
                 m_Context = context;
+                m_Context.active = currentViewTool == ViewTool.FPS;
 
-                if (!context.active)
+                if (m_Context.active)
+                {
+                    ShortcutIntegration.instance.contextManager.SetPriorityContext(context);
+                }
+                else
+                {
+                    ShortcutIntegration.instance.contextManager.ClearPriorityContext();
                     m_ArrowKeysActive = DoArrowKeys(controlID, orthographic);
+                }
 
                 if (currentlyMoving && Mathf.Approximately(m_Context.m_PreviousVector.sqrMagnitude, 0f))
                     s_Timer.Begin();
@@ -93,7 +101,7 @@ namespace UnityEditor
             }
         }
 
-        public bool active => Tools.viewTool == ViewTool.FPS;
+        public bool active { get; set; }
 
         Vector3 m_PreviousVector;
 

@@ -772,7 +772,7 @@ namespace UnityEditor.U2D
         protected static List<SpriteOutline> GenerateSpriteRectOutline(Rect rect, float detail, byte alphaTolerance, ITextureDataProvider textureProvider)
         {
             List<SpriteOutline> outline = new List<SpriteOutline>();
-            var texture = textureProvider.texture;
+            var texture = textureProvider.GetReadableTexture2D();
             if (texture != null)
             {
                 Vector2[][] paths;

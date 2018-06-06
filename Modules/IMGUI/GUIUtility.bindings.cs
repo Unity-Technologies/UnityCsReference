@@ -8,6 +8,7 @@ namespace UnityEngine
 {
     // Utility class for making new GUI controls.
     [NativeHeader("Modules/IMGUI/GUIUtility.h"),
+     NativeHeader("Modules/IMGUI/GUIManager.h"),
      NativeHeader("Runtime/Input/InputManager.h"),
      NativeHeader("Runtime/Utilities/CopyPaste.h"),
      NativeHeader("Runtime/Camera/RenderLayers/GUITexture.h")]
@@ -21,6 +22,14 @@ namespace UnityEngine
 
         [NativeProperty("GetGUIState().m_OnGUIDepth", true, TargetType.Field)]
         internal static extern int guiDepth {[VisibleToOtherModules("UnityEngine.UIElementsModule")] get; }
+
+        internal static extern Vector2 s_EditorScreenPointOffset
+        {
+            [NativeMethod("GetGUIManager().GetGUIPixelOffset", true)]
+            get;
+            [NativeMethod("GetGUIManager().SetGUIPixelOffset", true)]
+            set;
+        }
 
         [NativeProperty("GetGUIState().m_CanvasGUIState.m_IsMouseUsed", true, TargetType.Field)]
         internal static extern bool mouseUsed { get; set; }
@@ -71,16 +80,11 @@ namespace UnityEngine
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern bool HasFocusableControls();
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static extern Rect Internal_AlignRectToDevice(Rect rect, Matrix4x4 transform);
+        public static extern Rect AlignRectToDevice(Rect rect, out int widthInPixels, out int heightInPixels);
 
         // This is used in sensitive alignment-related operations. Avoid calling this method if you can.
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static extern Vector3 Internal_MultiplyPoint(Vector3 point, Matrix4x4 transform);
-
-        // This is used in sensitive alignment-related operations. Avoid calling this method if you can.
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal static extern float Internal_Roundf(float f);
 
         internal static extern bool GetChanged();
         internal static extern void SetChanged(bool changed);
@@ -93,5 +97,7 @@ namespace UnityEngine
         private static extern System.Object Internal_GetDefaultSkin(int skinMode);
         private static extern Object Internal_GetBuiltinSkin(int skin);
         private static extern void Internal_ExitGUI();
+        private static extern Vector2 InternalWindowToScreenPoint(Vector2 windowPoint);
+        private static extern Vector2 InternalScreenToWindowPoint(Vector2 screenPoint);
     }
 }

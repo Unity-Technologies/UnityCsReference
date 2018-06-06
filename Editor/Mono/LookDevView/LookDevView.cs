@@ -14,6 +14,18 @@ namespace UnityEditor
     [EditorWindowTitle(title = "Look Dev", useTypeNameAsIconName = true)]
     internal class LookDevView : EditorWindow, IHasCustomMenu
     {
+        internal class TestUtility
+        {
+            public TestUtility(LookDevView lookDevView)
+            {
+                this.lookDevView = lookDevView;
+            }
+
+            public readonly LookDevView lookDevView;
+
+            public Camera camera => lookDevView.m_PreviewUtilityContexts[lookDevView.m_LookDevConfig.currentEditionContextIndex].m_PreviewUtility[0].camera;
+        }
+
         static readonly Vector2 s_MinWindowSize = new Vector2(300, 60);
 
         // Note: Color init in OnEnable
@@ -279,8 +291,6 @@ namespace UnityEditor
             {
                 m_LookDevEnvWindow = new LookDevEnvironmentWindow(this);
             }
-
-            m_CameraController.ActivateFlyModeContext();
         }
 
         void InitializePreviewUtilities()

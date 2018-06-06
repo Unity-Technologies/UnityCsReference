@@ -75,6 +75,10 @@ namespace UnityEditor.PackageManager
         [NativeName("resolvedDependencies")]
         private DependencyInfo[] m_ResolvedDependencies = new DependencyInfo[0];
 
+        [SerializeField]
+        [NativeName("keywords")]
+        private string[] m_Keywords = new string[0];
+
         private PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -91,6 +95,7 @@ namespace UnityEditor.PackageManager
         public VersionsInfo versions { get { return m_Versions; } }
         public DependencyInfo[] dependencies { get { return m_Dependencies; } }
         public DependencyInfo[] resolvedDependencies { get { return m_ResolvedDependencies; } }
+        public string[] keywords { get { return m_Keywords;  } }
     }
 }
 

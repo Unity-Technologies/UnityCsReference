@@ -174,7 +174,7 @@ namespace UnityEditor
                 result.icon = null;
         }
 
-        void SearchAllAssets()
+        void SearchAllAssets(SearchFilter.SearchArea area)
         {
             const int k_MaxAddCount = 3000;
             if (m_HierarchyType == HierarchyType.Assets)
@@ -183,6 +183,7 @@ namespace UnityEditor
                 list.AddRange(m_Results);
 
                 var maxAddCount = k_MaxAddCount;
+                m_SearchFilter.searchArea = area;
                 var enumerator = AssetDatabase.EnumerateAllAssets(m_SearchFilter);
                 while (enumerator.MoveNext() && --maxAddCount >= 0)
                 {
@@ -230,6 +231,7 @@ namespace UnityEditor
                 }
             }
 
+            m_SearchFilter.searchArea = SearchFilter.SearchArea.SelectedFolders;
             foreach (string folderPath in baseFolders)
             {
                 // Ensure we do not have a filter when finding folder
@@ -308,9 +310,11 @@ namespace UnityEditor
         {
             switch (m_SearchFilter.GetState())
             {
-                case SearchFilter.State.FolderBrowsing:         FolderBrowsing();  break;
-                case SearchFilter.State.SearchingInAllAssets:   SearchAllAssets(); break;
-                case SearchFilter.State.SearchingInFolders:     SearchInFolders(); break;
+                case SearchFilter.State.FolderBrowsing:          FolderBrowsing();  break;
+                case SearchFilter.State.SearchingInAllAssets:    SearchAllAssets(SearchFilter.SearchArea.AllAssets); break;
+                case SearchFilter.State.SearchingInAssetsOnly:   SearchAllAssets(SearchFilter.SearchArea.InAssetsOnly); break;
+                case SearchFilter.State.SearchingInPackagesOnly: SearchAllAssets(SearchFilter.SearchArea.InPackagesOnly); break;
+                case SearchFilter.State.SearchingInFolders:      SearchInFolders(); break;
                 case SearchFilter.State.SearchingInAssetStore: /*do nothing*/ break;
                 case SearchFilter.State.EmptySearchFilter: /*do nothing*/ break;
                 default: Debug.LogError("Unhandled enum!"); break;

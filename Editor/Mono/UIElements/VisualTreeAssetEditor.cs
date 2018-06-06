@@ -11,7 +11,7 @@ using Object = UnityEngine.Object;
 namespace UnityEditor.Experimental.UIElements
 {
     [CustomEditor(typeof(VisualTreeAsset))]
-    internal class VisualTreeAssetEditor : Editor
+    internal class VisualTreeAssetEditor : ScriptableObjectAssetEditor
     {
         private Panel m_Panel;
         private VisualElement m_Tree;
@@ -26,31 +26,15 @@ namespace UnityEditor.Experimental.UIElements
         protected void OnDestroy()
         {
             m_Panel = null;
-            UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
-        }
-
-        // hack to avoid null references when a scriptedImporter runs and replaces the current selection
-        internal override string targetTitle
-        {
-            get
+            if (m_LastTree != null)
             {
-                if (!target)
-                {
-                    serializedObject.Update();
-                    InternalSetTargets(serializedObject.targetObjects);
-                }
-                return base.targetTitle;
+                UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
             }
         }
 
         public override bool HasPreviewGUI()
         {
             return true;
-        }
-
-        public override GUIContent GetPreviewTitle()
-        {
-            return GUIContent.Temp(targetTitle);
         }
 
         private void RenderIcon(Rect iconRect)

@@ -256,12 +256,10 @@ namespace UnityEngine
                 throw new ArgumentException("You can only call GUI functions from inside OnGUI.");
         }
 
-        internal static Vector2 s_EditorScreenPointOffset = Vector2.zero;
-
         // Convert a point from GUI position to screen space.
         public static Vector2 GUIToScreenPoint(Vector2 guiPoint)
         {
-            return GUIClip.UnclipToWindow(guiPoint) + s_EditorScreenPointOffset;
+            return InternalWindowToScreenPoint(GUIClip.UnclipToWindow(guiPoint));
         }
 
         // Convert a rect from GUI position to screen space.
@@ -276,7 +274,7 @@ namespace UnityEngine
         // Convert a point from screen space to GUI position.
         public static Vector2 ScreenToGUIPoint(Vector2 screenPoint)
         {
-            return GUIClip.ClipToWindow(screenPoint) - s_EditorScreenPointOffset;
+            return GUIClip.ClipToWindow(InternalScreenToWindowPoint(screenPoint));
         }
 
         // Convert a rect from screen space to GUI position.
@@ -327,6 +325,12 @@ namespace UnityEngine
                 m_Disposed = true;
                 manualTex2SRGBEnabled = m_WasEnabled;
             }
+        }
+
+        public static Rect AlignRectToDevice(Rect rect)
+        {
+            int width, height;
+            return AlignRectToDevice(rect, out width, out height);
         }
     }
 

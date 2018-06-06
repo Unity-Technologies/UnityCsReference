@@ -110,7 +110,10 @@ namespace UnityEditor
         {
             var insp = FirstInspectorWithGameObject();
             if (insp != null)
+            {
+                insp.ShowTab();
                 insp.SendEvent(EditorGUIUtility.CommandEvent(OpenAddComponentDropdown));
+            }
         }
 
         private static InspectorWindow FirstInspectorWithGameObject()

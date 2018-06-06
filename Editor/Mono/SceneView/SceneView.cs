@@ -532,8 +532,6 @@ namespace UnityEditor
             if (m_CameraMode.drawMode == DrawCameraMode.UserDefined && !s_UserDefinedModes.Contains(m_CameraMode))
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
 
-            SceneViewMotion.ActivateFlyModeContext();
-
             base.OnEnable();
         }
 

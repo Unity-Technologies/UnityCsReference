@@ -335,22 +335,19 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal bool isWorldTransformDirty { get; set; } = true;
+
         /// <summary>
-        /// <c>rect</c> converted to world space, aligned to the pixel-grid, and converted back to its original space.
+        /// Returns a matrix that cumulates the following operations (in order):
+        /// -Local Scaling
+        /// -Local Rotation
+        /// -Local Translation
+        /// -Layout Translation
+        /// -Parent <c>worldTransform</c> (recursive definition - consider identity when there is no parent)
         /// </summary>
         /// <remarks>
-        /// The offset used when rendering to a pixel cache can yield numerical errors that result in rounding
-        /// differences in GUITexture.cpp, causing blur. By specifying an already-aligned rect, the numerical
-        /// errors aren't sufficient to generate rounding differences.
+        /// Multiplying the <c>layout</c> rect by this matrix is incorrect because it already contains the translation.
         /// </remarks>
-        internal Rect alignedRect
-        {
-            get
-            {
-                return GUIUtility.Internal_AlignRectToDevice(rect, worldTransform);
-            }
-        }
-
         public Matrix4x4 worldTransform
         {
             get
@@ -1302,7 +1299,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new TextureStylePainterParameters
             {
-                rect = ve.alignedRect,
+                rect = GUIUtility.AlignRectToDevice(ve.rect),
                 uv = new Rect(0, 0, 1, 1),
                 color = Color.white,
                 texture = style.backgroundImage,
@@ -1321,7 +1318,7 @@ namespace UnityEngine.Experimental.UIElements
             IStyle style = ve.style;
             var painterParams = new RectStylePainterParameters
             {
-                rect = ve.alignedRect,
+                rect = GUIUtility.AlignRectToDevice(ve.rect),
                 color = style.backgroundColor,
             };
             painter.SetBorderFromStyle(ref painterParams.border, style);

@@ -249,6 +249,10 @@ namespace UnityEditor.Experimental.UIElements
             if (!vta.inlineSheet)
                 vta.inlineSheet = ScriptableObject.CreateInstance<StyleSheet>();
 
+            // Make sure imported objects aren't editable in the Inspector
+            vta.hideFlags = HideFlags.NotEditable;
+            vta.inlineSheet.hideFlags = HideFlags.NotEditable;
+
             args.AddObjectToAsset("inlineStyle", vta.inlineSheet);
         }
 

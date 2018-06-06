@@ -208,7 +208,7 @@ namespace UnityEditor
             if (slicingMethod == AutoSlicingMethod.DeleteAll)
                 m_RectsCache.spriteRects.Clear();
 
-            var textureToUse = m_TextureDataProvider.GetReadableTexture2D();
+            var textureToUse = GetTextureToSlice();
             List<Rect> frames = new List<Rect>(InternalSpriteUtility.GenerateAutomaticSpriteRectangles((UnityTexture2D)textureToUse, minimumSpriteSize, 0));
             frames = SortRects(frames);
             int index = 0;
@@ -221,9 +221,23 @@ namespace UnityEditor
             Repaint();
         }
 
+        UnityTexture2D GetTextureToSlice()
+        {
+            int width, height;
+            m_TextureDataProvider.GetTextureActualWidthAndHeight(out width, out height);
+            var readableTexture = m_TextureDataProvider.GetReadableTexture2D();
+            if (readableTexture == null || (readableTexture.width == width && readableTexture.height == height))
+                return readableTexture;
+            // we want to slice based on the original texture slice. Upscale the imported texture
+            var texture = UnityEditor.SpriteUtility.CreateTemporaryDuplicate(readableTexture, width, height);
+            if (texture != null)
+                texture.filterMode = texture.filterMode;
+            return texture;
+        }
+
         public void DoGridSlicing(Vector2 size, Vector2 offset, Vector2 padding, int alignment, Vector2 pivot)
         {
-            var textureToUse = m_TextureDataProvider.GetReadableTexture2D();
+            var textureToUse = GetTextureToSlice();
             Rect[] frames = InternalSpriteUtility.GenerateGridSpriteRectangles((UnityTexture2D)textureToUse, offset, size, padding);
 
             int index = 0;

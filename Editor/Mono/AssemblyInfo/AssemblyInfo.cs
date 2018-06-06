@@ -6,6 +6,8 @@ using System.Runtime.CompilerServices;
 using UnityEngine;
 
 // ADD_NEW_PLATFORM_HERE
+[assembly: InternalsVisibleTo("Unity.Burst")]
+[assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.Advertisements")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]

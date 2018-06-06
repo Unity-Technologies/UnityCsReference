@@ -101,14 +101,22 @@ namespace UnityEditor
         private static IEnumerator<T> FindEverywhere<T>(SearchFilter searchFilter, Func<HierarchyProperty, T> selector)
         {
             var rootPaths = new List<string>();
-            rootPaths.Add("Assets");
-            var packages = PackageManager.Packages.GetAll();
-            foreach (var package in packages)
+            if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
+                searchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly)
             {
-                if (package.source == PackageManager.PackageSource.BuiltIn)
-                    continue;
+                rootPaths.Add("Assets");
+            }
+            if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
+                searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
+            {
+                var packages = PackageManager.Packages.GetAll();
+                foreach (var package in packages)
+                {
+                    if (package.source == PackageManager.PackageSource.BuiltIn)
+                        continue;
 
-                rootPaths.Add(package.assetPath);
+                    rootPaths.Add(package.assetPath);
+                }
             }
             foreach (var rootPath in rootPaths)
             {

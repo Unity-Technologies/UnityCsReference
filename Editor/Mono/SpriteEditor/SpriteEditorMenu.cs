@@ -199,12 +199,10 @@ namespace UnityEditorInternal
         private void DoAnalytics()
         {
             UsabilityAnalytics.Event("Sprite Editor", "Slice", "Type", (int)s_Setting.slicingType);
-            var texture = m_TextureDataProvider.texture;
-            if (texture != null)
-            {
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Texture Width", texture.width);
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Texture Height", texture.height);
-            }
+            int width, height;
+            m_TextureDataProvider.GetTextureActualWidthAndHeight(out width, out height);
+            UsabilityAnalytics.Event("Sprite Editor", "Slice", "Texture Width", width);
+            UsabilityAnalytics.Event("Sprite Editor", "Slice", "Texture Height", height);
 
             if (s_Setting.slicingType == SpriteEditorMenuSetting.SlicingType.Automatic)
             {
@@ -254,7 +252,7 @@ namespace UnityEditorInternal
         {
             int width, height;
             m_TextureDataProvider.GetTextureActualWidthAndHeight(out width, out height);
-            var texture = m_TextureDataProvider.texture;
+            var texture = m_TextureDataProvider.GetReadableTexture2D();
             int maxWidth = texture != null ? width : 4096;
             int maxHeight = texture != null ? height : 4096;
 
@@ -327,7 +325,7 @@ namespace UnityEditorInternal
         private void OnAutomaticGUI()
         {
             float spacing = 38f;
-            var texture = m_TextureDataProvider.texture;
+            var texture = m_TextureDataProvider.GetReadableTexture2D();
             if (texture != null && UnityEditor.TextureUtil.IsCompressedTextureFormat(texture.format))
             {
                 EditorGUILayout.LabelField(s_Styles.automaticSlicingHintLabel, s_Styles.notice);
@@ -391,7 +389,7 @@ namespace UnityEditorInternal
         {
             int width, height;
             m_TextureDataProvider.GetTextureActualWidthAndHeight(out width, out height);
-            var texture = m_TextureDataProvider.texture;
+            var texture = m_TextureDataProvider.GetReadableTexture2D();
             int maxWidth = texture != null ? width : 4096;
             int maxHeight = texture != null ? height : 4096;
 

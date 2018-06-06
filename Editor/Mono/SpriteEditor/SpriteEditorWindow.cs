@@ -114,7 +114,7 @@ namespace UnityEditor
             {
                 int width = 0, height = 0;
                 textureProvider.GetTextureActualWidthAndHeight(out width, out height);
-                m_Texture = textureProvider.texture == null ? null : new PreviewTexture2D(textureProvider.texture, width, height);
+                m_Texture = textureProvider.previewTexture == null ? null : new PreviewTexture2D(textureProvider.previewTexture, width, height);
             }
         }
 
@@ -848,6 +848,11 @@ namespace UnityEditor
         public bool editingDisabled
         {
             get { return EditorApplication.isPlayingOrWillChangePlaymode; }
+        }
+
+        public void SetPreviewTexture(UnityTexture2D texture, int width, int height)
+        {
+            m_Texture = new PreviewTexture2D(texture, width, height);
         }
 
         public void ApplyOrRevertModification(bool apply)

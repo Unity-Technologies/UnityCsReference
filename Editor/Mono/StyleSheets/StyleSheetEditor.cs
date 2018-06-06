@@ -10,7 +10,7 @@ using UnityEngine.StyleSheets;
 namespace UnityEditor.StyleSheets
 {
     [CustomEditor(typeof(StyleSheet))]
-    internal class StyleSheetEditor : Editor
+    internal class StyleSheetEditor : ScriptableObjectAssetEditor
     {
         private Texture2D m_FileTypeIcon;
 

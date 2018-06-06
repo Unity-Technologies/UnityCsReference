@@ -192,7 +192,7 @@ namespace UnityEditor
             }
 
             var id = GUIUtility.GetControlID(FocusType.Passive);
-            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(m_CameraFlyModeContext, id))
+            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(m_CameraFlyModeContext, m_CurrentViewTool, id))
             {
                 if (inputSamplingScope.inputVectorChanged)
                     m_FlySpeed = 0;
@@ -215,11 +215,6 @@ namespace UnityEditor
                 }
                 break;
             }
-        }
-
-        public void ActivateFlyModeContext()
-        {
-            ShortcutIntegration.instance.contextManager.SetPriorityContext(m_CameraFlyModeContext);
         }
 
         public void DeactivateFlyModeContext()

@@ -2165,6 +2165,9 @@
   <Compile Include="..\..\Editor\Mono\Inspector\ScriptExecutionOrderInspector.cs">
     <Link>Editor\Mono\Inspector\ScriptExecutionOrderInspector.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\ScriptableObjectAssetEditor.cs">
+    <Link>Editor\Mono\Inspector\ScriptableObjectAssetEditor.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\ShaderGUI.cs">
     <Link>Editor\Mono\Inspector\ShaderGUI.cs</Link>
   </Compile>
@@ -2629,6 +2632,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\PlayerSettingsSplashScreen.cs">
     <Link>Editor\Mono\PlayerSettingsSplashScreen.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\PlayerSettingsSwitch.bindings.cs">
+    <Link>Editor\Mono\PlayerSettingsSwitch.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\PlayerSettingsTVOS.bindings.cs">
     <Link>Editor\Mono\PlayerSettingsTVOS.bindings.cs</Link>

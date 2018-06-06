@@ -518,9 +518,9 @@ namespace UnityEngine.Experimental.UIElements
                 }
 
                 float x1 = Mathf.Max(worldBound.x, currentGlobalClip.x);
-                float x2 = Mathf.Min(worldBound.x + worldBound.width, currentGlobalClip.x + currentGlobalClip.width);
+                float x2 = Mathf.Min(worldBound.xMax, currentGlobalClip.xMax);
                 float y1 = Mathf.Max(worldBound.y, currentGlobalClip.y);
-                float y2 = Mathf.Min(worldBound.y + worldBound.height, currentGlobalClip.y + currentGlobalClip.height);
+                float y2 = Mathf.Min(worldBound.yMax, currentGlobalClip.yMax);
 
                 // new global clip and hierarchical clip space option.
                 currentGlobalClip = new Rect(x1, y1, x2 - x1, y2 - y1);
@@ -546,12 +546,14 @@ namespace UnityEngine.Experimental.UIElements
                 // validate cache texture size first
                 var worldBound = root.worldBound;
 
-                int w = (int)GUIUtility.Internal_Roundf(worldBound.xMax) - (int)GUIUtility.Internal_Roundf(worldBound.xMin);
-                int h = (int)GUIUtility.Internal_Roundf(worldBound.yMax) - (int)GUIUtility.Internal_Roundf(worldBound.yMin);
-
-                // This needs to be consistent with RoundRect() in GUITexture.cpp. Otherwise, the texture may be stretched.
-                int textureWidth = (int)GUIUtility.Internal_Roundf(w * GUIUtility.pixelsPerPoint);
-                int textureHeight = (int)GUIUtility.Internal_Roundf(h * GUIUtility.pixelsPerPoint);
+                Rect alignedRect;
+                int textureWidth, textureHeight;
+                painter.currentWorldClip = currentGlobalClip;
+                painter.currentTransform = offset * root.worldTransform;
+                using (new GUIClip.ParentClipScope(painter.currentTransform, currentGlobalClip))
+                {
+                    alignedRect = GUIUtility.AlignRectToDevice(root.rect, out textureWidth, out textureHeight);
+                }
 
                 // Prevent the texture size from going empty, which may occur if the element has a sub-pixel size
                 textureWidth = Math.Max(textureWidth, 1);
@@ -608,12 +610,13 @@ namespace UnityEngine.Experimental.UIElements
 
                         // Calculate the offset required to translate the origin of the rect to the upper left corner
                         // of the pixel cache. We need to round because the rect will be rounded when rendered.
-                        var childrenOffset = Matrix4x4.Translate(new Vector3(-GUIUtility.Internal_Roundf(worldBound.x), -GUIUtility.Internal_Roundf(worldBound.y), 0));
+                        Rect worldAlignedRect = root.LocalToWorld(alignedRect);
+                        var childrenOffset = Matrix4x4.Translate(new Vector3(-worldAlignedRect.x, -worldAlignedRect.y, 0));
 
                         Matrix4x4 offsetWorldTransform = childrenOffset * root.worldTransform;
 
                         // reset clipping
-                        var textureClip = new Rect(0, 0, w, h);
+                        var textureClip = new Rect(0, 0, worldAlignedRect.width, worldAlignedRect.height);
                         painter.currentTransform = offsetWorldTransform;
 
                         // Metal ignores the sRGBWrite flag and will always do linear to gamma conversions
@@ -697,18 +700,17 @@ namespace UnityEngine.Experimental.UIElements
                 painter.currentWorldClip = currentGlobalClip;
                 painter.currentTransform = offset * root.worldTransform;
 
-                var painterParams = new TextureStylePainterParameters
-                {
-                    rect = root.alignedRect,
-                    uv = new Rect(0, 0, 1, 1),
-                    texture = root.renderData.pixelCache,
-                    color = Color.white,
-                    scaleMode = ScaleMode.StretchToFill,
-                    usePremultiplyAlpha = true
-                };
-
                 using (new GUIClip.ParentClipScope(painter.currentTransform, currentGlobalClip))
                 {
+                    var painterParams = new TextureStylePainterParameters
+                    {
+                        rect = GUIUtility.AlignRectToDevice(root.rect),
+                        uv = new Rect(0, 0, 1, 1),
+                        texture = root.renderData.pixelCache,
+                        color = Color.white,
+                        scaleMode = ScaleMode.StretchToFill,
+                        usePremultiplyAlpha = true
+                    };
                     painter.DrawTexture(painterParams);
                 }
             }

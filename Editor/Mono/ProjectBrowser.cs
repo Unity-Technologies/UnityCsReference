@@ -48,6 +48,8 @@ namespace UnityEditor
         {
             NotSearching,
             AllAssets,
+            InAssetsOnly,
+            InPackagesOnly,
             SubFolders,
             AssetStore
         }
@@ -116,7 +118,7 @@ namespace UnityEditor
         bool m_DidSelectSearchResult = false;
         bool m_ItemSelectedByRightClickThisEvent = false;
         bool m_InternalSelectionChange = false; // to know when selection change originated in project view itself
-        SearchFilter.SearchArea m_LastLocalAssetsSearchArea = SearchFilter.SearchArea.AllAssets;
+        SearchFilter.SearchArea m_LastLocalAssetsSearchArea = SearchFilter.SearchArea.InAssetsOnly;
         PopupList.InputData m_AssetLabels;
         PopupList.InputData m_ObjectTypes;
         bool m_UseTreeViewSelectionInsteadOfMainSelection;
@@ -176,7 +178,11 @@ namespace UnityEditor
 
         // Used by search menu bar
         [NonSerialized]
-        public GUIContent m_SearchAllAssets = EditorGUIUtility.TrTextContent("All Assets"); // do not localize this: Assets=folder name
+        public GUIContent m_SearchAllAssets = EditorGUIUtility.TrTextContent("All");
+        [NonSerialized]
+        public GUIContent m_SearchInPackagesOnly = EditorGUIUtility.TrTextContent("In Packages");
+        [NonSerialized]
+        public GUIContent m_SearchInAssetsOnly = EditorGUIUtility.TrTextContent("In Assets");
         [NonSerialized]
         public GUIContent m_SearchInFolders = new GUIContent(""); // updated when needed
         [NonSerialized]
@@ -470,6 +476,12 @@ namespace UnityEditor
                 case SearchViewState.AllAssets:
                     m_SearchFilter.searchArea = SearchFilter.SearchArea.AllAssets;
                     break;
+                case SearchViewState.InAssetsOnly:
+                    m_SearchFilter.searchArea = SearchFilter.SearchArea.InAssetsOnly;
+                    break;
+                case SearchViewState.InPackagesOnly:
+                    m_SearchFilter.searchArea = SearchFilter.SearchArea.InPackagesOnly;
+                    break;
                 case SearchViewState.SubFolders:
                     m_SearchFilter.searchArea = SearchFilter.SearchArea.SelectedFolders;
                     break;
@@ -490,9 +502,11 @@ namespace UnityEditor
         {
             switch (m_SearchFilter.GetState())
             {
-                case SearchFilter.State.SearchingInAllAssets:   return SearchViewState.AllAssets;
-                case SearchFilter.State.SearchingInFolders:     return SearchViewState.SubFolders;
-                case SearchFilter.State.SearchingInAssetStore:  return SearchViewState.AssetStore;
+                case SearchFilter.State.SearchingInAllAssets:    return SearchViewState.AllAssets;
+                case SearchFilter.State.SearchingInAssetsOnly:   return SearchViewState.InAssetsOnly;
+                case SearchFilter.State.SearchingInPackagesOnly: return SearchViewState.InPackagesOnly;
+                case SearchFilter.State.SearchingInFolders:      return SearchViewState.SubFolders;
+                case SearchFilter.State.SearchingInAssetStore:   return SearchViewState.AssetStore;
             }
             return SearchViewState.NotSearching;
         }
@@ -503,7 +517,10 @@ namespace UnityEditor
             {
                 SetSearchViewState((SearchViewState)itemClicked.m_UserData);
 
-                if (m_SearchFilter.searchArea == SearchFilter.SearchArea.AllAssets || m_SearchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
+                if (m_SearchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
+                    m_SearchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly ||
+                    m_SearchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly ||
+                    m_SearchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
                     m_LastLocalAssetsSearchArea = m_SearchFilter.searchArea;
             }
         }
@@ -523,6 +540,10 @@ namespace UnityEditor
 
             bool on = state == SearchViewState.AllAssets;
             buttonData.Add(new ExposablePopupMenu.ItemData(m_SearchAllAssets, on ? onStyle : offStyle, on, true, (int)SearchViewState.AllAssets));
+            on = state == SearchViewState.InPackagesOnly;
+            buttonData.Add(new ExposablePopupMenu.ItemData(m_SearchInPackagesOnly, on ? onStyle : offStyle, on, true, (int)SearchViewState.InPackagesOnly));
+            on = state == SearchViewState.InAssetsOnly;
+            buttonData.Add(new ExposablePopupMenu.ItemData(m_SearchInAssetsOnly, on ? onStyle : offStyle, on, true, (int)SearchViewState.InAssetsOnly));
             on = state == SearchViewState.SubFolders;
             buttonData.Add(new ExposablePopupMenu.ItemData(m_SearchInFolders, on ? onStyle : offStyle, on, hasFolderSelected, (int)SearchViewState.SubFolders));
             on = state == SearchViewState.AssetStore;
@@ -533,6 +554,12 @@ namespace UnityEditor
             {
                 case SearchViewState.AllAssets:
                     popupButtonContent = m_SearchAllAssets;
+                    break;
+                case SearchViewState.InPackagesOnly:
+                    popupButtonContent = m_SearchInPackagesOnly;
+                    break;
+                case SearchViewState.InAssetsOnly:
+                    popupButtonContent = m_SearchInAssetsOnly;
                     break;
                 case SearchViewState.SubFolders:
                     popupButtonContent = m_SearchInFolders;
@@ -1354,6 +1381,8 @@ namespace UnityEditor
                 switch (state)
                 {
                     case SearchViewState.AllAssets:
+                    case SearchViewState.InAssetsOnly:
+                    case SearchViewState.InPackagesOnly:
                     case SearchViewState.AssetStore:
                     {
                         if (!isSavedFilterSelected)
@@ -1457,6 +1486,15 @@ namespace UnityEditor
                     SavedSearchFilters.RemoveSavedFilter(filterInstanceID);
                 }
             }
+        }
+
+        [UsedByNativeCode]
+        internal static string GetSelectedPath()
+        {
+            if (s_LastInteractedProjectBrowser == null)
+                return string.Empty;
+
+            return s_LastInteractedProjectBrowser.m_SelectedPath;
         }
 
         // Also called from C++ (used for AssetsMenu check if selection is Packages folder)
@@ -1697,18 +1735,7 @@ namespace UnityEditor
             else
             {
                 string displayPath = m_SelectedPath;
-                string rootPath = "Assets/";
-                if (m_SelectedPath.StartsWith(rootPath, StringComparison.CurrentCultureIgnoreCase))
-                    displayPath = m_SelectedPath.Substring(rootPath.Length);
-                else if (m_SelectedPath.StartsWith(PackageManager.Folders.GetPackagesMountPoint() + "/", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    rootPath = PackageManager.Folders.GetPackagesMountPoint() + "/";
-                    var packageInfo = PackageManager.Packages.GetForAssetPath(m_SelectedPath);
-                    if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.displayName))
-                        displayPath = Regex.Replace(m_SelectedPath, @"^" + packageInfo.assetPath, packageInfo.displayName);
-                    else
-                        displayPath = m_SelectedPath.Substring(rootPath.Length);
-                }
+                var rootPath = string.Empty;
 
                 if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing)
                 {
@@ -1732,13 +1759,14 @@ namespace UnityEditor
                         m_SelectedPathSplitted.Reverse ();
                          */
 
-                        string[] split = displayPath.Split('/');
-                        string[] splitPath = m_SelectedPath.Split('/');
-                        string curPath = rootPath;
-                        for (int i = 0, j = 1; i < split.Length; ++i, ++j)
+                        var split = displayPath.Split('/');
+                        var splitPath = m_SelectedPath.Split('/');
+                        var curPath = rootPath;
+                        var j = string.IsNullOrEmpty(rootPath) ? 0 : 1;
+                        for (var i = 0; i < split.Length; ++i, ++j)
                         {
                             curPath += splitPath[j];
-                            Texture icon = AssetDatabase.GetCachedIcon(curPath);
+                            var icon = AssetDatabase.GetCachedIcon(curPath);
 
                             m_SelectedPathSplitted.Add(new GUIContent(split[i], icon));
                             curPath += "/";

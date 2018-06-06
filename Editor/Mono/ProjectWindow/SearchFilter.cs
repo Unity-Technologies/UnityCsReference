@@ -16,6 +16,8 @@ namespace UnityEditor
         public enum SearchArea
         {
             AllAssets,
+            InAssetsOnly,
+            InPackagesOnly,
             SelectedFolders,
             AssetStore
         }
@@ -25,6 +27,8 @@ namespace UnityEditor
             EmptySearchFilter,
             FolderBrowsing,
             SearchingInAllAssets,
+            SearchingInAssetsOnly,
+            SearchingInPackagesOnly,
             SearchingInFolders,
             SearchingInAssetStore
         }
@@ -49,8 +53,7 @@ namespace UnityEditor
         [SerializeField]
         private bool m_ShowAllHits = false;         // If true then just one filter must match to show an object, if false then all filters must match to show an object
         [SerializeField]
-        SearchArea m_SearchArea = SearchArea.AllAssets;
-
+        SearchArea m_SearchArea = SearchArea.InAssetsOnly;
         // Folder browsing
         [SerializeField]
         private string[] m_Folders = new string[0];
@@ -108,6 +111,12 @@ namespace UnityEditor
                 if (foldersActive && m_SearchArea == SearchArea.SelectedFolders)
                     return State.SearchingInFolders;
 
+                if (m_SearchArea == SearchArea.InAssetsOnly)
+                    return State.SearchingInAssetsOnly;
+
+                if (m_SearchArea == SearchArea.InPackagesOnly)
+                    return State.SearchingInPackagesOnly;
+
                 return State.SearchingInAllAssets;
             }
             else if (foldersActive)
@@ -121,7 +130,11 @@ namespace UnityEditor
         public bool IsSearching()
         {
             State state = GetState();
-            return (state == State.SearchingInAllAssets || state == State.SearchingInFolders || state == State.SearchingInAssetStore);
+            return (state == State.SearchingInAllAssets ||
+                    state == State.SearchingInAssetsOnly ||
+                    state == State.SearchingInPackagesOnly ||
+                    state == State.SearchingInFolders ||
+                    state == State.SearchingInAssetStore);
         }
 
         public bool SetNewFilter(SearchFilter newFilter)

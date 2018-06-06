@@ -321,6 +321,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 borderContainer.clippingOptions = ClippingOptions.ClipAndCacheContents;
                 mainContainer = borderContainer;
+                var selection = main.Q(name: "selection-border");
+                if (selection != null)
+                {
+                    selection.clippingOptions = ClippingOptions.NoClipping; //fixes issues with selection border being clipped when zooming out
+                }
             }
             else
             {

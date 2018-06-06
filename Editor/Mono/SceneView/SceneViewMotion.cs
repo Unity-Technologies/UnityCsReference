@@ -44,7 +44,7 @@ namespace UnityEditor
                 view.FixNegativeSize();
             }
 
-            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(s_CameraFlyModeContext, id, view.orthographic))
+            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(s_CameraFlyModeContext, Tools.s_LockedViewTool, id, view.orthographic))
             {
                 if (inputSamplingScope.currentlyMoving)
                     view.viewIsLockedToObject = false;
@@ -380,11 +380,6 @@ namespace UnityEditor
         public static void ResetMotion()
         {
             s_Motion = Vector3.zero;
-        }
-
-        public static void ActivateFlyModeContext()
-        {
-            ShortcutIntegration.instance.contextManager.SetPriorityContext(s_CameraFlyModeContext);
         }
 
         public static void DeactivateFlyModeContext()

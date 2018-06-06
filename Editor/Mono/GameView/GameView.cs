@@ -806,7 +806,10 @@ namespace UnityEditor
 
                     GUI.BeginGroup(m_ZoomArea.drawRect);
                     // Actually draw the game view to the screen, without alpha blending
-                    Graphics.DrawTexture(deviceFlippedTargetInView, m_TargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
+                    Rect drawRect = deviceFlippedTargetInView;
+                    drawRect.x = Mathf.Round(drawRect.x);
+                    drawRect.y = Mathf.Round(drawRect.y);
+                    Graphics.DrawTexture(drawRect, m_TargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
                     GUI.EndGroup();
                 }
             }

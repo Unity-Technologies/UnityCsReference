@@ -259,6 +259,12 @@ namespace UnityEditor
                     filter.scenePaths = new[] { scene.path };
             }
 
+            // For now, we don t want to display assets from Packages
+            // Make sure we only search in Assets folder
+            if (hierarchyType == HierarchyType.Assets)
+            {
+                filter.searchArea = SearchFilter.SearchArea.InAssetsOnly;
+            }
             m_ListArea.Init(listPosition, hierarchyType, filter, true);
         }
 
