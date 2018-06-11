@@ -23,7 +23,7 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("Grid.MoveTool", "|Move selection with active brush (M)"),
                 EditorGUIUtility.IconContent("Grid.PaintTool", "|Paint with active brush (B)"),
                 EditorGUIUtility.IconContent("Grid.BoxTool", "|Paint a filled box with active brush (U)"),
-                EditorGUIUtility.IconContent("Grid.PickingTool", "|Pick or marquee select new brush (Ctrl/CMD)."),
+                EditorGUIUtility.IconContent("Grid.PickingTool", "|Pick or marquee select new brush (Ctrl)."),
                 EditorGUIUtility.IconContent("Grid.EraserTool", "|Erase with active brush (Shift)"),
                 EditorGUIUtility.IconContent("Grid.FillTool", "|Flood fill with active brush (G)")
             };

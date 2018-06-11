@@ -233,7 +233,8 @@ namespace UnityEngine.Networking
         public UnityWebRequestAsyncOperation SendWebRequest()
         {
             UnityWebRequestAsyncOperation webOp = BeginWebRequest();
-            webOp.webRequest = this;
+            if (webOp != null)
+                webOp.webRequest = this;
             return webOp;
         }
 

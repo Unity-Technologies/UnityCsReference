@@ -446,7 +446,7 @@ namespace UnityEditorInternal.VR
 
             if (customOptions != null && customOptions.IsExpanded)
             {
-                customOptions.Draw(rect);
+                customOptions.Draw(target, rect);
             }
         }
 

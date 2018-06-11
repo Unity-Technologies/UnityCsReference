@@ -112,7 +112,10 @@ namespace UnityEngine.Experimental.UIElements
             m_GUIGlobals.backgroundColor = GUI.backgroundColor;
             m_GUIGlobals.enabled = GUI.enabled;
             m_GUIGlobals.changed = GUI.changed;
-            m_GUIGlobals.displayIndex = Event.current.displayIndex;
+            if (Event.current != null)
+            {
+                m_GUIGlobals.displayIndex = Event.current.displayIndex;
+            }
         }
 
         private void RestoreGlobals()
@@ -123,7 +126,10 @@ namespace UnityEngine.Experimental.UIElements
             GUI.backgroundColor = m_GUIGlobals.backgroundColor;
             GUI.enabled = m_GUIGlobals.enabled;
             GUI.changed = m_GUIGlobals.changed;
-            Event.current.displayIndex = m_GUIGlobals.displayIndex;
+            if (Event.current != null)
+            {
+                Event.current.displayIndex = m_GUIGlobals.displayIndex;
+            }
         }
 
         private void DoOnGUI(Event evt)

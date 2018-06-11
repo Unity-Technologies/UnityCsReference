@@ -60,16 +60,28 @@ namespace UnityEditor
         public void OnSceneGUI(SceneView sceneView)
         {
             UpdateMouseGridPosition();
-            base.OnGUI();
-            if (PaintableGrid.InGridEditMode())
+
+            var dot = 1.0f;
+            var gridView = GetGridView();
+            if (gridView != null)
             {
-                CallOnSceneGUI();
-                if ((grid != null) && (GridPaintingState.activeGrid == this || GridSelection.active))
+                dot = Math.Abs(Vector3.Dot(sceneView.camera.transform.forward, Grid.Swizzle(gridView.cellSwizzle, gridView.transform.forward)));
+            }
+
+            // Case 1021655: Validate that grid is not totally parallel to view (+-5 degrees), otherwise tiles could be accidentally painted on large positions
+            if (dot > 0.1f)
+            {
+                base.OnGUI();
+                if (InGridEditMode())
                 {
-                    CallOnPaintSceneGUI();
+                    CallOnSceneGUI();
+                    if ((grid != null) && (GridPaintingState.activeGrid == this || GridSelection.active))
+                    {
+                        CallOnPaintSceneGUI();
+                    }
+                    if (Event.current.type == EventType.Repaint)
+                        EditorGUIUtility.AddCursorRect(new Rect(0, EditorGUI.kWindowToolbarHeight, sceneView.position.width, sceneView.position.height - EditorGUI.kWindowToolbarHeight), MouseCursor.CustomCursor);
                 }
-                if (Event.current.type == EventType.Repaint)
-                    EditorGUIUtility.AddCursorRect(new Rect(0, EditorGUI.kWindowToolbarHeight, sceneView.position.width, sceneView.position.height - EditorGUI.kWindowToolbarHeight), MouseCursor.CustomCursor);
             }
             HandleMouseEnterLeave(sceneView);
         }
@@ -278,6 +290,15 @@ namespace UnityEditor
                     return new Plane(grid.transform.right * -1f, grid.transform.position);
             }
             return new Plane(grid.transform.forward * -1f, grid.transform.position);
+        }
+
+        private GridLayout GetGridView()
+        {
+            if (tilemap != null)
+                return tilemap;
+            if (grid != null)
+                return grid;
+            return null;
         }
 
         void CallOnPaintSceneGUI()

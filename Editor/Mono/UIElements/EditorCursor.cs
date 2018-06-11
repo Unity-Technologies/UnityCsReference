@@ -11,6 +11,12 @@ namespace UnityEditor.Experimental.UIElements
     {
         public void SetCursor(CursorStyle cursor)
         {
+            if (GUIView.current == null)
+            {
+                // Cannot set the cursor if the current view is null.
+                return;
+            }
+
             if (cursor.texture != null)
             {
                 EditorGUIUtility.SetCurrentViewCursor(cursor.texture, cursor.hotspot, MouseCursor.CustomCursor);
@@ -23,6 +29,11 @@ namespace UnityEditor.Experimental.UIElements
 
         public void ResetCursor()
         {
+            if (GUIView.current == null)
+            {
+                // Cannot clear the cursor if the current view is null.
+                return;
+            }
             EditorGUIUtility.ClearCurrentViewCursor();
         }
     }

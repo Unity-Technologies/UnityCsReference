@@ -443,7 +443,7 @@ namespace UnityEngine
                     return "Unsupported Media Type";
                 case 416:
                     return "Requested Range Not Satisfiable";
-                case 41:
+                case 417:
                     return "Expectation Failed";
                 case 500:
                     return "Internal Server Error";

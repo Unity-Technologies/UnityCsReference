@@ -16,17 +16,30 @@ namespace UnityEditor.Experimental.Animations
     [NativeType]
     public class GameObjectRecorder : Object
     {
-        [Obsolete("The GameObjectRecorder constructor now takes a root GameObject", true)]
-        public GameObjectRecorder()
-        {
-        }
-
         public GameObjectRecorder(GameObject root)
         {
             Internal_Create(this, root);
         }
 
-        extern private static void Internal_Create([Writable] GameObjectRecorder notSelf, [NotNull] GameObject root);
+        public void BindComponentsOfType<T>(GameObject target, bool recursive)
+            where T : Component
+        {
+            BindComponentsOfType(target, typeof(T), recursive);
+        }
+
+        public void BindComponentsOfType(GameObject target, Type componentType, bool recursive)
+        {
+            Component[] components;
+            if (recursive)
+                components = target.GetComponentsInChildren(componentType, true);
+            else
+                components = target.GetComponents(componentType);
+
+            for (int i = 0; i < components.Length; ++i)
+                BindComponent(components[i]);
+        }
+
+        extern private static void Internal_Create([Writable] GameObjectRecorder self, [NotNull] GameObject root);
 
         // Root.
         extern public GameObject root { get; }
@@ -34,12 +47,7 @@ namespace UnityEditor.Experimental.Animations
         // Bindings.
         extern public void Bind(EditorCurveBinding binding);
         extern public void BindAll(GameObject target, bool recursive);
-        extern public void BindComponent(GameObject target, Type componentType, bool recursive);
-
-        public void BindComponent<T>(GameObject target, bool recursive) where T : Component
-        {
-            BindComponent(target, typeof(T), recursive);
-        }
+        extern public void BindComponent([NotNull] Component component);
 
         extern public EditorCurveBinding[] GetBindings();
 
@@ -50,5 +58,15 @@ namespace UnityEditor.Experimental.Animations
 
         extern public void SaveToClip(AnimationClip clip);
         extern public void ResetRecording();
+
+        // Obsolete
+        [Obsolete("The GameObjectRecorder constructor now takes a root GameObject", true)]
+        public GameObjectRecorder() {}
+
+        [Obsolete("BindComponent() using a System::Type is obsolete, use BindComponentsOfType() instead (UnityUpgradable) -> BindComponentsOfType(*)", true)]
+        public void BindComponent(GameObject target, Type componentType, bool recursive) {}
+
+        [Obsolete("\"BindComponent<T>() where T : Component\" is obsolete, use BindComponentsOfType<T>() instead (UnityUpgradable) -> BindComponentsOfType<T>(*)", true)]
+        public void BindComponent<T>(GameObject target, bool recursive) where T : Component {}
     }
 }
