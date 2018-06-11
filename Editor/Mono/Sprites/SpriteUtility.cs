@@ -268,6 +268,7 @@ namespace UnityEditor
 
                 if (string.IsNullOrEmpty(newClipPath))
                 {
+                    Undo.ClearUndo(animator);
                     Object.DestroyImmediate(animator);
                     return false;
                 }

@@ -6,6 +6,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using UnityEngineInternal;
 using UnityEngine.Bindings;
@@ -211,6 +212,10 @@ namespace UnityEngine.Networking
 
         private void InternalCreateVFS(string path)
         {
+            string dir = Path.GetDirectoryName(path);
+            // On UWP CreateDirectory fails when passing something like Application.presistentDataPath (works if subdir of it)
+            if (!Directory.Exists(dir))
+                Directory.CreateDirectory(dir);
             m_Ptr = Create(this, path);
         }
 

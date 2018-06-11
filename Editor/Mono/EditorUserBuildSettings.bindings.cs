@@ -244,6 +244,7 @@ namespace UnityEditor
         private EditorUserBuildSettings() {}
 
         internal static AppleBuildAndRunType appleBuildAndRunType = AppleBuildAndRunType.Xcode;
+        internal static extern string appleDeviceId { get; set; }
 
         // The currently selected build target group.
         public static extern BuildTargetGroup selectedBuildTargetGroup { get; set; }

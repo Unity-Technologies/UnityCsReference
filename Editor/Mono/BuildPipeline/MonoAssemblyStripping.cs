@@ -267,13 +267,11 @@ namespace UnityEditor
             {
                 return resolver.Resolve(assemblyName, new ReaderParameters { AssemblyResolver = resolver, ApplyWindowsRuntimeProjections = true });
             }
-            catch (AssemblyResolutionException e)
+            catch (AssemblyResolutionException)
             {
                 // DefaultAssemblyResolver doesn't handle windows runtime references correctly. But that is okay, as they cannot derive from managed types anyway
-                if (e.AssemblyReference.IsWindowsRuntime)
-                    return null;
-
-                throw;
+                // Besides, if any assembly is missing, UnityLinker will stub it and we should not care about it
+                return null;
             }
         }
 

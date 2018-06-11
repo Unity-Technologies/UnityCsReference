@@ -29,9 +29,11 @@ namespace UnityEditorInternal.VR
             m_DashSupport = FindPropertyAssert("dashSupport");
         }
 
-        public override Rect Draw(Rect rect)
+        public override Rect Draw(BuildTargetGroup target, Rect rect)
         {
             rect.y += EditorGUIUtility.standardVerticalSpacing;
+
+            EditorGUI.BeginDisabled(target == BuildTargetGroup.Android);
 
             rect.height = EditorGUIUtility.singleLineHeight;
             GUIContent label = EditorGUI.BeginProperty(rect, s_SharedDepthBufferLabel, m_SharedDepthBuffer);
@@ -53,6 +55,9 @@ namespace UnityEditorInternal.VR
                 m_DashSupport.boolValue = boolValue;
             }
             EditorGUI.EndProperty();
+
+            EditorGUI.EndDisabled();
+
             rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
 
             return rect;
