@@ -21,6 +21,7 @@ namespace UnityEngine
 
 [ExcludeFromPreset]
 [ExcludeFromObjectFactory]
+[Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
 public sealed partial class MovieTexture : Texture
 {
     private MovieTexture() {}

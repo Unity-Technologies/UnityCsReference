@@ -543,8 +543,8 @@ namespace UnityEditor
                 else
                 {
                     ushort trackCountBefore = (ushort)m_ControlledAudioTrackCount.intValue;
-                    HandleControlledAudioTrackCount();
-                    if (m_ControlledAudioTrackCount.hasMultipleDifferentValues)
+                    bool useControlledAudioTrackCount = HandleControlledAudioTrackCount();
+                    if (useControlledAudioTrackCount && m_ControlledAudioTrackCount.hasMultipleDifferentValues)
                         EditorGUILayout.HelpBox(s_Styles.selectUniformAudioTracksHelp, MessageType.Warning, false);
                     else
                     {
@@ -555,9 +555,19 @@ namespace UnityEditor
                         // HandleControlledAudioTrackCount().  But this adjustment is
                         // only done later so we conservatively only iterate over the
                         // smallest known number of tracks we know are initialized.
-                        ushort trackCount = (ushort)Math.Min(
-                                (ushort)m_ControlledAudioTrackCount.intValue, trackCountBefore);
-                        trackCount = (ushort)Math.Min(trackCount, m_EnabledAudioTracks.arraySize);
+                        ushort trackCount = 0;
+                        if (useControlledAudioTrackCount)
+                        {
+                            trackCount = (ushort)Math.Min(
+                                    (ushort)m_ControlledAudioTrackCount.intValue, trackCountBefore);
+                            trackCount = (ushort)Math.Min(trackCount, m_EnabledAudioTracks.arraySize);
+                        }
+                        else
+                        {
+                            var clip = ((VideoPlayer)target).clip;
+                            if (clip != null)
+                                trackCount = clip.audioTrackCount;
+                        }
 
                         for (ushort trackIdx = 0; trackIdx < trackCount; ++trackIdx)
                         {
@@ -629,13 +639,13 @@ namespace UnityEditor
             return info.content;
         }
 
-        private void HandleControlledAudioTrackCount()
+        private bool HandleControlledAudioTrackCount()
         {
             // Won't show the widget for number of controlled tracks if we're
             // just using VideoClips (for which editing this property doesn't
             // make sense) or mixing VideoClips and URLs.
             if (m_DataSourceIsClip.value || m_DataSource.hasMultipleDifferentValues)
-                return;
+                return false;
 
             VideoPlayer player = (VideoPlayer)target;
             ushort audioTrackCount = serializedObject.isEditingMultipleObjects ? (ushort)0 : player.audioTrackCount;
@@ -664,6 +674,7 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(m_ControlledAudioTrackCount, controlledAudioTrackCountContent);
+            return true;
         }
 
         private void PrepareCompleted(VideoPlayer vp)

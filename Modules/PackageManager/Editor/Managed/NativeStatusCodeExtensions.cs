@@ -18,6 +18,7 @@ namespace UnityEditor.PackageManager
                     return StatusCode.InProgress;
                 case NativeStatusCode.Error:
                 case NativeStatusCode.NotFound:
+                case NativeStatusCode.Cancelled:
                     return StatusCode.Failure;
                 case NativeStatusCode.Done:
                     return StatusCode.Success;

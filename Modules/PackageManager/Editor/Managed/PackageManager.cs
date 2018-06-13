@@ -4,6 +4,7 @@
 
 using System;
 using UnityEditor.Compilation;
+using System.Collections.Generic;
 using Assembly = System.Reflection.Assembly;
 
 namespace UnityEditor.PackageManager
@@ -27,19 +28,18 @@ namespace UnityEditor.PackageManager
             return null;
         }
 
-        public static PackageInfo GetForAssembly(Assembly assembly)
+        private static string GetRelativePathForAssemblyFilePath(string fullPath)
         {
-            if (assembly == null)
-                throw new ArgumentNullException("assembly");
+            if (fullPath == null)
+                throw new ArgumentNullException("fullPath");
 
-            var fullPath = assembly.Location;
             if (fullPath.StartsWith(Environment.CurrentDirectory + System.IO.Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
             {
                 // Path is inside the project dir
                 var relativePath = fullPath.Substring(Environment.CurrentDirectory.Length + 1).Replace('\\', '/');
 
                 // See if there is an asmdef file for this assembly - use it if so
-                var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(assembly.GetName().Name);
+                var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(fullPath);
                 if (asmdefPath != null)
                     relativePath = asmdefPath;
 
@@ -48,8 +48,59 @@ namespace UnityEditor.PackageManager
                     return null;
 
                 if (relativePath.StartsWith(Folders.GetPackagesMountPoint() + "/", StringComparison.OrdinalIgnoreCase))
-                    return GetForAssetPath(relativePath);
+                    return relativePath;
             }
+            return String.Empty;
+        }
+
+        public static List<PackageInfo> GetForAssemblyFilePaths(List<string> assemblyPaths)
+        {
+            // We will first get all the relative paths from assembly paths
+            Dictionary<string, string> matchingRelativePaths = new Dictionary<string, string>();
+            foreach (string assemblyPath in assemblyPaths)
+            {
+                string relativePath = GetRelativePathForAssemblyFilePath(assemblyPath);
+                if (relativePath != null)
+                    matchingRelativePaths.Add(assemblyPath, relativePath);
+            }
+
+            // We will loop thru all the packages and see if they match the relative paths
+            List<PackageInfo> matchingPackages = new List<PackageInfo>();
+            foreach (var package in GetAll())
+            {
+                foreach (var item in matchingRelativePaths)
+                {
+                    bool found;
+                    string relativePath = item.Value;
+                    if (!String.IsNullOrEmpty(relativePath))
+                        found = (relativePath == package.assetPath || relativePath.StartsWith(package.assetPath + '/'));
+                    else
+                        found = item.Key.StartsWith(package.resolvedPath + System.IO.Path.DirectorySeparatorChar);
+
+                    if (found)
+                    {
+                        matchingPackages.Add(package);
+                        matchingRelativePaths.Remove(item.Key);
+                        break;
+                    }
+                }
+                if (matchingRelativePaths.Count == 0)
+                    break;
+            }
+            return matchingPackages;
+        }
+
+        public static PackageInfo GetForAssembly(Assembly assembly)
+        {
+            if (assembly == null)
+                throw new ArgumentNullException("assembly");
+
+            string fullPath = assembly.Location;
+            string relativePath = GetRelativePathForAssemblyFilePath(fullPath);
+            if (!String.IsNullOrEmpty(relativePath))
+                return GetForAssetPath(relativePath);
+            else if (relativePath == null)
+                return null;
 
             // Path is outside the project dir - or possibly inside the project dir but local (e.g. in LocalPackages in the test project)
             // Might be in the global package cache, might be a built-in engine module, etc. Do a scan through all packages for one that owns

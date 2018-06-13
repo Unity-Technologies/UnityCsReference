@@ -310,6 +310,7 @@ namespace UnityEngine
             return WebRequestWWW.InternalCreateAudioClipUsingDH(_uwr.downloadHandler, _uwr.url, stream, compressed, audioType);
         }
 
+        [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
         internal object GetMovieTextureInternal()
         {
             return WebRequestWWW.InternalCreateMovieTextureUsingDH(_uwr.downloadHandler);
@@ -351,6 +352,7 @@ namespace UnityEngine
             return (AudioClip)GetAudioClipInternal(threeD, false, true, audioType);
         }
 
+        [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
         public MovieTexture GetMovieTexture()
         {
             return (MovieTexture)GetMovieTextureInternal();

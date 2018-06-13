@@ -77,7 +77,19 @@ public sealed partial class PlayerSettings : UnityEngine.Object
         VoipCall = 21,
         Bluetooth = 22,
         SpatialPerception = 23,
-        InputInjectionBrokered = 24
+        InputInjectionBrokered = 24,
+        Appointments = 25,
+        BackgroundMediaPlayback = 26,
+        Contacts = 27,
+        LowLevelDevices = 28,
+        OfflineMapsManagement = 29,
+        PhoneCallHistoryPublic = 30,
+        PointOfService = 31,
+        RecordedCallsFolder = 32,
+        RemoteSystem = 33,
+        SystemManagement = 34,
+        UserDataTasks = 35,
+        UserNotificationListener = 36,
     }
 
     public enum WSAImageScale    

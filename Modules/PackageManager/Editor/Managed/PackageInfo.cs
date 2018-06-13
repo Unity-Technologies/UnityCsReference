@@ -24,6 +24,10 @@ namespace UnityEditor.PackageManager
         private string m_PackageId = "";
 
         [SerializeField]
+        [NativeName("isRootDependency")]
+        private bool m_IsRootDependency = false;
+
+        [SerializeField]
         [NativeName("version")]
         private string m_Version = "";
 
@@ -50,6 +54,10 @@ namespace UnityEditor.PackageManager
         [SerializeField]
         [NativeName("category")]
         private string m_Category = "";
+
+        [SerializeField]
+        [NativeName("type")]
+        private string m_Type = "";
 
         [SerializeField]
         [NativeName("description")]
@@ -82,6 +90,7 @@ namespace UnityEditor.PackageManager
         private PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
+        internal bool isRootDependency { get { return m_IsRootDependency;  } }
         public string version { get { return m_Version;  } }
         public PackageSource source { get { return m_Source;  } }
         public string resolvedPath { get { return m_ResolvedPath;  } }
@@ -89,6 +98,7 @@ namespace UnityEditor.PackageManager
         public string name { get { return m_Name;  } }
         public string displayName { get { return m_DisplayName;  } }
         public string category { get { return m_Category;  } }
+        internal string type { get { return m_Type;  } }
         public string description { get { return m_Description;  } }
         public PackageStatus status { get { return m_Status;  } }
         public Error[] errors { get { return m_Errors;  } }

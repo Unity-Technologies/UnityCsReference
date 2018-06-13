@@ -342,7 +342,7 @@ namespace UnityEditor
                 if (isWindowsStandalone)
                 {
                     extension = realExtension;
-                    path = Path.Combine(path, Path.GetFileName(path) + '.' + extension);
+                    path = Path.Combine(path, PlayerSettings.productName + '.' + extension);
                 }
 
                 if (!IsBuildPathValid(path))

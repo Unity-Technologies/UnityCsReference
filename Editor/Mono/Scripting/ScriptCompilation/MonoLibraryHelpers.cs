@@ -52,6 +52,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
             {
                 references.AddRange(GetSystemReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
+                references.AddRange(GetNet46SystemReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
 
                 // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
                 // used later by the language compilers.
@@ -97,6 +98,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // Add the .NET Standard 2.0 compat shims
             classLibraries.AddRange(Directory.GetFiles(NetStandardFinder.GetNetStandardCompatShimsDirectory(), "*.dll"));
 
+            // Add the .NET Standard 2.0 extensions
+            classLibraries.AddRange(Directory.GetFiles(NetStandardFinder.GetNetStandardExtensionsDirectory(), "*.dll"));
+
             // Add the .NET Framework compat shims
             classLibraries.AddRange(Directory.GetFiles(NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory(), "*.dll"));
 
@@ -113,6 +117,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 "System.Runtime.Serialization.dll",
                 "System.Xml.dll",
                 "System.Xml.Linq.dll",
+            };
+        }
+
+        static string[] GetNet46SystemReferences()
+        {
+            return new[]
+            {
+                "System.Numerics.dll",
+                "System.Numerics.Vectors.dll"
             };
         }
 

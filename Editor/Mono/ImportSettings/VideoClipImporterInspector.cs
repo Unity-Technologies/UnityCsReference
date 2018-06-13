@@ -745,9 +745,11 @@ namespace UnityEditor
 
             if (m_UseLegacyImporter.boolValue)
             {
+#pragma warning disable 0618
                 EditorGUILayout.PropertyField(
                     m_IsColorLinear, MovieImporterInspector.linearTextureContent);
                 EditorGUILayout.Slider(m_Quality, 0.0f, 1.0f);
+#pragma warning restore 0618
             }
             else
             {
@@ -786,6 +788,14 @@ namespace UnityEditor
 
         protected override void Apply()
         {
+            foreach (var t in targets)
+            {
+                var importer = (VideoClipImporter)t;
+                if (importer.isPlayingPreview)
+                    importer.StopPreview();
+            }
+            m_IsPlaying = false;
+
             base.Apply();
             WriteSettingsToBackend();
 
@@ -804,17 +814,13 @@ namespace UnityEditor
 
         public override GUIContent GetPreviewTitle()
         {
-            if (m_PreviewTitle != null)
-                return m_PreviewTitle;
-
-            m_PreviewTitle = new GUIContent();
+            if (m_PreviewTitle == null)
+                m_PreviewTitle = new GUIContent();
 
             if (targets.Length == 1)
-            {
-                AssetImporter importer = (AssetImporter)target;
-                m_PreviewTitle.text = Path.GetFileName(importer.assetPath);
-            }
-            else
+                // Asset name can change over time so we have to re-evaluate constantly.
+                m_PreviewTitle.text = Path.GetFileName(((AssetImporter)target).assetPath);
+            else if (string.IsNullOrEmpty(m_PreviewTitle.text))
                 m_PreviewTitle.text = targets.Length + " Video Clips";
 
             return m_PreviewTitle;

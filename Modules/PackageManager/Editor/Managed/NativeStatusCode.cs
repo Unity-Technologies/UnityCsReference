@@ -13,7 +13,8 @@ namespace UnityEditor.PackageManager
         InProgress,
         Done,
         Error,
-        NotFound
+        NotFound,
+        Cancelled
     }
 }
 

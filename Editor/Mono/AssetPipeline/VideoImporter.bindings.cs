@@ -216,6 +216,9 @@ namespace UnityEditor
         public extern int pixelAspectRatioDenominator { get; }
 
         public extern bool transcodeSkipped { get; }
+
+        [NativeMethod("operator==")]
+        extern public bool Equals(VideoClipImporter rhs);
     }
 
 }

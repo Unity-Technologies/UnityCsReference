@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 namespace UnityEditor
 {
     // AssetImporter for importing MovieTextures
+    [System.Obsolete("MovieImporter is deprecated. Use VideoClipImporter instead.", false)]
     [NativeHeader("Editor/Src/AssetPipeline/MovieImporter.h")]
     public partial class MovieImporter : AssetImporter
     {

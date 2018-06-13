@@ -54,6 +54,12 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("sceneViewInfo", parameters);
         }
 
+        internal static bool SendEventBuildPackageList(object parameters)
+        {
+            return EditorAnalytics.SendEvent("buildPackageList", parameters,
+                SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
+        }
+
         internal static bool SendEventBuildTargetPermissions(object parameters)
         {
             return EditorAnalytics.SendEvent("buildTargetPermissions", parameters,
