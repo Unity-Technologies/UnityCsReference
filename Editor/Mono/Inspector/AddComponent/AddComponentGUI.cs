@@ -4,17 +4,36 @@
 
 using UnityEngine;
 
-namespace UnityEditor
+namespace UnityEditor.AdvancedDropdown
 {
     internal class AddComponentGUI : AdvancedDropdownGUI
     {
+        private static class Styles
+        {
+            public static GUIStyle itemStyle = new GUIStyle("PR Label");
+
+            static Styles()
+            {
+                itemStyle.alignment = TextAnchor.MiddleLeft;
+                itemStyle.padding.left = 0;
+                itemStyle.fixedHeight = 20;
+                itemStyle.margin = new RectOffset(0, 0, 0, 0);
+            }
+        }
+
         private Vector2 m_IconSize = new Vector2(16, 16);
+
         public override Vector2 iconSize => m_IconSize;
+        public override GUIStyle lineStyle => Styles.itemStyle;
+
+        public AddComponentGUI(AdvancedDropdownDataSource dataSource) : base(dataSource)
+        {
+        }
 
         public override void DrawItem(AdvancedDropdownItem item, bool selected, bool hasSearch)
         {
-            var nsItem = item as NewScriptDropdownItem;
-            if (nsItem == null)
+            var newScriptItem = item as NewScriptDropdownItem;
+            if (newScriptItem == null)
             {
                 base.DrawItem(item, selected, hasSearch);
                 return;
@@ -25,13 +44,13 @@ namespace UnityEditor
             EditorGUI.FocusTextInControl("NewScriptName");
             GUI.SetNextControlName("NewScriptName");
 
-            nsItem.m_ClassName = EditorGUILayout.TextField(nsItem.m_ClassName);
+            newScriptItem.m_ClassName = EditorGUILayout.TextField(newScriptItem.m_ClassName);
 
             EditorGUILayout.Space();
 
-            var canCreate = nsItem.CanCreate();
-            if (!canCreate && nsItem.m_ClassName != "")
-                GUILayout.Label(nsItem.GetError(), EditorStyles.helpBox);
+            var canCreate = newScriptItem.CanCreate();
+            if (!canCreate && newScriptItem.m_ClassName != "")
+                GUILayout.Label(newScriptItem.GetError(), EditorStyles.helpBox);
 
             GUILayout.FlexibleSpace();
 
@@ -39,7 +58,7 @@ namespace UnityEditor
             {
                 if (GUILayout.Button("Create and Add"))
                 {
-                    nsItem.Create(AddComponentWindow.s_AddComponentWindow.m_GameObjects);
+                    newScriptItem.Create(AddComponentWindow.s_AddComponentWindow.m_GameObjects);
                 }
             }
 

@@ -144,7 +144,7 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
     [ThreadAndSerializationSafe]
-    public class AnimationCurve
+    public class AnimationCurve : IEquatable<AnimationCurve>
     {
         internal IntPtr m_Ptr;
 
@@ -154,35 +154,39 @@ namespace UnityEngine
         [FreeFunction("AnimationCurveBindings::Internal_Create", IsThreadSafe = true)]
         extern static private IntPtr Internal_Create(Keyframe[] keys);
 
+        [FreeFunction("AnimationCurveBindings::Internal_Equals", HasExplicitThis = true)]
+        extern private bool Internal_Equals(IntPtr other);
+
         ~AnimationCurve()
         {
             Internal_Destroy(m_Ptr);
         }
 
         // Evaluate the curve at /time/.
+        [ThreadSafe]
         extern public float Evaluate(float time);
 
         //  All keys defined in the animation curve.
         public Keyframe[] keys { get { return GetKeys(); } set { SetKeys(value); } }
 
         // Add a new key to the curve.
-        [FreeFunction("AnimationCurveBindings::AddKeySmoothTangents", HasExplicitThis = true)]
+        [FreeFunction("AnimationCurveBindings::AddKeySmoothTangents", HasExplicitThis = true, IsThreadSafe = true)]
         extern public int AddKey(float time, float value);
 
         // Add a new key to the curve.
         public int AddKey(Keyframe key) { return AddKey_Internal(key); }
 
-        [NativeMethod("AddKey")]
+        [NativeMethod("AddKey", IsThreadSafe = true)]
         extern private int AddKey_Internal(Keyframe key);
 
         // Removes the keyframe at /index/ and inserts key.
         [NativeThrows]
-        [FreeFunction("AnimationCurveBindings::MoveKey", HasExplicitThis = true)]
+        [FreeFunction("AnimationCurveBindings::MoveKey", HasExplicitThis = true, IsThreadSafe = true)]
         extern public int MoveKey(int index, Keyframe key);
 
         // Removes a key
         [NativeThrows]
-        [FreeFunction("AnimationCurveBindings::RemoveKey", HasExplicitThis = true)]
+        [FreeFunction("AnimationCurveBindings::RemoveKey", HasExplicitThis = true, IsThreadSafe = true)]
         extern public void RemoveKey(int index);
 
         // Retrieves the key at index (RO)
@@ -194,24 +198,24 @@ namespace UnityEngine
         // The number of keys in the curve (RO)
         extern public int length
         {
-            [NativeMethod("GetKeyCount")]
+            [NativeMethod("GetKeyCount", IsThreadSafe = true)]
             get;
         }
 
         // Replace all keyframes with the /keys/ array.
-        [FreeFunction("AnimationCurveBindings::SetKeys", HasExplicitThis = true)]
+        [FreeFunction("AnimationCurveBindings::SetKeys", HasExplicitThis = true, IsThreadSafe = true)]
         extern private void SetKeys(Keyframe[] keys);
 
         [NativeThrows]
-        [FreeFunction("AnimationCurveBindings::GetKey", HasExplicitThis = true)]
+        [FreeFunction("AnimationCurveBindings::GetKey", HasExplicitThis = true, IsThreadSafe = true)]
         extern private Keyframe GetKey(int index);
 
-        [FreeFunction("AnimationCurveBindings::GetKeys", HasExplicitThis = true)]
+        [FreeFunction("AnimationCurveBindings::GetKeys", HasExplicitThis = true, IsThreadSafe = true)]
         extern private Keyframe[] GetKeys();
 
         // Smooth the in and out tangents of the keyframe at /index/.
         [NativeThrows]
-        [FreeFunction("AnimationCurveBindings::SmoothTangents", HasExplicitThis = true)]
+        [FreeFunction("AnimationCurveBindings::SmoothTangents", HasExplicitThis = true, IsThreadSafe = true)]
         extern public void SmoothTangents(int index, float weight);
 
         // A constant line at /value/ starting at /timeStart/ and ending at /timeEnd/
@@ -238,18 +242,18 @@ namespace UnityEngine
         // The behaviour of the animation before the first keyframe
         extern public WrapMode preWrapMode
         {
-            [NativeMethod("GetPreInfinity")]
+            [NativeMethod("GetPreInfinity", IsThreadSafe = true)]
             get;
-            [NativeMethod("SetPreInfinity")]
+            [NativeMethod("SetPreInfinity", IsThreadSafe = true)]
             set;
         }
 
         // The behaviour of the animation after the last keyframe
         extern public WrapMode postWrapMode
         {
-            [NativeMethod("GetPostInfinity")]
+            [NativeMethod("GetPostInfinity", IsThreadSafe = true)]
             get;
-            [NativeMethod("SetPostInfinity")]
+            [NativeMethod("SetPostInfinity", IsThreadSafe = true)]
             set;
         }
 
@@ -261,6 +265,50 @@ namespace UnityEngine
         // Creates an empty animation curve
         [RequiredByNativeCode]
         public AnimationCurve()  { m_Ptr = Internal_Create(null); }
+
+        public override bool Equals(object o)
+        {
+            if (ReferenceEquals(null, o))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, o))
+            {
+                return true;
+            }
+
+            if (o.GetType() != this.GetType())
+            {
+                return false;
+            }
+            return Equals((AnimationCurve)o);
+        }
+
+        public bool Equals(AnimationCurve other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if (m_Ptr.Equals(other.m_Ptr))
+            {
+                return true;
+            }
+
+            return Internal_Equals(other.m_Ptr);
+        }
+
+        public override int GetHashCode()
+        {
+            return m_Ptr.GetHashCode();
+        }
     }
 
 #pragma warning restore 414

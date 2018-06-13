@@ -11,14 +11,156 @@ using UnityEngine;
 
 namespace UnityEditorInternal.Profiling
 {
+    internal class ProfilerCallersAndCalleeData
+    {
+        public float totalSelectedPropertyTime { get; private set; }
+
+        public CallsData callersData
+        {
+            get
+            {
+                return m_CallersData;
+            }
+        }
+        public CallsData calleesData
+        {
+            get
+            {
+                return m_CalleesData;
+            }
+        }
+
+        CallsData m_CallersData = new CallsData() {calls = new List<CallInformation>(), totalSelectedPropertyTime = 0 };
+        CallsData m_CalleesData = new CallsData() {calls = new List<CallInformation>(), totalSelectedPropertyTime = 0 };
+
+        Dictionary<int, CallInformation> m_Callers = new Dictionary<int, CallInformation>();
+        Dictionary<int, CallInformation> m_Callees = new Dictionary<int, CallInformation>();
+
+        List<int> m_ChildrenIds = new List<int>(256);
+        Stack<int> m_Stack = new Stack<int>();
+
+        internal struct CallsData
+        {
+            public List<CallInformation> calls;
+            public float totalSelectedPropertyTime;
+        }
+
+        internal class CallInformation
+        {
+            public int id; // FrameDataView item id
+            public string name;
+            public int callsCount;
+            public int gcAllocBytes;
+            public double totalCallTimeMs;
+            public double totalSelfTimeMs;
+            public double timePercent; // Cached value - calculated based on view type
+        }
+
+        internal float UpdateData(FrameDataView frameDataView, int selectedMarkerId)
+        {
+            totalSelectedPropertyTime = 0;
+
+            m_Callers.Clear();
+            m_Callees.Clear();
+
+            m_ChildrenIds.Clear();
+            m_Stack.Clear();
+            m_Stack.Push(frameDataView.GetRootItemID());
+
+            while (m_Stack.Count > 0)
+            {
+                var current = m_Stack.Pop();
+
+                if (!frameDataView.HasItemChildren(current))
+                    continue;
+
+                var markerId = frameDataView.GetItemMarkerID(current);
+                frameDataView.GetItemChildren(current, m_ChildrenIds);
+                foreach (var childId in m_ChildrenIds)
+                {
+                    var childMarkerId = frameDataView.GetItemMarkerID(childId);
+                    if (childMarkerId == selectedMarkerId)
+                    {
+                        var totalSelfTime = frameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.TotalTime);
+                        totalSelectedPropertyTime += totalSelfTime;
+
+                        if (current != 0)
+                        {
+                            // Add markerId to callers (except root)
+                            CallInformation callInfo;
+                            var totalTime = frameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.TotalTime);
+                            var calls = (int)frameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.Calls);
+                            var gcAlloc = (int)frameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.GCMemory);
+                            if (!m_Callers.TryGetValue(markerId, out callInfo))
+                            {
+                                m_Callers.Add(markerId, new CallInformation()
+                                {
+                                    id = current,
+                                    name = frameDataView.GetItemFunctionName(current),
+                                    callsCount = calls,
+                                    gcAllocBytes = gcAlloc,
+                                    totalCallTimeMs = totalTime,
+                                    totalSelfTimeMs = totalSelfTime
+                                });
+                            }
+                            else
+                            {
+                                callInfo.callsCount += calls;
+                                callInfo.gcAllocBytes += gcAlloc;
+                                callInfo.totalCallTimeMs += totalTime;
+                                callInfo.totalSelfTimeMs += totalSelfTime;
+                            }
+                        }
+                    }
+
+                    if (markerId == selectedMarkerId)
+                    {
+                        // Add childMarkerId to callees
+                        CallInformation callInfo;
+                        var totalTime = frameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.TotalTime);
+                        var calls = (int)frameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.Calls);
+                        var gcAlloc = (int)frameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.GCMemory);
+                        if (!m_Callees.TryGetValue(childMarkerId, out callInfo))
+                        {
+                            m_Callees.Add(childMarkerId, new CallInformation()
+                            {
+                                id = childId,
+                                name = frameDataView.GetItemFunctionName(childId),
+                                callsCount = calls,
+                                gcAllocBytes = gcAlloc,
+                                totalCallTimeMs = totalTime,
+                                totalSelfTimeMs = 0
+                            });
+                        }
+                        else
+                        {
+                            callInfo.callsCount += calls;
+                            callInfo.gcAllocBytes += gcAlloc;
+                            callInfo.totalCallTimeMs += totalTime;
+                        }
+                    }
+
+                    m_Stack.Push(childId);
+                }
+            }
+            UpdateCallsData(ref m_CallersData, m_Callers, totalSelectedPropertyTime);
+            UpdateCallsData(ref m_CalleesData, m_Callees, totalSelectedPropertyTime);
+            return totalSelectedPropertyTime;
+        }
+
+        private void UpdateCallsData(ref CallsData callsData, Dictionary<int, CallInformation> data,  float totalSelectedPropertyTime)
+        {
+            callsData.calls.Clear();
+            callsData.calls.AddRange(data.Values);
+            callsData.totalSelectedPropertyTime = totalSelectedPropertyTime;
+        }
+    }
+
     [Serializable]
     internal class ProfilerDetailedCallsView : ProfilerDetailedView
     {
         [NonSerialized]
         bool m_Initialized = false;
-
-        [NonSerialized]
-        float m_TotalSelectedPropertyTime;
 
         [NonSerialized]
         GUIContent m_TotalSelectedPropertyTimeLabel = EditorGUIUtility.TrTextContent("", "Total time of all calls of the selected function in the frame.");
@@ -35,22 +177,8 @@ namespace UnityEditorInternal.Profiling
         public delegate void FrameItemCallback(int id);
         public event FrameItemCallback frameItemEvent;
 
-        struct CallsData
-        {
-            public List<CallInformation> calls;
-            public float totalSelectedPropertyTime;
-        }
-
-        class CallInformation
-        {
-            public int id; // FrameDataView item id
-            public string name;
-            public int callsCount;
-            public int gcAllocBytes;
-            public double totalCallTimeMs;
-            public double totalSelfTimeMs;
-            public double timePercent; // Cached value - calculated based on view type
-        }
+        [NonSerialized]
+        ProfilerCallersAndCalleeData callersAndCalleeData = null;
 
         class CallsTreeView : TreeView
         {
@@ -71,7 +199,7 @@ namespace UnityEditorInternal.Profiling
                 Count
             }
 
-            internal CallsData m_CallsData;
+            internal ProfilerCallersAndCalleeData.CallsData m_CallsData;
             Type m_Type;
 
             public event FrameItemCallback frameItemEvent;
@@ -89,7 +217,7 @@ namespace UnityEditorInternal.Profiling
                 Reload();
             }
 
-            public void SetCallsData(CallsData callsData)
+            public void SetCallsData(ProfilerCallersAndCalleeData.CallsData callsData)
             {
                 m_CallsData = callsData;
 
@@ -190,7 +318,7 @@ namespace UnityEditorInternal.Profiling
                 if (m_CallsData.calls != null)
                 {
                     var orderMultiplier = header.IsSortedAscending(header.sortedColumnIndex) ? 1 : -1;
-                    Comparison<CallInformation> comparison;
+                    Comparison<ProfilerCallersAndCalleeData.CallInformation> comparison;
                     switch ((Column)header.sortedColumnIndex)
                     {
                         case Column.Name:
@@ -361,7 +489,7 @@ namespace UnityEditorInternal.Profiling
                 m_Type = type;
             }
 
-            public void SetCallsData(CallsData callsData)
+            public void SetCallsData(ProfilerCallersAndCalleeData.CallsData callsData)
             {
                 InitIfNeeded();
 
@@ -397,6 +525,8 @@ namespace UnityEditorInternal.Profiling
                 m_CallersTreeView = new CallsTreeViewController();
             m_CallersTreeView.SetType(CallsTreeView.Type.Callers);
             m_CallersTreeView.frameItemEvent += frameItemEvent;
+
+            callersAndCalleeData = new ProfilerCallersAndCalleeData();
 
             m_Initialized = true;
         }
@@ -439,106 +569,20 @@ namespace UnityEditorInternal.Profiling
             m_FrameDataView = frameDataView;
             m_SelectedID = selectedId;
 
-            m_TotalSelectedPropertyTime = 0;
+            callersAndCalleeData.UpdateData(m_FrameDataView, m_FrameDataView.GetItemMarkerID(m_SelectedID));
 
-            var selectedMarkerId = m_FrameDataView.GetItemMarkerID(m_SelectedID);
+            m_CallersTreeView.SetCallsData(callersAndCalleeData.callersData);
+            m_CalleesTreeView.SetCallsData(callersAndCalleeData.calleesData);
 
-            var callers = new Dictionary<int, CallInformation>();
-            var callees = new Dictionary<int, CallInformation>();
-
-            var childrenIds = new List<int>(256);
-            var stack = new Stack<int>();
-            stack.Push(m_FrameDataView.GetRootItemID());
-
-            while (stack.Count > 0)
-            {
-                var current = stack.Pop();
-
-                if (m_FrameDataView.HasItemChildren(current))
-                    continue;
-
-                var markerId = m_FrameDataView.GetItemMarkerID(current);
-                m_FrameDataView.GetItemChildren(current, childrenIds);
-                foreach (var childId in childrenIds)
-                {
-                    var childMarkerId = m_FrameDataView.GetItemMarkerID(childId);
-                    if (childMarkerId == selectedMarkerId)
-                    {
-                        var totalSelfTime = m_FrameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.TotalTime);
-                        m_TotalSelectedPropertyTime += totalSelfTime;
-
-                        if (current != 0)
-                        {
-                            // Add markerId to callers (except root)
-                            CallInformation callInfo;
-                            var totalTime = m_FrameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.TotalTime);
-                            var calls = (int)m_FrameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.Calls);
-                            var gcAlloc = (int)m_FrameDataView.GetItemColumnDataAsSingle(current, ProfilerColumn.GCMemory);
-                            if (!callers.TryGetValue(markerId, out callInfo))
-                            {
-                                callers.Add(markerId, new CallInformation()
-                                {
-                                    id = current,
-                                    name = m_FrameDataView.GetItemFunctionName(current),
-                                    callsCount = calls,
-                                    gcAllocBytes = gcAlloc,
-                                    totalCallTimeMs = totalTime,
-                                    totalSelfTimeMs = totalSelfTime
-                                });
-                            }
-                            else
-                            {
-                                callInfo.callsCount += calls;
-                                callInfo.gcAllocBytes += gcAlloc;
-                                callInfo.totalCallTimeMs += totalTime;
-                                callInfo.totalSelfTimeMs += totalSelfTime;
-                            }
-                        }
-                    }
-
-                    if (markerId == selectedMarkerId)
-                    {
-                        // Add childMarkerId to callees
-                        CallInformation callInfo;
-                        var totalTime = m_FrameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.TotalTime);
-                        var calls = (int)m_FrameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.Calls);
-                        var gcAlloc = (int)m_FrameDataView.GetItemColumnDataAsSingle(childId, ProfilerColumn.GCMemory);
-                        if (!callees.TryGetValue(childMarkerId, out callInfo))
-                        {
-                            callees.Add(childMarkerId, new CallInformation()
-                            {
-                                id = childId,
-                                name = m_FrameDataView.GetItemFunctionName(childId),
-                                callsCount = calls,
-                                gcAllocBytes = gcAlloc,
-                                totalCallTimeMs = totalTime,
-                                totalSelfTimeMs = 0
-                            });
-                        }
-                        else
-                        {
-                            callInfo.callsCount += calls;
-                            callInfo.gcAllocBytes += gcAlloc;
-                            callInfo.totalCallTimeMs += totalTime;
-                        }
-                    }
-
-                    stack.Push(childId);
-                }
-            }
-
-            m_CallersTreeView.SetCallsData(new CallsData() { calls = callers.Values.ToList(), totalSelectedPropertyTime = m_TotalSelectedPropertyTime });
-            m_CalleesTreeView.SetCallsData(new CallsData() { calls = callees.Values.ToList(), totalSelectedPropertyTime = m_TotalSelectedPropertyTime });
-
-            m_TotalSelectedPropertyTimeLabel.text = m_FrameDataView.GetItemFunctionName(selectedId) + string.Format(" - Total time: {0:f2} ms", m_TotalSelectedPropertyTime);
+            m_TotalSelectedPropertyTimeLabel.text = m_FrameDataView.GetItemFunctionName(selectedId) + string.Format(" - Total time: {0:f2} ms", callersAndCalleeData.totalSelectedPropertyTime);
         }
 
         public void Clear()
         {
             if (m_CallersTreeView != null)
-                m_CallersTreeView.SetCallsData(new CallsData() { calls = null, totalSelectedPropertyTime = 0 });
+                m_CallersTreeView.SetCallsData(new ProfilerCallersAndCalleeData.CallsData() { calls = null, totalSelectedPropertyTime = 0 });
             if (m_CalleesTreeView != null)
-                m_CalleesTreeView.SetCallsData(new CallsData() { calls = null, totalSelectedPropertyTime = 0 });
+                m_CalleesTreeView.SetCallsData(new ProfilerCallersAndCalleeData.CallsData() { calls = null, totalSelectedPropertyTime = 0 });
         }
     }
 }

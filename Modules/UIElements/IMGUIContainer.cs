@@ -7,14 +7,13 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    //TODO: rename to IMGUIAdapter or something, as it's NOT a VisualContainer
     public class IMGUIContainer : VisualElement
     {
-        public class IMGUIContainerFactory : UxmlFactory<IMGUIContainer, IMGUIContainerUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<IMGUIContainer, UxmlTraits> {}
 
-        public class IMGUIContainerUxmlTraits : VisualElementUxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            public IMGUIContainerUxmlTraits()
+            public UxmlTraits()
             {
                 m_FocusIndex.defaultValue = 0;
             }
@@ -61,14 +60,22 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public ContextType contextType { get; set; }
-        internal int GUIDepth { get; private set; }
 
+        // The following flag indicates that the focus for the actual IMGUIContainer must react like an UIElements and not a IMGUI.
+        // This should be used mainly by the UIElements field that are using an IMGUIContainer to achieve their implementation
+        // Like : ColorField...
+        internal bool useUIElementsFocusStyle;
+
+        // The following 2 flags indicate the following :
+        // 1) lostFocus : a blur event occured and we need to make sure the actual keyboard focus from IMGUI is really un-focused
         bool lostFocus = false;
+        // 2) receivedFocus : a Focus event occured and we need to focus the actual IMGUIContainer as being THE element focused.
         bool receivedFocus = false;
         FocusChangeDirection focusChangeDirection = FocusChangeDirection.unspecified;
         bool hasFocusableControls = false;
 
         int newKeyboardFocusControlID = 0;
+
         public override bool canGrabFocus
         {
             get { return base.canGrabFocus && hasFocusableControls; }
@@ -84,14 +91,16 @@ namespace UnityEngine.Experimental.UIElements
             focusIndex = 0;
 
             requireMeasureFunction = true;
+
+            style.overflow = StyleEnums.Overflow.Hidden;
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        protected override void DoRepaint(IStylePainter painter)
         {
-            base.DoRepaint();
+            base.DoRepaint(painter);
 
-            lastWorldClip = painter.currentWorldClip;
-            HandleIMGUIEvent(painter.repaintEvent);
+            lastWorldClip = elementPanel.repaintData.currentWorldClip;
+            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent);
         }
 
         // global GUI values.
@@ -137,8 +146,10 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private void DoOnGUI(Event evt, bool isComputingLayout = false)
+        private void DoOnGUI(Event evt, Matrix4x4 worldTransform, Rect clippingRect, bool isComputingLayout = false)
         {
+            // Extra checks are needed here because client code might have changed the IMGUIContainer
+            // since we enter HandleIMGUIEvent()
             if (m_OnGUIHandler == null
                 || panel == null)
             {
@@ -165,7 +176,7 @@ namespace UnityEngine.Experimental.UIElements
                         // - we are the currently focused element (that would be surprising)
                         // - the currently focused element is not an IMGUIContainer (in this case,
                         //   GUIUtility.keyboardControl should be 0).
-                        if (focusController.focusedElement == null || focusController.focusedElement == this || !(focusController.focusedElement is IMGUIContainer))
+                        if (focusController.focusedElement == null || focusController.focusedElement == this || !(focusController.focusedElement is IMGUIContainer) || useUIElementsFocusStyle)
                         {
                             GUIUtility.keyboardControl = 0;
                             focusController.imguiKeyboardControl = 0;
@@ -190,6 +201,20 @@ namespace UnityEngine.Experimental.UIElements
                             GUIUtility.SetKeyboardControlToFirstControlId();
                         }
                     }
+                    else if (useUIElementsFocusStyle)
+                    {
+                        // When the direction is not set, this is because we are coming back to this specific IMGUIContainer
+                        // with a mean other than TAB, we need to make sure to return to the element that was focused before...
+                        if ((focusController == null) || (focusController.imguiKeyboardControl == 0))
+                        {
+                            GUIUtility.SetKeyboardControlToFirstControlId();
+                        }
+                        else
+                        {
+                            GUIUtility.keyboardControl = focusController.imguiKeyboardControl;
+                        }
+                    }
+
                     receivedFocus = false;
                     focusChangeDirection = FocusChangeDirection.unspecified;
                     if (focusController != null)
@@ -201,7 +226,6 @@ namespace UnityEngine.Experimental.UIElements
                 // newKeyboardFocusControlID = GUIUtility.keyboardControl;
             }
 
-            GUIDepth = GUIUtility.guiDepth;
             EventType originalEventType = Event.current.type;
 
             bool isExitGUIException = false;
@@ -212,12 +236,8 @@ namespace UnityEngine.Experimental.UIElements
                 // it is dependant on the layout, which is being calculated (thus, not good)
                 if (!isComputingLayout)
                 {
-                    Matrix4x4 currentTransform;
-                    Rect clippingRect;
-                    GetCurrentTransformAndClip(this, evt, out currentTransform, out clippingRect);
-
                     // Push UIElements matrix in GUIClip to make mouse position relative to the IMGUIContainer top left
-                    using (new GUIClip.ParentClipScope(currentTransform, clippingRect))
+                    using (new GUIClip.ParentClipScope(worldTransform, clippingRect))
                     {
                         m_OnGUIHandler();
                     }
@@ -298,13 +318,28 @@ namespace UnityEngine.Experimental.UIElements
                         else if (result == 0)
                         {
                             // This means the event is not a tab. Synchronize our focus info with IMGUI.
-                            if (currentKeyboardFocus != GUIUtility.keyboardControl || originalEventType == EventType.MouseDown)
+                            if ((currentKeyboardFocus != GUIUtility.keyboardControl) || (originalEventType == EventType.MouseDown))
                             {
                                 focusController.SyncIMGUIFocus(GUIUtility.keyboardControl, this);
                             }
+                            else if (GUIUtility.keyboardControl != focusController.imguiKeyboardControl)
+                            {
+                                // Here we want to resynchronize our internal state ...
+                                newKeyboardFocusControlID = GUIUtility.keyboardControl;
+
+                                if (focusController.focusedElement == this)
+                                {
+                                    // In this case, the focused element is the right one in the Focus Controller... we are just updating the internal imguiKeyboardControl
+                                    focusController.imguiKeyboardControl = GUIUtility.keyboardControl;
+                                }
+                                else
+                                {
+                                    // In this case, the focused element is NOT the right one in the Focus Controller... we also have to refocus...
+                                    focusController.SyncIMGUIFocus(GUIUtility.keyboardControl, this);
+                                }
+                            }
                         }
                     }
-
                     // Cache the fact that we have focusable controls or not.
                     hasFocusableControls = GUIUtility.HasFocusableControls();
                 }
@@ -335,8 +370,13 @@ namespace UnityEngine.Experimental.UIElements
 
             if (eventType == EventType.Used)
             {
-                Dirty(ChangeType.Repaint);
+                IncrementVersion(VersionChangeType.Repaint);
             }
+        }
+
+        public void MakeDirtyLayout()
+        {
+            IncrementVersion(VersionChangeType.Layout);
         }
 
         public override void HandleEvent(EventBase evt)
@@ -358,11 +398,6 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            if (m_OnGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(evt.imguiEvent.type) == false)
-            {
-                return;
-            }
-
             if (HandleIMGUIEvent(evt.imguiEvent))
             {
                 evt.StopPropagation();
@@ -372,7 +407,16 @@ namespace UnityEngine.Experimental.UIElements
 
         internal bool HandleIMGUIEvent(Event e)
         {
-            if (e == null)
+            Matrix4x4 currentTransform;
+            Rect clippingRect;
+            GetCurrentTransformAndClip(this, e, out currentTransform, out clippingRect);
+
+            return HandleIMGUIEvent(e, currentTransform, clippingRect);
+        }
+
+        internal bool HandleIMGUIEvent(Event e, Matrix4x4 worldTransform, Rect clippingRect)
+        {
+            if (e == null || m_OnGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.type) == false)
             {
                 return false;
             }
@@ -381,10 +425,10 @@ namespace UnityEngine.Experimental.UIElements
             e.type = EventType.Layout;
 
             // layout event
-            DoOnGUI(e);
+            DoOnGUI(e, worldTransform, clippingRect);
             // the actual event
             e.type = originalEventType;
-            DoOnGUI(e);
+            DoOnGUI(e, worldTransform, clippingRect);
 
             if (newKeyboardFocusControlID > 0)
             {
@@ -433,18 +477,11 @@ namespace UnityEngine.Experimental.UIElements
             //   They are focusable, but only for the purpose of focusing their children.
 
             // Here, we set flags that will be acted upon in DoOnGUI(), since we need to change IMGUI state.
-
             if (evt.GetEventTypeId() == BlurEvent.TypeId())
             {
-                BlurEvent be = evt as BlurEvent;
-                VisualElement relatedTargetElement = be.relatedTarget as VisualElement;
-                // To mimic IMGUI behavior, we only want to clear GUIUtility.keyboardControl
-                // when there is something else actually taking focus (canGrabFocus == true)
-                // or when the clicked element is the top level IMGUIContainer (relatedTargetElement.parent == panel.visualTree).
-                if (relatedTargetElement != null && (be.relatedTarget.canGrabFocus || relatedTargetElement.parent == panel.visualTree))
-                {
-                    lostFocus = true;
-                }
+                // A lost focus event is ... a lost focus event.
+                // The specific handling of the IMGUI will be done in the DoOnGUI() above...
+                lostFocus = true;
             }
             else if (evt.GetEventTypeId() == FocusEvent.TypeId())
             {
@@ -472,9 +509,16 @@ namespace UnityEngine.Experimental.UIElements
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
+
             if (widthMode != MeasureMode.Exactly || heightMode != MeasureMode.Exactly)
             {
-                DoOnGUI(new Event { type = EventType.Layout }, true);
+                var evt = new Event { type = EventType.Layout };
+
+                // When computing layout it's important to not call GetCurrentTransformAndClip
+                // because it will remove the dirty flag on the container transform which might
+                // set the transform in an invalid state.
+                // Since DoOnGUI doesn't use the worldTransform and clipping rect we can pass anything.
+                DoOnGUI(evt, Matrix4x4.identity, Rect.zero, true);
                 measuredWidth = m_Cache.topLevel.minWidth;
                 measuredHeight = m_Cache.topLevel.minHeight;
             }
@@ -514,12 +558,11 @@ namespace UnityEngine.Experimental.UIElements
 
             transform = container.worldTransform;
             if (evt.type == EventType.Repaint
-                && container.elementPanel != null
-                && container.elementPanel.stylePainter != null)
+                && container.elementPanel != null)
             {
                 // during repaint, we must use in case the current transform is not relative to Panel
                 // this is to account for the pixel caching feature
-                transform = container.elementPanel.stylePainter.currentTransform;
+                transform = container.elementPanel.repaintData.currentTransform;
             }
         }
     }

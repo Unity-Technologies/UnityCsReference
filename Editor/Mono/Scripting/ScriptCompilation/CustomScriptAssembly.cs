@@ -9,6 +9,33 @@ using UnityEditor.Compilation;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    class SymbolNameRestrictions
+    {
+        private const int k_MaxLength = 247;
+
+        public static bool IsValid(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+
+            if (name.Length > k_MaxLength ||
+                name.Contains(" "))
+            {
+                return false;
+            }
+
+            var firstChar = name[0];
+            if (!Char.IsLetter(firstChar) && firstChar != '_')
+            {
+                return false;
+            }
+
+            return true;
+        }
+    }
+
     [System.Serializable]
     class CustomScriptAssemblyData
     {
@@ -19,10 +46,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public string[] includePlatforms;
         public string[] excludePlatforms;
         public bool allowUnsafeCode;
+        public bool overrideReferences;
+        public string[] precompiledReferences;
+        public bool autoReferenced;
+        public string[] defineConstraints;
 
         public static CustomScriptAssemblyData FromJson(string json)
         {
-            var assemblyData = UnityEngine.JsonUtility.FromJson<CustomScriptAssemblyData>(json);
+            CustomScriptAssemblyData assemblyData = new CustomScriptAssemblyData();
+            assemblyData.autoReferenced = true;
+            UnityEngine.JsonUtility.FromJsonOverwrite(json, assemblyData);
 
             if (assemblyData == null)
                 throw new System.Exception("Json file does not contain an assembly definition");
@@ -89,14 +122,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public EditorCompilation.PackageAssembly? PackageAssembly { get; set; }
         public ScriptCompilerOptions CompilerOptions { get; set; }
 
+        public bool OverrideReferences { get; set; }
+        public string[] PrecompiledReferences { get; set; }
+        public bool AutoReferenced { get; set; }
+        public string[] DefineConstraints { get; set; }
+
         public AssemblyFlags AssemblyFlags
         {
             get
             {
-                if (IncludePlatforms != null && IncludePlatforms.Length == 1 && IncludePlatforms[0].BuildTarget == BuildTarget.NoTarget)
-                    return AssemblyFlags.EditorOnly;
+                var assemblyFlags = AssemblyFlags.None;
 
-                return AssemblyFlags.None;
+                if (IncludePlatforms != null && IncludePlatforms.Length == 1 && IncludePlatforms[0].BuildTarget == BuildTarget.NoTarget)
+                    assemblyFlags |= AssemblyFlags.EditorOnly;
+
+                if (OverrideReferences)
+                {
+                    assemblyFlags |= AssemblyFlags.ExplicitReferences;
+                }
+
+                if (!AutoReferenced)
+                {
+                    assemblyFlags |= AssemblyFlags.ExplicitlyReferenced;
+                }
+
+                return assemblyFlags;
             }
         }
 
@@ -155,7 +205,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return true;
         }
 
-        public bool IsCompatibleWith(BuildTarget buildTarget, EditorScriptCompilationOptions options)
+        public bool IsCompatibleWith(BuildTarget buildTarget, EditorScriptCompilationOptions options, string[] defines = null)
         {
             bool buildingForEditor = (options & EditorScriptCompilationOptions.BuildingForEditor) == EditorScriptCompilationOptions.BuildingForEditor;
 
@@ -164,6 +214,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!buildingForEditor && isTestAssembly && !isBuildingWithTestAssemblies)
             {
                 return false;
+            }
+
+            if (DefineConstraints != null && DefineConstraints.Any())
+            {
+                if (defines == null)
+                {
+                    return false;
+                }
+
+                const string not = "!";
+                var notExpectedDefines = DefineConstraints.Where(x => x.StartsWith(not)).Select(x => x.Substring(1));
+                var expectedDefines = DefineConstraints.Where(x => !x.StartsWith(not));
+
+                if (!expectedDefines.All(defines.Contains) || notExpectedDefines.Any(defines.Contains))
+                {
+                    return false;
+                }
             }
 
             var isPackage = PackageAssembly.HasValue;
@@ -178,9 +245,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (buildingForEditor)
                 return IsCompatibleWithEditor();
-
-            if (buildingForEditor)
-                buildTarget = BuildTarget.NoTarget; // Editor
 
             if (ExcludePlatforms != null)
                 return ExcludePlatforms.All(p => p.BuildTarget != buildTarget);
@@ -201,7 +265,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.FilePath = modifiedDirectory;
             customScriptAssembly.PathPrefix = modifiedDirectory;
             customScriptAssembly.References = new string[0];
+            customScriptAssembly.PrecompiledReferences = new string[0];
             customScriptAssembly.CompilerOptions = new ScriptCompilerOptions();
+            customScriptAssembly.AutoReferenced = true;
 
             return customScriptAssembly;
         }
@@ -219,6 +285,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             customScriptAssembly.References = customScriptAssemblyData.references;
             customScriptAssembly.FilePath = path;
             customScriptAssembly.PathPrefix = pathPrefix;
+            customScriptAssembly.AutoReferenced = customScriptAssemblyData.autoReferenced;
+            customScriptAssembly.OverrideReferences = customScriptAssemblyData.overrideReferences;
+            customScriptAssembly.PrecompiledReferences = customScriptAssemblyData.precompiledReferences ?? new string[0];
+            customScriptAssembly.DefineConstraints = customScriptAssemblyData.defineConstraints ?? new string[0];
 
             customScriptAssemblyData.optionalUnityReferences = customScriptAssemblyData.optionalUnityReferences ?? new string[0];
             foreach (var optionalUnityReferenceString in customScriptAssemblyData.optionalUnityReferences)

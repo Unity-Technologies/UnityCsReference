@@ -9,7 +9,7 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 
 namespace UnityEditor.Experimental.UIElements
 {
-    internal static class TooltipExtension
+    static class Tooltip
     {
         [RequiredByNativeCode]
         internal static void SetTooltip(float mouseX, float mouseY)
@@ -31,7 +31,7 @@ namespace UnityEditor.Experimental.UIElements
                         tooltipEvent.rect = Rect.zero;
                         view.visualTree.panel.dispatcher.DispatchEvent(tooltipEvent, panel);
 
-                        if (!string.IsNullOrEmpty(tooltipEvent.tooltip))
+                        if (!string.IsNullOrEmpty(tooltipEvent.tooltip) && !tooltipEvent.isDefaultPrevented)
                         {
                             Rect rect = tooltipEvent.rect;
                             rect.position += view.screenPosition.position; //SetMouseTooltip expects Screen relative coordinates.
@@ -41,52 +41,6 @@ namespace UnityEditor.Experimental.UIElements
                     }
                 }
             }
-        }
-
-        internal static void AddTooltip(this VisualElement e, string tooltip)
-        {
-            if (string.IsNullOrEmpty(tooltip))
-            {
-                RemoveTooltip(e);
-                return;
-            }
-            TooltipElement tooltipElement = e.Query().Children<TooltipElement>();
-
-            if (tooltipElement == null)
-                tooltipElement = new TooltipElement();
-
-            tooltipElement.style.positionType = PositionType.Absolute;
-            tooltipElement.style.positionLeft = tooltipElement.style.positionRight = tooltipElement.style.positionTop = tooltipElement.style.positionBottom = 0;
-
-            tooltipElement.tooltip = tooltip;
-
-            if (e.childCount < 1 || e.ElementAt(0) != tooltipElement)
-                e.Insert(0, tooltipElement);
-        }
-
-        internal static void RemoveTooltip(this VisualElement e)
-        {
-            TooltipElement tooltipElement = e.Query().Children<TooltipElement>();
-            if (tooltipElement != null)
-                e.Remove(tooltipElement);
-        }
-    }
-
-
-    class TooltipElement : VisualElement
-    {
-        public string tooltip { get; set; }
-
-        public TooltipElement()
-        {
-            RegisterCallback<TooltipEvent>(OnTooltip);
-        }
-
-        void OnTooltip(TooltipEvent e)
-        {
-            e.tooltip = tooltip;
-            e.rect = worldBound;
-            e.StopPropagation();
         }
     }
 }

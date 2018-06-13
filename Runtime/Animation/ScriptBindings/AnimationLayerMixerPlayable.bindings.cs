@@ -96,10 +96,16 @@ namespace UnityEngine.Animations
             SetLayerMaskFromAvatarMaskInternal(ref m_Handle, layerIndex, mask);
         }
 
-        // Bindings methods.
+        [NativeThrows]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
+
+        [NativeThrows]
         extern private static bool IsLayerAdditiveInternal(ref PlayableHandle handle, uint layerIndex);
+
+        [NativeThrows]
         extern private static void SetLayerAdditiveInternal(ref PlayableHandle handle, uint layerIndex, bool value);
+
+        [NativeThrows]
         extern private static void SetLayerMaskFromAvatarMaskInternal(ref PlayableHandle handle, uint layerIndex, AvatarMask mask);
     }
 }

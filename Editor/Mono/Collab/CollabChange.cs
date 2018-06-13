@@ -5,16 +5,21 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Collaboration
 {
     // Keep internal and undocumented until we expose more functionality
     //*undocumented
     [StructLayout(LayoutKind.Sequential)]
+    [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Editor/Src/Collab/CollabChange.h",
+         IntermediateScriptingStructName = "ScriptingCollabChange")]
+    [NativeHeader("Editor/Src/Collab/Collab.bindings.h")]
+    [NativeAsStruct]
     internal class Change
     {
         [Flags]
-        public enum RevertableStates : ulong
+        public enum RevertableStates : uint
         {
             Revertable                         = 1 << 0,
             NotRevertable                      = 1 << 1,
@@ -30,33 +35,43 @@ namespace UnityEditor.Collaboration
             NotRevertable_FolderContainsAdd    = 1 << 9,
 
             // do not exceed Javascript Number range
-            InvalidRevertableState             = (ulong)1 << 31
+            InvalidRevertableState             = (uint)1 << 31
         };
 
-        private string m_Path;
-        private Collab.CollabStates m_State;
-        private Change.RevertableStates m_RevertableState;
-        private string m_RelatedTo;
-        private string m_LocalStatus;
-        private string m_RemoteStatus;
-        private string m_ResolveStatus;
+        string m_Path;
+        Collab.CollabStates m_State;
+        RevertableStates m_RevertableState;
+        string m_RelatedTo;
+        string m_LocalStatus;
+        string m_RemoteStatus;
+        string m_ResolveStatus;
 
-        private Change() {}
+        Change() {}
 
         public string path { get { return m_Path; } }
-        public System.UInt64 state { get { return (System.UInt64)m_State; } }
-        public bool isRevertable { get { return (m_RevertableState & Change.RevertableStates.Revertable) == Change.RevertableStates.Revertable; } }
-        public System.UInt64 revertableState { get { return (System.UInt64)m_RevertableState; } }
+        public Collab.CollabStates state { get { return m_State; } }
+        public bool isRevertable { get { return HasRevertableState(RevertableStates.Revertable); } }
+        public RevertableStates revertableState { get { return m_RevertableState; } }
         public string relatedTo { get { return m_RelatedTo; } }
 
-        public bool isMeta { get { return (m_State & Collab.CollabStates.kCollabMetaFile) == Collab.CollabStates.kCollabMetaFile; } }
-        public bool isConflict { get { return (m_State & Collab.CollabStates.kCollabConflicted) == Collab.CollabStates.kCollabConflicted || (m_State & Collab.CollabStates.kCollabPendingMerge) == Collab.CollabStates.kCollabPendingMerge; } }
-        public bool isFolderMeta { get { return (m_State & Collab.CollabStates.kCollabFolderMetaFile) == Collab.CollabStates.kCollabFolderMetaFile; } }
-        public bool isResolved { get { return (m_State & Collab.CollabStates.kCollabUseMine) == Collab.CollabStates.kCollabUseMine || (m_State & Collab.CollabStates.kCollabUseTheir) == Collab.CollabStates.kCollabUseTheir || (m_State & Collab.CollabStates.kCollabMerged) == Collab.CollabStates.kCollabMerged; } }
+        public bool isMeta { get { return HasState(Collab.CollabStates.kCollabMetaFile); } }
+        public bool isConflict { get { return HasState(Collab.CollabStates.kCollabConflicted) || HasState(Collab.CollabStates.kCollabPendingMerge); } }
+        public bool isFolderMeta { get { return HasState(Collab.CollabStates.kCollabFolderMetaFile); } }
+        public bool isResolved { get { return HasState(Collab.CollabStates.kCollabUseMine) || HasState(Collab.CollabStates.kCollabUseTheir) || HasState(Collab.CollabStates.kCollabMerged); } }
 
         public string localStatus { get { return m_LocalStatus; } }
         public string remoteStatus { get { return m_RemoteStatus; } }
         public string resolveStatus { get { return m_ResolveStatus; } }
+
+        internal bool HasState(Collab.CollabStates states)
+        {
+            return (m_State & states) != 0;
+        }
+
+        internal bool HasRevertableState(RevertableStates revertableStates)
+        {
+            return (m_RevertableState & revertableStates) != 0;
+        }
     }
 
     internal class PublishInfo

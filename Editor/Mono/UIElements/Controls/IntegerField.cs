@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -11,29 +10,11 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class IntegerField : TextValueField<int>
     {
-        public class IntegerFieldFactory : UxmlFactory<IntegerField, IntegerFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<IntegerField, UxmlTraits> {}
 
-        public class IntegerFieldUxmlTraits : TextValueFieldUxmlTraits
+        public new class UxmlTraits : TextValueField<int>.UxmlTraits
         {
-            UxmlIntAttributeDescription m_Value;
-
-            public IntegerFieldUxmlTraits()
-            {
-                m_Value = new UxmlIntAttributeDescription { name = "value" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Value;
-                }
-            }
+            UxmlIntAttributeDescription m_Value = new UxmlIntAttributeDescription { name = "value" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -63,7 +44,7 @@ namespace UnityEditor.Experimental.UIElements
             float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
             long v = value;
             v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
-            SetValueAndNotify(MathUtils.ClampToInt(v));
+            value = MathUtils.ClampToInt(v);
         }
 
         protected override string ValueToString(int v)

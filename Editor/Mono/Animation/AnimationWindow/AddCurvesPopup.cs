@@ -81,7 +81,7 @@ namespace UnityEditorInternal
                 s_Hierarchy = new AddCurvesPopupHierarchy();
 
             Rect rect = new Rect(1, 1, windowSize.x - k_WindowPadding, windowSize.y - k_WindowPadding);
-            GUI.Box(new Rect(0, 0, windowSize.x, windowSize.y), GUIContent.none, new GUIStyle("grey_border"));
+            GUI.Box(new Rect(0, 0, windowSize.x, windowSize.y), GUIContent.none, "grey_border");
             s_Hierarchy.OnGUI(rect, this);
         }
     }

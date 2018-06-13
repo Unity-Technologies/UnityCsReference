@@ -20,28 +20,31 @@ namespace UnityEditor.Experimental.UIElements
             IUxmlFactory[] factories =
             {
                 // Primitives
-                new FloatField.FloatFieldFactory(),
-                new DoubleField.DoubleFieldFactory(),
-                new IntegerField.IntegerFieldFactory(),
-                new LongField.LongFieldFactory(),
-                new CurveField.CurveFieldFactory(),
-                new ObjectField.ObjectFieldFactory(),
-                new ColorField.ColorFieldFactory(),
-                new EnumField.EnumFieldFactory(),
-                new GradientField.GradientFieldFactory(),
+                new TextElement.UxmlFactory(),
+                new FloatField.UxmlFactory(),
+                new DoubleField.UxmlFactory(),
+                new IntegerField.UxmlFactory(),
+                new LongField.UxmlFactory(),
+                new CurveField.UxmlFactory(),
+                new ObjectField.UxmlFactory(),
+                new ColorField.UxmlFactory(),
+                new EnumField.UxmlFactory(),
+                new GradientField.UxmlFactory(),
 
                 // Compounds
-                new RectField.RectFieldFactory(),
-                new Vector2Field.Vector2FieldFactory(),
-                new Vector3Field.Vector3FieldFactory(),
-                new Vector4Field.Vector4FieldFactory(),
-                new BoundsField.BoundsFieldFactory(),
-                new PropertyControl<int>.PropertyControlFactory(),
-                new PropertyControl<long>.PropertyControlFactory(),
-                new PropertyControl<float>.PropertyControlFactory(),
-                new PropertyControl<double>.PropertyControlFactory(),
-                new PropertyControl<string>.PropertyControlFactory(),
+                new RectField.UxmlFactory(),
+                new Vector2Field.UxmlFactory(),
+                new Vector3Field.UxmlFactory(),
+                new Vector4Field.UxmlFactory(),
+                new BoundsField.UxmlFactory(),
+                new PropertyControl<int>.UxmlFactory(),
+                new PropertyControl<long>.UxmlFactory(),
+                new PropertyControl<float>.UxmlFactory(),
+                new PropertyControl<double>.UxmlFactory(),
+                new PropertyControl<string>.UxmlFactory(),
+                new VisualSplitter.UxmlFactory()
             };
+
             foreach (IUxmlFactory factory in factories)
             {
                 VisualElementFactoryRegistry.RegisterFactory(factory);

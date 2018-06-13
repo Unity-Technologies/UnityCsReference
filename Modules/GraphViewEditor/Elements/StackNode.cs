@@ -2,9 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleSheets;
@@ -34,7 +31,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public StackNode() : base("UXML/GraphView/StackNode.uxml")
         {
+            this.Q("stackNodeContainers").clippingOptions = ClippingOptions.NoClipping;
+
             VisualElement stackNodeContentContainerPlaceholder = this.Q("stackNodeContentContainerPlaceholder");
+            stackNodeContentContainerPlaceholder.clippingOptions = ClippingOptions.NoClipping;
 
             headerContainer = this.Q("stackNodeHeaderContainer");
             m_SeparatorContainer = this.Q("stackSeparatorContainer");
@@ -50,8 +50,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddToClassList("stack-node");
             AddStyleSheetPath("StyleSheets/GraphView/StackNode.uss");
 
-            clippingOptions = ClippingOptions.NoClipping;
-
             InitAnimations();
         }
 
@@ -63,15 +61,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 UpdateSeparators();
             }
-        }
-
-        internal override void ChangePanel(BaseVisualElementPanel p)
-        {
-            if (p != panel)
+            else if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
             {
-                graphView = p != null ? GetFirstAncestorOfType<GraphView>() : null;
+                graphView = null;
             }
-            base.ChangePanel(p);
+            else if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
+            {
+                graphView = GetFirstAncestorOfType<GraphView>();
+            }
         }
 
         private bool AcceptsElementInternal(GraphElement element, ref int proposedIndex, int maxIndex)
@@ -133,7 +130,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 for (int i = m_SeparatorContainer.childCount; i < expectedSeparatorCount; ++i)
                 {
-                    var separator = new StackNodeSeparator();
+                    var separator = new StackNodeSeparator { menuEvent = ExecuteOnSeparatorContextualMenuEvent };
                     separator.StretchToParentWidth();
                     m_SeparatorContainer.Add(separator);
                 }
@@ -229,6 +226,49 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             GraphElement element = evt.target as GraphElement;
 
             OnChildRemoved(element);
+        }
+
+        private void ExecuteOnSeparatorContextualMenuEvent(ContextualMenuPopulateEvent evt, int separatorIndex)
+        {
+            if (evt.target is StackNodeSeparator)
+            {
+                OnSeparatorContextualMenuEvent(evt, separatorIndex);
+            }
+            evt.StopPropagation();
+        }
+
+        protected virtual void OnSeparatorContextualMenuEvent(ContextualMenuPopulateEvent evt, int separatorIndex)
+        {
+        }
+
+        public int GetInsertionIndex(Vector2 worldPosition)
+        {
+            var ve = graphView.currentInsertLocation as VisualElement;
+            if (ve == null)
+                return -1;
+
+            // Checking if it's one of our children
+            if (this == ve.GetFirstAncestorOfType<StackNode>())
+            {
+                InsertInfo insertInfo;
+                graphView.currentInsertLocation.GetInsertInfo(worldPosition, out insertInfo);
+                return insertInfo.index;
+            }
+
+            return -1;
+        }
+
+        public virtual void OnStartDragging(GraphElement ge)
+        {
+            var node = ge as Node;
+            if (node != null)
+            {
+                ge.RemoveFromHierarchy();
+
+                graphView.AddElement(ge);
+                // Reselect it because RemoveFromHierarchy unselected it
+                ge.Select(graphView, true);
+            }
         }
     }
 }

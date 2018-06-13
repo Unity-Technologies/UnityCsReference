@@ -379,10 +379,17 @@ namespace UnityEditor
         }
     }
 
-    internal class DelayedCallback
+    internal interface IDelayedCallback
+    {
+        void Clear();
+        void Reset();
+    }
+
+    internal class DelayedCallback : IDelayedCallback
     {
         private System.Action m_Callback;
         private double m_CallbackTime;
+        private double m_Delay;
 
         public DelayedCallback(System.Action function, double timeFromNow)
         {
@@ -390,6 +397,7 @@ namespace UnityEditor
 
             m_Callback = function;
             m_CallbackTime = EditorApplication.timeSinceStartup + timeFromNow;
+            m_Delay = timeFromNow;
             EditorApplication.update += Update;
         }
 
@@ -409,6 +417,14 @@ namespace UnityEditor
                 Clear();
 
                 callback();
+            }
+        }
+
+        public void Reset()
+        {
+            if (m_Callback != null)
+            {
+                m_CallbackTime = EditorApplication.timeSinceStartup + m_Delay;
             }
         }
     }

@@ -154,17 +154,37 @@ namespace UnityEngine.Audio
             m_Handle.Play();
         }
 
-        // Bindings methods.
+        [NativeThrows]
         extern private static AudioClip GetClipInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static void SetClipInternal(ref PlayableHandle hdl, AudioClip clip);
+
+        [NativeThrows]
         extern private static bool GetLoopedInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static void SetLoopedInternal(ref PlayableHandle hdl, bool looped);
+
+        [NativeThrows]
         extern private static bool GetIsChannelPlayingInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static double GetStartDelayInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static void SetStartDelayInternal(ref PlayableHandle hdl, double delay);
+
+        [NativeThrows]
         extern private static double GetPauseDelayInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static void SetPauseDelayInternal(ref PlayableHandle hdl, double delay);
+
+        [NativeThrows]
         extern private static bool InternalCreateAudioClipPlayable(ref PlayableGraph graph, AudioClip clip, bool looping, ref PlayableHandle handle);
+
+        [NativeThrows]
         extern private static bool ValidateType(ref PlayableHandle hdl);
 
     }

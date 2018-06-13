@@ -39,6 +39,7 @@ namespace UnityEditor.StyleSheets
         List<Color> m_Colors = new List<Color>();
         List<string> m_Strings = new List<string>();
         List<StyleRule> m_Rules = new List<StyleRule>();
+        List<Object> m_Assets = new List<Object>();
         List<StyleComplexSelector> m_ComplexSelectors = new List<StyleComplexSelector>();
 
         List<StyleProperty> m_CurrentProperties = new List<StyleProperty>();
@@ -135,6 +136,11 @@ namespace UnityEditor.StyleSheets
             RegisterValue(m_Colors, StyleValueType.Color, value);
         }
 
+        public void AddValue(Object value)
+        {
+            RegisterValue(m_Assets, StyleValueType.AssetReference, value);
+        }
+
         public void EndProperty()
         {
             Log("Ending property");
@@ -169,6 +175,7 @@ namespace UnityEditor.StyleSheets
             writeTo.colors = m_Colors.ToArray();
             writeTo.strings = m_Strings.ToArray();
             writeTo.rules = m_Rules.ToArray();
+            writeTo.assets = m_Assets.ToArray();
             writeTo.complexSelectors = m_ComplexSelectors.ToArray();
         }
 

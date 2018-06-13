@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.Bindings;
 using uei = UnityEngine.Internal;
@@ -9,7 +10,7 @@ using uei = UnityEngine.Internal;
 namespace UnityEditor.SceneManagement
 {
     [NativeHeader("Runtime/SceneManager/SceneManager.h")]
-    [NativeHeader("Editor/Src/AssetPipeline/DefaultImporter.h")]
+    [NativeHeader("Modules/AssetPipelineEditor/Public/DefaultImporter.h")]
     [NativeHeader("Editor/Mono/EditorSceneManager.bindings.h")]
     public sealed partial class EditorSceneManager : SceneManager
     {
@@ -153,5 +154,8 @@ namespace UnityEditor.SceneManagement
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("DetectCrossSceneReferences")]
         public extern static bool DetectCrossSceneReferences(Scene scene);
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        private extern static AsyncOperation LoadSceneInPlayModeInternal(string path, LoadSceneParameters parameters, bool isSynchronous);
     }
 }

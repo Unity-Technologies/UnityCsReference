@@ -10,7 +10,14 @@ namespace UnityEditor
 {
     internal static class PopupLocationHelper
     {
-        public enum PopupLocation { Below, Above, Left, Right }
+        public enum PopupLocation
+        {
+            Below,
+            Above,
+            Left,
+            Right,
+            Overlay
+        }
 
         public static Rect GetDropDownRect(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow)
         {
@@ -20,7 +27,13 @@ namespace UnityEditor
         public static Rect GetDropDownRect(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow, PopupLocation[] locationPriorityOrder)
         {
             if (locationPriorityOrder == null)
-                locationPriorityOrder = new[] {PopupLocation.Below, PopupLocation.Above, PopupLocation.Left, PopupLocation.Right}; // Default priority order
+                locationPriorityOrder = new[]
+                {
+                    PopupLocation.Below,
+                    PopupLocation.Above,
+                    PopupLocation.Left,
+                    PopupLocation.Right
+                }; // Default priority order
 
             List<Rect> croppedRects = new List<Rect>();
             foreach (PopupLocation location in locationPriorityOrder)
@@ -45,6 +58,11 @@ namespace UnityEditor
                         break;
                     case PopupLocation.Right:
                         if (PopupRight(buttonRect, minSize, maxSize, popupContainerWindow, out resultRect))
+                            return resultRect;
+                        croppedRects.Add(resultRect);
+                        break;
+                    case PopupLocation.Overlay:
+                        if (PopupOverlay(buttonRect, minSize, maxSize, popupContainerWindow, out resultRect))
                             return resultRect;
                         croppedRects.Add(resultRect);
                         break;
@@ -147,6 +165,15 @@ namespace UnityEditor
             }
             resultRect = new Rect(dropDownRectBelow.x, buttonRect.yMax, dropDownRectBelow.width, availableHeightBelow);
             return false;
+        }
+
+        private static bool PopupOverlay(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow,
+            out Rect resultRect)
+        {
+            //Stretch the popup over the button Rect if it doesn't fit
+            Rect dropDownRectBelow = new Rect(buttonRect.x, buttonRect.yMax, maxSize.x, maxSize.y);
+            resultRect = FitRect(dropDownRectBelow, popupContainerWindow);
+            return true;
         }
 
         private static Rect GetLargestRect(List<Rect> rects)

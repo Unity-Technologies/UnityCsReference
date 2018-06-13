@@ -55,22 +55,23 @@ namespace UnityEditorInternal.VersionControl
             if (asset == null || !asset.IsUnderVersionControl)
                 return AssetMoveResult.DidNotMove;
 
-            if (asset.IsState(Asset.States.OutOfSync))
+            Asset.States assetState = asset.state;
+            if (Asset.IsState(assetState, Asset.States.OutOfSync))
             {
                 Debug.LogError("Cannot move version controlled file that is not up to date. Please get latest changes from server");
                 return AssetMoveResult.FailedMove;
             }
-            else if (asset.IsState(Asset.States.DeletedRemote))
+            else if (Asset.IsState(assetState, Asset.States.DeletedRemote))
             {
                 Debug.LogError("Cannot move version controlled file that is deleted on server. Please get latest changes from server");
                 return AssetMoveResult.FailedMove;
             }
-            else if (asset.IsState(Asset.States.CheckedOutRemote))
+            else if (Asset.IsState(assetState, Asset.States.CheckedOutRemote))
             {
                 Debug.LogError("Cannot move version controlled file that is checked out on server. Please get latest changes from server");
                 return AssetMoveResult.FailedMove;
             }
-            else if (asset.IsState(Asset.States.LockedRemote))
+            else if (Asset.IsState(assetState, Asset.States.LockedRemote))
             {
                 Debug.LogError("Cannot move version controlled file that is locked on server. Please get latest changes from server");
                 return AssetMoveResult.FailedMove;

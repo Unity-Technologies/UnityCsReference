@@ -94,6 +94,8 @@ namespace UnityEngine.Networking
         [NativeMethod(IsThreadSafe = true)]
         [NativeConditional("ENABLE_UNITYWEBREQUEST")]
         private extern static string GetWebErrorString(UnityWebRequestError err);
+        [VisibleToOtherModules]
+        internal extern static string GetHTTPStatusString(long responseCode);
 
         public bool disposeCertificateHandlerOnDispose { get; set; }
 
@@ -101,6 +103,26 @@ namespace UnityEngine.Networking
 
         public bool disposeUploadHandlerOnDispose { get; set; }
 
+        public static void ClearCookieCache()
+        {
+            ClearCookieCache(null, null);
+        }
+
+        public static void ClearCookieCache(Uri uri)
+        {
+            if (uri == null)
+                ClearCookieCache(null, null);
+            else
+            {
+                string domain = uri.Host;
+                string path = uri.AbsolutePath;
+                if (path == "/")
+                    path = null;
+                ClearCookieCache(domain, path);
+            }
+        }
+
+        private static extern void ClearCookieCache(string domain, string path);
 
         internal extern static IntPtr Create();
 
@@ -324,7 +346,15 @@ namespace UnityEngine.Networking
                 if (!(isNetworkError || isHttpError))
                     return null;
 
-                return UnityWebRequest.GetWebErrorString(GetError());
+                if (isHttpError)
+                {
+                    string status = UnityWebRequest.GetHTTPStatusString(responseCode);
+                    return string.Format("HTTP/1.1 {0} {1}", responseCode, status);
+                }
+                else
+                {
+                    return UnityWebRequest.GetWebErrorString(GetError());
+                }
             }
         }
 
@@ -550,7 +580,6 @@ namespace UnityEngine.Networking
                 m_CertificateHandler = value;
             }
         }
-
         private extern int GetTimeoutMsec();
         private extern UnityWebRequestError SetTimeoutMsec(int timeout);
 

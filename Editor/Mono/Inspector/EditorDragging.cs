@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Linq;
-using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 
@@ -45,8 +43,7 @@ namespace UnityEditor
             if (contentRect.height == 0f)
                 contentRect = dragRect;
 
-            var targetHeight = 8f;
-            var targetRect = new Rect(contentRect.x, contentRect.yMax - (targetHeight - 2f), contentRect.width, targetHeight * 2f + 1f);
+            var targetRect = GetTargetRect(contentRect);
 
             var markerY = contentRect.yMax;
 
@@ -158,6 +155,7 @@ namespace UnityEditor
                     }
                     else
                         m_TargetIndex = -1;
+
                     break;
 
                 case EventType.DragPerform:
@@ -238,14 +236,26 @@ namespace UnityEditor
                 case EventType.Repaint:
                     if (m_TargetIndex != -1 && targetRect.Contains(evt.mousePosition))
                     {
-                        var markerRect = new Rect(targetRect.x, markerY, targetRect.width, 3f);
-                        if (!m_TargetAbove)
-                            markerRect.y += 2f;
-
-                        Styles.insertionMarker.Draw(markerRect, false, false, false, false);
+                        Styles.insertionMarker.Draw(GetMarkerRect(targetRect, markerY, m_TargetAbove), false, false, false, false);
                     }
                     break;
             }
+        }
+
+        private static Rect GetTargetRect(Rect contentRect)
+        {
+            var targetHeight = 8f;
+            var yPos = contentRect.yMax - targetHeight * .75f;
+            return new Rect(contentRect.x, yPos, contentRect.width, targetHeight * 2f + 1f);
+        }
+
+        private static Rect GetMarkerRect(Rect targetRect, float markerY, bool targetAbove)
+        {
+            var markerRect = new Rect(targetRect.x, markerY, targetRect.width, 3f);
+            if (!targetAbove)
+                markerRect.y += 2f;
+
+            return markerRect;
         }
 
         bool MoveOrCopyComponents(Component[] sourceComponents, Component[] targetComponents, bool copy, bool validateOnly)

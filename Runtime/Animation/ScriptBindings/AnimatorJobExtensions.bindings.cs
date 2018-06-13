@@ -6,6 +6,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Playables;
+using UnityEngine.Internal;
 
 namespace UnityEngine.Experimental.Animations
 {
@@ -25,8 +26,13 @@ namespace UnityEngine.Experimental.Animations
 
         public static PropertyStreamHandle BindStreamProperty(this Animator animator, Transform transform, Type type, string property)
         {
+            return BindStreamProperty(animator, transform, type, property, false);
+        }
+
+        public static PropertyStreamHandle BindStreamProperty(this Animator animator, Transform transform, Type type, string property, [DefaultValue("false")] bool isObjectReference)
+        {
             PropertyStreamHandle propertyStreamHandle = new PropertyStreamHandle();
-            InternalBindStreamProperty(animator, transform, type, property, out propertyStreamHandle);
+            InternalBindStreamProperty(animator, transform, type, property, isObjectReference, out propertyStreamHandle);
             return propertyStreamHandle;
         }
 
@@ -39,8 +45,13 @@ namespace UnityEngine.Experimental.Animations
 
         public static PropertySceneHandle BindSceneProperty(this Animator animator, Transform transform, Type type, string property)
         {
+            return BindSceneProperty(animator, transform, type, property, false);
+        }
+
+        public static PropertySceneHandle BindSceneProperty(this Animator animator, Transform transform, Type type, string property, [DefaultValue("false")] bool isObjectReference)
+        {
             PropertySceneHandle propertySceneHandle = new PropertySceneHandle();
-            InternalBindSceneProperty(animator, transform, type, property, out propertySceneHandle);
+            InternalBindSceneProperty(animator, transform, type, property, isObjectReference, out propertySceneHandle);
             return propertySceneHandle;
         }
 
@@ -66,11 +77,11 @@ namespace UnityEngine.Experimental.Animations
 
         extern private static void InternalBindStreamTransform([NotNull] Animator animator, [NotNull] Transform transform, out TransformStreamHandle transformStreamHandle);
 
-        extern private static void InternalBindStreamProperty([NotNull] Animator animator, [NotNull] Transform transform, [NotNull] Type type, [NotNull] string property, out PropertyStreamHandle propertyStreamHandle);
+        extern private static void InternalBindStreamProperty([NotNull] Animator animator, [NotNull] Transform transform, [NotNull] Type type, [NotNull] string property, bool isObjectReference, out PropertyStreamHandle propertyStreamHandle);
 
         extern private static void InternalBindSceneTransform([NotNull] Animator animator, [NotNull] Transform transform, out TransformSceneHandle transformSceneHandle);
 
-        extern private static void InternalBindSceneProperty([NotNull] Animator animator, [NotNull] Transform transform, [NotNull] Type type, [NotNull] string property, out PropertySceneHandle propertySceneHandle);
+        extern private static void InternalBindSceneProperty([NotNull] Animator animator, [NotNull] Transform transform, [NotNull] Type type, [NotNull] string property, bool isObjectReference, out PropertySceneHandle propertySceneHandle);
 
         extern private static bool InternalOpenAnimationStream([NotNull] Animator animator, ref AnimationStream stream);
 

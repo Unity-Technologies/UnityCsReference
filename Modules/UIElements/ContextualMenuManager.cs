@@ -10,21 +10,13 @@ namespace UnityEngine.Experimental.UIElements
 
         public void DisplayMenu(EventBase triggerEvent, IEventHandler target)
         {
-            bool doDisplay;
             ContextualMenu menu = new ContextualMenu();
-            using (ContextualMenuPopulateEvent cme = ContextualMenuPopulateEvent.GetPooled(triggerEvent, menu, target))
+            using (ContextualMenuPopulateEvent cme = ContextualMenuPopulateEvent.GetPooled(triggerEvent, menu, target, this))
             {
                 UIElementsUtility.eventDispatcher.DispatchEvent(cme, null);
-                doDisplay = cme.isDefaultPrevented == false;
-            }
-
-            if (doDisplay)
-            {
-                menu.PrepareForDisplay(triggerEvent);
-                DoDisplayMenu(menu, triggerEvent);
             }
         }
 
-        protected abstract void DoDisplayMenu(ContextualMenu menu, EventBase triggerEvent);
+        protected internal abstract void DoDisplayMenu(ContextualMenu menu, EventBase triggerEvent);
     }
 }

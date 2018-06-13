@@ -56,6 +56,7 @@ namespace UnityEditor
             else
                 // If for reasons we cannot determine the sides of the polygon, fall back to 0 (Square)
                 polygonSides = 0;
+            ViewUpdateSideCountField();
         }
 
         public int GetPolygonSideCount()
@@ -91,6 +92,25 @@ namespace UnityEditor
                 spriteEditor.SetDataModified();
             }
             Repaint();
+        }
+
+        public override bool ApplyRevert(bool apply)
+        {
+            var outlineProvider = spriteEditor.GetDataProvider<ISpriteOutlineDataProvider>();
+            if (apply)
+            {
+                for (int i = 0; i < m_RectsCache.spriteRects.Count && i < m_Outline.Count; ++i)
+                    outlineProvider.SetOutlines(m_RectsCache.spriteRects[i].spriteID, m_Outline[i]);
+            }
+            else
+            {
+                m_Outline.Clear();
+                for (int i = 0; i < m_RectsCache.spriteRects.Count; ++i)
+                    m_Outline.Add(outlineProvider.GetOutlines(m_RectsCache.spriteRects[i].spriteID));
+                DeterminePolygonSides();
+                ViewUpdateSideCountField();
+            }
+            return base.ApplyRevert(apply);
         }
     }
 }

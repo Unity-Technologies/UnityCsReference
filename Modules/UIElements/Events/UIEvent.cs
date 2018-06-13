@@ -18,7 +18,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.Capturable | EventFlags.Cancellable;
+            flags = EventFlags.Bubbles | EventFlags.TricklesDown | EventFlags.Cancellable;
         }
 
         public IMGUIEvent()

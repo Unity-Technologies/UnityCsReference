@@ -8,7 +8,7 @@ namespace UnityEngine.Experimental.UIElements
 {
     public interface IUxmlAttributes
     {
-        // TODO 2018.3 [Obsolete("Use GetPropertyString(string propertyName, string defaultValue)")]
+        [Obsolete("Use GetPropertyString(string propertyName, string defaultValue)")]
         string GetPropertyString(string propertyName);
         string GetPropertyString(string propertyName, string defaultValue);
         float GetPropertyFloat(string propertyName, float defaultValue);

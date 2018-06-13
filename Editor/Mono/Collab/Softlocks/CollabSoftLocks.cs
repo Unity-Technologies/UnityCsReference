@@ -4,6 +4,7 @@
 
 
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Collaboration
@@ -11,15 +12,19 @@ namespace UnityEditor.Collaboration
     // Keep internal and undocumented until we expose more functionality
     //*undocumented
     [StructLayout(LayoutKind.Sequential)]
+    [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Editor/Src/Collab/Softlocks/CollabSoftLock.h",
+         IntermediateScriptingStructName = "ScriptingSoftLock")]
+    [NativeHeader("Editor/Src/Collab/Collab.bindings.h")]
+    [NativeAsStruct]
     internal class SoftLock
     {
-        private string m_UserID;
-        private string m_MachineID;
-        private string m_DisplayName;
-        private ulong m_TimeStamp;
-        private string m_Hash;
+        string m_UserID;
+        string m_MachineID;
+        string m_DisplayName;
+        ulong m_TimeStamp;
+        string m_Hash;
 
-        private SoftLock() {}
+        SoftLock() {}
 
         public string userID { get { return m_UserID;  } }
         public string machineID { get { return m_MachineID;  } }

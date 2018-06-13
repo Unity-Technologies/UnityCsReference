@@ -83,6 +83,18 @@ namespace UnityEngine
         }
     }
 
+    // Attribute used to make a float or int variable in a script be restricted to a specific minimum value.
+    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public sealed class MinAttribute : PropertyAttribute
+    {
+        public readonly float min;
+
+        // Attribute used to make a float or int variable in a script be restricted to a specific minimum value.
+        public MinAttribute(float min)
+        {
+            this.min = min;
+        }
+    }
 
     // Attribute to make a string be edited with a multi-line textfield
     [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]

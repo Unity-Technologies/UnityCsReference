@@ -1215,7 +1215,9 @@ namespace UnityEditor
     internal class EyeDropper : GUIView
     {
         const int kPixelSize = 10;
-        const int kDummyWindowSize = 8192;
+        // Can't be larger right now since OSX Metal surfaces can't be larger than 16384 pixels.
+        // This needs to be changed to a larger size since it will miss mouse events when using multiple 4K monitors
+        private const int kDummyWindowSize = 8192;
         internal static Color s_LastPickedColor;
         GUIView m_DelegateView;
         Texture2D m_Preview;
@@ -1277,7 +1279,7 @@ namespace UnityEditor
 
         public static Color GetPickedColor()
         {
-            return InternalEditorUtility.ReadScreenPixel(s_PickCoordinates, 1, 1)[0];
+            return InternalEditorUtility.ReadScreenPixelUnderCursor(s_PickCoordinates, 1, 1)[0];
         }
 
         public static Color GetLastPickedColor()
@@ -1312,7 +1314,7 @@ namespace UnityEditor
 
             Vector2 p = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
             Vector2 mPos = p - new Vector2((width / 2), (height / 2));
-            preview.SetPixels(InternalEditorUtility.ReadScreenPixel(mPos, width, height), 0);
+            preview.SetPixels(InternalEditorUtility.ReadScreenPixelUnderCursor(p, width, height), 0);
             preview.Apply(true);
 
             Graphics.DrawTexture(position, preview);
@@ -1348,6 +1350,7 @@ namespace UnityEditor
             {
                 case EventType.MouseMove:
                     s_PickCoordinates = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+
                     StealMouseCapture();
                     SendEvent(EventCommandNames.EyeDropperUpdate, true, false);
                     break;
@@ -1355,6 +1358,7 @@ namespace UnityEditor
                     if (Event.current.button == 0)
                     {
                         s_PickCoordinates = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
+
                         // We have to close helper window before we read color from screen. On Win
                         // the window covers whole desktop (see Show()) and is black with 0x01 alpha value.
                         // That might cause invalid picked color.

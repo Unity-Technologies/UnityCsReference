@@ -3,54 +3,24 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class BoundsField : BaseValueField<Bounds>
+    public class BoundsField : BaseField<Bounds>
     {
-        public class BoundsFieldFactory : UxmlFactory<BoundsField, BoundsFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<BoundsField, UxmlTraits> {}
 
-        public class BoundsFieldUxmlTraits : BaseValueFieldUxmlTraits
+        public new class UxmlTraits : BaseField<Bounds>.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_CenterXValue;
-            UxmlFloatAttributeDescription m_CenterYValue;
-            UxmlFloatAttributeDescription m_CenterZValue;
+            UxmlFloatAttributeDescription m_CenterXValue = new UxmlFloatAttributeDescription { name = "cx" };
+            UxmlFloatAttributeDescription m_CenterYValue = new UxmlFloatAttributeDescription { name = "cy" };
+            UxmlFloatAttributeDescription m_CenterZValue = new UxmlFloatAttributeDescription { name = "cz" };
 
-            UxmlFloatAttributeDescription m_ExtentsXValue;
-            UxmlFloatAttributeDescription m_ExtentsYValue;
-            UxmlFloatAttributeDescription m_ExtentsZValue;
-
-            public BoundsFieldUxmlTraits()
-            {
-                m_CenterXValue = new UxmlFloatAttributeDescription { name = "cx" };
-                m_CenterYValue = new UxmlFloatAttributeDescription { name = "cy" };
-                m_CenterZValue = new UxmlFloatAttributeDescription { name = "cz" };
-
-                m_ExtentsXValue = new UxmlFloatAttributeDescription { name = "ex" };
-                m_ExtentsYValue = new UxmlFloatAttributeDescription { name = "ey" };
-                m_ExtentsZValue = new UxmlFloatAttributeDescription { name = "ez" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_CenterXValue;
-                    yield return m_CenterYValue;
-                    yield return m_CenterZValue;
-                    yield return m_ExtentsXValue;
-                    yield return m_ExtentsYValue;
-                    yield return m_ExtentsZValue;
-                }
-            }
+            UxmlFloatAttributeDescription m_ExtentsXValue = new UxmlFloatAttributeDescription { name = "ex" };
+            UxmlFloatAttributeDescription m_ExtentsYValue = new UxmlFloatAttributeDescription { name = "ey" };
+            UxmlFloatAttributeDescription m_ExtentsZValue = new UxmlFloatAttributeDescription { name = "ez" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -74,7 +44,7 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     Bounds current = value;
                     current.center = e.newValue;
-                    SetValueAndNotify(current);
+                    value = current;
                 });
 
             var centerGroup = new VisualElement();
@@ -89,7 +59,7 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     Bounds current = value;
                     current.extents = e.newValue;
-                    SetValueAndNotify(current);
+                    value = current;
                 });
 
             var extentsGroup = new VisualElement();
@@ -99,10 +69,16 @@ namespace UnityEditor.Experimental.UIElements
             this.shadow.Add(extentsGroup);
         }
 
-        protected override void UpdateDisplay()
+        public override Bounds value
         {
-            m_CenterField.value = m_Value.center;
-            m_ExtentsField.value = m_Value.extents;
+            get { return base.value; }
+            set
+            {
+                base.value = value;
+
+                m_CenterField.SetValueWithoutNotify(m_Value.center);
+                m_ExtentsField.SetValueWithoutNotify(m_Value.extents);
+            }
         }
     }
 }

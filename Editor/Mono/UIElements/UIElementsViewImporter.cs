@@ -17,7 +17,8 @@ using StyleSheet = UnityEngine.StyleSheets.StyleSheet;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    [ScriptedImporter(3, "uxml", 0)]
+    // Make sure UXML is imported after assets than can be addressed in USS
+    [ScriptedImporter(version: 4, ext: "uxml", importQueueOffset: 1000)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
         [MenuItem("Assets/Create/UIElements View")]
@@ -59,13 +60,14 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     xmlnsList += "    xmlns:" + prefix.Value + "=\"" + prefix.Key + "\"\n";
                 }
-                schemaLocationList += "                        " + prefix.Key + " " + schemaDirectory + "/" + UxmlSchemaGenerator.GetFileNameForNamespace(prefix.Key) + "\n";
+                schemaLocationList += "                        " + prefix.Key + " " + schemaDirectory + "/" +
+                    UxmlSchemaGenerator.GetFileNameForNamespace(prefix.Key) + "\n";
             }
 
             // The noNamespaceSchemaLocation attribute should be sufficient to reference all namespaces
             // but Rider does not support it very well, so we add schemaLocation to make it happy.
             string xmlTemplate = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<engine:" + k_RootNode + @"
+<engine:" + UXMLImporterImpl.k_RootNode + @"
     xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
 " + xmlnsList + @"
     xsi:noNamespaceSchemaLocation=""" + schemaDirectory + @"/UIElements.xsd""
@@ -73,11 +75,31 @@ namespace UnityEditor.Experimental.UIElements
 " + schemaLocationList + @"""
 >
   <engine:Label text=""Hello World!"" />
-</engine:" + k_RootNode + ">";
+</engine:" + UXMLImporterImpl.k_RootNode + ">";
 
-            ProjectWindowUtil.CreateAssetWithContent("New UIElements View.uxml", xmlTemplate, EditorGUIUtility.FindTexture(typeof(VisualTreeAsset)));
+            ProjectWindowUtil.CreateAssetWithContent("New UIElements View.uxml", xmlTemplate,
+                EditorGUIUtility.FindTexture(typeof(VisualTreeAsset)));
         }
 
+        public override void OnImportAsset(AssetImportContext args)
+        {
+            VisualTreeAsset vta;
+
+            var importer = new UXMLImporterImpl(args);
+
+            importer.Import(out vta);
+            args.AddObjectToAsset("tree", vta);
+            args.SetMainObject(vta);
+
+            if (!vta.inlineSheet)
+                vta.inlineSheet = ScriptableObject.CreateInstance<StyleSheet>();
+
+            args.AddObjectToAsset("inlineStyle", vta.inlineSheet);
+        }
+    }
+
+    class UXMLImporterImpl : StyleValueImporter
+    {
         internal struct Error
         {
             public readonly Level level;
@@ -94,7 +116,8 @@ namespace UnityEditor.Experimental.UIElements
                 Fatal,
             }
 
-            public Error(ImportErrorType error, ImportErrorCode code, object context, Level level, string filePath, IXmlLineInfo xmlLineInfo)
+            public Error(ImportErrorType error, ImportErrorCode code, object context, Level level, string filePath,
+                         IXmlLineInfo xmlLineInfo)
             {
                 this.xmlLineInfo = xmlLineInfo;
                 this.error = error;
@@ -113,11 +136,14 @@ namespace UnityEditor.Experimental.UIElements
                     case ImportErrorCode.InvalidRootElement:
                         return "Expected the XML Root element name to be '" + k_RootNode + "', found '{0}'";
                     case ImportErrorCode.TemplateHasEmptyName:
-                        return "'" + k_TemplateNode + "' declaration requires a non-empty '" + k_TemplateNameAttr + "' attribute";
+                        return "'" + k_TemplateNode + "' declaration requires a non-empty '" + k_TemplateNameAttr +
+                            "' attribute";
                     case ImportErrorCode.TemplateInstanceHasEmptySource:
-                        return "'" + k_TemplateInstanceNode + "' declaration requires a non-empty '" + k_TemplateInstanceSourceAttr + "' attribute";
+                        return "'" + k_TemplateInstanceNode + "' declaration requires a non-empty '" +
+                            k_TemplateInstanceSourceAttr + "' attribute";
                     case ImportErrorCode.MissingPathAttributeOnTemplate:
-                        return "'" + k_TemplateNode + "' declaration requires a '" + k_TemplatePathAttr + "' attribute referencing another uxml file";
+                        return "'" + k_TemplateNode + "' declaration requires a '" + k_TemplatePathAttr +
+                            "' attribute referencing another uxml file";
                     case ImportErrorCode.DuplicateTemplateName:
                         return "Duplicate name '{0}'";
                     case ImportErrorCode.UnknownTemplate:
@@ -148,8 +174,11 @@ namespace UnityEditor.Experimental.UIElements
             public override string ToString()
             {
                 string message = ErrorMessage(code);
-                string lineInfo = xmlLineInfo == null ? "" : string.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
-                return string.Format("{0}{1}: {2} - {3}", filePath, lineInfo, error, string.Format(message, context == null ? "<null>" : context.ToString()));
+                string lineInfo = xmlLineInfo == null
+                    ? ""
+                    : string.Format(" ({0},{1})", xmlLineInfo.LineNumber, xmlLineInfo.LinePosition);
+                return string.Format("{0}{1}: {2} - {3}", filePath, lineInfo, error,
+                    string.Format(message, context == null ? "<null>" : context.ToString()));
             }
         }
 
@@ -158,7 +187,8 @@ namespace UnityEditor.Experimental.UIElements
             protected List<Error> m_Errors = new List<Error>();
             protected string m_Path;
 
-            internal virtual void LogError(ImportErrorType error, ImportErrorCode code, object context, Error.Level level, IXmlLineInfo xmlLineInfo)
+            internal virtual void LogError(ImportErrorType error, ImportErrorCode code, object context,
+                Error.Level level, IXmlLineInfo xmlLineInfo)
             {
                 m_Errors.Add(new Error(error, code, context, level, m_Path, xmlLineInfo));
             }
@@ -224,7 +254,7 @@ namespace UnityEditor.Experimental.UIElements
         }
 
         const StringComparison k_Comparison = StringComparison.InvariantCulture;
-        const string k_RootNode = "UXML";
+        public const string k_RootNode = "UXML";
         const string k_TemplateNode = "Template";
         const string k_TemplateNameAttr = "name";
         const string k_TemplatePathAttr = "path";
@@ -235,24 +265,21 @@ namespace UnityEditor.Experimental.UIElements
         const string k_SlotDefinitionAttr = "slot-name";
         const string k_SlotUsageAttr = "slot";
 
-        internal static DefaultLogger logger = new DefaultLogger();
-
-        public override void OnImportAsset(AssetImportContext args)
+        public UXMLImporterImpl(AssetImportContext context) : base(context)
         {
-            logger.BeginImport(args.assetPath);
-            VisualTreeAsset vta;
-            ImportXml(args.assetPath, out vta);
-
-            args.AddObjectToAsset("tree", vta);
-            args.SetMainObject(vta);
-
-            if (!vta.inlineSheet)
-                vta.inlineSheet = ScriptableObject.CreateInstance<StyleSheet>();
-
-            args.AddObjectToAsset("inlineStyle", vta.inlineSheet);
         }
 
-        internal static void ImportXml(string xmlPath, out VisualTreeAsset vta)
+        public void Import(out VisualTreeAsset asset)
+        {
+            // TODO where is the EndImport matching this?
+            logger.BeginImport(assetPath);
+            ImportXml(assetPath, out asset);
+        }
+
+        // This variable is overriden during editor tests
+        internal static DefaultLogger logger = new DefaultLogger();
+
+        void ImportXml(string xmlPath, out VisualTreeAsset vta)
         {
             vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
             vta.visualElementAssets = new List<VisualElementAsset>();
@@ -270,16 +297,15 @@ namespace UnityEditor.Experimental.UIElements
                 return;
             }
 
-            StyleSheetBuilder ssb = new StyleSheetBuilder();
-            LoadXmlRoot(doc, vta, ssb);
+            LoadXmlRoot(doc, vta);
 
             StyleSheet inlineSheet = ScriptableObject.CreateInstance<StyleSheet>();
             inlineSheet.name = "inlineStyle";
-            ssb.BuildTo(inlineSheet);
+            m_Builder.BuildTo(inlineSheet);
             vta.inlineSheet = inlineSheet;
         }
 
-        private static void LoadXmlRoot(XDocument doc, VisualTreeAsset vta, StyleSheetBuilder ssb)
+        void LoadXmlRoot(XDocument doc, VisualTreeAsset vta)
         {
             XElement elt = doc.Root;
             if (!string.Equals(elt.Name.LocalName, k_RootNode, k_Comparison))
@@ -300,13 +326,13 @@ namespace UnityEditor.Experimental.UIElements
                         LoadTemplateNode(vta, elt, child);
                         break;
                     default:
-                        LoadXml(child, null, vta, ssb);
+                        LoadXml(child, null, vta);
                         continue;
                 }
             }
         }
 
-        private static void LoadTemplateNode(VisualTreeAsset vta, XElement elt, XElement child)
+        void LoadTemplateNode(VisualTreeAsset vta, XElement elt, XElement child)
         {
             bool hasPath = false;
             string name = null;
@@ -370,7 +396,7 @@ namespace UnityEditor.Experimental.UIElements
             vta.RegisterTemplate(name, path);
         }
 
-        private static void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta, StyleSheetBuilder ssb)
+        void LoadXml(XElement elt, VisualElementAsset parent, VisualTreeAsset vta)
         {
             VisualElementAsset vea = ResolveType(elt, vta);
             if (vea == null)
@@ -385,12 +411,12 @@ namespace UnityEditor.Experimental.UIElements
             vea.parentId = parentId;
             vea.id = id;
 
-            bool startedRule = ParseAttributes(elt, vea, ssb, vta, parent);
+            bool startedRule = ParseAttributes(elt, vea, vta, parent);
 
             // each vea will creates 0 or 1 style rule, with one or more properties
             // they don't have selectors and are directly referenced by index
             // it's then applied during tree cloning
-            vea.ruleIndex = startedRule ? ssb.EndRule() : -1;
+            vea.ruleIndex = startedRule ? m_Builder.EndRule() : -1;
             if (vea is TemplateAsset)
                 vta.templateAssets.Add((TemplateAsset)vea);
             else
@@ -403,12 +429,12 @@ namespace UnityEditor.Experimental.UIElements
                     if (child.Name.LocalName == k_StyleReferenceNode)
                         LoadStyleReferenceNode(vea, child);
                     else
-                        LoadXml(child, vea, vta, ssb);
+                        LoadXml(child, vea, vta);
                 }
             }
         }
 
-        private static void LoadStyleReferenceNode(VisualElementAsset vea, XElement styleElt)
+        void LoadStyleReferenceNode(VisualElementAsset vea, XElement styleElt)
         {
             XAttribute pathAttr = styleElt.Attribute(k_StylePathAttr);
             if (pathAttr == null || String.IsNullOrEmpty(pathAttr.Value))
@@ -419,7 +445,7 @@ namespace UnityEditor.Experimental.UIElements
             vea.stylesheets.Add(pathAttr.Value);
         }
 
-        private static VisualElementAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
+        VisualElementAsset ResolveType(XElement elt, VisualTreeAsset visualTreeAsset)
         {
             VisualElementAsset vea = null;
 
@@ -449,8 +475,7 @@ namespace UnityEditor.Experimental.UIElements
                     ? elt.Name.LocalName
                     : elt.Name.NamespaceName + "." + elt.Name.LocalName;
 
-                // HACK: wait for Theo's PR OR go with that
-                if (fullName == "UnityEngine.Experimental.UIElements.VisualContainer")
+                if (fullName == typeof(VisualContainer).FullName)
                 {
                     Debug.LogWarning("VisualContainer is obsolete, use VisualElement now");
                     fullName = typeof(VisualElement).FullName;
@@ -462,7 +487,7 @@ namespace UnityEditor.Experimental.UIElements
             return vea;
         }
 
-        private static bool ParseAttributes(XElement elt, VisualElementAsset res, StyleSheetBuilder ssb, VisualTreeAsset vta, VisualElementAsset parent)
+        bool ParseAttributes(XElement elt, VisualElementAsset res, VisualTreeAsset vta, VisualElementAsset parent)
         {
             bool startedRule = false;
 
@@ -526,17 +551,16 @@ namespace UnityEditor.Experimental.UIElements
                                 xattr);
                             continue;
                         }
-                        ssb.BeginRule(-1);
+                        m_Builder.BeginRule(-1);
                         startedRule = true;
-                        StyleSheetImportErrors errors = new StyleSheetImportErrors();
                         foreach (Property prop in parsed.StyleRules[0].Declarations)
                         {
-                            ssb.BeginProperty(prop.Name);
-                            StyleSheetImporterImpl.VisitValue(errors, ssb, prop.Term);
-                            ssb.EndProperty();
+                            m_Builder.BeginProperty(prop.Name);
+                            VisitValue(prop.Term);
+                            m_Builder.EndProperty();
                         }
 
-                        // Don't call ssb.EndRule() here, it's done in LoadXml to get the rule index at the same time !
+                        // Don't call m_Builder.EndRule() here, it's done in LoadXml to get the rule index at the same time !
                         continue;
                 }
 
@@ -569,17 +593,6 @@ namespace UnityEditor.Experimental.UIElements
     internal enum ImportErrorType
     {
         Syntax,
-        Semantic,
-        Other,
-        Internal,
-    }
-
-    static class XmlExtensions
-    {
-        public static string AttributeValue(this XElement elt, string attributeName)
-        {
-            var attr = elt.Attribute(attributeName);
-            return attr == null ? null : attr.Value;
-        }
+        Semantic
     }
 }

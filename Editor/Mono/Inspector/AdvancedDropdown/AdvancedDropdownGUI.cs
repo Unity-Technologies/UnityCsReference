@@ -3,40 +3,69 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 using UnityEngine;
 using Event = UnityEngine.Event;
 
-namespace UnityEditor
+namespace UnityEditor.AdvancedDropdown
 {
     internal class AdvancedDropdownGUI
     {
-        protected static class Styles
+        private static class Styles
         {
+            public static GUIStyle itemStyle = new GUIStyle("PR Label");
             public static GUIStyle header = new GUIStyle(EditorStyles.inspectorBig);
-            public static GUIStyle rightArrow = "AC RightArrow";
-            public static GUIStyle leftArrow = "AC LeftArrow";
+            public static GUIStyle headerArrow = new GUIStyle();
+            public static GUIStyle checkMark = new GUIStyle("PR Label");
             public static GUIStyle lineSeparator = new GUIStyle();
+
+            public static GUIContent checkMarkContent = new GUIContent("✔");
+            public static GUIContent arrowRightContent = new GUIContent("▸");
+            public static GUIContent arrowLeftContent = new GUIContent("◂");
 
             static Styles()
             {
+                itemStyle.alignment = TextAnchor.MiddleLeft;
+                itemStyle.padding = new RectOffset(0, 0, 0, 0);
+                itemStyle.margin = new RectOffset(0, 0, 0, 0);
+                itemStyle.fixedHeight += 1;
+
                 header.font = EditorStyles.boldLabel.font;
                 header.margin = new RectOffset(0, 0, 0, 0);
+                header.border = new RectOffset(0, 0, 3, 3);
+                header.padding = new RectOffset(6, 6, 6, 6);
+                header.contentOffset = Vector2.zero;
+
+                headerArrow.alignment = TextAnchor.MiddleCenter;
+                headerArrow.fontSize = 20;
 
                 lineSeparator.fixedHeight = 1;
                 lineSeparator.margin.bottom = 2;
                 lineSeparator.margin.top = 2;
+
+                checkMark.alignment = TextAnchor.MiddleCenter;
+                checkMark.padding = new RectOffset(0, 0, 0, 0);
+                checkMark.margin = new RectOffset(0, 0, 0, 0);
+                checkMark.fixedHeight += 1;
             }
         }
 
-        protected Rect m_SearchRect;
-        public virtual float HeaderHeight => m_SearchRect.height;
-
-        private const int kWindowHeight = 395 - 80;
-        public virtual float WindowHeight => kWindowHeight;
-
         //This should ideally match line height
         private Vector2 s_IconSize = new Vector2(13, 13);
+        private AdvancedDropdownDataSource m_DataSource;
+
+        protected Rect m_SearchRect;
+        protected Rect m_HeaderRect;
+
+        public virtual float searchHeight => m_SearchRect.height;
+        public virtual float headerHeight => m_HeaderRect.height;
+        public virtual GUIStyle lineStyle => Styles.itemStyle;
         public virtual Vector2 iconSize => s_IconSize;
+
+        public AdvancedDropdownGUI(AdvancedDropdownDataSource dataSource)
+        {
+            m_DataSource = dataSource;
+        }
 
         public virtual void DrawItem(AdvancedDropdownItem item, bool selected, bool hasSearch)
         {
@@ -47,24 +76,44 @@ namespace UnityEditor
             }
 
             var content = !hasSearch ? item.content : item.contentWhenSearching;
-            var rect = GUILayoutUtility.GetRect(content, item.lineStyle, GUILayout.ExpandWidth(true));
+            var imgTemp = content.image;
+            //we need to pretend we have an icon to calculate proper width in case
+            if (content.image == null)
+                content.image = Texture2D.whiteTexture;
+            var rect = GUILayoutUtility.GetRect(content, lineStyle, GUILayout.ExpandWidth(true));
+            content.image = imgTemp;
+
             if (item.IsSeparator() || Event.current.type != EventType.Repaint)
                 return;
 
-            if (content.image == null)
+            var imageTemp = content.image;
+            if (m_DataSource.selectedIds.Any() && m_DataSource.selectedIds.Contains(item.id))
             {
-                item.lineStyle.Draw(rect, GUIContent.none, false, false, selected, selected);
-                rect.x += iconSize.x;
-                rect.width -= iconSize.x;
+                var checkMarkRect = new Rect(rect);
+                checkMarkRect.width = iconSize.x + 1;
+                Styles.checkMark.Draw(checkMarkRect, Styles.checkMarkContent, false, false, selected, selected);
+                rect.x += iconSize.x + 1;
+                rect.width -= iconSize.x + 1;
+
+                //don't draw the icon if the check mark is present
+                content.image = null;
             }
-            item.lineStyle.Draw(rect, content, false, false, selected, selected);
+            else if (content.image == null)
+            {
+                lineStyle.Draw(rect, GUIContent.none, false, false, selected, selected);
+                rect.x += iconSize.x + 1;
+                rect.width -= iconSize.x + 1;
+            }
+            EditorGUI.BeginDisabled(!item.enabled);
+            lineStyle.Draw(rect, content, false, false, selected, selected);
+            content.image = imageTemp;
             if (item.drawArrow)
             {
-                var size = Styles.rightArrow.lineHeight;
-                var yOffset = item.lineStyle.fixedHeight / 2 - size / 2;
-                Rect arrowRect = new Rect(rect.x + rect.width - size, rect.y + yOffset, size, size);
-                Styles.rightArrow.Draw(arrowRect, false, false, false, false);
+                var size = lineStyle.lineHeight;
+                Rect arrowRect = new Rect(rect.x + rect.width - size, rect.y, size, size);
+                lineStyle.Draw(arrowRect, Styles.arrowRightContent, false, false, false, false);
             }
+            EditorGUI.EndDisabled();
         }
 
         protected virtual void DrawLineSeparator()
@@ -72,26 +121,29 @@ namespace UnityEditor
             var rect = GUILayoutUtility.GetRect(GUIContent.none, Styles.lineSeparator, GUILayout.ExpandWidth(true));
             if (Event.current.type != EventType.Repaint)
                 return;
-            EditorGUIUtility.DrawVerticalSplitter(rect);
+            Color orgColor = GUI.color;
+            Color tintColor = (EditorGUIUtility.isProSkin) ? new Color(0.12f, 0.12f, 0.12f, 1.333f) : new Color(0.6f, 0.6f, 0.6f, 1.333f);
+            GUI.color = GUI.color * tintColor;
+            GUI.DrawTexture(rect, EditorGUIUtility.whiteTexture);
+            GUI.color = orgColor;
         }
 
         public void DrawHeader(AdvancedDropdownItem group, Action backButtonPressed)
         {
-            var content = GUIContent.Temp(group.name);
-            var headerRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true));
+            var content = GUIContent.Temp(group.name, group.name);
+            m_HeaderRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true));
 
             if (Event.current.type == EventType.Repaint)
-                Styles.header.Draw(headerRect, content, false, false, false, false);
+                Styles.header.Draw(m_HeaderRect, content, false, false, false, false);
 
             // Back button
             if (group.parent != null)
             {
-                var arrowSize = 13;
-                var y = headerRect.y + (headerRect.height / 2 - arrowSize / 2);
-                var arrowRect = new Rect(headerRect.x + 4, y, arrowSize, arrowSize);
+                var arrowWidth = 13;
+                var arrowRect = new Rect(m_HeaderRect.x, m_HeaderRect.y, arrowWidth, m_HeaderRect.height);
                 if (Event.current.type == EventType.Repaint)
-                    Styles.leftArrow.Draw(arrowRect, false, false, false, false);
-                if (Event.current.type == EventType.MouseDown && headerRect.Contains(Event.current.mousePosition))
+                    Styles.headerArrow.Draw(arrowRect, Styles.arrowLeftContent, false, false, false, false);
+                if (Event.current.type == EventType.MouseDown && m_HeaderRect.Contains(Event.current.mousePosition))
                 {
                     backButtonPressed();
                     Event.current.Use();
@@ -123,29 +175,89 @@ namespace UnityEditor
         {
             var paddingX = 8f;
             var paddingY = 2f;
-            m_SearchRect = GUILayoutUtility.GetRect(0, 0);
-            m_SearchRect.x += paddingX;
-            m_SearchRect.y += paddingY;
-            m_SearchRect.height = EditorStyles.toolbarSearchField.fixedHeight + paddingY * 2;
-            // Adjust to the frame
-            m_SearchRect.y += 1;
-            m_SearchRect.height += 1;
-            m_SearchRect.width -= paddingX * 2;
-            var newSearch = EditorGUI.ToolbarSearchField(m_SearchRect, searchString, false);
-            return newSearch;
+            var rect = GUILayoutUtility.GetRect(0, 0, EditorStyles.toolbarSearchField);
+            rect.x += paddingX;
+            rect.y += paddingY + 1; // Add one for the border
+            rect.height += EditorStyles.toolbarSearchField.fixedHeight + paddingY * 3;
+            rect.width -= paddingX * 2;
+            m_SearchRect = rect;
+            searchString = EditorGUI.ToolbarSearchField(m_SearchRect, searchString, false);
+            return searchString;
         }
 
         public Rect GetAnimRect(Rect position, float anim)
         {
             // Calculate rect for animated area
             var rect = new Rect(position);
-            rect.x = position.width * anim;
-            rect.y = HeaderHeight;
-            rect.height -= HeaderHeight;
-            // Adjust to the frame
-            rect.x += 1;
-            rect.width -= 2;
+            rect.x = position.x + position.width * anim;
+            rect.y += searchHeight;
+            rect.height -= searchHeight;
             return rect;
+        }
+
+        public Vector2 CalculateContentSize(AdvancedDropdownDataSource dataSource)
+        {
+            float maxWidth = 0;
+            float maxHeight = 0;
+            bool includeArrow = false;
+            float arrowWidth = 0f;
+
+            foreach (var child in dataSource.mainTree.children)
+            {
+                var content = child.content;
+                var a = lineStyle.CalcSize(content);
+                a.x += iconSize.x + 1;
+
+                if (maxWidth < a.x)
+                {
+                    maxWidth = a.x + 1;
+                    includeArrow |= child.hasChildren;
+                }
+                if (child.IsSeparator())
+                {
+                    maxHeight += Styles.lineSeparator.CalcHeight(content, maxWidth) + Styles.lineSeparator.margin.vertical;
+                }
+                else
+                {
+                    maxHeight += lineStyle.CalcHeight(content, maxWidth);
+                }
+                if (arrowWidth == 0)
+                {
+                    lineStyle.CalcMinMaxWidth(Styles.arrowRightContent, out arrowWidth, out arrowWidth);
+                }
+            }
+            if (includeArrow)
+            {
+                maxWidth += arrowWidth;
+            }
+            return new Vector2(maxWidth, maxHeight);
+        }
+
+        public float GetSelectionHeight(AdvancedDropdownDataSource dataSource, Rect buttonRect)
+        {
+            if (dataSource.mainTree.selectedItem == -1)
+                return 0;
+            float heigth = 0;
+            for (int i = 0; i < dataSource.mainTree.children.Count; i++)
+            {
+                var child = dataSource.mainTree.children[i];
+                var content = child.content;
+
+                if (dataSource.mainTree.selectedItem == i)
+                {
+                    var diff = (lineStyle.CalcHeight(content, 0) - buttonRect.height) / 2f;
+                    return heigth + diff;
+                }
+                if (child.IsSeparator())
+                {
+                    heigth += Styles.lineSeparator.CalcHeight(content, 0) + Styles.lineSeparator.margin.vertical;
+                }
+                else
+                {
+                    heigth += lineStyle.CalcHeight(content, 0);
+                }
+            }
+            return heigth;
         }
     }
 }

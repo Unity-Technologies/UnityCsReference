@@ -17,24 +17,30 @@ namespace UnityEditor.Scripting.Compilers
     {
         public static void UpdateScripts(string responseFile, string sourceExtension)
         {
-            if (!ScriptUpdatingManager.WaitForVCSServerConnection(true))
+            if (!APIUpdaterManager.WaitForVCSServerConnection(true))
             {
                 return;
             }
 
-            var outputPath = Provider.enabled ? tempOutputPath : ".";
+            var tempOutputPath = "Library/Temp/ScriptUpdater/" + new System.Random().Next() + "/";
+
             RunUpdatingProgram(
                 "ScriptUpdater.exe",
                 sourceExtension
                 + " "
                 + CommandLineFormatter.PrepareFileName(MonoInstallationFinder.GetFrameWorksFolder())
                 + " "
-                + outputPath
+                + tempOutputPath
                 + " "
-                + responseFile);
+                + APIUpdaterManager.ConfigurationSourcesFilter
+                + " "
+                + "Library/Packages"
+                + " "
+                + responseFile,
+                tempOutputPath);
         }
 
-        private static void RunUpdatingProgram(string executable, string arguments)
+        private static void RunUpdatingProgram(string executable, string arguments, string tempOutputPath)
         {
             var scriptUpdater = EditorApplication.applicationContentsPath + "/Tools/ScriptUpdater/" + executable;
             var program = new ManagedProgram(MonoInstallationFinder.GetMonoInstallation("MonoBleedingEdge"), null, scriptUpdater, arguments, false, null);
@@ -44,19 +50,19 @@ namespace UnityEditor.Scripting.Compilers
 
             Console.WriteLine(string.Join(Environment.NewLine, program.GetStandardOutput()));
 
-            HandleUpdaterReturnValue(program);
+            HandleUpdaterReturnValue(program, tempOutputPath);
         }
 
-        private static void HandleUpdaterReturnValue(ManagedProgram program)
+        private static void HandleUpdaterReturnValue(ManagedProgram program, string tempOutputPath)
         {
             if (program.ExitCode == 0)
             {
                 Console.WriteLine(string.Join(Environment.NewLine, program.GetErrorOutput()));
-                UpdateFilesInVCIfNeeded();
+                CopyUpdatedFiles(tempOutputPath);
                 return;
             }
 
-            ScriptUpdatingManager.ReportExpectedUpdateFailure();
+            APIUpdaterManager.ReportExpectedUpdateFailure();
             if (program.ExitCode > 0)
                 ReportAPIUpdaterFailure(program.GetErrorOutput());
             else
@@ -71,16 +77,33 @@ namespace UnityEditor.Scripting.Compilers
         private static void ReportAPIUpdaterFailure(IEnumerable<string> errorOutput)
         {
             var msg = string.Format("APIUpdater encountered some issues and was not able to finish.{0}{1}", Environment.NewLine, errorOutput.Aggregate("", (acc, curr) => acc + Environment.NewLine + "\t" + curr));
-            ScriptUpdatingManager.ReportGroupedAPIUpdaterFailure(msg);
+            APIUpdaterManager.ReportGroupedAPIUpdaterFailure(msg);
         }
 
-        private static void UpdateFilesInVCIfNeeded()
+        private static void CopyUpdatedFiles(string tempOutputPath)
         {
-            if (!Provider.enabled)
+            if (!Directory.Exists(tempOutputPath))
                 return;
 
             var files = Directory.GetFiles(tempOutputPath, "*.*", SearchOption.AllDirectories);
 
+            if (Provider.enabled && !ValidateVCSFiles(files, tempOutputPath))
+                return;
+
+            foreach (var sourceFileName in files)
+            {
+                var destFileName = sourceFileName.Substring(tempOutputPath.Length);
+                File.Copy(sourceFileName,  destFileName, true);
+            }
+
+            var destRelativeFilePaths = files.Select(sourceFileName => sourceFileName.Substring(tempOutputPath.Length)).ToArray();
+            APIUpdaterManager.ReportUpdatedFiles(destRelativeFilePaths);
+
+            FileUtil.DeleteFileOrDirectory(tempOutputPath);
+        }
+
+        private static bool ValidateVCSFiles(IEnumerable<string> files, string tempOutputPath)
+        {
             var assetList = new AssetList();
             foreach (string f in files)
                 assetList.Add(Provider.GetAssetByPath(f.Replace(tempOutputPath, "")));
@@ -90,13 +113,15 @@ namespace UnityEditor.Scripting.Compilers
             // Provider.GetAssetByPath() can fail i.e. the asset database GUID can not be found for the input asset path
             foreach (var f in files)
             {
-                var assetPath = f.Replace(tempOutputPath, "");
+                var rawAssetPath = f.Replace(tempOutputPath, "");
+                // VCS assets path separator is '/' , file path might be '\' or '/'
+                var assetPath = (Path.DirectorySeparatorChar == '\\') ? rawAssetPath.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : rawAssetPath;
                 var foundAsset = assetList.Where(asset => (asset.path == assetPath));
                 if (!foundAsset.Any())
                 {
-                    Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to add file to list): {0}", assetPath);
-                    ScriptUpdatingManager.ReportExpectedUpdateFailure();
-                    return;
+                    Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to add file to list): {0}", rawAssetPath);
+                    APIUpdaterManager.ReportExpectedUpdateFailure();
+                    return false;
                 }
             }
 
@@ -112,8 +137,8 @@ namespace UnityEditor.Scripting.Compilers
             if (!checkoutTask.success || notEditable.Any())
             {
                 Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to check out): {0}", notEditable.Select(a => a.fullName + " (" + a.state + ")").Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
-                ScriptUpdatingManager.ReportExpectedUpdateFailure();
-                return;
+                APIUpdaterManager.ReportExpectedUpdateFailure();
+                return false;
             }
 
             // Verify that all the files we need to copy are now writable
@@ -122,20 +147,11 @@ namespace UnityEditor.Scripting.Compilers
             if (notEditable.Any())
             {
                 Debug.LogErrorFormat("[API Updater] Files cannot be updated (files not writable): {0}", notEditable.Select(a => a.fullName).Aggregate((acc, curr) => acc + Environment.NewLine + "\t" + curr));
-                ScriptUpdatingManager.ReportExpectedUpdateFailure();
-                return;
+                APIUpdaterManager.ReportExpectedUpdateFailure();
+                return false;
             }
 
-            // Copy the temp files to the destination : note this operates on "files"
-            // Earlier have verified a one-to-one correspondence between assetList and "files"
-            foreach (var sourceFileName in files)
-            {
-                var destFileName = sourceFileName.Replace(tempOutputPath, "");
-                File.Copy(sourceFileName,  destFileName, true);
-            }
-            FileUtil.DeleteFileOrDirectory(tempOutputPath);
+            return true;
         }
-
-        private const string tempOutputPath = "Temp/ScriptUpdater/";
     }
 }

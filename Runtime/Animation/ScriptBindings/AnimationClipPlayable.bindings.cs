@@ -98,14 +98,28 @@ namespace UnityEngine.Animations
             SetRemoveStartOffsetInternal(ref m_Handle, value);
         }
 
-        // Bindings methods.
+        [NativeThrows]
         extern private static bool CreateHandleInternal(PlayableGraph graph, AnimationClip clip, ref PlayableHandle handle);
+
+        [NativeThrows]
         extern private static AnimationClip GetAnimationClipInternal(ref PlayableHandle handle);
+
+        [NativeThrows]
         extern private static bool GetApplyFootIKInternal(ref PlayableHandle handle);
+
+        [NativeThrows]
         extern private static void SetApplyFootIKInternal(ref PlayableHandle handle, bool value);
+
+        [NativeThrows]
         extern private static bool GetApplyPlayableIKInternal(ref PlayableHandle handle);
+
+        [NativeThrows]
         extern private static void SetApplyPlayableIKInternal(ref PlayableHandle handle, bool value);
+
+        [NativeThrows]
         extern private static bool GetRemoveStartOffsetInternal(ref PlayableHandle handle);
+
+        [NativeThrows]
         extern private static void SetRemoveStartOffsetInternal(ref PlayableHandle handle, bool value);
     }
 }

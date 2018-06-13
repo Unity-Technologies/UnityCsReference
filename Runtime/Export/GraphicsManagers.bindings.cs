@@ -14,6 +14,7 @@ namespace UnityEngine
 {
     [NativeHeader("Runtime/Camera/RenderSettings.h")]
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
+    [NativeHeader("Runtime/Graphics/QualitySettingsTypes.h")]
     [StaticAccessor("GetRenderSettings()", StaticAccessorType.Dot)]
     public sealed partial class RenderSettings : Object
     {
@@ -65,8 +66,8 @@ namespace UnityEngine
         extern public static ShadowProjection shadowProjection      { get; set; }
         extern public static int              shadowCascades        { get; set; }
         extern public static float            shadowDistance        { get; set; }
-        extern public static ShadowResolution shadowResolution      { get; set; }
-        extern public static ShadowmaskMode   shadowmaskMode        { get; set; }
+        [NativeProperty("ShadowResolution")] extern public static ShadowResolution shadowResolution      { get; set; }
+        [NativeProperty("ShadowmaskMode")] extern public static ShadowmaskMode   shadowmaskMode        { get; set; }
         extern public static float            shadowNearPlaneOffset { get; set; }
         extern public static float            shadowCascade2Split   { get; set; }
         extern public static Vector3          shadowCascade4Split   { get; set; }

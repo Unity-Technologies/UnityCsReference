@@ -49,7 +49,7 @@ namespace UnityEngine.SceneManagement
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern public static Scene CreateScene([NotNull] string sceneName);
+        extern public static Scene CreateScene([NotNull] string sceneName, CreateSceneParameters parameters);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
@@ -61,7 +61,7 @@ namespace UnityEngine.SceneManagement
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern private static AsyncOperation LoadSceneAsyncNameIndexInternal(string sceneName, int sceneBuildIndex, bool isAdditive, bool mustCompleteNextFrame);
+        extern private static AsyncOperation LoadSceneAsyncNameIndexInternal(string sceneName, int sceneBuildIndex, LoadSceneParameters parameters, bool mustCompleteNextFrame);
 
         [StaticAccessor("SceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]

@@ -42,7 +42,7 @@ namespace UnityEditor.RestService
                         MoveAsset(oldFile, newFile);
                         break;
                     case "create":
-                        var createPath = request.Url.Substring("/unity/".Length);
+                        var createPath = request.Url.Substring("/unity/assets/".Length);
                         var contents = payload.Get("contents").AsString();
                         byte[] convertedBytes = Convert.FromBase64String(contents);
                         contents = Encoding.UTF8.GetString(convertedBytes);
@@ -62,9 +62,9 @@ namespace UnityEditor.RestService
                 return result.Length == 0;
             }
 
-            internal void CreateAsset(string assetPath, string contents)
+            internal void CreateAsset(string assetSubpath, string contents)
             {
-                var fullPath = Path.GetFullPath(assetPath);
+                var fullPath = Path.GetFullPath(Path.Combine("Assets", assetSubpath));
                 try
                 {
                     using (StreamWriter writer = new StreamWriter(File.OpenWrite(fullPath)))

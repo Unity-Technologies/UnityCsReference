@@ -20,6 +20,8 @@ namespace UnityEditor
         const string kNotSupportedPostFix = " (Function Not Supported)";
         const string kNoneSelected = "(No Function Selected)";
 
+        public static GUIContent s_OverloadWarning = EditorGUIUtility.TrTextContent("Some functions were overloaded in MonoBehaviour components and may not work as intended if used with Animation Events!");
+
         public override void OnInspectorGUI()
         {
             var awes = targets.Select(o => o as AnimationWindowEvent).ToArray();
@@ -51,7 +53,9 @@ namespace UnityEditor
 
             if (data.root != null)
             {
-                List<AnimationWindowEventMethod> methods = CollectSupportedMethods(data.root);
+                List<AnimationWindowEventMethod> methods = new List<AnimationWindowEventMethod>();
+                HashSet<string> overloads = new HashSet<string>();
+                CollectSupportedMethods(data.root, methods, overloads);
 
                 var methodsFormatted = new List<string>(methods.Count);
 
@@ -118,6 +122,12 @@ namespace UnityEditor
 
                     DoEditRegularParameters(data.selectedEvents, selectedParameter);
                 }
+
+                if (overloads.Count > 0)
+                {
+                    EditorGUILayout.Space();
+                    EditorGUILayout.HelpBox(s_OverloadWarning.text, MessageType.Warning, true);
+                }
             }
             else
             {
@@ -163,15 +173,12 @@ namespace UnityEditor
             }
         }
 
-        public static List<AnimationWindowEventMethod> CollectSupportedMethods(GameObject gameObject)
+        public static void CollectSupportedMethods(GameObject gameObject, List<AnimationWindowEventMethod> supportedMethods, HashSet<string> overloadedMethods)
         {
-            List<AnimationWindowEventMethod> supportedMethods = new List<AnimationWindowEventMethod>();
-
             if (gameObject == null)
-                return supportedMethods;
+                return;
 
             MonoBehaviour[] behaviours = gameObject.GetComponents<MonoBehaviour>();
-            HashSet<string> ambiguousMethods = new HashSet<string>();
 
             foreach (MonoBehaviour behaviour in behaviours)
             {
@@ -213,32 +220,25 @@ namespace UnityEditor
                         newMethod.name = method.Name;
                         newMethod.parameterType = parameterType;
 
+                        // Since AnimationEvents only stores method name, it can't handle functions with multiple overloads.
+                        // Only retrieve first found function, but discard overloads.
                         int existingMethodIndex = supportedMethods.FindIndex(m => m.name == name);
                         if (existingMethodIndex != -1)
                         {
                             // The method is only ambiguous if it has a different signature to the one we saw before
                             if (supportedMethods[existingMethodIndex].parameterType != parameterType)
-                                ambiguousMethods.Add(name);
+                            {
+                                overloadedMethods.Add(name);
+                            }
                         }
-
-                        supportedMethods.Add(newMethod);
+                        else
+                        {
+                            supportedMethods.Add(newMethod);
+                        }
                     }
                     type = type.BaseType;
                 }
             }
-
-            // Since AnimationEvents only stores method name, it can't handle functions with multiple overloads
-            // So we remove all the ambiguous methods (overloads) from the list
-            foreach (string ambiguousMethod in ambiguousMethods)
-            {
-                for (int i = supportedMethods.Count - 1; i >= 0; --i)
-                {
-                    if (supportedMethods[i].name.Equals(ambiguousMethod))
-                        supportedMethods.RemoveAt(i);
-                }
-            }
-
-            return supportedMethods;
         }
 
         public static string FormatEvent(GameObject root, AnimationEvent evt)

@@ -39,6 +39,7 @@ namespace UnityEditor.Experimental.U2D
         void SetDataModified();
         void ApplyOrRevertModification(bool apply);
         VisualElement GetMainVisualContainer();
+        void SetPreviewTexture(Texture2D texture, int width, int height);
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]

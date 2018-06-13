@@ -24,8 +24,6 @@ namespace UnityEditor
         SerializedProperty m_Sprites;
         SerializedProperty m_Cycles;
         SerializedProperty m_UVChannelMask;
-        SerializedProperty m_FlipU;
-        SerializedProperty m_FlipV;
 
         class Texts
         {
@@ -42,8 +40,6 @@ namespace UnityEditor
             public GUIContent frame = EditorGUIUtility.TrTextContent("Frame", "The frame in the sheet which will be used.");
             public GUIContent cycles = EditorGUIUtility.TrTextContent("Cycles", "Specifies how many times the animation will loop during the lifetime of the particle.");
             public GUIContent uvChannelMask = EditorGUIUtility.TrTextContent("Affected UV Channels", "Specifies which UV channels will be animated.");
-            public GUIContent flipU = EditorGUIUtility.TrTextContent("Flip U", "Cause some particle texture mapping to be flipped horizontally. (Set between 0 and 1, where a higher value causes more to flip)");
-            public GUIContent flipV = EditorGUIUtility.TrTextContent("Flip V", "Cause some particle texture mapping to be flipped vertically. (Set between 0 and 1, where a higher value causes more to flip)");
 
             public GUIContent[] modes = new GUIContent[]
             {
@@ -86,8 +82,6 @@ namespace UnityEditor
             m_Sprites = GetProperty("sprites");
             m_Cycles = GetProperty("cycles");
             m_UVChannelMask = GetProperty("uvChannelMask");
-            m_FlipU = GetProperty("flipU");
-            m_FlipV = GetProperty("flipV");
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
@@ -129,23 +123,6 @@ namespace UnityEditor
             }
 
             GUIFloat(s_Texts.cycles, m_Cycles);
-
-            bool disableFlipping = false;
-            foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)
-            {
-                ParticleSystemRenderer renderer = ps.GetComponent<ParticleSystemRenderer>();
-                if ((renderer != null) && (renderer.renderMode == ParticleSystemRenderMode.Mesh))
-                {
-                    disableFlipping = true;
-                    break;
-                }
-            }
-            using (new EditorGUI.DisabledScope(disableFlipping))
-            {
-                GUIFloat(s_Texts.flipU, m_FlipU);
-                GUIFloat(s_Texts.flipV, m_FlipV);
-            }
-
             GUIEnumMaskUVChannelFlags(s_Texts.uvChannelMask, m_UVChannelMask);
         }
 
@@ -162,7 +139,7 @@ namespace UnityEditor
                 // add plus button to first element
                 if (i == 0)
                 {
-                    if (GUILayout.Button(GUIContent.none, new GUIStyle("OL Plus"), GUILayout.Width(16)))
+                    if (GUILayout.Button(GUIContent.none, "OL Plus", GUILayout.Width(16)))
                     {
                         m_Sprites.InsertArrayElementAtIndex(m_Sprites.arraySize);
                         SerializedProperty newSpriteData = m_Sprites.GetArrayElementAtIndex(m_Sprites.arraySize - 1);
@@ -173,7 +150,7 @@ namespace UnityEditor
                 // add minus button to all other elements
                 else
                 {
-                    if (GUILayout.Button(GUIContent.none, new GUIStyle("OL Minus"), GUILayout.Width(16)))
+                    if (GUILayout.Button(GUIContent.none, "OL Minus", GUILayout.Width(16)))
                         m_Sprites.DeleteArrayElementAtIndex(i);
                 }
 

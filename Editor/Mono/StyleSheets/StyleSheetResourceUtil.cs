@@ -51,12 +51,16 @@ namespace UnityEditor.StyleSheets
                 resource = Resources.Load(pathName, type);
             }
 
+            // This should be deprecated and removed.
+            // Project asset paths should be resolved at import time.
             if (resource == null && lookForRetinaAssets)
             {
                 resource = AssetDatabase.LoadMainAssetAtPath(hiResPath);
                 assetIsRetinaTexture = (resource as Texture2D != null);
             }
 
+            // This should be deprecated and removed.
+            // Project asset paths should be resolved at import time.
             if (resource == null)
             {
                 resource = AssetDatabase.LoadMainAssetAtPath(pathName);
@@ -65,13 +69,6 @@ namespace UnityEditor.StyleSheets
             if (resource != null)
             {
                 Debug.Assert(type.IsAssignableFrom(resource.GetType()), "Resource type mismatch");
-
-                // Add to post processor for tracking asset moves/deletes.
-                var absoluteAssetPath = AssetDatabase.GetAssetPath(resource);
-                if (type != typeof(UnityEngine.StyleSheets.StyleSheet) && !absoluteAssetPath.StartsWith("Library"))
-                {
-                    StyleSheetAssetPostprocessor.AddReferencedAssetPath(absoluteAssetPath);
-                }
             }
 
             if (assetIsRetinaTexture)

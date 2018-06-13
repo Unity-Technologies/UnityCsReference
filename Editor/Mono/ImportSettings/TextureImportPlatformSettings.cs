@@ -9,7 +9,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System;
-
+using UnityEngine.Assertions;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -17,16 +17,37 @@ namespace UnityEditor
     [System.Serializable]
     internal class TextureImportPlatformSettings
     {
-        [SerializeField] private TextureImporterPlatformSettings m_PlatformSettings = new TextureImporterPlatformSettings();
-        public TextureImporterPlatformSettings platformTextureSettings { get { return m_PlatformSettings; } }
+        [SerializeField]
+        private TextureImporterPlatformSettings m_PlatformSettings = new TextureImporterPlatformSettings();
 
-        public string name { get { return m_PlatformSettings.name; } }
+        public TextureImporterPlatformSettings platformTextureSettings
+        {
+            get { return m_PlatformSettings; }
+        }
+
+        public string name
+        {
+            get { return m_PlatformSettings.name; }
+        }
 
         // Is Overridden
         [SerializeField] private bool m_OverriddenIsDifferent = false;
-        public bool overridden { get { return m_PlatformSettings.overridden; } }
-        public bool overriddenIsDifferent { get { return m_OverriddenIsDifferent; } }
-        public bool allAreOverridden { get { return isDefault || (overridden && !m_OverriddenIsDifferent); } }
+
+        public bool overridden
+        {
+            get { return m_PlatformSettings.overridden; }
+        }
+
+        public bool overriddenIsDifferent
+        {
+            get { return m_OverriddenIsDifferent; }
+        }
+
+        public bool allAreOverridden
+        {
+            get { return isDefault || (overridden && !m_OverriddenIsDifferent); }
+        }
+
         public void SetOverriddenForAll(bool overridden)
         {
             m_PlatformSettings.overridden = overridden;
@@ -36,24 +57,43 @@ namespace UnityEditor
 
         // Maximum texture size
         [SerializeField] private bool m_MaxTextureSizeIsDifferent = false;
-        public int maxTextureSize { get { return m_PlatformSettings.maxTextureSize; } }
-        public bool maxTextureSizeIsDifferent { get { return m_MaxTextureSizeIsDifferent; } }
+
+        public int maxTextureSize
+        {
+            get { return m_PlatformSettings.maxTextureSize; }
+        }
+
+        public bool maxTextureSizeIsDifferent
+        {
+            get { return m_MaxTextureSizeIsDifferent; }
+        }
+
         public void SetMaxTextureSizeForAll(int maxTextureSize)
         {
-            Debug.Assert(allAreOverridden, "Attempting to set max texture size for all platforms even though settings are not overridden for all platforms.");
+            Debug.Assert(allAreOverridden,
+                "Attempting to set max texture size for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.maxTextureSize = maxTextureSize;
             m_MaxTextureSizeIsDifferent = false;
             SetChanged();
         }
 
         // Resize Algorithm
-        [SerializeField]
-        private bool m_ResizeAlgorithmIsDifferent = false;
-        public TextureResizeAlgorithm resizeAlgorithm { get { return m_PlatformSettings.resizeAlgorithm; } }
-        public bool resizeAlgorithmIsDifferent { get { return m_ResizeAlgorithmIsDifferent; } }
+        [SerializeField] private bool m_ResizeAlgorithmIsDifferent = false;
+
+        public TextureResizeAlgorithm resizeAlgorithm
+        {
+            get { return m_PlatformSettings.resizeAlgorithm; }
+        }
+
+        public bool resizeAlgorithmIsDifferent
+        {
+            get { return m_ResizeAlgorithmIsDifferent; }
+        }
+
         public void SetResizeAlgorithmForAll(TextureResizeAlgorithm algorithm)
         {
-            Debug.Assert(allAreOverridden, "Attempting to set resize algorithm for all platforms even though settings are not overridden for all platforms.");
+            Debug.Assert(allAreOverridden,
+                "Attempting to set resize algorithm for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.resizeAlgorithm = algorithm;
             m_ResizeAlgorithmIsDifferent = false;
             SetChanged();
@@ -61,11 +101,21 @@ namespace UnityEditor
 
         // Texture compression
         [SerializeField] private bool m_TextureCompressionIsDifferent = false;
-        public TextureImporterCompression textureCompression { get { return m_PlatformSettings.textureCompression; } }
-        public bool textureCompressionIsDifferent { get { return m_TextureCompressionIsDifferent; } }
+
+        public TextureImporterCompression textureCompression
+        {
+            get { return m_PlatformSettings.textureCompression; }
+        }
+
+        public bool textureCompressionIsDifferent
+        {
+            get { return m_TextureCompressionIsDifferent; }
+        }
+
         public void SetTextureCompressionForAll(TextureImporterCompression textureCompression)
         {
-            Debug.Assert(allAreOverridden, "Attempting to set texture compression for all platforms even though settings are not overridden for all platforms.");
+            Debug.Assert(allAreOverridden,
+                "Attempting to set texture compression for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.textureCompression = textureCompression;
             m_TextureCompressionIsDifferent = false;
             m_HasChanged = true;
@@ -73,11 +123,21 @@ namespace UnityEditor
 
         // Compression rate
         [SerializeField] private bool m_CompressionQualityIsDifferent = false;
-        public int compressionQuality { get { return m_PlatformSettings.compressionQuality; } }
-        public bool compressionQualityIsDifferent { get { return m_CompressionQualityIsDifferent; } }
+
+        public int compressionQuality
+        {
+            get { return m_PlatformSettings.compressionQuality; }
+        }
+
+        public bool compressionQualityIsDifferent
+        {
+            get { return m_CompressionQualityIsDifferent; }
+        }
+
         public void SetCompressionQualityForAll(int quality)
         {
-            Debug.Assert(allAreOverridden, "Attempting to set texture compression quality for all platforms even though settings are not overridden for all platforms.");
+            Debug.Assert(allAreOverridden,
+                "Attempting to set texture compression quality for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.compressionQuality = quality;
             m_CompressionQualityIsDifferent = false;
             SetChanged();
@@ -85,11 +145,21 @@ namespace UnityEditor
 
         // Crunched compression
         [SerializeField] private bool m_CrunchedCompressionIsDifferent = false;
-        public bool crunchedCompression { get { return m_PlatformSettings.crunchedCompression; } }
-        public bool crunchedCompressionIsDifferent { get { return m_CrunchedCompressionIsDifferent; } }
+
+        public bool crunchedCompression
+        {
+            get { return m_PlatformSettings.crunchedCompression; }
+        }
+
+        public bool crunchedCompressionIsDifferent
+        {
+            get { return m_CrunchedCompressionIsDifferent; }
+        }
+
         public void SetCrunchedCompressionForAll(bool crunched)
         {
-            Debug.Assert(allAreOverridden, "Attempting to set texture crunched compression for all platforms even though settings are not overridden for all platforms.");
+            Debug.Assert(allAreOverridden,
+                "Attempting to set texture crunched compression for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.crunchedCompression = crunched;
             m_CrunchedCompressionIsDifferent = false;
             SetChanged();
@@ -97,37 +167,65 @@ namespace UnityEditor
 
         // Texture format
         [SerializeField] private bool m_TextureFormatIsDifferent = false;
-        public TextureImporterFormat format { get { return m_PlatformSettings.format; } }
-        public bool textureFormatIsDifferent { get { return m_TextureFormatIsDifferent; } }
+
+        public TextureImporterFormat format
+        {
+            get { return m_PlatformSettings.format; }
+        }
+
+        public bool textureFormatIsDifferent
+        {
+            get { return m_TextureFormatIsDifferent; }
+        }
+
         public void SetTextureFormatForAll(TextureImporterFormat format)
         {
-            Debug.Assert(allAreOverridden, "Attempting to set texture format for all platforms even though settings are not overridden for all platforms.");
+            Debug.Assert(allAreOverridden,
+                "Attempting to set texture format for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.format = format;
             m_TextureFormatIsDifferent = false;
             SetChanged();
         }
 
         // Alpha splitting
-        [SerializeField]
-        private bool m_AlphaSplitIsDifferent = false;
-        public bool allowsAlphaSplitting { get { return m_PlatformSettings.allowsAlphaSplitting; } }
-        public bool allowsAlphaSplitIsDifferent { get { return m_AlphaSplitIsDifferent; } }
+        [SerializeField] private bool m_AlphaSplitIsDifferent = false;
+
+        public bool allowsAlphaSplitting
+        {
+            get { return m_PlatformSettings.allowsAlphaSplitting; }
+        }
+
+        public bool allowsAlphaSplitIsDifferent
+        {
+            get { return m_AlphaSplitIsDifferent; }
+        }
+
         public void SetAllowsAlphaSplitForAll(bool value)
         {
-            Debug.Assert(allAreOverridden, "Attempting to set alpha splitting for all platforms even though settings are not overridden for all platforms.");
+            Debug.Assert(allAreOverridden,
+                "Attempting to set alpha splitting for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.allowsAlphaSplitting = value;
             m_AlphaSplitIsDifferent = false;
             SetChanged();
         }
 
         // Android fallback format in case ETC2 is not supported
-        [SerializeField]
-        private bool m_AndroidETC2FallbackOverrideIsDifferent = false;
-        public AndroidETC2FallbackOverride androidETC2FallbackOverride { get { return m_PlatformSettings.androidETC2FallbackOverride; } }
-        public bool androidETC2FallbackOverrideIsDifferent { get { return m_AndroidETC2FallbackOverrideIsDifferent; } }
+        [SerializeField] private bool m_AndroidETC2FallbackOverrideIsDifferent = false;
+
+        public AndroidETC2FallbackOverride androidETC2FallbackOverride
+        {
+            get { return m_PlatformSettings.androidETC2FallbackOverride; }
+        }
+
+        public bool androidETC2FallbackOverrideIsDifferent
+        {
+            get { return m_AndroidETC2FallbackOverrideIsDifferent; }
+        }
+
         public void SetAndroidETC2FallbackOverrideForAll(AndroidETC2FallbackOverride value)
         {
-            Debug.Assert(allAreOverridden, "Attempting to set android ETC2 fallback format for all platforms even though settings are not overridden for all platforms.");
+            Debug.Assert(allAreOverridden,
+                "Attempting to set android ETC2 fallback format for all platforms even though settings are not overridden for all platforms.");
             m_PlatformSettings.androidETC2FallbackOverride = value;
             m_AndroidETC2FallbackOverrideIsDifferent = false;
             SetChanged();
@@ -135,11 +233,19 @@ namespace UnityEditor
 
         [SerializeField] public BuildTarget m_Target;
         [SerializeField] TextureImporter[] m_Importers;
-        public TextureImporter[] importers { get { return m_Importers; } }
+
+        public TextureImporter[] importers
+        {
+            get { return m_Importers; }
+        }
 
         [SerializeField] bool m_HasChanged = false;
         [SerializeField] TextureImporterInspector m_Inspector;
-        public bool isDefault { get { return name == TextureImporterInspector.s_DefaultPlatformName; } }
+
+        public bool isDefault
+        {
+            get { return name == TextureImporterInspector.s_DefaultPlatformName; }
+        }
 
         public TextureImportPlatformSettings(string name, BuildTarget target, TextureImporterInspector inspector)
         {
@@ -176,43 +282,13 @@ namespace UnityEditor
                         m_CrunchedCompressionIsDifferent = true;
                     if (curPlatformSettings.allowsAlphaSplitting != m_PlatformSettings.allowsAlphaSplitting)
                         m_AlphaSplitIsDifferent = true;
-                    if (curPlatformSettings.androidETC2FallbackOverride != m_PlatformSettings.androidETC2FallbackOverride)
+                    if (curPlatformSettings.androidETC2FallbackOverride !=
+                        m_PlatformSettings.androidETC2FallbackOverride)
                         m_AndroidETC2FallbackOverrideIsDifferent = true;
                 }
             }
 
             Sync();
-        }
-
-        public bool SupportsFormat(TextureImporterFormat format, TextureImporter importer)
-        {
-            TextureImporterSettings settings = GetSettings(importer);
-            int[] testValues;
-            switch (m_Target)
-            {
-                case BuildTarget.PSP2:
-                    testValues = kTextureFormatsValuePSP2;
-                    break;
-                case BuildTarget.Switch:
-                    testValues = kTextureFormatsValueSwitch;
-                    break;
-                // on gles mobile targets we use rgb normal maps, so we can use whatever format we want
-                case BuildTarget.iOS:
-                case BuildTarget.tvOS:
-                    testValues = kTextureFormatsValueApplePVR;
-                    break;
-                case BuildTarget.Android:
-                    testValues = kTextureFormatsValueAndroid;
-                    break;
-
-                default:
-                    testValues = settings.textureType == TextureImporterType.NormalMap ? kNormalFormatsValueDefault : kTextureFormatsValueDefault;
-                    break;
-            }
-
-            if ((testValues as IList).Contains((int)format))
-                return true;
-            return false;
         }
 
         public TextureImporterSettings GetSettings(TextureImporter importer)
@@ -260,7 +336,8 @@ namespace UnityEditor
 
             if ((overridden || m_OverriddenIsDifferent) && m_PlatformSettings.format < 0)
             {
-                m_PlatformSettings.format = TextureImporter.FormatFromTextureParameters(GetSettings(importers[0]),
+                m_PlatformSettings.format = TextureImporter.DefaultFormatFromTextureParameters(
+                        GetSettings(importers[0]),
                         m_PlatformSettings,
                         importers[0].DoesSourceTextureHaveAlpha(),
                         importers[0].IsSourceTextureHDR(),
@@ -273,7 +350,7 @@ namespace UnityEditor
                     TextureImporter imp = importers[i];
                     TextureImporterSettings settings = GetSettings(imp);
 
-                    TextureImporterFormat format = TextureImporter.FormatFromTextureParameters(settings,
+                    TextureImporterFormat format = TextureImporter.DefaultFormatFromTextureParameters(settings,
                             m_PlatformSettings,
                             imp.DoesSourceTextureHaveAlpha(),
                             imp.IsSourceTextureHDR(),
@@ -324,177 +401,6 @@ namespace UnityEditor
             }
         }
 
-        public static readonly int[] kTextureFormatsValuePSP2 =
-        {
-            (int)TextureImporterFormat.DXT1,
-            (int)TextureImporterFormat.DXT5,
-            (int)TextureImporterFormat.RGB16,
-            (int)TextureImporterFormat.RGB24,
-            (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32,
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.RGBAHalf,
-        };
-
-        public static readonly int[] kTextureFormatsValueSwitch =
-        {
-            (int)TextureImporterFormat.DXT1,
-            (int)TextureImporterFormat.DXT5,
-            (int)TextureImporterFormat.DXT1Crunched,
-            (int)TextureImporterFormat.DXT5Crunched,
-            (int)TextureImporterFormat.RGB16,
-            (int)TextureImporterFormat.RGB24,
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.ARGB16,
-            (int)TextureImporterFormat.RGBA32,
-            (int)TextureImporterFormat.RGBAHalf,
-            (int)TextureImporterFormat.BC4,
-            (int)TextureImporterFormat.BC5,
-            (int)TextureImporterFormat.BC6H,
-            (int)TextureImporterFormat.BC7,
-
-            (int)TextureImporterFormat.ASTC_RGB_4x4,
-            (int)TextureImporterFormat.ASTC_RGB_5x5,
-            (int)TextureImporterFormat.ASTC_RGB_6x6,
-            (int)TextureImporterFormat.ASTC_RGB_8x8,
-            (int)TextureImporterFormat.ASTC_RGB_10x10,
-            (int)TextureImporterFormat.ASTC_RGB_12x12,
-            (int)TextureImporterFormat.ASTC_RGBA_4x4,
-            (int)TextureImporterFormat.ASTC_RGBA_5x5,
-            (int)TextureImporterFormat.ASTC_RGBA_6x6,
-            (int)TextureImporterFormat.ASTC_RGBA_8x8,
-            (int)TextureImporterFormat.ASTC_RGBA_10x10,
-            (int)TextureImporterFormat.ASTC_RGBA_12x12,
-        };
-
-        public static readonly int[] kTextureFormatsValueApplePVR =
-        {
-            (int)TextureImporterFormat.PVRTC_RGB2,
-            (int)TextureImporterFormat.PVRTC_RGBA2,
-            (int)TextureImporterFormat.PVRTC_RGB4,
-            (int)TextureImporterFormat.PVRTC_RGBA4,
-
-            (int)TextureImporterFormat.ASTC_RGB_4x4,
-            (int)TextureImporterFormat.ASTC_RGB_5x5,
-            (int)TextureImporterFormat.ASTC_RGB_6x6,
-            (int)TextureImporterFormat.ASTC_RGB_8x8,
-            (int)TextureImporterFormat.ASTC_RGB_10x10,
-            (int)TextureImporterFormat.ASTC_RGB_12x12,
-            (int)TextureImporterFormat.ASTC_RGBA_4x4,
-            (int)TextureImporterFormat.ASTC_RGBA_5x5,
-            (int)TextureImporterFormat.ASTC_RGBA_6x6,
-            (int)TextureImporterFormat.ASTC_RGBA_8x8,
-            (int)TextureImporterFormat.ASTC_RGBA_10x10,
-            (int)TextureImporterFormat.ASTC_RGBA_12x12,
-
-            (int)TextureImporterFormat.ETC_RGB4,
-            (int)TextureImporterFormat.ETC_RGB4Crunched,
-            (int)TextureImporterFormat.ETC2_RGB4,
-            (int)TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
-            (int)TextureImporterFormat.ETC2_RGBA8,
-            (int)TextureImporterFormat.ETC2_RGBA8Crunched,
-
-            (int)TextureImporterFormat.EAC_R,
-            (int)TextureImporterFormat.EAC_RG,
-
-            (int)TextureImporterFormat.RGB16,
-            (int)TextureImporterFormat.RGB24,
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32,
-            (int)TextureImporterFormat.RGBAHalf,
-        };
-
-        public static readonly int[] kTextureFormatsValueAndroid =
-        {
-            (int)TextureImporterFormat.DXT1,
-            (int)TextureImporterFormat.DXT1Crunched,
-            (int)TextureImporterFormat.DXT5,
-            (int)TextureImporterFormat.DXT5Crunched,
-
-            (int)TextureImporterFormat.ETC_RGB4,
-            (int)TextureImporterFormat.ETC_RGB4Crunched,
-            (int)TextureImporterFormat.ETC2_RGB4,
-            (int)TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
-            (int)TextureImporterFormat.ETC2_RGBA8,
-            (int)TextureImporterFormat.ETC2_RGBA8Crunched,
-
-            (int)TextureImporterFormat.EAC_R,
-            (int)TextureImporterFormat.EAC_RG,
-
-            (int)TextureImporterFormat.PVRTC_RGB2,
-            (int)TextureImporterFormat.PVRTC_RGBA2,
-            (int)TextureImporterFormat.PVRTC_RGB4,
-            (int)TextureImporterFormat.PVRTC_RGBA4,
-
-            (int)TextureImporterFormat.ASTC_RGB_4x4,
-            (int)TextureImporterFormat.ASTC_RGB_5x5,
-            (int)TextureImporterFormat.ASTC_RGB_6x6,
-            (int)TextureImporterFormat.ASTC_RGB_8x8,
-            (int)TextureImporterFormat.ASTC_RGB_10x10,
-            (int)TextureImporterFormat.ASTC_RGB_12x12,
-            (int)TextureImporterFormat.ASTC_RGBA_4x4,
-            (int)TextureImporterFormat.ASTC_RGBA_5x5,
-            (int)TextureImporterFormat.ASTC_RGBA_6x6,
-            (int)TextureImporterFormat.ASTC_RGBA_8x8,
-            (int)TextureImporterFormat.ASTC_RGBA_10x10,
-            (int)TextureImporterFormat.ASTC_RGBA_12x12,
-
-            (int)TextureImporterFormat.RGB16,
-            (int)TextureImporterFormat.RGB24,
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.RGBA16,
-            (int)TextureImporterFormat.RGBA32,
-            (int)TextureImporterFormat.RGBAHalf,
-        };
-
-        public static readonly int[] kTextureFormatsValueWebGL =
-        {
-            (int)TextureImporterFormat.DXT1,
-            (int)TextureImporterFormat.DXT5,
-            (int)TextureImporterFormat.DXT1Crunched,
-            (int)TextureImporterFormat.DXT5Crunched,
-            (int)TextureImporterFormat.RGB16,
-            (int)TextureImporterFormat.RGB24,
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.ARGB16,
-            (int)TextureImporterFormat.RGBA32
-        };
-
-        public static readonly int[] kNormalFormatsValueDefault =
-        {
-            (int)TextureImporterFormat.BC5,
-            (int)TextureImporterFormat.BC7,
-            (int)TextureImporterFormat.DXT5,
-            (int)TextureImporterFormat.DXT5Crunched,
-            (int)TextureImporterFormat.ARGB16,
-            (int)TextureImporterFormat.RGBA32,
-        };
-        public static readonly int[] kTextureFormatsValueDefault =
-        {
-            (int)TextureImporterFormat.DXT1,
-            (int)TextureImporterFormat.DXT5,
-            (int)TextureImporterFormat.DXT1Crunched,
-            (int)TextureImporterFormat.DXT5Crunched,
-            (int)TextureImporterFormat.RGB16,
-            (int)TextureImporterFormat.RGB24,
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.ARGB16,
-            (int)TextureImporterFormat.RGBA32,
-            (int)TextureImporterFormat.RGBAHalf,
-            (int)TextureImporterFormat.BC4,
-            (int)TextureImporterFormat.BC5,
-            (int)TextureImporterFormat.BC6H,
-            (int)TextureImporterFormat.BC7,
-        };
-        public static readonly int[] kTextureFormatsValueSingleChannel =
-        {
-            (int)TextureImporterFormat.Alpha8,
-            (int)TextureImporterFormat.R8,
-            (int)TextureImporterFormat.BC4,
-            (int)TextureImporterFormat.EAC_R,
-        };
-
         public static readonly int[] kAndroidETC2FallbackOverrideValues =
         {
             (int)AndroidETC2FallbackOverride.UseBuildSettings,
@@ -502,5 +408,15 @@ namespace UnityEditor
             (int)AndroidETC2FallbackOverride.Quality16Bit,
             (int)AndroidETC2FallbackOverride.Quality32BitDownscaled,
         };
+
+        public void GetValidTextureFormatsAndStrings(TextureImporterType textureType, out int[] formatValues, out string[] formatStrings)
+        {
+            if (isDefault)
+                TextureImportValidFormats.GetDefaultTextureFormatValuesAndStrings(textureType, out formatValues,
+                    out formatStrings);
+            else
+                TextureImportValidFormats.GetPlatformTextureFormatValuesAndStrings(textureType, m_Target, out formatValues,
+                    out formatStrings);
+        }
     }
 }

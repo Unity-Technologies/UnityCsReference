@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace UnityEditor
+namespace UnityEditor.AdvancedDropdown
 {
     internal class AddComponentDataSource : AdvancedDropdownDataSource
     {
@@ -16,6 +16,7 @@ namespace UnityEditor
 
         protected AdvancedDropdownItem RebuildTree()
         {
+            m_SearchableElements = new List<AdvancedDropdownItem>();
             AdvancedDropdownItem root = new ComponentDropdownItem();
             var menuDictionary = GetMenuDictionary();
             menuDictionary.Sort(CompareItems);
@@ -37,9 +38,9 @@ namespace UnityEditor
                     if (j == paths.Length - 1)
                     {
                         var element = new ComponentDropdownItem(LocalizationDatabase.GetLocalizedString(path), menuPath, menu.Value);
-                        element.searchable = true;
                         element.SetParent(parent);
                         parent.AddChild(element);
+                        m_SearchableElements.Add(element);
                         continue;
                     }
                     var group = parent.children.SingleOrDefault(c => c.name == path);
@@ -57,6 +58,7 @@ namespace UnityEditor
             var newScript = new ComponentDropdownItem("New script", -1);
             newScript.AddChild(new NewScriptDropdownItem());
             newScript.SetParent(root);
+            newScript.selectedItem = 0;
             root.AddChild(newScript);
             return root;
         }
@@ -99,6 +101,7 @@ namespace UnityEditor
                 addNewScriptGroup.AddChild(addNewScript);
                 addNewScript.SetParent(addNewScriptGroup);
                 addNewScriptGroup.SetParent(searchTree);
+                addNewScriptGroup.selectedItem = 0;
                 searchTree.AddChild(addNewScriptGroup);
             }
             return searchTree;

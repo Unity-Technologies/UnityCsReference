@@ -45,7 +45,7 @@ namespace UnityEditor
 
         public TypeSelection(string typeName, Object[] objects)
         {
-            System.Diagnostics.Debug.Assert(objects != null || objects.Length >= 1);
+            System.Diagnostics.Debug.Assert(objects != null && objects.Length >= 1);
             this.objects = objects;
             label = new GUIContent(objects.Length + " " + ObjectNames.NicifyVariableName(typeName) + (objects.Length > 1 ? "s" : ""));
             label.image = AssetPreview.GetMiniTypeThumbnail(objects[0]);

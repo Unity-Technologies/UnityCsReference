@@ -113,6 +113,29 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         }
     }
 
+    private static BuildTarget DefaultArchitectureForTarget(BuildTarget target)
+    {
+        switch (target)
+        {
+            case BuildTarget.StandaloneWindows:
+            case BuildTarget.StandaloneWindows64:
+                return BuildTarget.StandaloneWindows64;
+            case BuildTarget.StandaloneLinux:
+            case BuildTarget.StandaloneLinux64:
+            case BuildTarget.StandaloneLinuxUniversal:
+                return BuildTarget.StandaloneLinux64;
+            case BuildTarget.StandaloneOSX:
+                // Deprecated
+#pragma warning disable 612, 618
+            case BuildTarget.StandaloneOSXIntel:
+            case BuildTarget.StandaloneOSXIntel64:
+#pragma warning restore 612, 618
+                return BuildTarget.StandaloneOSX;
+            default:
+                return target;
+        }
+    }
+
     public override void ShowPlatformBuildOptions()
     {
         BuildTarget selectedTarget = GetBestStandaloneTarget(EditorUserBuildSettings.selectedStandaloneTarget);
@@ -130,25 +153,23 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
                 GUIContent[] architectureNames = new List<GUIContent>(architectures.Keys).ToArray();
                 int selectedArchitecture = 0;
 
-                if (newIndex == selectedIndex)
+                // Grab m_Architecture index for currently selected target
+                foreach (var architecture in architectures)
                 {
-                    // Grab m_Architecture index for currently selected target
-                    foreach (var architecture in architectures)
+                    if (architecture.Value == selectedTarget)
                     {
-                        if (architecture.Value == selectedTarget)
-                        {
-                            selectedArchitecture = System.Math.Max(0, System.Array.IndexOf(architectureNames, architecture.Key));
-                            break;
-                        }
+                        selectedArchitecture = System.Math.Max(0, System.Array.IndexOf(architectureNames, architecture.Key));
+                        break;
                     }
                 }
+
                 selectedArchitecture = EditorGUILayout.Popup(m_Architecture, selectedArchitecture, architectureNames);
                 newTarget = architectures[architectureNames[selectedArchitecture]];
             }
         }
         else
         {
-            newTarget = m_StandaloneSubtargets[newIndex];
+            newTarget = DefaultArchitectureForTarget(m_StandaloneSubtargets[newIndex]);
         }
 
         if (newTarget != EditorUserBuildSettings.selectedStandaloneTarget)

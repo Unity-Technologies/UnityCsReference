@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UnityEditor
 {
@@ -29,9 +30,9 @@ namespace UnityEditor
             ProfilerDriver.GetUISystemEventMarkersBatch(firstFrame, historyLength, m_Markers, m_MarkerNames);
         }
 
-        public override int DoChartGUI(int currentFrame, ProfilerArea currentArea)
+        public override int DoChartGUI(int currentFrame, bool active)
         {
-            int res = base.DoChartGUI(currentFrame, currentArea);
+            int res = base.DoChartGUI(currentFrame, active);
             if (m_Markers != null && showMarkers)
             {
                 Rect rect = GUILayoutUtility.GetLastRect();

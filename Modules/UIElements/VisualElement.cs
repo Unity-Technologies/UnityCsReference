@@ -66,35 +66,15 @@ namespace UnityEngine.Experimental.UIElements
     }
     public partial class VisualElement : Focusable, ITransform
     {
-        public class VisualElementFactory : UxmlFactory<VisualElement, VisualElementUxmlTraits> {}
+        public class UxmlFactory : UxmlFactory<VisualElement, UxmlTraits> {}
 
-        public class VisualElementUxmlTraits : UxmlTraits
+        public class UxmlTraits : UIElements.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Name;
-            UxmlEnumAttributeDescription<PickingMode> m_PickingMode;
-            protected UxmlIntAttributeDescription m_FocusIndex;
-
-            public VisualElementUxmlTraits()
-            {
-                m_Name = new UxmlStringAttributeDescription { name = "name" };
-                m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "pickingMode" };
-                m_FocusIndex = new UxmlIntAttributeDescription { name = "focusIndex", defaultValue = VisualElement.defaultFocusIndex };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Name;
-                    yield return m_PickingMode;
-                    yield return m_FocusIndex;
-                }
-            }
+            UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = "name" };
+            UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "pickingMode" };
+            UxmlStringAttributeDescription m_Tooltip = new UxmlStringAttributeDescription { name = "tooltip" };
+            protected UxmlIntAttributeDescription m_FocusIndex = new UxmlIntAttributeDescription { name = "focusIndex", defaultValue = VisualElement.defaultFocusIndex };
+            UxmlBoolAttributeDescription m_Visible = new UxmlBoolAttributeDescription { name = "visible", defaultValue = true };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -107,6 +87,8 @@ namespace UnityEngine.Experimental.UIElements
                 ve.name = m_Name.GetValueFromBag(bag);
                 ve.pickingMode = m_PickingMode.GetValueFromBag(bag);
                 ve.focusIndex = m_FocusIndex.GetValueFromBag(bag);
+                ve.tooltip = m_Tooltip.GetValueFromBag(bag);
+                ve.visible = m_Visible.GetValueFromBag(bag);
             }
         }
 
@@ -131,7 +113,7 @@ namespace UnityEngine.Experimental.UIElements
                     m_PersistenceKey = value;
 
                     if (!string.IsNullOrEmpty(value))
-                        Dirty(ChangeType.PersistentData);
+                        IncrementVersion(VersionChangeType.PersistentData);
                 }
             }
         }
@@ -180,7 +162,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (m_Position == value)
                     return;
                 m_Position = value;
-                Dirty(ChangeType.Transform);
+                IncrementVersion(VersionChangeType.Transform);
             }
         }
 
@@ -195,7 +177,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (m_Rotation == value)
                     return;
                 m_Rotation = value;
-                Dirty(ChangeType.Transform);
+                IncrementVersion(VersionChangeType.Transform);
             }
         }
 
@@ -210,7 +192,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (m_Scale == value)
                     return;
                 m_Scale = value;
-                Dirty(ChangeType.Transform);
+                IncrementVersion(VersionChangeType.Transform);
             }
         }
 
@@ -265,7 +247,7 @@ namespace UnityEngine.Experimental.UIElements
                 styleAccess.width = value.width;
                 styleAccess.height = value.height;
 
-                Dirty(ChangeType.Transform);
+                IncrementVersion(VersionChangeType.Transform);
             }
         }
 
@@ -335,27 +317,24 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal bool isWorldTransformDirty { get; set; } = true;
+
         /// <summary>
-        /// <c>rect</c> converted to world space, aligned to the pixel-grid, and converted back to its original space.
+        /// Returns a matrix that cumulates the following operations (in order):
+        /// -Local Scaling
+        /// -Local Rotation
+        /// -Local Translation
+        /// -Layout Translation
+        /// -Parent <c>worldTransform</c> (recursive definition - consider identity when there is no parent)
         /// </summary>
         /// <remarks>
-        /// The offset used when rendering to a pixel cache can yield numerical errors that result in rounding
-        /// differences in GUITexture.cpp, causing blur. By specifying an already-aligned rect, the numerical
-        /// errors aren't sufficient to generate rounding differences.
+        /// Multiplying the <c>layout</c> rect by this matrix is incorrect because it already contains the translation.
         /// </remarks>
-        internal Rect alignedRect
-        {
-            get
-            {
-                return GUIUtility.Internal_AlignRectToDevice(rect, worldTransform);
-            }
-        }
-
         public Matrix4x4 worldTransform
         {
             get
             {
-                if (IsDirty(ChangeType.Transform))
+                if (isWorldTransformDirty)
                 {
                     var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
                     if (shadow.parent != null)
@@ -366,7 +345,7 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         renderData.worldTransForm = offset * transform.matrix;
                     }
-                    ClearDirty(ChangeType.Transform);
+                    isWorldTransformDirty = false;
                 }
                 return renderData.worldTransForm;
             }
@@ -390,7 +369,7 @@ namespace UnityEngine.Experimental.UIElements
                     if ((triggerPseudoMask & m_PseudoStates) != 0
                         || (dependencyPseudoMask & ~m_PseudoStates) != 0)
                     {
-                        Dirty(ChangeType.Styles);
+                        IncrementVersion(VersionChangeType.Styles);
                     }
                 }
             }
@@ -407,7 +386,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (m_Name == value)
                     return;
                 m_Name = value;
-                Dirty(ChangeType.Styles);
+                IncrementVersion(VersionChangeType.Styles);
             }
         }
 
@@ -426,7 +405,14 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 if (string.IsNullOrEmpty(m_TypeName))
-                    m_TypeName = GetType().Name;
+                {
+                    var type = GetType();
+                    bool isGeneric = false;
+                    isGeneric = type.IsGenericType;
+
+                    m_TypeName = isGeneric ? type.Name.Remove(type.Name.IndexOf('`')) : type.Name;
+                }
+
                 return m_TypeName;
             }
         }
@@ -514,8 +500,6 @@ namespace UnityEngine.Experimental.UIElements
 
             name = string.Empty;
             yogaNode = new YogaNode();
-            changesNeeded = ChangeType.All;
-            clippingOptions = ClippingOptions.ClipContents;
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -579,150 +563,117 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        // This should never be called directly
-        // This needs to be virtual for GraphView.cs
-        // We could avoid this by having a single PanelChangeEvent
-        // containing both the previous and the new panel values.
-        internal virtual void ChangePanel(BaseVisualElementPanel p)
+        void ChangePanel(BaseVisualElementPanel p)
         {
+            if (panel == p)
+            {
+                return;
+            }
+
             if (panel != null)
             {
-                using (var e = DetachFromPanelEvent.GetPooled())
+                //we need to notify the current panel that its topology has changed
+                IncrementVersion(VersionChangeType.Hierarchy);
+
+                using (var e = DetachFromPanelEvent.GetPooled(panel, p))
                 {
                     e.target = this;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
+                    // This cast will go away in my next PR
+                    EventDispatcher dispatcher = UIElementsUtility.eventDispatcher as EventDispatcher;
+                    dispatcher.DispatchEvent(e, panel, DispatchMode.Immediate);
                 }
             }
 
+            IPanel prevPanel = panel;
             elementPanel = p;
 
             if (panel != null)
             {
-                using (var e = AttachToPanelEvent.GetPooled())
+                using (var e = AttachToPanelEvent.GetPooled(prevPanel, p))
                 {
                     e.target = this;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(e, panel);
+                    // This cast will go away in my next PR
+                    EventDispatcher dispatcher = UIElementsUtility.eventDispatcher as EventDispatcher;
+                    dispatcher.DispatchEvent(e, panel, DispatchMode.Immediate);
                 }
             }
 
-            Dirty(ChangeType.Styles);
+            // styles are dependent on topology
+            IncrementVersion(VersionChangeType.Styles | VersionChangeType.Hierarchy | VersionChangeType.Transform);
+
+            // persistent data key may have changed or needs initialization
+            if (!string.IsNullOrEmpty(persistenceKey))
+                IncrementVersion(VersionChangeType.PersistentData);
         }
 
-        // in the case of a Topology change the target is the parent of the removed or added element
-        // TODO write test suite for this method. in particular, any change type should implicitly
-        private ChangeType changesNeeded;
-
-        // helper when change impact are known and we need to propagate down into children
-        private void PropagateToChildren(ChangeType type)
+        internal void IncrementVersion(VersionChangeType changeType)
         {
-            // when touching we grass fire in the tree but stop when we are already touched.
-            // this is a key point of the on demand dirty that keeps it from exploding.
-            if ((type & changesNeeded) == type)
-                return;
-
-            changesNeeded |= type;
-
-            // only those propagate to children
-            type = type & (ChangeType.Styles | ChangeType.Transform);
-            if (type == 0)
-                return;
-
-            // propagate to children
-            if (m_Children != null)
-            {
-                foreach (var child in m_Children)
-                {
-                    // recurse down
-                    child.PropagateToChildren(type);
-                }
-            }
+            elementPanel?.OnVersionChanged(this, changeType);
         }
 
-        private void PropagateChangesToParents()
+        private void IncrementVersion(ChangeType changeType)
         {
-            ChangeType parentChanges = 0;
-            if (changesNeeded != 0)
-            {
-                // if we have any change at all, propagate the repaint flag
-                // this is somehow an implementation detail but this is the only flag that is checked in the app tick
-                // this means that styles, layout, transform, etc. will be processed just before painting a panel
-                // a small downside is that we might repaint more often that necessary
-                // another solution would be to process all flags sequentially in the tick to check if a repaint is needed
-                parentChanges |= ChangeType.Repaint;
-
-                if ((changesNeeded & ChangeType.Styles) > 0)
-                {
-                    // if this visual element needs its styles recomputed, propagate this specific flags for its parents
-                    // it is less expensive than a full styles re-pass
-                    parentChanges |= ChangeType.StylesPath;
-                }
-
-                if ((changesNeeded & (ChangeType.PersistentData | ChangeType.PersistentDataPath)) > 0)
-                {
-                    // Parents do not need their OnPersistentDataReady() called but they need to call still
-                    // propagate it to their children so it gets back to us.
-                    parentChanges |= ChangeType.PersistentDataPath;
-                }
-            }
-
-            var current = shadow.parent;
-            while (current != null)
-            {
-                if ((current.changesNeeded & parentChanges) == parentChanges)
-                    break;
-
-                current.changesNeeded |= parentChanges;
-                current = current.shadow.parent;
-            }
+            IncrementVersion(GetVersionChange(changeType));
         }
 
+        private VersionChangeType GetVersionChange(ChangeType type)
+        {
+            VersionChangeType versionChangeType = VersionChangeType.All;
+
+            if ((type & ChangeType.PersistentData) != ChangeType.PersistentData &&
+                (type & ChangeType.PersistentDataPath) != ChangeType.PersistentDataPath)
+            {
+                versionChangeType &= ~VersionChangeType.PersistentData;
+            }
+
+            if ((type & ChangeType.Layout) != ChangeType.Layout)
+            {
+                versionChangeType &= ~VersionChangeType.Layout;
+            }
+
+            if ((type & ChangeType.Styles) != ChangeType.Styles &&
+                (type & ChangeType.StylesPath) != ChangeType.StylesPath)
+            {
+                versionChangeType &= ~VersionChangeType.Styles;
+            }
+
+            if ((type & ChangeType.Transform) != ChangeType.Transform)
+            {
+                versionChangeType &= ~VersionChangeType.Transform;
+            }
+
+            if ((type & ChangeType.Repaint) != ChangeType.Repaint)
+            {
+                versionChangeType &= ~VersionChangeType.Repaint;
+            }
+
+            return versionChangeType;
+        }
+
+        [Obsolete("Dirty is deprecated. Use MarkDirtyRepaint to trigger a new repaint of the VisualElement.")]
         public void Dirty(ChangeType type)
         {
-            // when touching we grass fire in the tree but stop when we are already touched.
-            // this is a key point of the on demand dirty that keeps it from exploding.
-            if ((type & changesNeeded) == type)
-                return;
-
-            if ((type & ChangeType.Layout) == ChangeType.Layout)
-            {
-                if (yogaNode != null && yogaNode.IsMeasureDefined)
-                {
-                    yogaNode.MarkDirty();
-                }
-                type |= ChangeType.Repaint;
-            }
-
-            if (((type & ChangeType.Transform) == ChangeType.Transform) && (elementPanel != null))
-            {
-                elementPanel.hasDirtyTransform = true;
-            }
-
-            PropagateToChildren(type);
-
-            PropagateChangesToParents();
+            IncrementVersion(type);
         }
 
-        internal bool AnyDirty()
-        {
-            return changesNeeded != 0;
-        }
-
+        [Obsolete("IsDirty is deprecated. Avoid using it, will always return false.")]
         public bool IsDirty(ChangeType type)
         {
-            return (changesNeeded & type) == type;
+            return false;
         }
 
+        [Obsolete("AnyDirty is deprecated. Avoid using it, will always return false.")]
         public bool AnyDirty(ChangeType type)
         {
-            return (changesNeeded & type) > 0;
+            return false;
         }
 
+        [Obsolete("ClearDirty is deprecated. Avoid using it, it's now a no-op.")]
         public void ClearDirty(ChangeType type)
         {
-            changesNeeded &= ~type;
         }
 
-        [Obsolete("enabled is deprecated. Use SetEnabled as setter, and enabledSelf/enabledInHierarchy as getters.", true)]
+        [Obsolete("enabled is deprecated. Use SetEnabled as setter, and enabledSelf/enabledInHierarchy as getters.")]
         public virtual bool enabled
         {
             get { return enabledInHierarchy; }
@@ -730,7 +681,6 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         private bool m_Enabled;
-
 
         //TODO: Make private once VisualContainer is merged with VisualElement
         protected internal bool SetEnabledFromHierarchy(bool state)
@@ -795,20 +745,25 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public virtual void DoRepaint()
+        public void MarkDirtyRepaint()
         {
-            var painter = elementPanel.stylePainter;
-            painter.DrawBackground(this);
-            painter.DrawBorder(this);
+            IncrementVersion(VersionChangeType.Repaint);
         }
 
-        internal virtual void DoRepaint(IStylePainter painter)
+        internal void Repaint(IStylePainter painter)
         {
             if (visible == false)
             {
                 return;
             }
-            DoRepaint();
+            DoRepaint(painter);
+        }
+
+        protected virtual void DoRepaint(IStylePainter painter)
+        {
+            var stylePainter = (IStylePainterInternal)painter;
+            stylePainter.DrawBackground(this);
+            stylePainter.DrawBorder(this);
         }
 
         private void GetFullHierarchicalPersistenceKey(StringBuilder key)
@@ -997,8 +952,18 @@ namespace UnityEngine.Experimental.UIElements
 
         void FinalizeLayout()
         {
-            yogaNode.Flex = style.flex.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.FlexBasis = style.flexBasis.GetSpecifiedValueOrDefault(float.NaN);
+            yogaNode.Flex = float.NaN;
+
+            float fb = style.flexBasis.GetSpecifiedValueOrDefault(float.NaN);
+            if (fb == -1f)
+            {
+                yogaNode.FlexBasis = YogaValue.Auto();
+            }
+            else
+            {
+                yogaNode.FlexBasis = fb;
+            }
+
             yogaNode.FlexGrow = style.flexGrow.GetSpecifiedValueOrDefault(float.NaN);
             yogaNode.FlexShrink = style.flexShrink.GetSpecifiedValueOrDefault(float.NaN);
             yogaNode.Left = style.positionLeft.GetSpecifiedValueOrDefault(float.NaN);
@@ -1047,8 +1012,8 @@ namespace UnityEngine.Experimental.UIElements
             yogaNode.JustifyContent = (YogaJustify)style.justifyContent.value;
             yogaNode.Wrap = (YogaWrap)style.flexWrap.value;
 
-            Dirty(ChangeType.Layout);
-            Dirty(ChangeType.Transform);
+            IncrementVersion(VersionChangeType.Layout);
+            IncrementVersion(VersionChangeType.Transform);
         }
 
         internal event OnStylesResolved onStylesResolved;
@@ -1067,7 +1032,6 @@ namespace UnityEngine.Experimental.UIElements
         {
             Debug.Assert(sharedStyle.isShared);
 
-            ClearDirty(ChangeType.StylesPath | ChangeType.Styles);
             if (sharedStyle == m_SharedStyle)
             {
                 return;
@@ -1089,7 +1053,7 @@ namespace UnityEngine.Experimental.UIElements
                 onStylesResolved(m_Style);
             }
             OnStyleResolved(m_Style);
-            Dirty(ChangeType.Repaint);
+            IncrementVersion(VersionChangeType.Repaint);
         }
 
         public void ResetPositionProperties()
@@ -1115,7 +1079,7 @@ namespace UnityEngine.Experimental.UIElements
             m_Style.Apply(sharedStyle, StylePropertyApplyMode.CopyIfNotInline);
             FinalizeLayout();
 
-            Dirty(ChangeType.Layout);
+            IncrementVersion(VersionChangeType.Layout);
         }
 
         public override string ToString()
@@ -1134,7 +1098,7 @@ namespace UnityEngine.Experimental.UIElements
             if (m_ClassList != null && m_ClassList.Count > 0)
             {
                 m_ClassList.Clear();
-                Dirty(ChangeType.Styles);
+                IncrementVersion(VersionChangeType.Styles);
             }
         }
 
@@ -1145,7 +1109,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (m_ClassList.Add(className))
             {
-                Dirty(ChangeType.Styles);
+                IncrementVersion(VersionChangeType.Styles);
             }
         }
 
@@ -1153,7 +1117,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (m_ClassList != null && m_ClassList.Remove(className))
             {
-                Dirty(ChangeType.Styles);
+                IncrementVersion(VersionChangeType.Styles);
             }
         }
 
@@ -1290,109 +1254,49 @@ namespace UnityEngine.Experimental.UIElements
 
     internal static class StylePainterExtensionMethods
     {
-        internal static TextureStylePainterParameters GetDefaultTextureParameters(this IStylePainter painter, VisualElement ve)
-        {
-            IStyle style = ve.style;
-            var painterParams = new TextureStylePainterParameters
-            {
-                rect = ve.alignedRect,
-                uv = new Rect(0, 0, 1, 1),
-                color = Color.white,
-                texture = style.backgroundImage,
-                scaleMode = style.backgroundSize,
-                sliceLeft = style.sliceLeft,
-                sliceTop = style.sliceTop,
-                sliceRight = style.sliceRight,
-                sliceBottom = style.sliceBottom
-            };
-            painter.SetBorderFromStyle(ref painterParams.border, style);
-            return painterParams;
-        }
-
-        internal static RectStylePainterParameters GetDefaultRectParameters(this IStylePainter painter, VisualElement ve)
-        {
-            IStyle style = ve.style;
-            var painterParams = new RectStylePainterParameters
-            {
-                rect = ve.alignedRect,
-                color = style.backgroundColor,
-            };
-            painter.SetBorderFromStyle(ref painterParams.border, style);
-            return painterParams;
-        }
-
-        internal static TextStylePainterParameters GetDefaultTextParameters(this IStylePainter painter, BaseTextElement te)
-        {
-            IStyle style = te.style;
-            var painterParams = new TextStylePainterParameters
-            {
-                rect = te.contentRect,
-                text = te.text,
-                font = style.font,
-                fontSize = style.fontSize,
-                fontStyle = style.fontStyle,
-                fontColor = style.textColor.GetSpecifiedValueOrDefault(Color.black),
-                anchor = style.textAlignment,
-                wordWrap = style.wordWrap,
-                wordWrapWidth = style.wordWrap ? te.contentRect.width : 0.0f,
-                richText = false,
-                clipping = style.textClipping
-            };
-            return painterParams;
-        }
-
-        internal static CursorPositionStylePainterParameters GetDefaultCursorPositionParameters(this IStylePainter painter, BaseTextElement te)
-        {
-            IStyle style = te.style;
-            var painterParams = new CursorPositionStylePainterParameters() {
-                rect = te.contentRect,
-                text = te.text,
-                font = style.font,
-                fontSize = style.fontSize,
-                fontStyle = style.fontStyle,
-                anchor = style.textAlignment,
-                wordWrapWidth = style.wordWrap ? te.contentRect.width : 0.0f,
-                richText = false,
-                cursorIndex = 0
-            };
-            return painterParams;
-        }
-
         internal static void DrawBackground(this IStylePainter painter, VisualElement ve)
         {
+            var stylePainter = (IStylePainterInternal)painter;
             IStyle style = ve.style;
             if (style.backgroundColor != Color.clear)
             {
-                var painterParams = painter.GetDefaultRectParameters(ve);
+                var painterParams = RectStylePainterParameters.GetDefault(ve);
                 painterParams.border.SetWidth(0.0f);
-                painter.DrawRect(painterParams);
+                stylePainter.DrawRect(painterParams);
             }
 
             if (style.backgroundImage.value != null)
             {
-                var painterParams = painter.GetDefaultTextureParameters(ve);
+                var painterParams = TextureStylePainterParameters.GetDefault(ve);
                 painterParams.border.SetWidth(0.0f);
-                painter.DrawTexture(painterParams);
+                stylePainter.DrawTexture(painterParams);
             }
         }
 
         internal static void DrawBorder(this IStylePainter painter, VisualElement ve)
         {
+            var stylePainter = (IStylePainterInternal)painter;
             IStyle style = ve.style;
             if (style.borderColor != Color.clear && (style.borderLeftWidth > 0.0f || style.borderTopWidth > 0.0f || style.borderRightWidth > 0.0f || style.borderBottomWidth > 0.0f))
             {
-                var painterParams = painter.GetDefaultRectParameters(ve);
+                var painterParams = RectStylePainterParameters.GetDefault(ve);
                 painterParams.color = style.borderColor;
-                painter.DrawRect(painterParams);
+                stylePainter.DrawRect(painterParams);
             }
         }
 
-        internal static void DrawText(this IStylePainter painter, BaseTextElement te)
+        internal static void DrawText(this IStylePainter painter, VisualElement ve, string text)
         {
-            if (!string.IsNullOrEmpty(te.text) && te.contentRect.width > 0.0f && te.contentRect.height > 0.0f)
+            var stylePainter = (IStylePainterInternal)painter;
+            if (!string.IsNullOrEmpty(text) && ve.contentRect.width > 0.0f && ve.contentRect.height > 0.0f)
             {
-                painter.DrawText(painter.GetDefaultTextParameters(te));
+                stylePainter.DrawText(TextStylePainterParameters.GetDefault(ve, text));
             }
+        }
+
+        internal static void DrawText(this IStylePainter painter, TextElement te)
+        {
+            DrawText(painter, te, te.text);
         }
 
         internal static void SetBorderFromStyle(this IStylePainter painter, ref BorderParameters border, IStyle style)

@@ -116,7 +116,7 @@ namespace UnityEditor
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareEnum,
                     drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
                         {
-                            bool areaLight = dep.Length > 1 && dep[0].enumValueIndex == (int)LightType.Area;
+                            bool areaLight = dep.Length > 1 && (dep[0].enumValueIndex == (int)LightType.Area || dep[0].enumValueIndex == (int)LightType.Disc);
 
                             using (new EditorGUI.DisabledScope(areaLight))
                             {

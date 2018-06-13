@@ -429,6 +429,8 @@ namespace UnityEditor
 
         public static extern AndroidMinification androidReleaseMinification { get; set; }
 
+        public static extern bool androidUseLegacySdkTools { get; set; }
+
         // *undocumented*
         // NOTE: This setting should probably not be a part of the public API as is. Atm it is used by playmode tests
         //  and applied during build post-processing. We will however move towards separating building and launching

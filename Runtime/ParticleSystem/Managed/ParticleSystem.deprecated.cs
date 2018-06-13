@@ -56,18 +56,26 @@ namespace UnityEngine
 
         public partial struct SubEmittersModule
         {
-            [Obsolete("birth0 property is deprecated.Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
+            [Obsolete("birth0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
             public ParticleSystem birth0 { get { return GetBirth(m_ParticleSystem, 0); } set { SetBirth(m_ParticleSystem, 0, value); } }
-            [Obsolete("birth1 property is deprecated.Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
+            [Obsolete("birth1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
             public ParticleSystem birth1 { get { return GetBirth(m_ParticleSystem, 1); } set { SetBirth(m_ParticleSystem, 1, value); } }
-            [Obsolete("collision0 property is deprecated.Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
+            [Obsolete("collision0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
             public ParticleSystem collision0 { get { return GetCollision(m_ParticleSystem, 0); } set { SetCollision(m_ParticleSystem, 0, value); } }
-            [Obsolete("collision1 property is deprecated.Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
+            [Obsolete("collision1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
             public ParticleSystem collision1 { get { return GetCollision(m_ParticleSystem, 1); } set { SetCollision(m_ParticleSystem, 1, value); } }
-            [Obsolete("death0 property is deprecated.Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
+            [Obsolete("death0 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
             public ParticleSystem death0 { get { return GetDeath(m_ParticleSystem, 0); } set { SetDeath(m_ParticleSystem, 0, value); } }
-            [Obsolete("death1 property is deprecated.Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
+            [Obsolete("death1 property is deprecated. Use AddSubEmitter, RemoveSubEmitter, SetSubEmitterSystem and GetSubEmitterSystem instead.", false)]
             public ParticleSystem death1 { get { return GetDeath(m_ParticleSystem, 1); } set { SetDeath(m_ParticleSystem, 1, value); } }
+        }
+
+        public partial struct TextureSheetAnimationModule
+        {
+            [Obsolete("flipU property is deprecated. Use ParticleSystemRenderer.flip.x instead.", false)]
+            public float flipU { get { return m_ParticleSystem.GetComponent<ParticleSystemRenderer>().flip.x; } set { var psr = m_ParticleSystem.GetComponent<ParticleSystemRenderer>(); var flip = psr.flip; flip.x = value; psr.flip = flip; } }
+            [Obsolete("flipV property is deprecated. Use ParticleSystemRenderer.flip.y instead.", false)]
+            public float flipV { get { return m_ParticleSystem.GetComponent<ParticleSystemRenderer>().flip.y; } set { var psr = m_ParticleSystem.GetComponent<ParticleSystemRenderer>(); var flip = psr.flip; flip.y = value; psr.flip = flip; } }
         }
 
         public partial struct Particle

@@ -118,204 +118,6 @@ namespace UnityEditor
         [SerializeField]
         internal List<TextureImportPlatformSettings> m_PlatformSettings;
 
-
-        internal static int[] s_TextureFormatsValueAll;
-
-        internal static int[] TextureFormatsValueAll
-        {
-            get
-            {
-                if (s_TextureFormatsValueAll != null)
-                    return s_TextureFormatsValueAll;
-
-                bool requireETC = false;
-                bool requirePVRTC = false;
-                bool requireETC2 = false;
-                bool requireASTC = false;
-
-                // Build available formats based on available platforms
-                BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
-                foreach (BuildPlatform platform in validPlatforms)
-                {
-                    switch (platform.defaultTarget)
-                    {
-                        case BuildTarget.Android:
-                            requirePVRTC = true;
-                            requireETC = true;
-                            requireETC2 = true;
-                            requireASTC = true;
-                            break;
-                        case BuildTarget.iOS:
-                            requirePVRTC = true;
-                            requireETC = true;
-                            requireETC2 = true;
-                            break;
-                        case BuildTarget.tvOS:
-                            requirePVRTC = true;
-                            requireASTC = true;
-                            requireETC = true;
-                            requireETC2 = true;
-                            break;
-                    }
-                }
-                List<int> formatValues = new List<int>();
-
-                formatValues.AddRange(new[] {
-                    (int)TextureImporterFormat.DXT1,
-                    (int)TextureImporterFormat.DXT5,
-                });
-
-                if (requireETC)
-                    formatValues.Add((int)TextureImporterFormat.ETC_RGB4);
-
-                if (requirePVRTC)
-                    formatValues.AddRange(new[] {
-                        (int)TextureImporterFormat.PVRTC_RGB2,
-                        (int)TextureImporterFormat.PVRTC_RGBA2,
-                        (int)TextureImporterFormat.PVRTC_RGB4,
-                        (int)TextureImporterFormat.PVRTC_RGBA4
-                    });
-
-                if (requireETC2)
-                    formatValues.AddRange(new[] {
-                        (int)TextureImporterFormat.ETC2_RGB4,
-                        (int)TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
-                        (int)TextureImporterFormat.ETC2_RGBA8
-                    });
-
-                if (requireASTC)
-                    formatValues.AddRange(new[] {
-                        (int)TextureImporterFormat.ASTC_RGB_4x4,
-                        (int)TextureImporterFormat.ASTC_RGB_5x5,
-                        (int)TextureImporterFormat.ASTC_RGB_6x6,
-                        (int)TextureImporterFormat.ASTC_RGB_8x8,
-                        (int)TextureImporterFormat.ASTC_RGB_10x10,
-                        (int)TextureImporterFormat.ASTC_RGB_12x12,
-                        (int)TextureImporterFormat.ASTC_RGBA_4x4,
-                        (int)TextureImporterFormat.ASTC_RGBA_5x5,
-                        (int)TextureImporterFormat.ASTC_RGBA_6x6,
-                        (int)TextureImporterFormat.ASTC_RGBA_8x8,
-                        (int)TextureImporterFormat.ASTC_RGBA_10x10,
-                        (int)TextureImporterFormat.ASTC_RGBA_12x12
-                    });
-
-
-                formatValues.AddRange(new[] {
-                    (int)TextureImporterFormat.RGB16,
-                    (int)TextureImporterFormat.ARGB16,
-                    (int)TextureImporterFormat.RGBA16,
-
-                    (int)TextureImporterFormat.RGB24,
-                    (int)TextureImporterFormat.Alpha8,
-                    (int)TextureImporterFormat.ARGB32,
-                    (int)TextureImporterFormat.RGBA32,
-                    (int)TextureImporterFormat.RGBAHalf,
-                    (int)TextureImporterFormat.BC6H,
-                    (int)TextureImporterFormat.BC7,
-
-                    (int)TextureImporterFormat.DXT1Crunched,
-                    (int)TextureImporterFormat.DXT5Crunched,
-                    (int)TextureImporterFormat.ETC_RGB4Crunched,
-                    (int)TextureImporterFormat.ETC2_RGBA8Crunched,
-                });
-
-                s_TextureFormatsValueAll = formatValues.ToArray();
-                return s_TextureFormatsValueAll;
-            }
-        }
-
-        internal static int[] s_NormalFormatsValueAll;
-        internal static int[] NormalFormatsValueAll
-        {
-            get
-            {
-                bool requireETC = false;
-                bool requirePVRTC = false;
-                bool requireETC2 = false;
-                bool requireASTC = false;
-
-                // Build available normals formats based on available platforms
-                BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
-                foreach (BuildPlatform platform in validPlatforms)
-                {
-                    switch (platform.defaultTarget)
-                    {
-                        case BuildTarget.Android:
-                            requirePVRTC = true;
-                            requireETC = true;
-                            requireETC2 = true;
-                            requireASTC = true;
-                            break;
-                        case BuildTarget.iOS:
-                            requirePVRTC = true;
-                            requireETC = true;
-                            requireETC2 = true;
-                            break;
-                        case BuildTarget.tvOS:
-                            requirePVRTC = true;
-                            requireASTC = true;
-                            requireETC = true;
-                            requireETC2 = true;
-                            break;
-                    }
-                }
-                List<int> formatValues = new List<int>();
-
-                formatValues.AddRange(new[] {
-                    (int)TextureImporterFormat.DXT5
-                });
-
-                if (requirePVRTC)
-                    formatValues.AddRange(new[] {
-                        (int)TextureImporterFormat.PVRTC_RGB2,
-                        (int)TextureImporterFormat.PVRTC_RGBA2,
-                        (int)TextureImporterFormat.PVRTC_RGB4,
-                        (int)TextureImporterFormat.PVRTC_RGBA4,
-                    });
-
-                if (requireETC)
-                    formatValues.AddRange(new int[] {
-                        (int)TextureImporterFormat.ETC_RGB4,
-                    });
-
-                if (requireETC2)
-                    formatValues.AddRange(new[] {
-                        (int)TextureImporterFormat.ETC2_RGB4,
-                        (int)TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
-                        (int)TextureImporterFormat.ETC2_RGBA8
-                    });
-
-                if (requireASTC)
-                    formatValues.AddRange(new[] {
-                        (int)TextureImporterFormat.ASTC_RGB_4x4,
-                        (int)TextureImporterFormat.ASTC_RGB_5x5,
-                        (int)TextureImporterFormat.ASTC_RGB_6x6,
-                        (int)TextureImporterFormat.ASTC_RGB_8x8,
-                        (int)TextureImporterFormat.ASTC_RGB_10x10,
-                        (int)TextureImporterFormat.ASTC_RGB_12x12,
-                        (int)TextureImporterFormat.ASTC_RGBA_4x4,
-                        (int)TextureImporterFormat.ASTC_RGBA_5x5,
-                        (int)TextureImporterFormat.ASTC_RGBA_6x6,
-                        (int)TextureImporterFormat.ASTC_RGBA_8x8,
-                        (int)TextureImporterFormat.ASTC_RGBA_10x10,
-                        (int)TextureImporterFormat.ASTC_RGBA_12x12
-                    });
-
-                formatValues.AddRange(new[] {
-                    (int)TextureImporterFormat.ARGB16,
-                    (int)TextureImporterFormat.RGBA16,
-
-                    (int)TextureImporterFormat.RGBA32,
-
-                    (int)TextureImporterFormat.DXT5Crunched
-                });
-
-                s_NormalFormatsValueAll = formatValues.ToArray();
-
-                return s_NormalFormatsValueAll;
-            }
-        }
-
         internal static readonly TextureImporterFormat[] kFormatsWithCompressionSettings =
         {
             TextureImporterFormat.DXT1Crunched,
@@ -343,17 +145,6 @@ namespace UnityEditor
             TextureImporterFormat.ASTC_RGBA_10x10,
             TextureImporterFormat.ASTC_RGBA_12x12
         };
-
-#pragma warning disable 649
-        internal static string[] s_TextureFormatStringsAll;
-        internal static string[] s_TextureFormatStringsPSP2;
-        internal static string[] s_TextureFormatStringsSwitch;
-        internal static string[] s_TextureFormatStringsWebGL;
-        internal static string[] s_TextureFormatStringsApplePVR;
-        internal static string[] s_TextureFormatStringsAndroid;
-        internal static string[] s_TextureFormatStringsSingleChannel;
-        internal static string[] s_TextureFormatStringsDefault;
-        internal static string[] s_NormalFormatStringsDefault;
 
         enum CookieMode
         {
@@ -555,7 +346,7 @@ namespace UnityEditor
             public readonly GUIContent spriteGenerateFallbackPhysicsShape = EditorGUIUtility.TrTextContent("Generate Physics Shape", "Generates a default physics shape from the outline of the Sprite/s when a physics shape has not been set in the Sprite Editor.");
 
             public readonly GUIContent alphaIsTransparency = EditorGUIUtility.TrTextContent("Alpha Is Transparency", "If the provided alpha channel is transparency, enable this to pre-filter the color to avoid texture filtering artifacts. This is not supported for HDR textures.");
-            public readonly GUIContent etc1Compression = EditorGUIUtility.TrTextContent("Compress using ETC1 (split alpha channel)", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
+            public readonly GUIContent useAlphaSplitLabel = EditorGUIUtility.TrTextContent("Split Alpha Channel", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
 
             public readonly GUIContent crunchedCompression = EditorGUIUtility.TrTextContent("Use Crunch Compression", "Texture is crunch-compressed to save space on disk when applicable.");
 
@@ -810,8 +601,6 @@ namespace UnityEditor
 
             importer.GetWidthAndHeight(ref m_TextureWidth, ref m_TextureHeight);
             m_IsPOT = IsPowerOfTwo(m_TextureWidth) && IsPowerOfTwo(m_TextureHeight);
-
-            InitializeTextureFormatStrings();
         }
 
         void SetSerializedPropertySettings(TextureImporterSettings settings)
@@ -1558,29 +1347,9 @@ namespace UnityEditor
             for (int i = 0; i < texFormatValues.Length; i++)
             {
                 int val = texFormatValues[i];
-                retval[i] = " " + TextureUtil.GetTextureFormatString((TextureFormat)val);
+                retval[i] = " " + (val < 0 ? "Auto" : TextureUtil.GetTextureFormatString((TextureFormat)val));
             }
             return retval;
-        }
-
-        internal static void InitializeTextureFormatStrings()
-        {
-            if (s_TextureFormatStringsApplePVR == null)
-                s_TextureFormatStringsApplePVR = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueApplePVR);
-            if (s_TextureFormatStringsAndroid == null)
-                s_TextureFormatStringsAndroid = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueAndroid);
-            if (s_TextureFormatStringsWebGL == null)
-                s_TextureFormatStringsWebGL = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueWebGL);
-            if (s_TextureFormatStringsPSP2 == null)
-                s_TextureFormatStringsPSP2 = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValuePSP2);
-            if (s_TextureFormatStringsSwitch == null)
-                s_TextureFormatStringsSwitch = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSwitch);
-            if (s_TextureFormatStringsDefault == null)
-                s_TextureFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueDefault);
-            if (s_NormalFormatStringsDefault == null)
-                s_NormalFormatStringsDefault = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kNormalFormatsValueDefault);
-            if (s_TextureFormatStringsSingleChannel == null)
-                s_TextureFormatStringsSingleChannel = TextureImporterInspector.BuildTextureStrings(TextureImportPlatformSettings.kTextureFormatsValueSingleChannel);
         }
 
         internal static bool IsFormatRequireCompressionSetting(TextureImporterFormat format)
@@ -1641,7 +1410,7 @@ namespace UnityEditor
             BuildPlatform[] validPlatforms = GetBuildPlayerValidPlatforms();
 
             m_PlatformSettings = new List<TextureImportPlatformSettings>();
-            m_PlatformSettings.Add(new TextureImportPlatformSettings(TextureImporterInspector.s_DefaultPlatformName, BuildTarget.StandaloneWindows, this));
+            m_PlatformSettings.Add(new TextureImportPlatformSettings(s_DefaultPlatformName, BuildTarget.StandaloneWindows, this));
 
             foreach (BuildPlatform bp in validPlatforms)
                 m_PlatformSettings.Add(new TextureImportPlatformSettings(bp.name, bp.defaultTarget, this));

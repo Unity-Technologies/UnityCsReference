@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -13,23 +14,67 @@ namespace UnityEngine
         [StructLayout(LayoutKind.Sequential)]
         public partial struct Burst
         {
-            public Burst(float _time, short _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
-            public Burst(float _time, short _minCount, short _maxCount) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
-            public Burst(float _time, short _minCount, short _maxCount, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; }
-            public Burst(float _time, MinMaxCurve _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; }
-            public Burst(float _time, MinMaxCurve _count, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = _count; m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; }
+            public Burst(float _time, short _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
+            public Burst(float _time, short _minCount, short _maxCount) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
+            public Burst(float _time, short _minCount, short _maxCount, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = new MinMaxCurve(_minCount, _maxCount); m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; m_InvProbability = 0.0f; }
+            public Burst(float _time, MinMaxCurve _count) { m_Time = _time; m_Count = _count; m_RepeatCount = 0; m_RepeatInterval = 0.0f; m_InvProbability = 0.0f; }
+            public Burst(float _time, MinMaxCurve _count, int _cycleCount, float _repeatInterval) { m_Time = _time; m_Count = _count; m_RepeatCount = _cycleCount - 1; m_RepeatInterval = _repeatInterval; m_InvProbability = 0.0f; }
 
             public float time { get { return m_Time; } set { m_Time = value; } }                                                // The time the burst happens.
             public MinMaxCurve count { get { return m_Count; } set { m_Count = value; } }                                       // Number of particles to be emitted.
             public short minCount { get { return (short)m_Count.constantMin; } set { m_Count.constantMin = (short)value; } }    // Minimum number of particles to be emitted.
             public short maxCount { get { return (short)m_Count.constantMax; } set { m_Count.constantMax = (short)value; } }    // Maximum number of particles to be emitted.
-            public int cycleCount { get { return m_RepeatCount + 1; } set { m_RepeatCount = value - 1; } }                      // How many times to play the burst.
-            public float repeatInterval { get { return m_RepeatInterval; } set { m_RepeatInterval = value; } }                  // The interval between repeats of the burst.
+
+            // How many times to play the burst.
+            public int cycleCount
+            {
+                get
+                {
+                    return m_RepeatCount + 1;
+                }
+                set
+                {
+                    if (value < 0)
+                        throw new ArgumentOutOfRangeException("cycleCount", "cycleCount must be at least 0: " + value);
+                    m_RepeatCount = value - 1;
+                }
+            }
+
+            // The interval between repeats of the burst.
+            public float repeatInterval
+            {
+                get
+                {
+                    return m_RepeatInterval;
+                }
+                set
+                {
+                    if (value <= 0.0f)
+                        throw new ArgumentOutOfRangeException("repeatInterval", "repeatInterval must be greater than 0.0f: " + value);
+                    m_RepeatInterval = value;
+                }
+            }
+
+            // The chance a burst will trigger.
+            public float probability
+            {
+                get
+                {
+                    return 1.0f - m_InvProbability;
+                }
+                set
+                {
+                    if (value < 0.0f || value > 1.0f)
+                        throw new ArgumentOutOfRangeException("probability", "probability must be between 0.0f and 1.0f: " + value);
+                    m_InvProbability = 1.0f - value;
+                }
+            }
 
             private float m_Time;
             private MinMaxCurve m_Count;
             private int m_RepeatCount; // externally, we use "cycles", because users preferred that, but internally, we must use something that defaults to 0, due to C# struct rules
             private float m_RepeatInterval;
+            private float m_InvProbability; // internally, we must use something that defaults to 0, due to C# struct rules, so reverse the storage from 0-1 to 1-0
         }
 
         [Serializable]
@@ -204,17 +249,17 @@ namespace UnityEngine
             public void ResetRandomSeed() { m_RandomSeedSet = false; }
             public void ResetStartLifetime() { m_StartLifetimeSet = false; }
 
-            private Particle m_Particle;
-            private bool m_PositionSet;
-            private bool m_VelocitySet;
-            private bool m_AxisOfRotationSet;
-            private bool m_RotationSet;
-            private bool m_AngularVelocitySet;
-            private bool m_StartSizeSet;
-            private bool m_StartColorSet;
-            private bool m_RandomSeedSet;
-            private bool m_StartLifetimeSet;
-            private bool m_ApplyShapeToPosition;
+            [NativeName(Name = "particle")] private Particle m_Particle;
+            [NativeName(Name = "positionSet")] private bool m_PositionSet;
+            [NativeName(Name = "velocitySet")] private bool m_VelocitySet;
+            [NativeName(Name = "axisOfRotationSet")] private bool m_AxisOfRotationSet;
+            [NativeName(Name = "rotationSet")] private bool m_RotationSet;
+            [NativeName(Name = "rotationalSpeedSet")] private bool m_AngularVelocitySet;
+            [NativeName(Name = "startSizeSet")] private bool m_StartSizeSet;
+            [NativeName(Name = "startColorSet")] private bool m_StartColorSet;
+            [NativeName(Name = "randomSeedSet")] private bool m_RandomSeedSet;
+            [NativeName(Name = "startLifetimeSet")] private bool m_StartLifetimeSet;
+            [NativeName(Name = "applyShapeToPosition")] private bool m_ApplyShapeToPosition;
         }
     }
 }

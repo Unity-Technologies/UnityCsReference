@@ -6,11 +6,11 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class Button : BaseTextElement
+    public class Button : TextElement
     {
-        public class ButtonFactory : UxmlFactory<Button, ButtonUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Button, UxmlTraits> {}
 
-        public class ButtonUxmlTraits : BaseTextElementUxmlTraits {}
+        public new class UxmlTraits : TextElement.UxmlTraits {}
 
         public Clickable clickable;
 

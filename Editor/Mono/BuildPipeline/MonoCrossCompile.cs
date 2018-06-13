@@ -3,20 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using UnityEditor.Scripting.ScriptCompilation;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using UnityEditorInternal;
 using System;
 using System.Threading;
-using System.Runtime.InteropServices;
-using System.Runtime.CompilerServices;
-using System.Text.RegularExpressions;
-using Mono.Cecil;
 
 namespace UnityEditor
 {
@@ -276,7 +268,7 @@ namespace UnityEditor
                 arguments += "print-skipped,";
             }
 
-            if (additionalOptions != null & additionalOptions.Trim().Length > 0)
+            if (additionalOptions != null && additionalOptions.Trim().Length > 0)
                 arguments += additionalOptions.Trim() + ",";
 
             string outputFileName = Path.GetFileName(output);

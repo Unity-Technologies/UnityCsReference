@@ -47,9 +47,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 int oldValue = m_Distance;
                 if (m_Distance.Apply(value, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
                 {
-                    if (oldValue != m_Distance)
+                    if (oldValue != m_Distance && m_Attacher != null)
                     {
-                        Dirty(ChangeType.Layout);
+                        m_Attacher.distance = m_Distance;
                     }
                 }
             }
@@ -114,8 +114,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_TextElement.RemoveFromHierarchy();
                 m_TextElement.style.wordWrap = true;
                 m_TextElement.RegisterCallback<GeometryChangedEvent>((evt) => ComputeTextSize());
-
-                clippingOptions = ClippingOptions.NoClipping;
             }
         }
 

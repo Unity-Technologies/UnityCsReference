@@ -114,12 +114,12 @@ namespace UnityEditor.Compilation
 
         internal string[] GetDefaultReferences(EditorCompilation editorCompilation)
         {
-            return editorCompilation.GetDefaultReferences(this);
+            return editorCompilation.GetAssemblyBuilderDefaultReferences(this);
         }
 
         internal string[] GetDefaultDefines(EditorCompilation editorCompilation)
         {
-            return editorCompilation.GetDefaultDefines(this);
+            return editorCompilation.GetAssemblyBuilderDefaultDefines(this);
         }
 
         public AssemblyBuilderStatus status

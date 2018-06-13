@@ -18,14 +18,14 @@ namespace UnityEngine.Experimental.Animations
     {
         private System.IntPtr stream;
 
-        public bool IsValid()
+        public bool isValid
         {
-            return stream != System.IntPtr.Zero;
+            get { return stream != System.IntPtr.Zero; }
         }
 
         private void ThrowIfInvalid()
         {
-            if (!IsValid())
+            if (!isValid)
                 throw new InvalidOperationException("The AnimationHumanStream is invalid.");
         }
 
@@ -35,17 +35,29 @@ namespace UnityEngine.Experimental.Animations
 
         public float rightFootHeight { get { ThrowIfInvalid(); return GetFootHeight(false); } }
 
-        public Vector3 GetBodyLocalPosition() { ThrowIfInvalid(); return InternalGetBodyLocalPosition(); }
-        public void SetBodyLocalPosition(Vector3 value) { ThrowIfInvalid(); InternalSetBodyLocalPosition(value); }
+        public Vector3 bodyLocalPosition
+        {
+            get { ThrowIfInvalid(); return InternalGetBodyLocalPosition(); }
+            set { ThrowIfInvalid(); InternalSetBodyLocalPosition(value); }
+        }
 
-        public Quaternion GetBodyLocalRotation() { ThrowIfInvalid(); return InternalGetBodyLocalRotation(); }
-        public void SetBodyLocalRotation(Quaternion value) { ThrowIfInvalid(); InternalSetBodyLocalRotation(value); }
+        public Quaternion bodyLocalRotation
+        {
+            get { ThrowIfInvalid(); return InternalGetBodyLocalRotation(); }
+            set { ThrowIfInvalid(); InternalSetBodyLocalRotation(value); }
+        }
 
-        public Vector3 GetBodyPosition() { ThrowIfInvalid(); return InternalGetBodyPosition(); }
-        public void SetBodyPosition(Vector3 value) { ThrowIfInvalid(); InternalSetBodyPosition(value); }
+        public Vector3 bodyPosition
+        {
+            get { ThrowIfInvalid(); return InternalGetBodyPosition(); }
+            set { ThrowIfInvalid(); InternalSetBodyPosition(value); }
+        }
 
-        public Quaternion GetBodyRotation() { ThrowIfInvalid(); return InternalGetBodyRotation(); }
-        public void SetBodyRotation(Quaternion value) { ThrowIfInvalid(); InternalSetBodyRotation(value); }
+        public Quaternion bodyRotation
+        {
+            get { ThrowIfInvalid(); return InternalGetBodyRotation(); }
+            set { ThrowIfInvalid(); InternalSetBodyRotation(value); }
+        }
 
         public float GetMuscle(MuscleHandle muscle) { ThrowIfInvalid(); return InternalGetMuscle(muscle); }
         public void  SetMuscle(MuscleHandle muscle, float value) { ThrowIfInvalid(); InternalSetMuscle(muscle, value); }
@@ -54,7 +66,7 @@ namespace UnityEngine.Experimental.Animations
         public Vector3 rightFootVelocity { get { ThrowIfInvalid(); return GetRightFootVelocity(); } }
 
         // IK goals
-        public void SetStancePose() { ThrowIfInvalid(); InternalSetStancePose(); }
+        public void ResetToStancePose() { ThrowIfInvalid(); InternalResetToStancePose(); }
 
         public Vector3 GetGoalPositionFromPose(AvatarIKGoal index) { ThrowIfInvalid(); return InternalGetGoalPositionFromPose(index); }
         public Quaternion GetGoalRotationFromPose(AvatarIKGoal index) { ThrowIfInvalid(); return InternalGetGoalRotationFromPose(index); }
@@ -84,7 +96,7 @@ namespace UnityEngine.Experimental.Animations
         public void SetLookAtBodyWeight(float weight)                           { ThrowIfInvalid(); InternalSetLookAtBodyWeight(weight); }
         public void SetLookAtHeadWeight(float weight)                           { ThrowIfInvalid(); InternalSetLookAtHeadWeight(weight); }
         public void SetLookAtEyesWeight(float weight)                           { ThrowIfInvalid(); InternalSetLookAtEyesWeight(weight); }
-        public void IKSolve()                                                   { ThrowIfInvalid(); InternalIKSolve(); }
+        public void SolveIK()                                                   { ThrowIfInvalid(); InternalSolveIK(); }
 
         [NativeMethod(IsThreadSafe = true)]
         private extern float GetHumanScale();
@@ -92,8 +104,8 @@ namespace UnityEngine.Experimental.Animations
         [NativeMethod(IsThreadSafe = true)]
         private extern float GetFootHeight(bool left);
 
-        [NativeMethod(Name = "SetStancePose", IsThreadSafe = true)]
-        private extern void InternalSetStancePose();
+        [NativeMethod(Name = "ResetToStancePose", IsThreadSafe = true)]
+        private extern void InternalResetToStancePose();
 
         [NativeMethod(Name = "AnimationHumanStreamBindings::GetGoalPositionFromPose", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern Vector3 InternalGetGoalPositionFromPose(AvatarIKGoal index);
@@ -199,7 +211,7 @@ namespace UnityEngine.Experimental.Animations
         [NativeMethod(Name = "SetLookAtEyesWeight", IsThreadSafe = true)]
         private extern void InternalSetLookAtEyesWeight(float weight);
 
-        [NativeMethod(Name = "IKSolve", IsThreadSafe = true)]
-        private extern void InternalIKSolve();
+        [NativeMethod(Name = "SolveIK", IsThreadSafe = true)]
+        private extern void InternalSolveIK();
     }
 }

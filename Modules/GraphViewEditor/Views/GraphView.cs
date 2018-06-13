@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
@@ -160,12 +161,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected GraphView()
         {
             selection = new List<ISelectable>();
-            clippingOptions = ClippingOptions.ClipContents;
+            style.overflow = Overflow.Hidden;
 
             contentViewContainer = new ContentViewContainer
             {
                 name = "contentViewContainer",
-                clippingOptions = ClippingOptions.NoClipping,
                 pickingMode = PickingMode.Ignore
             };
 
@@ -209,32 +209,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        internal override void ChangePanel(BaseVisualElementPanel p)
-        {
-            if (p == panel)
-                return;
-
-            if (p == null)
-            {
-                Undo.ClearUndo(m_GraphViewUndoRedoSelection);
-                Undo.undoRedoPerformed -= UndoRedoPerformed;
-                ScriptableObject.DestroyImmediate(m_GraphViewUndoRedoSelection);
-                m_GraphViewUndoRedoSelection = null;
-
-                if (!EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
-                    ClearSavedSelection();
-            }
-            else if (panel == null)
-            {
-                Undo.undoRedoPerformed += UndoRedoPerformed;
-                m_GraphViewUndoRedoSelection = ScriptableObject.CreateInstance<GraphViewUndoRedoSelection>();
-                m_GraphViewUndoRedoSelection.selectedElements = new List<string>();
-                m_GraphViewUndoRedoSelection.hideFlags = HideFlags.HideAndDontSave;
-            }
-
-            base.ChangePanel(p);
-        }
-
         private void ClearSavedSelection()
         {
             if (m_PersistedSelection == null)
@@ -260,7 +234,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_GraphViewUndoRedoSelection.version = graphViewSelection.version;
             m_PersistedSelection.version = graphViewSelection.version;
 
-            ClearSelection();
+            ClearSelectionNoUndoRecord();
             foreach (string guid in graphViewSelection.selectedElements)
             {
                 var element = GetElementByGuid(guid);
@@ -324,7 +298,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void AddLayer(int index)
         {
-            Layer newLayer = new Layer { clippingOptions = ClippingOptions.NoClipping, pickingMode = PickingMode.Ignore };
+            Layer newLayer = new Layer { pickingMode = PickingMode.Ignore };
 
             m_ContainerLayers.Add(index, newLayer);
 
@@ -522,6 +496,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (graphElement == null)
                 return;
 
+            if (selection.Contains(selectable))
+                return;
+
             AddToSelectionNoUndoRecord(graphElement);
 
             if (ShouldRecordUndo())
@@ -542,7 +519,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // To ensure that the selected GraphElement gets unselected if it is removed from the GraphView.
             graphElement.RegisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
 
-            contentViewContainer.Dirty(ChangeType.Repaint);
+            contentViewContainer.MarkDirtyRepaint();
         }
 
         private void RemoveFromSelectionNoUndoRecord(ISelectable selectable)
@@ -555,13 +532,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             selection.Remove(selectable);
             graphElement.OnUnselected();
             graphElement.UnregisterCallback<DetachFromPanelEvent>(OnSelectedElementDetachedFromPanel);
-            contentViewContainer.Dirty(ChangeType.Repaint);
+            contentViewContainer.MarkDirtyRepaint();
         }
 
         public virtual void RemoveFromSelection(ISelectable selectable)
         {
             var graphElement = selectable as GraphElement;
             if (graphElement == null)
+                return;
+
+            if (!selection.Contains(selectable))
                 return;
 
             RemoveFromSelectionNoUndoRecord(selectable);
@@ -575,7 +555,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public virtual void ClearSelection()
+        private bool ClearSelectionNoUndoRecord()
         {
             foreach (var graphElement in selection.OfType<GraphElement>())
             {
@@ -587,7 +567,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             bool selectionWasNotEmpty = selection.Any();
             selection.Clear();
-            contentViewContainer.Dirty(ChangeType.Repaint);
+            contentViewContainer.MarkDirtyRepaint();
+
+            return selectionWasNotEmpty;
+        }
+
+        public virtual void ClearSelection()
+        {
+            bool selectionWasNotEmpty = ClearSelectionNoUndoRecord();
 
             if (ShouldRecordUndo() && selectionWasNotEmpty)
             {
@@ -669,6 +656,39 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            if (evt.GetEventTypeId() == DetachFromPanelEvent.TypeId())
+            {
+                DetachFromPanelEvent dtpe = (DetachFromPanelEvent)evt;
+
+                if (dtpe.destinationPanel == null)
+                {
+                    Undo.ClearUndo(m_GraphViewUndoRedoSelection);
+                    Undo.undoRedoPerformed -= UndoRedoPerformed;
+                    ScriptableObject.DestroyImmediate(m_GraphViewUndoRedoSelection);
+                    m_GraphViewUndoRedoSelection = null;
+
+                    if (!EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPlaying)
+                        ClearSavedSelection();
+                }
+            }
+            else if (evt.GetEventTypeId() == AttachToPanelEvent.TypeId())
+            {
+                AttachToPanelEvent atpe = (AttachToPanelEvent)evt;
+
+                if (atpe.originPanel == null)
+                {
+                    Undo.undoRedoPerformed += UndoRedoPerformed;
+                    m_GraphViewUndoRedoSelection = ScriptableObject.CreateInstance<GraphViewUndoRedoSelection>();
+                    m_GraphViewUndoRedoSelection.selectedElements = new List<string>();
+                    m_GraphViewUndoRedoSelection.hideFlags = HideFlags.HideAndDontSave;
+                }
+            }
+        }
+
         void OnContextualMenu(ContextualMenuPopulateEvent evt)
         {
             // If popping a contextual menu on a GraphElement, add the cut/copy actions.
@@ -695,7 +715,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (!isReframable)
                 return;
 
-            if (MouseCaptureController.IsMouseCaptureTaken())
+            if (MouseCaptureController.IsMouseCaptured())
                 return;
 
             EventPropagation result = EventPropagation.Continue;
@@ -753,7 +773,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void OnValidateCommand(ValidateCommandEvent evt)
         {
-            if (MouseCaptureController.IsMouseCaptureTaken())
+            if (MouseCaptureController.IsMouseCaptured())
                 return;
 
             if ((evt.commandName == EventCommandNames.Copy && canCopySelection)
@@ -786,7 +806,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void OnExecuteCommand(ExecuteCommandEvent evt)
         {
-            if (MouseCaptureController.IsMouseCaptureTaken())
+            if (MouseCaptureController.IsMouseCaptured())
                 return;
 
             if (evt.commandName == EventCommandNames.Copy)
@@ -1079,11 +1099,21 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             // TODO : Find a better way to remove a graphElement from its scope when it is removed from the GraphView.
             Scope scope = graphElement.GetContainingScope();
-
             if (scope != null)
             {
                 scope.RemoveElement(graphElement);
             }
+
+            StackNode stack = graphElement.parent as StackNode;
+            if (stack != null)
+            {
+                stack.RemoveElement(graphElement);
+                if (elementRemovedFromStackNode != null)
+                {
+                    elementRemovedFromStackNode(stack, graphElement);
+                }
+            }
+
             graphElement.RemoveFromHierarchy();
         }
 
@@ -1264,7 +1294,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 UpdateViewTransform(frameTranslation, frameScaling);
             }
 
-            contentViewContainer.Dirty(ChangeType.Repaint);
+            contentViewContainer.MarkDirtyRepaint();
 
             UpdatePersistedViewTransform();
 

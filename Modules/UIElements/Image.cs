@@ -10,9 +10,9 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class Image : VisualElement
     {
-        public class ImageFactory : UxmlFactory<Image, ImageUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Image, UxmlTraits> {}
 
-        public class ImageUxmlTraits : VisualElementUxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -29,9 +29,9 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_Image; }
             set
             {
-                if (StyleValueUtils.ApplyAndCompare(ref m_Image, value))
+                if (StyleValueUtils.ApplyAndCompareObject(ref m_Image, value))
                 {
-                    Dirty(ChangeType.Repaint | ChangeType.Layout);
+                    IncrementVersion(VersionChangeType.Layout | VersionChangeType.Repaint);
                     if (m_Image.value == null)
                     {
                         m_UV = new Rect(0, 0, 1 , 1);
@@ -63,7 +63,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (StyleValueUtils.ApplyAndCompare(ref m_ScaleMode,
                         new StyleValue<int>((int)value.value, value.specificity)))
                 {
-                    Dirty(ChangeType.Layout);
+                    IncrementVersion(VersionChangeType.Layout);
                 }
             }
         }
@@ -104,7 +104,7 @@ namespace UnityEngine.Experimental.UIElements
             return new Vector2(measuredWidth, measuredHeight);
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        protected override void DoRepaint(IStylePainter painter)
         {
             //we paint the bg color, borders, etc
             base.DoRepaint(painter);
@@ -124,13 +124,19 @@ namespace UnityEngine.Experimental.UIElements
                 color = GUI.color,
                 scaleMode = scaleMode
             };
-            painter.DrawTexture(painterParams);
+            var stylePainter = (IStylePainterInternal)painter;
+            stylePainter.DrawTexture(painterParams);
         }
 
         protected override void OnStyleResolved(ICustomStyle elementStyle)
         {
             base.OnStyleResolved(elementStyle);
-            elementStyle.ApplyCustomProperty("image", ref m_Image);
+
+            // We should consider not exposing image as a style at all, since it's intimately tied to uv/sourceRect
+            StyleValue<Texture2D> targetAsDefinition = new StyleValue<Texture2D>(m_Image.value as Texture2D, m_Image.specificity);
+            elementStyle.ApplyCustomProperty("image", ref targetAsDefinition);
+            m_Image = new StyleValue<Texture>(targetAsDefinition.value, targetAsDefinition.specificity);
+
             elementStyle.ApplyCustomProperty("image-size", ref m_ScaleMode);
         }
 

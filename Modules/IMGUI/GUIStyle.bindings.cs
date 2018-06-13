@@ -21,7 +21,9 @@ namespace UnityEngine
         [FreeFunction(Name = "GUIStyleState_Bindings::Cleanup", IsThreadSafe = true, HasExplicitThis = true)] private extern void Cleanup();
     }
 
-    [RequiredByNativeCode, NativeHeader("Modules/IMGUI/GUIStyle.bindings.h")]
+    [RequiredByNativeCode]
+    [NativeHeader("Modules/IMGUI/GUIStyle.bindings.h")]
+    [NativeHeader("IMGUIScriptingClasses.h")]
     partial class GUIStyle
     {
         [NativeProperty("Name", false, TargetType.Function)] public extern string name { get; set; }

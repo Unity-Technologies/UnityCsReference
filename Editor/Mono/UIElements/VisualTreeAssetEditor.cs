@@ -26,7 +26,8 @@ namespace UnityEditor.Experimental.UIElements
         protected void OnDestroy()
         {
             m_Panel = null;
-            UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
+            if (m_LastTree != null)
+                UIElementsUtility.RemoveCachedPanel(m_LastTree.GetInstanceID());
         }
 
         // hack to avoid null references when a scriptedImporter runs and replaces the current selection
@@ -95,9 +96,7 @@ namespace UnityEditor.Experimental.UIElements
             EditorGUI.DrawRect(r, EditorGUIUtility.isProSkin ? EditorGUIUtility.kDarkViewBackground : HostView.kViewColor);
 
             m_Panel.visualTree.layout = GUIClip.UnclipToWindow(r);
-
-            m_Panel.visualTree.Dirty(ChangeType.Layout);
-            m_Panel.visualTree.Dirty(ChangeType.Repaint);
+            m_Panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
 
             var oldState = SavedGUIState.Create();
             int clips = GUIClip.Internal_GetCount();

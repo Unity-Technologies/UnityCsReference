@@ -6,6 +6,6 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class Box : VisualElement
     {
-        public class BoxFactory : UxmlFactory<Box> {}
+        public new class UxmlFactory : UxmlFactory<Box> {}
     }
 }

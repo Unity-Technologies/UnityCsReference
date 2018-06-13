@@ -12,6 +12,7 @@ using UnityEngine.Scripting;
 namespace UnityEditor
 {
     [NativeHeader("Editor/Mono/EditorUtility.bindings.h")]
+    [NativeHeader("Editor/Mono/MonoEditorUtility.h")]
     [NativeHeader("Runtime/Shaders/ShaderImpl/ShaderUtilities.h")]
     partial class EditorUtility
     {
@@ -62,6 +63,9 @@ namespace UnityEditor
 
         [FreeFunction("CopySerialized")]
         public static extern void CopySerialized(Object source, Object dest);
+
+        [FreeFunction("CopyScriptSerialized")]
+        public static extern void CopySerializedManagedFieldsOnly([NotNull] System.Object source, [NotNull] System.Object dest);
 
         [FreeFunction("CopySerializedIfDifferent")]
         private static extern void InternalCopySerializedIfDifferent(Object source, Object dest);

@@ -52,6 +52,7 @@ namespace UnityEditor.Experimental.U2D
     public interface ITextureDataProvider
     {
         Texture2D texture { get; }
+        Texture2D previewTexture { get; }
         void GetTextureActualWidthAndHeight(out int width , out int height);
         Texture2D GetReadableTexture2D();
     }
@@ -434,6 +435,11 @@ namespace UnityEditor.Experimental.U2D
             }
         }
 
+        public Texture2D previewTexture
+        {
+            get { return texture; }
+        }
+
         public void GetTextureActualWidthAndHeight(out int width, out int height)
         {
             width = height = 0;
@@ -444,9 +450,7 @@ namespace UnityEditor.Experimental.U2D
         {
             if (m_ReadableTexture == null)
             {
-                int width = 0, height = 0;
-                GetTextureActualWidthAndHeight(out width, out height);
-                m_ReadableTexture = UnityEditor.SpriteUtility.CreateTemporaryDuplicate(texture, width, height);
+                m_ReadableTexture = UnityEditor.SpriteUtility.CreateTemporaryDuplicate(texture, texture.width, texture.height);
                 if (m_ReadableTexture != null)
                     m_ReadableTexture.filterMode = texture.filterMode;
             }

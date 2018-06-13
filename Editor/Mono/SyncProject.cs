@@ -10,6 +10,7 @@ using Microsoft.Win32;
 using UnityEditor.Callbacks;
 using UnityEditor.VisualStudioIntegration;
 using UnityEngine;
+using UnityEngine.Scripting;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -160,6 +161,7 @@ namespace UnityEditor
             }
         }
 
+        [RequiredByNativeCode]
         public static void SyncVisualStudioProjectIfItAlreadyExists()
         {
             if (Synchronizer.SolutionExists())

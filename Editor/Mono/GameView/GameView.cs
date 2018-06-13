@@ -513,7 +513,7 @@ namespace UnityEditor
                 var newZoom = Mathf.Pow(10f, logScale);
                 SnapZoom(newZoom);
             }
-            var scaleContent = EditorGUIUtility.TempContent(string.Format("{0}x", (m_ZoomArea.scale.y).ToString("G2")));
+            var scaleContent = EditorGUIUtility.TempContent(string.Format("{0}x", (m_ZoomArea.scale.y).ToString("G3")));
             scaleContent.tooltip = Styles.zoomSliderContent.tooltip;
             GUILayout.Label(scaleContent, EditorStyles.miniLabel, GUILayout.Width(kScaleLabelWidth));
             scaleContent.tooltip = string.Empty;
@@ -726,6 +726,26 @@ namespace UnityEditor
             m_ZoomArea.shownArea = shownArea;
         }
 
+        public void RenderToHMDOnly()
+        {
+            ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y);
+
+            if (m_TargetTexture.IsCreated())
+            {
+                var gizmos = false;
+                var targetDisplay = 0;
+                var sendInput = false;
+
+                EditorGUIUtility.RenderGameViewCamerasInternal(
+                    m_TargetTexture,
+                    targetDisplay,
+                    GUIClip.Unclip(viewInWindow),
+                    Vector2.zero,
+                    gizmos,
+                    sendInput);
+            }
+        }
+
         private void OnGUI()
         {
             if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
@@ -800,19 +820,23 @@ namespace UnityEditor
                 }
                 if (m_TargetTexture.IsCreated())
                 {
-                    EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos);
+                    var sendInput = true;
+                    EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos, sendInput);
                     oldState.ApplyAndForget();
                     GUIUtility.s_EditorScreenPointOffset = oldOffset;
 
                     GUI.BeginGroup(m_ZoomArea.drawRect);
                     // Actually draw the game view to the screen, without alpha blending
-                    Graphics.DrawTexture(deviceFlippedTargetInView, m_TargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
+                    Rect drawRect = deviceFlippedTargetInView;
+                    drawRect.x = Mathf.Round(drawRect.x);
+                    drawRect.y = Mathf.Round(drawRect.y);
+                    Graphics.DrawTexture(drawRect, m_TargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
                     GUI.EndGroup();
                 }
             }
             else if (type != EventType.Layout && type != EventType.Used)
             {
-                if (!EditorApplication.isPlaying || EditorApplication.isPaused)
+                if (Event.current.isKey && (!EditorApplication.isPlaying || EditorApplication.isPaused))
                     return;
 
                 bool mousePosInGameViewRect = viewInWindow.Contains(Event.current.mousePosition);

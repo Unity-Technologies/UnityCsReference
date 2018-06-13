@@ -5,10 +5,11 @@
 using UnityEngine;
 using UnityEditor;
 
+using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor.Utils;
-using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditorInternal
 {
@@ -16,6 +17,19 @@ namespace UnityEditorInternal
     {
         // Keep in sync with enum ScriptEditorType in ExternalEditor.h
         public enum ScriptEditor { SystemDefault = 0, MonoDevelop = 1, VisualStudio = 2, VisualStudioExpress = 3, VisualStudioCode = 4, Rider = 5, Other = 32 }
+
+        public struct Installation
+        {
+            public string Name;
+            public string Path;
+        }
+
+        static readonly List<Func<Installation[]>> k_PathCallbacks = new List<Func<Installation[]>>();
+
+        public static void RegisterIde(Func<Installation[]> pathCallBack)
+        {
+            k_PathCallbacks.Add(pathCallBack);
+        }
 
         public static ScriptEditor GetScriptEditorFromPath(string path)
         {
@@ -42,8 +56,7 @@ namespace UnityEditorInternal
             if (filename == "code.exe" || filename == "visualstudiocode.app" || filename == "vscode.app" || filename == "code.app" || filename == "code")
                 return ScriptEditor.VisualStudioCode;
 
-            if (filename == "rider.exe" || filename == "rider64.exe" || filename == "rider32.exe"
-                || (filename.StartsWith("rider") && filename.EndsWith(".app")) || filename == "rider.sh")
+            if (filename.StartsWith("rider"))
                 return ScriptEditor.Rider;
 
             return ScriptEditor.Other;
@@ -59,8 +72,8 @@ namespace UnityEditorInternal
             // If no script editor is set, try to use first found supported one.
             var editorPaths = GetFoundScriptEditorPaths(Application.platform);
 
-            if (editorPaths.Length > 0)
-                return editorPaths[0];
+            if (editorPaths.Count > 0)
+                return editorPaths.Keys.ToArray()[0];
 
             return string.Empty;
         }
@@ -123,22 +136,31 @@ namespace UnityEditorInternal
             return GetScriptEditorFromPath(GetExternalScriptEditor());
         }
 
-        public static string[] GetFoundScriptEditorPaths(RuntimePlatform platform)
+        public static Dictionary<string, string> GetFoundScriptEditorPaths(RuntimePlatform platform)
         {
-            var result = new List<string>();
+            var result = new Dictionary<string, string>();
 
             if (platform == RuntimePlatform.OSXEditor)
             {
-                AddIfDirectoryExists("/Applications/Visual Studio.app", result);
+                AddIfDirectoryExists("Visual Studio", "/Applications/Visual Studio.app", result);
             }
 
-            return result.ToArray();
+            foreach (var callback in k_PathCallbacks)
+            {
+                var pathCallbacks = callback.Invoke();
+                foreach (var pathCallback in pathCallbacks)
+                {
+                    AddIfDirectoryExists(pathCallback.Name, pathCallback.Path, result);
+                }
+            }
+
+            return result;
         }
 
-        static void AddIfDirectoryExists(string path, List<string> list)
+        static void AddIfDirectoryExists(string name, string path, Dictionary<string, string> list)
         {
-            if (Directory.Exists(path))
-                list.Add(path);
+            if (Directory.Exists(path)) list.Add(path, name);
+            else if (File.Exists(path)) list.Add(path, name);
         }
     }
 }

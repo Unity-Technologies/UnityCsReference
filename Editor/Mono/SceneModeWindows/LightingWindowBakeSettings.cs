@@ -395,7 +395,7 @@ namespace UnityEditor
 
                             if (Unsupported.IsDeveloperMode() && (Application.platform == RuntimePlatform.WindowsEditor))
                             {
-                                var backendOptions = new[] { "Enlighten", "Progressive CPU", "Progressive GPU (Experimental)" };
+                                var backendOptions = new[] { "Enlighten", "Progressive CPU", "Progressive GPU (Preview)" };
                                 m_BakeBackend.intValue = EditorGUILayout.Popup(Styles.BakeBackend, m_BakeBackend.intValue, backendOptions);
                             }
                             else
@@ -415,6 +415,7 @@ namespace UnityEditor
                                 if (LightmapEditorSettings.sampling != LightmapEditorSettings.Sampling.Auto)
                                 {
                                     // Update those constants also in LightmapBake.cpp UpdateSamples().
+                                    const int kMinDirectSamples = 1;
                                     const int kMinSamples = 10;
                                     const int kMaxSamples = 100000;
 
@@ -432,6 +433,12 @@ namespace UnityEditor
                                         m_PVRSampleCount.intValue > kMaxSamples)
                                     {
                                         m_PVRSampleCount.intValue = Math.Max(Math.Min(m_PVRSampleCount.intValue, kMaxSamples), kMinSamples);
+                                    }
+
+                                    if (m_PVRDirectSampleCount.intValue < kMinDirectSamples ||
+                                        m_PVRDirectSampleCount.intValue > kMaxSamples)
+                                    {
+                                        m_PVRDirectSampleCount.intValue = Math.Max(Math.Min(m_PVRDirectSampleCount.intValue, kMaxSamples), kMinDirectSamples);
                                     }
 
                                     // TODO(PVR): make non-fixed sampling modes work.
@@ -483,7 +490,7 @@ namespace UnityEditor
                         }
                     }
 
-                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU) && !m_EnableRealtimeGI.boolValue))
+                    using (new EditorGUI.DisabledScope((LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten) && !m_EnableRealtimeGI.boolValue))
                     {
                         DrawResolutionField(m_Resolution, Styles.IndirectResolution);
                     }

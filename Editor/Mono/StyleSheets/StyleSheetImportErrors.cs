@@ -25,7 +25,12 @@ namespace UnityEditor.StyleSheets
         InvalidSelectorListDelimiter,
         InvalidComplexSelectorDelimiter,
         UnsupportedSelectorFormat,
-        RecursiveSelectorDetected
+        RecursiveSelectorDetected,
+        MissingFunctionArgument,
+        InvalidURILocation,
+        InvalidURIScheme,
+        InvalidURIProjectAssetPath,
+        InvalidURIProjectAssetType
     }
 
     class StyleSheetImportErrors

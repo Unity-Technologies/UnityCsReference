@@ -18,7 +18,7 @@ namespace UnityEngine.Experimental.Animations
     [StructLayout(LayoutKind.Sequential)]
     public struct MuscleHandle
     {
-        public HumanPartDoF humanPartDoF
+        public HumanPartDof humanPartDof
         {
             get;
             private set;
@@ -29,60 +29,43 @@ namespace UnityEngine.Experimental.Animations
             private set;
         }
 
-        public MuscleHandle(BodyDoF bodyDoF)
+        public MuscleHandle(BodyDof bodyDof)
         {
-            humanPartDoF = HumanPartDoF.Body;
-            dof = (int)bodyDoF;
+            humanPartDof = HumanPartDof.Body;
+            dof = (int)bodyDof;
         }
 
-        public MuscleHandle(HeadDoF headDoF)
+        public MuscleHandle(HeadDof headDof)
         {
-            humanPartDoF = HumanPartDoF.Head;
-            dof = (int)headDoF;
+            humanPartDof = HumanPartDof.Head;
+            dof = (int)headDof;
         }
 
-        public MuscleHandle(HumanPartDoF partDoF, BodyDoF bodyDoF)
+        public MuscleHandle(HumanPartDof partDof, LegDof legDof)
         {
-            if (partDoF != HumanPartDoF.Body)
-                throw new InvalidOperationException("Invalid HumanPartDoF for body, please use HumanPartDoF.Body");
-            humanPartDoF = HumanPartDoF.Body;
-            dof = (int)bodyDoF;
+            if (partDof != HumanPartDof.LeftLeg && partDof != HumanPartDof.RightLeg)
+                throw new InvalidOperationException("Invalid HumanPartDof for a leg, please use either HumanPartDof.LeftLeg or HumanPartDof.RightLeg.");
+
+            humanPartDof = partDof;
+            dof = (int)legDof;
         }
 
-        public MuscleHandle(HumanPartDoF partDoF, HeadDoF headDoF)
+        public MuscleHandle(HumanPartDof partDof, ArmDof armDof)
         {
-            if (partDoF != HumanPartDoF.Head)
-                throw new InvalidOperationException("Invalid HumanPartDoF for head, please use HumanPartDoF.Head");
+            if (partDof != HumanPartDof.LeftArm && partDof != HumanPartDof.RightArm)
+                throw new InvalidOperationException("Invalid HumanPartDof for an arm, please use either HumanPartDof.LeftArm or HumanPartDof.RightArm.");
 
-            humanPartDoF = HumanPartDoF.Head;
-            dof = (int)headDoF;
+            humanPartDof = partDof;
+            dof = (int)armDof;
         }
 
-        public MuscleHandle(HumanPartDoF partDoF, LegDoF legDoF)
+        public MuscleHandle(HumanPartDof partDof, FingerDof fingerDof)
         {
-            if (partDoF != HumanPartDoF.LeftLeg && partDoF != HumanPartDoF.RightLeg)
-                throw new InvalidOperationException("Invalid HumanPartDoF for a leg, please use either HumanPartDoF.LeftLeg or HumanPartDoF.RightLeg.");
+            if (partDof < HumanPartDof.LeftThumb || partDof > HumanPartDof.RightLittle)
+                throw new InvalidOperationException("Invalid HumanPartDof for a finger.");
 
-            humanPartDoF = partDoF;
-            dof = (int)legDoF;
-        }
-
-        public MuscleHandle(HumanPartDoF partDoF, ArmDoF armDoF)
-        {
-            if (partDoF != HumanPartDoF.LeftArm && partDoF != HumanPartDoF.RightArm)
-                throw new InvalidOperationException("Invalid HumanPartDoF for an arm, please use either HumanPartDoF.LeftArm or HumanPartDoF.RightArm.");
-
-            humanPartDoF = partDoF;
-            dof = (int)armDoF;
-        }
-
-        public MuscleHandle(HumanPartDoF partDoF, FingerDoF fingerDoF)
-        {
-            if (partDoF < HumanPartDoF.LeftThumb || partDoF > HumanPartDoF.RightLittle)
-                throw new InvalidOperationException("Invalid HumanPartDoF for a finger.");
-
-            humanPartDoF = partDoF;
-            dof = (int)fingerDoF;
+            humanPartDof = partDof;
+            dof = (int)fingerDof;
         }
 
         public string name
@@ -90,16 +73,16 @@ namespace UnityEngine.Experimental.Animations
             get { return GetName(); }
         }
 
-        public static int muscleHandlesCount
+        public static int muscleHandleCount
         {
-            get { return GetMuscleHandlesCount(); }
+            get { return GetMuscleHandleCount(); }
         }
 
         public extern static void GetMuscleHandles([NotNull][Out] MuscleHandle[] muscleHandles);
 
         private extern string GetName();
 
-        private extern static int GetMuscleHandlesCount();
+        private extern static int GetMuscleHandleCount();
     }
 }
 

@@ -186,6 +186,37 @@ namespace UnityEditor.Compilation
             return assemblyDefinitionPlatforms;
         }
 
+        public static string[] GetPrecompiledAssemblyNames()
+        {
+            return GetPrecompiledAssemblyNames(EditorCompilationInterface.Instance);
+        }
+
+        internal static string[] GetPrecompiledAssemblyNames(EditorCompilation editorCompilation)
+        {
+            return editorCompilation.GetAllPrecompiledAssemblies()
+                .Where(x => (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly)
+                .Select(x => AssetPath.GetFileName(x.Path))
+                .Distinct()
+                .ToArray();
+        }
+
+        public static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName)
+        {
+            return GetPrecompiledAssemblyPathFromAssemblyName(assemblyName, EditorCompilationInterface.Instance);
+        }
+
+        internal static string GetPrecompiledAssemblyPathFromAssemblyName(string assemblyName, EditorCompilation editorCompilation)
+        {
+            var precompiledAssembliesWithName = editorCompilation.GetAllPrecompiledAssemblies()
+                .Where(x => AssetPath.GetFileName(x.Path) == assemblyName  && (x.Flags & sc.AssemblyFlags.UserAssembly) == sc.AssemblyFlags.UserAssembly);
+
+            if (precompiledAssembliesWithName.Any())
+            {
+                return precompiledAssembliesWithName.Single().Path;
+            }
+            return null;
+        }
+
         internal static Assembly[] GetEditorAssemblies(EditorCompilation editorCompilation, EditorScriptCompilationOptions additionalOptions)
         {
             var scriptAssemblies = editorCompilation.GetAllEditorScriptAssemblies(additionalOptions);

@@ -58,6 +58,11 @@ namespace UnityEditor.Utils
                     lines.Add("Could not read output because an ObjectDisposedException was thrown.");
                 }
             }
+            catch (IOException)
+            {
+                // We may trigger an IOException (during domain unload) when shutting down a thread that is currently
+                // waiting on a synchronous syscall like ReadFile or WriteFile in mono
+            }
         }
 
         internal string[] GetOutput()

@@ -13,6 +13,7 @@ namespace UnityEngine
 {
     // MonoBehaviour is the base class every script derives from.
     [RequiredByNativeCode]
+    [ExtensionOfNativeClass]
     [NativeHeader("Runtime/Mono/MonoBehaviour.h")]
     [NativeHeader("Runtime/Scripting/DelayedCallUtility.h")]
     public class MonoBehaviour : Behaviour

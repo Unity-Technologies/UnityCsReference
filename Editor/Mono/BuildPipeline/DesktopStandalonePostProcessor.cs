@@ -18,6 +18,11 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
 {
     readonly bool m_HasIl2CppPlayers;
 
+    protected DesktopStandalonePostProcessor()
+    {
+        m_HasIl2CppPlayers = false;
+    }
+
     protected DesktopStandalonePostProcessor(bool hasIl2CppPlayers)
     {
         m_HasIl2CppPlayers = hasIl2CppPlayers;

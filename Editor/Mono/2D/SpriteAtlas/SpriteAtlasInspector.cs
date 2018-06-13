@@ -25,10 +25,10 @@ namespace UnityEditor.U2D
                 m_ShowMaxSizeOption = showMaxSizeOption;
             }
 
-            public override int DrawMaxSize(int defaultValue, bool isMixedValue, out bool changed)
+            public override int DrawMaxSize(int defaultValue, bool isMixedValue, bool isDisabled, out bool changed)
             {
                 if (m_ShowMaxSizeOption)
-                    return base.DrawMaxSize(defaultValue, isMixedValue, out changed);
+                    return base.DrawMaxSize(defaultValue, isMixedValue, isDisabled, out changed);
                 else
                     changed = false;
                 return defaultValue;
@@ -42,7 +42,7 @@ namespace UnityEditor.U2D
             public readonly GUIStyle previewButton = "preButton";
             public readonly GUIStyle previewSlider = "preSlider";
             public readonly GUIStyle previewSliderThumb = "preSliderThumb";
-            public readonly GUIStyle previewLabel = new GUIStyle("preLabel");
+            public readonly GUIStyle previewLabel = "preLabel";
 
             public readonly GUIContent textureSettingLabel = EditorGUIUtility.TrTextContent("Texture");
             public readonly GUIContent variantSettingLabel = EditorGUIUtility.TrTextContent("Variant");
@@ -119,6 +119,7 @@ namespace UnityEditor.U2D
         private int[] m_OptionValues = null;
         private string[] m_OptionDisplays = null;
         private Texture2D[] m_PreviewTextures = null;
+        private Texture2D[] m_PreviewAlphaTextures = null;
 
         private bool m_PackableListExpanded = true;
         private ReorderableList m_PackableList;
@@ -193,9 +194,6 @@ namespace UnityEditor.U2D
             m_PackableList.headerHeight = 0f;
 
             SyncPlatformSettings();
-
-            // Initialise texture importer's texture format strings
-            TextureImporterInspector.InitializeTextureFormatStrings();
 
             m_TexturePlatformSettingsView = new SpriteAtlasInspectorPlatformSettingView(AllTargetsAreMaster());
             m_TexturePlatformSettingTextureHelper = new TexturePlatformSettingsFormatHelper();
@@ -414,15 +412,15 @@ namespace UnityEditor.U2D
         private void HandlePlatformSettingUI()
         {
             int shownTextureFormatPage = EditorGUILayout.BeginPlatformGrouping(m_ValidPlatforms.ToArray(), s_Styles.defaultPlatformLabel);
+            var defaultPlatformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
             if (shownTextureFormatPage == -1)
             {
-                var platformSettings = m_TempPlatformSettings[TextureImporterInspector.s_DefaultPlatformName];
-                if (m_TexturePlatformSettingsController.HandleDefaultSettings(platformSettings, m_TexturePlatformSettingsView))
+                if (m_TexturePlatformSettingsController.HandleDefaultSettings(defaultPlatformSettings, m_TexturePlatformSettingsView, m_TexturePlatformSettingTextureHelper))
                 {
-                    for (var i = 0; i < platformSettings.Count; ++i)
+                    for (var i = 0; i < defaultPlatformSettings.Count; ++i)
                     {
                         SpriteAtlas sa = (SpriteAtlas)targets[i];
-                        sa.SetPlatformSettings(platformSettings[i]);
+                        sa.SetPlatformSettings(defaultPlatformSettings[i]);
                     }
                 }
             }
@@ -432,14 +430,24 @@ namespace UnityEditor.U2D
                 var platformSettings = m_TempPlatformSettings[buildPlatform.name];
 
 
-                // Predetermine format if overridden is unchecked
                 for (var i = 0; i < platformSettings.Count; ++i)
                 {
                     var settings = platformSettings[i];
                     if (!settings.overridden)
                     {
-                        SpriteAtlas sa = (SpriteAtlas)targets[i];
-                        settings.format = (TextureImporterFormat)sa.GetTextureFormat(buildPlatform.defaultTarget);
+                        if (defaultPlatformSettings[0].format == TextureImporterFormat.Automatic)
+                        {
+                            SpriteAtlas sa = (SpriteAtlas)targets[i];
+                            settings.format = (TextureImporterFormat)sa.GetTextureFormat(buildPlatform.defaultTarget);
+                        }
+                        else
+                        {
+                            settings.format = defaultPlatformSettings[0].format;
+                        }
+
+                        settings.maxTextureSize = defaultPlatformSettings[0].maxTextureSize;
+                        settings.crunchedCompression = defaultPlatformSettings[0].crunchedCompression;
+                        settings.compressionQuality = defaultPlatformSettings[0].compressionQuality;
                     }
                 }
 
@@ -540,6 +548,7 @@ namespace UnityEditor.U2D
             if (m_PreviewTextures == null || m_Hash != spriteAtlas.GetHash())
             {
                 m_PreviewTextures = spriteAtlas.GetPreviewTextures();
+                m_PreviewAlphaTextures = spriteAtlas.GetPreviewAlphaTextures();
                 m_Hash = spriteAtlas.GetHash();
 
                 if (m_PreviewTextures != null
@@ -588,7 +597,7 @@ namespace UnityEditor.U2D
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 
-                if (TextureUtil.HasAlphaTextureFormat(t.format))
+                if (TextureUtil.HasAlphaTextureFormat(t.format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))
                     m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? s_Styles.alphaIcon : s_Styles.RGBIcon, s_Styles.previewButton);
 
                 int mipCount = Mathf.Max(1, TextureUtil.GetMipmapCount(t));
@@ -604,7 +613,15 @@ namespace UnityEditor.U2D
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
             CachePreviewTexture();
-            if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
+
+            if (m_ShowAlpha && m_PreviewAlphaTextures != null && m_PreviewPage < m_PreviewAlphaTextures.Length)
+            {
+                var at = m_PreviewAlphaTextures[m_PreviewPage];
+                var bias = m_MipLevel - (float)(System.Math.Log(at.width / r.width) / System.Math.Log(2));
+
+                EditorGUI.DrawTextureTransparent(r, at, ScaleMode.ScaleToFit, 0, bias);
+            }
+            else if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 

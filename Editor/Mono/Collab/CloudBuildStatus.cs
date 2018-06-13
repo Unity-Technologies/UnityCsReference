@@ -19,6 +19,13 @@ namespace UnityEditor.Collaboration
         private bool m_Complete;
         private bool m_Successful;
 
+        internal CloudBuildStatus(string platform = "", bool complete = false, bool success = false)
+        {
+            m_Platform = platform;
+            m_Complete = complete;
+            m_Successful = success;
+        }
+
         public string platform { get { return m_Platform; } }
         public bool complete { get { return m_Complete; } }
         public bool success { get { return m_Successful; } }

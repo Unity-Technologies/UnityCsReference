@@ -192,6 +192,7 @@ namespace UnityEditor
         private void UndoRedoPerformed()
         {
             m_PointEditor.RemoveInvalidSelections();
+            m_PositionsView.Reload();
             m_PositionsView.SetSelection(m_PointEditor.m_Selection);
             ResetSimplifyPreview();
         }
@@ -367,10 +368,10 @@ namespace UnityEditor
 
         private void DrawSimplifyPreview()
         {
-            if (!showSimplifyPreview || m_IsMultiEditing)
-                return;
-
             var lineRenderer = target as LineRenderer;
+
+            if (!showSimplifyPreview || m_IsMultiEditing || !lineRenderer.enabled)
+                return;
 
             if (m_PreviewPoints == null && lineRenderer.positionCount > 2)
             {
@@ -478,6 +479,11 @@ namespace UnityEditor
             {
                 case EditMode.SceneViewEditMode.LineRendererEdit:
                     m_PointEditor.EditSceneGUI();
+                    if (m_Positions.arraySize != m_PositionsView.GetRows().Count)
+                    {
+                        m_PositionsView.Reload();
+                        ResetSimplifyPreview();
+                    }
                     m_PositionsView.SetSelection(m_PointEditor.m_Selection, TreeViewSelectionOptions.RevealAndFrame);
                     break;
                 case EditMode.SceneViewEditMode.LineRendererCreate:

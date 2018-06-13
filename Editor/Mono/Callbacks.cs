@@ -3,10 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
-using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
-using UnityEngine;
+using System.Collections.Generic;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -34,6 +34,9 @@ namespace UnityEditor
         {
             public RegisterPluginsAttribute() { m_CallbackOrder = 1; }
             public RegisterPluginsAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; }
+
+            [RequiredSignature]
+            extern static IEnumerable<PluginDesc> Signature(BuildTarget target);
         }
 
         [RequiredByNativeCode]
@@ -41,6 +44,9 @@ namespace UnityEditor
         {
             public PostProcessBuildAttribute() { m_CallbackOrder = 1; }
             public PostProcessBuildAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; }
+
+            [RequiredSignature]
+            extern static void Signature(BuildTarget target, string pathToBuiltProject);
         }
 
         [RequiredByNativeCode]
@@ -54,6 +60,9 @@ namespace UnityEditor
             public PostProcessSceneAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; m_version = 0; }
 
             public PostProcessSceneAttribute(int callbackOrder, int version) { m_CallbackOrder = callbackOrder; m_version = version; }
+
+            [RequiredSignature]
+            extern static void Signature();
         }
 
         [RequiredByNativeCode]
@@ -62,6 +71,9 @@ namespace UnityEditor
             public DidReloadScripts() { m_CallbackOrder = 1; }
 
             public DidReloadScripts(int callbackOrder) { m_CallbackOrder = callbackOrder; }
+
+            [RequiredSignature]
+            extern static void Signature();
         }
 
         // Add this attribute to a static method to get a callback for opening an asset inside Unity before trying to open it with an external tool
@@ -70,12 +82,9 @@ namespace UnityEditor
         {
             public OnOpenAssetAttribute() { m_CallbackOrder = 1; }
             public OnOpenAssetAttribute(int callbackOrder) { m_CallbackOrder = callbackOrder; }
-        }
-    }
 
-    internal partial class Empty
-    {
-        internal static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject) {}
-        internal static bool OnOpenAsset(int instanceID, int line) {return false; }
+            [RequiredSignature]
+            extern static bool Signature(int instanceID, int line);
+        }
     }
 }

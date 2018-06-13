@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
@@ -14,6 +16,12 @@ namespace UnityEditor
     [NativeHeader("Runtime/Camera/ReflectionProbeTypes.h")]
     public partial class SpeedTreeImporter : AssetImporter
     {
+        public enum MaterialLocation
+        {
+            External = 0,
+            InPrefab = 1
+        }
+
         public extern bool hasImported
         {
             [FreeFunction(Name = "SpeedTreeImporterBindings::HasImported", HasExplicitThis = true)]
@@ -21,6 +29,17 @@ namespace UnityEditor
         }
 
         public extern string materialFolderPath
+        {
+            get;
+        }
+
+        public extern MaterialLocation materialLocation
+        {
+            get;
+            set;
+        }
+
+        public extern bool isV8
         {
             get;
         }
@@ -125,6 +144,15 @@ namespace UnityEditor
             set;
         }
 
+        public extern bool[] enableSubsurface
+        {
+            [FreeFunction(Name = "SpeedTreeImporterBindings::GetEnableSubsurface", HasExplicitThis = true)]
+            get;
+            [NativeThrows]
+            [FreeFunction(Name = "SpeedTreeImporterBindings::SetEnableSubsurface", HasExplicitThis = true)]
+            set;
+        }
+
         public static readonly string[] windQualityNames = new[] { "None", "Fastest", "Fast", "Better", "Best", "Palm" };
 
         public extern int bestWindQuality { get; }
@@ -149,5 +177,54 @@ namespace UnityEditor
         }
 
         internal extern void SetMaterialVersionToCurrent();
+
+        internal extern SourceAssetIdentifier[] sourceMaterials
+        {
+            [FreeFunction(Name = "SpeedTreeImporterBindings::GetSourceMaterials", HasExplicitThis = true)]
+            get;
+        }
+
+        public bool SearchAndRemapMaterials(string materialFolderPath)
+        {
+            bool changedMappings = false;
+
+            if (materialFolderPath == null)
+                throw new ArgumentNullException("materialFolderPath");
+
+            if (string.IsNullOrEmpty(materialFolderPath))
+                throw new ArgumentException(string.Format("Invalid material folder path: {0}.", materialFolderPath), "materialFolderPath");
+
+            var guids = AssetDatabase.FindAssets("t:Material", new string[] { materialFolderPath });
+            List<Tuple<string, Material>> materials = new List<Tuple<string, Material>>();
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                // ensure that we only load material assets, not embedded materials
+                var material = AssetDatabase.LoadMainAssetAtPath(path) as Material;
+                if (material)
+                    materials.Add(new Tuple<string, Material>(path, material));
+            }
+
+            var importedMaterials = sourceMaterials;
+            foreach (var material in materials)
+            {
+                var materialName = material.Item2.name;
+                var materialFile = material.Item1;
+
+                // the legacy materials have the LOD in the path, while the new materials have the LOD as part of the name
+                var isLegacyMaterial = !materialName.Contains("LOD") && !materialName.Contains("Billboard");
+                var hasLOD = isLegacyMaterial && materialFile.Contains("LOD");
+                var lod = Path.GetFileNameWithoutExtension(Path.GetDirectoryName(materialFile));
+                var importedMaterial = Array.Find(importedMaterials, x => x.name.Contains(materialName) && (!hasLOD || x.name.Contains(lod)));
+
+                if (!string.IsNullOrEmpty(importedMaterial.name))
+                {
+                    AddRemap(importedMaterial, material.Item2);
+                    changedMappings = true;
+                }
+            }
+
+            return changedMappings;
+        }
     }
 }

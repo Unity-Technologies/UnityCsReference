@@ -19,10 +19,11 @@ namespace UnityEditor
 
             public enum ValueMode { Random, Loop, PingPong, BurstSpread };
 
-            public static MultiModeParameter GetProperty(ModuleUI ui, string name, GUIContent speed)
+            public static MultiModeParameter GetProperty(ModuleUI ui, string name, GUIContent speed, bool skipValue = false)
             {
                 MultiModeParameter result = new MultiModeParameter();
-                result.m_Value = ui.GetProperty(name + ".value");
+                if (!skipValue)
+                    result.m_Value = ui.GetProperty(name + ".value");
                 result.m_Mode = ui.GetProperty(name + ".mode");
                 result.m_Spread = ui.GetProperty(name + ".spread");
                 result.m_Speed = new SerializedMinMaxCurve(ui, speed, name + ".speed", kUseSignedRange);
@@ -30,16 +31,18 @@ namespace UnityEditor
                 return result;
             }
 
-            public void OnInspectorGUI(MultiModeTexts text)
+            public void OnInspectorGUI(MultiModeTexts text, GUIContent[] modesText, bool showSpread = true, bool showSpeed = true)
             {
-                GUIFloat(text.value, m_Value);
+                if (m_Value != null)
+                    GUIFloat(text.value, m_Value);
 
                 EditorGUI.indentLevel++;
 
-                GUIPopup(text.mode, m_Mode, s_Texts.emissionModes);
-                GUIFloat(text.spread, m_Spread);
+                GUIPopup(text.mode, m_Mode, modesText);
+                if (showSpread)
+                    GUIFloat(text.spread, m_Spread);
 
-                if (!m_Mode.hasMultipleDifferentValues)
+                if (showSpeed && !m_Mode.hasMultipleDifferentValues)
                 {
                     ValueMode mode = (ValueMode)m_Mode.intValue;
                     if (mode == ValueMode.Loop || mode == ValueMode.PingPong)
@@ -82,6 +85,8 @@ namespace UnityEditor
         SerializedProperty m_UseMeshMaterialIndex;
         SerializedProperty m_UseMeshColors;
         SerializedProperty m_MeshNormalOffset;
+        MultiModeParameter m_MeshSpawn;
+
 
         // texture properties
         SerializedProperty m_Texture;
@@ -195,6 +200,13 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Burst Spread")
             };
 
+            public GUIContent[] emissionModesMesh = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("Random"),
+                EditorGUIUtility.TrTextContent("Loop"),
+                EditorGUIUtility.TrTextContent("Ping-Pong")
+            };
+
             public GUIContent[] textureClipChannels = new GUIContent[]
             {
                 EditorGUIUtility.TrTextContent("Red"),
@@ -234,6 +246,12 @@ namespace UnityEditor
                 /*_spread:*/ "Spread|Spawn particles only at specific angles around the arc (0 to disable).",
                 /*_speed:*/ "Speed|Control the speed that the emission position moves around the arc.");
 
+        static MultiModeTexts s_MeshTexts = new MultiModeTexts(
+                /*_value:*/ null,
+                /*_mode:*/ "Mode|Control how particles are spawned across the mesh.",
+                /*_spread:*/ "Spread|Spawn particles only at specific positions across the mesh (0 to disable).",
+                /*_speed:*/ "Speed|Control the speed that the emission position moves along the edges of the mesh.");
+
         public ShapeModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "ShapeModule", displayName, VisibilityState.VisibleAndFolded)
         {
@@ -266,6 +284,7 @@ namespace UnityEditor
             m_UseMeshMaterialIndex = GetProperty("m_UseMeshMaterialIndex");
             m_UseMeshColors = GetProperty("m_UseMeshColors");
             m_MeshNormalOffset = GetProperty("m_MeshNormalOffset");
+            m_MeshSpawn = MultiModeParameter.GetProperty(this, "m_MeshSpawn", s_MeshTexts.speed, true);
             m_Texture = GetProperty("m_Texture");
             m_TextureClipChannel = GetProperty("m_TextureClipChannel");
             m_TextureClipThreshold = GetProperty("m_TextureClipThreshold");
@@ -362,7 +381,7 @@ namespace UnityEditor
                         GUIFloat(s_Texts.radius, m_Radius.m_Value);
                         GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
 
-                        m_Arc.OnInspectorGUI(s_ArcTexts);
+                        m_Arc.OnInspectorGUI(s_ArcTexts, s_Texts.emissionModes);
 
                         bool showLength = (type != (int)ParticleSystemShapeType.ConeVolume);
                         using (new EditorGUI.DisabledScope(showLength))
@@ -382,7 +401,7 @@ namespace UnityEditor
                         GUIFloat(s_Texts.donutRadius, m_DonutRadius);
                         GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
 
-                        m_Arc.OnInspectorGUI(s_ArcTexts);
+                        m_Arc.OnInspectorGUI(s_ArcTexts, s_Texts.emissionModes);
                     }
                     break;
 
@@ -390,7 +409,13 @@ namespace UnityEditor
                     case ParticleSystemShapeType.MeshRenderer:
                     case ParticleSystemShapeType.SkinnedMeshRenderer:
                     {
-                        GUIPopup(s_Texts.meshType, m_PlacementMode, s_Texts.meshTypes);
+                        ParticleSystemMeshShapeType placementMode = (ParticleSystemMeshShapeType)GUIPopup(s_Texts.meshType, m_PlacementMode, s_Texts.meshTypes);
+
+                        if (!m_PlacementMode.hasMultipleDifferentValues && placementMode != ParticleSystemMeshShapeType.Triangle)
+                        {
+                            bool showSpeedAndSpread = (placementMode != ParticleSystemMeshShapeType.Vertex);
+                            m_MeshSpawn.OnInspectorGUI(s_MeshTexts, s_Texts.emissionModesMesh, showSpeedAndSpread, showSpeedAndSpread);
+                        }
 
                         Material material = null;
                         Mesh srcMesh = null;
@@ -468,13 +493,13 @@ namespace UnityEditor
                         GUIFloat(s_Texts.radius, m_Radius.m_Value);
                         GUIFloat(s_Texts.radiusThickness, m_RadiusThickness);
 
-                        m_Arc.OnInspectorGUI(s_ArcTexts);
+                        m_Arc.OnInspectorGUI(s_ArcTexts, s_Texts.emissionModes);
                     }
                     break;
 
                     case ParticleSystemShapeType.SingleSidedEdge:
                     {
-                        m_Radius.OnInspectorGUI(s_RadiusTexts);
+                        m_Radius.OnInspectorGUI(s_RadiusTexts, s_Texts.emissionModes);
                     }
                     break;
 

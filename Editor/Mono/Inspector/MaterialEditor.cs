@@ -1452,7 +1452,7 @@ namespace UnityEditor
         static Renderer[] GetAssociatedRenderersFromInspector()
         {
             List<Renderer> renderers = new List<Renderer>();
-            if (InspectorWindow.s_CurrentInspectorWindow)
+            if (InspectorWindow.s_CurrentInspectorWindow != null)
             {
                 Editor[] editors = InspectorWindow.s_CurrentInspectorWindow.tracker.activeEditors;
                 foreach (var editor in editors)

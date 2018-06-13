@@ -383,12 +383,6 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static void SetViewInfo(Vector2 screenPosition)
-        {
-            GUIUtility.s_EditorScreenPointOffset = screenPosition;
-        }
-
-        [RequiredByNativeCode]
         internal static void EndHandles()
         {
             if (s_PreviousNearestControl != s_NearestControl
@@ -424,16 +418,24 @@ namespace UnityEditor
         // Convert world space point to a 2D GUI position.
         public static Vector2 WorldToGUIPoint(Vector3 world)
         {
+            return WorldToGUIPointWithDepth(world);
+        }
+
+        // Convert world space point to a 2D GUI position.
+        public static Vector3 WorldToGUIPointWithDepth(Vector3 world)
+        {
             world = Handles.matrix.MultiplyPoint(world);
             Camera cam = Camera.current;
             if (cam)
             {
-                Vector2 pos = cam.WorldToScreenPoint(world);
+                Vector3 pos = cam.WorldToScreenPoint(world);
                 pos.y = Screen.height - pos.y;
-                pos = EditorGUIUtility.PixelsToPoints(pos);
-                return GUIClip.Clip(pos);
+                Vector2 points = EditorGUIUtility.PixelsToPoints(pos);
+                points = GUIClip.Clip(points);
+                return new Vector3(points.x, points.y, pos.z);
             }
-            return new Vector2(world.x, world.y);
+
+            return world;
         }
 
         public static Vector2 GUIPointToScreenPixelCoordinate(Vector2 guiPoint)
@@ -629,11 +631,26 @@ namespace UnityEditor
             }
         }
         static Material s_HandleMaterial;
+        static bool s_CallbackRegistered = false;
+
+        // Called by native code
+        [RequiredByNativeCode]
+        static void CleanupHandleMaterials()
+        {
+            // This is enough for all of them to get re-fetched in next call to InitHandleMaterials()
+            s_HandleWireMaterial = null;
+        }
 
         static void InitHandleMaterials()
         {
             if (!s_HandleWireMaterial)
             {
+                if (!s_CallbackRegistered)
+                {
+                    RegisterGfxDeviceCleanup();
+                    s_CallbackRegistered = true;
+                }
+
                 s_HandleWireMaterial = (Material)EditorGUIUtility.LoadRequired("SceneView/HandleLines.mat");
                 s_HandleWireMaterial2D = (Material)EditorGUIUtility.LoadRequired("SceneView/2DHandleLines.mat");
                 s_HandleWireTextureIndex = ShaderUtil.GetTextureBindingIndex(s_HandleWireMaterial.shader, Shader.PropertyToID("_MainTex"));

@@ -22,12 +22,15 @@ namespace UnityEditor
             SearchFilter searchFilter = new SearchFilter();
             SearchUtility.ParseSearchString(filter, searchFilter);
             if (searchInFolders != null)
+            {
                 searchFilter.folders = searchInFolders;
+                searchFilter.searchArea = SearchFilter.SearchArea.SelectedFolders;
+            }
 
             return FindAssets(searchFilter);
         }
 
-        private static string[] FindAssets(SearchFilter searchFilter)
+        internal static string[] FindAssets(SearchFilter searchFilter)
         {
             return FindAllAssets(searchFilter).Select(property => property.guid).ToArray();
         }
@@ -41,7 +44,7 @@ namespace UnityEditor
 
         internal static IEnumerator<HierarchyProperty> EnumerateAllAssets(SearchFilter searchFilter)
         {
-            if (searchFilter.folders != null && searchFilter.folders.Length > 0)
+            if (searchFilter.folders != null && searchFilter.folders.Length > 0 && searchFilter.searchArea == SearchFilter.SearchArea.SelectedFolders)
                 return FindInFolders(searchFilter, p => p);
 
             return FindEverywhere(searchFilter, p => p);
@@ -49,15 +52,30 @@ namespace UnityEditor
 
         private static IEnumerator<T> FindInFolders<T>(SearchFilter searchFilter, Func<HierarchyProperty,  T> selector)
         {
-            foreach (string folderPath in searchFilter.folders)
+            var folders = new List<string>();
+            folders.AddRange(searchFilter.folders);
+            if (folders.Remove(PackageManager.Folders.GetPackagesMountPoint()))
+            {
+                var packages = PackageManager.Packages.GetAll();
+                foreach (var package in packages)
+                {
+                    if (package.source == PackageManager.PackageSource.BuiltIn)
+                        continue;
+
+                    if (!folders.Contains(package.assetPath))
+                        folders.Add(package.assetPath);
+                }
+            }
+
+            foreach (string folderPath in folders)
             {
                 var folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
                 var rootPath = "Assets";
 
-                var pathComponents = folderPath.Split('/');
                 // Find the right rootPath if folderPath is part of a package
-                if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
-                    rootPath = pathComponents[0] + "/" + pathComponents[1];
+                var packageInfo = PackageManager.Packages.GetForAssetPath(folderPath);
+                if (packageInfo != null)
+                    rootPath = packageInfo.assetPath;
 
                 // Set empty filter to ensure we search all assets to find folder
                 var property = new HierarchyProperty(rootPath);
@@ -83,8 +101,23 @@ namespace UnityEditor
         private static IEnumerator<T> FindEverywhere<T>(SearchFilter searchFilter, Func<HierarchyProperty, T> selector)
         {
             var rootPaths = new List<string>();
-            rootPaths.Add("Assets");
-            rootPaths.AddRange(UnityEditor.PackageManager.Folders.GetPackagesPaths());
+            if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
+                searchFilter.searchArea == SearchFilter.SearchArea.InAssetsOnly)
+            {
+                rootPaths.Add("Assets");
+            }
+            if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
+                searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
+            {
+                var packages = PackageManager.Packages.GetAll();
+                foreach (var package in packages)
+                {
+                    if (package.source == PackageManager.PackageSource.BuiltIn)
+                        continue;
+
+                    rootPaths.Add(package.assetPath);
+                }
+            }
             foreach (var rootPath in rootPaths)
             {
                 var property = new HierarchyProperty(rootPath);

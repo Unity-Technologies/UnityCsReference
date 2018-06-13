@@ -1235,6 +1235,10 @@ namespace UnityEditor
         // Make a text label positioned in 3D space.
         public static void Label(Vector3 position, GUIContent content, GUIStyle style)
         {
+            Vector3 screenPoint = HandleUtility.WorldToGUIPointWithDepth(position);
+            if (screenPoint.z < 0)
+                return; //label is behind camera
+
             Handles.BeginGUI();
             GUI.Label(HandleUtility.WorldPointToSizedRect(position, content, style), content, style);
             Handles.EndGUI();

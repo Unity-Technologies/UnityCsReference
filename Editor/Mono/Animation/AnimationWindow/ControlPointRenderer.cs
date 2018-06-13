@@ -102,6 +102,9 @@ namespace UnityEditor
                     renderChunk.isDirty = false;
                 }
 
+                // Previous camera may still be active when calling DrawMeshNow.
+                Camera.SetupCurrent(null);
+
                 Graphics.DrawMeshNow(renderChunk.mesh, Handles.matrix);
             }
         }

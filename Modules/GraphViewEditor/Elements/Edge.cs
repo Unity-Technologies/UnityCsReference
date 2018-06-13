@@ -113,7 +113,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     {
                         edgeControl.from = m_GlobalCandidatePosition;
                     }
-                    Dirty(ChangeType.Repaint | ChangeType.Layout);
+                    MarkDirtyRepaint();
                     UpdateEdgeControl();
                 }
             }
@@ -164,8 +164,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Edge()
         {
-            clippingOptions = ClippingOptions.NoClipping;
-
             ClearClassList();
             AddToClassList("edge");
             style.positionType = PositionType.Absolute;
@@ -231,7 +229,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
-        public override void DoRepaint()
+        protected override void DoRepaint(IStylePainter painter)
         {
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
             DrawEdge();

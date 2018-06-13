@@ -8,6 +8,7 @@ using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEditorInternal.Profiling;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 namespace UnityEditor
 {
@@ -385,9 +386,9 @@ namespace UnityEditor
             }
         }
 
-        public void CurrentAreaChanged(ProfilerArea profilerArea)
+        public void CurrentAreaChanged(ProfilerArea? newArea)
         {
-            if (profilerArea != ProfilerArea.UI && profilerArea != ProfilerArea.UIDetails)
+            if (!newArea.HasValue || newArea.Value != ProfilerArea.UI && newArea.Value != ProfilerArea.UIDetails)
             {
                 if (m_DetachedPreview)
                 {

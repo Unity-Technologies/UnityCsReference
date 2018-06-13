@@ -14,29 +14,11 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class ListView : VisualElement
     {
-        public class ListViewFactory : UxmlFactory<ListView, ListViewUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<ListView, UxmlTraits> {}
 
-        public class ListViewUxmlTraits : VisualElementUxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlIntAttributeDescription m_ItemHeight;
-
-            public ListViewUxmlTraits()
-            {
-                m_ItemHeight = new UxmlIntAttributeDescription { name = "itemHeight", defaultValue = k_DefaultItemHeight };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_ItemHeight;
-                }
-            }
+            UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "itemHeight", defaultValue = k_DefaultItemHeight };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -92,6 +74,8 @@ namespace UnityEngine.Experimental.UIElements
             }
             set
             {
+                if (m_MakeItem == value)
+                    return;
                 m_MakeItem = value;
                 Refresh();
             }
@@ -171,12 +155,6 @@ namespace UnityEngine.Experimental.UIElements
             m_ScrollView.contentContainer.RegisterCallback<MouseDownEvent>(OnClick);
             m_ScrollView.contentContainer.RegisterCallback<KeyDownEvent>(OnKeyDown);
             m_ScrollView.contentContainer.focusIndex = 0;
-
-            schedule.Execute(() =>
-                {
-                    Dirty(ChangeType.Layout);
-                    m_ScrollView.Focus();
-                }).StartingIn(1);
         }
 
         public ListView(IList itemsSource, int itemHeight, Func<VisualElement> makeItem, Action<VisualElement, int> bindItem) : this()
@@ -234,7 +212,18 @@ namespace UnityEngine.Experimental.UIElements
                 int actualCount = (int)(m_LastSize.height / itemHeight);
                 if (index < m_FirstVisibleIndex + actualCount)
                     return;
-                m_ScrollView.scrollOffset = Vector2.up * itemHeight * (index - actualCount);
+
+                bool someItemIsPartiallyVisible = (int)m_LastSize.height % itemHeight != 0;
+                int d = index - actualCount;
+
+                // we're scrolling down in that case
+                // if the listview size is not an integer multiple of the item height
+                // the selected item might be the last visible and truncated one
+                // in that case, increment by one the index
+                if (someItemIsPartiallyVisible)
+                    d++;
+
+                m_ScrollView.scrollOffset = Vector2.up * itemHeight * d;
             }
         }
 
@@ -253,7 +242,7 @@ namespace UnityEngine.Experimental.UIElements
                     if (selectionType == SelectionType.None)
                         return;
 
-                    if (selectionType == SelectionType.Multiple && evt.ctrlKey)
+                    if (selectionType == SelectionType.Multiple && evt.actionKey)
                         if (m_SelectedIndices.Contains(clickedIndex))
                             RemoveFromSelection(clickedIndex);
                         else
@@ -385,7 +374,9 @@ namespace UnityEngine.Experimental.UIElements
             m_ScrollView.Clear();
 
             m_ScrollView.contentContainer.style.width = m_ScrollView.contentViewport.layout.width;
-            m_ScrollView.contentContainer.style.flex = 0;
+            m_ScrollView.contentContainer.style.flexGrow = 0;
+            m_ScrollView.contentContainer.style.flexShrink = 0;
+            m_ScrollView.contentContainer.style.flexBasis = -1f; // magic value for auto
 
             if (!HasValidDataAndBindings())
                 return;
@@ -423,7 +414,6 @@ namespace UnityEngine.Experimental.UIElements
                 item.style.height = itemHeight;
                 if (i < itemsSource.Count)
                 {
-                    item.style.visibility = Visibility.Visible;
                     Setup(recycledItem, i);
                 }
                 else
@@ -433,13 +423,12 @@ namespace UnityEngine.Experimental.UIElements
 
                 m_ScrollView.Add(item);
             }
-
-            schedule.Execute(() => { Dirty(ChangeType.Layout); });
         }
 
         private void Setup(RecycledItem recycledItem, int newIndex)
         {
             Assert.IsTrue(newIndex < itemsSource.Count);
+            recycledItem.element.style.visibility = Visibility.Visible;
             recycledItem.index = newIndex;
             recycledItem.element.style.positionTop = recycledItem.index * itemHeight;
             recycledItem.element.style.positionBottom = (itemsSource.Count - recycledItem.index - 1) * itemHeight;

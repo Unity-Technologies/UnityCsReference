@@ -131,7 +131,7 @@ namespace UnityEditorInternal.VR
             if (!TargetGroupSupportsVirtualReality(targetGroup) && !TargetGroupSupportsAugmentedReality(targetGroup))
                 return;
 
-            if (VREditor.IsDeviceListDirty(targetGroup))
+            if (m_VRDeviceActiveUI.ContainsKey(targetGroup) && VREditor.IsDeviceListDirty(targetGroup))
             {
                 VREditor.ClearDeviceListDirty(targetGroup);
                 m_VRDeviceActiveUI[targetGroup].list = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup);
@@ -331,7 +331,7 @@ namespace UnityEditorInternal.VR
             if (!supportsSinglePass && (stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass))
                 stereoRenderingPath.intValue = (int)StereoRenderingPath.MultiPass;
 
-            EditorGUILayout.IntPopup(stereoRenderingPath, validStereoRenderingPaths, validStereoRenderingValues, EditorGUIUtility.TrTextContent("Stereo Rendering Method*"));
+            EditorGUILayout.IntPopup(stereoRenderingPath, validStereoRenderingPaths, validStereoRenderingValues, EditorGUIUtility.TrTextContent("Stereo Rendering Mode*"));
 
             if ((stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass) && (targetGroup == BuildTargetGroup.Android))
             {
@@ -447,7 +447,7 @@ namespace UnityEditorInternal.VR
 
             if (customOptions != null && customOptions.IsExpanded)
             {
-                customOptions.Draw(rect);
+                customOptions.Draw(target, rect);
             }
         }
 

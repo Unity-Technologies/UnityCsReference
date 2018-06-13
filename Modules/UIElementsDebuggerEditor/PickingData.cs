@@ -35,43 +35,9 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                     selectedPanel = panel;
                     return true;
                 }
-                DrawRect(sp, Color.white);
+                PanelDebug.DrawRect(sp, Color.white);
             }
             return false;
-        }
-
-        public static void DrawRect(Rect sp, Color c)
-        {
-            sp.xMin++;
-            sp.xMax--;
-            sp.yMin++;
-            sp.yMax--;
-
-            HandleUtility.ApplyWireMaterial();
-            GL.PushMatrix();
-            GL.Begin(GL.LINES);
-
-            GL.Color(c);
-            GL.Vertex3(sp.xMin, sp.yMin, 0);
-            GL.Color(c);
-            GL.Vertex3(sp.xMax, sp.yMin, 0);
-
-            GL.Color(c);
-            GL.Vertex3(sp.xMax, sp.yMin, 0);
-            GL.Color(c);
-            GL.Vertex3(sp.xMax, sp.yMax, 0);
-
-            GL.Color(c);
-            GL.Vertex3(sp.xMax, sp.yMax, 0);
-            GL.Color(c);
-            GL.Vertex3(sp.xMin, sp.yMax, 0);
-
-            GL.Color(c);
-            GL.Vertex3(sp.xMin, sp.yMax, 0);
-            GL.Color(c);
-            GL.Vertex3(sp.xMin, sp.yMin, 0);
-            GL.End();
-            GL.PopMatrix();
         }
 
         public void Refresh()

@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace UnityEditor
+namespace UnityEditor.AdvancedDropdown
 {
     internal abstract class AdvancedDropdownDataSource
     {
@@ -16,9 +16,17 @@ namespace UnityEditor
         public AdvancedDropdownItem mainTree { get { return m_MainTree; }}
         public AdvancedDropdownItem searchTree { get { return m_SearchTree; }}
 
+        protected List<AdvancedDropdownItem> m_SearchableElements;
+
+        public List<string> selectedIds = new List<string>();
+
         public void ReloadData()
         {
             m_MainTree = FetchData();
+        }
+
+        public virtual void UpdateSelectedId(AdvancedDropdownItem item)
+        {
         }
 
         protected abstract AdvancedDropdownItem FetchData();
@@ -30,19 +38,19 @@ namespace UnityEditor
 
         virtual protected AdvancedDropdownItem Search(string searchString)
         {
-            if (string.IsNullOrEmpty(searchString))
+            if (string.IsNullOrEmpty(searchString) || m_SearchableElements == null)
                 return null;
 
             // Support multiple search words separated by spaces.
             var searchWords = searchString.ToLower().Split(' ');
 
             // We keep two lists. Matches that matches the start of an item always get first priority.
-            var matchesStart = new List<AdvancedDropdownItem>();
-            var matchesWithin = new List<AdvancedDropdownItem>();
+            var matchesStart = new SortedList<string, AdvancedDropdownItem>();
+            var matchesWithin = new SortedList<string, AdvancedDropdownItem>();
 
-            foreach (var e in m_MainTree.GetSearchableElements())
+            foreach (var e in m_SearchableElements)
             {
-                var name = e.name.ToLower().Replace(" ", "");
+                var name = e.searchableName.ToLower().Replace(" ", "");
 
                 var didMatchAll = true;
                 var didMatchStart = false;
@@ -69,23 +77,20 @@ namespace UnityEditor
                 if (didMatchAll)
                 {
                     if (didMatchStart)
-                        matchesStart.Add(e);
+                        matchesStart.Add(e.id, e);
                     else
-                        matchesWithin.Add(e);
+                        matchesWithin.Add(e.id, e);
                 }
             }
-
-            matchesStart.Sort();
-            matchesWithin.Sort();
 
             var searchTree = new AdvancedDropdownItem(kSearchHeader, -1);
             foreach (var element in matchesStart)
             {
-                searchTree.AddChild(element);
+                searchTree.AddChild(element.Value);
             }
             foreach (var element in matchesWithin)
             {
-                searchTree.AddChild(element);
+                searchTree.AddChild(element.Value);
             }
             return searchTree;
         }

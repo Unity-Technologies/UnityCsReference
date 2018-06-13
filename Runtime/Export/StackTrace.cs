@@ -40,12 +40,16 @@ namespace UnityEngine
         static bool IsSystemStacktraceType(object name)
         {
             string casted = (string)name;
-            return casted.StartsWith("UnityEditor.") || casted.StartsWith("UnityEngine.") || casted.StartsWith("System.") || casted.StartsWith("UnityScript.Lang.") || casted.StartsWith("Boo.Lang.") || casted.StartsWith("UnityEngine.SetupCoroutine");
+            return casted.StartsWith("UnityEditor.") ||
+                casted.StartsWith("UnityEngine.") ||
+                casted.StartsWith("System.") ||
+                casted.StartsWith("UnityScript.Lang.") ||
+                casted.StartsWith("Boo.Lang.");
         }
 
         static public string ExtractStringFromException(System.Object exception)
         {
-            string message = "", stackTrace = "";
+            string message, stackTrace;
             ExtractStringFromExceptionInternal(exception, out message, out stackTrace);
             return message + "\n" + stackTrace;
         }

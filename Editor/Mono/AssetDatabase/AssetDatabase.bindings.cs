@@ -72,6 +72,18 @@ namespace UnityEditor
         [FreeFunction("AssetDatabase::GetGUIDAndLocalIdentifierInFile")]
         extern private static bool GetGUIDAndLocalIdentifierInFile(int instanceID, out GUID outGuid, out long outLocalId);
 
+        [Obsolete("Please use the overload of this function that uses a long data type for the localId parameter, because this version can return a localID that has overflowed. This can happen when called on objects that are part of a Prefab.",  true)]
+        public static bool TryGetGUIDAndLocalFileIdentifier(UnityEngine.Object obj, out string guid, out int localId)
+        {
+            return TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guid, out localId);
+        }
+
+        [Obsolete("Please use the overload of this function that uses a long data type for the localId parameter, because this version can return a localID that has overflowed. This can happen when called on objects that are part of a Prefab.",  true)]
+        public static bool TryGetGUIDAndLocalFileIdentifier(int instanceID, out string guid, out int localId)
+        {
+            throw new NotSupportedException("Use the overload of this function that uses a long data type for the localId parameter, because this version can return a localID that has overflowed. This can happen when called on objects that are part of a Prefab.");
+        }
+
         public static bool TryGetGUIDAndLocalFileIdentifier(UnityEngine.Object obj, out string guid, out long localId)
         {
             return TryGetGUIDAndLocalFileIdentifier(obj.GetInstanceID(), out guid, out localId);
@@ -89,5 +101,8 @@ namespace UnityEditor
         {
             ForceReserializeAssets(GetAllAssetPaths());
         }
+
+        [FreeFunction("AssetDatabase::RemoveObjectFromAsset")]
+        extern public static void RemoveObjectFromAsset([NotNull] UnityEngine.Object objectToRemove);
     }
 }

@@ -146,6 +146,13 @@ namespace UnityEditor.Presets
         public override void OnSelectionClosed(Preset selection)
         {
             OnSelectionChanged(selection);
+            if (m_ImporterEditors != null)
+            {
+                foreach (var target in m_Targets)
+                {
+                    DestroyImmediate(target);
+                }
+            }
             DestroyImmediate(this);
         }
     }

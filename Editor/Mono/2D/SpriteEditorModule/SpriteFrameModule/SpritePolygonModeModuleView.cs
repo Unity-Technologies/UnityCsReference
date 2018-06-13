@@ -87,10 +87,16 @@ namespace UnityEditor
             DrawSpriteRectGizmos();
         }
 
+        private void ViewUpdateSideCountField()
+        {
+            var sidesField = m_PolygonShapeView.Q<PropertyControl<long>>("labelIntegerField");
+            sidesField.value = polygonSides;
+        }
+
         private void SetupPolygonChangeShapeWindowElements(VisualElement moduleView)
         {
             var sidesField = moduleView.Q<PropertyControl<long>>("labelIntegerField");
-            sidesField.value = polygonSides;
+            sidesField.SetValueWithoutNotify(polygonSides);
             sidesField.OnValueChanged((evt) =>
                 {
                     polygonSides = (int)evt.newValue;

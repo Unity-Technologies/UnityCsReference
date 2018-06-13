@@ -9,29 +9,11 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class TemplateContainer : VisualElement
     {
-        public class TemplateContainerFactory : UxmlFactory<TemplateContainer, TemplateContainerUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<TemplateContainer, UxmlTraits> {}
 
-        public class TemplateContainerUxmlTraits : VisualElementUxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Template;
-
-            public TemplateContainerUxmlTraits()
-            {
-                m_Template = new UxmlStringAttributeDescription { name = "template", use = UxmlAttributeDescription.Use.Required};
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Template;
-                }
-            }
+            UxmlStringAttributeDescription m_Template = new UxmlStringAttributeDescription { name = "template", use = UxmlAttributeDescription.Use.Required };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {

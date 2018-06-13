@@ -43,6 +43,16 @@ namespace UnityEngine.Experimental.UIElements
             GUIUtility.processEvent += ProcessEvent;
             GUIUtility.cleanupRoots += CleanupRoots;
             GUIUtility.endContainerGUIFromException += EndContainerGUIFromException;
+
+            GUIUtility.enabledStateChanged += EnabledStateChanged;
+        }
+
+        static void EnabledStateChanged()
+        {
+            if (s_ContainerStack.Count > 0)
+            {
+                s_ContainerStack.Peek().MakeDirtyLayout();
+            }
         }
 
         private static void TakeCapture()
@@ -51,20 +61,17 @@ namespace UnityEngine.Experimental.UIElements
             {
                 var topmostContainer = s_ContainerStack.Peek();
 
-                if (topmostContainer.GUIDepth != GUIUtility.guiDepth)
-                    return;
-
-                if (MouseCaptureController.IsMouseCaptureTaken() && !topmostContainer.HasMouseCapture())
+                if (MouseCaptureController.IsMouseCaptured() && !topmostContainer.HasMouseCapture())
                 {
                     Debug.Log("Should not grab hot control with an active capture");
                 }
-                topmostContainer.TakeMouseCapture();
+                topmostContainer.CaptureMouse();
             }
         }
 
         private static void ReleaseCapture()
         {
-            MouseCaptureController.ReleaseMouseCapture();
+            MouseCaptureController.ReleaseMouse();
         }
 
         private static bool ProcessEvent(int instanceID, IntPtr nativeEventPtr)
@@ -219,13 +226,8 @@ namespace UnityEngine.Experimental.UIElements
 
             if (s_EventInstance.type == EventType.Repaint)
             {
-                // If this is an individual repaint event (not part of a RepaintAll then we have to handle sRGBWrite ourselves)
-                bool oldSRGBWrite = GL.sRGBWrite;
-                if (oldSRGBWrite)
-                    GL.sRGBWrite = false;
                 panel.Repaint(s_EventInstance);
-                if (oldSRGBWrite)
-                    GL.sRGBWrite = true;
+
                 // TODO get rid of this when we wrap every GUIView inside IMGUIContainers
                 // here we pretend to use the repaint event
                 // in order to suspend to suspend OnGUI() processing on the native side
@@ -238,14 +240,13 @@ namespace UnityEngine.Experimental.UIElements
 
                 using (EventBase evt = CreateEvent(s_EventInstance))
                 {
-                    // DispatchEvent changes s_EventInstance.mousePosition.
-                    s_EventDispatcher.DispatchEvent(evt, panel);
-                    s_EventInstance.mousePosition = evt.originalMousePosition;
+                    bool immediate = s_EventInstance.type == EventType.Used || s_EventInstance.type == EventType.Layout || s_EventInstance.type == EventType.ExecuteCommand || s_EventInstance.type == EventType.ValidateCommand;
+                    s_EventDispatcher.DispatchEvent(evt, panel, immediate ? DispatchMode.Immediate : DispatchMode.Queued);
 
                     // FIXME: we dont always have to repaint if evt.isPropagationStopped.
                     if (evt.isPropagationStopped)
                     {
-                        panel.visualTree.Dirty(ChangeType.Repaint);
+                        panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
                     }
                     usesEvent = evt.isPropagationStopped;
                 }

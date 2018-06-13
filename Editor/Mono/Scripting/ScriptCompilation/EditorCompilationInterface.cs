@@ -8,6 +8,7 @@ using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
 using UnityEditorInternal;
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -42,6 +43,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static void LogException(Exception exception)
         {
             var assemblyDefinitionException = exception as AssemblyDefinitionException;
+            var precompiledAssemblyException = exception as PrecompiledAssemblyException;
 
             if (assemblyDefinitionException != null && assemblyDefinitionException.filePaths.Length > 0)
             {
@@ -53,6 +55,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     var instanceID = asset.GetInstanceID();
 
                     CompilationPipeline.LogEditorCompilationError(message, instanceID);
+                }
+            }
+            else if (precompiledAssemblyException != null)
+            {
+                foreach (var filePath in precompiledAssemblyException.filePaths)
+                {
+                    var message = string.Format(exception.Message, filePath);
+                    var loadAssetAtPath = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(filePath);
+
+                    CompilationPipeline.LogEditorCompilationError(message, loadAssetAtPath.GetInstanceID());
                 }
             }
             else
@@ -182,13 +194,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static void SetAllPackageAssemblies(EditorCompilation.PackageAssembly[] packageAssemblies)
         {
-            EmitExceptionAsError(() => Instance.SetAllPackageAssemblies(packageAssemblies));
+            Instance.SetAllPackageAssemblies(packageAssemblies);
         }
 
         [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
         {
             return EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(), new EditorCompilation.TargetAssemblyInfo[0]);
+        }
+
+        [RequiredByNativeCode]
+        public static EditorCompilation.TargetAssemblyInfo[] GetTargetAssembliesWithScripts()
+        {
+            var options = GetAdditionalEditorScriptCompilationOptions();
+            return Instance.GetTargetAssembliesWithScripts(options);
         }
 
         [RequiredByNativeCode]

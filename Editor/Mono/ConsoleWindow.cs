@@ -23,11 +23,7 @@ namespace UnityEditor
             private static bool ms_Loaded;
             private static int ms_logStyleLineCount;
             public static GUIStyle Box;
-            public static GUIStyle Button;
             public static GUIStyle MiniButton;
-            public static GUIStyle MiniButtonLeft;
-            public static GUIStyle MiniButtonMiddle;
-            public static GUIStyle MiniButtonRight;
             public static GUIStyle LogStyle;
             public static GUIStyle WarningStyle;
             public static GUIStyle ErrorStyle;
@@ -75,33 +71,30 @@ namespace UnityEditor
                 if (ms_Loaded)
                     return;
                 ms_Loaded = true;
-                Box = new GUIStyle("CN Box");
-                Button = new GUIStyle("Button");
+                Box = "CN Box";
 
-                MiniButton = new GUIStyle("ToolbarButton");
-                MiniButtonLeft = new GUIStyle("ToolbarButton");
-                MiniButtonMiddle = new GUIStyle("ToolbarButton");
-                MiniButtonRight = new GUIStyle("ToolbarButton");
-                Toolbar = new GUIStyle("Toolbar");
+
+                MiniButton = "ToolbarButton";
+                Toolbar = "Toolbar";
                 LogStyle = new GUIStyle("CN EntryInfo");
-                LogSmallStyle = new GUIStyle("CN EntryInfoSmall");
+                LogSmallStyle = "CN EntryInfoSmall";
                 WarningStyle = new GUIStyle("CN EntryWarn");
-                WarningSmallStyle = new GUIStyle("CN EntryWarnSmall");
+                WarningSmallStyle = "CN EntryWarnSmall";
                 ErrorStyle = new GUIStyle("CN EntryError");
-                ErrorSmallStyle = new GUIStyle("CN EntryErrorSmall");
-                IconLogStyle = new GUIStyle("CN EntryInfoIcon");
-                IconLogSmallStyle = new GUIStyle("CN EntryInfoIconSmall");
-                IconWarningStyle = new GUIStyle("CN EntryWarnIcon");
-                IconWarningSmallStyle = new GUIStyle("CN EntryWarnIconSmall");
-                IconErrorStyle = new GUIStyle("CN EntryErrorIcon");
-                IconErrorSmallStyle = new GUIStyle("CN EntryErrorIconSmall");
-                EvenBackground = new GUIStyle("CN EntryBackEven");
-                OddBackground = new GUIStyle("CN EntryBackodd");
-                MessageStyle = new GUIStyle("CN Message");
-                StatusError = new GUIStyle("CN StatusError");
-                StatusWarn = new GUIStyle("CN StatusWarn");
-                StatusLog = new GUIStyle("CN StatusInfo");
-                CountBadge = new GUIStyle("CN CountBadge");
+                ErrorSmallStyle = "CN EntryErrorSmall";
+                IconLogStyle = "CN EntryInfoIcon";
+                IconLogSmallStyle = "CN EntryInfoIconSmall";
+                IconWarningStyle = "CN EntryWarnIcon";
+                IconWarningSmallStyle = "CN EntryWarnIconSmall";
+                IconErrorStyle = "CN EntryErrorIcon";
+                IconErrorSmallStyle = "CN EntryErrorIconSmall";
+                EvenBackground = "CN EntryBackEven";
+                OddBackground = "CN EntryBackodd";
+                MessageStyle = "CN Message";
+                StatusError = "CN StatusError";
+                StatusWarn = "CN StatusWarn";
+                StatusLog = "CN StatusInfo";
+                CountBadge = "CN CountBadge";
 
                 // If the console window isn't open OnEnable() won't trigger so it will end up with 0 lines,
                 // so we always make sure we read it up when we initialize here.
@@ -329,11 +322,27 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            MakeSureConsoleAlwaysOnlyOne();
+
             titleContent = GetLocalizedTitleContent();
             ms_ConsoleWindow = this;
             m_DevBuild = Unsupported.IsDeveloperMode();
 
             Constants.LogStyleLineCount = EditorPrefs.GetInt("ConsoleWindowLogLineCount", 2);
+        }
+
+        void MakeSureConsoleAlwaysOnlyOne()
+        {
+            // make sure that console window is always open as only one.
+            if (ms_ConsoleWindow != null)
+            {
+                // get the container window of this console window.
+                ContainerWindow cw = ms_ConsoleWindow.m_Parent.window;
+
+                // the container window must not be main view(prevent from quitting editor).
+                if (cw.rootView.GetType() != typeof(MainView))
+                    cw.Close();
+            }
         }
 
         void OnDisable()
@@ -569,7 +578,7 @@ namespace UnityEditor
             EditorGUILayout.Space();
 
             bool wasCollapsed = HasFlag(ConsoleFlags.Collapse);
-            SetFlag(ConsoleFlags.Collapse, GUILayout.Toggle(wasCollapsed, Constants.CollapseLabel, Constants.MiniButtonLeft));
+            SetFlag(ConsoleFlags.Collapse, GUILayout.Toggle(wasCollapsed, Constants.CollapseLabel, Constants.MiniButton));
 
             bool collapsedChanged = (wasCollapsed != HasFlag(ConsoleFlags.Collapse));
             if (collapsedChanged)
@@ -581,8 +590,8 @@ namespace UnityEditor
                 m_ListView.scrollPos.y = LogEntries.GetCount() * RowHeight;
             }
 
-            SetFlag(ConsoleFlags.ClearOnPlay, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnPlay), Constants.ClearOnPlayLabel, Constants.MiniButtonMiddle));
-            SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPauseLabel, Constants.MiniButtonRight));
+            SetFlag(ConsoleFlags.ClearOnPlay, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnPlay), Constants.ClearOnPlayLabel, Constants.MiniButton));
+            SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPauseLabel, Constants.MiniButton));
 
             m_AttachProfilerUI.OnGUILayout(this);
 
@@ -591,8 +600,8 @@ namespace UnityEditor
             if (m_DevBuild)
             {
                 GUILayout.FlexibleSpace();
-                SetFlag(ConsoleFlags.StopForAssert, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForAssert), Constants.StopForAssertLabel, Constants.MiniButtonLeft));
-                SetFlag(ConsoleFlags.StopForError, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForError), Constants.StopForErrorLabel, Constants.MiniButtonRight));
+                SetFlag(ConsoleFlags.StopForAssert, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForAssert), Constants.StopForAssertLabel, Constants.MiniButton));
+                SetFlag(ConsoleFlags.StopForError, GUILayout.Toggle(HasFlag(ConsoleFlags.StopForError), Constants.StopForErrorLabel, Constants.MiniButton));
             }
 
             GUILayout.FlexibleSpace();
@@ -600,9 +609,9 @@ namespace UnityEditor
             int errorCount = 0, warningCount = 0, logCount = 0;
             LogEntries.GetCountsByType(ref errorCount, ref warningCount, ref logCount);
             EditorGUI.BeginChangeCheck();
-            bool setLogFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelLog), new GUIContent((logCount <= 999 ? logCount.ToString() : "999+"), logCount > 0 ? iconInfoSmall : iconInfoMono), Constants.MiniButtonRight);
-            bool setWarningFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelWarning), new GUIContent((warningCount <= 999 ? warningCount.ToString() : "999+"), warningCount > 0 ? iconWarnSmall : iconWarnMono), Constants.MiniButtonMiddle);
-            bool setErrorFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelError), new GUIContent((errorCount <= 999 ? errorCount.ToString() : "999+"), errorCount > 0 ? iconErrorSmall : iconErrorMono), Constants.MiniButtonLeft);
+            bool setLogFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelLog), new GUIContent((logCount <= 999 ? logCount.ToString() : "999+"), logCount > 0 ? iconInfoSmall : iconInfoMono), Constants.MiniButton);
+            bool setWarningFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelWarning), new GUIContent((warningCount <= 999 ? warningCount.ToString() : "999+"), warningCount > 0 ? iconWarnSmall : iconWarnMono), Constants.MiniButton);
+            bool setErrorFlag = GUILayout.Toggle(HasFlag(ConsoleFlags.LogLevelError), new GUIContent((errorCount <= 999 ? errorCount.ToString() : "999+"), errorCount > 0 ? iconErrorSmall : iconErrorMono), Constants.MiniButton);
             // Active entry index may no longer be valid
             if (EditorGUI.EndChangeCheck())
                 SetActiveEntry(null);

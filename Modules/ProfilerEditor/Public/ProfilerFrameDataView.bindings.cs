@@ -63,6 +63,10 @@ namespace UnityEditorInternal.Profiling
 
             public override bool Equals(object obj)
             {
+                if (ReferenceEquals(obj, null))
+                    return false;
+                if (obj.GetType() != GetType())
+                    return false;
                 var other = (MarkerPath)obj;
 
                 if (markerIds == other.markerIds)
@@ -137,6 +141,12 @@ namespace UnityEditorInternal.Profiling
         public extern int frameIndex { get; }
 
         public extern int threadIndex { get; }
+
+        public extern string threadGroupName { get; }
+
+        public extern string threadName { get; }
+
+        public extern ulong threadId { get; }
 
         public extern ProfilerColumn sortColumn { get; }
 

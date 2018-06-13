@@ -12,7 +12,7 @@ namespace UnityEngine
 {
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public struct RectInt
+    public struct RectInt : IEquatable<RectInt>
     {
         private int m_XMin, m_YMin, m_Width, m_Height;
 
@@ -90,6 +90,14 @@ namespace UnityEngine
         public override string ToString()
         {
             return UnityString.Format("(x:{0}, y:{1}, width:{2}, height:{3})", x, y, width, height);
+        }
+
+        public bool Equals(RectInt other)
+        {
+            return m_XMin == other.m_XMin &&
+                m_YMin == other.m_YMin &&
+                m_Width == other.m_Width &&
+                m_Height == other.m_Height;
         }
 
         public PositionEnumerator allPositionsWithin

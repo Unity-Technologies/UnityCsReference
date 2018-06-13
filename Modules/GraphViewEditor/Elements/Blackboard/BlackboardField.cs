@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 
@@ -36,6 +37,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             set { m_Pill.icon = value; }
         }
 
+        public bool highlighted
+        {
+            get { return m_Pill.highlighted; }
+            set { m_Pill.highlighted = value; }
+        }
+
         public BlackboardField() : this(null, "", "") {}
         public BlackboardField(Texture icon, string text, string typeText)
         {
@@ -46,11 +53,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             mainContainer.pickingMode = PickingMode.Ignore;
 
             m_ContentItem = mainContainer.Q("contentItem");
+            Assert.IsTrue(m_ContentItem != null);
 
             m_Pill = mainContainer.Q<Pill>("pill");
+            Assert.IsTrue(m_Pill != null);
+
             m_TypeLabel = mainContainer.Q<Label>("typeLabel");
+            Assert.IsTrue(m_TypeLabel != null);
 
             m_TextField = mainContainer.Q<TextField>("textField");
+            Assert.IsTrue(m_TextField != null);
+
             m_TextField.visible = false;
             m_TextField.RegisterCallback<FocusOutEvent>(e => { OnEditTextFinished(); });
             m_TextField.RegisterCallback<KeyDownEvent>(OnTextFieldKeyPressed);
@@ -122,7 +135,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public void OpenTextEditor()
         {
-            m_TextField.value = text;
+            m_TextField.SetValueWithoutNotify(text);
             m_TextField.visible = true;
             m_ContentItem.visible = false;
             m_TextField.Focus();
@@ -132,18 +145,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
             evt.menu.AppendAction("Rename", (a) => OpenTextEditor(), ContextualMenu.MenuAction.AlwaysEnabled);
-        }
-
-        public override void OnSelected()
-        {
-            base.OnSelected();
-            m_Pill.highlighted = true;
-        }
-
-        public override void OnUnselected()
-        {
-            base.OnUnselected();
-            m_Pill.highlighted = false;
         }
     }
 }

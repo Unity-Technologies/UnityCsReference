@@ -236,7 +236,7 @@ namespace UnityEditor
 
             // Determine if SerializedObject target is a script or a builtin type
             UnityEngine.Object target = property.serializedObject.targetObject;
-            if ((target is MonoBehaviour) || (target is ScriptableObject))
+            if (NativeClassExtensionUtilities.ExtendsANativeType(target))
             {
                 // For scripts, use reflection to get FieldInfo for the member the property represents
                 field = GetFieldInfoFromProperty(property, out propertyType);

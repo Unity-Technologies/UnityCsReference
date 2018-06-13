@@ -21,7 +21,6 @@ namespace UnityEditor
 
         public extern bool hasFocus {[NativeMethod("IsViewFocused")] get; }
 
-        [NativeMethod(IsThreadSafe = true)]
         public extern void Repaint();
         public extern void Focus();
         public extern void RepaintImmediately();
@@ -42,11 +41,12 @@ namespace UnityEditor
         internal extern void ClearKeyboardControl();
         internal extern void SetKeyboardControl(int id);
         internal extern void GrabPixels(RenderTexture rd, Rect rect);
+        internal extern void MarkHotRegion(Rect hotRegionRect);
 
         protected extern void Internal_SetAsActiveWindow();
 
-        private extern void Internal_Init(int depthBits);
-        private extern void Internal_Recreate(int depthBits);
+        private extern void Internal_Init(int depthBits, int antiAliasing);
+        private extern void Internal_Recreate(int depthBits, int antiAliasing);
         private extern void Internal_Close();
         private extern bool Internal_SendEvent(Event e);
         private extern void Internal_SetWantsMouseMove(bool wantIt);

@@ -6,11 +6,11 @@ using System;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class Label : BaseTextElement
+    public class Label : TextElement
     {
-        public class LabelFactory : UxmlFactory<Label, LabelUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Label, UxmlTraits> {}
 
-        public class LabelUxmlTraits : BaseTextElementUxmlTraits {}
+        public new class UxmlTraits : TextElement.UxmlTraits {}
 
         public Label() : this(String.Empty) {}
         public Label(string text)

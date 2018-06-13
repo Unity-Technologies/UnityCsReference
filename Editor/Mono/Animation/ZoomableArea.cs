@@ -93,22 +93,38 @@ namespace UnityEditor
         public float hScaleMin
         {
             get { return m_HScaleMin; }
-            set { m_HScaleMin = Mathf.Clamp(value, kMinScale, kMaxScale); }
+            set
+            {
+                m_HScaleMin = Mathf.Clamp(value, kMinScale, kMaxScale);
+                styles.enableSliderZoomHorizontal = allowSliderZoomHorizontal;
+            }
         }
         public float hScaleMax
         {
             get { return m_HScaleMax; }
-            set { m_HScaleMax = Mathf.Clamp(value, kMinScale, kMaxScale); }
+            set
+            {
+                m_HScaleMax = Mathf.Clamp(value, kMinScale, kMaxScale);
+                styles.enableSliderZoomHorizontal = allowSliderZoomHorizontal;
+            }
         }
         public float vScaleMin
         {
             get { return m_VScaleMin; }
-            set { m_VScaleMin = Mathf.Clamp(value, kMinScale, kMaxScale); }
+            set
+            {
+                m_VScaleMin = Mathf.Clamp(value, kMinScale, kMaxScale);
+                styles.enableSliderZoomVertical = allowSliderZoomVertical;
+            }
         }
         public float vScaleMax
         {
             get { return m_VScaleMax; }
-            set { m_VScaleMax = Mathf.Clamp(value, kMinScale, kMaxScale); }
+            set
+            {
+                m_VScaleMax = Mathf.Clamp(value, kMinScale, kMaxScale);
+                styles.enableSliderZoomVertical = allowSliderZoomVertical;
+            }
         }
 
 
@@ -128,7 +144,12 @@ namespace UnityEditor
         [SerializeField] private bool m_EnableMouseInput = true;
         public bool enableMouseInput { get { return m_EnableMouseInput; } set { m_EnableMouseInput = value; } }
 
-        [SerializeField] private bool m_EnableSliderZoom = true;
+        [SerializeField] private bool m_EnableSliderZoomHorizontal = true;
+        [SerializeField] private bool m_EnableSliderZoomVertical = true;
+
+        // if the min and max scaling does not allow for actual zooming, there is no point in allowing it
+        protected bool allowSliderZoomHorizontal { get { return m_EnableSliderZoomHorizontal && m_HScaleMin < m_HScaleMax; } }
+        protected bool allowSliderZoomVertical { get { return m_EnableSliderZoomVertical && m_VScaleMin < m_VScaleMax; } }
 
         public bool m_UniformScale;
         public bool uniformScale { get { return m_UniformScale; } set { m_UniformScale = value; } }
@@ -182,16 +203,56 @@ namespace UnityEditor
         public class Styles
         {
             public GUIStyle horizontalScrollbar;
-            public GUIStyle horizontalMinMaxScrollbarThumb;
+            public GUIStyle horizontalMinMaxScrollbarThumb
+            {
+                get
+                {
+                    return GetSliderAxisStyle(enableSliderZoomHorizontal).horizontal;
+                }
+            }
             public GUIStyle horizontalScrollbarLeftButton;
             public GUIStyle horizontalScrollbarRightButton;
             public GUIStyle verticalScrollbar;
-            public GUIStyle verticalMinMaxScrollbarThumb;
+            public GUIStyle verticalMinMaxScrollbarThumb
+            {
+                get
+                {
+                    return GetSliderAxisStyle(enableSliderZoomVertical).vertical;
+                }
+            }
             public GUIStyle verticalScrollbarUpButton;
             public GUIStyle verticalScrollbarDownButton;
 
+            public bool enableSliderZoomHorizontal;
+            public bool enableSliderZoomVertical;
+
             public float sliderWidth;
             public float visualSliderWidth;
+
+            private bool minimalGUI;
+
+            private SliderTypeStyles.SliderAxisStyles GetSliderAxisStyle(bool enableSliderZoom)
+            {
+                if (minimalGUI)
+                    return enableSliderZoom ? minimalSliderStyles.minMaxSliders : minimalSliderStyles.scrollbar;
+                else
+                    return enableSliderZoom ? normalSliderStyles.minMaxSliders : normalSliderStyles.scrollbar;
+            }
+
+            private static SliderTypeStyles minimalSliderStyles;
+            private static SliderTypeStyles normalSliderStyles;
+
+            private class SliderTypeStyles
+            {
+                public SliderAxisStyles scrollbar;
+                public SliderAxisStyles minMaxSliders;
+                public class SliderAxisStyles
+                {
+                    public GUIStyle horizontal;
+                    public GUIStyle vertical;
+                }
+            }
+
             public Styles(bool minimalGUI)
             {
                 if (minimalGUI)
@@ -208,24 +269,45 @@ namespace UnityEditor
 
             public void InitGUIStyles(bool minimalGUI, bool enableSliderZoom)
             {
+                InitGUIStyles(minimalGUI, enableSliderZoom, enableSliderZoom);
+            }
+
+            public void InitGUIStyles(bool minimalGUI, bool enableSliderZoomHorizontal, bool enableSliderZoomVertical)
+            {
+                this.minimalGUI = minimalGUI;
+                this.enableSliderZoomHorizontal = enableSliderZoomHorizontal;
+                this.enableSliderZoomVertical = enableSliderZoomVertical;
+
                 if (minimalGUI)
                 {
-                    horizontalMinMaxScrollbarThumb = enableSliderZoom ? "MiniMinMaxSliderHorizontal" : "MiniSliderhorizontal";
+                    if (minimalSliderStyles == null)
+                    {
+                        minimalSliderStyles = new SliderTypeStyles()
+                        {
+                            scrollbar = new SliderTypeStyles.SliderAxisStyles() { horizontal = "MiniSliderhorizontal", vertical = "MiniSliderVertical" },
+                            minMaxSliders = new SliderTypeStyles.SliderAxisStyles() { horizontal = "MiniMinMaxSliderHorizontal", vertical = "MiniMinMaxSlidervertical" },
+                        };
+                    }
                     horizontalScrollbarLeftButton = GUIStyle.none;
                     horizontalScrollbarRightButton = GUIStyle.none;
                     horizontalScrollbar = GUIStyle.none;
-                    verticalMinMaxScrollbarThumb = enableSliderZoom ? "MiniMinMaxSlidervertical" : "MiniSliderVertical";
                     verticalScrollbarUpButton = GUIStyle.none;
                     verticalScrollbarDownButton = GUIStyle.none;
                     verticalScrollbar = GUIStyle.none;
                 }
                 else
                 {
-                    horizontalMinMaxScrollbarThumb = enableSliderZoom ? "horizontalMinMaxScrollbarThumb" : "horizontalscrollbarthumb";
+                    if (normalSliderStyles == null)
+                    {
+                        normalSliderStyles = new SliderTypeStyles()
+                        {
+                            scrollbar = new SliderTypeStyles.SliderAxisStyles() { horizontal = "horizontalscrollbarthumb", vertical = "verticalscrollbarthumb" },
+                            minMaxSliders = new SliderTypeStyles.SliderAxisStyles() { horizontal = "horizontalMinMaxScrollbarThumb", vertical = "verticalMinMaxScrollbarThumb" },
+                        };
+                    }
                     horizontalScrollbarLeftButton = "horizontalScrollbarLeftbutton";
                     horizontalScrollbarRightButton = "horizontalScrollbarRightbutton";
                     horizontalScrollbar = GUI.skin.horizontalScrollbar;
-                    verticalMinMaxScrollbarThumb = enableSliderZoom ? "verticalMinMaxScrollbarThumb" : "verticalscrollbarthumb";
                     verticalScrollbarUpButton = "verticalScrollbarUpbutton";
                     verticalScrollbarDownButton = "verticalScrollbarDownbutton";
                     verticalScrollbar = GUI.skin.verticalScrollbar;
@@ -511,16 +593,19 @@ namespace UnityEditor
             m_MinimalGUI = minimalGUI;
         }
 
-        public ZoomableArea(bool minimalGUI, bool enableSliderZoom)
+        public ZoomableArea(bool minimalGUI, bool enableSliderZoom) : this(minimalGUI, enableSliderZoom, enableSliderZoom) {}
+
+        public ZoomableArea(bool minimalGUI, bool enableSliderZoomHorizontal, bool enableSliderZoomVertical)
         {
             m_MinimalGUI = minimalGUI;
-            m_EnableSliderZoom = enableSliderZoom;
+            m_EnableSliderZoomHorizontal = enableSliderZoomHorizontal;
+            m_EnableSliderZoomVertical = enableSliderZoomVertical;
         }
 
         public void BeginViewGUI()
         {
             if (styles.horizontalScrollbar == null)
-                styles.InitGUIStyles(m_MinimalGUI, m_EnableSliderZoom);
+                styles.InitGUIStyles(m_MinimalGUI, allowSliderZoomHorizontal, allowSliderZoomVertical);
 
             if (enableMouseInput)
                 HandleZoomAndPanEvents(m_DrawArea);
@@ -627,7 +712,7 @@ namespace UnityEditor
                     Rect hRangeSliderRect = new Rect(drawRect.x + 1, drawRect.yMax - inset, drawRect.width - otherInset, styles.sliderWidth);
                     float shownXRange = area.width;
                     float shownXMin = area.xMin;
-                    if (m_EnableSliderZoom)
+                    if (allowSliderZoomHorizontal)
                     {
                         EditorGUIExt.MinMaxScroller(hRangeSliderRect, horizontalScrollbarID,
                             ref shownXMin, ref shownXRange,
@@ -661,7 +746,7 @@ namespace UnityEditor
                         Rect vRangeSliderRect = new Rect(drawRect.xMax - inset, drawRect.y, styles.sliderWidth, drawRect.height - otherInset);
                         float shownYRange = area.height;
                         float shownYMin = -area.yMax;
-                        if (m_EnableSliderZoom)
+                        if (allowSliderZoomVertical)
                         {
                             EditorGUIExt.MinMaxScroller(vRangeSliderRect, verticalScrollbarID,
                                 ref shownYMin, ref shownYRange,
@@ -690,7 +775,7 @@ namespace UnityEditor
                         Rect vRangeSliderRect = new Rect(drawRect.xMax - inset, drawRect.y, styles.sliderWidth, drawRect.height - otherInset);
                         float shownYRange = area.height;
                         float shownYMin = area.yMin;
-                        if (m_EnableSliderZoom)
+                        if (allowSliderZoomVertical)
                         {
                             EditorGUIExt.MinMaxScroller(vRangeSliderRect, verticalScrollbarID,
                                 ref shownYMin, ref shownYRange,

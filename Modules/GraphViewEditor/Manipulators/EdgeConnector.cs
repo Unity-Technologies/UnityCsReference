@@ -80,7 +80,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_EdgeDragHelper.HandleMouseDown(e))
             {
                 m_Active = true;
-                target.TakeMouseCapture();
+                target.CaptureMouse();
 
                 e.StopPropagation();
             }
@@ -112,7 +112,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 Abort();
 
             m_Active = false;
-            target.ReleaseMouseCapture();
+            target.ReleaseMouse();
             e.StopPropagation();
         }
 
@@ -124,7 +124,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Abort();
 
             m_Active = false;
-            target.ReleaseMouseCapture();
+            target.ReleaseMouse();
             e.StopPropagation();
         }
 

@@ -172,16 +172,15 @@ namespace UnityEditor
                 SaveSelectedAssets();
             }
 
-            if (m_Assets.Count == 0)
-                CloseWindow();
-
-
             GUI.enabled = true;
 
             GUILayout.Space(10);
             GUILayout.EndHorizontal();
 
             GUILayout.Space(10);
+
+            if (m_Assets.Count == 0)
+                CloseWindow();
         }
 
         void Cancel()

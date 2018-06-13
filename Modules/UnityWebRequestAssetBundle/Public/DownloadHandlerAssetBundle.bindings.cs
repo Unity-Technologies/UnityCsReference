@@ -45,6 +45,11 @@ namespace UnityEngine.Networking
             InternalCreateAssetBundleCached(url, name, hash, crc);
         }
 
+        public DownloadHandlerAssetBundle(string url, CachedAssetBundle cachedBundle, uint crc)
+        {
+            InternalCreateAssetBundleCached(url, cachedBundle.name, cachedBundle.hash, crc);
+        }
+
         protected override byte[] GetData()
         {
             throw new System.NotSupportedException("Raw data access is not supported for asset bundles");

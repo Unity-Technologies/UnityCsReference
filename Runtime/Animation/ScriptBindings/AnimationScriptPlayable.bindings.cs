@@ -23,16 +23,16 @@ namespace UnityEngine.Experimental.Animations
         static readonly AnimationScriptPlayable m_NullPlayable = new AnimationScriptPlayable(PlayableHandle.Null);
         public static AnimationScriptPlayable Null { get { return m_NullPlayable; } }
 
-        public static AnimationScriptPlayable Create<T>(PlayableGraph graph, T job, int inputCount = 0)
+        public static AnimationScriptPlayable Create<T>(PlayableGraph graph, T jobData, int inputCount = 0)
             where T : struct, IAnimationJob
         {
-            var handle = CreateHandle<T>(graph, job, inputCount);
+            var handle = CreateHandle<T>(graph, inputCount);
             var playable = new AnimationScriptPlayable(handle);
-            playable.SetJobData(job);
+            playable.SetJobData(jobData);
             return playable;
         }
 
-        private static PlayableHandle CreateHandle<T>(PlayableGraph graph, T job, int inputCount)
+        private static PlayableHandle CreateHandle<T>(PlayableGraph graph, int inputCount)
             where T : struct, IAnimationJob
         {
             IntPtr jobReflectionData = ProcessAnimationJobStruct<T>.GetJobReflectionData();
@@ -79,12 +79,12 @@ namespace UnityEngine.Experimental.Animations
             return data;
         }
 
-        public unsafe void SetJobData<T>(T value)
+        public unsafe void SetJobData<T>(T jobData)
             where T : struct, IAnimationJob
         {
             CheckJobTypeValidity<T>();
 
-            UnsafeUtility.CopyStructureToPtr(ref value, (void*)GetHandle().GetAdditionalPayload());
+            UnsafeUtility.CopyStructureToPtr(ref jobData, (void*)GetHandle().GetAdditionalPayload());
         }
 
         public static implicit operator Playable(AnimationScriptPlayable playable)
@@ -112,9 +112,13 @@ namespace UnityEngine.Experimental.Animations
             return GetProcessInputsInternal(GetHandle());
         }
 
-        // Bindings methods.
+        [NativeThrows]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle, IntPtr jobReflectionData);
+
+        [NativeThrows]
         extern private static void SetProcessInputsInternal(PlayableHandle handle, bool value);
+
+        [NativeThrows]
         extern private static bool GetProcessInputsInternal(PlayableHandle handle);
     }
 }

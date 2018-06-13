@@ -12,8 +12,8 @@ namespace UnityEditorInternal
     {
         public EditorWindow owner;
         public bool showPlusButton { get; set; }
-        private GUIStyle plusButtonStyle = new GUIStyle("OL Plus");
-        private GUIStyle plusButtonBackgroundStyle = new GUIStyle("Tag MenuItem");
+        private GUIStyle plusButtonStyle = "OL Plus";
+        private GUIStyle plusButtonBackgroundStyle = "Tag MenuItem";
         private const float plusButtonWidth = 17;
 
         public AddCurvesPopupHierarchyGUI(TreeViewController treeView, EditorWindow owner)

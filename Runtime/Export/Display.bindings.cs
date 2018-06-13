@@ -132,6 +132,9 @@ namespace UnityEngine
         [RequiredByNativeCode]
         private static void RecreateDisplayList(IntPtr[] nativeDisplay)
         {
+            if (nativeDisplay.Length == 0) // case 1017288
+                return;
+
             Display.displays = new Display[nativeDisplay.Length];
             for (int i = 0; i < nativeDisplay.Length; ++i)
                 Display.displays[i] = new Display(nativeDisplay[i]);

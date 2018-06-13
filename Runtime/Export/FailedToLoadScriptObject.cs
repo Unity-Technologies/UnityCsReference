@@ -12,7 +12,7 @@ using UnityEngineInternal;
 
 namespace UnityEngine
 {
-    // A class used as a stand-in when a script, used by a ScriptedObject, is missing.
+    // A class used as a stand-in when a script, used by a ObjectStoredSerializableManagedRef, is missing.
     [StructLayout(LayoutKind.Sequential)]
     [RequiredByNativeCode]
     [NativeClass(null)]

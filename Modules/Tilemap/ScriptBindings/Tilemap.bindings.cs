@@ -275,6 +275,12 @@ namespace UnityEngine.Tilemaps
             TopRight = 3,
         }
 
+        public enum Mode
+        {
+            Chunk = 0,
+            Individual = 1,
+        }
+
         public enum DetectChunkCullingBounds
         {
             Auto = 0,
@@ -308,6 +314,13 @@ namespace UnityEngine.Tilemaps
         }
 
         public extern SortOrder sortOrder
+        {
+            get;
+            set;
+        }
+
+        [NativeProperty("RenderMode")]
+        public extern Mode mode
         {
             get;
             set;

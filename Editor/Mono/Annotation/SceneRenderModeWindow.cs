@@ -69,6 +69,7 @@ namespace UnityEditor
         SpriteMask = 31,
         BakedUVOverlap = 32,
         TextureStreaming = 33,
+        BakedLightmapCulling = 34,
     }
 
     internal class SceneRenderModeWindow : PopupWindowContent
@@ -148,6 +149,7 @@ namespace UnityEditor
                 new SceneView.CameraMode(DrawCameraMode.BakedCharting, "UV Charts", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.BakedTexelValidity, "Texel Validity", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.BakedUVOverlap, "UV Overlap", kBakedGI),
+                new SceneView.CameraMode(DrawCameraMode.BakedLightmapCulling, "Baked Lightmap Culling", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.BakedIndices, "Lightmap Indices", kBakedGI),
                 new SceneView.CameraMode(DrawCameraMode.LightOverlap, "Light Overlap", kBakedGI),
 
@@ -336,6 +338,19 @@ namespace UnityEditor
         internal static SceneView.CameraMode GetBuiltinCameraMode(DrawCameraMode drawMode)
         {
             return Styles.sBuiltinCameraModes.Single(mode => mode.drawMode == drawMode);
+        }
+
+        internal static bool DrawCameraModeExists(DrawCameraMode drawMode)
+        {
+            foreach (var mode in Styles.sBuiltinCameraModes)
+            {
+                if (mode.drawMode == drawMode)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 }

@@ -83,7 +83,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_Start = e.localMousePosition;
 
                 m_Active = true;
-                target.TakeMouseCapture();
+                target.CaptureMouse();
                 e.StopPropagation();
             }
         }
@@ -132,7 +132,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         graphElement.UpdatePresenterPosition();
 
                     m_Active = false;
-                    target.ReleaseMouseCapture();
+                    target.ReleaseMouse();
                     e.StopPropagation();
                 }
             }

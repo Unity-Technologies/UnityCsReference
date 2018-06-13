@@ -17,5 +17,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         UseForDotNet = (1 << 2),
         FirstPass = (1 << 3),
         ExcludedForRuntimeCode = (1 << 4),
+        UserAssembly = (1 << 5),
+        ExplicitlyReferenced = (1 << 6),
+        ExplicitReferences = (1 << 7),
+        UnityModule = (1 << 8)
     };
 }

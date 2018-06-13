@@ -14,7 +14,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     {
         public Color elementTypeColor { get; set; }
 
-
         StyleValue<int> m_Layer;
         public int layer
         {
@@ -231,7 +230,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         static void RegisterAll()
         {
-            VisualElementFactoryRegistry.RegisterFactory(new Pill.PillFactory());
+            VisualElementFactoryRegistry.RegisterFactory(new Pill.UxmlFactory());
         }
     }
 }

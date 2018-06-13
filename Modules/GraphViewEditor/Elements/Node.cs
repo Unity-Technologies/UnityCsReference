@@ -16,6 +16,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public VisualElement titleContainer { get; private set; }
         public VisualElement inputContainer { get; private set; }
         public VisualElement outputContainer { get; private set; }
+        public VisualElement titleButtonContainer { get; private set; }
 
         private VisualElement m_InputContainerParent;
         private VisualElement m_OutputContainerParent;
@@ -24,6 +25,20 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public VisualElement topContainer { get; private set; }
         public VisualElement extensionContainer { get; private set; }
         private VisualElement m_CollapsibleArea;
+
+        private GraphView m_GraphView;
+        // TODO Maybe make protected and move to GraphElement!
+        private GraphView graphView
+        {
+            get
+            {
+                if (m_GraphView == null)
+                {
+                    m_GraphView = GetFirstAncestorOfType<GraphView>();
+                }
+                return m_GraphView;
+            }
+        }
 
         private bool m_Expanded;
         public virtual bool expanded
@@ -104,6 +119,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         protected readonly VisualElement m_CollapseButton;
+        protected readonly VisualElement m_ButtonContainer;
 
         private const string k_ExpandedStyleClass = "expanded";
         private const string k_CollapsedStyleClass = "collapsed";
@@ -308,8 +324,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public Node(string uiFile)
         {
-            clippingOptions = ClippingOptions.NoClipping;
-
             var tpl = EditorGUIUtility.Load(uiFile) as VisualTreeAsset;
 
             tpl.CloneTree(this, new Dictionary<string, VisualElement>());
@@ -321,6 +335,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 borderContainer.clippingOptions = ClippingOptions.ClipAndCacheContents;
                 mainContainer = borderContainer;
+                var selection = main.Q(name: "selection-border");
+                if (selection != null)
+                {
+                    selection.clippingOptions = ClippingOptions.NoClipping; //fixes issues with selection border being clipped when zooming out
+                }
             }
             else
             {
@@ -347,6 +366,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             m_TitleLabel = main.Q<Label>(name: "title-label");
+            titleButtonContainer = main.Q(name: "title-button-container");
             m_CollapseButton = main.Q<VisualElement>(name: "collapse-button");
             m_CollapseButton.AddManipulator(new Clickable(ToggleCollapse));
 
@@ -398,7 +418,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddConnectionsToDeleteSet(outputContainer, ref toDelete);
             toDelete.Remove(null);
 
-            GraphView graphView = GetFirstAncestorOfType<GraphView>();
             if (graphView != null)
             {
                 graphView.DeleteElements(toDelete);

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -10,29 +9,11 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class FloatField : TextValueField<float>
     {
-        public class FloatFieldFactory : UxmlFactory<FloatField, FloatFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<FloatField, UxmlTraits> {}
 
-        public class FloatFieldUxmlTraits : TextValueFieldUxmlTraits
+        public new class UxmlTraits : TextValueField<float>.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_Value;
-
-            public FloatFieldUxmlTraits()
-            {
-                m_Value = new UxmlFloatAttributeDescription { name = "value" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Value;
-                }
-            }
+            UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -63,7 +44,7 @@ namespace UnityEditor.Experimental.UIElements
             double v = value;
             v += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
             v = MathUtils.RoundBasedOnMinimumDifference(v, sensitivity);
-            SetValueAndNotify(MathUtils.ClampToFloat(v));
+            value = MathUtils.ClampToFloat(v);
         }
 
         protected override string ValueToString(float v)

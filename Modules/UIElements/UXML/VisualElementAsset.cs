@@ -18,7 +18,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         private int m_Id;
 
-        // TODO 2018.3 [Obsolete("Use GetPropertyString(\"name\", null) instead.")]
+        [Obsolete("Use GetPropertyString(\"name\", null) instead.")]
         public string name
         {
             get { return GetPropertyString("name", null); }
@@ -52,7 +52,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         private string m_Text;
 
-        // TODO 2018.3 [Obsolete("Use GetPropertyString(\"text\", null) instead.")]
+        [Obsolete("Use GetPropertyString(\"text\", null) instead.")]
         public string text
         {
             get { return GetPropertyString("text", null); }
@@ -62,7 +62,7 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         private PickingMode m_PickingMode;
 
-        // TODO 2018.3 [Obsolete("Use GetPropertyString(\"pickingMode\", null) instead.")]
+        [Obsolete("Use GetPropertyString(\"pickingMode\", null) instead.")]
         public string pickingMode
         {
             get { return GetPropertyString("pickingMode", null); }
@@ -203,7 +203,7 @@ namespace UnityEngine.Experimental.UIElements
             m_Properties.Add(propertyValue);
         }
 
-        // TODO 2018.3 [Obsolete("Use GetPropertyString(string propertyName, string defaultValue)")]
+        [Obsolete("Use GetPropertyString(string propertyName, string defaultValue)")]
         public virtual string GetPropertyString(string propertyName)
         {
             return GetPropertyString(propertyName, null);

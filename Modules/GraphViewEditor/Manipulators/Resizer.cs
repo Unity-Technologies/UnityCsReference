@@ -12,20 +12,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
     public class Resizer : VisualElement
     {
         private Vector2 m_Start;
+        private Vector2 m_MinimumSize;
         private Rect m_StartPos;
 
         public MouseButton activateButton { get; set; }
-
-        private Texture image { get; set; }
-
-        private Vector2 m_MinimumSize;
-
-        // We need to delay style creation because we need to make sure we have a GUISkin loaded.
-        private GUIStyle m_StyleWidget;
-        private GUIStyle m_StyleLabel;
-        private GUIContent m_LabelText = new GUIContent();
-
-        private readonly Rect k_WidgetTextOffset = new Rect(0, 0, 5, 5);
 
         bool m_Active;
 
@@ -47,6 +37,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             style.paddingTop = 14;
             style.width = 20;
             style.height = 20;
+            style.backgroundSize = ScaleMode.ScaleAndCrop;
 
             m_Active = false;
 
@@ -66,7 +57,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            if (MouseCaptureController.IsMouseCaptureTaken())
+            if (MouseCaptureController.IsMouseCaptured())
                 return;
 
             var ce = parent as GraphElement;
@@ -97,7 +88,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
 
                 m_Active = true;
-                this.TakeMouseCapture();
+                this.CaptureMouse();
                 e.StopPropagation();
             }
         }
@@ -117,7 +108,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (e.button == (int)activateButton && m_Active)
             {
                 m_Active = false;
-                this.ReleaseMouseCapture();
+                this.ReleaseMouse();
                 e.StopPropagation();
             }
         }
@@ -183,7 +174,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     {
                         ce.SetPosition(new Rect(ce.layout.x, ce.layout.y, newSize.x, newSize.y));
                         resized = true;
-                        m_LabelText.text = String.Format("{0:0}", parent.layout.width) + "x" + String.Format("{0:0}", parent.layout.height);
                     }
                     else if (parent.style.positionType == PositionType.Absolute)
                     {
@@ -191,13 +181,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         {
                             ce.style.width = newSize.x;
                             resized = true;
-                            m_LabelText.text = String.Format("{0:0}", parent.style.width) + "x" + String.Format("{0:0}", parent.style.height);
                         }
                         else if (parent.style.flexDirection == FlexDirection.Row)
                         {
                             ce.style.height = newSize.y;
                             resized = true;
-                            m_LabelText.text = String.Format("{0:0}", parent.style.width) + "x" + String.Format("{0:0}", parent.style.height);
                         }
                     }
                 }
@@ -217,40 +205,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public override void DoRepaint()
+        protected override void DoRepaint(IStylePainter painter)
         {
-            // TODO: I would like to listen for skin change and create GUIStyle then and only then
-            if (m_StyleWidget == null)
-            {
-                m_StyleWidget = new GUIStyle("WindowBottomResize") { fixedHeight = 0 };
-                image = m_StyleWidget.normal.background;
-            }
-
-            if (image == null)
-            {
-                Debug.LogWarning("null texture passed to GUI.DrawTexture");
-                return;
-            }
-
-            GUI.DrawTexture(contentRect, image, ScaleMode.ScaleAndCrop, true, 0, GUI.color, 0, 0);
-
-            if (m_StyleLabel == null)
-            {
-                m_StyleLabel = new GUIStyle("Label");
-            }
-
-            if (m_Active)
-            {
-                // Get adjusted text offset
-                Rect adjustedWidget = k_WidgetTextOffset;
-
-                // Now define widget to locate label
-                var widget = new Rect(layout.max.x + adjustedWidget.width,
-                        layout.max.y + adjustedWidget.height,
-                        200.0f, 20.0f);
-
-                m_StyleLabel.Draw(widget, m_LabelText, false, false, false, false);
-            }
+            var stylePainter = (IStylePainterInternal)painter;
+            var textureParam = TextureStylePainterParameters.GetDefault(this);
+            textureParam.rect = contentRect;
+            stylePainter.DrawTexture(textureParam);
         }
     }
 }

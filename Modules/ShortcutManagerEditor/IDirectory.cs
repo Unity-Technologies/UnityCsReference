@@ -10,6 +10,7 @@ namespace UnityEditor.ShortcutManagement
     interface IDirectory
     {
         void FindShortcutEntries(List<KeyCombination> combinationSequence, Type[] context, List<ShortcutEntry> outputShortcuts);
+        void FindShortcutEntries(List<KeyCombination> combinationSequence, IContextManager contextManager, List<ShortcutEntry> outputShortcuts);
         void FindShortcutEntries(List<KeyCombination> combinationSequence, List<ShortcutEntry> outputShortcuts);
         ShortcutEntry FindShortcutEntry(Identifier identifier);
         ShortcutEntry FindShortcutEntry(string identifier);

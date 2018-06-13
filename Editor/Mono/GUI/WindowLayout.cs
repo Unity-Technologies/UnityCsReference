@@ -5,13 +5,15 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Reflection;
+using System.Collections.ObjectModel;
 using System.IO;
-using UnityEditorInternal;
-using UnityEditor.VersionControl;
+using System.Reflection;
+using System.Text;
 using UnityEditor.Connect;
 using UnityEditor.ShortcutManagement;
+using UnityEditor.VersionControl;
 using UnityEditor.Web;
+using UnityEditorInternal;
 using UnityEngine;
 using Directory = System.IO.Directory;
 using UnityObject = UnityEngine.Object;
@@ -91,6 +93,7 @@ namespace UnityEditor
             if (windowToBeFocused.m_Parent != null && windowToBeFocused.m_Parent is DockArea)
             {
                 DockArea dock = windowToBeFocused.m_Parent as DockArea;
+
                 // Get currently focused window/tab in that dock
                 EditorWindow actualView = dock.actualView;
                 if (actualView)
@@ -115,6 +118,7 @@ namespace UnityEditor
                     SaveCurrentFocusedWindowInSameDock(gameView);
                     gameView.Focus();
                 }
+
                 return gameView;
             }
             else
@@ -137,6 +141,7 @@ namespace UnityEditor
                 if (maximizedView.actualView)
                     return maximizedView.actualView;
             }
+
             return null;
         }
 
@@ -155,6 +160,7 @@ namespace UnityEditor
             if (entering)
             {
                 WindowFocusState.instance.m_WasMaximizedBeforePlay = (maximized != null);
+
                 // If a view is already maximized before entering play mode,
                 // just keep that maximized view, no matter if it's the game view or some other.
                 // Trust that user has a good reason (desire by Ethan etc.)
@@ -282,6 +288,7 @@ namespace UnityEditor
                     }
 
                     parent.Initialize(parent.window);
+
                     //If parent window had to be resized, call this to make sure new size gets propagated
                     parent.position = parent.position;
                     oldRoot.Reflow();
@@ -340,17 +347,17 @@ namespace UnityEditor
                 MaximizeKeyHandler(args);
         }
 
-        [Shortcut("Window/Maximize View", null, "# ")]
+        [Shortcut("Window/Maximize View", typeof(EditorWindow), "# ")]
         [FormerlyPrefKeyAs("Window/Maximize View", "# ")]
         internal static void MaximizeKeyHandler(ShortcutArguments args)
         {
             if (args.context == null || args.context is PreviewWindow)
                 return;
 
-            if (IsMaximized(args.context))
-                Unmaximize(args.context);
+            if (IsMaximized(args.context as EditorWindow))
+                Unmaximize(args.context as EditorWindow);
             else
-                Maximize(args.context);
+                Maximize(args.context as EditorWindow);
         }
 
         public static void AddSplitViewAndChildrenRecurse(View splitview, ArrayList list)
@@ -358,16 +365,16 @@ namespace UnityEditor
             list.Add(splitview);
             DockArea dock = splitview as DockArea;
             if (dock != null)
+            {
                 list.AddRange(dock.m_Panes);
 
-            HostView host = splitview as DockArea;
-            if (host != null)
-                list.Add(dock.actualView);
+                HostView host = splitview as DockArea;
+                if (host != null)
+                    list.Add(dock.actualView);
+            }
 
             foreach (View child in splitview.children)
-            {
                 AddSplitViewAndChildrenRecurse(child, list);
-            }
         }
 
         public static void SaveSplitViewAndChildren(View splitview, EditorWindow win, string path)
@@ -553,12 +560,14 @@ namespace UnityEditor
                     {
                         Console.WriteLine("LoadWindowLayout: Error while reading window layout: window #" + i + " is null");
                         layoutLoadingIssue = true;
+
                         // Keep going
                     }
                     else if (o.GetType() == null)
                     {
                         Console.WriteLine("LoadWindowLayout: Error while reading window layout: window #" + i + " type is null, instanceID=" + o.GetInstanceID());
                         layoutLoadingIssue = true;
+
                         // Keep going
                     }
                     else
@@ -585,6 +594,7 @@ namespace UnityEditor
                     Debug.LogError("Error while reading window layout: no main window found");
                     throw new System.Exception();
                 }
+
                 mainWindow.Show(mainWindow.showMode, true, true);
 
                 // Show other windows
@@ -603,26 +613,12 @@ namespace UnityEditor
                 GameView gameView = GetMaximizedWindow() as GameView;
                 if (gameView != null && gameView.maximizeOnPlay)
                     Unmaximize(gameView);
-
-                // For new projects, show services window if and only if online and logged in
-                if (newProjectLayoutWasCreated)
-                {
-                    if (UnityConnect.instance.online && UnityConnect.instance.loggedIn && UnityConnect.instance.shouldShowServicesWindow)
-                    {
-                        UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "new_project_created");
-                    }
-                    else
-                    {
-                        UnityConnectServiceCollection.instance.CloseServices();
-                    }
-                }
             }
             catch (System.Exception ex)
             {
                 Debug.LogError("Failed to load window layout: " + ex);
 
                 int option = 0;
-
 
                 UnityObject[] containerWindows = Resources.FindObjectsOfTypeAll(typeof(ContainerWindow));
 
@@ -696,6 +692,7 @@ namespace UnityEditor
                     output += "\n" + killme.GetType().Name;
                     UnityObject.DestroyImmediate(killme, true);
                 }
+
                 Debug.LogError("Failed to destroy editor windows: #" + oldWindows.Length + output);
             }
 
@@ -708,6 +705,7 @@ namespace UnityEditor
                     output += "\n" + killme.GetType().Name;
                     UnityObject.DestroyImmediate(killme, true);
                 }
+
                 Debug.LogError("Failed to destroy views: #" + oldViews.Length + output);
             }
         }
@@ -728,6 +726,7 @@ namespace UnityEditor
                     continue;
                 all.Add(w);
             }
+
             foreach (View w in views)
             {
                 // skip Views that belong to "dont save me" container
@@ -735,6 +734,7 @@ namespace UnityEditor
                     continue;
                 all.Add(w);
             }
+
             foreach (EditorWindow w in windows)
             {
                 // skip EditorWindows that belong to "dont save me" container
@@ -763,15 +763,18 @@ namespace UnityEditor
                 Debug.LogError("No Main View found!");
                 return null;
             }
+
             return mainViews[0];
         }
 
         public static void SaveGUI()
         {
-            View mainView = FindMainView();
-            Rect rect = mainView.screenPosition;
-            SaveWindowLayout w = EditorWindow.GetWindowWithRect<SaveWindowLayout>(new Rect(rect.xMax - 180, rect.y + 20, 200, 48), true, "Save Window Layout");
-            w.m_Parent.window.m_DontSaveToLayout = true;
+            UnityEditor.SaveWindowLayout.Show(FindMainView().screenPosition);
+        }
+
+        public static void DeleteGUI()
+        {
+            DeleteWindowLayout.Show(FindMainView().screenPosition);
         }
 
         private static void RevertFactorySettings()
@@ -788,21 +791,65 @@ namespace UnityEditor
         {
             get { return Directory.GetCurrentDirectory() + "/Library"; }
         }
-
-        public static void DeleteGUI()
-        {
-            View mainView = FindMainView();
-            Rect rect = mainView.screenPosition;
-            DeleteWindowLayout w = EditorWindow.GetWindowWithRect<DeleteWindowLayout>(new Rect(rect.xMax - 180, rect.y + 20, 200, 150), true, "Delete Window Layout");
-            w.m_Parent.window.m_DontSaveToLayout = true;
-        }
     }
 
     [EditorWindowTitle(title = "Save Layout")]
     internal class SaveWindowLayout : EditorWindow
     {
-        internal string m_LayoutName = Toolbar.lastLoadedLayoutName;
-        internal bool didFocus = false;
+        bool m_DidFocus;
+        const int k_Offset = 20;
+        const int k_Width = 200;
+        const int k_Height = 48;
+        const int k_HelpBoxHeight = 40;
+
+        static readonly ReadOnlyCollection<char> k_InvalidChars = new ReadOnlyCollection<char>(Path.GetInvalidFileNameChars());
+        static StringBuilder s_CurrentInvalidChars = new StringBuilder(k_InvalidChars.Count);
+        static string s_InvalidCharsFormatString = L10n.Tr("Invalid characters: {0}");
+        static string s_LayoutName = Toolbar.lastLoadedLayoutName;
+
+        internal static SaveWindowLayout Show(Rect r)
+        {
+            SaveWindowLayout w = GetWindowWithRect<SaveWindowLayout>(new Rect(r.xMax - (k_Width - k_Offset), r.y + k_Offset, k_Width, k_Height), true, L10n.Tr("Save Layout"));
+            w.m_Parent.window.m_DontSaveToLayout = true;
+            return w;
+        }
+
+        private static void UpdateCurrentInvalidChars()
+        {
+            s_CurrentInvalidChars.Clear();
+            // This approach will get the invalid characters in the layout name in they order they appear.
+            // This approach would help locate invalid characters faster (in theory) and makes more sense to display them this way if a few unique characters were being typed in a row.
+
+            // We loop through the characters in the name of the layout.
+            for (int i = 0; i < s_LayoutName.Length; ++i)
+            {
+                bool wasAdded = false;
+                bool isInvalidChr = false;
+
+                // We loop through the invalid characters, trying to see if the current character in the layout name is invalid.
+                for (int j = 0; j < k_InvalidChars.Count && !isInvalidChr; ++j)
+                {
+                    if (s_LayoutName[i] == k_InvalidChars[j])
+                    {
+                        isInvalidChr = true;
+
+                        // We loop through the invalid characters to see if the current invalid character was already added.
+                        for (int k = 0; k < s_CurrentInvalidChars.Length && !wasAdded; ++k)
+                        {
+                            if (s_CurrentInvalidChars[k] == k_InvalidChars[j])
+                            {
+                                wasAdded = true;
+                            }
+                        }
+                    }
+                }
+
+                if (!wasAdded && isInvalidChr)
+                {
+                    s_CurrentInvalidChars.Append(s_LayoutName[i]);
+                }
+            }
+        }
 
         void OnEnable()
         {
@@ -815,24 +862,47 @@ namespace UnityEditor
             Event evt = Event.current;
             bool hitEnter = evt.type == EventType.KeyDown && (evt.keyCode == KeyCode.Return || evt.keyCode == KeyCode.KeypadEnter);
             GUI.SetNextControlName("m_PreferencesName");
-            m_LayoutName = EditorGUILayout.TextField(m_LayoutName);
-
-            if (!didFocus)
+            EditorGUI.BeginChangeCheck();
+            s_LayoutName = EditorGUILayout.TextField(s_LayoutName);
+            if (EditorGUI.EndChangeCheck())
             {
-                didFocus = true;
+                UpdateCurrentInvalidChars();
+            }
+
+            if (!m_DidFocus)
+            {
+                m_DidFocus = true;
                 EditorGUI.FocusTextInControl("m_PreferencesName");
             }
 
-            GUI.enabled = m_LayoutName.Length != 0;
-            if (GUILayout.Button("Save") || hitEnter)
+            if (s_CurrentInvalidChars.Length != 0)
+            {
+                EditorGUILayout.HelpBox(string.Format(s_InvalidCharsFormatString, s_CurrentInvalidChars), MessageType.Warning);
+                minSize = new Vector2(k_Width, k_Height + k_HelpBoxHeight);
+            }
+            else
+            {
+                minSize = new Vector2(k_Width, k_Height);
+            }
+
+            bool canSaveLayout = s_LayoutName.Length > 0 && s_CurrentInvalidChars.Length == 0;
+            EditorGUI.BeginDisabled(!canSaveLayout);
+
+            if (GUILayout.Button("Save") || hitEnter && canSaveLayout)
             {
                 Close();
-                string path = Path.Combine(WindowLayout.layoutsPreferencesPath, m_LayoutName + ".wlt");
-                Toolbar.lastLoadedLayoutName = m_LayoutName;
+                string path = Path.Combine(WindowLayout.layoutsPreferencesPath, s_LayoutName + ".wlt");
+                Toolbar.lastLoadedLayoutName = s_LayoutName;
                 WindowLayout.SaveWindowLayout(path);
                 InternalEditorUtility.ReloadWindowLayoutMenu();
                 GUIUtility.ExitGUI();
             }
+            else
+            {
+                m_DidFocus = false;
+            }
+
+            EditorGUI.EndDisabled();
         }
     }
 
@@ -840,11 +910,17 @@ namespace UnityEditor
     internal class DeleteWindowLayout : EditorWindow
     {
         internal string[] m_Paths;
-        private const int kMaxLayoutNameLength = 15;
+        const int k_MaxLayoutNameLength = 15;
+        const int k_Offset = 20;
+        const int k_Width = 200;
+        const int k_Height = 175;
+        Vector2 m_ScrollPos;
 
-        void OnEnable()
+        internal static DeleteWindowLayout Show(Rect r)
         {
-            titleContent = GetLocalizedTitleContent();
+            DeleteWindowLayout w = GetWindowWithRect<DeleteWindowLayout>(new Rect(r.xMax - (k_Width - k_Offset), r.y + k_Offset, k_Width, k_Height), true, L10n.Tr("Delete Layout"));
+            w.m_Parent.window.m_DontSaveToLayout = true;
+            return w;
         }
 
         private void InitializePaths()
@@ -861,7 +937,10 @@ namespace UnityEditor
             m_Paths = filteredFiles.ToArray(typeof(string)) as string[];
         }
 
-        private Vector2 m_ScrollPos;
+        void OnEnable()
+        {
+            titleContent = GetLocalizedTitleContent();
+        }
 
         void OnGUI()
         {
@@ -871,8 +950,8 @@ namespace UnityEditor
             foreach (string path in m_Paths)
             {
                 string name = Path.GetFileNameWithoutExtension(path);
-                if (name.Length > kMaxLayoutNameLength)
-                    name = name.Substring(0, kMaxLayoutNameLength) + "...";
+                if (name.Length > k_MaxLayoutNameLength)
+                    name = name.Substring(0, k_MaxLayoutNameLength) + "...";
                 if (GUILayout.Button(name))
                 {
                     if (Toolbar.lastLoadedLayoutName == name)
@@ -883,6 +962,7 @@ namespace UnityEditor
                     InitializePaths();
                 }
             }
+
             EditorGUILayout.EndScrollView();
         }
     }

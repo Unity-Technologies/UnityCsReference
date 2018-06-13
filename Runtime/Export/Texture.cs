@@ -118,6 +118,11 @@ namespace UnityEngine
 
     public partial class RenderTexture : Texture
     {
+        [RequiredByNativeCode] // used to create builtin textures
+        internal protected RenderTexture()
+        {
+        }
+
         public RenderTexture(RenderTextureDescriptor desc)
         {
             ValidateRenderTextureDesc(desc);
@@ -273,12 +278,54 @@ namespace UnityEngine
 
     public sealed partial class CustomRenderTexture : RenderTexture
     {
+        // Be careful. We can't call base constructor here because it would create the native object twice.
+        public CustomRenderTexture(int width, int height, RenderTextureFormat format, RenderTextureReadWrite readWrite)
+        {
+            Internal_CreateCustomRenderTexture(this, readWrite);
+
+            this.width = width;
+            this.height = height;
+            this.format = format;
+        }
+
+        public CustomRenderTexture(int width, int height, RenderTextureFormat format)
+        {
+            Internal_CreateCustomRenderTexture(this, RenderTextureReadWrite.Default);
+            this.width = width;
+            this.height = height;
+            this.format = format;
+        }
+
+        public CustomRenderTexture(int width, int height)
+        {
+            Internal_CreateCustomRenderTexture(this, RenderTextureReadWrite.Default);
+            this.width = width;
+            this.height = height;
+            this.format = RenderTextureFormat.Default;
+        }
+
         public CustomRenderTexture(int width, int height, GraphicsFormat format)
         {
             Internal_CreateCustomRenderTexture(this, GraphicsFormatUtility.IsSRGBFormat(format) ? RenderTextureReadWrite.sRGB : RenderTextureReadWrite.Linear);
             this.width = width;
             this.height = height;
             this.format = GraphicsFormatUtility.GetRenderTextureFormat(format);
+        }
+
+        bool IsCubemapFaceEnabled(CubemapFace face)
+        {
+            return (cubemapFaceMask & (1 << (int)face)) != 0;
+        }
+
+        void EnableCubemapFace(CubemapFace face, bool value)
+        {
+            uint oldValue = cubemapFaceMask;
+            uint bit = 1u << (int)face;
+            if (value)
+                oldValue |= bit;
+            else
+                oldValue &= ~bit;
+            cubemapFaceMask = oldValue;
         }
     }
 
@@ -473,6 +520,49 @@ namespace UnityEngine
             NoAllocHelpers.EnsureListElemCount(results, sizes.Length);
             GenerateAtlasImpl(sizes, padding, atlasSize, NoAllocHelpers.ExtractArrayFromListT(results));
             return results.Count != 0;
+        }
+
+        public void SetPixels32(Color32[] colors, int miplevel)
+        {
+            SetAllPixels32(colors, miplevel);
+        }
+
+        public void SetPixels32(Color32[] colors)
+        {
+            SetPixels32(colors, 0);
+        }
+
+        public void SetPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors, int miplevel)
+        {
+            SetBlockOfPixels32(x, y, blockWidth, blockHeight, colors, miplevel);
+        }
+
+        public void SetPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors)
+        {
+            SetPixels32(x, y, blockWidth, blockHeight, colors, 0);
+        }
+
+        public Color[] GetPixels(int miplevel)
+        {
+            int w = width >> miplevel; if (w < 1) w = 1;
+            int h = height >> miplevel; if (h < 1) h = 1;
+            return GetPixels(0, 0, w, h, miplevel);
+        }
+
+        public Color[] GetPixels()
+        {
+            return GetPixels(0);
+        }
+
+        [Flags]
+        public enum EXRFlags
+        {
+            None = 0,
+            OutputAsFloat = 1 << 0, // Default is Half
+            // Compression are mutually exclusive.
+            CompressZIP = 1 << 1,
+            CompressRLE = 1 << 2,
+            CompressPIZ = 1 << 3,
         }
     }
 

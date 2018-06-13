@@ -72,6 +72,9 @@ namespace UnityEditor.IMGUI.Controls
         public System.Action<string> searchChanged { get; set; }
         public System.Action<Vector2> scrollChanged { get; set; }
         public System.Action<int, Rect> onGUIRowCallback { get; set; }  // <id, Rect of row>
+        public System.Action<TreeViewItem, TreeViewItem> hoveredItemChangedCallback { get; set; }
+
+        internal System.Action<int, Rect> onFoldoutButton { get; set; }  // <id, Rect of row>
 
         // Main state
         GUIView m_GUIView;                                              // Containing view for this tree: used for checking if we have focus and for requesting repaints
@@ -107,6 +110,19 @@ namespace UnityEditor.IMGUI.Controls
         int m_KeyboardControlID;
 
         const float kSpaceForScrollBar = 16f;
+        private TreeViewItem m_HoveredItem;
+        public TreeViewItem hoveredItem
+        {
+            get { return m_HoveredItem; }
+            set
+            {
+                if (value != m_HoveredItem)
+                {
+                    hoveredItemChangedCallback?.Invoke(m_HoveredItem, value);
+                    m_HoveredItem = value;
+                }
+            }
+        }
 
         public TreeViewController(EditorWindow editorWindow, TreeViewState treeViewState)
         {
@@ -624,6 +640,9 @@ namespace UnityEditor.IMGUI.Controls
             // fast forward to a fixed entry in the id list so the following controls always start from there regardless of the rows that have been
             // culled.
             GUIUtility.GetControlID(33243602, FocusType.Passive);
+
+            if (Event.current.type == EventType.MouseLeaveWindow)
+                hoveredItem = null;
         }
 
         void IterateVisibleItems(int firstRow, int numVisibleRows, float rowWidth, bool hasFocus)
@@ -631,6 +650,8 @@ namespace UnityEditor.IMGUI.Controls
             // We stop iterating items if datasource state changes while iterating its items.
             // This can happen e.g when dragging items or items are expanding/collapsing.
             m_StopIteratingItems = false;
+
+            TreeViewItem currentHovedItem = null;
 
             int rowOffset = 0;
             for (int i = 0; i < numVisibleRows; ++i)
@@ -673,9 +694,19 @@ namespace UnityEditor.IMGUI.Controls
                 // Item GUI
                 DoItemGUI(data.GetItem(row), row, rowWidth, hasFocus);
 
+                if (Event.current.type == EventType.MouseMove)
+                {
+                    Rect rowRect = gui.GetRowRect(row, rowWidth);
+                    if (rowRect.Contains(Event.current.mousePosition))
+                        currentHovedItem = data.GetItem(row);
+                }
+
                 if (m_StopIteratingItems)
-                    return;
+                    break;
             }
+
+            if (Event.current.type == EventType.MouseMove && currentHovedItem != hoveredItem)
+                hoveredItem = currentHovedItem;
         }
 
         List<int> GetVisibleSelectedIds()

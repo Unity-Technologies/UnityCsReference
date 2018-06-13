@@ -72,8 +72,10 @@ namespace UnityEngine.Experimental.Playables
             InternalSetTarget(ref m_Handle, value);
         }
 
-        // Bindings methods.
+        [NativeThrows]
         extern private static RenderTexture InternalGetTarget(ref PlayableOutputHandle output);
+
+        [NativeThrows]
         extern private static void InternalSetTarget(ref PlayableOutputHandle output, RenderTexture target);
 
     }

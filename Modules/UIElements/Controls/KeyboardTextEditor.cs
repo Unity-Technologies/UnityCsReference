@@ -68,7 +68,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (evt.button == (int)MouseButton.LeftMouse)
                 {
-                    textInputField.TakeMouseCapture();
+                    textInputField.CaptureMouse();
                 }
 
                 evt.StopPropagation();
@@ -95,7 +95,7 @@ namespace UnityEngine.Experimental.UIElements
                     m_SelectAllOnMouseUp = false;
                 }
 
-                textInputField.TakeMouseCapture();
+                textInputField.CaptureMouse();
                 evt.StopPropagation();
             }
             else if (evt.button == (int)MouseButton.RightMouse)
@@ -142,7 +142,7 @@ namespace UnityEngine.Experimental.UIElements
 
             editorEngine.MouseDragSelectsWholeWords(false);
 
-            textInputField.ReleaseMouseCapture();
+            textInputField.ReleaseMouse();
 
             m_DragToPosition = true;
             m_Dragged = false;

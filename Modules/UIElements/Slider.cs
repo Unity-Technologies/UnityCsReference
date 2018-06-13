@@ -9,41 +9,15 @@ namespace UnityEngine.Experimental.UIElements
 {
     public class Slider : VisualElement
     {
-        public class SliderFactory : UxmlFactory<Slider, SliderUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Slider, UxmlTraits> {}
 
-        public class SliderUxmlTraits : VisualElementUxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_LowValue;
-            UxmlFloatAttributeDescription m_HighValue;
-            UxmlFloatAttributeDescription m_PageSize;
-            UxmlEnumAttributeDescription<Direction> m_Direction;
-            UxmlFloatAttributeDescription m_Value;
-
-            public SliderUxmlTraits()
-            {
-                m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
-                m_HighValue = new UxmlFloatAttributeDescription { name = "highValue" };
-                m_PageSize = new UxmlFloatAttributeDescription { name = "pageSize" };
-                m_Direction = new UxmlEnumAttributeDescription<Slider.Direction> { name = "direction", defaultValue = Direction.Vertical };
-                m_Value = new UxmlFloatAttributeDescription { name = "value" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_LowValue;
-                    yield return m_HighValue;
-                    yield return m_PageSize;
-                    yield return m_Direction;
-                    yield return m_Value;
-                }
-            }
+            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
+            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "highValue", defaultValue = kDefaultHighValue };
+            UxmlFloatAttributeDescription m_PageSize = new UxmlFloatAttributeDescription { name = "pageSize", defaultValue = kDefaultPageSize };
+            UxmlEnumAttributeDescription<Direction> m_Direction = new UxmlEnumAttributeDescription<Direction> { name = "direction", defaultValue = Direction.Vertical };
+            UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -102,6 +76,7 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public float range { get { return Math.Abs(highValue - lowValue); } }
+
         public float pageSize { get; set; }
 
         public event System.Action<float> valueChanged;
@@ -144,7 +119,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (valueChanged != null)
                     valueChanged(m_SliderValue.m_Value);
 
-                this.Dirty(ChangeType.Repaint);
+                this.IncrementVersion(VersionChangeType.Repaint);
 
                 SavePersistentData();
             }
@@ -170,11 +145,14 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal const float kDefaultHighValue = 10.0f;
+        internal const float kDefaultPageSize = 10.0f;
+
         public Slider()
-            : this(0, 10.0f, null) {}
+            : this(0, kDefaultHighValue, null) {}
 
         public Slider(float start, float end, System.Action<float> valueChanged,
-                      Direction direction = Direction.Horizontal, float pageSize = 10f)
+                      Direction direction = Direction.Horizontal, float pageSize = kDefaultPageSize)
         {
             this.direction = direction;
             this.pageSize = pageSize;

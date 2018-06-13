@@ -170,19 +170,15 @@ namespace UnityEngine.XR
             if (null == m_CommandBuffer)
                 return;
 
-            Camera camera;
+            var cam = m_Camera ?? Camera.main;
+            if (cam == null)
+                return;
 
-            if (m_Camera != null)
-                camera = m_Camera;
-            else
-                camera = Camera.main;
-
-            if (camera != null)
-                camera.clearFlags = m_CameraClearFlags;
+            cam.clearFlags = m_CameraClearFlags;
 
             // Command buffer
-            camera.RemoveCommandBuffer(CameraEvent.BeforeForwardOpaque, m_CommandBuffer);
-            camera.RemoveCommandBuffer(CameraEvent.BeforeGBuffer, m_CommandBuffer);
+            cam.RemoveCommandBuffer(CameraEvent.BeforeForwardOpaque, m_CommandBuffer);
+            cam.RemoveCommandBuffer(CameraEvent.BeforeGBuffer, m_CommandBuffer);
         }
 
         private bool ReapplyCommandBuffersIfNeeded()

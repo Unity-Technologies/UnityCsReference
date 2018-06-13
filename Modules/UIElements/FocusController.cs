@@ -103,14 +103,17 @@ namespace UnityEngine.Experimental.UIElements
     {
         // https://w3c.github.io/uievents/#interface-focusevent
 
-        public FocusController(IFocusRing focusRing)
+        public FocusController(IFocusRing focusRing, IPanel panel)
         {
             this.focusRing = focusRing;
             focusedElement = null;
             imguiKeyboardControl = 0;
+            this.panel = panel;
         }
 
-        IFocusRing focusRing { get; set; }
+        IPanel panel { get; }
+
+        IFocusRing focusRing { get; }
 
         public Focusable focusedElement
         {
@@ -118,33 +121,38 @@ namespace UnityEngine.Experimental.UIElements
             private set;
         }
 
-        static void AboutToReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
+        internal void DoFocusChange(Focusable f)
         {
-            using (FocusOutEvent e = FocusOutEvent.GetPooled(focusable, willGiveFocusTo, direction))
+            focusedElement = f;
+        }
+
+        void AboutToReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
+        {
+            using (FocusOutEvent e = FocusOutEvent.GetPooled(focusable, willGiveFocusTo, direction, this))
             {
                 UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
             }
         }
 
-        static void ReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
+        void ReleaseFocus(Focusable focusable, Focusable willGiveFocusTo, FocusChangeDirection direction)
         {
-            using (BlurEvent e = BlurEvent.GetPooled(focusable, willGiveFocusTo, direction))
+            using (BlurEvent e = BlurEvent.GetPooled(focusable, willGiveFocusTo, direction, this))
             {
                 UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
             }
         }
 
-        static void AboutToGrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
+        void AboutToGrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
         {
-            using (FocusInEvent e = FocusInEvent.GetPooled(focusable, willTakeFocusFrom, direction))
+            using (FocusInEvent e = FocusInEvent.GetPooled(focusable, willTakeFocusFrom, direction, this))
             {
                 UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
             }
         }
 
-        static void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
+        void GrabFocus(Focusable focusable, Focusable willTakeFocusFrom, FocusChangeDirection direction)
         {
-            using (FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction))
+            using (FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction, this))
             {
                 UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
             }
@@ -162,34 +170,39 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            var oldFocusedElement = focusedElement;
-
-            if (newFocusedElement == null || !newFocusedElement.canGrabFocus)
+            if (panel == null || panel.dispatcher == null)
             {
-                if (oldFocusedElement != null)
-                {
-                    AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                    focusedElement = null;
-                    ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                }
+                return;
             }
-            else if (newFocusedElement != oldFocusedElement)
+
+            using (new EventDispatcher.Gate((EventDispatcher)panel.dispatcher))
             {
-                if (oldFocusedElement != null)
+                var oldFocusedElement = focusedElement;
+
+                if (newFocusedElement == null || !newFocusedElement.canGrabFocus)
                 {
-                    AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                    if (oldFocusedElement != null)
+                    {
+                        AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                        ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                    }
                 }
-
-                AboutToGrabFocus(newFocusedElement, oldFocusedElement, direction);
-
-                focusedElement = newFocusedElement;
-
-                if (oldFocusedElement != null)
+                else if (newFocusedElement != oldFocusedElement)
                 {
-                    ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                }
+                    if (oldFocusedElement != null)
+                    {
+                        AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                    }
 
-                GrabFocus(newFocusedElement, oldFocusedElement, direction);
+                    AboutToGrabFocus(newFocusedElement, oldFocusedElement, direction);
+
+                    if (oldFocusedElement != null)
+                    {
+                        ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                    }
+
+                    GrabFocus(newFocusedElement, oldFocusedElement, direction);
+                }
             }
         }
 
@@ -203,9 +216,12 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        /// <summary>
+        /// This property contains the actual keyboard id of the element being focused in the case of an IMGUIContainer
+        /// </summary>
         internal int imguiKeyboardControl { get; set; }
 
-        internal void SyncIMGUIFocus(int imguiKeyboardControlID, IMGUIContainer imguiContainerHavingKeyboardControl)
+        internal void SyncIMGUIFocus(int imguiKeyboardControlID, Focusable imguiContainerHavingKeyboardControl)
         {
             imguiKeyboardControl = imguiKeyboardControlID;
 

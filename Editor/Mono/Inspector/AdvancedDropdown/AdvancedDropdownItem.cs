@@ -6,28 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using Event = UnityEngine.Event;
-using Object = UnityEngine.Object;
 
-namespace UnityEditor
+namespace UnityEditor.AdvancedDropdown
 {
     internal class AdvancedDropdownItem : IComparable
     {
         internal static AdvancedDropdownItem s_SeparatorItem = new SeparatorDropdownItem();
-
-        private static class Styles
-        {
-            public static GUIStyle itemStyle = new GUIStyle("PR Label");
-
-            static Styles()
-            {
-                itemStyle.alignment = TextAnchor.MiddleLeft;
-                itemStyle.padding = new RectOffset(0, 0, 2, 2);
-                itemStyle.margin = new RectOffset(0, 0, 0, 0);
-            }
-        }
-
-        public virtual GUIStyle lineStyle => Styles.itemStyle;
 
         protected GUIContent m_Content;
         public virtual GUIContent content => m_Content;
@@ -37,6 +21,8 @@ namespace UnityEditor
 
         private string m_Name;
         public string name => m_Name;
+
+        public string searchableName => m_Id;
 
         private string m_Id;
         public string id => m_Id;
@@ -50,17 +36,19 @@ namespace UnityEditor
         public bool hasChildren => children.Any();
         public virtual bool drawArrow => hasChildren;
 
-        public virtual bool searchable { get; set; }
+        public virtual bool enabled { get; set; } = true;
 
         internal int m_Index = -1;
         internal Vector2 m_Scroll;
-        internal int m_SelectedItem = 0;
+        private int m_SelectedItem = -1;
+        internal bool selectionExists;
 
         public int selectedItem
         {
             get { return m_SelectedItem; }
             set
             {
+                selectionExists = true;
                 if (value < 0)
                 {
                     m_SelectedItem = 0;
@@ -124,7 +112,7 @@ namespace UnityEditor
 
         public virtual bool OnAction()
         {
-            return true;
+            return enabled;
         }
 
         public AdvancedDropdownItem GetSelectedChild()
@@ -144,22 +132,9 @@ namespace UnityEditor
             return m_SelectedItem;
         }
 
-        public IEnumerable<AdvancedDropdownItem> GetSearchableElements()
-        {
-            if (searchable)
-                yield return this;
-            foreach (var child in children)
-            {
-                foreach (var searchableChildren in child.GetSearchableElements())
-                {
-                    yield return searchableChildren;
-                }
-            }
-        }
-
         public virtual int CompareTo(object o)
         {
-            return name.CompareTo((o as AdvancedDropdownItem).name);
+            return id.CompareTo((o as AdvancedDropdownItem).id);
         }
 
         public void MoveDownSelection()
@@ -177,6 +152,11 @@ namespace UnityEditor
 
         public void MoveUpSelection()
         {
+            if (selectedItem < 0)
+            {
+                selectedItem = children.Count;
+                return;
+            }
             var selectedIndex = selectedItem;
             do
             {
@@ -196,6 +176,11 @@ namespace UnityEditor
             internal override bool IsSeparator()
             {
                 return true;
+            }
+
+            public override bool OnAction()
+            {
+                return false;
             }
         }
     }

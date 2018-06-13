@@ -10,32 +10,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 {
     public class Pill : VisualElement
     {
-        public class PillFactory : UxmlFactory<Pill, PillUxmTraits> {}
+        public new class UxmlFactory : UxmlFactory<Pill, UxmlTraits> {}
 
-        public class PillUxmTraits : VisualElementUxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlBoolAttributeDescription m_Highlighted;
-            UxmlStringAttributeDescription m_Text;
-
-            public PillUxmTraits()
-            {
-                m_Highlighted = new UxmlBoolAttributeDescription { name = "highlighted" };
-                m_Text = new UxmlStringAttributeDescription { name = "text" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Highlighted;
-                    yield return m_Text;
-                }
-            }
+            UxmlBoolAttributeDescription m_Highlighted = new UxmlBoolAttributeDescription { name = "highlighted" };
+            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {

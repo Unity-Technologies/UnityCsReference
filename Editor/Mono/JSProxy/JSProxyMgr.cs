@@ -222,11 +222,6 @@ namespace UnityEditor.Web
             return s_Instance;
         }
 
-        static JSProxyMgr()
-        {
-            WebView.OnDomainReload();
-        }
-
         public static void DoTasks()
         {
             GetInstance().ProcessTasks();

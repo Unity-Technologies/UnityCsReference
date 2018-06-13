@@ -158,6 +158,9 @@ namespace UnityEditor
 
             public override bool Equals(object obj)
             {
+                var key = obj as DrawBatchDataKey;
+                if (ReferenceEquals(key, null))
+                    return false;
                 return m_Hash == obj.GetHashCode();
             }
         }

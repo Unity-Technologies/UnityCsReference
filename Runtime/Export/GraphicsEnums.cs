@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEngine
@@ -64,7 +65,8 @@ namespace UnityEngine
         Spot = 0,
         Directional = 1,
         Point = 2,
-        Area = 3
+        Area = 3,
+        Disc = 4
     }
 
     public enum LightRenderMode
@@ -210,6 +212,7 @@ namespace UnityEngine
 
     // Match ColorGamut on C++ side
     [UsedByNativeCode]
+    [NativeHeader("Runtime/Graphics/ColorGamut.h")]
     public enum ColorGamut
     {
         sRGB = 0,
@@ -567,8 +570,12 @@ namespace UnityEngine
                 D32_SFloat_S8_Uint = 94,
                 S8_Uint = 95,
 
+                [Obsolete("Enum member GraphicsFormat.RGB_DXT1_SRGB has been deprecated. Use GraphicsFormat.RGBA_DXT1_SRGB instead (UnityUpgradable) -> RGBA_DXT1_SRGB", true)]
                 RGB_DXT1_SRGB = 96,
+                RGBA_DXT1_SRGB = 96,
+                [Obsolete("Enum member GraphicsFormat.RGB_DXT1_UNorm has been deprecated. Use GraphicsFormat.RGBA_DXT1_UNorm instead (UnityUpgradable) -> RGBA_DXT1_UNorm", true)]
                 RGB_DXT1_UNorm = 97,
+                RGBA_DXT1_UNorm = 97,
                 RGBA_DXT3_SRGB = 98,
                 RGBA_DXT3_UNorm = 99,
                 RGBA_DXT5_SRGB = 100,
@@ -677,6 +684,12 @@ namespace UnityEngine
             Automatic = 0,
             EveryFrame = 1,
             ViaScripting = 2,
+        }
+
+        public enum QualityMode
+        {
+            Low = 0,
+            Normal = 1,
         }
     }
 
@@ -1047,6 +1060,7 @@ namespace UnityEngine.Rendering
         Direct3D12 = 18,
         N3DS = 19,
         Vulkan = 21,
+        Switch = 22,
         XboxOneD3D12 = 23
     }
 

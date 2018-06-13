@@ -298,7 +298,9 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/MeshRenderer.h")]
     public partial class MeshRenderer : Renderer
     {
-        [RequiredByNativeCode] // Used in the VR Splash screen.
+        [RequiredByNativeCode]  // MeshRenderer is used in the VR Splash screen.
+        private void DontStripMeshRenderer() {}
+
         extern public Mesh additionalVertexStreams { get; set; }
         extern public int subMeshStartIndex {[NativeName("GetSubMeshStartIndex")] get; }
     }

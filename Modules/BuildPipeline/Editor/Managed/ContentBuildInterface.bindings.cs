@@ -6,61 +6,12 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using UnityEditor.Build.Player;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
 namespace UnityEditor.Build.Content
 {
-    public enum CompressionType
-    {
-        None,
-        Lzma,
-        Lz4,
-        Lz4HC,
-    }
-
-    public enum CompressionLevel
-    {
-        None,
-        Fastest,
-        Fast,
-        Normal,
-        High,
-        Maximum,
-    }
-
-    [Serializable]
-    [UsedByNativeCode]
-    [StructLayout(LayoutKind.Sequential)]
-    public struct BuildCompression
-    {
-        public static readonly BuildCompression DefaultUncompressed = new BuildCompression
-        {
-            compression = CompressionType.None,
-            level = CompressionLevel.Maximum,
-            blockSize = 128 * 1024
-        };
-
-        public static readonly BuildCompression DefaultLZ4 = new BuildCompression
-        {
-            compression = CompressionType.Lz4HC,
-            level = CompressionLevel.Maximum,
-            blockSize = 128 * 1024
-        };
-
-        public static readonly BuildCompression DefaultLZMA = new BuildCompression
-        {
-            compression = CompressionType.Lzma,
-            level = CompressionLevel.Maximum,
-            blockSize = 128 * 1024
-        };
-
-        public CompressionType compression;
-        public CompressionLevel level;
-        public uint blockSize;
-    }
-
-
     [NativeHeader("Modules/BuildPipeline/Editor/Public/ContentBuildTypes.h")]
 
     [NativeHeader("Modules/BuildPipeline/Editor/Shared/ContentBuildInterface.bindings.h")]
@@ -189,6 +140,6 @@ namespace UnityEditor.Build.Content
         extern private static WriteResult WriteSceneSerializedFileAssetBundle(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo);
 
         [FreeFunction("BuildPipeline::ArchiveAndCompress")]
-        extern public static uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, BuildCompression compression);
+        extern public static uint ArchiveAndCompress(ResourceFile[] resourceFiles, string outputBundlePath, UnityEngine.BuildCompression compression);
     }
 }

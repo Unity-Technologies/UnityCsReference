@@ -94,22 +94,22 @@ namespace UnityEditor
             public static readonly GUIContent editSelfInterCollisionLabel = EditorGUIUtility.TrTextContent("Edit Collision Particles");
             public static readonly GUIContent selfInterCollisionParticleColor = EditorGUIUtility.TrTextContent("Visualization Color");
             public static readonly GUIContent selfInterCollisionBrushColor = EditorGUIUtility.TrTextContent("Brush Color");
-            public static readonly GUIContent clothSelfCollisionAndInterCollision = EditorGUIUtility.TrTextContent("Cloth Self-Collision And Inter-Collision");
+            public static readonly GUIContent clothSelfCollisionAndInterCollision = EditorGUIUtility.TrTextContent("Cloth Self-Collision and Inter-Collision");
             public static readonly GUIContent paintCollisionParticles = EditorGUIUtility.TrTextContent("Paint Collision Particles");
             public static readonly GUIContent selectCollisionParticles = EditorGUIUtility.TrTextContent("Select Collision Particles");
             public static readonly GUIContent brushRadiusString = EditorGUIUtility.TrTextContent("Brush Radius");
             public static readonly GUIContent selfAndInterCollisionMode = EditorGUIUtility.TrTextContent("Paint or Select Particles");
             public static readonly GUIContent backFaceManipulationMode = EditorGUIUtility.TrTextContent("Back Face Manipulation");
             public static readonly GUIContent manipulateBackFaceString = EditorGUIUtility.TrTextContent("Manipulate Backfaces");
-            public static readonly GUIContent selfCollisionString = EditorGUIUtility.TrTextContent("Self Collision");
+            public static readonly GUIContent selfCollisionString = EditorGUIUtility.TrTextContent("Self-Collision");
             public static readonly GUIContent setSelfAndInterCollisionString = EditorGUIUtility.TrTextContent("Self-Collision and Inter-Collision");
 
             public static readonly int clothEditorWindowWidth = 300;
 
             public static GUIContent[] toolContents =
             {
-                EditorGUIUtility.IconContent("EditCollider"),
-                EditorGUIUtility.IconContent("EditCollider")
+                EditorGUIUtility.IconContent("editconstraints_16"),
+                EditorGUIUtility.IconContent("editCollision_16")
             };
 
             public static GUIContent[] toolIcons =
@@ -141,8 +141,8 @@ namespace UnityEditor
 
             public static GUIContent[] collVisModeStrings =
             {
-                EditorGUIUtility.TrTextContent("Self Collision"),
-                EditorGUIUtility.TrTextContent("Inter Collision"),
+                EditorGUIUtility.TrTextContent("Self-Collision"),
+                EditorGUIUtility.TrTextContent("Inter-Collision"),
             };
 
             public static GUIContent paintIcon = EditorGUIUtility.TrIconContent("ClothInspector.PaintValue", "Change this vertex coefficient value by painting in the scene view.");
@@ -153,16 +153,16 @@ namespace UnityEditor
                 EditMode.SceneViewEditMode.ClothSelfAndInterCollisionParticles
             };
 
-            public static GUIContent selfCollisionDistanceGUIContent = EditorGUIUtility.TrTextContent("Self Collision Distance");
-            public static GUIContent selfCollisionStiffnessGUIContent = EditorGUIUtility.TrTextContent("Self Collision Stiffness");
+            public static GUIContent selfCollisionDistanceGUIContent = EditorGUIUtility.TrTextContent("Self-Collision Distance");
+            public static GUIContent selfCollisionStiffnessGUIContent = EditorGUIUtility.TrTextContent("Self-Collision Stiffness");
 
             static Styles()
             {
                 toolContents[0].tooltip = EditorGUIUtility.TrTextContent("Edit cloth constraints").text;
-                toolContents[1].tooltip = EditorGUIUtility.TrTextContent("Edit cloth self or inter collision").text;
+                toolContents[1].tooltip = EditorGUIUtility.TrTextContent("Edit cloth self/inter-collision").text;
 
-                toolIcons[0].tooltip = EditorGUIUtility.TrTextContent("Select cloth particles for use in self or inter collision").text;
-                toolIcons[1].tooltip = EditorGUIUtility.TrTextContent("Paint cloth particles for use in self or inter collision").text;
+                toolIcons[0].tooltip = EditorGUIUtility.TrTextContent("Select cloth particles for use in self/inter-collision").text;
+                toolIcons[1].tooltip = EditorGUIUtility.TrTextContent("Paint cloth particles for use in self/inter-collision").text;
 
                 collToolModeIcons[0].tooltip = EditorGUIUtility.TrTextContent("Select cloth particles.").text;
                 collToolModeIcons[1].tooltip = EditorGUIUtility.TrTextContent("Paint cloth particles.").text;

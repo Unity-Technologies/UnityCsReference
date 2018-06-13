@@ -157,10 +157,12 @@ namespace UnityEngine
         // Returns the angle in degrees between /from/ and /to/.
         public static float Angle(Vector2 from, Vector2 to)
         {
-            float dot = Mathf.Clamp(Dot(from.normalized, to.normalized), -1F, 1F);
-            if (Mathf.Abs(dot) > (1F - kEpsilon))
-                return dot > 0F ? 0F : 180F;
+            // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
+            float denominator = Mathf.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
+            if (denominator < kEpsilonNormalSqrt)
+                return 0F;
 
+            float dot = Mathf.Clamp(Dot(from, to) / denominator, -1F, 1F);
             return Mathf.Acos(dot) * Mathf.Rad2Deg;
         }
 
@@ -310,5 +312,7 @@ namespace UnityEngine
 
         // *Undocumented*
         public const float kEpsilon = 0.00001F;
+        // *Undocumented*
+        public const float kEpsilonNormalSqrt = 1e-15f;
     }
 }

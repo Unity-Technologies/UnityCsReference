@@ -33,7 +33,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         MinHeight,
         MaxWidth,
         MaxHeight,
-        Flex,
         FlexBasis,
         FlexGrow,
         FlexShrink,
@@ -76,6 +75,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         Opacity,
         // Shorthand value
         BorderRadius,
+        Flex,
         Margin,
         Padding,
         // Always leave as last value
@@ -220,17 +220,18 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             return false;
         }
 
-        public static bool ApplyAndCompare(ref StyleValue<CursorStyle> current, StyleValue<CursorStyle> other)
+        // Note: this should not box values since we use a generic constraint
+        public static bool ApplyAndCompare<T>(ref StyleValue<T> current, StyleValue<T> other) where T : struct, IEquatable<T>
         {
-            CursorStyle oldValue = current.value;
+            T oldValue = current.value;
             if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))
             {
-                return oldValue != other.value;
+                return !oldValue.Equals(other.value);
             }
             return false;
         }
 
-        public static bool ApplyAndCompare<T>(ref StyleValue<T> current, StyleValue<T> other) where T : Object
+        public static bool ApplyAndCompareObject<T>(ref StyleValue<T> current, StyleValue<T> other) where T : class
         {
             T oldValue = current.value;
             if (current.Apply(other, StylePropertyApplyMode.CopyIfEqualOrGreaterSpecificity))

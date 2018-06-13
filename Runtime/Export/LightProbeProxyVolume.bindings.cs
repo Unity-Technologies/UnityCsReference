@@ -37,6 +37,8 @@ namespace UnityEngine
 
         public extern LightProbeProxyVolume.RefreshMode refreshMode { get; set; }
 
+        public extern LightProbeProxyVolume.QualityMode qualityMode { get; set; }
+
         public void Update()
         {
             SetDirtyFlag(true);

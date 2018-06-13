@@ -121,5 +121,10 @@ namespace UnityEditor.Modules
         {
             return false;
         }
+
+        public virtual bool ShouldShowVulkanSettings()
+        {
+            return false;
+        }
     }
 }

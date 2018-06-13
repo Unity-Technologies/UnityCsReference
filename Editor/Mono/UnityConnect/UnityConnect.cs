@@ -3,9 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEditorInternal;
 using UnityEditor.Web;
 using UnityEngine;
+using UnityEngine.Bindings;
 
 namespace UnityEditor.Connect
 {
@@ -109,6 +111,18 @@ namespace UnityEditor.Connect
             if (UserLoggedOut != null)
                 UserLoggedOut();
         }
+    }
+
+    [NativeHeader("Editor/Src/UnityConnect/UnityErrors.h")]
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct UnityErrorInfo
+    {
+        public int code;
+        public int priority;
+        public int behaviour;
+        public string msg;
+        public string shortMsg;
+        public string codeStr;
     }
 
     [InitializeOnLoad]
@@ -218,6 +232,11 @@ namespace UnityEditor.Connect
         }
 
         // End for Javascript Only
+        [MenuItem("Window/Unity Connect/Clear Access Token", false, 1000, true)]
+        public static void InvokeClearAccessTokenForTesting()
+        {
+            instance.ClearAccessToken();
+        }
 
         [MenuItem("Window/Unity Connect/Computer GoesToSleep", false, 1000, true)]
         public static void TestComputerGoesToSleep()

@@ -9,26 +9,24 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class PopupField<T> : BaseTextControl<T>
+    public class PopupField<T> : BaseField<T>
     {
-        private readonly List<T> m_Choices;
+        private List<T> m_Choices;
+        protected TextElement m_TextElement;
 
-        private T m_Value;
         public override T value
         {
-            get { return m_Value; }
+            get { return base.value; }
             set
             {
-                if (EqualityComparer<T>.Default.Equals(m_Value, value))
-                    return;
-
-                if (!m_Choices.Contains(value))
+                int newIndex = m_Choices.IndexOf(value);
+                if (newIndex < 0)
                     throw new ArgumentException(string.Format("Value {0} is not present in the list of possible values", value));
 
-                m_Value = value;
-                m_Index = m_Choices.IndexOf(m_Value);
-                text = m_Value.ToString();
-                Dirty(ChangeType.Repaint);
+                m_Index = newIndex;
+
+                base.value = value;
+                m_TextElement.text = m_Value.ToString();
             }
         }
 
@@ -48,14 +46,37 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public string text
+        {
+            get { return m_TextElement.text; }
+        }
+
+        // This property will be removed once JF's pr hits trunk.
+        public List<T> choices
+        {
+            get { return m_Choices; }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("choices can't be null");
+
+                m_Choices = value;
+            }
+        }
+
         private PopupField(List<T> choices)
         {
             if (choices == null)
                 throw new ArgumentNullException("choices can't be null");
 
+            m_TextElement = new TextElement();
+            Add(m_TextElement);
+
             m_Choices = choices;
 
             AddToClassList("popupField");
+
+            RegisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
         }
 
         public PopupField(List<T> choices, T defaultValue) :
@@ -81,11 +102,17 @@ namespace UnityEditor.Experimental.UIElements
             index = defaultIndex;
         }
 
+        private void OnMouseDown(MouseDownEvent evt)
+        {
+            if (evt.button == (int)MouseButton.LeftMouse)
+                ShowMenu();
+        }
+
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
 
-            if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
+            if ((evt as KeyDownEvent)?.character == '\n')
                 ShowMenu();
         }
 
@@ -108,7 +135,7 @@ namespace UnityEditor.Experimental.UIElements
 
         private void ChangeValueFromMenu(T menuItem)
         {
-            SetValueAndNotify(menuItem);
+            value = menuItem;
         }
     }
 }

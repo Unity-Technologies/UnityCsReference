@@ -14,6 +14,7 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor
 {
+    [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     internal sealed partial class RequiredSignatureAttribute : Attribute {}
 
@@ -42,7 +43,7 @@ namespace UnityEditor
                     {
                         Debug.LogWarningFormat(
                             "Method {0}.{1} is marked with the DrawGizmo attribute but does not take parameters (ComponentType, GizmoType) so will be ignored.",
-                            mi.DeclaringType.FullName, mi.Name
+                            mi.DeclaringType?.FullName, mi.Name
                             );
                         continue;
                     }
@@ -65,7 +66,7 @@ namespace UnityEditor
                     {
                         Debug.LogWarningFormat(
                             "Method {0}.{1} is marked with the DrawGizmo attribute but the component type it applies to could not be determined.",
-                            mi.DeclaringType.FullName, mi.Name
+                            mi.DeclaringType?.FullName, mi.Name
                             );
                         continue;
                     }
@@ -75,7 +76,7 @@ namespace UnityEditor
                     {
                         Debug.LogWarningFormat(
                             "Method {0}.{1} is marked with the DrawGizmo attribute but does not take a second parameter of type GizmoType so will be ignored.",
-                            mi.DeclaringType.FullName, mi.Name
+                            mi.DeclaringType?.FullName, mi.Name
                             );
                         continue;
                     }

@@ -98,6 +98,8 @@ namespace UnityEditor
         Editor m_CurrentTransformEditor;
         bool m_CurrentTransformEditorFoldout;
 
+        private readonly Handles.BoneRenderer m_BoneRenderer = new Handles.BoneRenderer();
+
         // This list containt the mecanim's human bones id for each body part
         protected int[][] m_BodyPartHumanBone =
         {
@@ -863,7 +865,7 @@ namespace UnityEditor
             if (s_Styles == null)
                 return;
 
-            AvatarSkeletonDrawer.DrawSkeleton(root, modelBones, m_Bones);
+            AvatarSkeletonDrawer.DrawSkeleton(root, modelBones, m_Bones, m_BoneRenderer);
 
             if (EditorGUIUtility.hotControl == 0)
                 TransferPoseIfChanged();

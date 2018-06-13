@@ -36,7 +36,13 @@ namespace UnityEditorInternal.VR
 
         extern public static string[] GetVREnabledDevicesOnTarget(BuildTarget target);
 
-        extern public static void SetVREnabledDevicesOnTargetGroup(BuildTargetGroup targetGroup, string[] devices);
+        [NativeMethod("SetVREnabledDevicesOnTargetGroup")]
+        extern public static void NativeSetVREnabledDevicesOnTargetGroup(BuildTargetGroup targetGroup, string[] devices);
+        public static void SetVREnabledDevicesOnTargetGroup(BuildTargetGroup targetGroup, string[] devices)
+        {
+            NativeSetVREnabledDevicesOnTargetGroup(targetGroup, devices);
+            SetDeviceListDirty(targetGroup);
+        }
     }
 }
 

@@ -687,7 +687,6 @@ namespace UnityEditor
 
                 Handles.EmitGUIGeometryForCamera(c, previewCamera);
 
-                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
 
                 if (c.usePhysicalProperties)
                 {
@@ -699,7 +698,6 @@ namespace UnityEditor
                 }
 
                 previewCamera.Render();
-                GL.sRGBWrite = false;
                 Graphics.DrawTexture(cameraRect, previewTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
             }
         }
@@ -708,7 +706,7 @@ namespace UnityEditor
         {
             if (m_PreviewTexture == null || m_PreviewTexture.width != width || m_PreviewTexture.height != height)
             {
-                m_PreviewTexture = new RenderTexture(width, height, 24, RenderTextureFormat.Default, RenderTextureReadWrite.Linear);
+                m_PreviewTexture = new RenderTexture(width, height, 24, RenderTextureFormat.Default, RenderTextureReadWrite.sRGB);
             }
             return m_PreviewTexture;
         }

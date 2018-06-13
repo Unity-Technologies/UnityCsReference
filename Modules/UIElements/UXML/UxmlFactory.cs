@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
+
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -19,7 +21,13 @@ namespace UnityEngine.Experimental.UIElements
 
         public virtual IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
         {
-            get { yield break; }
+            get
+            {
+                foreach (UxmlAttributeDescription attributeDescription in GetAllAttributeDescriptionForType(GetType()))
+                {
+                    yield return attributeDescription;
+                }
+            }
         }
 
         public virtual IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -28,6 +36,26 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public virtual void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc) {}
+
+        IEnumerable<UxmlAttributeDescription> GetAllAttributeDescriptionForType(Type t)
+        {
+            Type baseType =
+                t.BaseType;
+
+            if (baseType != null)
+            {
+                foreach (UxmlAttributeDescription ident in GetAllAttributeDescriptionForType(baseType))
+                {
+                    yield return ident;
+                }
+            }
+
+            foreach (FieldInfo fieldInfo in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly)
+                     .Where(f => typeof(UxmlAttributeDescription).IsAssignableFrom(f.FieldType)))
+            {
+                yield return (UxmlAttributeDescription)fieldInfo.GetValue(this);
+            }
+        }
     }
 
     public interface IUxmlFactory
@@ -187,7 +215,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (!s_WarningLogged)
                 {
-                    // TODO 2018.3 Debug.LogWarning("Calling obsolete method " + GetType().FullName + ".DoCreate(IUxmlAttributes bag, CreationContext cc). Remove and implemenent a default constructor for the created type instead.");
+                    Debug.LogWarning("Calling obsolete method " + GetType().FullName + ".DoCreate(IUxmlAttributes bag, CreationContext cc). Remove and implemenent a default constructor for the created type instead.");
                     s_WarningLogged = true;
                 }
 #pragma warning disable 618
@@ -224,15 +252,15 @@ namespace UnityEngine.Experimental.UIElements
             return ve;
         }
 
-        // TODO 2018.3 [Obsolete("Remove and implemenent a default constructor for the created type instead.")]
+        [Obsolete("Remove and implemenent a default constructor for the created type instead.")]
         protected virtual TCreatedType DoCreate(IUxmlAttributes bag, CreationContext cc)
         {
             return null;
         }
 
-        // TODO 2018.3 [Obsolete("Use uxmlName and uxmlNamespace instead.")]
+        [Obsolete("Use uxmlName and uxmlNamespace instead.")]
         public Type CreatesType { get { return typeof(TCreatedType); } }
     }
 
-    public class UxmlFactory<TCreatedType> : UxmlFactory<TCreatedType, VisualElement.VisualElementUxmlTraits> where TCreatedType : VisualElement {}
+    public class UxmlFactory<TCreatedType> : UxmlFactory<TCreatedType, VisualElement.UxmlTraits> where TCreatedType : VisualElement {}
 }

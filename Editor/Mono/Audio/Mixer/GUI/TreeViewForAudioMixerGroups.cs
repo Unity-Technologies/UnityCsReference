@@ -82,11 +82,15 @@ namespace UnityEditor
 
             protected override Texture GetIconForItem(TreeViewItem item)
             {
-                if (item != null && item.icon != null)
-                    return item.icon;
+                if (item != null)
+                {
+                    if (item.icon != null)
+                        return item.icon;
 
-                if (item.id == kNoneItemID)
-                    return k_AudioListenerIcon;
+                    if (item.id == kNoneItemID)
+                        return k_AudioListenerIcon;
+                }
+
                 return k_AudioGroupIcon;
             }
 

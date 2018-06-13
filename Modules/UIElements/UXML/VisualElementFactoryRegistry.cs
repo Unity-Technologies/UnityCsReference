@@ -81,24 +81,25 @@ namespace UnityEngine.Experimental.UIElements
             IUxmlFactory[] factories =
             {
                 new UxmlRootElementFactory(),
-                new Button.ButtonFactory(),
-                new VisualElement.VisualElementFactory(),
-                new IMGUIContainer.IMGUIContainerFactory(),
-                new Image.ImageFactory(),
-                new Label.LabelFactory(),
-                new RepeatButton.RepeatButtonFactory(),
-                new ScrollerButton.ScrollerButtonFactory(),
-                new ScrollView.ScrollViewFactory(),
-                new Scroller.ScrollerFactory(),
-                new Slider.SliderFactory(),
-                new TextField.TextFieldFactory(),
-                new Toggle.ToggleFactory(),
-                new VisualContainer.VisualContainerFactory(),
-                new TemplateContainer.TemplateContainerFactory(),
-                new Box.BoxFactory(),
-                new PopupWindow.PopupWindowFactory(),
-                new ListView.ListViewFactory(),
+                new Button.UxmlFactory(),
+                new VisualElement.UxmlFactory(),
+                new IMGUIContainer.UxmlFactory(),
+                new Image.UxmlFactory(),
+                new Label.UxmlFactory(),
+                new RepeatButton.UxmlFactory(),
+                new ScrollerButton.UxmlFactory(),
+                new ScrollView.UxmlFactory(),
+                new Scroller.UxmlFactory(),
+                new Slider.UxmlFactory(),
+                new TextField.UxmlFactory(),
+                new Toggle.UxmlFactory(),
+                new VisualContainer.UxmlFactory(),
+                new TemplateContainer.UxmlFactory(),
+                new Box.UxmlFactory(),
+                new PopupWindow.UxmlFactory(),
+                new ListView.UxmlFactory(),
             };
+
             foreach (var factory in factories)
             {
                 RegisterFactory(factory);

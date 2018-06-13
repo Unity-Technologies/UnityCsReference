@@ -55,16 +55,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddToClassList("token-node");
         }
 
-        public override void OnSelected()
+        public bool highlighted
         {
-            base.OnSelected();
-            m_Pill.highlighted = true;
-        }
-
-        public override void OnUnselected()
-        {
-            base.OnUnselected();
-            m_Pill.highlighted = false;
+            get { return m_Pill.highlighted; }
+            set { m_Pill.highlighted = value; }
         }
     }
 }

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -47,9 +48,9 @@ namespace UnityEditor.Experimental.UIElements
             return t;
         }
     }
-    internal class PropertyControl<TType> : BaseControl<TType>
+    internal class PropertyControl<TType> : BaseField<TType>
     {
-        public class PropertyControlFactory : UxmlFactory<PropertyControl<TType>, PropertyControlUxmlTraits>
+        public new class UxmlFactory : UxmlFactory<PropertyControl<TType>, UxmlTraits>
         {
             public override string uxmlName
             {
@@ -81,43 +82,20 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        public class PropertyControlUxmlTraits : BaseControlUxmlTraits
+        public new class UxmlTraits : BaseField<TType>.UxmlTraits
         {
-            UxmlStringAttributeDescription m_TypeOf;
-            UxmlStringAttributeDescription m_Value;
-            UxmlStringAttributeDescription m_Label;
+            UxmlStringAttributeDescription m_TypeOf = new UxmlStringAttributeDescription { name = "typeOf", use = UxmlAttributeDescription.Use.Required };
+            UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
+            UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
 
-            public PropertyControlUxmlTraits()
+            public UxmlTraits()
             {
-                m_TypeOf = new UxmlStringAttributeDescription { name = "typeOf", use = UxmlAttributeDescription.Use.Required};
-                UxmlEnumeration typeList = new UxmlEnumeration();
-                typeList.values = new List<string>();
-                foreach (DataType dt in Enum.GetValues(typeof(DataType)))
+                m_TypeOf.restriction = new UxmlEnumeration
                 {
-                    if (dt != DataType.Unsupported)
-                    {
-                        typeList.values.Add(dt.ToString());
-                    }
-                }
-                m_TypeOf.restriction = typeList;
-
-                m_Value = new UxmlStringAttributeDescription { name = "value" };
-                m_Label = new UxmlStringAttributeDescription { name = "label" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_TypeOf;
-                    yield return m_Value;
-                    yield return m_Label;
-                }
+                    values = Enum.GetValues(typeof(DataType)).Cast<DataType>()
+                        .Where(dt => dt != DataType.Unsupported)
+                        .Select(dt => dt.ToString()).ToList()
+                };
             }
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
@@ -150,11 +128,7 @@ namespace UnityEditor.Experimental.UIElements
         private Action<TType> SetValueDelegate;
 
         private Label m_Label;
-
-        // TODO : In the future we want to support all controls type (not only the one based on TextField).
-        // m_Control will need to be of type BaseControl<TType> at this point.
-        // However, to do this we need to refactor all controls that inherit BaseTextControl.
-        private BaseTextControl<TType> m_Control;
+        private BaseField<TType> m_Field;
 
         public PropertyControl()
             : this("")
@@ -224,7 +198,7 @@ namespace UnityEditor.Experimental.UIElements
 
         private void AddLabelDragger<TDraggerType>()
         {
-            var dragger = new FieldMouseDragger<TDraggerType>((IValueField<TDraggerType>)m_Control);
+            var dragger = new FieldMouseDragger<TDraggerType>((IValueField<TDraggerType>)m_Field);
             dragger.SetDragZone(m_Label);
 
             m_Label.AddToClassList("propertyControlDragger");
@@ -235,12 +209,12 @@ namespace UnityEditor.Experimental.UIElements
             return (TTo)Convert.ChangeType(value, typeof(TTo));
         }
 
-        private void CreateControl<TControlType, TDataType>() where TControlType : BaseTextControl<TDataType>, new()
+        private void CreateControl<TControlType, TDataType>() where TControlType : BaseField<TDataType>, new()
         {
             var c = new TControlType();
             GetValueDelegate = () => ConvertType<TDataType, TType>(c.value);
             SetValueDelegate = (x) => c.value = ConvertType<TType, TDataType>(x);
-            m_Control = c as BaseTextControl<TType>;
+            m_Field = c as BaseField<TType>;
         }
 
         private void CreateControl()
@@ -264,11 +238,12 @@ namespace UnityEditor.Experimental.UIElements
                     break;
             }
 
-            if (m_Control == null)
+            if (m_Field == null)
                 throw new NotSupportedException($"Unsupported type attribute: {typeof(TType)}");
 
-            m_Control.AddToClassList("propertyControlControl");
-            Add(m_Control);
+            m_Field.AddToClassList("propertyControlControl");
+            m_Field.OnValueChanged(OnFieldValueChanged);
+            Add(m_Field);
         }
 
         public string label
@@ -299,14 +274,24 @@ namespace UnityEditor.Experimental.UIElements
             return ConvertType<string, TType>(str);
         }
 
-        public override void OnValueChanged(EventCallback<ChangeEvent<TType>> callback)
+        private void OnFieldValueChanged(ChangeEvent<TType> evt)
         {
-            m_Control.OnValueChanged(callback);
+            using (ChangeEvent<TType> newEvent = ChangeEvent<TType>.GetPooled(evt.previousValue, evt.newValue))
+            {
+                newEvent.target = this;
+                UIElementsUtility.eventDispatcher.DispatchEvent(newEvent, panel);
+            }
         }
 
+        public override void SetValueWithoutNotify(TType newValue)
+        {
+            m_Field.SetValueWithoutNotify(newValue);
+        }
+
+        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
         public override void SetValueAndNotify(TType newValue)
         {
-            m_Control.SetValueAndNotify(newValue);
+            value = newValue;
         }
 
         public override TType value
@@ -321,7 +306,7 @@ namespace UnityEditor.Experimental.UIElements
 
             // Delegate focus to the control
             if (evt.GetEventTypeId() == FocusEvent.TypeId())
-                m_Control.Focus();
+                m_Field.Focus();
         }
     }
 }

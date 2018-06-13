@@ -15,6 +15,8 @@ namespace UnityEditor
     {
         private const string kDisplayLightingKey = "SkinnedMeshRendererEditor.Lighting.ShowSettings";
 
+        private static GUIContent legacyClampBlendShapeWeightsInfo = EditorGUIUtility.TrTextContent("Note that BlendShape weight range is clamped. This can be disabled in Player Settings.");
+
         private SerializedProperty m_Materials;
         private SerializedProperty m_AABB;
         private SerializedProperty m_DirtyAABB;
@@ -57,8 +59,6 @@ namespace UnityEditor
         private void InitializeLightingFields()
         {
             m_Lighting = new LightingSettingsInspector(serializedObject);
-
-            m_Lighting.showSettings = EditorPrefs.GetBool(kDisplayLightingKey, false);
         }
 
         public override void OnInspectorGUI()
@@ -99,17 +99,8 @@ namespace UnityEditor
 
         private void LightingFieldsGUI()
         {
-            bool oldShowLighting = m_Lighting.showSettings;
-
-            if (m_Lighting.Begin())
-            {
-                RenderProbeFields();
-                m_Lighting.RenderMeshSettings(false);
-            }
-            m_Lighting.End();
-
-            if (m_Lighting.showSettings != oldShowLighting)
-                EditorPrefs.SetBool(kDisplayLightingKey, m_Lighting.showSettings);
+            RenderProbeFields();
+            m_Lighting.RenderMeshSettings(false);
         }
 
         public void OnBlendShapeUI()
@@ -127,6 +118,10 @@ namespace UnityEditor
                 return;
 
             EditorGUI.indentLevel++;
+
+            if (PlayerSettings.legacyClampBlendShapeWeights)
+                EditorGUILayout.HelpBox(legacyClampBlendShapeWeightsInfo.text, MessageType.Info);
+
             Mesh m = renderer.sharedMesh;
 
             int arraySize = m_BlendShapeWeights.arraySize;
@@ -134,19 +129,30 @@ namespace UnityEditor
             {
                 content.text = m.GetBlendShapeName(i);
 
+                // Calculate the min and max values for the slider from the frame blendshape weights
+                float sliderMin = 0f, sliderMax = 0f;
+
+                int frameCount = m.GetBlendShapeFrameCount(i);
+                for (int j = 0; j < frameCount; j++)
+                {
+                    float frameWeight = m.GetBlendShapeFrameWeight(i, j);
+                    sliderMin = Mathf.Min(frameWeight, sliderMin);
+                    sliderMax = Mathf.Max(frameWeight, sliderMax);
+                }
+
                 // The SkinnedMeshRenderer blendshape weights array size can be out of sync with the size defined in the mesh
                 // (default values in that case are 0)
                 // The desired behaviour is to resize the blendshape array on edit.
 
                 // Default path when the blend shape array size is big enough.
                 if (i < arraySize)
-                    EditorGUILayout.PropertyField(m_BlendShapeWeights.GetArrayElementAtIndex(i), content);
+                    EditorGUILayout.Slider(m_BlendShapeWeights.GetArrayElementAtIndex(i), sliderMin, sliderMax, float.MinValue, float.MaxValue, content);
                 // Fall back to 0 based editing &
                 else
                 {
                     EditorGUI.BeginChangeCheck();
 
-                    float value = EditorGUILayout.FloatField(content, 0.0F);
+                    float value = EditorGUILayout.Slider(content, 0f, sliderMin, sliderMax, float.MinValue, float.MaxValue);
                     if (EditorGUI.EndChangeCheck())
                     {
                         m_BlendShapeWeights.arraySize = blendShapeCount;

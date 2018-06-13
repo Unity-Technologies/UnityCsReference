@@ -96,7 +96,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             elementStyle.ApplyCustomProperty(k_GridBackgroundColorProperty, ref m_GridBackgroundColor);
         }
 
-        public override void DoRepaint()
+        protected override void DoRepaint(IStylePainter painter)
         {
             VisualElement target = parent;
 

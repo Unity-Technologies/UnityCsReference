@@ -48,8 +48,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public string Filename { get; set; }
         public string OutputDirectory { get; set; }
-        public ScriptAssembly[] ScriptAssemblyReferences { get; set; } // References to dependencies that will be built.
-        public string[] References { get; set; } // References to dependencies that that will *not* be built.
+
+        /// <summary>
+        /// References to dependencies that will be built.
+        /// </summary>
+        public ScriptAssembly[] ScriptAssemblyReferences { get; set; }
+
+        /// <summary>
+        ///References to dependencies that that will *not* be built.
+        /// </summary>
+        public string[] References { get; set; }
         public string[] AdditionalReferences { get; set; }
         public string[] Defines { get; set; }
         public string[] Files { get; set; }

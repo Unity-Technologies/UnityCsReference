@@ -3,35 +3,16 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
     public class TextField : TextInputFieldBase<string>
     {
-        public class TextFieldFactory : UxmlFactory<TextField, TextFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<TextField, UxmlTraits> {}
 
-        public class TextFieldUxmlTraits : TextInputFieldBaseUxmlTraits
+        public new class UxmlTraits : TextInputFieldBase<string>.UxmlTraits
         {
-            UxmlBoolAttributeDescription m_Multiline;
-
-            public TextFieldUxmlTraits()
-            {
-                m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Multiline;
-                }
-            }
+            UxmlBoolAttributeDescription m_Multiline = new UxmlBoolAttributeDescription { name = "multiline" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -80,15 +61,28 @@ namespace UnityEngine.Experimental.UIElements
             this.isPasswordField = isPasswordField;
         }
 
-        protected string m_Value;
-
         public override string value
         {
-            get { return m_Value; }
+            get { return base.value; }
             set
             {
-                m_Value = value;
+                base.value = value;
                 text = m_Value;
+            }
+        }
+
+        public override void SetValueWithoutNotify(string newValue)
+        {
+            base.SetValueWithoutNotify(newValue);
+            text = m_Value;
+        }
+
+        public void SelectRange(int cursorIndex, int selectionIndex)
+        {
+            if (editorEngine != null)
+            {
+                editorEngine.cursorIndex = cursorIndex;
+                editorEngine.selectIndex = selectionIndex;
             }
         }
 
@@ -99,6 +93,9 @@ namespace UnityEngine.Experimental.UIElements
             string key = GetFullHierarchicalPersistenceKey();
 
             OverwriteFromPersistedData(this, key);
+
+            // Here we must make sure the value is restored on screen from the saved value !
+            text = m_Value;
         }
 
         internal override void SyncTextEngine()
@@ -109,8 +106,9 @@ namespace UnityEngine.Experimental.UIElements
             base.SyncTextEngine();
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        protected override void DoRepaint(IStylePainter painter)
         {
+            var stylePainter = (IStylePainterInternal)painter;
             if (isPasswordField)
             {
                 // if we use system keyboard we will have normal text returned (hiding symbols is done inside os)
@@ -119,18 +117,18 @@ namespace UnityEngine.Experimental.UIElements
                 if (!hasFocus)
                 {
                     // We don't have the focus, don't draw the selection and cursor
-                    painter.DrawBackground(this);
-                    painter.DrawBorder(this);
+                    stylePainter.DrawBackground(this);
+                    stylePainter.DrawBorder(this);
                     if (!string.IsNullOrEmpty(drawText) && contentRect.width > 0.0f && contentRect.height > 0.0f)
                     {
-                        var textParams = painter.GetDefaultTextParameters(this);
+                        var textParams = TextStylePainterParameters.GetDefault(this, text);
                         textParams.text = drawText;
-                        painter.DrawText(textParams);
+                        stylePainter.DrawText(textParams);
                     }
                 }
                 else
                 {
-                    DrawWithTextSelectionAndCursor(painter, drawText);
+                    DrawWithTextSelectionAndCursor(stylePainter, drawText);
                 }
             }
             else
@@ -148,7 +146,7 @@ namespace UnityEngine.Experimental.UIElements
                 KeyDownEvent kde = evt as KeyDownEvent;
                 if (!isDelayed || kde.character == '\n')
                 {
-                    SetValueAndNotify(text);
+                    value = text;
                 }
             }
             else if (evt.GetEventTypeId() == ExecuteCommandEvent.TypeId())
@@ -157,7 +155,7 @@ namespace UnityEngine.Experimental.UIElements
                 string cmdName = commandEvt.commandName;
                 if (!isDelayed && (cmdName == EventCommandNames.Paste || cmdName == EventCommandNames.Cut))
                 {
-                    SetValueAndNotify(text);
+                    value = text;
                 }
             }
         }
@@ -166,9 +164,9 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.ExecuteDefaultAction(evt);
 
-            if (!isDelayed || evt.GetEventTypeId() == BlurEvent.TypeId())
+            if (isDelayed && evt.GetEventTypeId() == BlurEvent.TypeId())
             {
-                SetValueAndNotify(text);
+                value = text;
             }
         }
     }

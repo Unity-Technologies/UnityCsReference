@@ -22,19 +22,29 @@ namespace UnityEditor
         public extern System.Type GetClass();
 
         // Returns the MonoScript object containing specified MonoBehaviour
-        [FreeFunction]
-        public extern static MonoScript FromMonoBehaviour(MonoBehaviour behaviour);
+        public static MonoScript FromMonoBehaviour(MonoBehaviour behaviour)
+        {
+            return FromScriptedObject(behaviour);
+        }
 
         // Returns the MonoScript object containing specified ScriptableObject
+        public static MonoScript FromScriptableObject(ScriptableObject scriptableObject)
+        {
+            return FromScriptedObject(scriptableObject);
+        }
+
+        // Returns the MonoScript object used by the given scripted object
         [FreeFunction]
-        public extern static MonoScript FromScriptableObject(ScriptableObject scriptableObject);
+        internal static extern MonoScript FromScriptedObject(UnityEngine.Object obj);
 
         internal extern bool GetScriptTypeWasJustCreatedFromComponentMenu();
 
         internal extern void SetScriptTypeWasJustCreatedFromComponentMenu();
 
         // *undocumented*
-        public MonoScript()
+        // Pass CreateOptions.None to TextAsset constructor so it does not create a native TextAsset object.
+        // We create MonoScript native object instead.
+        public MonoScript() : base(TextAsset.CreateOptions.None, null)
         {
             Init_Internal(this);
         }

@@ -25,7 +25,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Shaders/Shader.h")]
     [UsedByNativeCode]
     [RequireComponent(typeof(Transform))]
-    public partial class Camera
+    public sealed partial class Camera : Behaviour
     {
         [NativeProperty("Near")] extern public float nearClipPlane { get; set; }
         [NativeProperty("Far")]  extern public float farClipPlane  { get; set; }
@@ -261,6 +261,9 @@ namespace UnityEngine
             if (buffer == null) throw new NullReferenceException("buffer is null");
             RemoveCommandBufferImpl(evt, buffer);
         }
+
+        [FreeFunction("CameraScripting::GetCommandBuffers", HasExplicitThis = true)]
+        extern public UnityEngine.Rendering.CommandBuffer[] GetCommandBuffers(UnityEngine.Rendering.CameraEvent evt);
     }
 
     public partial class Camera
@@ -308,6 +311,15 @@ namespace UnityEngine
         {
             if (onPostRender != null)
                 onPostRender(cam);
+        }
+
+        // These two empty internal methods (which will always be stripped) are required to make the EmptyBuildGotStrippedEnough test work.
+        internal void OnlyUsedForTesting1()
+        {
+        }
+
+        internal void OnlyUsedForTesting2()
+        {
         }
     }
 }

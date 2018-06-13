@@ -10,16 +10,20 @@ namespace UnityEngine.Experimental.UIElements
 
     public abstract class MouseCaptureEventBase<T> : EventBase<T>, IMouseCaptureEvent, IPropagatableEvent where T : MouseCaptureEventBase<T>, new()
     {
+        public IEventHandler relatedTarget { get; private set; }
+
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Capturable | EventFlags.Bubbles;
+            flags = EventFlags.TricklesDown | EventFlags.Bubbles;
+            relatedTarget = null;
         }
 
-        public static T GetPooled(IEventHandler target)
+        public static T GetPooled(IEventHandler target, IEventHandler relatedTarget)
         {
             T e = GetPooled();
             e.target = target;
+            e.relatedTarget = relatedTarget;
             return e;
         }
 

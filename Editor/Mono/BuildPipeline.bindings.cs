@@ -506,7 +506,7 @@ namespace UnityEditor
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetPlaybackEngineExtensionDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
 
-        internal static extern void SetPlaybackEngineDirectory(BuildTarget target, BuildOptions options, string playbackEngineDirectory);
+        internal static extern void SetPlaybackEngineDirectory(BuildTargetGroup targetGroup, BuildTarget target, BuildOptions options, string playbackEngineDirectory);
 
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetBuildToolsDirectory(BuildTarget target);

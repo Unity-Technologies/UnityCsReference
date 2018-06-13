@@ -35,6 +35,7 @@ namespace UnityEngine.Playables
         internal float m_EffectiveParentSpeed;
         internal float m_EffectiveSpeed;
         internal Flags m_Flags;
+        internal PlayableOutput m_Output;
 
         public ulong frameId                    { get { return m_FrameID; } }
         public float deltaTime                  { get { return (float)m_DeltaTime; } }
@@ -47,5 +48,6 @@ namespace UnityEngine.Playables
         public bool seekOccurred                { get { return (m_Flags & Flags.SeekOccured) != 0; } }
         public bool timeLooped                  { get { return (m_Flags & Flags.Loop) != 0; } }
         public bool timeHeld                    { get { return (m_Flags & Flags.Hold) != 0; } }
+        public PlayableOutput output            { get { return m_Output; } }
     }
 }

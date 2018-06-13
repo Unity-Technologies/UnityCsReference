@@ -669,7 +669,7 @@ namespace UnityEditor
             if (instanceIDs.Count == 0)
                 return true;
 
-            bool foundAssetsFolder = instanceIDs.IndexOf(ProjectBrowserColumnOneTreeViewDataSource.GetAssetsFolderInstanceID()) >= 0;
+            bool foundAssetsFolder = instanceIDs.IndexOf(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets")) >= 0;
             if (foundAssetsFolder)
             {
                 string title = "Cannot Delete";

@@ -98,6 +98,24 @@ namespace UnityEditor
             CreateHexagonalTilemap(GridLayout.CellSwizzle.YXZ, Styles.flatTopHexagonCreateUndo.text);
         }
 
+        [MenuItem("GameObject/2D Object/Isometric Tilemap")]
+        internal static void CreateIsometricTilemap()
+        {
+            var root = FindOrCreateRootGrid();
+            var uniqueName = GameObjectUtility.GetUniqueNameForSibling(root.transform, "Tilemap");
+            var tilemapGO = ObjectFactory.CreateGameObject(uniqueName, typeof(Tilemap), typeof(TilemapRenderer));
+            tilemapGO.transform.SetParent(root.transform);
+            tilemapGO.transform.position = Vector3.zero;
+
+            var grid = root.GetComponent<Grid>();
+            grid.cellLayout = Grid.CellLayout.Isometric;
+            grid.cellSize = new Vector3(1.0f, 0.5f, 0.0f);
+
+            var tilemapRenderer = tilemapGO.GetComponent<TilemapRenderer>();
+            tilemapRenderer.sortOrder = TilemapRenderer.SortOrder.TopRight;
+            Undo.RegisterCreatedObjectUndo(tilemapGO, "Create Isometric Tilemap");
+        }
+
         private static void CreateHexagonalTilemap(GridLayout.CellSwizzle swizzle, string undoMessage)
         {
             var root = FindOrCreateRootGrid();

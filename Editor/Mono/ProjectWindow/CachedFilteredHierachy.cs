@@ -119,10 +119,10 @@ namespace UnityEditor
                     var rootPath = "Assets";
 
                     var path = AssetDatabase.GetAssetPath(instanceIDs[i]);
-                    var pathComponents = path.Split('/');
+                    var packageInfo = PackageManager.Packages.GetForAssetPath(path);
                     // Find the right rootPath if folderPath is part of a package
-                    if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
-                        rootPath = pathComponents[0] + "/" + pathComponents[1];
+                    if (packageInfo != null)
+                        rootPath = packageInfo.assetPath;
 
                     rootPaths[i] = rootPath;
                 }
@@ -174,7 +174,7 @@ namespace UnityEditor
                 result.icon = null;
         }
 
-        void SearchAllAssets()
+        void SearchAllAssets(SearchFilter.SearchArea area)
         {
             const int k_MaxAddCount = 3000;
             if (m_HierarchyType == HierarchyType.Assets)
@@ -183,6 +183,7 @@ namespace UnityEditor
                 list.AddRange(m_Results);
 
                 var maxAddCount = k_MaxAddCount;
+                m_SearchFilter.searchArea = area;
                 var enumerator = AssetDatabase.EnumerateAllAssets(m_SearchFilter);
                 while (enumerator.MoveNext() && --maxAddCount >= 0)
                 {
@@ -215,8 +216,22 @@ namespace UnityEditor
         void SearchInFolders()
         {
             List<FilterResult> list = new List<FilterResult>();
-            string[] baseFolders = ProjectWindowUtil.GetBaseFolders(m_SearchFilter.folders);
+            List<string> baseFolders = new List<string>();
+            baseFolders.AddRange(ProjectWindowUtil.GetBaseFolders(m_SearchFilter.folders));
+            if (baseFolders.Remove(PackageManager.Folders.GetPackagesMountPoint()))
+            {
+                var packages = PackageManager.Packages.GetAll();
+                foreach (var package in packages)
+                {
+                    if (package.source == PackageManager.PackageSource.BuiltIn)
+                        continue;
 
+                    if (!baseFolders.Contains(package.assetPath))
+                        baseFolders.Add(package.assetPath);
+                }
+            }
+
+            m_SearchFilter.searchArea = SearchFilter.SearchArea.SelectedFolders;
             foreach (string folderPath in baseFolders)
             {
                 // Ensure we do not have a filter when finding folder
@@ -241,10 +256,32 @@ namespace UnityEditor
             // We are not concerned with assets being added multiple times as we only show the contents
             // of each selected folder. This is an issue when searching recursively into child folders.
             List<FilterResult> list = new List<FilterResult>();
+            HierarchyProperty property;
             foreach (string folderPath in m_SearchFilter.folders)
             {
+                if (folderPath == PackageManager.Folders.GetPackagesMountPoint())
+                {
+                    var packages = PackageManager.Packages.GetAll();
+                    foreach (var package in packages)
+                    {
+                        if (package.source == PackageManager.PackageSource.BuiltIn)
+                            continue;
+
+                        var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
+                        property = new HierarchyProperty(package.assetPath);
+                        if (property.Find(packageFolderInstanceId, null))
+                        {
+                            FilterResult result = new FilterResult();
+                            CopyPropertyData(ref result, property);
+                            result.name = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
+                            list.Add(result);
+                        }
+                    }
+                    continue;
+                }
+
                 int folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
-                HierarchyProperty property = new HierarchyProperty(folderPath);
+                property = new HierarchyProperty(folderPath);
                 property.SetSearchFilter(m_SearchFilter);
 
                 int folderDepth = property.depth;
@@ -273,9 +310,11 @@ namespace UnityEditor
         {
             switch (m_SearchFilter.GetState())
             {
-                case SearchFilter.State.FolderBrowsing:         FolderBrowsing();  break;
-                case SearchFilter.State.SearchingInAllAssets:   SearchAllAssets(); break;
-                case SearchFilter.State.SearchingInFolders:     SearchInFolders(); break;
+                case SearchFilter.State.FolderBrowsing:          FolderBrowsing();  break;
+                case SearchFilter.State.SearchingInAllAssets:    SearchAllAssets(SearchFilter.SearchArea.AllAssets); break;
+                case SearchFilter.State.SearchingInAssetsOnly:   SearchAllAssets(SearchFilter.SearchArea.InAssetsOnly); break;
+                case SearchFilter.State.SearchingInPackagesOnly: SearchAllAssets(SearchFilter.SearchArea.InPackagesOnly); break;
+                case SearchFilter.State.SearchingInFolders:      SearchInFolders(); break;
                 case SearchFilter.State.SearchingInAssetStore: /*do nothing*/ break;
                 case SearchFilter.State.EmptySearchFilter: /*do nothing*/ break;
                 default: Debug.LogError("Unhandled enum!"); break;

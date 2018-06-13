@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -11,38 +10,14 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class RectField : BaseCompoundField<Rect>
     {
-        public class RectFieldFactory : UxmlFactory<RectField, RectFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<RectField, UxmlTraits> {}
 
-        public class RectFieldUxmlTraits : BaseCompoundFieldUxmlTraits
+        public new class UxmlTraits : BaseCompoundField<Rect>.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_XValue;
-            UxmlFloatAttributeDescription m_YValue;
-            UxmlFloatAttributeDescription m_WValue;
-            UxmlFloatAttributeDescription m_HValue;
-
-            public RectFieldUxmlTraits()
-            {
-                m_XValue = new UxmlFloatAttributeDescription { name = "x" };
-                m_YValue = new UxmlFloatAttributeDescription { name = "y" };
-                m_WValue = new UxmlFloatAttributeDescription { name = "w" };
-                m_HValue = new UxmlFloatAttributeDescription { name = "h" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_XValue;
-                    yield return m_YValue;
-                    yield return m_WValue;
-                    yield return m_HValue;
-                }
-            }
+            UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
+            UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
+            UxmlFloatAttributeDescription m_WValue = new UxmlFloatAttributeDescription { name = "w" };
+            UxmlFloatAttributeDescription m_HValue = new UxmlFloatAttributeDescription { name = "h" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -67,32 +42,12 @@ namespace UnityEditor.Experimental.UIElements
 
     public class Vector2Field : BaseCompoundField<Vector2>
     {
-        public class Vector2FieldFactory : UxmlFactory<Vector2Field, Vector2FieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Vector2Field, UxmlTraits> {}
 
-        public class Vector2FieldUxmlTraits : BaseCompoundFieldUxmlTraits
+        public new class UxmlTraits : BaseCompoundField<Vector2>.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_XValue;
-            UxmlFloatAttributeDescription m_YValue;
-
-            public Vector2FieldUxmlTraits()
-            {
-                m_XValue = new UxmlFloatAttributeDescription { name = "x" };
-                m_YValue = new UxmlFloatAttributeDescription { name = "y" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_XValue;
-                    yield return m_YValue;
-                }
-            }
+            UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
+            UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -115,35 +70,13 @@ namespace UnityEditor.Experimental.UIElements
 
     public class Vector3Field : BaseCompoundField<Vector3>
     {
-        public class Vector3FieldFactory : UxmlFactory<Vector3Field, Vector3FieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Vector3Field, UxmlTraits> {}
 
-        public class Vector3FieldUxmlTraits : BaseCompoundFieldUxmlTraits
+        public new class UxmlTraits : BaseCompoundField<Vector3>.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_XValue;
-            UxmlFloatAttributeDescription m_YValue;
-            UxmlFloatAttributeDescription m_ZValue;
-
-            public Vector3FieldUxmlTraits()
-            {
-                m_XValue = new UxmlFloatAttributeDescription { name = "x" };
-                m_YValue = new UxmlFloatAttributeDescription { name = "y" };
-                m_ZValue = new UxmlFloatAttributeDescription { name = "z" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_XValue;
-                    yield return m_YValue;
-                    yield return m_ZValue;
-                }
-            }
+            UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
+            UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
+            UxmlFloatAttributeDescription m_ZValue = new UxmlFloatAttributeDescription { name = "z" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -167,38 +100,14 @@ namespace UnityEditor.Experimental.UIElements
 
     public class Vector4Field : BaseCompoundField<Vector4>
     {
-        public class Vector4FieldFactory : UxmlFactory<Vector4Field, Vector4FieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Vector4Field, UxmlTraits> {}
 
-        public class Vector4FieldUxmlTraits : BaseCompoundFieldUxmlTraits
+        public new class UxmlTraits : BaseCompoundField<Vector4>.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_XValue;
-            UxmlFloatAttributeDescription m_YValue;
-            UxmlFloatAttributeDescription m_ZValue;
-            UxmlFloatAttributeDescription m_WValue;
-
-            public Vector4FieldUxmlTraits()
-            {
-                m_XValue = new UxmlFloatAttributeDescription { name = "x" };
-                m_YValue = new UxmlFloatAttributeDescription { name = "y" };
-                m_ZValue = new UxmlFloatAttributeDescription { name = "z" };
-                m_WValue = new UxmlFloatAttributeDescription { name = "w" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_XValue;
-                    yield return m_YValue;
-                    yield return m_ZValue;
-                    yield return m_WValue;
-                }
-            }
+            UxmlFloatAttributeDescription m_XValue = new UxmlFloatAttributeDescription { name = "x" };
+            UxmlFloatAttributeDescription m_YValue = new UxmlFloatAttributeDescription { name = "y" };
+            UxmlFloatAttributeDescription m_ZValue = new UxmlFloatAttributeDescription { name = "z" };
+            UxmlFloatAttributeDescription m_WValue = new UxmlFloatAttributeDescription { name = "w" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {

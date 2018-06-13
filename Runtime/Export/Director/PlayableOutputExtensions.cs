@@ -2,8 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEngine;
+using System.Collections.Generic;
 
 namespace UnityEngine.Playables
 {
@@ -78,6 +77,26 @@ namespace UnityEngine.Playables
         public static void SetWeight<U>(this U output, float value) where U : struct, IPlayableOutput
         {
             output.GetHandle().SetWeight(value);
+        }
+
+        public static void PushNotification<U>(this U output, Playable origin, INotification notification, object context = null) where U : struct, IPlayableOutput
+        {
+            output.GetHandle().PushNotification(origin.GetHandle(), notification, context);
+        }
+
+        public static INotificationReceiver[] GetNotificationReceivers<U>(this U output) where U : struct, IPlayableOutput
+        {
+            return output.GetHandle().GetNotificationReceivers();
+        }
+
+        public static void AddNotificationReceiver<U>(this U output, INotificationReceiver receiver) where U : struct, IPlayableOutput
+        {
+            output.GetHandle().AddNotificationReceiver(receiver);
+        }
+
+        public static void RemoveNotificationReceiver<U>(this U output, INotificationReceiver receiver) where U : struct, IPlayableOutput
+        {
+            output.GetHandle().RemoveNotificationReceiver(receiver);
         }
     }
 }

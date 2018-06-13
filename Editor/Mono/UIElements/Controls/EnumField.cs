@@ -3,40 +3,19 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class EnumField : BaseTextControl<Enum>
+    public class EnumField : BaseField<Enum>
     {
-        public class EnumFieldFactory : UxmlFactory<EnumField, EnumFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<EnumField, UxmlTraits> {}
 
-        public class EnumFieldUxmlTraits : BaseTextControlUxmlTraits
+        public new class UxmlTraits : BaseField<Enum>.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Type;
-            UxmlStringAttributeDescription m_Value;
-
-            public EnumFieldUxmlTraits()
-            {
-                m_Type = new UxmlStringAttributeDescription { name = "type", use = UxmlAttributeDescription.Use.Required};
-                m_Value = new UxmlStringAttributeDescription { name = "value" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Type;
-                    yield return m_Value;
-                }
-            }
+            UxmlStringAttributeDescription m_Type = new UxmlStringAttributeDescription { name = "type", use = UxmlAttributeDescription.Use.Required};
+            UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -63,8 +42,8 @@ namespace UnityEditor.Experimental.UIElements
         }
 
         private Type m_EnumType;
+        private TextElement m_TextElement;
 
-        private Enum m_Value;
         public override Enum value
         {
             get { return m_Value; }
@@ -73,17 +52,44 @@ namespace UnityEditor.Experimental.UIElements
                 if (m_Value != value)
                 {
                     m_Value = value;
-                    text = ObjectNames.NicifyVariableName(m_Value.ToString());
-                    Dirty(ChangeType.Repaint);
+                    m_TextElement.text = ObjectNames.NicifyVariableName(m_Value.ToString());
+
+                    using (ChangeEvent<Enum> evt = ChangeEvent<Enum>.GetPooled(m_Value, value))
+                    {
+                        evt.target = this;
+                        SetValueWithoutNotify(value);
+                        UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
+                    }
+
+                    IncrementVersion(VersionChangeType.Repaint);
                 }
             }
         }
 
-        public EnumField() {}
+        public string text
+        {
+            get { return m_TextElement.text; }
+        }
+
+        private void Initialize(Enum defaultValue)
+        {
+            m_TextElement = new TextElement();
+            Add(m_TextElement);
+            if (defaultValue != null)
+            {
+                Init(defaultValue);
+            }
+            RegisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
+        }
+
+        public EnumField()
+        {
+            Initialize(null);
+        }
 
         public EnumField(Enum defaultValue)
         {
-            Init(defaultValue);
+            Initialize(defaultValue);
         }
 
         public void Init(Enum defaultValue)
@@ -92,25 +98,31 @@ namespace UnityEditor.Experimental.UIElements
             value = defaultValue;
         }
 
+        private void OnMouseDown(MouseDownEvent evt)
+        {
+            if (evt.button == (int)MouseButton.LeftMouse)
+                ShowMenu();
+        }
+
+        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
         public override void SetValueAndNotify(Enum newValue)
         {
             if (value != newValue)
             {
-                using (ChangeEvent<Enum> evt = ChangeEvent<Enum>.GetPooled(value, newValue))
-                {
-                    evt.target = this;
-                    value = newValue;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
-                }
+                value = newValue;
             }
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.ExecuteDefaultActionAtTarget(evt);
 
-            if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
+            if ((evt.GetEventTypeId() == KeyDownEvent.TypeId()) &&
+                (evt as KeyDownEvent)?.character == '\n')
+            {
                 ShowMenu();
+                evt.StopPropagation();
+            }
         }
 
         private void ShowMenu()
@@ -137,7 +149,7 @@ namespace UnityEditor.Experimental.UIElements
 
         private void ChangeValueFromMenu(object menuItem)
         {
-            SetValueAndNotify(menuItem as Enum);
+            value = menuItem as Enum;
         }
     }
 }

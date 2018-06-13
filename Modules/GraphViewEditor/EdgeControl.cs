@@ -81,7 +81,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_InputOrientation == value)
                     return;
                 m_InputOrientation = value;
-                Dirty(ChangeType.Repaint);
+                MarkDirtyRepaint();
             }
         }
 
@@ -94,7 +94,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_OutputOrientation == value)
                     return;
                 m_OutputOrientation = value;
-                Dirty(ChangeType.Repaint);
+                MarkDirtyRepaint();
             }
         }
 
@@ -108,7 +108,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     return;
                 m_InputColor = value;
                 m_OutputColor = value;
-                Dirty(ChangeType.Repaint);
+                MarkDirtyRepaint();
             }
         }
 
@@ -121,7 +121,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_InputColor != value)
                 {
                     m_InputColor = value;
-                    Dirty(ChangeType.Repaint);
+                    MarkDirtyRepaint();
                 }
             }
         }
@@ -135,7 +135,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_OutputColor != value)
                 {
                     m_OutputColor = value;
-                    Dirty(ChangeType.Repaint);
+                    MarkDirtyRepaint();
                 }
             }
         }
@@ -183,7 +183,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (m_CapRadius == value)
                     return;
                 m_CapRadius = value;
-                Dirty(ChangeType.Repaint);
+                MarkDirtyRepaint();
             }
         }
 
@@ -198,7 +198,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_EdgeWidth = value;
                 m_MeshDirty = true;
                 UpdateLayout(); // The layout depends on the edges width
-                Dirty(ChangeType.Repaint);
+                MarkDirtyRepaint();
             }
         }
 
@@ -316,12 +316,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public override void DoRepaint()
+        protected override void DoRepaint(IStylePainter painter)
         {
             UnityEngine.Profiling.Profiler.BeginSample("DrawEdge");
             UpdateEdgeCaps();
             // Edges do NOT call base.DoRepaint. It would create a visual artifact.
-            DrawEdge();
+            DrawEdge(painter);
 
             UnityEngine.Profiling.Profiler.EndSample();
         }
@@ -399,7 +399,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected virtual void PointsChanged()
         {
             m_ControlPointsDirty = true;
-            Dirty(ChangeType.Repaint);
+            MarkDirtyRepaint();
         }
 
         // The points that will be rendered. Expressed in coordinates local to the element.
@@ -768,7 +768,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        protected virtual void DrawEdge()
+        protected virtual void DrawEdge(IStylePainter painter)
         {
             if (edgeWidth <= 0)
                 return;
@@ -804,9 +804,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             lineMat.SetColor("_InputColor", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? inputColor.gamma : inputColor);
             lineMat.SetColor("_OutputColor", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? outputColor.gamma : outputColor);
-            lineMat.SetPass(0);
 
-            Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
+            var stylePainter = (IStylePainterInternal)painter;
+            var meshParams = MeshStylePainterParameters.GetDefault(m_Mesh, lineMat);
+            stylePainter.DrawMesh(meshParams);
         }
 
         private void RecomputeMesh()

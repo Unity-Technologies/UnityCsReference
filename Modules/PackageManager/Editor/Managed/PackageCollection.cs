@@ -50,4 +50,3 @@ namespace UnityEditor.PackageManager
         public Error error { get { return m_HasError ? m_Error : null; } }
     }
 }
-

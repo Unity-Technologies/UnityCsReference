@@ -62,6 +62,7 @@ namespace UnityEditor
 
                 // Dispatch all timer update messages to each scheduled item
                 panel.timerEventScheduler.UpdateScheduledEvents();
+                panel.UpdateBindings();
             }
         }
 
@@ -78,7 +79,7 @@ namespace UnityEditor
                     continue;
 
                 // Dispatch might have triggered a repaint request.
-                if (panel.visualTree.IsDirty(ChangeType.Repaint))
+                if (panel.isDirty)
                 {
                     var guiView = panel.ownerObject as GUIView;
                     if (guiView != null)
@@ -106,7 +107,7 @@ namespace UnityEditor
                     if (!anyUxmlImported)
                     {
                         anyUxmlImported = true;
-                        UIElementsViewImporter.logger.FinishImport();
+                        UXMLImporterImpl.logger.FinishImport();
 
                         // the inline stylesheet cache might get out of date.
                         // Usually called by the USS importer, which might not get called here
@@ -165,8 +166,7 @@ namespace UnityEditor
                 if (panel.contextType != ContextType.Editor)
                     continue;
 
-                panel.styleContext.DirtyStyleSheets();
-                panel.visualTree.Dirty(ChangeType.Styles); // dirty all styles
+                panel.DirtyStyleSheets();
 
                 var guiView = panel.ownerObject as GUIView;
                 if (guiView != null)

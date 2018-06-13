@@ -10,14 +10,6 @@ using UnityEngine.Playables;
 
 namespace UnityEngine.Playables
 {
-    // This must always be in sync with DirectorWrapMode in Runtime/Director/Core/DirectorTypes.h
-    public enum DirectorWrapMode
-    {
-        Hold = 0,
-        Loop = 1,
-        None = 2
-    }
-
     [NativeHeader("Modules/Director/PlayableDirector.h")]
     [NativeHeader("Runtime/Mono/MonoBehaviour.h")]
     [RequiredByNativeCode]

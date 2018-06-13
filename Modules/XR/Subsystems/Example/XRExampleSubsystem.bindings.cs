@@ -14,7 +14,10 @@ namespace UnityEngine.Experimental.XR
     [UsedByNativeCode]
     public class XRExampleSubsystem : Subsystem<XRExampleSubsystemDescriptor>
     {
+        [NativeConditional("ENABLE_XR")]
         public extern void PrintExample();
+
+        [NativeConditional("ENABLE_XR")]
         public extern bool GetBool();
     }
 }

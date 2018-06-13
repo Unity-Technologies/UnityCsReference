@@ -30,28 +30,20 @@ namespace UnityEngine.Analytics
         UnsupportedPlatform
     }
 
-    public static class Analytics
+    public static partial class Analytics
     {
-        private static UnityAnalyticsHandler s_UnityAnalyticsHandler;
-
-        internal static UnityAnalyticsHandler GetUnityAnalyticsHandler()
-        {
-            if (s_UnityAnalyticsHandler == null)
-                s_UnityAnalyticsHandler = new UnityAnalyticsHandler();
-            if (s_UnityAnalyticsHandler.IsInitialized())
-                return s_UnityAnalyticsHandler;
-            return null;
-        }
-
         public static bool limitUserTracking
         {
             get
             {
-                return UnityAnalyticsHandler.limitUserTracking;
+                if (!IsInitialized())
+                    return false;
+                return limitUserTrackingInternal;
             }
             set
             {
-                UnityAnalyticsHandler.limitUserTracking = value;
+                if (IsInitialized())
+                    limitUserTrackingInternal = value;
             }
         }
 
@@ -59,11 +51,14 @@ namespace UnityEngine.Analytics
         {
             get
             {
-                return UnityAnalyticsHandler.deviceStatsEnabled;
+                if (!IsInitialized())
+                    return false;
+                return deviceStatsEnabledInternal;
             }
             set
             {
-                UnityAnalyticsHandler.deviceStatsEnabled = value;
+                if (IsInitialized())
+                    deviceStatsEnabledInternal = value;
             }
         }
 
@@ -71,52 +66,60 @@ namespace UnityEngine.Analytics
         {
             get
             {
-                UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-                if (unityAnalyticsHandler == null)
+                if (!IsInitialized())
                     return false;
-                return unityAnalyticsHandler.enabled;
+                return enabledInternal;
             }
             set
             {
-                UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-                if (unityAnalyticsHandler != null)
-                    unityAnalyticsHandler.enabled = value;
+                if (IsInitialized())
+                    enabledInternal = value;
             }
         }
 
         public static AnalyticsResult FlushEvents()
         {
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
+            if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
-
-            return unityAnalyticsHandler.FlushEvents() ? AnalyticsResult.Ok : AnalyticsResult.NotInitialized;
+            return FlushArchivedEvents() ? AnalyticsResult.Ok : AnalyticsResult.NotInitialized;
         }
+
+        [Serializable]
+        private struct UserInfo
+        {
+            public string custom_userid;
+            public string sex;
+        };
 
         public static AnalyticsResult SetUserId(string userId)
         {
             if (string.IsNullOrEmpty(userId))
                 throw new ArgumentException("Cannot set userId to an empty or null string");
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
-                return AnalyticsResult.NotInitialized;
-            return unityAnalyticsHandler.SetUserId(userId);
+            return SendUserInfoEvent(new UserInfo() { custom_userid = userId });
         }
 
         public static AnalyticsResult SetUserGender(Gender gender)
         {
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
-                return AnalyticsResult.NotInitialized;
-            return unityAnalyticsHandler.SetUserGender(gender);
+            return SendUserInfoEvent(new UserInfo() { sex = gender == Gender.Male ? "M" : gender == Gender.Female ? "F" : "U" });
         }
+
+        [Serializable]
+        private struct UserInfoBirthYear
+        {
+            public int birth_year;
+        };
 
         public static AnalyticsResult SetUserBirthYear(int birthYear)
         {
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (s_UnityAnalyticsHandler == null)
+            return SendUserInfoEvent(new UserInfoBirthYear() { birth_year = birthYear });
+        }
+
+        private static AnalyticsResult SendUserInfoEvent(object param)
+        {
+            if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
-            return unityAnalyticsHandler.SetUserBirthYear(birthYear);
+            QueueEvent("userInfo", param, 1, String.Empty);
+            return AnalyticsResult.Ok;
         }
 
         public static AnalyticsResult Transaction(string productId, decimal amount, string currency)
@@ -135,52 +138,52 @@ namespace UnityEngine.Analytics
                 throw new ArgumentException("Cannot set productId to an empty or null string");
             if (string.IsNullOrEmpty(currency))
                 throw new ArgumentException("Cannot set currency to an empty or null string");
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
+            if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
             if (receiptPurchaseData == null)
                 receiptPurchaseData = string.Empty;
             if (signature == null)
                 signature = string.Empty;
-            return unityAnalyticsHandler.Transaction(productId, Convert.ToDouble(amount), currency, receiptPurchaseData, signature, usingIAPService);
+            return Transaction(productId, Convert.ToDouble(amount), currency, receiptPurchaseData, signature, usingIAPService);
         }
 
         public static AnalyticsResult CustomEvent(string customEventName)
         {
             if (string.IsNullOrEmpty(customEventName))
                 throw new ArgumentException("Cannot set custom event name to an empty or null string");
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
+            if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
-            return unityAnalyticsHandler.SendCustomEventName(customEventName);
+            return SendCustomEventName(customEventName);
         }
 
         public static AnalyticsResult CustomEvent(string customEventName, Vector3 position)
         {
             if (string.IsNullOrEmpty(customEventName))
                 throw new ArgumentException("Cannot set custom event name to an empty or null string");
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
+            if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
             CustomEventData customEvent = new CustomEventData(customEventName);
             customEvent.AddDouble("x", (double)System.Convert.ToDecimal(position.x));
             customEvent.AddDouble("y", (double)System.Convert.ToDecimal(position.y));
             customEvent.AddDouble("z", (double)System.Convert.ToDecimal(position.z));
-            return unityAnalyticsHandler.SendCustomEvent(customEvent);
+            var result = SendCustomEvent(customEvent);
+            customEvent.Dispose();
+            return result;
         }
 
         public static AnalyticsResult CustomEvent(string customEventName, IDictionary<string, object> eventData)
         {
             if (string.IsNullOrEmpty(customEventName))
                 throw new ArgumentException("Cannot set custom event name to an empty or null string");
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
+            if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
             if (eventData == null)
-                return unityAnalyticsHandler.SendCustomEventName(customEventName);
+                return SendCustomEventName(customEventName);
             CustomEventData customEvent = new CustomEventData(customEventName);
             customEvent.AddDictionary(eventData);
-            return unityAnalyticsHandler.SendCustomEvent(customEvent);
+            var result = SendCustomEvent(customEvent);
+            customEvent.Dispose();
+            return result;
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
@@ -201,10 +204,9 @@ namespace UnityEngine.Analytics
         {
             if (string.IsNullOrEmpty(eventName))
                 throw new ArgumentException("Cannot set event name to an empty or null string");
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
+            if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
-            return unityAnalyticsHandler.RegisterEvent(eventName, maxEventPerHour, maxItems, vendorKey, ver, prefix, assemblyInfo);
+            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, prefix, assemblyInfo);
         }
 
         public static AnalyticsResult SendEvent(string eventName, object parameters, int ver = 1, string prefix = "")
@@ -213,10 +215,9 @@ namespace UnityEngine.Analytics
                 throw new ArgumentException("Cannot set event name to an empty or null string");
             if (parameters == null)
                 throw new ArgumentException("Cannot set parameters to null");
-            UnityAnalyticsHandler unityAnalyticsHandler = GetUnityAnalyticsHandler();
-            if (unityAnalyticsHandler == null)
+            if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
-            return unityAnalyticsHandler.SendEvent(eventName, parameters, ver, prefix);
+            return SendEventWithLimit(eventName, parameters, ver, prefix);
         }
     }
 }

@@ -14,6 +14,7 @@ namespace UnityEngine.Experimental.UIElements
         bool ctrlKey { get; }
         bool commandKey { get; }
         bool altKey { get; }
+        bool actionKey { get; }
     }
 
     public abstract class KeyboardEventBase<T> : EventBase<T>, IKeyboardEvent where T : KeyboardEventBase<T>, new()
@@ -42,11 +43,26 @@ namespace UnityEngine.Experimental.UIElements
             get { return (modifiers & EventModifiers.Alt) != 0; }
         }
 
+        public bool actionKey
+        {
+            get
+            {
+                if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+                {
+                    return commandKey;
+                }
+                else
+                {
+                    return ctrlKey;
+                }
+            }
+        }
+
         // FIXME: see https://www.w3.org/TR/DOM-Level-3-Events/#interface-keyboardevent for key, code and location values.
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.Capturable | EventFlags.Cancellable;
+            flags = EventFlags.Bubbles | EventFlags.TricklesDown | EventFlags.Cancellable;
             modifiers = default(EventModifiers);
             character = default(char);
             keyCode = default(KeyCode);

@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Collaboration;
 using UnityEditor.Connect;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
@@ -135,7 +136,10 @@ namespace UnityEditor.Web
 
         public void GoToHistory()
         {
-            CollabHistoryWindow.ShowHistoryWindow();
+            if (Collab.ShowHistoryWindow != null)
+            {
+                Collab.ShowHistoryWindow();
+            }
         }
 
         public static void ShowToolbarDropdown()
@@ -149,12 +153,10 @@ namespace UnityEditor.Web
 
         public void CloseToolbarWindow()
         {
-            CollabToolbarWindow.CloseToolbarWindows();
-        }
-
-        public void CloseToolbarWindowImmediately()
-        {
-            CollabToolbarWindow.CloseToolbarWindowsImmediately();
+            if (Collab.CloseToolbar != null)
+            {
+                Collab.CloseToolbar();
+            }
         }
 
     }

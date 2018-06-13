@@ -32,14 +32,35 @@ namespace UnityEditor
         internal extern static bool IsBakedTextureType(GITextureType textureType);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
+        public   extern static VisualisationGITexture[] GetRealtimeGITextures(GITextureType textureType);
+
+        [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
+        public   extern static VisualisationGITexture GetRealtimeGITexture(Hash128 inputSystemHash, GITextureType textureType);
+
+        [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
+        public   extern static VisualisationGITexture GetBakedGITexture(int lightmapIndex, int instanceId, GITextureType textureType);
+
+        [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         public   extern static VisualisationGITexture GetSelectedObjectGITexture(GITextureType textureType);
+
+        [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
+        public   extern static Hash128 GetBakedGITextureHash(int lightmapIndex, int instanceId, GITextureType textureType);
+
+        [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
+        public   extern static Hash128 GetRealtimeGITextureHash(Hash128 inputSystemHash, GITextureType textureType);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         public   extern static Hash128 GetSelectedObjectGITextureHash(GITextureType textureType);
 
+        [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
+        public   extern static GameObject[] GetRealtimeGITextureRenderers(Hash128 inputSystemHash);
+
+        [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
+        public   extern static GameObject[] GetBakedGITextureRenderers(int lightmapIndex);
+
         [NativeHeader("Runtime/GI/RenderOverlay.h")]
         [FreeFunction("DrawTextureWithUVOverlay")]
-        public   extern static void DrawTextureWithUVOverlay(Texture2D texture, GameObject gameObject, Rect drawableArea, Rect position, GITextureType textureType);
+        public   extern static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         public   extern static LightmapType GetLightmapType(GITextureType textureType);

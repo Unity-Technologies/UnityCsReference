@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -97,12 +98,37 @@ namespace UnityEditor
         [Obsolete("GetAnimationClips(Animation) is deprecated. Use GetAnimationClips(GameObject) instead.")]
         public static AnimationClip[] GetAnimationClips(Animation component)
         {
-            return GetAnimationClips(component.gameObject);
+            return GetAnimationClipsInAnimationPlayer(component.gameObject);
         }
 
         // Returns the array of AnimationClips that are referenced in the Animation component
-        extern public static AnimationClip[] GetAnimationClips([NotNull] GameObject gameObject);
+        public static AnimationClip[] GetAnimationClips(GameObject gameObject)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException("gameObject");
 
+            AnimationClip[] clips = GetAnimationClipsInAnimationPlayer(gameObject);
+
+            IAnimationClipSource[] clipSources = gameObject.GetComponents<IAnimationClipSource>();
+            if (clipSources.Length > 0)
+            {
+                var allClips = new List<AnimationClip>(clips);
+                for (int i = 0; i < clipSources.Length; ++i)
+                {
+                    var extraClips = new List<AnimationClip>(clips);
+                    clipSources[i].GetAnimationClips(extraClips);
+
+                    allClips.AddRange(extraClips);
+                }
+
+                return allClips.ToArray();
+            }
+
+            return clips;
+        }
+
+        // Returns the array of AnimationClips that are referenced in the Animation component
+        extern internal static AnimationClip[] GetAnimationClipsInAnimationPlayer([NotNull] GameObject gameObject);
 
         // Sets the array of AnimationClips to be referenced in the Animation component
         extern public static void SetAnimationClips([NotNull] Animation animation, AnimationClip[] clips);

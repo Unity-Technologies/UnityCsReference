@@ -223,6 +223,8 @@ namespace UnityEditor.Modules
         void MultithreadedRenderingGUI(BuildTargetGroup targetGroup);
 
         bool SupportsCustomLightmapEncoding();
+
+        bool ShouldShowVulkanSettings();
     }
 
 

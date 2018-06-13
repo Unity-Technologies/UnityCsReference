@@ -3,15 +3,13 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    internal interface ITextInputField : IEventHandler
+    internal interface ITextInputField : IEventHandler, ITextElement
     {
         bool hasFocus { get; }
-        string text { get; }
 
         bool doubleClickSelectsWord { get; }
         bool tripleClickSelectsLine { get; }
@@ -22,35 +20,14 @@ namespace UnityEngine.Experimental.UIElements
         void UpdateText(string value);
     }
 
-    public abstract class TextInputFieldBase<T> : BaseTextControl<T>, ITextInputField
+    public abstract class TextInputFieldBase<T> : BaseField<T>, ITextInputField
     {
-        public class TextInputFieldBaseUxmlTraits : BaseTextControlUxmlTraits
+        public new class UxmlTraits : BaseField<T>.UxmlTraits
         {
-            UxmlIntAttributeDescription m_MaxLength;
-            UxmlBoolAttributeDescription m_Password;
-            UxmlStringAttributeDescription m_MaskCharacter;
-
-            protected TextInputFieldBaseUxmlTraits()
-            {
-                m_MaxLength = new UxmlIntAttributeDescription { name = "maxLength", defaultValue = kMaxLengthNone };
-                m_Password = new UxmlBoolAttributeDescription { name = "password" };
-                m_MaskCharacter = new UxmlStringAttributeDescription { name = "maskCharacter", defaultValue = "*"};
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_MaxLength;
-                    yield return m_Password;
-                    yield return m_MaskCharacter;
-                }
-            }
+            UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "maxLength", defaultValue = kMaxLengthNone };
+            UxmlBoolAttributeDescription m_Password = new UxmlBoolAttributeDescription { name = "password" };
+            UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "maskCharacter", defaultValue = "*" };
+            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -64,6 +41,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     field.maskChar = maskCharacter[0];
                 }
+                ((ITextElement)ve).text = m_Text.GetValueFromBag(bag);
             }
         }
 
@@ -72,6 +50,21 @@ namespace UnityEngine.Experimental.UIElements
 
         StyleValue<Color> m_SelectionColor;
         StyleValue<Color> m_CursorColor;
+
+        private string m_Text;
+        public string text
+        {
+            get { return m_Text; }
+            protected set
+            {
+                if (m_Text == value)
+                    return;
+
+                m_Text = value;
+                editorEngine.text = value;
+                IncrementVersion(VersionChangeType.Layout);
+            }
+        }
 
         public void SelectAll()
         {
@@ -109,6 +102,7 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         public int cursorIndex { get { return editorEngine.cursorIndex; } }
+        public int selectIndex { get { return editorEngine.selectIndex; } }
 
         public int maxLength { get; set; }
 
@@ -137,17 +131,11 @@ namespace UnityEngine.Experimental.UIElements
 
         public char maskChar { get; set; }
 
-        public override string text
-        {
-            protected set
-            {
-                base.text = value;
-                editorEngine.text = value;
-            }
-        }
-
         public TextInputFieldBase(int maxLength, char maskChar)
         {
+            requireMeasureFunction = true;
+
+            m_Text = "";
             this.maxLength = maxLength;
             this.maskChar = maskChar;
 
@@ -228,8 +216,9 @@ namespace UnityEngine.Experimental.UIElements
             return s;
         }
 
-        internal override void DoRepaint(IStylePainter painter)
+        protected override void DoRepaint(IStylePainter painter)
         {
+            var stylePainter = (IStylePainterInternal)painter;
             // When this is used, we can get rid of the content.text trick and use mask char directly in the text to print
             if (touchScreenTextField)
             {
@@ -258,13 +247,16 @@ namespace UnityEngine.Experimental.UIElements
             else
             {
                 if (!hasFocus)
+                {
                     base.DoRepaint(painter);
+                    painter.DrawText(this, text);
+                }
                 else
-                    DrawWithTextSelectionAndCursor(painter, text);
+                    DrawWithTextSelectionAndCursor(stylePainter, text);
             }
         }
 
-        internal void DrawWithTextSelectionAndCursor(IStylePainter painter, string newText)
+        internal void DrawWithTextSelectionAndCursor(IStylePainterInternal painter, string newText)
         {
             var keyboardTextEditor = editorEventHandler as KeyboardTextEditorEventHandler;
             if (keyboardTextEditor == null)
@@ -279,12 +271,12 @@ namespace UnityEngine.Experimental.UIElements
 
             IStyle style = this.style;
 
-            var textParams = painter.GetDefaultTextParameters(this);
+            var textParams = TextStylePainterParameters.GetDefault(this, text);
             textParams.text = " ";
             textParams.wordWrapWidth = 0.0f;
             textParams.wordWrap = false;
 
-            float lineHeight = painter.ComputeTextHeight(textParams);
+            float lineHeight = TextNative.ComputeTextHeight(textParams);
             float contentWidth = contentRect.width;
 
             Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
@@ -304,7 +296,7 @@ namespace UnityEngine.Experimental.UIElements
             // Draw highlighted section, if any
             if (cursorIndex != selectionEndIndex)
             {
-                var painterParams = painter.GetDefaultRectParameters(this);
+                var painterParams = RectStylePainterParameters.GetDefault(this);
                 painterParams.color = selectionColor;
                 painterParams.border.SetWidth(0.0f);
                 painterParams.border.SetRadius(0.0f);
@@ -312,14 +304,14 @@ namespace UnityEngine.Experimental.UIElements
                 int min = cursorIndex < selectionEndIndex ? cursorIndex : selectionEndIndex;
                 int max = cursorIndex > selectionEndIndex ? cursorIndex : selectionEndIndex;
 
-                cursorParams = painter.GetDefaultCursorPositionParameters(this);
+                cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                 cursorParams.text = editorEngine.text;
                 cursorParams.wordWrapWidth = contentWidth;
                 cursorParams.cursorIndex = min;
 
-                Vector2 minPos = painter.GetCursorPosition(cursorParams);
+                Vector2 minPos = TextNative.GetCursorPosition(cursorParams);
                 cursorParams.cursorIndex = max;
-                Vector2 maxPos = painter.GetCursorPosition(cursorParams);
+                Vector2 maxPos = TextNative.GetCursorPosition(cursorParams);
 
                 minPos -= scrollOffset;
                 maxPos -= scrollOffset;
@@ -358,7 +350,7 @@ namespace UnityEngine.Experimental.UIElements
             // Draw the text with the scroll offset
             if (!string.IsNullOrEmpty(editorEngine.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
             {
-                textParams = painter.GetDefaultTextParameters(this);
+                textParams = TextStylePainterParameters.GetDefault(this, text);
                 textParams.rect = new Rect(contentRect.x - scrollOffset.x, contentRect.y - scrollOffset.y, contentRect.width, contentRect.height);
                 textParams.text = editorEngine.text;
                 painter.DrawText(textParams);
@@ -367,12 +359,12 @@ namespace UnityEngine.Experimental.UIElements
             // Draw the cursor
             if (cursorIndex == selectionEndIndex && (Font)style.font != null)
             {
-                cursorParams = painter.GetDefaultCursorPositionParameters(this);
+                cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                 cursorParams.text = editorEngine.text;
                 cursorParams.wordWrapWidth = contentWidth;
                 cursorParams.cursorIndex = cursorIndex;
 
-                Vector2 cursorPosition = painter.GetCursorPosition(cursorParams);
+                Vector2 cursorPosition = TextNative.GetCursorPosition(cursorParams);
                 cursorPosition -= scrollOffset;
                 var painterParams = new RectStylePainterParameters
                 {
@@ -385,12 +377,12 @@ namespace UnityEngine.Experimental.UIElements
             // Draw alternate cursor, if any
             if (editorEngine.altCursorPosition != -1)
             {
-                cursorParams = painter.GetDefaultCursorPositionParameters(this);
+                cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                 cursorParams.text = editorEngine.text.Substring(0, editorEngine.altCursorPosition);
                 cursorParams.wordWrapWidth = contentWidth;
                 cursorParams.cursorIndex = editorEngine.altCursorPosition;
 
-                Vector2 altCursorPosition = painter.GetCursorPosition(cursorParams);
+                Vector2 altCursorPosition = TextNative.GetCursorPosition(cursorParams);
                 altCursorPosition -= scrollOffset;
 
                 var painterParams = new RectStylePainterParameters
@@ -429,7 +421,12 @@ namespace UnityEngine.Experimental.UIElements
 
         private void OnCursorIndexChange()
         {
-            Dirty(ChangeType.Repaint);
+            IncrementVersion(VersionChangeType.Repaint);
+        }
+
+        protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
+        {
+            return TextElement.MeasureVisualElementTextSize(this, m_Text, width, widthMode, height, heightMode);
         }
 
         protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
@@ -468,9 +465,10 @@ namespace UnityEngine.Experimental.UIElements
             get { return hasFocus; }
         }
 
-        string ITextInputField.text
+        string ITextElement.text
         {
-            get { return text; }
+            get { return m_Text; }
+            set { m_Text = value; }
         }
 
         void ITextInputField.SyncTextEngine()

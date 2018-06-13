@@ -93,6 +93,7 @@ namespace UnityEditor.U2D
         extern internal static void CopyMasterAtlasSettings(this SpriteAtlas spriteAtlas);
         extern internal static string GetHash(this SpriteAtlas spriteAtlas);
         extern internal static Texture2D[] GetPreviewTextures(this SpriteAtlas spriteAtlas);
+        extern internal static Texture2D[] GetPreviewAlphaTextures(this SpriteAtlas spriteAtlas);
         extern internal static TextureFormat GetTextureFormat(this SpriteAtlas spriteAtlas, BuildTarget target);
     }
 }

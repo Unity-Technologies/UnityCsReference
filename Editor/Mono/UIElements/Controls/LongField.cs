@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -11,29 +10,11 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class LongField : TextValueField<long>
     {
-        public class LongFieldFactory : UxmlFactory<LongField, LongFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<LongField, UxmlTraits> {}
 
-        public class LongFieldUxmlTraits : TextValueFieldUxmlTraits
+        public new class UxmlTraits : TextValueField<long>.UxmlTraits
         {
-            UxmlLongAttributeDescription m_Value;
-
-            public LongFieldUxmlTraits()
-            {
-                m_Value = new UxmlLongAttributeDescription { name = "value" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Value;
-                }
-            }
+            UxmlLongAttributeDescription m_Value = new UxmlLongAttributeDescription { name = "value" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -63,7 +44,7 @@ namespace UnityEditor.Experimental.UIElements
             float acceleration = NumericFieldDraggerUtility.Acceleration(speed == DeltaSpeed.Fast, speed == DeltaSpeed.Slow);
             long v = value;
             v += (long)Math.Round(NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity);
-            SetValueAndNotify(v);
+            value = v;
         }
 
         protected override string ValueToString(long v)

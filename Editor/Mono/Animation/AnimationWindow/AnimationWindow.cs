@@ -20,7 +20,7 @@ namespace UnityEditor
         private static List<AnimationWindow> s_AnimationWindows = new List<AnimationWindow>();
         public static List<AnimationWindow> GetAllAnimationWindows() { return s_AnimationWindows; }
 
-        [SerializeField] private AnimEditor m_AnimEditor;
+        private AnimEditor m_AnimEditor;
 
         [SerializeField]
         EditorGUIUtility.EditorLockTracker m_LockTracker = new EditorGUIUtility.EditorLockTracker();

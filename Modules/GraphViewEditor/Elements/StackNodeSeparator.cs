@@ -2,10 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
@@ -19,7 +19,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        public abstract void GetInsertInfo(Vector2 WorldPosition, out InsertInfo insert);
+        public abstract void GetInsertInfo(Vector2 worldPosition, out InsertInfo insert);
 
         public StackNodeInserter()
         {
@@ -51,6 +51,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private VisualElement m_HighlightItem;
         private float m_Extent;
         private float m_Height;
+
+        public Action<ContextualMenuPopulateEvent, int> menuEvent { get; set; }
 
         public float extent
         {
@@ -97,18 +99,34 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public StackNodeSeparator()
         {
-            m_HighlightItem = new VisualElement();
-            m_HighlightItem.name = "highlight";
+            m_HighlightItem = new VisualElement { name = "highlight" };
             m_HighlightItem.StretchToParentWidth();
             Add(m_HighlightItem);
 
+            this.AddManipulator(new ContextualMenuManipulator(OnContextualMenuEvent));
+
             ClearClassList();
             AddToClassList("stack-node-separator");
+        }
+
+        void OnContextualMenuEvent(ContextualMenuPopulateEvent evt)
+        {
+            if (menuEvent != null)
+            {
+                InsertInfo insertInfo;
+                GetInsertInfo(evt.mousePosition, out insertInfo);
+                menuEvent(evt, insertInfo.index);
+            }
         }
     }
 
     internal class StackNodeContentContainer : StackNodeInserter
     {
+        public StackNodeContentContainer()
+        {
+            clippingOptions = ClippingOptions.NoClipping;
+        }
+
         public override void GetInsertInfo(Vector2 worldPosition, out InsertInfo insertInfo)
         {
             insertInfo = new InsertInfo { target = stack, index = 0, localPosition = Vector2.zero };
@@ -123,10 +141,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     insertInfo.localPosition = child.ChangeCoordinatesTo(stack, child.rect.center);
                 }
             }
-        }
-
-        public StackNodeContentContainer()
-        {
         }
     }
 }

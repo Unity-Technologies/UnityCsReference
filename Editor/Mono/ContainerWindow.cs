@@ -163,6 +163,7 @@ namespace UnityEditor
             // Guard against destroy window or window in the process of being destroyed.
             if (this && m_WindowPtr.m_IntPtr != IntPtr.Zero)
                 InternalClose();
+            DestroyImmediate(this, true);
         }
 
         internal bool IsNotDocked()
@@ -390,7 +391,7 @@ namespace UnityEditor
 
         // Snapping windows
         static Vector2 s_LastDragMousePos;
-        static Rect dragPosition;
+        float startDragDpi;
         private void DragTitleBar(Rect titleBarRect)
         {
             int id = GUIUtility.GetControlID(FocusType.Passive);
@@ -407,8 +408,8 @@ namespace UnityEditor
                     {
                         GUIUtility.hotControl = id;
                         Event.current.Use();
-                        s_LastDragMousePos = GUIUtility.GUIToScreenPoint(evt.mousePosition);
-                        dragPosition = position;
+                        s_LastDragMousePos = evt.mousePosition;
+                        startDragDpi = GUIUtility.pixelsPerPoint;
                         Unsupported.SetAllowCursorLock(false, Unsupported.DisallowCursorLockReasons.SizeMove);
                     }
                     break;
@@ -423,20 +424,29 @@ namespace UnityEditor
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
                     {
-                        Vector2 absMouse = GUIUtility.GUIToScreenPoint(evt.mousePosition);
-                        Vector2 movement = absMouse - s_LastDragMousePos;
-
-                        float minimumDelta = 1.0f / GUIUtility.pixelsPerPoint;
-
-                        if (Mathf.Abs(movement.x) >= minimumDelta || Mathf.Abs(movement.y) >= minimumDelta)
+                        Vector2 mousePos = evt.mousePosition;
+                        if (startDragDpi != GUIUtility.pixelsPerPoint)
                         {
-                            s_LastDragMousePos = absMouse;
+                            // We ignore this mouse event when changing screens in multi monitor setups with
+                            // different dpi scalings as funky things might/will happen
+                            startDragDpi = GUIUtility.pixelsPerPoint;
+                            s_LastDragMousePos = mousePos;
+                        }
+                        else
+                        {
+                            Vector2 movement = mousePos - s_LastDragMousePos;
 
-                            dragPosition.x += movement.x;
-                            dragPosition.y += movement.y;
-                            position = dragPosition;
+                            float minimumDelta = 1.0f / GUIUtility.pixelsPerPoint;
 
-                            GUI.changed = true;
+                            if (Mathf.Abs(movement.x) >= minimumDelta || Mathf.Abs(movement.y) >= minimumDelta)
+                            {
+                                Rect dragPosition = position;
+                                dragPosition.x += movement.x;
+                                dragPosition.y += movement.y;
+                                position = dragPosition;
+
+                                GUI.changed = true;
+                            }
                         }
                     }
                     break;

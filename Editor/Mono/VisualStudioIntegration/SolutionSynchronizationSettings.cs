@@ -134,6 +134,8 @@ namespace UnityEditor.VisualStudioIntegration
                 @"    <NoConfig>true</NoConfig>",
                 @"    <NoStdLib>true</NoStdLib>",
                 @"    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>",
+                @"    <ImplicitlyExpandNETStandardFacades>false</ImplicitlyExpandNETStandardFacades>",
+                @"    <ImplicitlyExpandDesignTimeFacades>false</ImplicitlyExpandDesignTimeFacades>",
                 @"  </PropertyGroup>",
             };
 

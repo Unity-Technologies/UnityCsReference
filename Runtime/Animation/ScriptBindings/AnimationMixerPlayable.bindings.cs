@@ -66,7 +66,7 @@ namespace UnityEngine.Animations
             return GetHandle() == other.GetHandle();
         }
 
-        // Bindings methods.
+        [NativeThrows]
         extern private static bool CreateHandleInternal(PlayableGraph graph, int inputCount, bool normalizeWeights, ref PlayableHandle handle);
     }
 }

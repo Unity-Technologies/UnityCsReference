@@ -33,6 +33,9 @@ namespace UnityEditor
         [HideInInspector]
         int m_DepthBufferBits = 0;
 
+        [HideInInspector]
+        int m_AntiAliasing = 0;
+
         [SerializeField]
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 240);
@@ -419,8 +422,9 @@ namespace UnityEditor
                 return;
             m_Parent.SetTitle(GetType().FullName);
             m_Parent.autoRepaintOnSceneChange = m_AutoRepaintOnSceneChange;
-            bool parentChanged =  m_Parent.depthBufferBits != m_DepthBufferBits;
+            bool parentChanged =  m_Parent.depthBufferBits != m_DepthBufferBits || m_Parent.antiAliasing != m_AntiAliasing;
             m_Parent.depthBufferBits = m_DepthBufferBits;
+            m_Parent.antiAliasing = m_AntiAliasing;
             m_Parent.SetInternalGameViewDimensions(m_GameViewRect, m_GameViewClippedRect, m_GameViewTargetSize);
             m_Parent.eventInterests = m_EventInterests;
             m_Parent.disableInputEvents = m_DisableInputEvents;
@@ -444,7 +448,7 @@ namespace UnityEditor
                 ContainerWindow cw = ScriptableObject.CreateInstance<ContainerWindow>();
                 cw.title = titleContent.text;
                 HostView host = ScriptableObject.CreateInstance<HostView>();
-                host.actualView = this;
+                host.actualView = this; // Among other things, this sets m_Parent to host
 
                 Rect r = m_Parent.borderSize.Add(new Rect(position.x, position.y, position.width, position.height));
                 // Order is important here: first set rect of container, then assign main view, then apply various settings, then show.
@@ -465,7 +469,7 @@ namespace UnityEditor
                 ContainerWindow cw = ScriptableObject.CreateInstance<ContainerWindow>();
                 cw.title = titleContent.text;
                 HostView host = ScriptableObject.CreateInstance<HostView>();
-                host.actualView = this;
+                host.actualView = this; // Among other things, this sets m_Parent to host
 
                 Rect r = m_Parent.borderSize.Add(new Rect(position.x, position.y, position.width, position.height));
                 // Order is important here: first set rect of container, then assign main view, then apply various settings, then show.
@@ -813,6 +817,11 @@ namespace UnityEditor
         // Close the editor window.
         public void Close()
         {
+            // Guard against multiple call to Close in the same stack
+            // (since we call DestroyImmediate at the end of Close()).
+            if (!this)
+                return;
+
             // Ensure to restore normal workspace before destroying. Fix case 406657.
             if (WindowLayout.IsMaximized(this))
                 WindowLayout.Unmaximize(this);
@@ -906,6 +915,12 @@ namespace UnityEditor
             set { m_DepthBufferBits = value; }
         }
 
+        internal int antiAliasing
+        {
+            get { return m_AntiAliasing; }
+            set { m_AntiAliasing = value; }
+        }
+
         internal void SetParentGameViewDimensions(Rect rect, Rect clippedRect, Vector2 targetSize)
         {
             m_GameViewRect = rect;
@@ -993,8 +1008,8 @@ namespace UnityEditor
             SplitView sw = ScriptableObject.CreateInstance<SplitView>();
             cw.rootView = sw;
             DockArea da = ScriptableObject.CreateInstance<DockArea>();
-            sw.AddChild(da);
             da.AddTab(window);
+            sw.AddChild(da);
             Rect r = window.m_Parent.borderSize.Add(new Rect(screenPosition.x, screenPosition.y, window.position.width, window.position.height));
             cw.position = r;
             sw.position = new Rect(0, 0, r.width, r.height);
@@ -1028,6 +1043,16 @@ namespace UnityEditor
             public static VisualElement GetRootVisualContainer(this EditorWindow window)
             {
                 return window.rootVisualContainer;
+            }
+
+            public static void SetAntiAliasing(this EditorWindow window, int aa)
+            {
+                window.antiAliasing = aa;
+            }
+
+            public static int GetAntiAliasing(this EditorWindow window)
+            {
+                return window.antiAliasing;
             }
         }
     }

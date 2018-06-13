@@ -18,6 +18,7 @@ namespace UnityEngine.Experimental.Animations
         Float                          = 5,  // UnityEngine::Animation::kBindFloat
         Bool                           = 6,  // UnityEngine::Animation::kBindFloatToBool
         GameObjectActive               = 7,  // UnityEngine::Animation::kBindGameObjectActive
+        ObjectReference                = 9,  // UnityEngine::Animation::kBindScriptObjectReference;
         Int                            = 10, // UnityEngine::Animation::kBindFloatToInt
         DiscreetInt                    = 11, // UnityEngine::Animation::kBindDiscreteInt
     }
@@ -27,18 +28,23 @@ namespace UnityEngine.Experimental.Animations
     [StructLayout(LayoutKind.Sequential)]
     public struct TransformStreamHandle
     {
-        private UInt32 animatorBindingsVersion;
+        private UInt32 m_AnimatorBindingsVersion;
         private int handleIndex;
         private int skeletonIndex;
 
         public bool IsValid(AnimationStream stream)
         {
-            return stream.IsValid() && IsCreatedByNative();
+            return IsValidInternal(ref stream);
         }
 
-        private bool IsCreatedByNative()
+        private bool IsValidInternal(ref AnimationStream stream)
         {
-            return animatorBindingsVersion != (UInt32)AnimatorBindingsVersion.kInvalidNotNative;
+            return stream.isValid && createdByNative && hasHandleIndex;
+        }
+
+        private bool createdByNative
+        {
+            get { return animatorBindingsVersion != (UInt32)AnimatorBindingsVersion.kInvalidNotNative; }
         }
 
         private bool IsSameVersionAsStream(ref AnimationStream stream)
@@ -46,20 +52,21 @@ namespace UnityEngine.Experimental.Animations
             return animatorBindingsVersion == stream.animatorBindingsVersion;
         }
 
-        private bool HasHandleIndex()
+        private bool hasHandleIndex
         {
-            return handleIndex != AnimationStream.InvalidIndex;
+            get { return handleIndex != AnimationStream.InvalidIndex; }
         }
 
-        private bool HasSkeletonIndex()
+        private bool hasSkeletonIndex
         {
-            return skeletonIndex != AnimationStream.InvalidIndex;
+            get { return skeletonIndex != AnimationStream.InvalidIndex; }
         }
 
         // internal for EditorTests
-        internal UInt32 GetAnimatorBindingsVersion()
+        internal UInt32 animatorBindingsVersion
         {
-            return animatorBindingsVersion;
+            private set { m_AnimatorBindingsVersion = value; }
+            get { return m_AnimatorBindingsVersion; }
         }
 
         public void Resolve(AnimationStream stream)
@@ -74,10 +81,9 @@ namespace UnityEngine.Experimental.Animations
 
         private bool IsResolvedInternal(ref AnimationStream stream)
         {
-            return IsCreatedByNative() &&
+            return IsValidInternal(ref stream) &&
                 IsSameVersionAsStream(ref stream) &&
-                HasHandleIndex() &&
-                HasSkeletonIndex();
+                hasSkeletonIndex;
         }
 
         private void CheckIsValidAndResolve(ref AnimationStream stream)
@@ -89,15 +95,15 @@ namespace UnityEngine.Experimental.Animations
                 return;
 
             // Handle create directly by user are never valid
-            if (!IsCreatedByNative())
+            if (!createdByNative || !hasHandleIndex)
                 throw new InvalidOperationException("The TransformStreamHandle is invalid. Please use proper function to create the handle.");
 
-            if (!IsSameVersionAsStream(ref stream) || (HasHandleIndex() && !HasSkeletonIndex()))
+            if (!IsSameVersionAsStream(ref stream) || (hasHandleIndex && !hasSkeletonIndex))
             {
                 ResolveInternal(ref stream);
             }
 
-            if (HasHandleIndex() && !HasSkeletonIndex())
+            if (hasHandleIndex && !hasSkeletonIndex)
                 throw new InvalidOperationException("The TransformStreamHandle cannot be resolved.");
         }
 
@@ -154,19 +160,24 @@ namespace UnityEngine.Experimental.Animations
     [StructLayout(LayoutKind.Sequential)]
     public struct PropertyStreamHandle
     {
-        private UInt32 animatorBindingsVersion;
+        private UInt32 m_AnimatorBindingsVersion;
         private int handleIndex;
         private int valueArrayIndex;
         private int bindType;
 
         public bool IsValid(AnimationStream stream)
         {
-            return stream.IsValid() && IsCreatedByNative();
+            return IsValidInternal(ref stream);
         }
 
-        private bool IsCreatedByNative()
+        private bool IsValidInternal(ref AnimationStream stream)
         {
-            return animatorBindingsVersion != (UInt32)AnimatorBindingsVersion.kInvalidNotNative;
+            return stream.isValid && createdByNative && hasHandleIndex && hasBindType;
+        }
+
+        private bool createdByNative
+        {
+            get { return animatorBindingsVersion != (UInt32)AnimatorBindingsVersion.kInvalidNotNative; }
         }
 
         private bool IsSameVersionAsStream(ref AnimationStream stream)
@@ -174,25 +185,26 @@ namespace UnityEngine.Experimental.Animations
             return animatorBindingsVersion == stream.animatorBindingsVersion;
         }
 
-        private bool HasHandleIndex()
+        private bool hasHandleIndex
         {
-            return handleIndex != AnimationStream.InvalidIndex;
+            get { return handleIndex != AnimationStream.InvalidIndex; }
         }
 
-        private bool HasValueArrayIndex()
+        private bool hasValueArrayIndex
         {
-            return valueArrayIndex != AnimationStream.InvalidIndex;
+            get { return valueArrayIndex != AnimationStream.InvalidIndex; }
         }
 
-        private bool HasBindType()
+        private bool hasBindType
         {
-            return bindType != (int)BindType.Unbound;
+            get { return bindType != (int)BindType.Unbound; }
         }
 
         // internal for EditorTests
-        internal UInt32 GetAnimatorBindingsVersion()
+        internal UInt32 animatorBindingsVersion
         {
-            return animatorBindingsVersion;
+            private set { m_AnimatorBindingsVersion = value; }
+            get { return m_AnimatorBindingsVersion; }
         }
 
         public void Resolve(AnimationStream stream)
@@ -207,11 +219,9 @@ namespace UnityEngine.Experimental.Animations
 
         private bool IsResolvedInternal(ref AnimationStream stream)
         {
-            return IsCreatedByNative() &&
+            return IsValidInternal(ref stream) &&
                 IsSameVersionAsStream(ref stream) &&
-                HasBindType() &&
-                HasHandleIndex() &&
-                HasValueArrayIndex();
+                hasValueArrayIndex;
         }
 
         private void CheckIsValidAndResolve(ref AnimationStream stream)
@@ -223,15 +233,15 @@ namespace UnityEngine.Experimental.Animations
                 return;
 
             // Handle create directly by user are never valid
-            if (!IsCreatedByNative() || !HasBindType())
+            if (!createdByNative || !hasHandleIndex || !hasBindType)
                 throw new InvalidOperationException("The PropertyStreamHandle is invalid. Please use proper function to create the handle.");
 
-            if (!IsSameVersionAsStream(ref stream) || (HasHandleIndex() && !HasValueArrayIndex()))
+            if (!IsSameVersionAsStream(ref stream) || (hasHandleIndex && !hasValueArrayIndex))
             {
                 ResolveInternal(ref stream);
             }
 
-            if (HasHandleIndex() && !HasValueArrayIndex())
+            if (hasHandleIndex && !hasValueArrayIndex)
                 throw new InvalidOperationException("The PropertyStreamHandle cannot be resolved.");
         }
 
@@ -254,7 +264,7 @@ namespace UnityEngine.Experimental.Animations
         public int GetInt(AnimationStream stream)
         {
             CheckIsValidAndResolve(ref stream);
-            if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt)
+            if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt && bindType != (int)BindType.ObjectReference)
                 throw new InvalidOperationException("GetValue type doesn't match PropertyStreamHandle bound type.");
             return GetIntInternal(ref stream);
         }
@@ -262,7 +272,7 @@ namespace UnityEngine.Experimental.Animations
         public void SetInt(AnimationStream stream, int value)
         {
             CheckIsValidAndResolve(ref stream);
-            if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt)
+            if (bindType != (int)BindType.Int && bindType != (int)BindType.DiscreetInt && bindType != (int)BindType.ObjectReference)
                 throw new InvalidOperationException("SetValue type doesn't match PropertyStreamHandle bound type.");
             SetIntInternal(ref stream, value);
         }
@@ -315,20 +325,21 @@ namespace UnityEngine.Experimental.Animations
 
         public bool IsValid(AnimationStream stream)
         {
-            return stream.IsValid() &&
-                IsCreatedByNative() &&
-                HasValidTransform(ref stream) &&
-                HasTransformSceneHandleDefinitionIndex();
+            // [case 1032369] Cannot call native code before validating that handle was created in native and has a valid handle index
+            return stream.isValid &&
+                createdByNative &&
+                hasTransformSceneHandleDefinitionIndex &&
+                HasValidTransform(ref stream);
         }
 
-        private bool IsCreatedByNative()
+        private bool createdByNative
         {
-            return valid != 0;
+            get { return valid != 0; }
         }
 
-        private bool HasTransformSceneHandleDefinitionIndex()
+        private bool hasTransformSceneHandleDefinitionIndex
         {
-            return transformSceneHandleDefinitionIndex != AnimationStream.InvalidIndex;
+            get { return transformSceneHandleDefinitionIndex != AnimationStream.InvalidIndex; }
         }
 
         private void CheckIsValid(ref AnimationStream stream)
@@ -336,19 +347,13 @@ namespace UnityEngine.Experimental.Animations
             // Verify stream.
             stream.CheckIsValid();
 
-            var hasValidTransform = HasValidTransform(ref stream);
-            if (IsCreatedByNative() && hasValidTransform && HasTransformSceneHandleDefinitionIndex())
-                return;
-
             // Handle create directly by user are never valid
-            if (!IsCreatedByNative())
+            if (!createdByNative || !hasTransformSceneHandleDefinitionIndex)
                 throw new InvalidOperationException("The TransformSceneHandle is invalid. Please use proper function to create the handle.");
 
-            if (!hasValidTransform)
+            // [case 1032369] Cannot call native code before validating that handle was created in native and has a valid handle index
+            if (!HasValidTransform(ref stream))
                 throw new NullReferenceException("The transform is invalid.");
-
-            if (!HasTransformSceneHandleDefinitionIndex())
-                throw new InvalidOperationException("The TransformSceneHandle cannot be resolved.");
         }
 
         public Vector3 GetPosition(AnimationStream stream)
@@ -459,20 +464,21 @@ namespace UnityEngine.Experimental.Animations
 
         private bool IsValidInternal(ref AnimationStream stream)
         {
-            return stream.IsValid() &&
-                IsCreatedByNative() &&
-                HasValidTransform(ref stream) &&
-                HasHandleIndex();
+            // [case 1032369] Cannot call native code before validating that handle was created in native and has a valid handle index
+            return stream.isValid &&
+                createdByNative &&
+                hasHandleIndex &&
+                HasValidTransform(ref stream);
         }
 
-        private bool IsCreatedByNative()
+        private bool createdByNative
         {
-            return valid != 0;
+            get { return valid != 0; }
         }
 
-        private bool HasHandleIndex()
+        private bool hasHandleIndex
         {
-            return handleIndex != AnimationStream.InvalidIndex;
+            get { return handleIndex != AnimationStream.InvalidIndex; }
         }
 
         public void Resolve(AnimationStream stream)
@@ -491,19 +497,13 @@ namespace UnityEngine.Experimental.Animations
             // Verify stream.
             stream.CheckIsValid();
 
-            var hasValidTransform = HasValidTransform(ref stream);
-            if (IsCreatedByNative() && hasValidTransform && HasHandleIndex())
-                return;
-
             // Handle create directly by user are never valid
-            if (!IsCreatedByNative())
+            if (!createdByNative || !hasHandleIndex)
                 throw new InvalidOperationException("The PropertySceneHandle is invalid. Please use proper function to create the handle.");
 
-            if (!hasValidTransform)
+            // [case 1032369] Cannot call native code before validating that handle was created in native and has a valid handle index
+            if (!HasValidTransform(ref stream))
                 throw new NullReferenceException("The transform is invalid.");
-
-            if (!HasHandleIndex())
-                throw new InvalidOperationException("The PropertySceneHandle cannot be resolved.");
         }
 
         public float GetFloat(AnimationStream stream)

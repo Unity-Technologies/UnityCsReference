@@ -130,15 +130,15 @@ namespace UnityEditor
 
         public void CleanupUntouchedEditors()
         {
-            List<Object> toDelete = new List<Object>();
-            foreach (Object key in m_EditorCache.Keys)
-            {
-                if (!m_UsedEditors.ContainsKey(key))
-                    toDelete.Add(key);
-            }
-
             if (m_EditorCache != null)
             {
+                List<Object> toDelete = new List<Object>();
+                foreach (Object key in m_EditorCache.Keys)
+                {
+                    if (!m_UsedEditors.ContainsKey(key))
+                        toDelete.Add(key);
+                }
+
                 foreach (Object key in toDelete)
                 {
                     EditorWrapper ew = m_EditorCache[key];

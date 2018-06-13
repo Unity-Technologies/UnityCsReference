@@ -36,4 +36,3 @@ namespace UnityEditor.PackageManager
         public string message { get { return m_Message;  } }
     }
 }
-

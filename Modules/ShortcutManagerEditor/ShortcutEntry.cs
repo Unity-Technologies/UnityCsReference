@@ -20,7 +20,7 @@ namespace UnityEditor.ShortcutManagement
 
     struct ShortcutArguments
     {
-        public EditorWindow context;
+        public object context;
         public ShortcutState state;
     }
 
@@ -58,9 +58,6 @@ namespace UnityEditor.ShortcutManagement
         readonly Type m_Context;
         readonly ShortcutType m_Type;
 
-        static readonly object[] k_ReusableShortcutArgs = {null};
-        static readonly object[] k_EmptyReusableShortcutArgs = {};
-
         public Identifier identifier => m_Identifier;
 
         public IEnumerable<KeyCombination> combinations => activeCombination;
@@ -75,58 +72,10 @@ namespace UnityEditor.ShortcutManagement
         {
             m_Identifier = id;
             m_DefaultCombinations = new List<KeyCombination>(defaultCombination);
-            m_Context = context;
+            m_Context = context ?? ContextManager.globalContextType;
             m_Action = action;
             m_Type = type;
             this.prefKeyMigratedValue = prefKeyMigratedValue;
-        }
-
-        internal static ShortcutEntry CreateFromAttribute(MethodInfo methodInfo, ShortcutAttribute attribute)
-        {
-            var keyEvent = Event.KeyboardEvent(attribute.defaultKeyCombination);
-            var defaultCombination = new List<KeyCombination>();
-            var keyCombination = new KeyCombination(keyEvent);
-            defaultCombination.Add(keyCombination);
-            var identifier = new Identifier(methodInfo, attribute);
-            var type = attribute is ClutchShortcutAttribute ? ShortcutType.Clutch : ShortcutType.Action;
-            var methodParams = methodInfo.GetParameters();
-            Action<ShortcutArguments> action;
-            if (methodParams.Length == 0)
-            {
-                action = shortcutArgs =>
-                    {
-                        methodInfo.Invoke(null, k_EmptyReusableShortcutArgs);
-                    };
-            }
-            else
-            {
-                action = shortcutArgs =>
-                    {
-                        k_ReusableShortcutArgs[0] = shortcutArgs;
-                        methodInfo.Invoke(null, k_ReusableShortcutArgs);
-                    };
-            }
-
-            KeyCombination? prefKeyMigratedValue = null;
-            var prefKeyAttr = methodInfo.GetCustomAttributes(
-                    typeof(FormerlyPrefKeyAsAttribute), false
-                    ).FirstOrDefault() as FormerlyPrefKeyAsAttribute;
-            if (prefKeyAttr != null)
-            {
-                var prefKeyDefaultValue = new KeyCombination(Event.KeyboardEvent(prefKeyAttr.defaultValue));
-                string name;
-                Event keyboardEvent;
-                if (
-                    PrefKey.TryParseUniquePrefString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent)
-                    )
-                {
-                    var prefKeyCurrentValue = new KeyCombination(keyboardEvent);
-                    if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
-                        prefKeyMigratedValue = prefKeyCurrentValue;
-                }
-            }
-
-            return new ShortcutEntry(identifier, defaultCombination, action, attribute.context, type, prefKeyMigratedValue);
         }
 
         public override string ToString()

@@ -22,7 +22,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         void ApplyCustomProperty(string propertyName, ref StyleValue<int> target);
         void ApplyCustomProperty(string propertyName, ref StyleValue<bool> target);
         void ApplyCustomProperty(string propertyName, ref StyleValue<Color> target);
-        void ApplyCustomProperty<T>(string propertyName, ref StyleValue<T> target) where T : Object;
+        void ApplyCustomProperty(string propertyName, ref StyleValue<Texture2D> target);
         void ApplyCustomProperty(string propertyName, ref StyleValue<string> target);
     }
 
@@ -40,8 +40,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         internal StyleValue<float> maxHeight;
         internal StyleValue<float> minWidth;
         internal StyleValue<float> minHeight;
-        internal StyleValue<float> flex;
-        internal StyleValue<float> flexBasis;
+        internal StyleValue<FloatOrKeyword> flexBasis;
         internal StyleValue<float> flexShrink;
         internal StyleValue<float> flexGrow;
         internal StyleValue<int> overflow;
@@ -111,7 +110,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             maxHeight.Apply(other.maxHeight, mode);
             minWidth.Apply(other.minWidth, mode);
             minHeight.Apply(other.minHeight, mode);
-            flex.Apply(other.flex, mode);
             flexBasis.Apply(other.flexBasis, mode);
             flexGrow.Apply(other.flexGrow, mode);
             flexShrink.Apply(other.flexShrink, mode);
@@ -242,7 +240,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         break;
 
                     case StylePropertyID.BackgroundImage:
-                        registry.Apply(handles, specificity, ref backgroundImage, StyleSheetApplicator.ApplyResource);
+                        registry.Apply(handles, specificity, ref backgroundImage, StyleSheetApplicator.ApplyImage);
                         break;
 
                     case StylePropertyID.BorderLeft:
@@ -262,11 +260,11 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         break;
 
                     case StylePropertyID.Flex:
-                        registry.Apply(handles, specificity, ref flex, StyleSheetApplicator.ApplyFloat);
+                        registry.ApplyShorthand(handles, specificity, this, StyleSheetApplicator.ApplyFlexShorthand);
                         break;
 
                     case StylePropertyID.FlexBasis:
-                        registry.Apply(handles, specificity, ref flexBasis, StyleSheetApplicator.ApplyFloat);
+                        registry.Apply(handles, specificity, ref flexBasis, StyleSheetApplicator.ApplyFloatOrKeyword);
                         break;
 
                     case StylePropertyID.FlexGrow:
@@ -278,7 +276,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         break;
 
                     case StylePropertyID.Font:
-                        registry.Apply(handles, specificity, ref font, StyleSheetApplicator.ApplyResource);
+                        registry.Apply(handles, specificity, ref font, StyleSheetApplicator.ApplyFont);
                         break;
 
                     case StylePropertyID.FontSize:
@@ -517,9 +515,15 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             ApplyCustomProperty(propertyName, ref target, StyleValueType.Color, StyleSheetApplicator.ApplyColor);
         }
 
-        public void ApplyCustomProperty<T>(string propertyName, ref StyleValue<T> target) where T : Object
+        public void ApplyCustomProperty(string propertyName, ref StyleValue<Texture2D> target)
         {
-            ApplyCustomProperty(propertyName, ref target, StyleValueType.ResourcePath, StyleSheetApplicator.ApplyResource);
+            CustomProperty property;
+            StyleValue<Texture2D> tmp = new StyleValue<Texture2D>();
+            if (m_CustomProperties != null && m_CustomProperties.TryGetValue(propertyName, out property))
+            {
+                property.data.Apply(property.handles, property.specificity, ref tmp, StyleSheetApplicator.ApplyImage);
+            }
+            target.Apply(tmp, StylePropertyApplyMode.CopyIfNotInline);
         }
 
         public void ApplyCustomProperty(string propertyName, ref StyleValue<string> target)

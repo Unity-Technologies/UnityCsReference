@@ -41,7 +41,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Control});
-            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Command});
         }
 
         protected override void RegisterCallbacksOnTarget()
@@ -67,13 +67,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 var gv = graphElement.GetFirstAncestorOfType<GraphView>();
 
-                if (graphElement.IsSelected(gv) && e.ctrlKey)
+                if (graphElement.IsSelected(gv))
                 {
-                    graphElement.Unselect(gv);
+                    if (e.actionKey)
+                    {
+                        graphElement.Unselect(gv);
+                    }
                 }
                 else
                 {
-                    graphElement.Select(gv, e.shiftKey || e.ctrlKey);
+                    graphElement.Select(gv, e.actionKey);
                 }
                 // Do not stop the propagation as it is common case for a parent start to move the selection on a mouse down.
             }

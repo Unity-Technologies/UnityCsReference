@@ -91,9 +91,8 @@ namespace UnityEditor
 
                         DragAndDrop.AcceptDrag();
                     }
+                    return;
                 }
-
-                return;
             }
 
             DragAndDrop.visualMode = DragAndDropVisualMode.Rejected;

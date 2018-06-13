@@ -385,7 +385,7 @@ namespace UnityEngine.Networking.Match
             totalFilters += matchAttributeFilterEqualTo == null ? 0 : matchAttributeFilterEqualTo.Count;
             totalFilters += matchAttributeFilterGreaterThan == null ? 0 : matchAttributeFilterGreaterThan.Count;
             return base.IsValid()
-                && (pageSize >= 1 || pageSize <= 1000)
+                && pageSize >= 1 && pageSize <= 1000
                 && totalFilters <= 10;
         }
 

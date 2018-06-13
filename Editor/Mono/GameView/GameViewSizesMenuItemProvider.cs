@@ -101,11 +101,8 @@ namespace UnityEditor
         private static GameViewSize CastToGameViewSize(object obj)
         {
             GameViewSize newResolution = obj as GameViewSize;
-            if (obj == null)
-            {
+            if (newResolution == null)
                 Debug.LogError("Incorrect input");
-                return null;
-            }
             return newResolution;
         }
     }

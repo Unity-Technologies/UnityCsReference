@@ -2,10 +2,12 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Reflection;
 using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("UnityEngine.Advertisements")]
 [assembly: InternalsVisibleTo("UnityEditor.Advertisements")]
+[assembly: InternalsVisibleTo("Unity.Analytics.Editor")]
 [assembly: InternalsVisibleTo("UnityEditor.Analytics")]
 [assembly: InternalsVisibleTo("UnityEditor.Purchasing")]
 [assembly: InternalsVisibleTo("UnityEditor")]
@@ -14,14 +16,18 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.Graphs")]
 [assembly: InternalsVisibleTo("UnityEditor.XboxOne.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.PS4.Extensions")]
+[assembly: InternalsVisibleTo("UnityEditor.Switch.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.WSA.Extensions")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-firstpass-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-testable")]
 [assembly: InternalsVisibleTo("Assembly-CSharp-Editor-firstpass-testable")]
 [assembly: InternalsVisibleTo("UnityEditor.iOS.Extensions.Common")]
+[assembly: InternalsVisibleTo("UnityEditor.Android.Extensions")]
+[assembly: InternalsVisibleTo("Unity.AndroidBuildPipeline")]
 [assembly: InternalsVisibleTo("UnityEditor.OSXStandalone.Extensions")]
 [assembly: InternalsVisibleTo("UnityEditor.Timeline")] // for Driven Properties
+[assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
 [assembly: InternalsVisibleTo("UnityEditor.GoogleAudioSpatializer")]
 [assembly: InternalsVisibleTo("com.unity.editor.resources-testable")]
@@ -32,6 +38,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.Networking")]
 [assembly: InternalsVisibleTo("UnityEngine.Cloud")]
 [assembly: InternalsVisibleTo("UnityEngine.Cloud.Service")]
+[assembly: InternalsVisibleTo("Unity.Analytics")]
 [assembly: InternalsVisibleTo("UnityEngine.Analytics")]
 [assembly: InternalsVisibleTo("UnityEngine.Advertisements")]
 [assembly: InternalsVisibleTo("UnityEngine.Purchasing")]
@@ -39,6 +46,8 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.TestRunner")]
 [assembly: InternalsVisibleTo("UnityEngine.GoogleAudioSpatializer")]
 [assembly: InternalsVisibleTo("Unity.Automation")]
+[assembly: InternalsVisibleTo("Unity.Burst")]
+[assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests.UnityAnalytics")]
@@ -51,6 +60,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.RuntimeTests.AllIn1Runner")]
 [assembly: InternalsVisibleTo("UnityEngine.SpatialTracking")]
 [assembly: InternalsVisibleTo("GoogleAR.UnityNative")]
+[assembly: InternalsVisibleTo("Unity.WindowsMRAutomation")]
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")]

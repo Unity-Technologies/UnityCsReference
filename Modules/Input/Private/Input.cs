@@ -50,7 +50,8 @@ namespace UnityEngineInternal.Input
         Dynamic = 1 << 0,
         Fixed = 1 << 1,
         BeforeRender = 1 << 2,
-        Editor = 1 << 3
+        Editor = 1 << 3,
+        IgnoreFocus = 1 << 31,
     }
 
 

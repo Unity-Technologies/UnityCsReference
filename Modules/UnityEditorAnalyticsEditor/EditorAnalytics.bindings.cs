@@ -24,6 +24,11 @@ namespace UnityEditor
             kAppendBuildTarget = 1 << 1
         }
 
+        internal static bool SendEventScriptableBuildPipelineInfo(object parameters)
+        {
+            return EditorAnalytics.SendEvent("scriptableBuildPipeline", parameters);
+        }
+
         internal static bool SendEventServiceInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("serviceInfo", parameters);
@@ -49,6 +54,12 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("sceneViewInfo", parameters);
         }
 
+        internal static bool SendEventBuildPackageList(object parameters)
+        {
+            return EditorAnalytics.SendEvent("buildPackageList", parameters,
+                SendEventOptions.kAppendBuildGuid | SendEventOptions.kAppendBuildTarget);
+        }
+
         internal static bool SendEventBuildTargetPermissions(object parameters)
         {
             return EditorAnalytics.SendEvent("buildTargetPermissions", parameters,
@@ -58,6 +69,11 @@ namespace UnityEditor
         internal static bool SendCollabUserAction(object parameters)
         {
             return EditorAnalytics.SendEvent("collabUserAction", parameters);
+        }
+
+        internal static bool SendCollabOperation(object parameters)
+        {
+            return EditorAnalytics.SendEvent("collabOperation", parameters);
         }
 
         public extern static bool enabled

@@ -26,7 +26,11 @@ namespace UnityEngine.Experimental.UIElements
             ClipAndCacheContents // Renders contents to an cache texture
         }
 
-        private ClippingOptions m_ClippingOptions;
+        // Suppress "use of obsolete enum" warning
+        #pragma warning disable 0618
+        private ClippingOptions m_ClippingOptions = ClippingOptions.NoClipping;
+        #pragma warning restore 0618
+
         public ClippingOptions clippingOptions
         {
             get { return m_ClippingOptions; }
@@ -35,9 +39,18 @@ namespace UnityEngine.Experimental.UIElements
                 if (m_ClippingOptions != value)
                 {
                     m_ClippingOptions = value;
-                    Dirty(ChangeType.Repaint);
+                    IncrementVersion(VersionChangeType.Repaint);
                 }
             }
+        }
+
+        internal bool ShouldClip()
+        {
+            // Suppress "use of obsolete enum" warning
+            #pragma warning disable 0618
+            return style.overflow != Overflow.Visible ||
+                clippingOptions != ClippingOptions.NoClipping;
+            #pragma warning restore 0618
         }
 
         // parent in visual tree
@@ -279,14 +292,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 child.SetEnabledFromHierarchy(m_Owner.enabledInHierarchy);
 
-                // child styles are dependent on topology
-                child.Dirty(ChangeType.Styles);
-                child.Dirty(ChangeType.Transform);
-                m_Owner.Dirty(ChangeType.Layout);
-
-                // persistent data key may have changed or needs initialization
-                if (!string.IsNullOrEmpty(child.persistenceKey))
-                    child.Dirty(ChangeType.PersistentData);
+                m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
 
             public void Remove(VisualElement child)
@@ -323,7 +329,7 @@ namespace UnityEngine.Experimental.UIElements
                     }
                 }
 
-                m_Owner.Dirty(ChangeType.Layout);
+                m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
 
             public void Clear()
@@ -343,7 +349,7 @@ namespace UnityEngine.Experimental.UIElements
                         m_Owner.yogaNode.SetMeasureFunction(m_Owner.Measure);
                     }
 
-                    m_Owner.Dirty(ChangeType.Layout);
+                    m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
                 }
             }
 
@@ -355,9 +361,7 @@ namespace UnityEngine.Experimental.UIElements
 
                     if (index >= 0 && index < childCount - 1)
                     {
-                        RemoveChildAtIndex(index);
-                        PutChildAtIndex(child, childCount);
-                        m_Owner.Dirty(ChangeType.Layout);
+                        MoveChildElement(child, index, childCount);
                     }
                 }
             }
@@ -370,9 +374,7 @@ namespace UnityEngine.Experimental.UIElements
 
                     if (index > 0)
                     {
-                        RemoveChildAtIndex(index);
-                        PutChildAtIndex(child, 0);
-                        m_Owner.Dirty(ChangeType.Layout);
+                        MoveChildElement(child, index, 0);
                     }
                 }
             }
@@ -381,21 +383,17 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (childCount > 0)
                 {
-                    int index = m_Owner.m_Children.IndexOf(child);
-                    if (index < 0)
+                    int currenIndex = m_Owner.m_Children.IndexOf(child);
+                    if (currenIndex < 0)
                         return;
 
-                    RemoveChildAtIndex(index);
-
-                    index = m_Owner.m_Children.IndexOf(over);
-
-                    if (index < 0) //how can this happen?
+                    int nextIndex = m_Owner.m_Children.IndexOf(over);
+                    if (nextIndex > 0 && currenIndex < nextIndex)
                     {
-                        index = 0;
+                        nextIndex--;
                     }
 
-                    PutChildAtIndex(child, index);
-                    m_Owner.Dirty(ChangeType.Layout);
+                    MoveChildElement(child, currenIndex, nextIndex);
                 }
             }
 
@@ -403,17 +401,26 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (childCount > 0)
                 {
-                    int index = m_Owner.m_Children.IndexOf(child);
-                    if (index < 0)
+                    int currentIndex = m_Owner.m_Children.IndexOf(child);
+                    if (currentIndex < 0)
                         return;
 
-                    RemoveChildAtIndex(index);
+                    int nextIndex = m_Owner.m_Children.IndexOf(under);
+                    if (currentIndex > nextIndex)
+                    {
+                        nextIndex++;
+                    }
 
-                    index = m_Owner.m_Children.IndexOf(under) + 1;
-
-                    PutChildAtIndex(child, index);
-                    m_Owner.Dirty(ChangeType.Layout);
+                    MoveChildElement(child, currentIndex, nextIndex);
                 }
+            }
+
+            private void MoveChildElement(VisualElement child, int currentIndex, int nextIndex)
+            {
+                RemoveChildAtIndex(currentIndex);
+                PutChildAtIndex(child, nextIndex);
+
+                m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
 
             public int childCount
@@ -461,7 +468,6 @@ namespace UnityEngine.Experimental.UIElements
                 if (value != null)
                 {
                     m_Owner.SetPanel(m_Owner.m_PhysicalParent.elementPanel);
-                    m_Owner.PropagateChangesToParents();
                 }
                 else
                 {
@@ -480,7 +486,7 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         m_Owner.yogaNode.Insert(i, m_Owner.m_Children[i].yogaNode);
                     }
-                    m_Owner.Dirty(ChangeType.Layout);
+                    m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
                 }
             }
 

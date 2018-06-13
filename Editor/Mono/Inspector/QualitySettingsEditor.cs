@@ -234,6 +234,10 @@ namespace UnityEditor
                 position = EditorGUI.Popup(iconRect, position, qualitySettings.Select(x => x.m_Name).ToArray(), Styles.kDefaultDropdown);
                 platformDefaultQualitySettings[platform.name] = position;
             }
+
+            //Extra column for deleting setting button
+            GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth), GUILayout.Height(Styles.kHeaderRowHeight));
+
             GUILayout.EndHorizontal();
 
             GUILayout.Space(10);

@@ -7,29 +7,17 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class BaseTextElement : VisualElement
+    internal interface ITextElement
     {
-        public class BaseTextElementUxmlTraits : VisualElementUxmlTraits
+        string text { get; set; }
+    }
+
+    public class TextElement : VisualElement, ITextElement
+    {
+        public new class UxmlFactory : UxmlFactory<TextElement, UxmlTraits> {}
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Text;
-
-            public BaseTextElementUxmlTraits()
-            {
-                m_Text = new UxmlStringAttributeDescription { name = "text" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Text;
-                }
-            }
+            UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -39,12 +27,12 @@ namespace UnityEngine.Experimental.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((BaseTextElement)ve).text = m_Text.GetValueFromBag(bag);
+                ((ITextElement)ve).text = m_Text.GetValueFromBag(bag);
             }
         }
 
         internal const string k_TextElementClass = "textElement";
-        public BaseTextElement()
+        public TextElement()
         {
             requireMeasureFunction = true;
             AddToClassList(k_TextElementClass);
@@ -61,45 +49,49 @@ namespace UnityEngine.Experimental.UIElements
                     return;
 
                 m_Text = value;
-                Dirty(ChangeType.Layout);
+                IncrementVersion(VersionChangeType.Layout);
 
                 if (!string.IsNullOrEmpty(persistenceKey))
                     SavePersistentData();
             }
         }
 
-        public override void DoRepaint()
+        protected override void DoRepaint(IStylePainter painter)
         {
-            var painter = elementPanel.stylePainter;
             painter.DrawBackground(this);
             painter.DrawBorder(this);
             painter.DrawText(this);
         }
 
-        protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height, MeasureMode heightMode)
+        public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
+            MeasureMode heightMode)
+        {
+            return MeasureVisualElementTextSize(this, textToMeasure, width, widthMode, height, heightMode);
+        }
+
+        internal static Vector2 MeasureVisualElementTextSize(VisualElement ve, string textToMeasure, float width, MeasureMode widthMode, float height, MeasureMode heightMode)
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
 
-            Font usedFont = style.font;
-            if (text == null || usedFont == null)
+            Font usedFont = ve.style.font;
+            if (textToMeasure == null || usedFont == null)
                 return new Vector2(measuredWidth, measuredHeight);
 
-            var stylePainter = elementPanel.stylePainter;
             if (widthMode == MeasureMode.Exactly)
             {
                 measuredWidth = width;
             }
             else
             {
-                var textParams = stylePainter.GetDefaultTextParameters(this);
-                textParams.text = text;
+                var textParams = TextStylePainterParameters.GetDefault(ve, textToMeasure);
+                textParams.text = textToMeasure;
                 textParams.font = usedFont;
                 textParams.wordWrapWidth = 0.0f;
                 textParams.wordWrap = false;
                 textParams.richText = true;
 
-                measuredWidth = stylePainter.ComputeTextWidth(textParams);
+                measuredWidth = TextNative.ComputeTextWidth(textParams);
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -113,20 +105,27 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                var textParams = stylePainter.GetDefaultTextParameters(this);
-                textParams.text = text;
+                var textParams = TextStylePainterParameters.GetDefault(ve, textToMeasure);
+                textParams.text = textToMeasure;
                 textParams.font = usedFont;
                 textParams.wordWrapWidth = measuredWidth;
                 textParams.richText = true;
 
-                measuredHeight = stylePainter.ComputeTextHeight(textParams);
+                measuredHeight = TextNative.ComputeTextHeight(textParams);
 
                 if (heightMode == MeasureMode.AtMost)
                 {
                     measuredHeight = Mathf.Min(measuredHeight, height);
                 }
             }
+
             return new Vector2(measuredWidth, measuredHeight);
+        }
+
+        protected internal override Vector2 DoMeasure(float width, MeasureMode widthMode, float height,
+            MeasureMode heightMode)
+        {
+            return MeasureTextSize(text, width, widthMode, height, heightMode);
         }
     }
 }

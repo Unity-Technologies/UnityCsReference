@@ -259,6 +259,12 @@ namespace UnityEditor
                     filter.scenePaths = new[] { scene.path };
             }
 
+            // For now, we don t want to display assets from Packages
+            // Make sure we only search in Assets folder
+            if (hierarchyType == HierarchyType.Assets)
+            {
+                filter.searchArea = SearchFilter.SearchArea.InAssetsOnly;
+            }
             m_ListArea.Init(listPosition, hierarchyType, filter, true);
         }
 
@@ -348,7 +354,7 @@ namespace UnityEditor
             titleContent = EditorGUIUtility.TrTextContent("Select " + (requiredType == null ? m_RequiredType : requiredType.Name));
 
             // Deal with window size
-            Rect p = m_Parent.window.position;
+            Rect p = m_Parent == null ? new Rect(0, 0, 1, 1) : m_Parent.window.position;
             p.width = EditorPrefs.GetFloat("ObjectSelectorWidth", 200);
             p.height = EditorPrefs.GetFloat("ObjectSelectorHeight", 390);
             position = p;
@@ -363,7 +369,8 @@ namespace UnityEditor
             m_FocusSearchFilter = true;
 
             // Add after unfreezing display because AuxWindowManager.cpp assumes that aux windows are added after we get 'got/lost'- focus calls.
-            m_Parent.AddToAuxWindowList();
+            if (m_Parent != null)
+                m_Parent.AddToAuxWindowList();
 
             // Initial selection
             int initialSelection = obj != null ? obj.GetInstanceID() : 0;

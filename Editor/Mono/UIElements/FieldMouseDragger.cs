@@ -56,7 +56,7 @@ namespace UnityEditor.Experimental.UIElements
         {
             if (evt.button == 0 && (m_DragHotZone.width < 0 || m_DragHotZone.height < 0 || m_DragHotZone.Contains(m_DragElement.WorldToLocal(evt.mousePosition))))
             {
-                m_DragElement.TakeMouseCapture();
+                m_DragElement.CaptureMouse();
 
                 dragging = true;
                 startValue = m_DrivenField.value;
@@ -79,7 +79,7 @@ namespace UnityEditor.Experimental.UIElements
             if (dragging)
             {
                 dragging = false;
-                MouseCaptureController.ReleaseMouseCapture();
+                MouseCaptureController.ReleaseMouse();
                 EditorGUIUtility.SetWantsMouseJumping(0);
             }
         }
@@ -90,7 +90,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 dragging = false;
                 m_DrivenField.value = startValue;
-                MouseCaptureController.ReleaseMouseCapture();
+                MouseCaptureController.ReleaseMouse();
                 EditorGUIUtility.SetWantsMouseJumping(0);
             }
         }

@@ -57,7 +57,7 @@ namespace UnityEngine
     [ThreadAndSerializationSafe()]
     [RequiredByNativeCode]
     [NativeHeader("Runtime/Export/Gradient.bindings.h")]
-    public class Gradient
+    public class Gradient : IEquatable<Gradient>
     {
         internal IntPtr m_Ptr;
 
@@ -66,6 +66,9 @@ namespace UnityEngine
 
         [FreeFunction(Name = "Gradient_Bindings::Cleanup", IsThreadSafe = true, HasExplicitThis = true)]
         extern private void Cleanup();
+
+        [FreeFunction("Gradient_Bindings::Internal_Equals", HasExplicitThis = true)]
+        extern private bool Internal_Equals(IntPtr other);
 
         [RequiredByNativeCode]
         public Gradient()
@@ -102,5 +105,49 @@ namespace UnityEngine
         // Setup Gradient with an array of color keys and alpha keys
         [FreeFunction(Name = "Gradient_Bindings::SetKeys", HasExplicitThis = true)]
         extern public void SetKeys(GradientColorKey[] colorKeys, GradientAlphaKey[] alphaKeys);
+
+        public override bool Equals(object o)
+        {
+            if (ReferenceEquals(null, o))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, o))
+            {
+                return true;
+            }
+
+            if (o.GetType() != this.GetType())
+            {
+                return false;
+            }
+            return Equals((Gradient)o);
+        }
+
+        public bool Equals(Gradient other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if (m_Ptr.Equals(other.m_Ptr))
+            {
+                return true;
+            }
+
+            return Internal_Equals(other.m_Ptr);
+        }
+
+        public override int GetHashCode()
+        {
+            return m_Ptr.GetHashCode();
+        }
     }
 } // end of UnityEngine

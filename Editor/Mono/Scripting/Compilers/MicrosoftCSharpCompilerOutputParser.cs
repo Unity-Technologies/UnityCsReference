@@ -6,7 +6,7 @@ using System.Text.RegularExpressions;
 
 namespace UnityEditor.Scripting.Compilers
 {
-    internal class MicrosoftCSharpCompilerOutputParser : CompilerOutputParserBase
+    internal class MicrosoftCSharpCompilerOutputParser : CSharpCompilerOutputParserBase
     {
         private static Regex sCompilerOutput = new Regex(@"\s*(?<filename>.*)\((?<line>\d+),(?<column>\d+)\):\s*(?<type>warning|error)\s*(?<id>[^:]*):\s*(?<message>.*)", RegexOptions.ExplicitCapture | RegexOptions.Compiled);
 

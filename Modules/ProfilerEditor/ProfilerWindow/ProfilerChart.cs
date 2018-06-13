@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Profiling;
 
 namespace UnityEditorInternal
 {
@@ -75,7 +76,7 @@ namespace UnityEditorInternal
                     LocalizationDatabase.GetLocalizedString("Global Illumination|Graph of the Precomputed Realtime Global Illumination system resource usage."),
                 };
             }
-            UnityEngine.Debug.Assert(s_LocalizedChartNames.Length == (int)ProfilerArea.AreaCount);
+            UnityEngine.Debug.Assert(s_LocalizedChartNames.Length == Profiler.areaCount);
             return s_LocalizedChartNames[(int)m_Area];
         }
 
@@ -91,7 +92,7 @@ namespace UnityEditorInternal
                 GUI.Label(warningIconRect, performanceWarning);
         }
 
-        public virtual int DoChartGUI(int currentFrame, ProfilerArea currentArea)
+        public virtual int DoChartGUI(int currentFrame, bool active)
         {
             if (Event.current.type == EventType.Repaint)
             {
@@ -114,7 +115,7 @@ namespace UnityEditorInternal
                 legendHeaderLabel = EditorGUIUtility.TextContentWithIcon(GetLocalizedChartName(), iconName);
             }
 
-            return DoGUI(m_Type, currentFrame, m_Data, currentArea == m_Area);
+            return DoGUI(m_Type, currentFrame, m_Data, active);
         }
 
         public void LoadAndBindSettings()
@@ -124,9 +125,9 @@ namespace UnityEditorInternal
 
         private void ApplyActiveState()
         {
-            // Currently only GPU area supports disabling
-            if (m_Area == ProfilerArea.GPU)
-                ProfilerDriver.profileGPU = active;
+            // Opening/Closing CPU chart should not set the CPU area as that would set Profiler.enabled.
+            if (m_Area != ProfilerArea.CPU)
+                ProfilerDriver.SetAreaEnabled(m_Area, active);
         }
 
         private bool ReadActiveState()

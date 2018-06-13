@@ -22,6 +22,7 @@ namespace UnityEngine.Animations
             SetAnimatedPropertiesInternal(ref handle, clip);
         }
 
+        [NativeThrows]
         extern internal static void SetAnimatedPropertiesInternal(ref PlayableHandle playable, AnimationClip animatedProperties);
     };
 }

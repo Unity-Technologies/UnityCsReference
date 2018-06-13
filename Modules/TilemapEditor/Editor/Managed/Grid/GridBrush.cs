@@ -124,6 +124,8 @@ namespace UnityEditor
                 case GridLayout.CellLayout.Hexagon:
                     RotateHexagon(direction);
                     break;
+                case Grid.CellLayout.Isometric:
+                case Grid.CellLayout.IsometricZAsY:
                 case GridLayout.CellLayout.Rectangle:
                 {
                     Vector3Int oldSize = m_Size;

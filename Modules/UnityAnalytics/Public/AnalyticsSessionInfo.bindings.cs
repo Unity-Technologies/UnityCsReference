@@ -2,10 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Collections;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -51,6 +47,12 @@ namespace UnityEngine.Analytics
         public extern static long sessionElapsedTime
         {
             [NativeMethod("GetPlayerSessionElapsedTime")]
+            get;
+        }
+
+        public extern static bool sessionFirstRun
+        {
+            [NativeMethod("GetPlayerSessionFirstRun", false, true)]
             get;
         }
 

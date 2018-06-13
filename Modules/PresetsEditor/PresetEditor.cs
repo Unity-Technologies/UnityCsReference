@@ -179,6 +179,7 @@ namespace UnityEditor.Presets
                         if (s_References[p.GetInstanceID()].reference is Component)
                         {
                             var go = ((Component)s_References[p.GetInstanceID()].reference).gameObject;
+                            go.hideFlags = HideFlags.None; // make sure we remove the don't destroy flag before calling destroy
                             DestroyImmediate(go);
                         }
                         else
@@ -195,8 +196,6 @@ namespace UnityEditor.Presets
         {
             using (var change = new EditorGUI.ChangeCheckScope())
             {
-                for (int i = 0; i < m_InternalEditor.targets.Length; i++)
-                    m_InternalEditor.targets[i].hideFlags &= ~HideFlags.NotEditable;
                 if (m_InternalEditor.target is Component)
                 {
                     bool wasVisible = InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target);
@@ -216,8 +215,6 @@ namespace UnityEditor.Presets
                     m_InternalEditor.OnInspectorGUI();
                     EditorGUI.indentLevel--;
                 }
-                for (int i = 0; i < m_InternalEditor.targets.Length; i++)
-                    m_InternalEditor.targets[i].hideFlags |= HideFlags.NotEditable;
                 if (change.changed || m_InternalEditor.isInspectorDirty)
                 {
                     for (int i = 0; i < m_InternalEditor.targets.Length; i++)

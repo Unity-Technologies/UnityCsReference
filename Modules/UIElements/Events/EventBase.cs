@@ -15,13 +15,26 @@ namespace UnityEngine.Experimental.UIElements
         public abstract long GetEventTypeId();
 
         [Flags]
-        public enum EventFlags
+        protected internal enum EventFlags
         {
             None = 0,
             Bubbles = 1,
-            Capturable = 2,
+            TricklesDown = 2,
+            [Obsolete("Use TrickesDown instead of Capturable")]
+            Capturable = TricklesDown,
             Cancellable = 4,
-            Pooled = 256
+        }
+
+        [Flags]
+        enum LifeCycleFlags
+        {
+            None = 0,
+            PropagationStopped = 1,
+            ImmediatePropagationStopped = 2,
+            DefaultPrevented = 4,
+            Dispatching = 8,
+            Pooled = 16,
+            IMGUIEventIsValid = 32,
         }
 
         // Read-only state
@@ -29,28 +42,65 @@ namespace UnityEngine.Experimental.UIElements
 
         protected EventFlags flags { get; set; }
 
+        LifeCycleFlags lifeCycleFlags { get; set; }
+
+        protected internal virtual void PreDispatch() {}
+
+        protected internal virtual void PostDispatch() {}
+
         public bool bubbles
         {
             get { return (flags & EventFlags.Bubbles) != 0; }
         }
 
-        public bool capturable
+        [Obsolete("Use tricklesDown instead of capturable.")]
+        public bool capturable { get { return tricklesDown; } }
+
+        public bool tricklesDown
         {
-            get { return (flags & EventFlags.Capturable) != 0; }
+            get { return (flags & EventFlags.TricklesDown) != 0; }
         }
 
-        public IEventHandler target { get; internal set; }
+        public IEventHandler target { get; set; }
 
-        protected internal IEventHandler skipElement { get; set; }
+        internal IEventHandler skipElement { get; set; }
 
-        public bool isPropagationStopped { get; private set; }
+        public bool isPropagationStopped
+        {
+            get { return (lifeCycleFlags & LifeCycleFlags.PropagationStopped) != LifeCycleFlags.None; }
+            private set
+            {
+                if (value)
+                {
+                    lifeCycleFlags |= LifeCycleFlags.PropagationStopped;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.PropagationStopped;
+                }
+            }
+        }
 
         public void StopPropagation()
         {
             isPropagationStopped = true;
         }
 
-        public bool isImmediatePropagationStopped { get; private set; }
+        public bool isImmediatePropagationStopped
+        {
+            get { return (lifeCycleFlags & LifeCycleFlags.ImmediatePropagationStopped) != LifeCycleFlags.None; }
+            private set
+            {
+                if (value)
+                {
+                    lifeCycleFlags |= LifeCycleFlags.ImmediatePropagationStopped;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.ImmediatePropagationStopped;
+                }
+            }
+        }
 
         public void StopImmediatePropagation()
         {
@@ -58,7 +108,21 @@ namespace UnityEngine.Experimental.UIElements
             isImmediatePropagationStopped = true;
         }
 
-        public bool isDefaultPrevented { get; private set; }
+        public bool isDefaultPrevented
+        {
+            get { return (lifeCycleFlags & LifeCycleFlags.DefaultPrevented) != LifeCycleFlags.None; }
+            private set
+            {
+                if (value)
+                {
+                    lifeCycleFlags |= LifeCycleFlags.DefaultPrevented;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.DefaultPrevented;
+                }
+            }
+        }
 
         public void PreventDefault()
         {
@@ -85,41 +149,70 @@ namespace UnityEngine.Experimental.UIElements
                     var element = currentTarget as VisualElement;
                     if (element != null)
                     {
-                        imguiEvent.mousePosition = element.WorldToLocal(m_OriginalMousePosition);
+                        imguiEvent.mousePosition = element.WorldToLocal(originalMousePosition);
                     }
                 }
             }
         }
 
-        public bool dispatch { get; internal set; }
-
-
-        private Event m_ImguiEvent;
-
-        // We aim to make this internal.
-        public /*internal*/ Event imguiEvent
+        public bool dispatch
         {
-            get { return m_ImguiEvent; }
-            protected set
+            get { return (lifeCycleFlags & LifeCycleFlags.Dispatching) != LifeCycleFlags.None; }
+            internal set
             {
-                m_ImguiEvent = value;
-                if (m_ImguiEvent != null)
+                if (value)
                 {
-                    originalMousePosition = value.mousePosition; // when assigned, it is assumed that the imguievent is not touched and therefore in world coordinates.
+                    lifeCycleFlags |= LifeCycleFlags.Dispatching;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.Dispatching;
                 }
             }
         }
 
-        Vector2 m_OriginalMousePosition;
-
-        public Vector2 originalMousePosition
+        private Event m_ImguiEvent;
+        bool imguiEventIsValid
         {
-            get
+            get { return (lifeCycleFlags & LifeCycleFlags.IMGUIEventIsValid) != LifeCycleFlags.None; }
+            set
             {
-                return m_OriginalMousePosition;
+                if (value)
+                {
+                    lifeCycleFlags |= LifeCycleFlags.IMGUIEventIsValid;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.IMGUIEventIsValid;
+                }
             }
-            private set { m_OriginalMousePosition = value; }
         }
+
+        // We aim to make this internal.
+        public /*internal*/ Event imguiEvent
+        {
+            get { return imguiEventIsValid ? m_ImguiEvent : null; }
+            protected set
+            {
+                if (m_ImguiEvent == null)
+                {
+                    m_ImguiEvent = new Event();
+                }
+
+                if (value != null)
+                {
+                    m_ImguiEvent.CopyFrom(value);
+                    imguiEventIsValid = true;
+                    originalMousePosition = value.mousePosition; // when assigned, it is assumed that the imguievent is not touched and therefore in world coordinates.
+                }
+                else
+                {
+                    imguiEventIsValid = false;
+                }
+            }
+        }
+
+        public Vector2 originalMousePosition { get; private set; }
 
         protected virtual void Init()
         {
@@ -137,19 +230,37 @@ namespace UnityEngine.Experimental.UIElements
 
             propagationPhase = PropagationPhase.None;
 
-            m_OriginalMousePosition = Vector2.zero;
+            originalMousePosition = Vector2.zero;
             m_CurrentTarget = null;
 
             dispatch = false;
-            imguiEvent = null;
-            originalMousePosition = Vector2.zero;
+            imguiEventIsValid = false;
+            pooled = false;
         }
 
         protected EventBase()
         {
+            m_ImguiEvent = null;
             Init();
         }
 
+        protected bool pooled
+        {
+            get { return (lifeCycleFlags & LifeCycleFlags.Pooled) != LifeCycleFlags.None; }
+            set
+            {
+                if (value)
+                {
+                    lifeCycleFlags |= LifeCycleFlags.Pooled;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.Pooled;
+                }
+            }
+        }
+
+        internal abstract void Acquire();
         public abstract void Dispose();
     }
 
@@ -158,23 +269,41 @@ namespace UnityEngine.Experimental.UIElements
         static readonly long s_TypeId = RegisterEventType();
         static readonly ObjectPool<T> s_Pool = new ObjectPool<T>();
 
+        int m_RefCount;
+
+        protected EventBase()
+        {
+            m_RefCount = 0;
+        }
+
         public static long TypeId()
         {
             return s_TypeId;
+        }
+
+        protected override void Init()
+        {
+            base.Init();
+
+            if (m_RefCount != 0)
+            {
+                Debug.Log("Event improperly released.");
+                m_RefCount = 0;
+            }
         }
 
         public static T GetPooled()
         {
             T t = s_Pool.Get();
             t.Init();
-            t.flags |= EventFlags.Pooled;
+            t.pooled = true;
+            t.Acquire();
             return t;
         }
 
-        // If you want to release, call Dispose instead.
-        protected static void ReleasePooled(T evt)
+        static void ReleasePooled(T evt)
         {
-            if ((evt.flags & EventFlags.Pooled) == EventFlags.Pooled)
+            if (evt.pooled)
             {
                 // Reset the event before pooling to avoid leaking VisualElement
                 evt.Init();
@@ -182,13 +311,21 @@ namespace UnityEngine.Experimental.UIElements
                 s_Pool.Release(evt);
 
                 // To avoid double release from pool
-                evt.flags &= ~EventFlags.Pooled;
+                evt.pooled = false;
             }
+        }
+
+        internal override void Acquire()
+        {
+            m_RefCount++;
         }
 
         public override void Dispose()
         {
-            ReleasePooled((T)this);
+            if (--m_RefCount == 0)
+            {
+                ReleasePooled((T)this);
+            }
         }
 
         public override long GetEventTypeId()

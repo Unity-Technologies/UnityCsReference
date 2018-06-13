@@ -18,8 +18,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public FreehandSelector()
         {
-            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Control});
-            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Control | EventModifiers.Shift});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift});
+            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift | EventModifiers.Alt});
             m_FreehandElement = new FreehandElement();
             m_FreehandElement.StretchToParentSize();
         }
@@ -60,10 +60,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 m_FreehandElement.points.Clear();
                 m_FreehandElement.points.Add(e.localMousePosition);
-                m_FreehandElement.deleteModifier = e.shiftKey;
+                m_FreehandElement.deleteModifier = e.altKey;
 
                 m_Active = true;
-                target.TakeMouseCapture();
+                target.CaptureMouse();
                 e.StopImmediatePropagation();
             }
         }
@@ -111,14 +111,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     m_GraphView.AddToSelection(selectable);
             }
 
-            if (e.shiftKey)
+            if (e.altKey)
             {
                 // Delete instead
                 m_GraphView.DeleteSelection();
             }
 
             m_Active = false;
-            target.ReleaseMouseCapture();
+            target.ReleaseMouse();
             e.StopPropagation();
         }
 
@@ -128,7 +128,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
 
             m_FreehandElement.points.Add(e.localMousePosition);
-            m_FreehandElement.deleteModifier = e.shiftKey;
+            m_FreehandElement.deleteModifier = e.altKey;
 
             e.StopPropagation();
         }
@@ -162,7 +162,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 styles.ApplyCustomProperty(k_DeleteSegmentColorProperty, ref m_DeleteSegmentColor);
             }
 
-            public override void DoRepaint()
+            protected override void DoRepaint(IStylePainter painter)
             {
                 var pointCount = points.Count;
                 if (pointCount < 1)

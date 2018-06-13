@@ -382,16 +382,10 @@ namespace UnityEngine.XR.WSA.Input
     public partial class InteractionManager
     {
         private delegate void InternalSourceEventHandler(EventType eventType, ref InteractionSourceState state, InteractionSourcePressType pressType);
-        private static InternalSourceEventHandler m_OnSourceEventHandler;
 
         static InteractionManager()
         {
-            m_OnSourceEventHandler = OnSourceEvent;
-            SetEventHandler(Marshal.GetFunctionPointerForDelegate(m_OnSourceEventHandler));
         }
-
-        [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        private extern static void SetEventHandler(IntPtr internalSourceEventHandler);
 
         public static event Action<InteractionSourceDetectedEventArgs> InteractionSourceDetected;
         public static event Action<InteractionSourceLostEventArgs> InteractionSourceLost;
@@ -433,7 +427,7 @@ namespace UnityEngine.XR.WSA.Input
         }
 
 #pragma warning disable 0618
-        [AOT.MonoPInvokeCallback(typeof(InternalSourceEventHandler))]
+        [RequiredByNativeCode]
         private static void OnSourceEvent(EventType eventType, ref InteractionSourceState state, InteractionSourcePressType pressType)
         {
             switch (eventType)

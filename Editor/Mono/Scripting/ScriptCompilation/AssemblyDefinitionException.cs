@@ -15,4 +15,14 @@ namespace UnityEditor.Compilation
             this.filePaths = filePaths;
         }
     }
+
+    public class PrecompiledAssemblyException : Exception
+    {
+        public string[] filePaths { get; private set; }
+
+        public PrecompiledAssemblyException(string message, params string[] filePaths) : base(message)
+        {
+            this.filePaths = filePaths;
+        }
+    }
 }

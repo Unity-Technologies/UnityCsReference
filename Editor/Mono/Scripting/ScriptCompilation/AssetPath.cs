@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEditor.Utils;
+using File = System.IO.File;
 using SystemPath = System.IO.Path;
+
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -44,6 +46,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static string ReplaceSeparators(string path)
         {
             return path.Replace('\\', Separator);
+        }
+
+        public static bool Exists(string path)
+        {
+            return File.Exists(path);
         }
 
         public static string GetAssemblyNameWithoutExtension(string assemblyName)

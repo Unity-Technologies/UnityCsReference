@@ -70,7 +70,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_Edge = (evt.target as VisualElement).GetFirstOfType<Edge>();
 
             m_PressPos = evt.mousePosition;
-            target.TakeMouseCapture();
+            target.CaptureMouse();
             evt.StopPropagation();
             m_LastMouseDownEvent = evt;
         }
@@ -150,7 +150,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (CanStopManipulation(evt))
             {
-                target.ReleaseMouseCapture();
+                target.ReleaseMouse();
                 if (m_Active)
                 {
                     // Restore the detached port before potentially delete or reconnect it.
@@ -174,7 +174,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                     m_ConnectedEdgeDragHelper.Reset();
                     Reset();
-                    target.ReleaseMouseCapture();
+                    target.ReleaseMouse();
                     evt.StopPropagation();
                 }
             }

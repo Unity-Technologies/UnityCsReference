@@ -61,7 +61,10 @@ namespace UnityEditor
             if (m_SerializedObject == null)
                 m_SerializedObject = new SerializedObject(targets, m_Context) {inspectorMode = m_InspectorMode};
             else
+            {
                 m_SerializedObject.Update();
+                m_SerializedObject.inspectorMode = m_InspectorMode;
+            }
 
             height = 0;
             SerializedProperty property = m_SerializedObject.GetIterator();

@@ -168,8 +168,6 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
-            // Disable clipping on the root element to fix case 931831
-            visualTree.clippingOptions = VisualElement.ClippingOptions.NoClipping;
             EditorApplication.modifierKeysChanged += Repaint;
             // when undo or redo is done, we need to reset global tools rotation
             Undo.undoRedoPerformed += OnSelectionChange;
@@ -213,6 +211,10 @@ namespace UnityEditor
         {
             get
             {
+                if (get == null)
+                {
+                    return "Layout";
+                }
                 return string.IsNullOrEmpty(get.m_LastLoadedLayoutName) ? "Layout" : get.m_LastLoadedLayoutName;
             }
             set
@@ -385,10 +387,10 @@ namespace UnityEditor
                 if (UnityConnect.instance.loggedIn)
                 {
                     string name = "Sign out " + UnityConnect.instance.userInfo.displayName;
-                    menu.AddItem(new GUIContent(name), false, () => {UnityConnect.instance.Logout(); });
+                    menu.AddItem(new GUIContent(name), false, () => { UnityConnect.instance.Logout(); });
                 }
                 else
-                    menu.AddItem(EditorGUIUtility.TrTextContent("Sign in..."), false, () => {UnityConnect.instance.ShowLogin(); });
+                    menu.AddItem(EditorGUIUtility.TrTextContent("Sign in..."), false, () => { UnityConnect.instance.ShowLogin(); });
 
                 if (!Application.HasProLicense())
                 {
@@ -519,7 +521,7 @@ namespace UnityEditor
             var screenRect = GUIUtility.GUIToScreenRect(rect);
             // save all the assets
             AssetDatabase.SaveAssets();
-            if (CollabToolbarWindow.ShowCenteredAtPosition(screenRect))
+            if (Collab.ShowToolbarAtPosition != null && Collab.ShowToolbarAtPosition(screenRect))
             {
                 GUIUtility.ExitGUI();
             }
@@ -566,16 +568,12 @@ namespace UnityEditor
             {
                 Collab collab = Collab.instance;
                 CollabInfo currentInfo = collab.collabInfo;
-                int errorCode = 0;
-                int errorPriority = (int)UnityConnect.UnityErrorPriority.None;
-                int errorBehaviour = (int)UnityConnect.UnityErrorBehaviour.Hidden;
-                string errorMsg = "";
-                string errorShortMsg = "";
+                UnityErrorInfo errInfo;
                 bool error = false;
-                if (collab.GetError((int)(UnityConnect.UnityErrorFilter.ByContext | UnityConnect.UnityErrorFilter.ByChild), out errorCode, out errorPriority, out errorBehaviour, out errorMsg, out errorShortMsg))
+                if (collab.GetError((UnityConnect.UnityErrorFilter.ByContext | UnityConnect.UnityErrorFilter.ByChild), out errInfo))
                 {
-                    error = (errorPriority <= (int)UnityConnect.UnityErrorPriority.Error);
-                    m_DynamicTooltip = errorShortMsg;
+                    error = (errInfo.priority <= (int)UnityConnect.UnityErrorPriority.Error);
+                    m_DynamicTooltip = errInfo.shortMsg;
                 }
 
                 if (!currentInfo.ready)
@@ -617,12 +615,15 @@ namespace UnityEditor
                 currentCollabState = CollabToolbarState.Offline;
             }
 
-            if (currentCollabState != m_CollabToolbarState ||
-                CollabToolbarWindow.s_ToolbarIsVisible == m_ShowCollabTooltip)
+            if (Collab.IsToolbarVisible != null)
             {
-                m_CollabToolbarState = currentCollabState;
-                m_ShowCollabTooltip = !CollabToolbarWindow.s_ToolbarIsVisible;
-                RepaintToolbar();
+                if (currentCollabState != m_CollabToolbarState ||
+                    Collab.IsToolbarVisible() == m_ShowCollabTooltip)
+                {
+                    m_CollabToolbarState = currentCollabState;
+                    m_ShowCollabTooltip = !Collab.IsToolbarVisible();
+                    RepaintToolbar();
+                }
             }
         }
 

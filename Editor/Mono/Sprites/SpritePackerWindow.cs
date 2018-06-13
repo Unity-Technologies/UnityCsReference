@@ -36,6 +36,10 @@ namespace UnityEditor.Sprites
 
             public override bool Equals(object obj)
             {
+                if (ReferenceEquals(obj, null))
+                    return false;
+                if (obj.GetType() != GetType())
+                    return false;
                 Edge item = (Edge)obj;
                 return (v0 == item.v0 && v1 == item.v1) || (v0 == item.v1 && v1 == item.v0);
             }

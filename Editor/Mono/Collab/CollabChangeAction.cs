@@ -18,6 +18,12 @@ namespace UnityEditor.Collaboration
         private string m_Path;
         private string m_Action;
 
+        public ChangeAction(string path = "", string action = "")
+        {
+            m_Path = path;
+            m_Action = action;
+        }
+
         public string path { get { return m_Path; } }
         public string action { get { return m_Action; } }
     }

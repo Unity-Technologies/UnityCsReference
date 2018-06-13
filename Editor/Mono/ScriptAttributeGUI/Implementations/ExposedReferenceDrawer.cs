@@ -149,11 +149,11 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
         if (currentOverrideState == OverrideState.MissingOverride)
         {
             GUI.color = kMissingOverrideColor;
-            m_ModifiedLabel.tooltip += label.text + " " + NotFoundOn.text + " " + exposedPropertyTable.ToString() + ".";
+            m_ModifiedLabel.tooltip += label.text + " " + NotFoundOn.text + " " + exposedPropertyTable + ".";
         }
         else if (currentOverrideState == OverrideState.Overridden && exposedPropertyTable != null)
         {
-            m_ModifiedLabel.tooltip += OverridenByContent.text + exposedPropertyTable.ToString() + ".";
+            m_ModifiedLabel.tooltip += OverridenByContent.text + exposedPropertyTable + ".";
         }
 
         var prefixRect = EditorGUI.PrefixLabel(position, m_ModifiedLabel);

@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Scripting;
 using System.Collections.Generic;
 using UnityEditor.Web;
 using UnityEditorInternal;
@@ -32,10 +33,6 @@ namespace UnityEditor.Connect
         {
             //Add this to the v8 global table so javascript can call ShowService("")
             JSProxyMgr.GetInstance().AddGlobalObject("UnityConnectEditor", this);
-
-            // We want to show the service window when we create a project, but not every time we open one.
-            if (Application.HasARGV("createProject"))
-                ShowService(HubAccess.kServiceName, true, "init_create_project");
         }
 
         public bool isDrawerOpen
@@ -108,6 +105,7 @@ namespace UnityEditor.Connect
             }
         }
 
+        [RequiredByNativeCode]
         public static void StaticEnableService(string serviceName, bool enabled)
         {
             instance.EnableService(serviceName, enabled);

@@ -458,12 +458,15 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             InitStyles();
+
+            //Bug fix: 1018456 Moved the HandleLowPassFilter method before updating the serializedObjects
+            HandleLowPassFilter();
+
             serializedObject.Update();
 
             if (m_LowpassObject != null)
                 m_LowpassObject.Update();
 
-            HandleLowPassFilter();
 
             UpdateWrappersAndLegend();
 

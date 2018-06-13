@@ -23,6 +23,7 @@ namespace UnityEditor
 
         private SerializedProperty m_FadeMode;
         private SerializedProperty m_AnimateCrossFading;
+        private SerializedProperty m_LastLODIsBillboard;
         private SerializedProperty m_LODs;
 
         private AnimBool m_ShowAnimateCrossFading = new AnimBool();
@@ -33,6 +34,7 @@ namespace UnityEditor
             // TODO: support multi-editing?
             m_FadeMode = serializedObject.FindProperty("m_FadeMode");
             m_AnimateCrossFading = serializedObject.FindProperty("m_AnimateCrossFading");
+            m_LastLODIsBillboard = serializedObject.FindProperty("m_LastLODIsBillboard");
             m_LODs = serializedObject.FindProperty("m_LODs");
 
             m_ShowAnimateCrossFading.value = m_FadeMode.intValue != (int)LODFadeMode.None;
@@ -172,7 +174,10 @@ namespace UnityEditor
             {
                 // the second last LOD uses cross-fade if the last LOD is a billboard
                 var renderers = serializedObject.FindProperty(String.Format(kRenderRootPath, m_NumberOfLODs - 1));
-                if (renderers.arraySize == 1 && renderers.GetArrayElementAtIndex(0).FindPropertyRelative("renderer").objectReferenceValue is BillboardRenderer)
+                if (renderers.arraySize != 1)
+                    return false;
+                var renderer = renderers.GetArrayElementAtIndex(0).FindPropertyRelative("renderer").objectReferenceValue;
+                if (renderer is BillboardRenderer || (renderer is MeshRenderer && m_LastLODIsBillboard.boolValue))
                     return true;
             }
             return false;
@@ -237,7 +242,7 @@ namespace UnityEditor
             {
                 m_ShowFadeTransitionWidth.target = IsLODUsingCrossFadeWidth(activeLOD);
                 if (EditorGUILayout.BeginFadeGroup(m_ShowFadeTransitionWidth.faded))
-                    EditorGUILayout.PropertyField(serializedObject.FindProperty(string.Format(kFadeTransitionWidthDataPath, activeLOD)));
+                    EditorGUILayout.Slider(serializedObject.FindProperty(string.Format(kFadeTransitionWidthDataPath, activeLOD)), 0, 1);
                 EditorGUILayout.EndFadeGroup();
                 DrawRenderersInfo(EditorGUIUtility.currentViewWidth);
             }

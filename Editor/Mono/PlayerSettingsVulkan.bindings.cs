@@ -4,11 +4,8 @@
 
 using UnityEngine.Bindings;
 
-
 namespace UnityEditor
 {
-    [NativeHeader("Runtime/Misc/PlayerSettings.h")]
-    [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
     public partial class PlayerSettings : UnityEngine.Object
     {
         public static extern bool vulkanEnableSetSRGBWrite { get; set; }

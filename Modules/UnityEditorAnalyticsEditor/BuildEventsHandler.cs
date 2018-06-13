@@ -6,31 +6,39 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
+using System.Linq;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.Utils;
+using UnityEditor.PackageManager;
 
 namespace UnityEditor
 {
-    [Serializable]
-    internal struct SceneViewInfo
-    {
-        public int total_scene_views;
-        public int num_of_2d_views;
-        public bool is_default_2d_mode;
-    }
-
-    [Serializable]
-    struct AndroidBuildPermissions
-    {
-        public string[] features;
-        public string[] permissions;
-    }
-
     internal class BuildEventsHandlerPostProcess : IPostprocessBuildWithReport
     {
+        [Serializable]
+        internal struct SceneViewInfo
+        {
+            public int total_scene_views;
+            public int num_of_2d_views;
+            public bool is_default_2d_mode;
+        }
+
+        [Serializable]
+        internal struct BuildPackageIds
+        {
+            public string[] package_ids;
+        }
+
+        [Serializable]
+        internal struct AndroidBuildPermissions
+        {
+            public string[] features;
+            public string[] permissions;
+        }
+
         private static bool s_EventSent = false;
         private static int s_NumOfSceneViews = 0;
         private static int s_NumOf2dSceneViews = 0;
@@ -42,10 +50,26 @@ namespace UnityEditor
         public void OnPostprocessBuild(BuildReport report)
         {
             ReportSceneViewInfo();
+            ReportBuildPackageIds(report.files);
             if (EditorUserBuildSettings.activeBuildTarget == BuildTarget.Android)
             {
                 ReportBuildTargetPermissions();
             }
+        }
+
+        private void ReportBuildPackageIds(BuildFile[] buildFiles)
+        {
+            List<string> managedLibraries = new List<string>();
+            foreach (BuildFile file in buildFiles)
+            {
+                if (file.role == "ManagedLibrary")
+                    managedLibraries.Add(file.path);
+            }
+
+            var matchingPackages = Packages.GetForAssemblyFilePaths(managedLibraries);
+            var packageIds = matchingPackages.Select(item => item.packageId).ToArray();
+            if (packageIds.Length > 0)
+                EditorAnalytics.SendEventBuildPackageList(new BuildPackageIds() { package_ids = packageIds });
         }
 
         private void ReportSceneViewInfo()

@@ -17,6 +17,14 @@ namespace UnityEditor
         Highlight = 2
     }
 
+    // Compression Quality. Corresponds to the settings in a [[wiki:class-Texture2D|texture inspector]].
+    public enum TextureCompressionQuality
+    {
+        Fast = 0, // Fast compression
+        Normal = 50, // Normal compression (default)
+        Best = 100 // Best compression
+    }
+
     public class SceneAsset : Object
     {
         private SceneAsset() {}
@@ -135,17 +143,35 @@ namespace UnityEditor
 
         public static void DisplayCustomMenu(Rect position, GUIContent[] options, int selected, SelectMenuItemFunction callback, object userData)
         {
-            DisplayCustomMenu(position, options, selected, callback, userData, false);
+            DisplayCustomMenu(position, options, null, selected, callback, userData, false);
         }
 
         public static void DisplayCustomMenu(Rect position, GUIContent[] options, int selected, SelectMenuItemFunction callback, object userData, bool showHotkey)
+        {
+            DisplayCustomMenu(position, options, null, selected, callback, userData, showHotkey);
+        }
+
+        public static void DisplayCustomMenu(Rect position, GUIContent[] options, Func<int, bool> checkEnabled, int selected, SelectMenuItemFunction callback, object userData, bool showHotkey = false)
         {
             int[] selectedArray = { selected };
             string[] strings = new string[options.Length];
             for (int i = 0; i < options.Length; i++)
                 strings[i] = options[i].text;
 
-            DisplayCustomMenu(position, strings, selectedArray, callback, userData, showHotkey);
+            bool[] enabled;
+            if (checkEnabled != null)
+            {
+                enabled = new bool[strings.Length];
+                for (int i = 0; i < strings.Length; i++)
+                {
+                    enabled[i] = checkEnabled(i);
+                }
+            }
+            else
+            {
+                enabled = Enumerable.Repeat(true, options.Length).ToArray();
+            }
+            DisplayCustomMenu(position, strings, enabled, selectedArray, callback, userData, showHotkey);
         }
 
         public static string FormatBytes(int bytes)

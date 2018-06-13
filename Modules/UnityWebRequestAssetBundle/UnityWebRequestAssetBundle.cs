@@ -66,7 +66,7 @@ namespace UnityEngine.Networking
             return request;
         }
 
-        public static UnityWebRequest GetAssetBundle(string uri, Hash128 hash, uint crc)
+        public static UnityWebRequest GetAssetBundle(string uri, Hash128 hash, uint crc = 0)
         {
             UnityWebRequest request = new UnityWebRequest(
                     uri,
@@ -78,7 +78,7 @@ namespace UnityEngine.Networking
             return request;
         }
 
-        public static UnityWebRequest GetAssetBundle(Uri uri, Hash128 hash, uint crc)
+        public static UnityWebRequest GetAssetBundle(Uri uri, Hash128 hash, uint crc = 0)
         {
             UnityWebRequest request = new UnityWebRequest(
                     uri,
@@ -90,24 +90,24 @@ namespace UnityEngine.Networking
             return request;
         }
 
-        public static UnityWebRequest GetAssetBundle(string uri, CachedAssetBundle cachedAssetBundle, uint crc)
+        public static UnityWebRequest GetAssetBundle(string uri, CachedAssetBundle cachedAssetBundle, uint crc = 0)
         {
             UnityWebRequest request = new UnityWebRequest(
                     uri,
                     UnityWebRequest.kHttpVerbGET,
-                    new DownloadHandlerAssetBundle(uri, cachedAssetBundle.name, cachedAssetBundle.hash, crc),
+                    new DownloadHandlerAssetBundle(uri, cachedAssetBundle, crc),
                     null
                     );
 
             return request;
         }
 
-        public static UnityWebRequest GetAssetBundle(Uri uri, CachedAssetBundle cachedAssetBundle, uint crc)
+        public static UnityWebRequest GetAssetBundle(Uri uri, CachedAssetBundle cachedAssetBundle, uint crc = 0)
         {
             UnityWebRequest request = new UnityWebRequest(
                     uri,
                     UnityWebRequest.kHttpVerbGET,
-                    new DownloadHandlerAssetBundle(uri.AbsoluteUri, cachedAssetBundle.name, cachedAssetBundle.hash, crc),
+                    new DownloadHandlerAssetBundle(uri.AbsoluteUri, cachedAssetBundle, crc),
                     null
                     );
 

@@ -52,13 +52,15 @@ namespace UnityEngine.Experimental.Rendering
 
         uint rendererCount;
 
-        private fixed float _shadowCullPlanes[6 * 4];
-        private fixed float _cameraCullPlanes[6 * 4];
+        // can't make fixed types private, because then the compiler generates different code which BindinsgGenerator does not handle yet.
+        internal fixed float _shadowCullPlanes[6 * 4];
+        internal fixed float _cameraCullPlanes[6 * 4];
 
         float baseFarDistance;
 
         Vector3 shadowCullCenter;
-        fixed float layerCullDistances[kNumLayers];
+        // can't make fixed types private, because then the compiler generates different code which BindinsgGenerator does not handle yet.
+        internal fixed float layerCullDistances[kNumLayers];
         int layerCullSpherical;
 
         CoreCameraValues coreCameraValues;
@@ -119,8 +121,9 @@ namespace UnityEngine.Experimental.Rendering
         ForceEvenIfCameraIsNotActive = 1 << 0,
         OcclusionCull = 1 << 1,
         NeedsLighting = 1 << 2,
-        Stereo = 1 << 3,
-        DisablePerObjectCulling = 1 << 4
+        NeedsReflectionProbes = 1 << 3,
+        Stereo = 1 << 4,
+        DisablePerObjectCulling = 1 << 5
     };
 
 
@@ -131,13 +134,15 @@ namespace UnityEngine.Experimental.Rendering
         private int m_IsOrthographic;
         private LODParameters m_LodParameters;
 
-        private fixed float m_CullingPlanes[10 * 4];
+        // can't make fixed types private, because then the compiler generates different code which BindinsgGenerator does not handle yet.
+        internal fixed float m_CullingPlanes[10 * 4];
         private int m_CullingPlaneCount;
 
         private int m_CullingMask;
         private Int64 m_SceneMask;
 
-        private fixed float m_LayerFarCullDistances[32];
+        // can't make fixed types private, because then the compiler generates different code which BindinsgGenerator does not handle yet.
+        internal fixed float m_LayerFarCullDistances[32];
         private int m_LayerCull;
 
         private Matrix4x4 m_CullingMatrix;

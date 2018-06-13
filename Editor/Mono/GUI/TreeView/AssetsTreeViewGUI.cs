@@ -135,6 +135,15 @@ namespace UnityEditor
             return icon;
         }
 
+        protected override void DoItemGUI(Rect rect, int row, TreeViewItem item, bool selected, bool focused, bool useBoldFont)
+        {
+            if (item is AssetsTreeViewDataSource.RootTreeItem)
+            {
+                useBoldFont = true;
+            }
+            base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
+        }
+
         private void OnIconOverlayGUI(TreeViewItem item, Rect overlayRect)
         {
             if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset(item.id))

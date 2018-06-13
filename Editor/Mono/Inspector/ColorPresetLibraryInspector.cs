@@ -28,9 +28,10 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            if (m_GenericPresetLibraryInspector == null)
+                return;
             m_GenericPresetLibraryInspector.itemViewMode = PresetLibraryEditorState.GetItemViewMode(ColorPicker.presetsEditorPrefID); // ensure in-sync
-            if (m_GenericPresetLibraryInspector != null)
-                m_GenericPresetLibraryInspector.OnInspectorGUI();
+            m_GenericPresetLibraryInspector.OnInspectorGUI();
         }
 
         private void OnEditButtonClicked(string libraryPath)

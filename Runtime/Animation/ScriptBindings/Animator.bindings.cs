@@ -708,7 +708,7 @@ namespace UnityEngine
         public AnimatorControllerParameter GetParameter(int index)
         {
             AnimatorControllerParameter[] param = parameters;
-            if (index < 0 && index >= parameters.Length)
+            if (index < 0 || index >= parameters.Length)
                 throw new IndexOutOfRangeException("Index must be between 0 and " + parameters.Length);
             return param[index];
         }
@@ -821,6 +821,9 @@ namespace UnityEngine
 
         [FreeFunction(Name = "AnimatorBindings::CrossFadeInFixedTime", HasExplicitThis = true)]
         extern public void CrossFadeInFixedTime(int stateHashName, float fixedTransitionDuration, [DefaultValue("-1")]  int layer , [DefaultValue("0.0f")]  float fixedTimeOffset , [DefaultValue("0.0f")]  float normalizedTransitionTime);
+
+        [FreeFunction(Name = "AnimatorBindings::WriteDefaultValues", HasExplicitThis = true)]
+        extern public void WriteDefaultValues();
 
         public void CrossFade(string stateName, float normalizedTransitionDuration, int layer , float normalizedTimeOffset)
         {
@@ -966,7 +969,13 @@ namespace UnityEngine
             get;
         }
 
-        public Transform GetBoneTransform(HumanBodyBones humanBoneId) {return GetBoneTransformInternal(HumanTrait.GetBoneIndexFromMono((int)humanBoneId)); }
+        public Transform GetBoneTransform(HumanBodyBones humanBoneId)
+        {
+            if (humanBoneId < 0 || humanBoneId >= HumanBodyBones.LastBone)
+                throw new IndexOutOfRangeException("humanBoneId must be between 0 and " + HumanBodyBones.LastBone);
+
+            return GetBoneTransformInternal(HumanTrait.GetBoneIndexFromMono((int)humanBoneId));
+        }
 
         [NativeMethod("GetBoneTransform")]
         extern internal Transform GetBoneTransformInternal(int humanBoneId);

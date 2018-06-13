@@ -34,7 +34,7 @@ namespace UnityEditor.Connect
             var wins = Resources.FindObjectsOfTypeAll(typeof(UnityConnectEditorWindow)) as UnityConnectEditorWindow[];
             if (wins != null)
             {
-                // cannot test with title anymore since we are addind [env] to the title if not  production
+                // cannot test with title anymore since we are adding [env] to the title if not  production
                 foreach (var win in wins.Where(win => win != null /*&& win.title == title*/))
                 {
                     win.titleContent = new GUIContent(title);
@@ -90,7 +90,7 @@ namespace UnityEditor.Connect
             if (webView == null)
                 return;
 
-            webView.LoadFile(EditorApplication.userJavascriptPackagesPath + "unityeditor-cloud-hub/dist/index.html?failure=load_error&reload_url=" +  WWW.EscapeURL(url));
+            webView.LoadFile(EditorApplication.userJavascriptPackagesPath + "unityeditor-cloud-hub/dist/index.html?failure=load_error&reload_url=" +  UnityEngine.Networking.UnityWebRequest.EscapeURL(url));
             if (url.StartsWith("http://") || url.StartsWith("https://"))
                 UnregisterWebviewUrl(url);
         }
@@ -105,6 +105,16 @@ namespace UnityEditor.Connect
                 m_InitialOpenURL = m_ServiceUrls.Count > 0 ? UnityConnectServiceCollection.instance.GetUrlForService(HubAccess.kServiceName) : null;
             }
             base.OnGUI();
+        }
+
+        protected override void OnGotFocus()
+        {
+            base.OnGotFocus();
+        }
+
+        protected override void OnTakeFocus()
+        {
+            base.OnTakeFocus();
         }
     }
 }

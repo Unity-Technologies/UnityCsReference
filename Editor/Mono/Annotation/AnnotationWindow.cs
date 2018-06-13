@@ -36,7 +36,7 @@ namespace UnityEditor
                 texelWorldSizeStyle.fontSize = EditorStyles.miniLabel.fontSize;
                 texelWorldSizeStyle.padding.right = 0;
 
-                columnHeaderStyle = new GUIStyle(EditorStyles.miniLabel);
+                columnHeaderStyle = EditorStyles.miniLabel;
             }
         }
         const float kWindowWidth = 270;

@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 using System;
 using UnityEngine;
 
@@ -35,8 +34,10 @@ namespace UnityEditor.PackageManager.Requests
         internal RemoveRequest(long operationId, NativeStatusCode initialStatus, string packageName)
             : base(operationId, initialStatus)
         {
+            if (String.IsNullOrEmpty(packageName?.Trim()))
+                throw new ArgumentNullException(nameof(packageName));
+
             m_PackageIdOrName = packageName;
         }
     }
 }
-

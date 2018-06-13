@@ -95,7 +95,7 @@ namespace UnityEditor
             var assetsToReload = new HashSet<string>();
             foreach (var t in targets)
             {
-                var importer = t as ModelImporter;
+                var importer = t as AssetImporter;
 
                 var materials = AssetDatabase.LoadAllAssetsAtPath(importer.assetPath).Where(x => x.GetType() == typeof(Material));
 

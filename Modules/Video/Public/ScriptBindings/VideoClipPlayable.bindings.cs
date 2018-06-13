@@ -169,17 +169,37 @@ namespace UnityEngine.Experimental.Video
             }
         }
 
-        // Bindings methods.
+        [NativeThrows]
         extern private static VideoClip GetClipInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static void SetClipInternal(ref PlayableHandle hdl, VideoClip clip);
+
+        [NativeThrows]
         extern private static bool GetLoopedInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static void SetLoopedInternal(ref PlayableHandle hdl, bool looped);
+
+        [NativeThrows]
         extern private static bool GetIsPlayingInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static double GetStartDelayInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static void SetStartDelayInternal(ref PlayableHandle hdl, double delay);
+
+        [NativeThrows]
         extern private static double GetPauseDelayInternal(ref PlayableHandle hdl);
+
+        [NativeThrows]
         extern private static void SetPauseDelayInternal(ref PlayableHandle hdl, double delay);
+
+        [NativeThrows]
         extern private static bool InternalCreateVideoClipPlayable(ref PlayableGraph graph, VideoClip clip, bool looping, ref PlayableHandle handle);
+
+        [NativeThrows]
         extern private static bool ValidateType(ref PlayableHandle hdl);
 
     }

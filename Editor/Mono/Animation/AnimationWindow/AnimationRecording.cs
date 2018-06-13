@@ -4,11 +4,9 @@
 
 using System;
 using System.Linq;
-using System.Reflection;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
-using Object = UnityEngine.Object;
 
 namespace UnityEditorInternal
 {
@@ -77,7 +75,7 @@ namespace UnityEditorInternal
         }
 
         static private void CollectRotationModifications(IAnimationRecordingState state, ref UndoPropertyModification[] modifications,
-            ref System.Collections.Generic.Dictionary<object, RotationModification> rotationModifications)
+            ref Dictionary<object, RotationModification> rotationModifications)
         {
             List<UndoPropertyModification> outModifs = new List<UndoPropertyModification>();
             foreach (var modification in modifications)
@@ -212,7 +210,7 @@ namespace UnityEditorInternal
             state.AddPropertyModification(binding, modification.previousValue, modification.keepPrefabOverride);
         }
 
-        static private void ProcessRotationModifications(IAnimationRecordingState state, ref System.Collections.Generic.Dictionary<object, RotationModification> rotationModifications)
+        static private void ProcessRotationModifications(IAnimationRecordingState state, ref Dictionary<object, RotationModification> rotationModifications)
         {
             AnimationClip clip = state.activeAnimationClip;
             GameObject root = state.activeRootGameObject;
@@ -310,7 +308,7 @@ namespace UnityEditorInternal
         }
 
         static private void CollectVector3Modifications(IAnimationRecordingState state, ref UndoPropertyModification[] modifications,
-            ref System.Collections.Generic.Dictionary<object, Vector3Modification> vector3Modifications, string propertyName)
+            ref Dictionary<object, Vector3Modification> vector3Modifications, string propertyName)
         {
             List<UndoPropertyModification> outModifs = new List<UndoPropertyModification>();
             foreach (var modification in modifications)
@@ -376,7 +374,7 @@ namespace UnityEditorInternal
             AddKey(state, binding, typeof(float), property);
         }
 
-        static public void ProcessVector3Modifications(IAnimationRecordingState state, ref System.Collections.Generic.Dictionary<object, Vector3Modification> vector3Modifications)
+        static public void ProcessVector3Modifications(IAnimationRecordingState state, ref Dictionary<object, Vector3Modification> vector3Modifications)
         {
             AnimationClip clip = state.activeAnimationClip;
             GameObject root = state.activeRootGameObject;
@@ -430,9 +428,9 @@ namespace UnityEditorInternal
             if (!HasAnyRecordableModifications(root, modifications))
                 return modifications;
 
-            System.Collections.Generic.Dictionary<object, RotationModification> rotationModifications = new Dictionary<object, RotationModification>();
-            System.Collections.Generic.Dictionary<object, Vector3Modification> scaleModifications = new Dictionary<object, Vector3Modification>();
-            System.Collections.Generic.Dictionary<object, Vector3Modification> positionModifications = new Dictionary<object, Vector3Modification>();
+            Dictionary<object, RotationModification> rotationModifications = new Dictionary<object, RotationModification>();
+            Dictionary<object, Vector3Modification> scaleModifications = new Dictionary<object, Vector3Modification>();
+            Dictionary<object, Vector3Modification> positionModifications = new Dictionary<object, Vector3Modification>();
 
             //Strip out the rotation modifications from the rest
             CollectRotationModifications(state, ref modifications, ref rotationModifications);
@@ -452,8 +450,7 @@ namespace UnityEditorInternal
             // Process what's remaining.
             ProcessModifications(state, modifications);
 
-            discardedModifications.Concat(discardedRotationModifications);
-            return discardedModifications.ToArray();
+            return discardedModifications.Concat(discardedRotationModifications).ToArray();
         }
 
         static bool ValueFromPropertyModification(PropertyModification modification, EditorCurveBinding binding, out object outObject)
@@ -562,7 +559,7 @@ namespace UnityEditorInternal
         }
 
         static private void ProcessRootMotionModifications(IAnimationRecordingState state,
-            ref System.Collections.Generic.Dictionary<object, RootMotionModification> rootMotionModifications)
+            ref Dictionary<object, RootMotionModification> rootMotionModifications)
         {
             AnimationClip clip = state.activeAnimationClip;
             GameObject root = state.activeRootGameObject;
@@ -597,11 +594,11 @@ namespace UnityEditorInternal
         }
 
         static private void ProcessAnimatorModifications(IAnimationRecordingState state,
-            ref System.Collections.Generic.Dictionary<object, Vector3Modification> positionModifications,
-            ref System.Collections.Generic.Dictionary<object, RotationModification> rotationModifications,
-            ref System.Collections.Generic.Dictionary<object, Vector3Modification> scaleModifications)
+            ref Dictionary<object, Vector3Modification> positionModifications,
+            ref Dictionary<object, RotationModification> rotationModifications,
+            ref Dictionary<object, Vector3Modification> scaleModifications)
         {
-            System.Collections.Generic.Dictionary<object, RootMotionModification> rootMotionModifications = new Dictionary<object, RootMotionModification>();
+            Dictionary<object, RootMotionModification> rootMotionModifications = new Dictionary<object, RootMotionModification>();
 
             AnimationClip clip = state.activeAnimationClip;
             GameObject root = state.activeRootGameObject;

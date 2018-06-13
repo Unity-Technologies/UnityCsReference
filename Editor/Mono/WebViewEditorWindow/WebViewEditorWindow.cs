@@ -22,6 +22,7 @@ namespace UnityEditor.Web
 
         internal WebScriptObject scriptObject;
 
+        protected bool m_GotFocus;
         protected bool m_SyncingFocus;
         protected bool m_HasDelayedRefresh;
 
@@ -187,6 +188,21 @@ namespace UnityEditor.Web
             webView.Show();
         }
 
+        protected virtual void OnGotFocus()
+        {
+            m_GotFocus = true;
+            Focus();
+            if (m_Parent)
+                m_Parent.Repaint();
+        }
+
+        protected virtual void OnTakeFocus()
+        {
+            m_GotFocus = false;
+            if (m_Parent)
+                m_Parent.Repaint();
+        }
+
         public void OnFocus()
         {
             SetFocus(true);
@@ -200,6 +216,21 @@ namespace UnityEditor.Web
         public virtual void OnEnable()
         {
             Init();
+
+            EditorApplication.update += TrackFocusState;
+        }
+
+        public void OnDisable()
+        {
+            EditorApplication.update -= TrackFocusState;
+        }
+
+        protected void TrackFocusState()
+        {
+            if (!m_GotFocus)
+                return;
+            if (focusedWindow != this)
+                OnTakeFocus();
         }
 
         public void OnBecameInvisible()

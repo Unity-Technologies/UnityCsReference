@@ -20,7 +20,6 @@ namespace UnityEditor
         private SerializedProperty m_Materials;
         private LightingSettingsInspector m_Lighting;
 
-        private const string kDisplayLightingKey = "MeshRendererEditor.Lighting.ShowSettings";
         private const string kDisplayLightmapKey = "MeshRendererEditor.Lighting.ShowLightmapSettings";
         private const string kDisplayChartingKey = "MeshRendererEditor.Lighting.ShowChartingSettings";
 
@@ -44,26 +43,18 @@ namespace UnityEditor
         {
             m_Lighting = new LightingSettingsInspector(serializedObject);
 
-            m_Lighting.showSettings = EditorPrefs.GetBool(kDisplayLightingKey, false);
             m_Lighting.showChartingSettings = SessionState.GetBool(kDisplayChartingKey, true);
             m_Lighting.showLightmapSettings = SessionState.GetBool(kDisplayLightmapKey, true);
         }
 
         private void LightingFieldsGUI()
         {
-            bool oldShowLighting = m_Lighting.showSettings;
             bool oldShowCharting = m_Lighting.showChartingSettings;
             bool oldShowLightmap = m_Lighting.showLightmapSettings;
 
-            if (m_Lighting.Begin())
-            {
-                RenderProbeFields();
-                m_Lighting.RenderMeshSettings(true);
-            }
-            m_Lighting.End();
+            RenderProbeFields();
+            m_Lighting.RenderMeshSettings(true);
 
-            if (m_Lighting.showSettings != oldShowLighting)
-                EditorPrefs.SetBool(kDisplayLightingKey, m_Lighting.showSettings);
             if (m_Lighting.showChartingSettings != oldShowCharting)
                 SessionState.SetBool(kDisplayChartingKey, m_Lighting.showChartingSettings);
             if (m_Lighting.showLightmapSettings != oldShowLightmap)
@@ -73,10 +64,6 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
-            LightingFieldsGUI();
-
-            RenderRenderingLayer();
 
             // Evaluate displayMaterialWarning before drawing properties to avoid mismatched layout group
             bool displayMaterialWarning = false;
@@ -103,6 +90,10 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox(Styles.StaticBatchingWarning, MessageType.Warning, true);
                 }
             }
+
+            LightingFieldsGUI();
+
+            RenderRenderingLayer();
 
             CullDynamicFieldGUI();
 

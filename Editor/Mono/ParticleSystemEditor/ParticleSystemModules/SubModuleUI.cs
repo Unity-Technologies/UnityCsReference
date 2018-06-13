@@ -277,7 +277,7 @@ namespace UnityEditor
             GUIPopup(GUIContent.none, type, s_Texts.subEmitterTypes, GUILayout.MaxWidth(80));
             GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(4));
             GUIObject(GUIContent.none, subEmitter);
-            var olPlusStyle = new GUIStyle("OL Plus");
+            GUIStyle olPlusStyle = "OL Plus";
             if (subEmitter.objectReferenceValue == null)
             {
                 GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(8));
@@ -311,7 +311,7 @@ namespace UnityEditor
             // add minus button to all other elements
             else
             {
-                if (GUILayout.Button(GUIContent.none, new GUIStyle("OL Minus"), GUILayout.Width(16)))
+                if (GUILayout.Button(GUIContent.none, "OL Minus", GUILayout.Width(16)))
                     m_SubEmitters.DeleteArrayElementAtIndex(index);
             }
 

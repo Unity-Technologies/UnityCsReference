@@ -89,6 +89,7 @@ namespace UnityEditor
         static Styles s_Styles;
 
         private bool m_ShowAlpha;
+        public bool showAlpha {  get { return m_ShowAlpha; } }
 
         // Plain Texture
         protected SerializedProperty m_WrapU;
@@ -384,6 +385,12 @@ namespace UnityEditor
             return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.Tex3D;
         }
 
+        bool IsTexture2DArray()
+        {
+            var t = target as Texture2DArray;
+            return t != null && t.dimension == UnityEngine.Rendering.TextureDimension.Tex2DArray;
+        }
+
         public override void OnPreviewSettings()
         {
             if (IsCubemap())
@@ -392,10 +399,11 @@ namespace UnityEditor
                 return;
             }
 
+            if (IsTexture2DArray() && !SystemInfo.supports2DArrayTextures)
+                return;
 
             if (s_Styles == null)
                 s_Styles = new Styles();
-
 
             // TextureInspector code is reused for RenderTexture and Cubemap inspectors.
             // Make sure we can handle the situation where target is just a Texture and
@@ -609,9 +617,11 @@ namespace UnityEditor
                     height,
                     0,
                     RenderTextureFormat.Default,
-                    RenderTextureReadWrite.Linear);
-
-            Graphics.Blit(texture, tmp, EditorGUI.GetMaterialForSpecialTexture(texture, EditorGUIUtility.GUITextureBlit2SRGBMaterial));
+                    RenderTextureReadWrite.sRGB);
+            Material mat = EditorGUI.GetMaterialForSpecialTexture(texture);
+            if (mat != null)
+                Graphics.Blit(texture, tmp, mat);
+            else Graphics.Blit(texture, tmp);
 
             RenderTexture.active = tmp;
             Texture2D copy;

@@ -127,6 +127,11 @@ namespace UnityEngine.Video
             [NativeName("IsPlaying")]
             get;
         }
+        public extern bool isPaused
+        {
+            [NativeName("IsPaused")]
+            get;
+        }
 
         public extern bool canSetTime
         {
@@ -139,6 +144,8 @@ namespace UnityEngine.Video
 
         [NativeName("FramePosition")]
         public extern long frame { get; set; }
+
+        public extern double clockTime { get; }
 
         public extern bool canStep
         {
@@ -183,11 +190,27 @@ namespace UnityEngine.Video
 
         public extern float frameRate { get; }
 
+        [NativeName("Duration")]
+        public extern double length
+        {
+            get;
+        }
+
+        public extern uint width { get; }
+
+        public extern uint height { get; }
+
+        public extern uint pixelAspectRatioNumerator { get; }
+
+        public extern uint pixelAspectRatioDenominator { get; }
+
         public extern ushort audioTrackCount { get; }
 
         public extern string GetAudioLanguageCode(ushort trackIndex);
 
         public extern ushort GetAudioChannelCount(ushort trackIndex);
+
+        public extern uint GetAudioSampleRate(ushort trackIndex);
 
         public static extern ushort controlledAudioTrackMaxCount { get; }
 

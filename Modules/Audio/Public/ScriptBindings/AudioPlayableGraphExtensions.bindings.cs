@@ -15,6 +15,7 @@ namespace UnityEngine.Audio
     [StaticAccessor("AudioPlayableGraphExtensionsBindings", StaticAccessorType.DoubleColon)]
     internal static class AudioPlayableGraphExtensions
     {
+        [NativeThrows]
         extern internal static bool InternalCreateAudioOutput(ref PlayableGraph graph, string name, out PlayableOutputHandle handle);
     }
 

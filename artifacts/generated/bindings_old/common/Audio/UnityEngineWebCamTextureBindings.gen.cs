@@ -12,24 +12,10 @@ namespace UnityEngine
 {
 
 
-public enum WebCamFlags
-{
-    
-    FrontFacing = 1,
-}
-
 [UsedByNativeCode]
 [System.Runtime.InteropServices.StructLayout (System.Runtime.InteropServices.LayoutKind.Sequential)]
 public partial struct WebCamDevice
 {
-    public string name { get { return m_Name; } }
-    
-    
-    public bool isFrontFacing { get { return (m_Flags & ((int)WebCamFlags.FrontFacing)) == 1; } }
-    
-    
-    internal string m_Name;
-    internal int m_Flags;
 }
 
 public sealed partial class WebCamTexture : Texture

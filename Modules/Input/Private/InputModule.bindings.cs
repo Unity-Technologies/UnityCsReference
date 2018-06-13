@@ -15,9 +15,7 @@ namespace UnityEngineInternal.Input
     [NativeConditional("ENABLE_NEW_INPUT_SYSTEM")]
     public partial class NativeInputSystem
     {
-        public static extern double zeroEventTime { get; }
-
-        public static extern bool hasDeviceDiscoveredCallback { set; }
+        internal static extern bool hasDeviceDiscoveredCallback { set; }
 
         [FreeFunction("AllocateInputDeviceId")]
         public static extern int AllocateDeviceId();
@@ -34,21 +32,10 @@ namespace UnityEngineInternal.Input
 
         public static extern long IOCTL(int deviceId, int code, IntPtr data, int sizeInBytes);
 
-        public static void SetPollingFrequency(float hertz)
-        {
-            if (hertz < 1.0f)
-                throw new ArgumentException("Polling frequency cannot be less than 1Hz");
-            SetPollingFrequencyInternal(hertz);
-        }
+        public static extern void SetPollingFrequency(float hertz);
 
-        private static extern void SetPollingFrequencyInternal(float hertz);
-
-        // The following APIs are not for normal use of the system as they do things
-        // that are normally done either by platform-specific backends or by the player
-        // loop. However, they can be used, for example, to drive the system from
-        // managed code during tests.
         public static extern void Update(NativeInputUpdateType updateType);
-        public static extern int ReportNewInputDevice(string descriptor);
-        public static extern void ReportInputDeviceRemoved(int id);
+
+        public static extern void SetUpdateMask(NativeInputUpdateType mask);
     }
 }

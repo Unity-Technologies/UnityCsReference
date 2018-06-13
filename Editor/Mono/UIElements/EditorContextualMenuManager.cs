@@ -31,7 +31,7 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        protected override void DoDisplayMenu(ContextualMenu menu, EventBase triggerEvent)
+        protected internal override void DoDisplayMenu(ContextualMenu menu, EventBase triggerEvent)
         {
             var genericMenu = new GenericMenu();
             foreach (var item in menu.MenuItems())

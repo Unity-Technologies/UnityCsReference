@@ -231,7 +231,7 @@ namespace UnityEditor
 
                     if (GUILayout.Button(actionLabel, GUILayout.Height(40), GUILayout.Width(120)))
                     {
-                        if (info.isDownloadable)
+                        if (info != null && info.isDownloadable)
                             ImportPackage(activeAsset);
                         else
                             InitiateBuySelected();

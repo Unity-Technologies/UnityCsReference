@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Reflection;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
@@ -16,6 +17,7 @@ using Object = UnityEngine.Object;
 using Event = UnityEngine.Event;
 using UnityEditor.Build;
 using UnityEngine.Internal;
+using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 
 namespace UnityEditor
 {
@@ -83,7 +85,7 @@ namespace UnityEditor
         internal const float kLabelW = 80;
         internal const float kSpacing = 5;
         internal const float kSpacingSubLabel = 2;
-        internal const float kSliderMinW = 60;
+        internal const float kSliderMinW = 50;
         internal const float kSliderMaxW = 100;
         internal const float kSingleLineHeight = 16;
         internal const float kStructHeaderLineHeight = 16;
@@ -626,6 +628,58 @@ namespace UnityEditor
             style.Draw(position, content, false, false, false, false);
         }
 
+        static bool MightBePrintableKey(Event evt)
+        {
+            if (evt.command || evt.control)
+                return false;
+            if (evt.keyCode >= KeyCode.Mouse0 && evt.keyCode <= KeyCode.Mouse6)
+                return false;
+            if (evt.keyCode >= KeyCode.JoystickButton0 && evt.keyCode <= KeyCode.Joystick8Button19)
+                return false;
+            if (evt.keyCode >= KeyCode.F1 && evt.keyCode <= KeyCode.F15)
+                return false;
+            switch (evt.keyCode)
+            {
+                case KeyCode.AltGr:
+                case KeyCode.Backspace:
+                case KeyCode.CapsLock:
+                case KeyCode.Clear:
+                case KeyCode.Delete:
+                case KeyCode.DownArrow:
+                case KeyCode.End:
+                case KeyCode.Escape:
+                case KeyCode.Help:
+                case KeyCode.Home:
+                case KeyCode.Insert:
+                case KeyCode.LeftAlt:
+                case KeyCode.LeftArrow:
+                case KeyCode.LeftCommand: // same as LeftApple
+                case KeyCode.LeftControl:
+                case KeyCode.LeftShift:
+                case KeyCode.LeftWindows:
+                case KeyCode.Menu:
+                case KeyCode.Numlock:
+                case KeyCode.PageDown:
+                case KeyCode.PageUp:
+                case KeyCode.Pause:
+                case KeyCode.Print:
+                case KeyCode.RightAlt:
+                case KeyCode.RightArrow:
+                case KeyCode.RightCommand: // same as RightApple
+                case KeyCode.RightControl:
+                case KeyCode.RightShift:
+                case KeyCode.RightWindows:
+                case KeyCode.ScrollLock:
+                case KeyCode.SysReq:
+                case KeyCode.UpArrow:
+                    return false;
+                case KeyCode.None:
+                    return evt.character != 0;
+                default:
+                    return true;
+            }
+        }
+
         // Should we select all text from the current field when the mouse goes up?
         // (We need to keep track of this to support both SwipeSelection & initial click selects all)
         internal static string DoTextField(RecycledTextEditor editor, int id, Rect position, string text, GUIStyle style, string allowedletters, out bool changed, bool reset, bool multiline, bool passwordField)
@@ -889,6 +943,7 @@ namespace UnityEditor
 
                     break;
                 case EventType.KeyDown:
+                    var nonPrintableTab = false;
                     if (GUIUtility.keyboardControl == id)
                     {
                         char c = evt.character;
@@ -951,6 +1006,10 @@ namespace UnityEditor
                                     mayHaveChanged = true;
                                 }
                             }
+                            else
+                            {
+                                nonPrintableTab = true;
+                            }
                         }
                         else if (c == 25 || c == 27)
                         {
@@ -976,6 +1035,15 @@ namespace UnityEditor
                                     mayHaveChanged = true;
                                 }
                             }
+                        }
+                        // consume Keycode events that might result in a printable key so they aren't passed on to other controls or shortcut manager later
+                        if (
+                            editor.IsEditingControl(id) &&
+                            MightBePrintableKey(evt) &&
+                            !nonPrintableTab // only consume tabs that actually result in a character (above) so we don't disable tabbing between keyboard controls
+                            )
+                        {
+                            evt.Use();
                         }
                     }
 
@@ -1142,9 +1210,9 @@ namespace UnityEditor
             // UnityEngine.Object overrides == null, which means we might be dealing with an invalid object
             bool isUnityNull = target == null;
 
-            // if MonoBehaviour/Scriptable compares to null, then we are dealing with a missing script
+            // if scripted object compares to null, then we are dealing with a missing script
             // for which we still want to display context menu
-            if (isUnityNull && (target is MonoBehaviour || target is ScriptableObject))
+            if (isUnityNull && NativeClassExtensionUtilities.ExtendsANativeType(target.GetType()))
                 return true;
 
             return !isUnityNull;
@@ -2283,6 +2351,21 @@ namespace UnityEditor
             EndProperty();
         }
 
+        internal static void Slider(Rect position, SerializedProperty property, float sliderLeftValue, float sliderRightValue, float textLeftValue, float textRightValue, GUIContent label)
+        {
+            label = BeginProperty(position, label, property);
+
+            BeginChangeCheck();
+
+            float newValue = Slider(position, label, property.floatValue, sliderLeftValue, sliderRightValue, textLeftValue, textRightValue);
+            if (EndChangeCheck())
+            {
+                property.floatValue = newValue;
+            }
+
+            EndProperty();
+        }
+
         public static int IntSlider(Rect position, int value, int leftValue, int rightValue)
         {
             int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
@@ -2546,15 +2629,20 @@ namespace UnityEditor
         // Make a generic popup selection field.
         private static int PopupInternal(Rect position, GUIContent label, int selectedIndex, GUIContent[] displayedOptions, GUIStyle style)
         {
+            return PopupInternal(position, label, selectedIndex, displayedOptions, null, style);
+        }
+
+        private static int PopupInternal(Rect position, GUIContent label, int selectedIndex, GUIContent[] displayedOptions, Func<int, bool> checkEnabled, GUIStyle style)
+        {
             int id = GUIUtility.GetControlID(s_PopupHash, FocusType.Keyboard, position);
             if (label != null)
                 position = PrefixLabel(position, id, label);
-            return DoPopup(position, id, selectedIndex, displayedOptions, style);
+            return DoPopup(position, id, selectedIndex, displayedOptions, checkEnabled, style);
         }
 
         internal static int Popup(Rect position, GUIContent label, int selectedIndex, string[] displayedOptions, GUIStyle style)
         {
-            return PopupInternal(position, label, selectedIndex, EditorGUIUtility.TempContent(displayedOptions), style);
+            return PopupInternal(position, label, selectedIndex, EditorGUIUtility.TempContent(displayedOptions), null, style);
         }
 
         internal static int Popup(Rect position, GUIContent label, int selectedIndex, string[] displayedOptions)
@@ -2586,8 +2674,16 @@ namespace UnityEditor
             EndProperty();
         }
 
+        private static Func<Enum, bool> s_CurrentCheckEnumEnabled;
+        private static EnumData s_CurrentEnumData;
+
+        private static bool CheckCurrentEnumTypeEnabled(int value)
+        {
+            return s_CurrentCheckEnumEnabled(s_CurrentEnumData.values[value]);
+        }
+
         // Make an enum popup selection field.
-        private static Enum EnumPopupInternal(Rect position, GUIContent label, Enum selected, GUIStyle style)
+        private static Enum EnumPopupInternal(Rect position, GUIContent label, Enum selected, Func<Enum, bool> checkEnabled, bool includeObsolete, GUIStyle style)
         {
             var enumType = selected.GetType();
             if (!enumType.IsEnum)
@@ -2595,10 +2691,13 @@ namespace UnityEditor
                 throw new ArgumentException("Parameter selected must be of type System.Enum", nameof(selected));
             }
 
-            bool localize = EditorUtility.IsUnityAssembly(enumType);
-            var enumData = GetNonObsoleteEnumData(enumType);
+            var enumData = GetCachedEnumData(enumType, !includeObsolete);
             var i = Array.IndexOf(enumData.values, selected);
-            i = Popup(position, label, i, localize ? EditorGUIUtility.TrTempContent(enumData.displayNames) : EditorGUIUtility.TempContent(enumData.displayNames), style);
+            GUIContent[] options = EditorUtility.IsUnityAssembly(enumType) ? EditorGUIUtility.TrTempContent(enumData.displayNames) : EditorGUIUtility.TempContent(enumData.displayNames);
+            s_CurrentCheckEnumEnabled = checkEnabled;
+            s_CurrentEnumData = enumData;
+            i = PopupInternal(position, label, i, options, checkEnabled == null ? (Func<int, bool>)null : CheckCurrentEnumTypeEnabled, style);
+            s_CurrentCheckEnumEnabled = null;
             return (i < 0 || i >= enumData.flagValues.Length) ? selected : enumData.values[i];
         }
 
@@ -2755,8 +2854,12 @@ namespace UnityEditor
             }
         }
 
-
         internal static int DoPopup(Rect position, int controlID, int selected, GUIContent[] popupValues, GUIStyle style)
+        {
+            return DoPopup(position, controlID, selected, popupValues, null, style);
+        }
+
+        internal static int DoPopup(Rect position, int controlID, int selected, GUIContent[] popupValues, Func<int, bool> checkEnabled, GUIStyle style)
         {
             selected = PopupCallbackInfo.GetSelectedValueForControl(controlID, selected);
 
@@ -2800,7 +2903,7 @@ namespace UnityEditor
                         }
 
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
-                        EditorUtility.DisplayCustomMenu(position, popupValues, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
+                        EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         GUIUtility.keyboardControl = controlID;
                         evt.Use();
                     }
@@ -2814,7 +2917,7 @@ namespace UnityEditor
                         }
 
                         PopupCallbackInfo.instance = new PopupCallbackInfo(controlID);
-                        EditorUtility.DisplayCustomMenu(position, popupValues, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
+                        EditorUtility.DisplayCustomMenu(position, popupValues, checkEnabled, showMixedValue ? -1 : selected, PopupCallbackInfo.instance.SetEnumValueDelegate, null);
                         evt.Use();
                     }
                     break;
@@ -2986,7 +3089,7 @@ namespace UnityEditor
             return layer;
         }
 
-        struct EnumData
+        internal struct EnumData
         {
             public Enum[] values;
             public int[] flagValues;
@@ -2998,46 +3101,63 @@ namespace UnityEditor
         }
 
         private static readonly Dictionary<Type, EnumData> s_NonObsoleteEnumData = new Dictionary<Type, EnumData>();
+        private static readonly Dictionary<Type, EnumData> s_EnumData = new Dictionary<Type, EnumData>();
 
-        private static EnumData GetNonObsoleteEnumData(Type enumType)
+        private static string EnumNameFromEnumField(FieldInfo field)
+        {
+            var description = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
+            if (description.Count() > 0)
+            {
+                return ((DescriptionAttribute)description.First()).Description;
+            }
+            return ObjectNames.NicifyVariableName(field.Name);
+        }
+
+        internal static EnumData GetCachedEnumData(Type enumType, bool excludeObsolete = true)
         {
             EnumData enumData;
-            if (!s_NonObsoleteEnumData.TryGetValue(enumType, out enumData))
+            if (excludeObsolete && s_NonObsoleteEnumData.TryGetValue(enumType, out enumData))
+                return enumData;
+            if (!excludeObsolete && s_EnumData.TryGetValue(enumType, out enumData))
+                return enumData;
+            enumData = new EnumData { underlyingType = Enum.GetUnderlyingType(enumType) };
+            enumData.unsigned =
+                enumData.underlyingType == typeof(byte)
+                || enumData.underlyingType == typeof(ushort)
+                || enumData.underlyingType == typeof(uint)
+                || enumData.underlyingType == typeof(ulong);
+            var enumFields = enumType.GetFields(BindingFlags.Static | BindingFlags.Public)
+                .Where(f => !excludeObsolete || !f.IsDefined(typeof(ObsoleteAttribute), false))
+                .OrderBy(f => f.MetadataToken);
+            enumData.displayNames = enumFields.Select(f => EnumNameFromEnumField(f)).ToArray();
+            enumData.values = enumFields.Select(f => (Enum)Enum.Parse(enumType, f.Name)).ToArray();
+            enumData.flagValues = enumData.unsigned ?
+                enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray() :
+                enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
+            // convert "everything" values to ~0 for unsigned 8- and 16-bit types
+            if (enumData.underlyingType == typeof(ushort))
             {
-                enumData = new EnumData {underlyingType = Enum.GetUnderlyingType(enumType)};
-                enumData.unsigned =
-                    enumData.underlyingType == typeof(byte)
-                    || enumData.underlyingType == typeof(ushort)
-                    || enumData.underlyingType == typeof(uint)
-                    || enumData.underlyingType == typeof(ulong);
-                enumData.displayNames = Enum.GetNames(enumType).Where(n => enumType.GetField(n).GetCustomAttributes(typeof(ObsoleteAttribute), false).Length == 0).ToArray();
-                enumData.values = enumData.displayNames.Select(n => (Enum)Enum.Parse(enumType, n)).ToArray();
-                enumData.flagValues = enumData.unsigned ?
-                    enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray() :
-                    enumData.values.Select(v => unchecked((int)Convert.ToInt64(v))).ToArray();
-                for (int i = 0, length = enumData.displayNames.Length; i < length; ++i)
-                    enumData.displayNames[i] = ObjectNames.NicifyVariableName(enumData.displayNames[i]);
-                // convert "everything" values to ~0 for unsigned 8- and 16-bit types
-                if (enumData.underlyingType == typeof(ushort))
+                for (int i = 0, length = enumData.flagValues.Length; i < length; ++i)
                 {
-                    for (int i = 0, length = enumData.flagValues.Length; i < length; ++i)
-                    {
-                        if (enumData.flagValues[i] == 0xFFFFu)
-                            enumData.flagValues[i] = ~0;
-                    }
+                    if (enumData.flagValues[i] == 0xFFFFu)
+                        enumData.flagValues[i] = ~0;
                 }
-                else if (enumData.underlyingType == typeof(byte))
-                {
-                    for (int i = 0, length = enumData.flagValues.Length; i < length; ++i)
-                    {
-                        if (enumData.flagValues[i] == 0xFFu)
-                            enumData.flagValues[i] = ~0;
-                    }
-                }
-                enumData.flags = enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Length > 0;
-                enumData.serializable = enumData.underlyingType != typeof(long) && enumData.underlyingType != typeof(ulong);
-                s_NonObsoleteEnumData[enumType] = enumData;
             }
+            else if (enumData.underlyingType == typeof(byte))
+            {
+                for (int i = 0, length = enumData.flagValues.Length; i < length; ++i)
+                {
+                    if (enumData.flagValues[i] == 0xFFu)
+                        enumData.flagValues[i] = ~0;
+                }
+            }
+            enumData.flags = enumType.IsDefined(typeof(FlagsAttribute), false);
+            enumData.serializable = enumData.underlyingType != typeof(long) && enumData.underlyingType != typeof(ulong);
+
+            if (excludeObsolete)
+                s_NonObsoleteEnumData[enumType] = enumData;
+            else
+                s_EnumData[enumType] = enumData;
             return enumData;
         }
 
@@ -3089,19 +3209,24 @@ namespace UnityEditor
 
         public static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, GUIStyle style)
         {
+            return EnumFlagsField(position, label, enumValue, false, style);
+        }
+
+        public static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, [DefaultValue("false")] bool includeObsolete, [DefaultValue("null")] GUIStyle style = null)
+        {
             int changedFlags;
             bool changedToValue;
-            return EnumFlagsField(position, label, enumValue, out changedFlags, out changedToValue, style);
+            return EnumFlagsField(position, label, enumValue, includeObsolete, out changedFlags, out changedToValue, style == null ? EditorStyles.popup : style);
         }
 
         // Internal version that also gives you back which flags were changed and what they were changed to.
-        internal static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, out int changedFlags, out bool changedToValue, GUIStyle style)
+        internal static Enum EnumFlagsField(Rect position, GUIContent label, Enum enumValue, bool includeObsolete, out int changedFlags, out bool changedToValue, GUIStyle style)
         {
             var enumType = enumValue.GetType();
             if (!enumType.IsEnum)
                 throw new ArgumentException("Parameter enumValue must be of type System.Enum", nameof(enumValue));
 
-            var enumData = GetNonObsoleteEnumData(enumType);
+            var enumData = GetCachedEnumData(enumType, !includeObsolete);
             if (!enumData.serializable)
                 // this is the same message used in ScriptPopupMenus.cpp
                 throw new NotSupportedException(string.Format("Unsupported enum base type for {0}", enumType.Name));
@@ -4350,12 +4475,6 @@ namespace UnityEditor
             CurveEditorWindow.instance.Show(GUIView.current, settings);
         }
 
-        private static bool ValidTargetForIconSelection(Object[] targets)
-        {
-            // @TODO: Handle icon dropdown for multiple objects.
-            return ((targets[0] as MonoScript) || (targets[0] as GameObject)) && targets.Length == 1;
-        }
-
         internal static void ObjectIconDropDown(Rect position, Object[] targets, bool showLabelIcons, Texture2D nullIcon, SerializedProperty iconProperty)
         {
             if (s_IconTextureInactive == null)
@@ -4397,24 +4516,18 @@ namespace UnityEditor
                     GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
                 }
 
-                if (ValidTargetForIconSelection(targets))
+                if (s_IconDropDown == null)
                 {
-                    if (s_IconDropDown == null)
-                    {
-                        s_IconDropDown = EditorGUIUtility.IconContent("Icon Dropdown");
-                    }
-                    GUIStyle.none.Draw(new Rect(Mathf.Max(position.x + 2, iconRect.x - 6), iconRect.yMax - iconRect.height * 0.2f, 13, 8), s_IconDropDown, false, false, false, false);
+                    s_IconDropDown = EditorGUIUtility.IconContent("Icon Dropdown");
                 }
+                GUIStyle.none.Draw(new Rect(Mathf.Max(position.x + 2, iconRect.x - 6), iconRect.yMax - iconRect.height * 0.2f, 13, 8), s_IconDropDown, false, false, false, false);
             }
 
             if (DropdownButton(position, GUIContent.none, FocusType.Passive, GUIStyle.none))
             {
-                if (ValidTargetForIconSelection(targets))
+                if (IconSelector.ShowAtPosition(targets, position, showLabelIcons))
                 {
-                    if (IconSelector.ShowAtPosition(targets[0], position, showLabelIcons))
-                    {
-                        GUIUtility.ExitGUI();
-                    }
+                    GUIUtility.ExitGUI();
                 }
             }
         }
@@ -4611,7 +4724,7 @@ namespace UnityEditor
                 GUIStyle baseStyle = EditorStyles.inspectorTitlebar;
                 GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
                 GUIStyle foldoutStyle = EditorStyles.foldout;
-                Rect textRect = new Rect(position.x + baseStyle.padding.left + kInspTitlebarSpacing + (skipIconSpacing ? 0 : kInspTitlebarIconWidth), position.y + baseStyle.padding.top, 200, kInspTitlebarIconWidth);
+                Rect textRect = new Rect(position.x + baseStyle.padding.left + kInspTitlebarSpacing + (skipIconSpacing ? 0 : kInspTitlebarIconWidth), position.y + baseStyle.padding.top, EditorGUIUtility.labelWidth, kInspTitlebarIconWidth);
 
                 baseStyle.Draw(position, GUIContent.none, id, foldout);
                 foldoutStyle.Draw(GetInspectorTitleBarObjectFoldoutRenderRect(position), GUIContent.none, id, foldout);
@@ -5000,8 +5113,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Create a Property wrapper, useful for making regular GUI controls work with [[SerializedProperty]].
         internal static GUIContent BeginPropertyInternal(Rect totalPosition, GUIContent label, SerializedProperty property)
         {
-            Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
-
             if (s_PendingPropertyKeyboardHandling != null)
             {
                 DoPropertyFieldKeyboardHandling(s_PendingPropertyKeyboardHandling);
@@ -5023,6 +5134,8 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 HelpBox(totalPosition, "null", MessageType.Error);
                 throw new NullReferenceException(error);
             }
+
+            Highlighter.HighlightIdentifier(totalPosition, property.propertyPath);
 
             s_PropertyFieldTempContent.text = (label == null) ? property.localizedDisplayName : label.text; // no necessary to be translated.
             s_PropertyFieldTempContent.tooltip = isCollectingTooltips ? ((label == null) ? property.tooltip : label.tooltip) : null;
@@ -5812,7 +5925,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return false;
         }
 
-        static int EnumFlagsToInt(EnumData enumData, Enum enumValue)
+        internal static int EnumFlagsToInt(EnumData enumData, Enum enumValue)
         {
             if (enumData.unsigned)
             {
@@ -5835,9 +5948,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return Convert.ToInt32(enumValue);
         }
 
-        static Enum IntToEnumFlags(Type enumType, int value)
+        internal static Enum IntToEnumFlags(Type enumType, int value)
         {
-            var enumData = GetNonObsoleteEnumData(enumType);
+            var enumData = GetCachedEnumData(enumType);
 
             // parsing a string seems to be the only way to go from a flags int to an enum value
             if (enumData.unsigned)
@@ -5872,12 +5985,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static int AdvancedPopup(Rect rect, int selectedIndex, string[] displayedOptions)
         {
-            return StatelessAdvancedDropdown.SearchablePopup(rect, selectedIndex, displayedOptions, "MiniPullDown");
+            return StatelessAdvancedDropdown.DoSearchablePopup(rect, selectedIndex, displayedOptions, "MiniPullDown");
         }
 
         internal static int AdvancedPopup(Rect rect, int selectedIndex, string[] displayedOptions, GUIStyle style)
         {
-            return StatelessAdvancedDropdown.SearchablePopup(rect, selectedIndex, displayedOptions, style);
+            return StatelessAdvancedDropdown.DoSearchablePopup(rect, selectedIndex, displayedOptions, style);
         }
 
         // Draws the alpha channel of a texture within a rectangle.
@@ -6497,7 +6610,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         public static Enum EnumPopup(Rect position, GUIContent label, Enum selected, [DefaultValue("EditorStyles.popup")] GUIStyle style)
         {
-            return EnumPopupInternal(position, label, selected, style);
+            return EnumPopupInternal(position, label, selected, null, false, style);
+        }
+
+        public static Enum EnumPopup(Rect position, GUIContent label, Enum selected, [DefaultValue("null")] Func<Enum, bool> checkEnabled, [DefaultValue("false")] bool includeObsolete = false, [DefaultValue("null")] GUIStyle style = null)
+        {
+            return EnumPopupInternal(position, label, selected, checkEnabled, includeObsolete, style == null ? EditorStyles.popup : style);
         }
 
         [ExcludeFromDocs]
@@ -7452,6 +7570,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
             return EditorGUI.Slider(r, label, value, leftValue, rightValue);
         }
 
+        internal static float Slider(GUIContent label, float value, float sliderLeftValue, float sliderRightValue, float textLeftValue, float textRightValue, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetSliderRect(true, options);
+            return EditorGUI.Slider(r, label, value, sliderLeftValue, sliderRightValue, textLeftValue, textRightValue);
+        }
+
         public static void Slider(SerializedProperty property, float leftValue, float rightValue, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetSliderRect(false, options);
@@ -7468,6 +7592,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             Rect r = s_LastRect = GetSliderRect(true, options);
             EditorGUI.Slider(r, property, leftValue, rightValue, label);
+        }
+
+        internal static void Slider(SerializedProperty property, float sliderLeftValue, float sliderRightValue, float textLeftValue, float textRightValue, GUIContent label, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GetSliderRect(true, options);
+            EditorGUI.Slider(r, property, sliderLeftValue, sliderRightValue, textLeftValue, textRightValue, label);
         }
 
         internal static float PowerSlider(string label, float value, float leftValue, float rightValue, float power, params GUILayoutOption[] options)
@@ -7624,7 +7754,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         public static Enum EnumPopup(string label, Enum selected, GUIStyle style, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
-            return EditorGUI.EnumPopup(r, GUIContent.Temp(label), selected, style);
+            return EditorGUI.EnumPopup(r, GUIContent.Temp(label), selected, null, false, style);
         }
 
         public static Enum EnumPopup(GUIContent label, Enum selected, params GUILayoutOption[] options)
@@ -7635,8 +7765,18 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Make an enum popup selection field.
         public static Enum EnumPopup(GUIContent label, Enum selected, GUIStyle style, params GUILayoutOption[] options)
         {
+            return EnumPopup(label, selected, null, false, style);
+        }
+
+        public static Enum EnumPopup(GUIContent label, Enum selected, Func<Enum, bool> checkEnabled, bool includeObsolete, params GUILayoutOption[] options)
+        {
+            return EnumPopup(label, selected, checkEnabled, includeObsolete, EditorStyles.popup, options);
+        }
+
+        public static Enum EnumPopup(GUIContent label, Enum selected, Func<Enum, bool> checkEnabled, bool includeObsolete, GUIStyle style, params GUILayoutOption[] options)
+        {
             Rect r = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
-            return EditorGUI.EnumPopup(r, label, selected, style);
+            return EditorGUI.EnumPopup(r, label, selected, checkEnabled, includeObsolete, style);
         }
 
         public static int IntPopup(int selectedValue, string[] displayedOptions, int[] optionValues, params GUILayoutOption[] options)
@@ -7835,6 +7975,17 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             var position = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
             return EditorGUI.EnumFlagsField(position, label, enumValue, style);
+        }
+
+        public static Enum EnumFlagsField(GUIContent label, Enum enumValue, bool includeObsolete, params GUILayoutOption[] options)
+        {
+            return EnumFlagsField(label, enumValue, includeObsolete, EditorStyles.popup, options);
+        }
+
+        public static Enum EnumFlagsField(GUIContent label, Enum enumValue, bool includeObsolete, GUIStyle style, params GUILayoutOption[] options)
+        {
+            var position = s_LastRect = GetControlRect(true, EditorGUI.kSingleLineHeight, style, options);
+            return EditorGUI.EnumFlagsField(position, label, enumValue, includeObsolete, style);
         }
 
         [Obsolete("Check the docs for the usage of the new parameter 'allowSceneObjects'.")]
@@ -8729,27 +8880,13 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         public static bool BeginFadeGroup(float value)
         {
-            // Fade groups interfere with layout even when the fade group is collapsed because
-            // the margins of the elements before and after are added together instead of overlapping.
-            // This creates unwanted extra space between controls if there's an inactive fade group in between.
-            // We avoid this by simply not having the fade group if it's collapsed.
-            if (value == 0)
-            {
-                return false;
-            }
-            // Active fade groups interfere with styles that have overflow, because the overflow part gets clipped.
-            // We avoid this by simply not having the fade group if it's fully expanded.
-            if (value == 1)
-            {
-                return true;
-            }
-
             GUILayoutFadeGroup g = (GUILayoutFadeGroup)GUILayoutUtility.BeginLayoutGroup(GUIStyle.none, null, typeof(GUILayoutFadeGroup));
             g.isVertical = true;
             g.resetCoords = true;
             g.fadeValue = value;
             g.wasGUIEnabled = GUI.enabled;
             g.guiColor = GUI.color;
+            g.consideredForMargin = value > 0;
             if (value != 0.0f && value != 1.0f && Event.current.type == EventType.MouseDown)
             {
                 Event.current.Use();
@@ -8765,16 +8902,20 @@ This warning only shows up in development builds.", helpTopic, pageName);
         public static void EndFadeGroup()
         {
             // If we're inside a fade group, end it here.
-            // See BeginFadeGroup for details on why it's not always present.
             GUILayoutFadeGroup g = EditorGUILayoutUtilityInternal.topLevel as GUILayoutFadeGroup;
-            if (g != null)
+
+            // If there are no more FadeGroups to end, display a warning.
+            if (g == null)
             {
-                GUI.EndGroup();
-                EditorGUIUtility.UnlockContextWidth();
-                GUI.enabled = g.wasGUIEnabled;
-                GUI.color = g.guiColor;
-                GUILayoutUtility.EndLayoutGroup();
+                Debug.LogWarning("Unexpected call to EndFadeGroup! Make sure to call EndFadeGroup the same number of times as BeginFadeGroup.");
+                return;
             }
+
+            GUI.EndGroup();
+            EditorGUIUtility.UnlockContextWidth();
+            GUI.enabled = g.wasGUIEnabled;
+            GUI.color = g.guiColor;
+            GUILayoutUtility.EndLayoutGroup();
         }
 
         internal static int BeginPlatformGrouping(BuildPlatform[] platforms, GUIContent defaultTab)

@@ -32,6 +32,7 @@ namespace UnityEditor
             public GUIContent burstCycleCount = EditorGUIUtility.TrTextContent("Cycles", "How many times to emit the burst. Use the dropdown to repeat infinitely.");
             public GUIContent burstCycleCountInfinite = EditorGUIUtility.TrTextContent("Infinite");
             public GUIContent burstRepeatInterval = EditorGUIUtility.TrTextContent("Interval", "Repeat the burst every N seconds.");
+            public GUIContent burstProbability = EditorGUIUtility.TrTextContent("Probability", "0-1 Chance that the burst will trigger.");
         }
         private static Texts s_Texts;
 
@@ -98,9 +99,12 @@ namespace UnityEditor
             SerializedProperty burstCountState = burst.FindPropertyRelative("countCurve.minMaxState");
             SerializedProperty burstCount = burst.FindPropertyRelative("countCurve.scalar");
             SerializedProperty burstCycleCount = burst.FindPropertyRelative("cycleCount");
+            SerializedProperty burstProbability = burst.FindPropertyRelative("probability");
+
             burstCountState.intValue = (int)ParticleSystemCurveMode.Constant;
             burstCount.floatValue = 30.0f;
             burstCycleCount.intValue = 1;
+            burstProbability.floatValue = 1.0f;
 
             SerializedProperty burstCountMinCurve = burst.FindPropertyRelative("countCurve.minCurve");
             SerializedProperty burstCountMaxCurve = burst.FindPropertyRelative("countCurve.maxCurve");
@@ -131,7 +135,7 @@ namespace UnityEditor
         private void DrawBurstListHeaderCallback(Rect rect)
         {
             rect.width -= k_BurstDragWidth;
-            rect.width /= 4;
+            rect.width /= 5;
             rect.x += k_BurstDragWidth;
 
             EditorGUI.LabelField(rect, s_Texts.burstTime, ParticleSystemStyles.Get().label);
@@ -145,6 +149,9 @@ namespace UnityEditor
 
             EditorGUI.LabelField(rect, s_Texts.burstRepeatInterval, ParticleSystemStyles.Get().label);
             rect.x += rect.width;
+
+            EditorGUI.LabelField(rect, s_Texts.burstProbability, ParticleSystemStyles.Get().label);
+            rect.x += rect.width;
         }
 
         private void DrawBurstListElementCallback(Rect rect, int index, bool isActive, bool isFocused)
@@ -153,9 +160,10 @@ namespace UnityEditor
             SerializedProperty burstTime = burst.FindPropertyRelative("time");
             SerializedProperty burstCycleCount = burst.FindPropertyRelative("cycleCount");
             SerializedProperty burstRepeatInterval = burst.FindPropertyRelative("repeatInterval");
+            SerializedProperty burstProbability = burst.FindPropertyRelative("probability");
 
-            rect.width -= (k_BurstDragWidth * 3);
-            rect.width /= 4;
+            rect.width -= (k_BurstDragWidth * 4);
+            rect.width /= 5;
 
             // Time
             FloatDraggable(rect, burstTime, 1.0f, k_BurstDragWidth, "n3");
@@ -184,6 +192,10 @@ namespace UnityEditor
 
             // Repeat Interval
             FloatDraggable(rect, burstRepeatInterval, 1.0f, k_BurstDragWidth, "n3");
+            rect.x += rect.width;
+
+            // Probability
+            FloatDraggable(rect, burstProbability, 1.0f, k_BurstDragWidth, "n2");
             rect.x += rect.width;
         }
 

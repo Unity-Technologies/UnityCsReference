@@ -5,23 +5,267 @@
 using UnityEngine;
 using System.Collections.Generic;
 
+using UnityEngine.Rendering;
+
 namespace UnityEditor
 {
     public sealed partial class Handles
     {
-        private const float k_BoneThickness = 0.08f;
+        internal sealed class BoneRenderer
+        {
+            private List<Matrix4x4> m_BoneMatrices;
+            private List<Vector4> m_BoneColors;
+            private List<Matrix4x4> m_BoneLeafMatrices;
+            private List<Vector4> m_BoneLeafColors;
+
+            private static Mesh s_Mesh;
+            private static Material s_Material;
+
+            private const float k_Epsilon = 1e-5f;
+            private const float k_BoneScale = 0.08f;
+            private const float k_BoneLeafScale = 0.24f;
+            private const int k_BoneVertexCount = 4;
+            private const int k_BoneLeafDiscResolution = 30;
+
+            public enum SubMeshType
+            {
+                BoneFaces,
+                BoneWire,
+                BoneLeafWire,
+                Count
+            }
+
+            public BoneRenderer()
+            {
+                m_BoneMatrices = new List<Matrix4x4>();
+                m_BoneColors = new List<Vector4>();
+                m_BoneLeafMatrices = new List<Matrix4x4>();
+                m_BoneLeafColors = new List<Vector4>();
+            }
+
+            public void AddBoneInstance(Vector3 start, Vector3 end, Color color)
+            {
+                float length = (end - start).magnitude;
+                if (length < k_Epsilon)
+                    return;
+
+                m_BoneMatrices.Add(ComputeBoneMatrix(start, end, length));
+                m_BoneColors.Add(new Vector4(color.r, color.g, color.b, color.a));
+            }
+
+            public void AddBoneLeafInstance(Vector3 position, Quaternion rotation, float radius, Color color)
+            {
+                radius *= k_BoneLeafScale;
+                if (radius < k_Epsilon)
+                    return;
+
+                m_BoneLeafMatrices.Add(Matrix4x4.TRS(position, rotation, new Vector3(radius, radius, radius)));
+                m_BoneLeafColors.Add(new Vector4(color.r, color.g, color.b, color.a));
+            }
+
+            public void ClearInstances()
+            {
+                m_BoneMatrices.Clear();
+                m_BoneColors.Clear();
+                m_BoneLeafMatrices.Clear();
+                m_BoneLeafColors.Clear();
+            }
+
+            public static Material material
+            {
+                get
+                {
+                    if (!s_Material)
+                    {
+                        Shader shader = (Shader)EditorGUIUtility.LoadRequired("SceneView/BoneHandles.shader");
+                        s_Material = new Material(shader);
+                        s_Material.enableInstancing = true;
+                    }
+
+                    return s_Material;
+                }
+            }
+
+            public static Mesh mesh
+            {
+                get
+                {
+                    if (!s_Mesh)
+                    {
+                        s_Mesh = new Mesh();
+                        s_Mesh.name = "BoneRendererMesh";
+                        s_Mesh.subMeshCount = (int)SubMeshType.Count;
+                        s_Mesh.hideFlags = HideFlags.DontSave;
+
+                        // Bone vertices
+                        List<Vector3> vertices = new List<Vector3>(k_BoneVertexCount + k_BoneLeafDiscResolution * 3);
+                        vertices.Add(new Vector3(0.0f, 1.0f, 0.0f));
+                        vertices.Add(new Vector3(0.0f, 0.0f, -1.0f));
+                        vertices.Add(new Vector3(-0.9f, 0.0f, 0.5f));
+                        vertices.Add(new Vector3(0.9f, 0.0f, 0.5f));
+
+                        // Bone leaf vertices
+                        Vector3[] tmp = new Vector3[k_BoneLeafDiscResolution];
+                        Handles.SetDiscSectionPoints(tmp, Vector3.zero, Vector3.up, Vector3.right, 360f, 1f);
+                        vertices.AddRange(tmp);
+                        Handles.SetDiscSectionPoints(tmp, Vector3.zero, Vector3.right, Vector3.up, 360f, 1f);
+                        vertices.AddRange(tmp);
+                        Handles.SetDiscSectionPoints(tmp, Vector3.zero, Vector3.forward, Vector3.up, 360f, 1f);
+                        vertices.AddRange(tmp);
+                        s_Mesh.vertices = vertices.ToArray();
+
+                        // Build indices for different sub meshes
+                        int[] boneFaceIndices = new int[]
+                        {
+                            0, 2, 1,
+                            0, 1, 3,
+                            0, 3, 2,
+                            1, 2, 3
+                        };
+                        s_Mesh.SetIndices(boneFaceIndices, MeshTopology.Triangles, (int)SubMeshType.BoneFaces);
+
+                        int[] boneWireIndices = new int[]
+                        {
+                            0, 1, 0, 2, 0, 3, 1, 2, 2, 3, 3, 1
+                        };
+                        s_Mesh.SetIndices(boneWireIndices, MeshTopology.Lines, (int)SubMeshType.BoneWire);
+
+                        int counter = 0;
+                        int[] boneLeafWireIndices = new int[(vertices.Count - k_BoneVertexCount - 3) * 2];
+                        for (int i = k_BoneVertexCount + 1; i < vertices.Count; ++i)
+                        {
+                            if (((i - k_BoneVertexCount) % k_BoneLeafDiscResolution) == 0)
+                                continue;
+
+                            boneLeafWireIndices[counter++] = i - 1;
+                            boneLeafWireIndices[counter++] = i;
+                        }
+                        s_Mesh.SetIndices(boneLeafWireIndices, MeshTopology.Lines, (int)SubMeshType.BoneLeafWire);
+                    }
+
+                    return s_Mesh;
+                }
+            }
+
+            public int boneCount
+            {
+                get { return m_BoneMatrices.Count; }
+            }
+
+            public int boneLeafCount
+            {
+                get { return m_BoneLeafMatrices.Count; }
+            }
+
+            private static Matrix4x4 ComputeBoneMatrix(Vector3 start, Vector3 end, float length)
+            {
+                Vector3 direction = (end - start) / length;
+                Vector3 tangent = Vector3.Cross(direction, Vector3.up);
+                if (Vector3.SqrMagnitude(tangent) < 0.1f)
+                    tangent = Vector3.Cross(direction, Vector3.right);
+                tangent.Normalize();
+                Vector3 bitangent = Vector3.Cross(direction, tangent);
+
+                float scale = length * k_BoneScale;
+
+                return new Matrix4x4(
+                    new Vector4(tangent.x   * scale,  tangent.y   * scale,  tangent.z   * scale , 0f),
+                    new Vector4(direction.x * length, direction.y * length, direction.z * length, 0f),
+                    new Vector4(bitangent.x * scale,  bitangent.y * scale,  bitangent.z * scale , 0f),
+                    new Vector4(start.x, start.y, start.z, 1f));
+            }
+
+            private static int RenderChunkCount(int totalCount)
+            {
+                return Mathf.CeilToInt((totalCount / (float)Graphics.kMaxDrawMeshInstanceCount));
+            }
+
+            private static T[] GetRenderChunk<T>(List<T> array, int chunkIndex)
+            {
+                int rangeCount = (chunkIndex < (RenderChunkCount(array.Count) - 1)) ?
+                    Graphics.kMaxDrawMeshInstanceCount : array.Count - (chunkIndex * Graphics.kMaxDrawMeshInstanceCount);
+
+                return array.GetRange(chunkIndex * Graphics.kMaxDrawMeshInstanceCount, rangeCount).ToArray();
+            }
+
+            public static Vector3[] GetBoneWireVertices(Vector3 start, Vector3 end)
+            {
+                float length = (end - start).magnitude;
+                if (length < k_Epsilon)
+                    return null;
+
+                Matrix4x4 matrix = ComputeBoneMatrix(start, end, length);
+
+                Vector3[] pts = new Vector3[k_BoneVertexCount];
+                for (int i = 0; i < k_BoneVertexCount; ++i)
+                    pts[i] = matrix.MultiplyPoint3x4(mesh.vertices[i]);
+
+                int[] boneLines = mesh.GetIndices((int)SubMeshType.BoneWire);
+                Vector3[] lines = new Vector3[boneLines.Length];
+                for (int i = 0; i < boneLines.Length; ++i)
+                    lines[i] = pts[boneLines[i]];
+
+                return lines;
+            }
+
+            public void Render()
+            {
+                if (boneCount == 0)
+                    return;
+
+                Material mat = material;
+                mat.SetPass(0);
+
+                MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+                CommandBuffer cb = new CommandBuffer();
+
+                Matrix4x4[] matrices = null;
+
+                int chunkCount = RenderChunkCount(boneCount);
+                for (int i = 0; i < chunkCount; ++i)
+                {
+                    cb.Clear();
+                    matrices = GetRenderChunk(m_BoneMatrices, i);
+                    propertyBlock.SetVectorArray("_Color", GetRenderChunk(m_BoneColors, i));
+
+                    material.DisableKeyword("WIRE_ON");
+                    cb.DrawMeshInstanced(mesh, (int)SubMeshType.BoneFaces, material, 0, matrices, matrices.Length, propertyBlock);
+                    Graphics.ExecuteCommandBuffer(cb);
+
+                    cb.Clear();
+                    material.EnableKeyword("WIRE_ON");
+                    cb.DrawMeshInstanced(mesh, (int)SubMeshType.BoneWire, material, 0, matrices, matrices.Length, propertyBlock);
+                    Graphics.ExecuteCommandBuffer(cb);
+                }
+
+                if (boneLeafCount == 0)
+                    return;
+
+                chunkCount = RenderChunkCount(boneLeafCount);
+                cb.Clear();
+                material.EnableKeyword("WIRE_ON");
+
+                for (int i = 0; i < chunkCount; ++i)
+                {
+                    matrices = GetRenderChunk(m_BoneLeafMatrices, i);
+                    propertyBlock.SetVectorArray("_Color", GetRenderChunk(m_BoneLeafColors, i));
+                    cb.DrawMeshInstanced(mesh, (int)SubMeshType.BoneLeafWire, material, 0, matrices, matrices.Length, propertyBlock);
+                }
+                Graphics.ExecuteCommandBuffer(cb);
+            }
+        }
 
         internal static float DistanceToPolygone(Vector3[] vertices)
         {
             return HandleUtility.DistanceToPolyLine(vertices);
         }
 
-        internal static void DoBoneHandle(Transform target)
+        internal static void DoBoneHandle(Transform target, BoneRenderer renderer)
         {
-            DoBoneHandle(target, null);
+            DoBoneHandle(target, null, renderer);
         }
 
-        internal static void DoBoneHandle(Transform target, Dictionary<Transform, bool> validBones)
+        internal static void DoBoneHandle(Transform target, Dictionary<Transform, bool> validBones, BoneRenderer renderer)
         {
             int id = target.name.GetHashCode();
             Event evt = Event.current;
@@ -69,11 +313,10 @@ namespace UnityEditor
                 {
                     case EventType.Layout:
                     {
-                        float len = Vector3.Magnitude(endPoint - basePoint);
-                        float size = len * k_BoneThickness;
-                        Vector3[] vertices = GetBoneVertices(endPoint, basePoint, size);
-
-                        HandleUtility.AddControl(id, DistanceToPolygone(vertices));
+                        // TODO : This is slow and should be revisited prior to exposing bone handles
+                        Vector3[] vertices = BoneRenderer.GetBoneWireVertices(basePoint, endPoint);
+                        if (vertices != null)
+                            HandleUtility.AddControl(id, DistanceToPolygone(vertices));
 
                         break;
                     }
@@ -133,102 +376,15 @@ namespace UnityEditor
                     }
                     case EventType.Repaint:
                     {
-                        float len = Vector3.Magnitude(endPoint - basePoint);
-                        if (len > 0)
-                        {
-                            color = GUIUtility.hotControl == 0 && HandleUtility.nearestControl == id ? Handles.preselectionColor : color;
-
-                            // size used to be based on sqrt of length but that makes bones for
-                            // huge creatures hair-thin and bones for tiny creatures bulky.
-                            // So base on a fixed proportion instead.
-                            float size = len * k_BoneThickness;
-                            if (hasValidChildBones)
-                                Handles.DrawBone(endPoint, basePoint, size);
-                            else
-                                Handles.SphereHandleCap(id, basePoint, target.rotation, size * .2f, EventType.Repaint);
-                        }
-                        break;
+                        color = GUIUtility.hotControl == 0 && HandleUtility.nearestControl == id ? Handles.preselectionColor : color;
+                        if (hasValidChildBones)
+                            renderer.AddBoneInstance(basePoint, endPoint, color);
+                        else
+                            renderer.AddBoneLeafInstance(basePoint, target.rotation, (endPoint - basePoint).magnitude, color);
                     }
+                    break;
                 }
             }
-        }
-
-        internal static void DrawBone(Vector3 endPoint, Vector3 basePoint, float size)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-
-            const int sConeSides = 3;
-
-            Vector3[] vertices = GetBoneVertices(endPoint, basePoint, size);
-
-            HandleUtility.ApplyWireMaterial();
-
-            GL.Begin(GL.TRIANGLES);
-            GL.Color(color);
-            for (int i = 0; i < sConeSides; i++)
-            {
-                GL.Vertex(vertices[i * 6 + 0]);
-                GL.Vertex(vertices[i * 6 + 1]);
-                GL.Vertex(vertices[i * 6 + 2]);
-
-                GL.Vertex(vertices[i * 6 + 3]);
-                GL.Vertex(vertices[i * 6 + 4]);
-                GL.Vertex(vertices[i * 6 + 5]);
-            }
-            GL.End();
-
-            GL.Begin(GL.LINES);
-            GL.Color(color * new Color(1, 1, 1, 0) + new Color(0, 0, 0, 1.0f));
-            for (int i = 0; i < sConeSides; i++)
-            {
-                GL.Vertex(vertices[i * 6 + 0]);
-                GL.Vertex(vertices[i * 6 + 1]);
-
-                GL.Vertex(vertices[i * 6 + 1]);
-                GL.Vertex(vertices[i * 6 + 2]);
-
-                // No need to draw the third edge of the triangle; it's drawn by the triangles that shares the edge.
-            }
-            GL.End();
-        }
-
-        internal static Vector3[] GetBoneVertices(Vector3 endPoint, Vector3 basePoint, float radius)
-        {
-            const int sConeSides = 3;
-
-            Vector3 direction = Vector3.Normalize(endPoint - basePoint);
-            Vector3 tangent = Vector3.Cross(direction, Vector3.up);
-            if (Vector3.SqrMagnitude(tangent) < 0.1f)
-                tangent = Vector3.Cross(direction, Vector3.right);
-            tangent.Normalize();
-            Vector3 bitangent = Vector3.Cross(direction, tangent);
-
-            Vector3[] vertices = new Vector3[sConeSides * 6];
-            const float kDelta = Mathf.PI * 2.0f / sConeSides;
-            float phi = 0.0f;
-            for (int i = 0; i < sConeSides; ++i)
-            {
-                float cs1 = Mathf.Cos(phi);
-                float ss1 = Mathf.Sin(phi);
-                float cs2 = Mathf.Cos(phi + kDelta);
-                float ss2 = Mathf.Sin(phi + kDelta);
-                Vector3 p1 = basePoint + tangent * (cs1 * radius) + bitangent * (ss1 * radius);
-                Vector3 p2 = basePoint + tangent * (cs2 * radius) + bitangent * (ss2 * radius);
-
-                // triangle of the cone
-                vertices[i * 6 + 0] = endPoint;
-                vertices[i * 6 + 1] = p1;
-                vertices[i * 6 + 2] = p2;
-
-                // triangle of the base point disk
-                vertices[i * 6 + 3] = basePoint;
-                vertices[i * 6 + 4] = p2;
-                vertices[i * 6 + 5] = p1;
-                phi += kDelta;
-            }
-
-            return vertices;
         }
     }
 }

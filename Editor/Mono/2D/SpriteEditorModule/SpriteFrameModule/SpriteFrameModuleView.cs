@@ -55,7 +55,7 @@ namespace UnityEditor
 
         public override void DoToolbarGUI(Rect toolbarRect)
         {
-            using (new EditorGUI.DisabledScope(!containsMultipleSprites || spriteEditor.editingDisabled))
+            using (new EditorGUI.DisabledScope(!containsMultipleSprites || spriteEditor.editingDisabled || m_TextureDataProvider.GetReadableTexture2D() == null))
             {
                 GUIStyle skin = EditorStyles.toolbarPopup;
 

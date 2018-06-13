@@ -125,7 +125,10 @@ namespace UnityEngine.Experimental
         }
 
         // These are here instead of on SubsystemDescriptor because generic types are not supported by .bindings.cs
+        [NativeConditional("ENABLE_XR")]
         public static extern IntPtr Create(IntPtr descriptorPtr);
+
+        [NativeConditional("ENABLE_XR")]
         public static extern string GetId(IntPtr descriptorPtr);
     }
 
@@ -159,7 +162,10 @@ namespace UnityEngine.Experimental
             }
         }
 
+        [NativeConditional("ENABLE_XR")]
         extern internal static void DestroyInstance_Internal(IntPtr instancePtr);
+
+        [NativeConditional("ENABLE_XR")]
         extern internal static void StaticConstructScriptingClassMap();
     }
 

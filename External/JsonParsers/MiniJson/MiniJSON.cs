@@ -477,7 +477,7 @@ namespace UnityEditor
 				IDictionary asDict;
 				string asStr;
 
-				if (value == null)
+				if (value == null || value is Delegate)
 				{
 					builder.Append ("null");
 				}

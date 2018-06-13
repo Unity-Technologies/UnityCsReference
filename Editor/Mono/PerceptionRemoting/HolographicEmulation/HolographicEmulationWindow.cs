@@ -13,9 +13,9 @@ using UnityEngine;
 using UnityEngine.XR;
 using UnityEngine.XR.WSA;
 
-namespace UnityEditorInternal.VR
+namespace UnityEngine.XR.WSA
 {
-    public class HolographicEmulationWindow : EditorWindow
+    internal class HolographicEmulationWindow : EditorWindow
     {
         private bool m_InPlayMode = false;
         private bool m_OperatingSystemChecked = false;
@@ -113,14 +113,14 @@ namespace UnityEditorInternal.VR
                 return;
 
             string roomPath = EditorApplication.applicationContentsPath + "/UnityExtensions/Unity/VR/HolographicSimulation/Rooms/";
-            HolographicEmulation.LoadRoom(roomPath + s_RoomStrings[m_RoomIndex].text + ".xef");
+            HolographicAutomation.LoadRoom(roomPath + s_RoomStrings[m_RoomIndex].text + ".xef");
         }
 
         private void InitializeSimulation()
         {
             Disconnect();
 
-            HolographicEmulation.Initialize();
+            HolographicAutomation.Initialize();
 
             LoadCurrentRoom();
         }
@@ -135,7 +135,7 @@ namespace UnityEditorInternal.VR
 
             if (m_InPlayMode && !wasPlaying)
             {
-                HolographicEmulation.SetEmulationMode(m_Mode);
+                HolographicAutomation.SetEmulationMode(m_Mode);
                 switch (m_Mode)
                 {
                     case EmulationMode.Simulated:
@@ -150,7 +150,7 @@ namespace UnityEditorInternal.VR
                 switch (m_Mode)
                 {
                     case EmulationMode.Simulated:
-                        HolographicEmulation.Shutdown();
+                        HolographicAutomation.Shutdown();
                         break;
 
                     case EmulationMode.RemoteDevice:
@@ -161,21 +161,21 @@ namespace UnityEditorInternal.VR
 
         private void Connect()
         {
-            PerceptionRemotingPlugin.SetVideoEncodingParameters(m_MaxBitrateKbps);
-            PerceptionRemotingPlugin.SetEnableVideo(m_EnableVideo);
-            PerceptionRemotingPlugin.SetEnableAudio(m_EnableAudio);
-            PerceptionRemotingPlugin.Connect(m_RemoteMachineAddress);
+            PerceptionRemoting.SetVideoEncodingParameters(m_MaxBitrateKbps);
+            PerceptionRemoting.SetEnableVideo(m_EnableVideo);
+            PerceptionRemoting.SetEnableAudio(m_EnableAudio);
+            PerceptionRemoting.Connect(m_RemoteMachineAddress);
         }
 
         private void Disconnect()
         {
-            if (PerceptionRemotingPlugin.GetConnectionState() != HolographicStreamerConnectionState.Disconnected)
-                PerceptionRemotingPlugin.Disconnect();
+            if (PerceptionRemoting.GetConnectionState() != HolographicStreamerConnectionState.Disconnected)
+                PerceptionRemoting.Disconnect();
         }
 
         private bool IsConnectedToRemoteDevice()
         {
-            return PerceptionRemotingPlugin.GetConnectionState() == HolographicStreamerConnectionState.Connected;
+            return PerceptionRemoting.GetConnectionState() == HolographicStreamerConnectionState.Connected;
         }
 
         private void HandleButtonPress()
@@ -186,7 +186,7 @@ namespace UnityEditorInternal.VR
                 return;
             }
 
-            HolographicStreamerConnectionState connectionState = PerceptionRemotingPlugin.GetConnectionState();
+            HolographicStreamerConnectionState connectionState = PerceptionRemoting.GetConnectionState();
             if (connectionState == HolographicStreamerConnectionState.Connecting ||
                 connectionState == HolographicStreamerConnectionState.Connected)
             {
@@ -258,7 +258,7 @@ namespace UnityEditorInternal.VR
             Texture2D iconTexture;
             GUIContent labelContent;
             GUIContent buttonContent;
-            HolographicStreamerConnectionState connectionState = PerceptionRemotingPlugin.GetConnectionState();
+            HolographicStreamerConnectionState connectionState = PerceptionRemoting.GetConnectionState();
             switch (connectionState)
             {
                 case HolographicStreamerConnectionState.Disconnected:
@@ -380,7 +380,7 @@ namespace UnityEditorInternal.VR
                     EditorGUI.BeginChangeCheck();
                     m_Hand = (GestureHand)EditorGUILayout.Popup(s_HandText, (int)m_Hand, s_HandStrings);
                     if (EditorGUI.EndChangeCheck())
-                        HolographicEmulation.SetGestureHand(m_Hand);
+                        HolographicAutomation.SetGestureHand(m_Hand);
 
                     break;
             }
@@ -391,16 +391,16 @@ namespace UnityEditorInternal.VR
             switch (m_Mode)
             {
                 case EmulationMode.Simulated:
-                    HolographicEmulation.SetGestureHand(m_Hand);
+                    UnityEngine.XR.WSA.HolographicAutomation.SetGestureHand(m_Hand);
                     break;
 
                 case EmulationMode.RemoteDevice:
-                    HolographicStreamerConnectionState connectionState = PerceptionRemotingPlugin.GetConnectionState();
+                    HolographicStreamerConnectionState connectionState = PerceptionRemoting.GetConnectionState();
                     if (connectionState != m_LastConnectionState)
                     {
                         Repaint();
                     }
-                    var lastConnectionFailureReason = PerceptionRemotingPlugin.CheckForDisconnect();
+                    var lastConnectionFailureReason = PerceptionRemoting.CheckForDisconnect();
                     if (lastConnectionFailureReason == HolographicStreamerConnectionFailureReason.Unreachable
                         || lastConnectionFailureReason == HolographicStreamerConnectionFailureReason.ConnectionLost)
                     {

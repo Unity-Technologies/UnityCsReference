@@ -57,8 +57,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public MiniMap()
         {
-            clippingOptions = ClippingOptions.NoClipping;
-
             capabilities = Capabilities.Movable;
 
             m_Dragger = new Dragger { clampToParentEdges = true };
@@ -258,7 +256,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         private static Vector3[] s_CachedRect = new Vector3[4];
-        public override void DoRepaint()
+        protected override void DoRepaint(IStylePainter painter)
         {
             var gView = graphView;
             VisualElement container = gView.contentViewContainer;
@@ -281,7 +279,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             CalculateRects(container);
 
             // Let the base call draw the background and so on
-            base.DoRepaint();
+            base.DoRepaint(painter);
 
             // Display elements in the MiniMap
             Color currentColor = Handles.color;

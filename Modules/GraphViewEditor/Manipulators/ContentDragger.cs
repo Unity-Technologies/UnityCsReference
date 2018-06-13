@@ -90,7 +90,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_Start = graphView.ChangeCoordinatesTo(graphView.contentViewContainer, e.localMousePosition);
 
             m_Active = true;
-            target.TakeMouseCapture();
+            target.CaptureMouse();
             e.StopImmediatePropagation();
         }
 
@@ -127,7 +127,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             graphView.UpdateViewTransform(p, s);
 
             m_Active = false;
-            target.ReleaseMouseCapture();
+            target.ReleaseMouse();
             e.StopPropagation();
         }
     }

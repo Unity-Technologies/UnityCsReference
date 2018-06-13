@@ -12,6 +12,8 @@ namespace Unity.UNetWeaver
     {
         TypeDefinition m_TypeDef;
         TypeReference m_ItemType;
+        const MethodAttributes kPublicStaticHide = MethodAttributes.Public | MethodAttributes.Static | MethodAttributes.HideBySig;
+        const MethodAttributes kPublicVirtualHide = MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.HideBySig;
 
         public SyncListStructProcessor(TypeDefinition typeDef)
         {
@@ -76,11 +78,7 @@ namespace Unity.UNetWeaver
             }
 
             // create new reader for this type
-            MethodDefinition readerFunc = new MethodDefinition(functionName,
-                    MethodAttributes.Public |
-                    MethodAttributes.Static |
-                    MethodAttributes.HideBySig,
-                    Weaver.voidType);
+            MethodDefinition readerFunc = new MethodDefinition(functionName, kPublicStaticHide, Weaver.voidType);
 
             readerFunc.Parameters.Add(new ParameterDefinition("reader", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkReaderType)));
             readerFunc.Parameters.Add(new ParameterDefinition("instance", ParameterAttributes.None, m_TypeDef));
@@ -164,11 +162,7 @@ namespace Unity.UNetWeaver
             }
 
             // create new writer for this type
-            MethodDefinition writerFunc = new MethodDefinition(functionName,
-                    MethodAttributes.Public |
-                    MethodAttributes.Static |
-                    MethodAttributes.HideBySig,
-                    Weaver.voidType);
+            MethodDefinition writerFunc = new MethodDefinition(functionName, kPublicStaticHide, Weaver.voidType);
 
             writerFunc.Parameters.Add(new ParameterDefinition("writer", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkWriterType)));
             writerFunc.Parameters.Add(new ParameterDefinition("value", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(m_TypeDef)));
@@ -237,11 +231,7 @@ namespace Unity.UNetWeaver
                     return m;
             }
 
-            MethodDefinition serializeFunc = new MethodDefinition("SerializeItem", MethodAttributes.Public |
-                    MethodAttributes.Virtual |
-                    MethodAttributes.Public |
-                    MethodAttributes.HideBySig,
-                    Weaver.voidType);
+            MethodDefinition serializeFunc = new MethodDefinition("SerializeItem", kPublicVirtualHide, Weaver.voidType);
 
             serializeFunc.Parameters.Add(new ParameterDefinition("writer", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkWriterType)));
             serializeFunc.Parameters.Add(new ParameterDefinition("item", ParameterAttributes.None, m_ItemType));
@@ -306,11 +296,7 @@ namespace Unity.UNetWeaver
                     return m;
             }
 
-            MethodDefinition serializeFunc = new MethodDefinition("DeserializeItem", MethodAttributes.Public |
-                    MethodAttributes.Virtual |
-                    MethodAttributes.Public |
-                    MethodAttributes.HideBySig,
-                    m_ItemType);
+            MethodDefinition serializeFunc = new MethodDefinition("DeserializeItem", kPublicVirtualHide, m_ItemType);
 
             serializeFunc.Parameters.Add(new ParameterDefinition("reader", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkReaderType)));
 

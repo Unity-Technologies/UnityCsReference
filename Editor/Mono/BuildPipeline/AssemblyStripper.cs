@@ -194,9 +194,13 @@ namespace UnityEditorInternal
             if (isMono)
             {
                 // The old Mono assembly stripper uses per-platform link.xml files if available. Apply these here.
-                var platformDescriptor = Path.Combine(BuildPipeline.GetBuildToolsDirectory(platformProvider.target), "link.xml");
-                if (File.Exists(platformDescriptor))
-                    blacklists = blacklists.Concat(new[] {platformDescriptor});
+                var buildToolsDirectory = BuildPipeline.GetBuildToolsDirectory(platformProvider.target);
+                if (!string.IsNullOrEmpty(buildToolsDirectory))
+                {
+                    var platformDescriptor = Path.Combine(buildToolsDirectory, "link.xml");
+                    if (File.Exists(platformDescriptor))
+                        blacklists = blacklists.Concat(new[] {platformDescriptor});
+                }
             }
 
             if (!stripEngineCode)
@@ -314,7 +318,7 @@ namespace UnityEditorInternal
             return sb.ToString();
         }
 
-        static public void InvokeFromBuildPlayer(BuildTarget buildTarget, RuntimeClassRegistry usedClasses)
+        static public void InvokeFromBuildPlayer(BuildTarget buildTarget, RuntimeClassRegistry usedClasses, ManagedStrippingLevel strippingLevel)
         {
             var stagingAreaData = Paths.Combine("Temp", "StagingArea", "Data");
 

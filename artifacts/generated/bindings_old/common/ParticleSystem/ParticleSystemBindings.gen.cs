@@ -508,6 +508,10 @@ public sealed partial class ParticleSystem : Component
                     public int meshMaterialIndex { get { return GetMeshMaterialIndex(m_ParticleSystem); } set { SetMeshMaterialIndex(m_ParticleSystem, value); } }
                     public bool useMeshColors { get { return GetUseMeshColors(m_ParticleSystem); } set { SetUseMeshColors(m_ParticleSystem, value); } }
                     public float normalOffset { get { return GetNormalOffset(m_ParticleSystem); } set { SetNormalOffset(m_ParticleSystem, value); } }
+                    public ParticleSystemShapeMultiModeValue meshSpawnMode { get { return GetMeshSpawnMode(m_ParticleSystem); } set { SetMeshSpawnMode(m_ParticleSystem, value); } }
+                    public float meshSpawnSpread { get { return GetMeshSpawnSpread(m_ParticleSystem); } set { SetMeshSpawnSpread(m_ParticleSystem, value); } }
+                    public MinMaxCurve meshSpawnSpeed { set { SetMeshSpawnSpeed(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxCurve(); GetMeshSpawnSpeed(m_ParticleSystem, ref r); return r; } }
+                    public float meshSpawnSpeedMultiplier { get { return GetMeshSpawnSpeedMultiplier(m_ParticleSystem); } set { SetMeshSpawnSpeedMultiplier(m_ParticleSystem, value); } }
                     public float arc { get { return GetArc(m_ParticleSystem); } set { SetArc(m_ParticleSystem, value); } }
                     public ParticleSystemShapeMultiModeValue arcMode { get { return GetArcMode(m_ParticleSystem); } set { SetArcMode(m_ParticleSystem, value); } }
                     public float arcSpread { get { return GetArcSpread(m_ParticleSystem); } set { SetArcSpread(m_ParticleSystem, value); } }
@@ -733,6 +737,38 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  float GetNormalOffset (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMeshSpawnMode (ParticleSystem system, ParticleSystemShapeMultiModeValue value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  ParticleSystemShapeMultiModeValue GetMeshSpawnMode (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMeshSpawnSpread (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetMeshSpawnSpread (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMeshSpawnSpeed (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void GetMeshSpawnSpeed (ParticleSystem system, ref ParticleSystem.MinMaxCurve curve) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetMeshSpawnSpeedMultiplier (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetMeshSpawnSpeedMultiplier (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2556,8 +2592,6 @@ public sealed partial class ParticleSystem : Component
                     public int cycleCount { set { SetCycleCount(m_ParticleSystem, value); } get { return GetCycleCount(m_ParticleSystem); } }
                     public int rowIndex { set { SetRowIndex(m_ParticleSystem, value); } get { return GetRowIndex(m_ParticleSystem); } }
                     public Rendering.UVChannelFlags uvChannelMask { set { SetUVChannelMask(m_ParticleSystem, (int)value); } get { return (Rendering.UVChannelFlags)GetUVChannelMask(m_ParticleSystem); } }
-                    public float flipU { get { return GetFlipU(m_ParticleSystem); } set { SetFlipU(m_ParticleSystem, value); } }
-                    public float flipV { get { return GetFlipV(m_ParticleSystem); } set { SetFlipV(m_ParticleSystem, value); } }
                     public int spriteCount { get { return GetSpriteCount(m_ParticleSystem); } }
         
         public void AddSprite(Sprite sprite) { AddSprite(m_ParticleSystem, sprite); }
@@ -2669,22 +2703,6 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  int GetUVChannelMask (ParticleSystem system) ;
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetFlipU (ParticleSystem system, float value) ;
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  float GetFlipU (ParticleSystem system) ;
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void SetFlipV (ParticleSystem system, float value) ;
-
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  float GetFlipV (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -3061,132 +3079,6 @@ public sealed partial class ParticleSystem : Component
 
     }
 
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal float GetParticleCurrentSize (ref ParticleSystem.Particle particle) ;
-
-    internal Vector3 GetParticleCurrentSize3D (ref ParticleSystem.Particle particle) {
-        Vector3 result;
-        INTERNAL_CALL_GetParticleCurrentSize3D ( this, ref particle, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetParticleCurrentSize3D (ParticleSystem self, ref ParticleSystem.Particle particle, out Vector3 value);
-    internal Color32 GetParticleCurrentColor (ref ParticleSystem.Particle particle) {
-        Color32 result;
-        INTERNAL_CALL_GetParticleCurrentColor ( this, ref particle, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetParticleCurrentColor (ParticleSystem self, ref ParticleSystem.Particle particle, out Color32 value);
-    public extern bool isPlaying
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    public extern bool isEmitting
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    public extern bool isStopped
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    public extern bool isPaused
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    public extern float time
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern int particleCount
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    public extern UInt32 randomSeed
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern bool useAutoRandomSeed
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        set;
-    }
-
-    public extern bool automaticCullingEnabled
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    public MainModule main { get { return new MainModule(this); } }
-    public EmissionModule emission { get { return new EmissionModule(this); } }
-    public ShapeModule shape { get { return new ShapeModule(this); } }
-    public VelocityOverLifetimeModule velocityOverLifetime { get { return new VelocityOverLifetimeModule(this); } }
-    public LimitVelocityOverLifetimeModule limitVelocityOverLifetime { get { return new LimitVelocityOverLifetimeModule(this); } }
-    public InheritVelocityModule inheritVelocity { get { return new InheritVelocityModule(this); } }
-    public ForceOverLifetimeModule forceOverLifetime { get { return new ForceOverLifetimeModule(this); } }
-    public ColorOverLifetimeModule colorOverLifetime { get { return new ColorOverLifetimeModule(this); } }
-    public ColorBySpeedModule colorBySpeed { get { return new ColorBySpeedModule(this); } }
-    public SizeOverLifetimeModule sizeOverLifetime { get { return new SizeOverLifetimeModule(this); } }
-    public SizeBySpeedModule sizeBySpeed { get { return new SizeBySpeedModule(this); } }
-    public RotationOverLifetimeModule rotationOverLifetime { get { return new RotationOverLifetimeModule(this); } }
-    public RotationBySpeedModule rotationBySpeed { get { return new RotationBySpeedModule(this); } }
-    public ExternalForcesModule externalForces { get { return new ExternalForcesModule(this); } }
-    public NoiseModule noise { get { return new NoiseModule(this); } }
-    public CollisionModule collision { get { return new CollisionModule(this); } }
-    public TriggerModule trigger { get { return new TriggerModule(this); } }
-    public SubEmittersModule subEmitters { get { return new SubEmittersModule(this); } }
-    public TextureSheetAnimationModule textureSheetAnimation { get { return new TextureSheetAnimationModule(this); } }
-    public LightsModule lights { get { return new LightsModule(this); } }
-    public TrailModule trails { get { return new TrailModule(this); } }
-    public CustomDataModule customData { get { return new CustomDataModule(this); } }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void SetParticles (ParticleSystem.Particle[] particles, int size) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public int GetParticles (ParticleSystem.Particle[] particles) ;
-
     public void SetCustomParticleData(List<Vector4> customData, ParticleSystemCustomData streamIndex)
         {
             SetCustomParticleDataInternal(customData, (int)streamIndex);
@@ -3213,107 +3105,7 @@ public sealed partial class ParticleSystem : Component
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void Simulate (float t, [uei.DefaultValue("true")]  bool withChildren , [uei.DefaultValue("true")]  bool restart , [uei.DefaultValue("true")]  bool fixedTimeStep ) ;
-
-    [uei.ExcludeFromDocs]
-    public void Simulate (float t, bool withChildren , bool restart ) {
-        bool fixedTimeStep = true;
-        Simulate ( t, withChildren, restart, fixedTimeStep );
-    }
-
-    [uei.ExcludeFromDocs]
-    public void Simulate (float t, bool withChildren ) {
-        bool fixedTimeStep = true;
-        bool restart = true;
-        Simulate ( t, withChildren, restart, fixedTimeStep );
-    }
-
-    [uei.ExcludeFromDocs]
-    public void Simulate (float t) {
-        bool fixedTimeStep = true;
-        bool restart = true;
-        bool withChildren = true;
-        Simulate ( t, withChildren, restart, fixedTimeStep );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void Play ( [uei.DefaultValue("true")] bool withChildren ) ;
-
-    [uei.ExcludeFromDocs]
-    public void Play () {
-        bool withChildren = true;
-        Play ( withChildren );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void Pause ( [uei.DefaultValue("true")] bool withChildren ) ;
-
-    [uei.ExcludeFromDocs]
-    public void Pause () {
-        bool withChildren = true;
-        Pause ( withChildren );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void Stop ( [uei.DefaultValue("true")] bool withChildren , [uei.DefaultValue("ParticleSystemStopBehavior.StopEmitting")]  ParticleSystemStopBehavior stopBehavior ) ;
-
-    [uei.ExcludeFromDocs]
-    public void Stop (bool withChildren ) {
-        ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
-        Stop ( withChildren, stopBehavior );
-    }
-
-    [uei.ExcludeFromDocs]
-    public void Stop () {
-        ParticleSystemStopBehavior stopBehavior = ParticleSystemStopBehavior.StopEmitting;
-        bool withChildren = true;
-        Stop ( withChildren, stopBehavior );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void Clear ( [uei.DefaultValue("true")] bool withChildren ) ;
-
-    [uei.ExcludeFromDocs]
-    public void Clear () {
-        bool withChildren = true;
-        Clear ( withChildren );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public bool IsAlive ( [uei.DefaultValue("true")] bool withChildren ) ;
-
-    [uei.ExcludeFromDocs]
-    public bool IsAlive () {
-        bool withChildren = true;
-        return IsAlive ( withChildren );
-    }
-
-    [RequiredByNativeCode]
-    public void Emit (int count) {
-        INTERNAL_CALL_Emit ( this, count );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_Emit (ParticleSystem self, int count);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern private void Internal_EmitOld (ref ParticleSystem.Particle particle) ;
-
-    public void Emit(ParticleSystem.EmitParams emitParams, int count)
-        {
-            Internal_Emit(ref emitParams, count);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void Internal_Emit (ref ParticleSystem.EmitParams emitParams, int count) ;
 
     public void TriggerSubEmitter(int subEmitterIndex)
         {
@@ -3337,43 +3129,6 @@ public sealed partial class ParticleSystem : Component
 
     
     
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal void SetupDefaultType (int type) ;
-
-    internal Matrix4x4 GetLocalToWorldMatrix () {
-        Matrix4x4 result;
-        INTERNAL_CALL_GetLocalToWorldMatrix ( this, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_GetLocalToWorldMatrix (ParticleSystem self, out Matrix4x4 value);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal void GenerateNoisePreviewTexture (Texture2D dst) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal void CalculateEffectUIData (ref int particleCount, ref float fastestParticle, ref float slowestParticle) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal bool CalculateEffectUISubEmitterData (ref int particleCount, ref float fastestParticle, ref float slowestParticle) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal bool CheckVertexStreamsMatchShader (bool hasTangent, bool hasColor, int texCoordChannelCount, Material material, ref bool tangentError, ref bool colorError, ref bool uvError) ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal int GetMaxTexCoordStreams () ;
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal int GenerateRandomSeed () ;
-
 }
 
 [RequireComponent(typeof(Transform))]

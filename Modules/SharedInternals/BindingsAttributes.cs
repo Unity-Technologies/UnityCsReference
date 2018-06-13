@@ -341,7 +341,8 @@ namespace UnityEngine.Bindings
     {
         Dot,
         Arrow,
-        DoubleColon
+        DoubleColon,
+        ArrowWithDefaultReturnIfNull
     }
 
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Method | AttributeTargets.Property)]

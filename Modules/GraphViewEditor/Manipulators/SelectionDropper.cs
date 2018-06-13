@@ -118,7 +118,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Since we didn't drag after all, update selection with current element only
             if (!selectionContainer.selection.Contains(selectedElement))
             {
-                if (!e.ctrlKey)
+                if (!e.actionKey)
                     selectionContainer.ClearSelection();
                 selectionContainer.AddToSelection(selectedElement);
                 m_AddedByMouseDown = true;
@@ -135,7 +135,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_DragAndDropDelay.Init(e.localMousePosition);
 
                 m_Active = true;
-                target.TakeMouseCapture();
+                target.CaptureMouse();
                 e.StopPropagation();
             }
         }
@@ -160,8 +160,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         m_Dragging = true;
 
                         DragAndDrop.StartDrag("");
-                        DragAndDrop.visualMode = e.ctrlKey ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Move;
-                        target.ReleaseMouseCapture();
+                        DragAndDrop.visualMode = e.actionKey ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Move;
+                        target.ReleaseMouse();
                     }
 
                     e.StopPropagation();
@@ -180,7 +180,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (e.button == (int)activateButton)
             {
                 // Since we didn't drag after all, update selection with current element only
-                if (!e.ctrlKey)
+                if (!e.actionKey)
                 {
                     selectionContainer.ClearSelection();
                     selectionContainer.AddToSelection(selectedElement);
@@ -190,7 +190,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     selectionContainer.RemoveFromSelection(selectedElement);
                 }
 
-                target.ReleaseMouseCapture();
+                target.ReleaseMouse();
                 e.StopPropagation();
                 Reset();
             }

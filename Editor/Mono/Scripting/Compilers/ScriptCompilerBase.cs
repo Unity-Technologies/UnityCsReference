@@ -119,11 +119,9 @@ namespace UnityEditor.Scripting.Compilers
             return true;
         }
 
-        public static ResponseFileData ParseResponseFileFromFile(string responseFileName)
+        public static ResponseFileData ParseResponseFileFromFile(string responseFilePath)
         {
-            var relativeCustomResponseFilePath = Path.Combine("Assets", responseFileName);
-
-            if (!File.Exists(relativeCustomResponseFilePath))
+            if (!File.Exists(responseFilePath))
             {
                 var empty = new ResponseFileData
                 {
@@ -136,7 +134,7 @@ namespace UnityEditor.Scripting.Compilers
                 return empty;
             }
 
-            var responseFileText = File.ReadAllText(relativeCustomResponseFilePath);
+            var responseFileText = File.ReadAllText(responseFilePath);
 
             return ParseResponseFileText(responseFileText);
         }
@@ -338,7 +336,7 @@ namespace UnityEditor.Scripting.Compilers
 
             DumpStreamOutputToLog();
 
-            return CreateOutputParser().Parse(GetStreamContainingCompilerMessages(), CompilationHadFailure()).ToArray();
+            return CreateOutputParser().Parse(GetStreamContainingCompilerMessages(), CompilationHadFailure(), Path.GetFileName(_island._output)).ToArray();
         }
 
         protected bool CompilationHadFailure()
@@ -436,6 +434,8 @@ namespace UnityEditor.Scripting.Compilers
         /// if it can be mapped to a NormalizedCompilerStatusCode.
         public NormalizedCompilerStatus normalizedStatus;
 
+        public string assemblyName;
+
         public CompilerMessage(CompilerMessage cm)
         {
             message = cm.message;
@@ -444,6 +444,7 @@ namespace UnityEditor.Scripting.Compilers
             column = cm.column;
             type = cm.type;
             normalizedStatus = cm.normalizedStatus;
+            assemblyName = cm.assemblyName;
         }
     }
 }

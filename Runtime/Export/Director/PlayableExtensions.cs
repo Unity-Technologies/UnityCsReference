@@ -287,5 +287,15 @@ namespace UnityEngine.Playables
         {
             playable.GetHandle().SetTraversalMode(mode);
         }
+
+        internal static DirectorWrapMode GetTimeWrapMode<U>(this U playable) where U : struct, IPlayable
+        {
+            return playable.GetHandle().GetTimeWrapMode();
+        }
+
+        internal static void SetTimeWrapMode<U>(this U playable, DirectorWrapMode value) where U : struct, IPlayable
+        {
+            playable.GetHandle().SetTimeWrapMode(value);
+        }
     }
 }

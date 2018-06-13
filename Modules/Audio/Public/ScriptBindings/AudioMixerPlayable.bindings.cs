@@ -77,8 +77,13 @@ namespace UnityEngine.Audio
         //    SetAutoNormalizeInternal(ref m_Handle, value);
         //}
 
+        //[NativeThrows]
         //extern private static bool GetAutoNormalizeInternal(ref PlayableHandle hdl);
+
+        //[NativeThrows]
         //extern private static void SetAutoNormalizeInternal(ref PlayableHandle hdl, bool normalise);
+
+        [NativeThrows]
         extern private static bool CreateAudioMixerPlayableInternal(ref PlayableGraph graph, int inputCount, bool normalizeInputVolumes, ref PlayableHandle handle);
 
     }

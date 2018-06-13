@@ -9,9 +9,9 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public abstract class BaseCompoundField<T> : BaseValueField<T>
+    public abstract class BaseCompoundField<T> : BaseField<T>
     {
-        public class BaseCompoundFieldUxmlTraits : BaseValueFieldUxmlTraits {}
+        public new class UxmlTraits : BaseField<T>.UxmlTraits {}
 
         public class FieldDescription
         {
@@ -73,7 +73,7 @@ namespace UnityEditor.Experimental.UIElements
                     {
                         T cur = value;
                         desc.write(ref cur, e.newValue);
-                        SetValueAndNotify(cur);
+                        value = cur;
                     });
                 m_Fields.Add(field);
                 shadow.Add(fieldContainer);
@@ -86,7 +86,7 @@ namespace UnityEditor.Experimental.UIElements
             get { return null; }
         }
 
-        protected override void UpdateDisplay()
+        private void UpdateDisplay()
         {
             if (s_FieldDescriptions != null)
             {
@@ -94,6 +94,19 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     m_Fields[i].value = (s_FieldDescriptions[i].read(m_Value));
                 }
+            }
+        }
+
+        public override void SetValueWithoutNotify(T newValue)
+        {
+            T previousValue = m_Value;
+            // Make sure to call the base class to set the value...
+            base.SetValueWithoutNotify(newValue);
+
+            // Before Updating the display, just check if the value changed...
+            if (!EqualityComparer<T>.Default.Equals(previousValue, newValue))
+            {
+                UpdateDisplay();
             }
         }
 

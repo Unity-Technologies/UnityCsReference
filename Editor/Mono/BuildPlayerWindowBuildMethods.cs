@@ -199,6 +199,16 @@ namespace UnityEditor
                 return GetBuildPlayerOptionsInternal(true, defaultBuildPlayerOptions);
             }
 
+            internal static bool IsInstallInBuildFolderOption()
+            {
+                BuildTarget buildTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
+                BuildTargetGroup buildTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+
+                return EditorUserBuildSettings.installInBuildFolder &&
+                    PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget) &&
+                    (Unsupported.IsSourceBuild() || IsMetroPlayer(buildTarget));
+            }
+
             internal static BuildPlayerOptions GetBuildPlayerOptionsInternal(bool askForBuildLocation, BuildPlayerOptions defaultBuildPlayerOptions)
             {
                 var options = defaultBuildPlayerOptions;
@@ -210,8 +220,6 @@ namespace UnityEditor
 
                 // Pick location for the build
                 string newLocation = "";
-                bool installInBuildFolder = EditorUserBuildSettings.installInBuildFolder && PostprocessBuildPlayer.SupportsInstallInBuildFolder(buildTargetGroup, buildTarget) && (Unsupported.IsSourceBuild()
-                                                                                                                                                                                   || IsMetroPlayer(buildTarget));
 
                 //Check if Lz4 is supported for the current buildtargetgroup and enable it if need be
                 if (PostprocessBuildPlayer.SupportsLz4Compression(buildTargetGroup, buildTarget))
@@ -238,10 +246,11 @@ namespace UnityEditor
                 if (EditorUserBuildSettings.buildScriptsOnly)
                     options.options |= BuildOptions.BuildScriptsOnly;
 
-                if (installInBuildFolder)
+                if (IsInstallInBuildFolderOption())
+                {
                     options.options |= BuildOptions.InstallInBuildFolder;
-
-                if (!installInBuildFolder)
+                }
+                else
                 {
                     if (askForBuildLocation && !PickBuildLocation(buildTargetGroup, buildTarget, options.options, out updateExistingBuild))
                         throw new BuildMethodException();
@@ -342,7 +351,7 @@ namespace UnityEditor
                 if (isWindowsStandalone)
                 {
                     extension = realExtension;
-                    path = Path.Combine(path, Path.GetFileName(path) + '.' + extension);
+                    path = Path.Combine(path, PlayerSettings.productName + '.' + extension);
                 }
 
                 if (!IsBuildPathValid(path))
@@ -386,7 +395,7 @@ namespace UnityEditor
                 if (fullPath.EndsWith("/") || fullPath.EndsWith("\\"))
                     fullPath = fullPath.Remove(fullPath.Length - 1);
 
-                fullPath = Path.GetFullPath(fullPath);
+                fullPath = string.IsNullOrEmpty(fullPath) ? string.Empty : Path.GetFullPath(fullPath);
 
                 fullPath = fullPath.ToLower();
                 if (Path.DirectorySeparatorChar == '/')
@@ -397,6 +406,10 @@ namespace UnityEditor
             internal static bool IsBuildPathValid(string path)
             {
                 var cleanedPath = NormalizePath(path);
+                if (cleanedPath.Equals(string.Empty) &&
+                    IsInstallInBuildFolderOption())
+                    return true;
+
                 var basePath = NormalizePath(Application.dataPath + "/../");
 
                 var assetsPath = NormalizePath(basePath + "/Assets");

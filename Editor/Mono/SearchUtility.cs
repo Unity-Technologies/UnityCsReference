@@ -23,6 +23,7 @@ namespace UnityEditor
         // 'ref[:id]:path' syntax (e.g 'ref:1234' will show objects that references the object with instanceID 1234)
         // 'v:versionState' syntax (e.g 'v:modified' will show objects that are modified locally)
         // 's:softLockState' syntax (e.g 's:inprogress' will show objects that are modified by anyone (except you))
+        // 'a:area' syntax (e.g 'a:all' will s search in all assets, 'a:assets' will s search in assets folder only and 'a:packages' will s search in packages folder only)
         internal static bool ParseSearchString(string searchText, SearchFilter filter)
         {
             if (string.IsNullOrEmpty(searchText))
@@ -122,6 +123,28 @@ namespace UnityEditor
                 tmp.Add(softLockStateString);
                 filter.softLockControlStates = tmp.ToArray();
                 parsed = true;
+            }
+
+            // Support: 'a:area' syntax
+            index = searchString.IndexOf("a:");
+            if (index >= 0)
+            {
+                string areaString = searchString.Substring(index + 2);
+                if (string.Compare(areaString, "all", true) == 0)
+                {
+                    filter.searchArea = SearchFilter.SearchArea.AllAssets;
+                    parsed = true;
+                }
+                else if (string.Compare(areaString, "assets", true) == 0)
+                {
+                    filter.searchArea = SearchFilter.SearchArea.InAssetsOnly;
+                    parsed = true;
+                }
+                else if (string.Compare(areaString, "packages", true) == 0)
+                {
+                    filter.searchArea = SearchFilter.SearchArea.InPackagesOnly;
+                    parsed = true;
+                }
             }
 
             // Support: 'b:assetBundleName' syntax (e.g 'b:materialAssetBundle' will show assets within assetBundle 'materialAssetBundle')

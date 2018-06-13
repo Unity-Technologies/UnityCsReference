@@ -450,6 +450,9 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::ReadScreenPixel")]
         extern public static Color[] ReadScreenPixel(Vector2 pixelPos, int sizex, int sizey);
 
+        [FreeFunction("InternalEditorUtilityBindings::ReadScreenPixelUnderCursor")]
+        extern public static Color[] ReadScreenPixelUnderCursor(Vector2 cursorPosHint, int sizex, int sizey);
+
         [StaticAccessor("GetGpuDeviceManager()", StaticAccessorType.Dot)]
         [NativeMethod("SetDevice")]
         extern public static void SetGpuDeviceAndRecreateGraphics(int index, string name);

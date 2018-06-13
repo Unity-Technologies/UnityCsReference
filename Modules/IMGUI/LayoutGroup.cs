@@ -166,7 +166,7 @@ namespace UnityEngine
                 {
                     i.CalcWidth();
                     RectOffset margins = i.margin;
-                    if (i.style != GUILayoutUtility.spaceStyle)
+                    if (i.consideredForMargin)
                     {
                         if (!first)
                         {
@@ -197,9 +197,7 @@ namespace UnityEngine
                     RectOffset m = i.margin;
                     int margin;
 
-                    // Specialcase spaceStyle - instead of handling margins normally, we just want to insert the size...
-                    // This ensure that Space(1) adds ONE space, and doesn't prevent margin collapses
-                    if (i.style != GUILayoutUtility.spaceStyle)
+                    if (i.consideredForMargin)
                     {
                         if (!first)
                             margin = lastMargin > m.left ? lastMargin : m.left;
@@ -365,7 +363,7 @@ namespace UnityEngine
                     //              Debug.Log (i.minWidth);
                     thisWidth += perItemStretch * i.stretchWidth;
 
-                    if (i.style != GUILayoutUtility.spaceStyle) // Skip margins on spaces.
+                    if (i.consideredForMargin) // Skip margins on spaces.
                     {
                         int leftMargin = i.margin.left;
                         if (firstMargin)
@@ -409,9 +407,7 @@ namespace UnityEngine
                     RectOffset m = i.margin;
                     int margin;
 
-                    // Specialcase spaces - it's a space, so instead of handling margins normally, we just want to insert the size...
-                    // This ensure that Space(1) adds ONE space, and doesn't prevent margin collapses
-                    if (i.style != GUILayoutUtility.spaceStyle)
+                    if (i.consideredForMargin)
                     {
                         if (!first)
                             margin = Mathf.Max(lastMargin, m.top);
@@ -453,7 +449,7 @@ namespace UnityEngine
                 {
                     i.CalcHeight();
                     RectOffset margins = i.margin;
-                    if (i.style != GUILayoutUtility.spaceStyle)
+                    if (i.consideredForMargin)
                     {
                         if (!first)
                         {
@@ -565,7 +561,7 @@ namespace UnityEngine
                     float thisHeight = Mathf.Lerp(i.minHeight, i.maxHeight, minMaxScale);
                     thisHeight += perItemStretch * i.stretchHeight;
 
-                    if (i.style != GUILayoutUtility.spaceStyle)
+                    if (i.consideredForMargin)
                     {   // Skip margins on spaces.
                         int topMargin = i.margin.top;
                         if (firstMargin)

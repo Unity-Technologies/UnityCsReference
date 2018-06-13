@@ -1232,7 +1232,7 @@ namespace UnityEditor
 
             var foundScriptEditorPaths = ScriptEditorUtility.GetFoundScriptEditorPaths(Application.platform);
 
-            foreach (var scriptEditorPath in foundScriptEditorPaths)
+            foreach (var scriptEditorPath in foundScriptEditorPaths.Keys)
             {
                 ArrayUtility.Add(ref m_ScriptApps, scriptEditorPath);
                 ArrayUtility.Add(ref m_ScriptAppsEditions, null);
@@ -1240,10 +1240,10 @@ namespace UnityEditor
 
             m_ImageApps = BuildAppPathList(m_ImageAppPath, kRecentImageAppsKey, "");
 
-            m_ScriptAppDisplayNames = BuildFriendlyAppNameList(m_ScriptApps, m_ScriptAppsEditions,
+            m_ScriptAppDisplayNames = BuildFriendlyAppNameList(m_ScriptApps, m_ScriptAppsEditions, foundScriptEditorPaths,
                     "Open by file extension");
 
-            m_ImageAppDisplayNames = BuildFriendlyAppNameList(m_ImageApps, null,
+            m_ImageAppDisplayNames = BuildFriendlyAppNameList(m_ImageApps, null, null,
                     L10n.Tr("Open by file extension"));
 
             m_DiffTools = InternalEditorUtility.GetAvailableDiffTools();
@@ -1387,7 +1387,7 @@ namespace UnityEditor
             return apps;
         }
 
-        private string[] BuildFriendlyAppNameList(string[] appPathList, string[] appEditionList, string defaultBuiltIn)
+        private string[] BuildFriendlyAppNameList(string[] appPathList, string[] appEditionList, Dictionary<string, string> appPathToName, string defaultBuiltIn)
         {
             var list = new List<string>();
             for (int i = 0; i < appPathList.Length; ++i)
@@ -1402,6 +1402,8 @@ namespace UnityEditor
 
                     if (appEditionList != null && !string.IsNullOrEmpty(appEditionList[i]))
                         friendlyName = string.Format("{0} ({1})", friendlyName, appEditionList[i]);
+                    else if (appPathToName != null && appPathToName.ContainsKey(appPath))
+                        friendlyName = appPathToName[appPath];
 
                     list.Add(friendlyName);
                 }

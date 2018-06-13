@@ -30,7 +30,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Capturable | EventFlags.Bubbles | EventFlags.Cancellable;
+            flags = EventFlags.TricklesDown | EventFlags.Bubbles | EventFlags.Cancellable;
             commandName = null;
         }
 

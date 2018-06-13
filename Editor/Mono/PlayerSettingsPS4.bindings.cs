@@ -186,6 +186,7 @@ namespace UnityEditor
             [NativeProperty("ps4attribEyeToEyeDistanceSettingVR", false, TargetType.Field)] extern public static PlayStationVREyeToEyeDistanceSettings attribEyeToEyeDistanceSettingVR { get; set; }
             [NativeProperty("ps4IncludedModules", false, TargetType.Field)] extern public static string[] includedModules { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool enableApplicationExit { get; set; }
+            [NativeProperty(TargetType = TargetType.Field)] extern public static bool resetTempFolder { get; set; }
         }
     }
 }

@@ -273,31 +273,61 @@ namespace UnityEngine
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public static NetworkConnectionError Connect(string IP, int remotePort, string password = "")
+        public static NetworkConnectionError Connect(string IP, int remotePort)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public static NetworkConnectionError Connect(string[] IPs, int remotePort, string password = "")
+        public static NetworkConnectionError Connect(string IP, int remotePort, string password)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public static NetworkConnectionError Connect(string GUID, string password = "")
+        public static NetworkConnectionError Connect(string[] IPs, int remotePort)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public static NetworkConnectionError Connect(HostData hostData, string password = "")
+        public static NetworkConnectionError Connect(string[] IPs, int remotePort, string password)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public static void Disconnect(int timeout = 200)
+        public static NetworkConnectionError Connect(string GUID)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public static NetworkConnectionError Connect(string GUID, string password)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public static NetworkConnectionError Connect(HostData hostData)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public static NetworkConnectionError Connect(HostData hostData, string password)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public static void Disconnect()
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public static void Disconnect(int timeout)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
@@ -531,13 +561,25 @@ namespace UnityEngine
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public static ConnectionTesterStatus TestConnection(bool forceTest = false)
+        public static ConnectionTesterStatus TestConnection()
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public static ConnectionTesterStatus TestConnectionNAT(bool forceTest = false)
+        public static ConnectionTesterStatus TestConnection(bool forceTest)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public static ConnectionTesterStatus TestConnectionNAT()
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public static ConnectionTesterStatus TestConnectionNAT(bool forceTest)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
@@ -669,19 +711,37 @@ namespace UnityEngine
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public void Serialize(ref float value, float maxDelta = 0.00001F)
+        public void Serialize(ref float value)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public void Serialize(ref Quaternion value, float maxDelta = 0.00001F)
+        public void Serialize(ref float value, float maxDelta)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public void Serialize(ref Vector3 value, float maxDelta = 0.00001F)
+        public void Serialize(ref Quaternion value)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public void Serialize(ref Quaternion value, float maxDelta)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public void Serialize(ref Vector3 value)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public void Serialize(ref Vector3 value, float maxDelta)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }
@@ -897,7 +957,13 @@ namespace UnityEngine
         }
 
         [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
-        public static void RegisterHost(string gameTypeName, string gameName, string comment = "")
+        public static void RegisterHost(string gameTypeName, string gameName)
+        {
+            throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
+        }
+
+        [Obsolete("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.", true)]
+        public static void RegisterHost(string gameTypeName, string gameName, string comment)
         {
             throw new NotSupportedException("The legacy networking system has been removed in Unity 2018.2. Use Unity Multiplayer and NetworkIdentity instead.");
         }

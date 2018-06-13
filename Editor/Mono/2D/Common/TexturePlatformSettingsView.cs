@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using UnityEditor.U2D.Interface;
 
@@ -15,6 +16,7 @@ namespace UnityEditor.U2D.Common
             public readonly GUIContent maxTextureSizeLabel = EditorGUIUtility.TrTextContent("Max Texture Size", "Maximum size of the packed texture.");
             public readonly GUIContent compressionLabel = EditorGUIUtility.TrTextContent("Compression", "How will this texture be compressed?");
             public readonly GUIContent useCrunchedCompressionLabel = EditorGUIUtility.TrTextContent("Use Crunch Compression", "Texture is crunch-compressed to save space on disk when applicable.");
+            public readonly GUIContent useAlphaSplitLabel = EditorGUIUtility.TrTextContent("Split Alpha Channel", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
             public readonly GUIContent compressionQualityLabel = EditorGUIUtility.TrTextContent("Compressor Quality");
             public readonly GUIContent compressionQualitySliderLabel = EditorGUIUtility.TrTextContent("Compressor Quality", "Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)");
 
@@ -61,24 +63,31 @@ namespace UnityEditor.U2D.Common
             s_Styles = s_Styles ?? new Styles();
         }
 
-        public virtual TextureImporterCompression DrawCompression(TextureImporterCompression defaultValue, bool isMixedValue, out bool changed)
+        public virtual TextureImporterCompression DrawCompression(TextureImporterCompression defaultValue, bool isMixedValue, bool isDisabled, out bool changed)
         {
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = isMixedValue;
-            defaultValue = (TextureImporterCompression)EditorGUILayout.IntPopup(s_Styles.compressionLabel, (int)defaultValue, s_Styles.kTextureCompressionOptions, s_Styles.kTextureCompressionValues);
-            EditorGUI.showMixedValue = false;
-            changed = EditorGUI.EndChangeCheck();
-            return defaultValue;
+            using (new EditorGUI.DisabledScope(isDisabled))
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = isMixedValue;
+                defaultValue = (TextureImporterCompression)EditorGUILayout.IntPopup(s_Styles.compressionLabel,
+                        (int)defaultValue, s_Styles.kTextureCompressionOptions, s_Styles.kTextureCompressionValues);
+                EditorGUI.showMixedValue = false;
+                changed = EditorGUI.EndChangeCheck();
+                return defaultValue;
+            }
         }
 
-        public virtual bool DrawUseCrunchedCompression(bool defaultValue, bool isMixedValue, out bool changed)
+        public virtual bool DrawUseCrunchedCompression(bool defaultValue, bool isMixedValue, bool isDisabled, out bool changed)
         {
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = isMixedValue;
-            defaultValue = EditorGUILayout.Toggle(s_Styles.useCrunchedCompressionLabel, defaultValue);
-            EditorGUI.showMixedValue = false;
-            changed = EditorGUI.EndChangeCheck();
-            return defaultValue;
+            using (new EditorGUI.DisabledScope(isDisabled))
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = isMixedValue;
+                defaultValue = EditorGUILayout.Toggle(s_Styles.useCrunchedCompressionLabel, defaultValue);
+                EditorGUI.showMixedValue = false;
+                changed = EditorGUI.EndChangeCheck();
+                return defaultValue;
+            }
         }
 
         public virtual bool DrawOverride(bool defaultValue, bool isMixedValue, out bool changed)
@@ -91,14 +100,18 @@ namespace UnityEditor.U2D.Common
             return defaultValue;
         }
 
-        public virtual int DrawMaxSize(int defaultValue, bool isMixedValue, out bool changed)
+        public virtual int DrawMaxSize(int defaultValue, bool isMixedValue, bool isDisabled, out bool changed)
         {
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = isMixedValue;
-            defaultValue = EditorGUILayout.IntPopup(s_Styles.maxTextureSizeLabel, defaultValue, s_Styles.kMaxTextureSizeStrings, s_Styles.kMaxTextureSizeValues);
-            EditorGUI.showMixedValue = false;
-            changed = EditorGUI.EndChangeCheck();
-            return defaultValue;
+            using (new EditorGUI.DisabledScope(isDisabled))
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = isMixedValue;
+                defaultValue = EditorGUILayout.IntPopup(s_Styles.maxTextureSizeLabel, defaultValue,
+                        s_Styles.kMaxTextureSizeStrings, s_Styles.kMaxTextureSizeValues);
+                EditorGUI.showMixedValue = false;
+                changed = EditorGUI.EndChangeCheck();
+                return defaultValue;
+            }
         }
 
         public virtual TextureImporterFormat DrawFormat(TextureImporterFormat defaultValue, int[] displayValues, string[] displayStrings, bool isMixedValue, bool isDisabled, out bool changed)
@@ -114,24 +127,44 @@ namespace UnityEditor.U2D.Common
             }
         }
 
-        public virtual int DrawCompressionQualityPopup(int defaultValue, bool isMixedValue, out bool changed)
+        public virtual int DrawCompressionQualityPopup(int defaultValue, bool isMixedValue, bool isDisabled, out bool changed)
         {
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = isMixedValue;
-            defaultValue = EditorGUILayout.Popup(s_Styles.compressionQualityLabel, defaultValue, s_Styles.kMobileCompressionQualityOptions);
-            EditorGUI.showMixedValue = false;
-            changed = EditorGUI.EndChangeCheck();
-            return defaultValue;
+            using (new EditorGUI.DisabledScope(isDisabled))
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = isMixedValue;
+                defaultValue = EditorGUILayout.Popup(s_Styles.compressionQualityLabel, defaultValue,
+                        s_Styles.kMobileCompressionQualityOptions);
+                EditorGUI.showMixedValue = false;
+                changed = EditorGUI.EndChangeCheck();
+                return defaultValue;
+            }
         }
 
-        public virtual int DrawCompressionQualitySlider(int defaultValue, bool isMixedValue, out bool changed)
+        public virtual int DrawCompressionQualitySlider(int defaultValue, bool isMixedValue, bool isDisabled, out bool changed)
         {
-            EditorGUI.BeginChangeCheck();
-            EditorGUI.showMixedValue = isMixedValue;
-            defaultValue = EditorGUILayout.IntSlider(s_Styles.compressionQualitySliderLabel, defaultValue, 0, 100);
-            EditorGUI.showMixedValue = false;
-            changed = EditorGUI.EndChangeCheck();
-            return defaultValue;
+            using (new EditorGUI.DisabledScope(isDisabled))
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = isMixedValue;
+                defaultValue = EditorGUILayout.IntSlider(s_Styles.compressionQualitySliderLabel, defaultValue, 0, 100);
+                EditorGUI.showMixedValue = false;
+                changed = EditorGUI.EndChangeCheck();
+                return defaultValue;
+            }
+        }
+
+        public virtual bool DrawAlphaSplit(bool defaultValue, bool isMixedValue, bool isDisabled, out bool changed)
+        {
+            using (new EditorGUI.DisabledScope(isDisabled))
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = isMixedValue;
+                defaultValue = EditorGUILayout.Toggle(s_Styles.useAlphaSplitLabel, defaultValue);
+                EditorGUI.showMixedValue = false;
+                changed = EditorGUI.EndChangeCheck();
+                return defaultValue;
+            }
         }
     }
 }

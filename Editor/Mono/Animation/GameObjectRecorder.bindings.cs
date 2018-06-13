@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor;
 using Object = UnityEngine.Object;
+using uei = UnityEngine.Internal;
 
 namespace UnityEditor.Experimental.Animations
 {
@@ -56,7 +57,21 @@ namespace UnityEditor.Experimental.Animations
         extern public float currentTime { get; }
         extern public bool isRecording { get; }
 
-        extern public void SaveToClip(AnimationClip clip);
+        public void SaveToClip(AnimationClip clip)
+        {
+            SaveToClip(clip, 60.0f);
+        }
+
+        public void SaveToClip(AnimationClip clip, float fps)
+        {
+            if (fps <= Mathf.Epsilon)
+                throw new ArgumentException("FPS can't be 0.0 or less");
+            SaveToClipInternal(clip, fps);
+        }
+
+        [NativeMethod("SaveToClip")]
+        extern void SaveToClipInternal(AnimationClip clip, float fps);
+
         extern public void ResetRecording();
 
         // Obsolete

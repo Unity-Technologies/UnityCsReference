@@ -22,7 +22,8 @@ namespace UnityEngine
             Directional,
             Point,
             Spot,
-            Rectangle
+            Rectangle,
+            Disc
         }
 
         public enum LightMode : byte
@@ -188,6 +189,22 @@ namespace UnityEngine
             public float        width;
             public float        height;
         }
+        public struct DiscLight
+        {
+            // light id
+            public int instanceID;
+            // shadow
+            public bool shadow;
+            // light mode
+            public LightMode mode;
+            // light
+            public Vector3 position;
+            public Quaternion orientation;
+            public LinearColor color;
+            public LinearColor indirectColor;
+            public float range;
+            public float radius;
+        }
 
         // This struct must be kept in sync with its counterpart in LightDataGI.h
         [StructLayout(LayoutKind.Sequential)]
@@ -287,6 +304,24 @@ namespace UnityEngine
                 falloff        = FalloffType.Undefined;
             }
 
+            public void Init(ref DiscLight light)
+            {
+                instanceID = light.instanceID;
+                color = light.color;
+                indirectColor = light.indirectColor;
+                orientation = light.orientation;
+                position = light.position;
+                range = light.range;
+                coneAngle = 0.0f;
+                innerConeAngle = 0.0f;
+                shape0 = light.radius;
+                shape1 = 0.0f;
+                type = LightType.Disc;
+                mode = light.mode;
+                shadow = (byte)(light.shadow ? 1 : 0);
+                falloff = FalloffType.Undefined;
+            }
+
             public void InitNoBake(int lightInstanceID)
             {
                 instanceID = lightInstanceID;
@@ -366,6 +401,19 @@ namespace UnityEngine
                 rect.width          = l.areaSize.x;
                 rect.height         = l.areaSize.y;
             }
+
+            public static void Extract(Light l, ref DiscLight disc)
+            {
+                disc.instanceID = l.GetInstanceID();
+                disc.mode = Extract(l.lightmapBakeType);
+                disc.shadow = l.shadows != LightShadows.None;
+                disc.position = l.transform.position;
+                disc.orientation = l.transform.rotation;
+                disc.color = LinearColor.Convert(l.color, l.intensity);
+                disc.indirectColor = ExtractIndirect(l);
+                disc.range = l.range;
+                disc.radius = l.areaSize.x;
+            }
         }
 
         public static class Lightmapping
@@ -388,7 +436,8 @@ namespace UnityEngine
                     DirectionalLight dir   = new DirectionalLight();
                     PointLight       point = new PointLight();
                     SpotLight        spot  = new SpotLight();
-                    RectangleLight   rect  = new RectangleLight();
+                    RectangleLight   rect = new RectangleLight();
+                    DiscLight        disc = new DiscLight();
                     LightDataGI      ld    = new LightDataGI();
                     for (int i = 0; i < requests.Length; i++)
                     {
@@ -399,6 +448,7 @@ namespace UnityEngine
                             case UnityEngine.LightType.Point: LightmapperUtils.Extract(l, ref point); ld.Init(ref point); break;
                             case UnityEngine.LightType.Spot: LightmapperUtils.Extract(l, ref spot); ld.Init(ref spot); break;
                             case UnityEngine.LightType.Area: LightmapperUtils.Extract(l, ref rect); ld.Init(ref rect); break;
+                            case UnityEngine.LightType.Disc: LightmapperUtils.Extract(l, ref disc); ld.Init(ref disc); break;
                             default: ld.InitNoBake(l.GetInstanceID()); break;
                         }
                         lightsOutput[i] = ld;

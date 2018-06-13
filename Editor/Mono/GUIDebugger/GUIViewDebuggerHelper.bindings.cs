@@ -124,6 +124,7 @@ namespace UnityEditor
         [FreeFunction("GetGUIDebuggerManager().StopDebuggingAll")]
         static internal extern void StopDebugging();
 
+        [RequiredByNativeCode]
         private static GUIContent CreateGUIContent(string text, Texture image, string tooltip)
         {
             return new GUIContent(text, image, tooltip);

@@ -5,12 +5,15 @@
 using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
     // The contents of a GUI element.
     [StructLayout(LayoutKind.Sequential)]
     [Serializable]
+    [NativeHeader("Modules/IMGUI/GUIContent.h")]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
     public class GUIContent
     {
         // MUST MATCH MEMORY LAYOUT IN GUICONTENT.CPP

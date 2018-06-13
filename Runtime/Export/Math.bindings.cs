@@ -25,7 +25,6 @@ namespace UnityEngine
     [NativeType(Header = "Runtime/Math/Matrix4x4.h")]
     [NativeHeader("Runtime/Math/MathScripting.h")]
     [ThreadAndSerializationSafe]
-    [UsedByNativeCode]
     public partial struct Matrix4x4
     {
         [ThreadSafe] extern private Quaternion    GetRotation();

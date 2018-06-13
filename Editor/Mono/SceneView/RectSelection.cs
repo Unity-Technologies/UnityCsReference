@@ -96,15 +96,12 @@ namespace UnityEditor
                                 m_LastSelection = new Dictionary<GameObject, bool>(rectObjs.Length);
                                 foreach (GameObject g in rectObjs)
                                     m_LastSelection.Add(g, false);
-                                if (rectObjs != null)
-                                {
-                                    if (evt.shift)
-                                        UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Additive, m_RectSelecting);
-                                    else if (EditorGUI.actionKey)
-                                        UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Subtractive, m_RectSelecting);
-                                    else
-                                        UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Normal, m_RectSelecting);
-                                }
+                                if (evt.shift)
+                                    UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Additive, m_RectSelecting);
+                                else if (EditorGUI.actionKey)
+                                    UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Subtractive, m_RectSelecting);
+                                else
+                                    UpdateSelection(m_SelectionStart, rectObjs, SelectionType.Normal, m_RectSelecting);
                             }
                         }
                         evt.Use();

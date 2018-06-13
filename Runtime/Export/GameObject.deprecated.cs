@@ -110,12 +110,6 @@ namespace UnityEngine
             get { throw new NotSupportedException("hingeJoint property has been deprecated"); }
         }
 
-        [Obsolete("Property particleEmitter has been deprecated. Use GetComponent<ParticleEmitter>() instead. (UnityUpgradable)", true)]
-        public Component particleEmitter
-        {
-            get { throw new NotSupportedException("particleEmitter property has been deprecated"); }
-        }
-
         [Obsolete("Property particleSystem has been deprecated. Use GetComponent<ParticleSystem>() instead. (UnityUpgradable)", true)]
         public Component particleSystem
         {

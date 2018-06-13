@@ -35,7 +35,6 @@ namespace UnityEditor
             return true;
         }
 
-
         public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
         {
             DragAndDrop.PrepareStartDrag();
@@ -64,10 +63,10 @@ namespace UnityEditor
                 if (string.IsNullOrEmpty(path))
                     return DragAndDropVisualMode.Rejected;
 
-                var pathComponents = path.Split('/');
-                if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
+                var packageInfo = PackageManager.Packages.GetForAssetPath(path);
+                if (packageInfo != null)
                 {
-                    hierarchyProperty = new HierarchyProperty(pathComponents[0] + "/" + pathComponents[1]);
+                    hierarchyProperty = new HierarchyProperty(packageInfo.assetPath);
                     if (hierarchyProperty.Find(parentItem.id, null))
                         return InternalEditorUtility.ProjectWindowDrag(hierarchyProperty, perform);
                 }

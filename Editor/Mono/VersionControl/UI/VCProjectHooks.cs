@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor.VersionControl;
+using UnityEditor;
 
 namespace UnityEditorInternal.VersionControl
 {
@@ -15,6 +16,12 @@ namespace UnityEditorInternal.VersionControl
         {
             if (!Provider.isActive)
                 return;
+
+            string vcsType = EditorSettings.externalVersionControl;
+            if (vcsType == ExternalVersionControl.Disabled ||
+                vcsType == ExternalVersionControl.AutoDetect ||
+                vcsType == ExternalVersionControl.Generic)
+                return; // no icons for these version control systems
 
             Asset asset = Provider.GetAssetByGUID(guid);
             if (asset != null)

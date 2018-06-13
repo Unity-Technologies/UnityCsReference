@@ -107,10 +107,13 @@ namespace UnityEditor
             SetMinMaxSizes();
             titleContent = GetLocalizedTitleContent();
             AssetStoreUtils.RegisterDownloadDelegate(this);
+
+            EditorApplication.update += TrackFocusState;
         }
 
         public void OnDisable()
         {
+            EditorApplication.update -= TrackFocusState;
             AssetStoreUtils.UnRegisterDownloadDelegate(this);
         }
 
@@ -189,6 +192,21 @@ namespace UnityEditor
             webView.Show();
         }
 
+        protected virtual void OnGotFocus()
+        {
+            m_GotFocus = true;
+            Focus();
+            if (m_Parent)
+                m_Parent.Repaint();
+        }
+
+        protected virtual void OnTakeFocus()
+        {
+            m_GotFocus = false;
+            if (m_Parent)
+                m_Parent.Repaint();
+        }
+
         public void OnFocus()
         {
             SetFocus(true);
@@ -197,6 +215,14 @@ namespace UnityEditor
         public void OnLostFocus()
         {
             SetFocus(false);
+        }
+
+        protected void TrackFocusState()
+        {
+            if (!m_GotFocus)
+                return;
+            if (focusedWindow != this)
+                OnTakeFocus();
         }
 
         public void OnBecameInvisible()
@@ -357,6 +383,7 @@ namespace UnityEditor
         private int m_CurrentSkin;
         private bool m_IsDocked;
         private bool m_IsOffline;
+        private bool m_GotFocus;
         private bool m_SyncingFocus;
         private int m_RepeatedShow;
         private bool m_ShouldRetryInitialURL;

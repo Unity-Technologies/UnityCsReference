@@ -33,7 +33,13 @@ namespace UnityEngine
     {
         // Quits the player application. Quit is ignored in the editor or in a WebGL player.
         [FreeFunction("GetInputManager().QuitApplication")]
-        extern public static void Quit();
+        extern public static void Quit(int exitCode);
+
+        // Quits the player application with the default exit code, 0
+        public static void Quit()
+        {
+            Quit(0);
+        }
 
         // Cancels quitting the application. This is useful for showing a splash screen at the end of a game.
         [Obsolete("CancelQuit is deprecated. Use the wantsToQuit event instead.")]

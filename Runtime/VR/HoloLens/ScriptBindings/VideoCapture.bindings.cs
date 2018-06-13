@@ -14,8 +14,8 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.XR.WSA.WebCam
 {
     [MovedFrom("UnityEngine.VR.WSA.WebCam")]
-    [StaticAccessor("VideoCapture", StaticAccessorType.DoubleColon)]
-    [NativeHeader("Runtime/VR/HoloLens/WebCam/VideoCapture.h")]
+    [StaticAccessor("VideoCaptureBindings", StaticAccessorType.DoubleColon)]
+    [NativeHeader("Runtime/VR/HoloLens/WebCam/VideoCaptureBindings.h")]
     [NativeHeader("VRScriptingClasses.h")]
     [StructLayout(LayoutKind.Sequential)]   // needed for IntPtr binding classes
     public class VideoCapture : IDisposable
@@ -124,7 +124,7 @@ namespace UnityEngine.XR.WSA.WebCam
         public extern bool IsRecording
         {
             [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-            [NativeName("IsRecording")]
+            [NativeMethod("VideoCaptureBindings::IsRecording", HasExplicitThis = true)]
             get;
         }
 
@@ -177,7 +177,7 @@ namespace UnityEngine.XR.WSA.WebCam
         }
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        [NativeName("StartVideoMode")]
+        [NativeMethod("VideoCaptureBindings::StartVideoMode", HasExplicitThis = true)]
         private extern void StartVideoMode_Internal(CameraParameters cameraParameters, AudioState audioState, OnVideoModeStartedCallback onVideoModeStartedCallback);
 
         //-----------------------------------------------------------------
@@ -189,7 +189,7 @@ namespace UnityEngine.XR.WSA.WebCam
 
         //-----------------------------------------------------------------
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        [NativeName("StopVideoMode")]
+        [NativeMethod("VideoCaptureBindings::StopVideoMode", HasExplicitThis = true)]
         public extern void StopVideoModeAsync([NotNull] OnVideoModeStoppedCallback onVideoModeStoppedCallback);
 
         //-----------------------------------------------------------------
@@ -232,7 +232,7 @@ namespace UnityEngine.XR.WSA.WebCam
         }
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        [NativeName("StartRecordingVideoToDisk")]
+        [NativeMethod("VideoCaptureBindings::StartRecordingVideoToDisk", HasExplicitThis = true)]
         private extern void StartRecordingVideoToDisk_Internal(string filename, OnStartedRecordingVideoCallback onStartedRecordingVideoCallback);
 
         //-----------------------------------------------------------------
@@ -244,7 +244,7 @@ namespace UnityEngine.XR.WSA.WebCam
 
         //-----------------------------------------------------------------
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        [NativeName("StopRecordingVideoToDisk")]
+        [NativeMethod("VideoCaptureBindings::StopRecordingVideoToDisk", HasExplicitThis = true)]
         public extern void StopRecordingAsync([NotNull] OnStoppedRecordingVideoCallback onStoppedRecordingVideoCallback);
 
         //-----------------------------------------------------------------
@@ -257,6 +257,7 @@ namespace UnityEngine.XR.WSA.WebCam
         //-----------------------------------------------------------------
         [ThreadAndSerializationSafe]
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
+        [NativeMethod("VideoCaptureBindings::GetUnsafePointerToVideoDeviceController", HasExplicitThis = true)]
         public extern IntPtr GetUnsafePointerToVideoDeviceController();
 
         //-----------------------------------------------------------------
@@ -272,7 +273,7 @@ namespace UnityEngine.XR.WSA.WebCam
         }
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        [NativeName("Dispose")]
+        [NativeMethod("VideoCaptureBindings::Dispose", HasExplicitThis = true)]
         private extern void Dispose_Internal();
 
         //-----------------------------------------------------------------
@@ -287,7 +288,7 @@ namespace UnityEngine.XR.WSA.WebCam
 
         [ThreadAndSerializationSafe]
         [NativeConditional("ENABLE_HOLOLENS_MODULE")]
-        [NativeName("Dispose")]
+        [NativeMethod("VideoCaptureBindings::DisposeThreaded", HasExplicitThis = true)]
         private extern void DisposeThreaded_Internal();
     }
 }

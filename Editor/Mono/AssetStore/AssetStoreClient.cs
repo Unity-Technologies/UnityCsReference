@@ -85,7 +85,7 @@ namespace UnityEditor
 
         public void Parse(AssetStoreResponse response)
         {
-            if (response.job.IsSuccess())
+            if (response.job != null && response.job.IsSuccess())
             {
                 if (response.job.responseCode >= 300)
                     error = string.Format("HTTP status code {0}", response.job.responseCode);

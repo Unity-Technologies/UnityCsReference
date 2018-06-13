@@ -10,6 +10,7 @@ namespace UnityEngine
 {
     // LayerMask allow you to display the LayerMask popup menu in the inspector
     [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
+    [NativeHeader("Runtime/BaseClasses/BitField.h")]
     [NativeHeader("Runtime/BaseClasses/TagManager.h")]
     [NativeClass("BitField", "struct BitField;")]
     public struct LayerMask

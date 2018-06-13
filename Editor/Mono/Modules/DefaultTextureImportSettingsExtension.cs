@@ -65,19 +65,6 @@ namespace UnityEditor.Modules
                 platformSettings.SetResizeAlgorithmForAll((TextureResizeAlgorithm)resizeAlgorithmVal);
             }
 
-            // Texture Compression
-            using (new EditorGUI.DisabledScope(platformSettings.overridden && !platformSettings.isDefault))
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.textureCompressionIsDifferent || (platformSettings.overridden && !platformSettings.isDefault);
-                TextureImporterCompression textureCompression = (TextureImporterCompression)EditorGUILayout.IntPopup(kTextureCompression, (int)platformSettings.textureCompression, kTextureCompressionOptions, kTextureCompressionValues);
-                EditorGUI.showMixedValue = false;
-                if (EditorGUI.EndChangeCheck())
-                {
-                    platformSettings.SetTextureCompressionForAll(textureCompression);
-                }
-            }
-
             // Texture format
             int[] formatValuesForAll = null;
             string[] formatStringsForAll = null;
@@ -96,81 +83,26 @@ namespace UnityEditor.Modules
                 int[] formatValues = null;
                 string[] formatStrings = null;
 
-                if (platformSettings.isDefault)
+                if (!platformSettings.isDefault && !platformSettings.overridden)
                 {
-                    format = (int)TextureImporterFormat.Automatic;
-                    formatValues = new int[] { (int)TextureImporterFormat.Automatic };
-                    formatStrings = new string[] { "Auto" };
+                    // If not overriden, show what the auto format is going to be
+                    // don't care about alpha in normal maps
+                    var sourceHasAlpha = imp.DoesSourceTextureHaveAlpha() &&
+                        textureTypeForThis != TextureImporterType.NormalMap;
+
+                    format = (int)TextureImporter.DefaultFormatFromTextureParameters(settings,
+                            platformSettings.platformTextureSettings,
+                            editor.assetTarget && sourceHasAlpha,
+                            editor.assetTarget && imp.IsSourceTextureHDR(),
+                            platformSettings.m_Target);
+
+                    formatValues = new int[] { format };
+                    formatStrings = new string[] { TextureUtil.GetTextureFormatString((TextureFormat)format) };
                 }
                 else
                 {
-                    // If not overriden, show what the auto format is going to be
-                    if (!platformSettings.overridden)
-                    {
-                        format = (int)TextureImporter.FormatFromTextureParameters(settings,
-                                platformSettings.platformTextureSettings,
-                                editor.assetTarget && imp.DoesSourceTextureHaveAlpha(),
-                                editor.assetTarget && imp.IsSourceTextureHDR(),
-                                platformSettings.m_Target);
-
-                        formatValues = new int[] { format };
-                        formatStrings = new string[] { TextureUtil.GetTextureFormatString((TextureFormat)format) };
-                    }
-                    // else show the format choice filtered by platform.
-                    else
-                    {
-                        // Single channel format is the same for all platform at the moment
-                        if (textureTypeForThis == TextureImporterType.Cookie || textureTypeForThis == TextureImporterType.SingleChannel)
-                        {
-                            formatValues = TextureImportPlatformSettings.kTextureFormatsValueSingleChannel;
-                            formatStrings = TextureImporterInspector.s_TextureFormatStringsSingleChannel;
-                        }
-                        else
-                        {
-                            // on gles targets we use rgb normal maps so no need to split formats
-                            if (TextureImporterInspector.IsGLESMobileTargetPlatform(platformSettings.m_Target))
-                            {
-                                if (platformSettings.m_Target == BuildTarget.iOS || platformSettings.m_Target == BuildTarget.tvOS)
-                                {
-                                    formatValues = TextureImportPlatformSettings.kTextureFormatsValueApplePVR;
-                                    formatStrings = TextureImporterInspector.s_TextureFormatStringsApplePVR;
-                                }
-                                else
-                                {
-                                    formatValues = TextureImportPlatformSettings.kTextureFormatsValueAndroid;
-                                    formatStrings = TextureImporterInspector.s_TextureFormatStringsAndroid;
-                                }
-                            }
-                            else if (textureTypeForThis == TextureImporterType.NormalMap)
-                            {
-                                formatValues = TextureImportPlatformSettings.kNormalFormatsValueDefault;
-                                formatStrings = TextureImporterInspector.s_NormalFormatStringsDefault;
-                            }
-                            else
-                            {
-                                if (platformSettings.m_Target == BuildTarget.WebGL)
-                                {
-                                    formatValues = TextureImportPlatformSettings.kTextureFormatsValueWebGL;
-                                    formatStrings = TextureImporterInspector.s_TextureFormatStringsWebGL;
-                                }
-                                else if (platformSettings.m_Target == BuildTarget.PSP2)
-                                {
-                                    formatValues = TextureImportPlatformSettings.kTextureFormatsValuePSP2;
-                                    formatStrings = TextureImporterInspector.s_TextureFormatStringsPSP2;
-                                }
-                                else if (platformSettings.m_Target == BuildTarget.Switch)
-                                {
-                                    formatValues = TextureImportPlatformSettings.kTextureFormatsValueSwitch;
-                                    formatStrings = TextureImporterInspector.s_TextureFormatStringsSwitch;
-                                }
-                                else
-                                {
-                                    formatValues = TextureImportPlatformSettings.kTextureFormatsValueDefault;
-                                    formatStrings = TextureImporterInspector.s_TextureFormatStringsDefault;
-                                }
-                            }
-                        }
-                    }
+                    // otherwise show valid formats
+                    platformSettings.GetValidTextureFormatsAndStrings(textureTypeForThis, out formatValues, out formatStrings);
                 }
 
                 // Check if values are the same
@@ -208,11 +140,34 @@ namespace UnityEditor.Modules
                 }
             }
 
-            if (platformSettings.isDefault && platformSettings.textureCompression != TextureImporterCompression.Uncompressed)
+            // Texture Compression
+            if (platformSettings.isDefault && platformSettings.format == TextureImporterFormat.Automatic)
             {
                 EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.crunchedCompressionIsDifferent;
-                bool crunchedCompression = EditorGUILayout.Toggle(TextureImporterInspector.s_Styles.crunchedCompression, platformSettings.crunchedCompression);
+                EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent ||
+                    platformSettings.textureCompressionIsDifferent ||
+                    platformSettings.format != TextureImporterFormat.Automatic;
+                TextureImporterCompression textureCompression =
+                    (TextureImporterCompression)EditorGUILayout.IntPopup(kTextureCompression,
+                        (int)platformSettings.textureCompression, kTextureCompressionOptions,
+                        kTextureCompressionValues);
+                EditorGUI.showMixedValue = false;
+                if (EditorGUI.EndChangeCheck())
+                {
+                    platformSettings.SetTextureCompressionForAll(textureCompression);
+                }
+            }
+
+            // Use Crunch Compression
+            if (platformSettings.isDefault &&
+                (TextureImporterFormat)formatForAll == TextureImporterFormat.Automatic &&
+                platformSettings.textureCompression != TextureImporterCompression.Uncompressed)
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent ||
+                    platformSettings.crunchedCompressionIsDifferent;
+                bool crunchedCompression = EditorGUILayout.Toggle(
+                        TextureImporterInspector.s_Styles.crunchedCompression, platformSettings.crunchedCompression);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -222,20 +177,25 @@ namespace UnityEditor.Modules
 
             // compression quality
             bool isCrunchedFormat = false
-                || (TextureImporterFormat)formatForAll == TextureImporterFormat.DXT1Crunched
-                || (TextureImporterFormat)formatForAll == TextureImporterFormat.DXT5Crunched
-                || (TextureImporterFormat)formatForAll == TextureImporterFormat.ETC_RGB4Crunched
-                || (TextureImporterFormat)formatForAll == TextureImporterFormat.ETC2_RGBA8Crunched
+                || TextureUtil.IsCompressedCrunchTextureFormat((TextureFormat)formatForAll)
             ;
 
             if (
-                (platformSettings.isDefault && platformSettings.textureCompression != TextureImporterCompression.Uncompressed && platformSettings.crunchedCompression) ||
+                (platformSettings.isDefault &&
+                 (TextureImporterFormat)formatForAll == TextureImporterFormat.Automatic &&
+                 platformSettings.textureCompression != TextureImporterCompression.Uncompressed &&
+                 platformSettings.crunchedCompression) ||
+                (platformSettings.isDefault && platformSettings.crunchedCompression && isCrunchedFormat) ||
                 (!platformSettings.isDefault && isCrunchedFormat) ||
-                (!platformSettings.textureFormatIsDifferent && ArrayUtility.Contains<TextureImporterFormat>(TextureImporterInspector.kFormatsWithCompressionSettings, (TextureImporterFormat)formatForAll)))
+                (!platformSettings.textureFormatIsDifferent && ArrayUtility.Contains<TextureImporterFormat>(
+                     TextureImporterInspector.kFormatsWithCompressionSettings,
+                     (TextureImporterFormat)formatForAll)))
             {
                 EditorGUI.BeginChangeCheck();
-                EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.compressionQualityIsDifferent;
-                int compressionQuality = EditCompressionQuality(platformSettings.m_Target, platformSettings.compressionQuality, isCrunchedFormat);
+                EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent ||
+                    platformSettings.compressionQualityIsDifferent;
+                int compressionQuality = EditCompressionQuality(platformSettings.m_Target,
+                        platformSettings.compressionQuality, isCrunchedFormat);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -244,15 +204,16 @@ namespace UnityEditor.Modules
                 }
             }
 
-            // show the ETC1 split option only for sprites on platforms supporting ETC.
+            // show the ETC1 split option only for sprites on platforms supporting ETC and only when there is an alpha channel
             bool isETCPlatform = TextureImporter.IsETC1SupportedByBuildTarget(BuildPipeline.GetBuildTargetByName(platformSettings.name));
             bool isDealingWithSprite = (editor.spriteImportMode != SpriteImportMode.None);
             bool isETCFormatSelected = TextureImporter.IsTextureFormatETC1Compression((TextureFormat)formatForAll);
+
             if (isETCPlatform && isDealingWithSprite && isETCFormatSelected)
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent || platformSettings.allowsAlphaSplitIsDifferent;
-                bool allowsAlphaSplit = GUILayout.Toggle(platformSettings.allowsAlphaSplitting, TextureImporterInspector.s_Styles.etc1Compression);
+                bool allowsAlphaSplit = EditorGUILayout.Toggle(TextureImporterInspector.s_Styles.useAlphaSplitLabel, platformSettings.allowsAlphaSplitting);
                 if (EditorGUI.EndChangeCheck())
                 {
                     platformSettings.SetAllowsAlphaSplitForAll(allowsAlphaSplit);

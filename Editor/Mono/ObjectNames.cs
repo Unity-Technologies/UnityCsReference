@@ -54,6 +54,13 @@ namespace UnityEditor
                     return "Default References (" + (script ? script.name : string.Empty) + ")";
                 }
 
+                if (NativeClassExtensionUtilities.ExtendsANativeType(o))
+                {
+                    var script = MonoScript.FromScriptedObject(o);
+                    if (script != null)
+                        return script.GetClass().Name + " (Script)";
+                }
+
                 return o.GetType().Name;
             }
 

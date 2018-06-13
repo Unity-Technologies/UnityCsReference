@@ -45,7 +45,7 @@ namespace UnityEditor
 
         protected override void OnGUI()
         {
-            if (!m_ParentInspectorWindow)
+            if (m_ParentInspectorWindow == null)
             {
                 Close();
                 EditorGUIUtility.ExitGUI();

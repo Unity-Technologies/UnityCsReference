@@ -27,6 +27,22 @@ namespace UnityEditor.Collaboration
         private ChangeAction[] m_Entries;
         private CloudBuildStatus[] m_BuildStatuses;
 
+        internal Revision(string revisionID = "", string authorName = "", string author = "",
+                          string comment = "", string reference = "", ulong timeStamp = 0,
+                          bool isObtained = false, ChangeAction[] entries = null,
+                          CloudBuildStatus[] buildStatuses = null)
+        {
+            m_AuthorName = authorName;
+            m_Author = author;
+            m_Comment = comment;
+            m_RevisionID = revisionID;
+            m_Reference = reference;
+            m_TimeStamp = timeStamp;
+            m_IsObtained = isObtained;
+            m_Entries = entries ?? new ChangeAction[0];
+            m_BuildStatuses = buildStatuses ?? new CloudBuildStatus[0];
+        }
+
         public string authorName { get { return m_AuthorName;  } }
         public string author { get { return m_Author;  } }
         public string comment { get { return m_Comment;  } }

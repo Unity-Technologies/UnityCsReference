@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
@@ -88,6 +89,20 @@ namespace UnityEditor.SceneManagement
             {
                 activeSceneChangedInEditMode(previousActiveScene, newActiveScene);
             }
+        }
+
+        public static Scene LoadSceneInPlayMode(string path, LoadSceneParameters parameters)
+        {
+            AsyncOperation op = LoadSceneInPlayModeInternal(path, parameters, true);
+            if (op != null)
+                return GetSceneAt(sceneCount - 1);
+
+            return new Scene();
+        }
+
+        public static AsyncOperation LoadSceneAsyncInPlayMode(string path, LoadSceneParameters parameters)
+        {
+            return LoadSceneInPlayModeInternal(path, parameters, false);
         }
     }
 }

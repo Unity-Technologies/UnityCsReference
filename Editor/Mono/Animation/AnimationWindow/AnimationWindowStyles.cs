@@ -51,7 +51,7 @@ namespace UnityEditor
         public static GUIStyle popupCurveEditorSwatch = "PopupCurveEditorSwatch";
         public static GUIStyle popupCurveSwatchBackground = "PopupCurveSwatchBackground";
 
-        public static GUIStyle miniToolbar = new GUIStyle(EditorStyles.toolbar);
+        public static GUIStyle miniToolbar = EditorStyles.toolbar;
         public static GUIStyle miniToolbarButton = new GUIStyle(EditorStyles.toolbarButton);
         public static GUIStyle toolbarLabel = new GUIStyle(EditorStyles.toolbarPopup);
 

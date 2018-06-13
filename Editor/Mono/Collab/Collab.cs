@@ -5,10 +5,8 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Scripting;
-using UnityEditor;
 using UnityEditor.Web;
 using UnityEditorInternal;
 using UnityEditor.Connect;
@@ -18,24 +16,10 @@ namespace UnityEditor.Collaboration
 {
     internal delegate void StateChangedDelegate(CollabInfo info);
     internal delegate void ErrorDelegate();
-
-    [Flags]
-    internal enum CollabOperation : ulong
-    {
-        Noop          = 0,
-        Publish       = 1 << 0,
-        Update        = 1 << 1,
-        Revert        = 1 << 2,
-        GoBack        = 1 << 3,
-        Restore       = 1 << 4,
-        Diff          = 1 << 5,
-        ConflictDiff  = 1 << 6,
-        Exclude       = 1 << 7,
-        Include       = 1 << 8,
-        ChooseMine    = 1 << 9,
-        ChooseTheirs  = 1 << 10,
-        ExternalMerge = 1 << 11,
-    };
+    internal delegate bool ShowToolbarAtPositionDelegate(Rect screenRect);
+    internal delegate bool IsToolbarVisibleDelegate();
+    internal delegate void ShowHistoryWindowDelegate();
+    internal delegate void CloseToolbarDelegate();
 
     //*undocumented
     // We want to raise this exception from Cpp code but it fails
@@ -49,11 +33,23 @@ namespace UnityEditor.Collaboration
     [InitializeOnLoad]
     internal partial class Collab
     {
+        // Pointer to native Collab object used by automatic bindings system.
+        #pragma warning disable 414            // The private field is assigned but its value is never used
+        IntPtr m_nativeCollab = IntPtr.Zero;
+
         public event StateChangedDelegate StateChanged;
         public event StateChangedDelegate RevisionUpdated;
         public event StateChangedDelegate JobsCompleted;
         public event ErrorDelegate ErrorOccurred;
         public event ErrorDelegate ErrorCleared;
+
+        // Toolbar delegates
+        public static ShowToolbarAtPositionDelegate ShowToolbarAtPosition = null;
+        public static IsToolbarVisibleDelegate IsToolbarVisible = null;
+        public static CloseToolbarDelegate CloseToolbar = null;
+
+        // History delegates
+        public static ShowHistoryWindowDelegate ShowHistoryWindow = null;
 
         private static Collab s_Instance;
         private static bool s_IsFirstStateChange = true;
@@ -67,8 +63,29 @@ namespace UnityEditor.Collaboration
 
         public string[] currentProjectBrowserSelection;
 
+        // Must keep in sync with C++ in CollabCommon.h
         [Flags]
-        public enum CollabStates : ulong
+        public enum Operation
+        {
+            Noop          = 0,
+            Publish       = 1 << 0,
+            Update        = 1 << 1,
+            Revert        = 1 << 2,
+            GoBack        = 1 << 3,
+            Restore       = 1 << 4,
+            Diff          = 1 << 5,
+            ConflictDiff  = 1 << 6,
+            Exclude       = 1 << 7,
+            Include       = 1 << 8,
+            ChooseMine    = 1 << 9,
+            ChooseTheirs  = 1 << 10,
+            ExternalMerge = 1 << 11,
+        };
+
+        // Must keep in sync with C++ in CollabCommon.h
+        // Explicit uint so "Any" state works with C++
+        [Flags]
+        public enum CollabStates : uint
         {
             kCollabNone             =   0,
             kCollabLocal            =   1,
@@ -100,8 +117,9 @@ namespace UnityEditor.Collaboration
             // always keep most significant
             kCollabInvalidState     =   1 << 30,
 
-            kAnyLocalChanged =              (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabDeletedLocal | kCollabMovedLocal),
-            kAnyLocalEdited =               (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabMovedLocal)
+            kAnyLocalChanged        = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabDeletedLocal | kCollabMovedLocal),
+            kAnyLocalEdited         = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabMovedLocal),
+            kCollabAny = 0xFFFFFFFF
         };
 
         internal enum CollabStateID { None, Uninitialized, Initialized };
@@ -133,6 +151,7 @@ namespace UnityEditor.Collaboration
             s_Instance = new Collab();
             s_Instance.projectBrowserSingleSelectionPath = string.Empty;
             s_Instance.projectBrowserSingleMetaSelectionPath = string.Empty;
+            s_Instance.m_nativeCollab = GetNativeCollab();
             JSProxyMgr.GetInstance().AddGlobalObject("unity/collab", s_Instance);
             ObjectListArea.postAssetIconDrawCallback += CollabProjectHook.OnProjectWindowIconOverlay;
             AssetsTreeViewGUI.postAssetIconDrawCallback += CollabProjectHook.OnProjectBrowserNavPanelIconOverlay;
@@ -159,26 +178,21 @@ namespace UnityEditor.Collaboration
         }
 
 
-        public void CancelJobWithoutException(int jobType)
+        public bool GetError(UnityConnect.UnityErrorFilter errorFilter, out UnityErrorInfo info)
+        {
+            return GetErrorInternal((int)errorFilter, out info) && info.code > 0;
+        }
+
+        public void CancelJob(int jobType)
         {
             try
             {
-                CancelJobByType(jobType);
+                CancelJobByType(jobType, false);
             }
             catch (Exception ex)
             {
                 UnityEngine.Debug.Log("Cannot cancel job, reason:" + ex.Message);
             }
-        }
-
-        public CollabStates GetAssetState(string guid)
-        {
-            return (CollabStates)GetAssetStateInternal(guid);
-        }
-
-        public CollabStates GetSelectedAssetState()
-        {
-            return (CollabStates)GetSelectedAssetStateInternal();
         }
 
         public void UpdateEditorSelectionCache()
@@ -229,6 +243,16 @@ namespace UnityEditor.Collaboration
             collabFilters.ShowInProjectBrowser(filterString);
         }
 
+        public bool SetConflictsResolvedMine(string[] paths)
+        {
+            return SetConflictsResolved(paths, CollabStates.kCollabUseMine);
+        }
+
+        public bool SetConflictsResolvedTheirs(string[] paths)
+        {
+            return SetConflictsResolved(paths, CollabStates.kCollabUseTheir);
+        }
+
         public PublishInfo GetChangesToPublish()
         {
             Change[] changes = GetChangesToPublishInternal();
@@ -237,6 +261,15 @@ namespace UnityEditor.Collaboration
                 changes = changes,
                 filter = false
             };
+        }
+
+        public ProgressInfo GetJobProgress(int jobId)
+        {
+            ProgressInfo info = new ProgressInfo();
+            if (GetJobProgressInternal(info, jobId))
+                return info;
+
+            return null;
         }
 
         private static void OnStateChanged()
@@ -300,7 +333,7 @@ namespace UnityEditor.Collaboration
             var dialog = CollabPublishDialog.ShowCollabWindow(changelist);
 
             if (dialog.Options.DoPublish)
-                Collab.instance.Publish(dialog.Options.Comments, true);
+                Collab.instance.Publish(dialog.Options.Comments, true, false);
         }
 
         private static void CannotPublishDialog(string infoMessage)
@@ -366,5 +399,5 @@ namespace UnityEditor.Collaboration
                 }
             }
         }
-    };
+    }
 }

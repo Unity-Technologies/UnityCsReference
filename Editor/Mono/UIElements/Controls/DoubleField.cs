@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
@@ -11,29 +10,11 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class DoubleField : TextValueField<double>
     {
-        public class DoubleFieldFactory : UxmlFactory<DoubleField, DoubleFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<DoubleField, UxmlTraits> {}
 
-        public class DoubleFieldUxmlTraits : TextValueFieldUxmlTraits
+        public new class UxmlTraits : TextValueField<double>.UxmlTraits
         {
-            UxmlDoubleAttributeDescription m_Value;
-
-            public DoubleFieldUxmlTraits()
-            {
-                m_Value = new UxmlDoubleAttributeDescription { name = "value" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Value;
-                }
-            }
+            UxmlDoubleAttributeDescription m_Value = new UxmlDoubleAttributeDescription { name = "value" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -64,7 +45,7 @@ namespace UnityEditor.Experimental.UIElements
             double v = value;
             v += NumericFieldDraggerUtility.NiceDelta(delta, acceleration) * sensitivity;
             v = MathUtils.RoundBasedOnMinimumDifference(v, sensitivity);
-            SetValueAndNotify(v);
+            value = v;
         }
 
         protected override string ValueToString(double v)

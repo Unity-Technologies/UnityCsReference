@@ -38,10 +38,12 @@ namespace UnityEditor
         SerializedProperty m_SortMode;          //< What method of particle sorting to use. If none is specified, no sorting will occur.
         SerializedProperty m_SortingFudge;      //< Lower the number, most likely that these particles will appear in front of other transparent objects, including other particles.
         SerializedProperty m_NormalDirection;
+        SerializedProperty m_AllowRoll;
         RendererEditorBase.Probes m_Probes;
 
         SerializedProperty m_RenderAlignment;
         SerializedProperty m_Pivot;
+        SerializedProperty m_Flip;
         SerializedProperty m_UseCustomVertexStreams;
         SerializedProperty m_VertexStreams;
         SerializedProperty m_MaskInteraction;
@@ -88,11 +90,14 @@ namespace UnityEditor
             public GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "Only opaque materials receive shadows. When using deferred rendering, all opaque objects receive shadows.");
             public GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
             public GUIContent normalDirection = EditorGUIUtility.TrTextContent("Normal Direction", "Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
+            public GUIContent allowRoll = EditorGUIUtility.TrTextContent("Allow Roll", "Allows billboards to roll with the camera. It is often useful to disable this option when using VR.");
 
             public GUIContent sortingLayer = EditorGUIUtility.TrTextContent("Sorting Layer", "Name of the Renderer's sorting layer.");
             public GUIContent sortingOrder = EditorGUIUtility.TrTextContent("Order in Layer", "Renderer's order within a sorting layer");
             public GUIContent space = EditorGUIUtility.TrTextContent("Render Alignment", "Specifies if the particles will face the camera, align to world axes, or stay local to the system's transform.");
             public GUIContent pivot = EditorGUIUtility.TrTextContent("Pivot", "Applies an offset to the pivot of particles, as a multiplier of its size.");
+            public GUIContent flip = EditorGUIUtility.TrTextContent("Flip", "Cause some particles to be flipped horizontally and/or vertically. (Set between 0 and 1, where a higher value causes more to flip)");
+            public GUIContent flipMeshes = EditorGUIUtility.TrTextContent("Flip", "Cause some mesh particles to be flipped along each of their axes. Use a shader with CullMode=None, to avoid inside-out geometry. (Set between 0 and 1, where a higher value causes more to flip)");
             public GUIContent visualizePivot = EditorGUIUtility.TrTextContent("Visualize Pivot", "Render the pivot positions of the particles.");
             public GUIContent useCustomVertexStreams = EditorGUIUtility.TrTextContent("Custom Vertex Streams", "Choose whether to send custom particle data to the shader.");
             public GUIContent enableGPUInstancing = EditorGUIUtility.TrTextContent("Enable Mesh GPU Instancing", "When rendering mesh particles, use GPU Instancing on platforms where it is supported, and when using shaders that contain a Procedural Instancing pass (#pragma instancing_options procedural).");
@@ -217,12 +222,14 @@ namespace UnityEditor
             m_SortingFudge = GetProperty0("m_SortingFudge");
             m_SortMode = GetProperty0("m_SortMode");
             m_NormalDirection = GetProperty0("m_NormalDirection");
+            m_AllowRoll = GetProperty0("m_AllowRoll");
 
             m_Probes = new RendererEditorBase.Probes();
             m_Probes.Initialize(serializedObject);
 
             m_RenderAlignment = GetProperty0("m_RenderAlignment");
             m_Pivot = GetProperty0("m_Pivot");
+            m_Flip = GetProperty0("m_Flip");
 
             m_Meshes[0] = GetProperty0("m_Mesh");
             m_Meshes[1] = GetProperty0("m_Mesh1");
@@ -323,12 +330,18 @@ namespace UnityEditor
                         {
                             GUIPopup(s_Texts.space, m_RenderAlignment, s_Texts.spaces);
                         }
+
+                        if (renderMode == RenderMode.Billboard)
+                            GUIVector3Field(s_Texts.flip, m_Flip);
+                        else
+                            GUIVector3Field(s_Texts.flipMeshes, m_Flip);
                     }
 
+                    if (renderMode == RenderMode.Billboard)
+                        GUIToggle(s_Texts.allowRoll, m_AllowRoll);
+
                     if (renderMode == RenderMode.Mesh)
-                    {
                         GUIToggle(s_Texts.enableGPUInstancing, m_EnableGPUInstancing);
-                    }
                 }
 
                 GUIVector3Field(s_Texts.pivot, m_Pivot);
@@ -464,7 +477,7 @@ namespace UnityEditor
                     Material material = m_Material.objectReferenceValue as Material;
                     int totalChannelCount = m_NumTexCoords * 4 + m_TexCoordChannelIndex;
                     bool tangentError = false, colorError = false, uvError = false;
-                    bool anyErrors = m_ParticleSystemUI.m_ParticleSystems[0].CheckVertexStreamsMatchShader(m_HasTangent, m_HasColor, totalChannelCount, material, ref tangentError, ref colorError, ref uvError);
+                    bool anyErrors = ParticleSystem.CheckVertexStreamsMatchShader(m_HasTangent, m_HasColor, totalChannelCount, material, ref tangentError, ref colorError, ref uvError);
                     if (anyErrors)
                     {
                         errors += "Vertex streams do not match the shader inputs. Particle systems may not render correctly. Ensure your streams match and are used by the shader.";
@@ -478,7 +491,7 @@ namespace UnityEditor
                 }
 
                 // check we aren't using too many texcoords
-                int maxTexCoords = m_ParticleSystemUI.m_ParticleSystems[0].GetMaxTexCoordStreams();
+                int maxTexCoords = ParticleSystem.GetMaxTexCoordStreams();
                 if (m_NumTexCoords > maxTexCoords || (m_NumTexCoords == maxTexCoords && m_TexCoordChannelIndex > 0))
                 {
                     if (errors != "")
@@ -604,7 +617,7 @@ namespace UnityEditor
                 Matrix4x4 transform = Matrix4x4.identity;
                 if (ps.main.simulationSpace == ParticleSystemSimulationSpace.Local)
                 {
-                    transform = ps.GetLocalToWorldMatrix();
+                    transform = ps.localToWorldMatrix;
                 }
                 Handles.matrix = transform;
 

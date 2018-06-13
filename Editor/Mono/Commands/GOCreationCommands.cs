@@ -176,13 +176,25 @@ namespace UnityEditor
             Place(go, parent);
         }
 
-        [MenuItem("GameObject/Light/Area Light", priority = 4)]
+        [MenuItem("GameObject/Light/Rectangular Light", priority = 4)]
         static void CreateAreaLight(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(null, "Area Light", typeof(Light));
+            var go = CreateGameObject(null, "Rectangular Light", typeof(Light));
 
             go.GetComponent<Light>().type = LightType.Area;
+            go.GetComponent<Transform>().SetLocalEulerAngles(new Vector3(90, 0, 0), RotationOrder.OrderZXY);
+
+            Place(go, parent);
+        }
+
+        [MenuItem("GameObject/Light/Disc Light", priority = 5)]
+        static void CreateDiscLight(MenuCommand menuCommand)
+        {
+            var parent = menuCommand.context as GameObject;
+            var go = CreateGameObject(null, "Disc Light", typeof(Light));
+
+            go.GetComponent<Light>().type = LightType.Disc;
             go.GetComponent<Transform>().SetLocalEulerAngles(new Vector3(90, 0, 0), RotationOrder.OrderZXY);
 
             Place(go, parent);

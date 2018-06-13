@@ -121,7 +121,7 @@ namespace UnityEditor
             {
                 if (bp.name == platform)
                 {
-                    return FormatFromTextureParameters(settings,
+                    return DefaultFormatFromTextureParameters(settings,
                         platformSettings,
                         DoesSourceTextureHaveAlpha(),
                         IsSourceTextureHDR(),
@@ -168,7 +168,10 @@ namespace UnityEditor
         public extern void ClearPlatformTextureSettings(string platform);
 
         [FreeFunction]
-        internal static extern  TextureImporterFormat FormatFromTextureParameters([NotNull] TextureImporterSettings settings, TextureImporterPlatformSettings platformSettings, bool doesTextureContainAlpha, bool sourceWasHDR, BuildTarget destinationPlatform);
+        internal static extern  TextureImporterFormat DefaultFormatFromTextureParameters([NotNull] TextureImporterSettings settings, TextureImporterPlatformSettings platformSettings, bool doesTextureContainAlpha, bool sourceWasHDR, BuildTarget destinationPlatform);
+
+        [FreeFunction]
+        internal static extern TextureImporterFormat[] RecommendedFormatsFromTextureTypeAndPlatform(TextureImporterType textureType, BuildTarget destinationPlatform);
 
         // Cubemap generation mode.
         public extern TextureImporterGenerateCubemap generateCubemap { get; set; }

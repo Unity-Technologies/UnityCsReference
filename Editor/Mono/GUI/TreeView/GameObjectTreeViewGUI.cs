@@ -2,12 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
@@ -43,7 +41,6 @@ namespace UnityEditor
                 disabledPrefabLabel.alignment = TextAnchor.MiddleLeft;
                 brokenPrefabLabel.alignment = TextAnchor.MiddleLeft;
                 disabledBrokenPrefabLabel.alignment = TextAnchor.MiddleLeft;
-
                 ClearSelectionTexture(disabledLabel);
                 ClearSelectionTexture(prefabLabel);
                 ClearSelectionTexture(disabledPrefabLabel);

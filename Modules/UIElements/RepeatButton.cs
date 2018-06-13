@@ -3,38 +3,17 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class RepeatButton : BaseTextElement
+    public class RepeatButton : TextElement
     {
-        public class RepeatButtonFactory : UxmlFactory<RepeatButton, RepeatButtonUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<RepeatButton, UxmlTraits> {}
 
-        public class RepeatButtonUxmlTraits : BaseTextElementUxmlTraits
+        public new class UxmlTraits : TextElement.UxmlTraits
         {
-            UxmlLongAttributeDescription m_Delay;
-            UxmlLongAttributeDescription m_Interval;
-
-            public RepeatButtonUxmlTraits()
-            {
-                m_Delay = new UxmlLongAttributeDescription {name = "delay" };
-                m_Interval = new UxmlLongAttributeDescription { name = "interval" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Delay;
-                    yield return m_Interval;
-                }
-            }
+            UxmlLongAttributeDescription m_Delay = new UxmlLongAttributeDescription { name = "delay" };
+            UxmlLongAttributeDescription m_Interval = new UxmlLongAttributeDescription { name = "interval" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {

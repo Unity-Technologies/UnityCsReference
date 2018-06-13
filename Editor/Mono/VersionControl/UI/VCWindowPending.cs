@@ -62,8 +62,6 @@ namespace UnityEditor.VersionControl
                     {
                         GUIContent gc = new GUIContent();
                         gc.image = EditorGUIUtility.LoadIcon("WaitSpin" + i.ToString("00")) as Texture2D;
-                        //EditorGUIUtility.LoadIconForSkin(
-                        //gc.image = tex != null ? tex : EditorGUIUtility.LoadIcon("Builtin Skins/Icons/    WaitSpin" + i.ToString("00") + ".png") as Texture2D;
                         gc.image.hideFlags = HideFlags.HideAndDontSave;
                         gc.image.name = "Spinner";
                         sStatusWheel[i] = gc;

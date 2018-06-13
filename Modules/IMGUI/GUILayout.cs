@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
+
 namespace UnityEngine
 {
     // The GUILayout class is the interface for Unity gui with automatic layout.
@@ -219,6 +221,13 @@ namespace UnityEngine
                 GUILayoutUtility.GetRect(0, pixels, GUILayoutUtility.spaceStyle, GUILayout.Height(pixels));
             else
                 GUILayoutUtility.GetRect(pixels, 0, GUILayoutUtility.spaceStyle, GUILayout.Width(pixels));
+            // Instead of handling margins normally, we just want to insert the size.
+            // This ensures that Space(1) adds ONE space, and doesn't prevent margin collapse.
+
+            if (Event.current.type == EventType.Layout)
+            {
+                GUILayoutUtility.current.topLevel.entries[GUILayoutUtility.current.topLevel.entries.Count - 1].consideredForMargin = false;
+            }
         }
 
         // Insert a flexible space element.

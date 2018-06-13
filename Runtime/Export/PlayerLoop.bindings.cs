@@ -38,8 +38,6 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct UnityConnectClientUpdate {}
         [RequiredByNativeCode]
-        public struct CloudWebServicesUpdate {}
-        [RequiredByNativeCode]
         public struct UnityWebRequestUpdate {}
         [RequiredByNativeCode]
         public struct UpdateStreamingManager {}
@@ -122,8 +120,6 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct ScriptRunDelayedFixedFrameRate {}
         [RequiredByNativeCode]
-        public struct ScriptRunDelayedTasks {}
-        [RequiredByNativeCode]
         public struct NewInputFixedUpdate {}
     }
     [RequiredByNativeCode]
@@ -157,6 +153,8 @@ namespace UnityEngine.Experimental.PlayerLoop
         public struct DirectorUpdate {}
         [RequiredByNativeCode]
         public struct ScriptRunDelayedDynamicFrameRate {}
+        [RequiredByNativeCode]
+        public struct ScriptRunDelayedTasks {}
     }
     [RequiredByNativeCode]
     public struct PreLateUpdate
@@ -206,7 +204,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct ScriptRunDelayedDynamicFrameRate {}
         [RequiredByNativeCode]
-        public struct ParticlesLegacyUpdateAllParticleSystems {}
+        public struct VFXUpdate {}
         [RequiredByNativeCode]
         public struct ParticleSystemEndUpdateAll {}
         [RequiredByNativeCode]

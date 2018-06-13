@@ -13,7 +13,8 @@ namespace UnityEngine.Experimental.Rendering
     unsafe public struct ShadowSplitData
     {
         public int cullingPlaneCount;
-        private fixed float _cullingPlanes[10 * 4];
+        // can't make fixed types private, because then the compiler generates different code which BindinsgGenerator does not handle yet.
+        internal fixed float _cullingPlanes[10 * 4];
         public Vector4 cullingSphere;
 
         public Plane GetCullingPlane(int index)

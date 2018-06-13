@@ -118,7 +118,7 @@ namespace UnityEditorInternal
                 {
                     var errorOutput = p.GetErrorOutput();
                     var standardOutput = p.GetStandardOutput();
-                    messages = parser.Parse(errorOutput, standardOutput, true);
+                    messages = parser.Parse(errorOutput, standardOutput, true, "n/a (il2cpp)");
                 }
 
                 if (p.ExitCode != 0)

@@ -16,7 +16,6 @@ namespace UnityEngine.Experimental.UIElements.StyleEnums
     public enum Overflow
     {
         Visible = YogaOverflow.Visible,
-        Scroll = YogaOverflow.Scroll,
         Hidden = YogaOverflow.Hidden
     }
 

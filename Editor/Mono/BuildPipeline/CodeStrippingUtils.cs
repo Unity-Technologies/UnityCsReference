@@ -61,21 +61,19 @@ namespace UnityEditor
             // Can also be used to set up dependencies to modules which cannot be derived by the build pipeline without custom rules
             const string connectSettingsName = "UnityConnectSettings";
             var connectSettings = UnityType.FindTypeByName(connectSettingsName);
-            const string cloudWebServicesManagerName = "CloudWebServicesManager";
-            var cloudWebServicesManager = UnityType.FindTypeByName(cloudWebServicesManagerName);
-            if (nativeClasses.Contains(connectSettings) || nativeClasses.Contains(cloudWebServicesManager))
+            const string analyticsManagerName = "UnityAnalyticsManager";
+            var analyticsManager = UnityType.FindTypeByName(analyticsManagerName);
+            if (nativeClasses.Contains(connectSettings) || nativeClasses.Contains(analyticsManager))
             {
                 if (PlayerSettings.submitAnalytics)
                 {
                     const string requiredMessage = "Required by HW Statistics (See Player Settings)";
                     strippingInfo.RegisterDependency(connectSettingsName, requiredMessage);
-                    strippingInfo.RegisterDependency(cloudWebServicesManagerName, requiredMessage);
+                    strippingInfo.RegisterDependency(analyticsManagerName, requiredMessage);
                     strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
                 }
             }
 
-            const string analyticsManagerName = "UnityAnalyticsManager";
-            var analyticsManager = UnityType.FindTypeByName(analyticsManagerName);
             if (nativeClasses.Contains(analyticsManager))
             {
                 if (UnityEditor.Analytics.AnalyticsSettings.enabled)
@@ -193,7 +191,7 @@ namespace UnityEditor
                 strippingInfo.AddModule("Core");
             }
 
-            if (nativeClasses != null && strippingInfo != null)
+            if (nativeClasses != null && strippingInfo != null && platformProvider != null)
                 InjectCustomDependencies(platformProvider.target, strippingInfo, nativeClasses, nativeModules);
         }
 
@@ -252,7 +250,7 @@ namespace UnityEditor
             return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
         }
 
-        public static void WriteModuleAndClassRegistrationFile(string strippedAssemblyDir, string icallsListFile, string outputDir, RuntimeClassRegistry rcr, IEnumerable<UnityType> classesToSkip, IIl2CppPlatformProvider platformProvider)
+        public static void WriteModuleAndClassRegistrationFile(string strippedAssemblyDir, string icallsListFile, string outputDir, RuntimeClassRegistry rcr, IEnumerable<UnityType> classesToSkip, IIl2CppPlatformProvider platformProvider, bool writeModuleRegistration = true, bool writeClassRegistration = true)
         {
             HashSet<UnityType> nativeClasses;
             HashSet<string> nativeModules;
@@ -261,7 +259,14 @@ namespace UnityEditor
             GenerateDependencies(strippedAssemblyDir, icallsListFile, rcr, doStripping, out nativeClasses, out nativeModules, platformProvider);
 
             var outputClassRegistration = Path.Combine(outputDir, "UnityClassRegistration.cpp");
-            WriteModuleAndClassRegistrationFile(outputClassRegistration, nativeModules, nativeClasses, new HashSet<UnityType>(classesToSkip));
+            using (TextWriter w = new StreamWriter(outputClassRegistration))
+            {
+                if (writeModuleRegistration)
+                    WriteFunctionRegisterStaticallyLinkedModulesGranular(w, nativeModules);
+                if (writeClassRegistration)
+                    WriteStaticallyLinkedModuleClassRegistration(w, nativeClasses, new HashSet<UnityType>(classesToSkip));
+                w.Close();
+            }
         }
 
         public static HashSet<string> GetNativeModulesToRegister(HashSet<UnityType> nativeClasses, StrippingInfo strippingInfo)
@@ -273,7 +278,7 @@ namespace UnityEditor
         {
             HashSet<string> nativeModules = new HashSet<string>();
             foreach (string module in ModuleMetadata.GetModuleNames())
-                if (ModuleMetadata.IsStrippableModule(module)) // Only handle strippable modules. Others are listed in RegisterStaticallyLinkedModules()
+                if (ModuleMetadata.IsStrippableModule(module)) // Only handle strippable modules. Others are listed in RegisterStaticallyLinkedModulesGranular()
                     nativeModules.Add(module);
             return nativeModules;
         }
@@ -284,7 +289,7 @@ namespace UnityEditor
             HashSet<string> nativeModules = new HashSet<string>();
             foreach (string module in ModuleMetadata.GetModuleNames())
             {
-                if (ModuleMetadata.IsStrippableModule(module)) // Only handle strippable modules. Others are listed in RegisterStaticallyLinkedModules()
+                if (ModuleMetadata.IsStrippableModule(module)) // Only handle strippable modules. Others are listed in RegisterStaticallyLinkedModulesGranular()
                 {
                     var moduleClasses = new HashSet<UnityType>(ModuleMetadata.GetModuleTypes(module));
                     if (nativeClasses.Overlaps(moduleClasses)) // Include module if at least one of its classes is present
@@ -497,7 +502,7 @@ namespace UnityEditor
             }
         }
 
-        private static void WriteStaticallyLinkedModuleRegistration(TextWriter w, HashSet<string> nativeModules, HashSet<UnityType> nativeClasses)
+        private static void WriteFunctionInvokeRegisterStaticallyLinkedModuleClasses(TextWriter w, HashSet<UnityType> nativeClasses)
         {
             w.WriteLine("void InvokeRegisterStaticallyLinkedModuleClasses()");
             w.WriteLine("{");
@@ -512,7 +517,11 @@ namespace UnityEditor
             }
             w.WriteLine("}");
             w.WriteLine();
-            w.WriteLine("void RegisterStaticallyLinkedModulesGranular()");
+        }
+
+        private static void WriteFunctionRegisterStaticallyLinkedModulesGranular(TextWriter w, HashSet<string> nativeModules)
+        {
+            w.WriteLine("extern \"C\" void RegisterStaticallyLinkedModulesGranular()");
             w.WriteLine("{");
 
             var nativeModulesSorted = nativeModules.OrderBy(x => x, new ModuleDependencyComparer());
@@ -523,96 +532,92 @@ namespace UnityEditor
                 w.WriteLine();
             }
             w.WriteLine("}");
+            w.WriteLine();
         }
 
-        private static void WriteModuleAndClassRegistrationFile(string file, HashSet<string> nativeModules, HashSet<UnityType> nativeClasses, HashSet<UnityType> classesToSkip)
+        private static void WriteStaticallyLinkedModuleClassRegistration(TextWriter w, HashSet<UnityType> nativeClasses, HashSet<UnityType> classesToSkip)
         {
-            using (TextWriter w = new StreamWriter(file))
+            w.WriteLine("template <typename T> void RegisterUnityClass(const char*);");
+            w.WriteLine("template <typename T> void RegisterStrippedType(int, const char*, const char*);");
+            w.WriteLine();
+
+            WriteFunctionInvokeRegisterStaticallyLinkedModuleClasses(w, nativeClasses);
+
+            // Forward declare types
+            if (nativeClasses != null)
             {
-                w.WriteLine("template <typename T> void RegisterUnityClass(const char*);");
-                w.WriteLine("template <typename T> void RegisterStrippedType(int, const char*, const char*);");
+                foreach (var type in UnityType.GetTypes())
+                {
+                    if (type.baseClass == null || type.isEditorOnly || classesToSkip.Contains(type))
+                        continue;
 
+                    if (type.hasNativeNamespace)
+                        w.Write("namespace {0} {{ class {1}; }} ", type.nativeNamespace, type.name);
+                    else
+                        w.Write("class {0}; ", type.name);
+
+                    if (nativeClasses.Contains(type))
+                        w.WriteLine("template <> void RegisterUnityClass<{0}>(const char*);", type.qualifiedName);
+                    else
+                        w.WriteLine();
+                }
                 w.WriteLine();
-                WriteStaticallyLinkedModuleRegistration(w, nativeModules, nativeClasses);
-                w.WriteLine();
-
-                // Forward declare types
-                if (nativeClasses != null)
-                {
-                    foreach (var type in UnityType.GetTypes())
-                    {
-                        if (type.baseClass == null || type.isEditorOnly || classesToSkip.Contains(type))
-                            continue;
-
-                        if (type.hasNativeNamespace)
-                            w.Write("namespace {0} {{ class {1}; }} ", type.nativeNamespace, type.name);
-                        else
-                            w.Write("class {0}; ", type.name);
-
-                        if (nativeClasses.Contains(type))
-                            w.WriteLine("template <> void RegisterUnityClass<{0}>(const char*);", type.qualifiedName);
-                        else
-                            w.WriteLine();
-                    }
-                    w.WriteLine();
-                }
-
-                // Class registration function
-                w.WriteLine("void RegisterAllClasses()");
-                w.WriteLine("{");
-
-                if (nativeClasses == null)
-                {
-                    w.WriteLine("\tvoid RegisterAllClassesGranular();");
-                    w.WriteLine("\tRegisterAllClassesGranular();");
-                }
-                else
-                {
-                    w.WriteLine("void RegisterBuiltinTypes();");
-                    w.WriteLine("RegisterBuiltinTypes();");
-                    w.WriteLine("\t//Total: {0} non stripped classes", nativeClasses.Count);
-
-                    int index = 0;
-                    foreach (var klass in nativeClasses)
-                    {
-                        w.WriteLine("\t//{0}. {1}", index, klass.qualifiedName);
-                        if (classesToSkip.Contains(klass))
-                            w.WriteLine("\t//Skipping {0}", klass.qualifiedName);
-                        else
-                            w.WriteLine("\tRegisterUnityClass<{0}>(\"{1}\");", klass.qualifiedName, klass.module);
-                        ++index;
-                    }
-                    w.WriteLine();
-
-                    // Register stripped classes
-
-                    // TODO (ulfj ) 2016-08-15 : Right now we cannot deal with types that are compiled into the editor
-                    // but not the player due to other defines than UNITY_EDITOR in them module definition file
-                    // (for example WorldAnchor only being there if ENABLE_HOLOLENS_MODULE_API). Doing this would
-                    // require either some non trivial changes to the module registration macros or a way for these
-                    // conditionals to be included in the RTTI so we can emit them when generating the code, so we
-                    // disabling the registration of stripped classes for now and will get back to this when we have
-                    // landed the remaining changes to the type system.
-
-                    //w.WriteLine("\t//Stripped classes");
-                    //foreach (var type in UnityType.GetTypes())
-                    //{
-                    //  if (type.baseClass == null || type.isEditorOnly || classesToSkip.Contains(type) || nativeClasses.Contains(type))
-                    //      continue;
-
-                    //  w.WriteLine("\tRegisterStrippedType<{0}>({1}, \"{2}\", \"{3}\");", type.qualifiedName, type.persistentTypeID, type.name, type.nativeNamespace);
-                    //}
-                }
-                w.WriteLine("}");
-                w.Close();
             }
+
+            // Class registration function
+            w.WriteLine("void RegisterAllClasses()");
+            w.WriteLine("{");
+
+            if (nativeClasses == null)
+            {
+                w.WriteLine("\tvoid RegisterAllClassesGranular();");
+                w.WriteLine("\tRegisterAllClassesGranular();");
+            }
+            else
+            {
+                w.WriteLine("void RegisterBuiltinTypes();");
+                w.WriteLine("RegisterBuiltinTypes();");
+                w.WriteLine("\t//Total: {0} non stripped classes", nativeClasses.Count);
+
+                int index = 0;
+                foreach (var klass in nativeClasses)
+                {
+                    w.WriteLine("\t//{0}. {1}", index, klass.qualifiedName);
+                    if (classesToSkip.Contains(klass))
+                        w.WriteLine("\t//Skipping {0}", klass.qualifiedName);
+                    else
+                        w.WriteLine("\tRegisterUnityClass<{0}>(\"{1}\");", klass.qualifiedName, klass.module);
+                    ++index;
+                }
+                w.WriteLine();
+
+                // Register stripped classes
+
+                // TODO (ulfj ) 2016-08-15 : Right now we cannot deal with types that are compiled into the editor
+                // but not the player due to other defines than UNITY_EDITOR in them module definition file
+                // (for example WorldAnchor only being there if ENABLE_HOLOLENS_MODULE_API). Doing this would
+                // require either some non trivial changes to the module registration macros or a way for these
+                // conditionals to be included in the RTTI so we can emit them when generating the code, so we
+                // disabling the registration of stripped classes for now and will get back to this when we have
+                // landed the remaining changes to the type system.
+
+                //w.WriteLine("\t//Stripped classes");
+                //foreach (var type in UnityType.GetTypes())
+                //{
+                //  if (type.baseClass == null || type.isEditorOnly || classesToSkip.Contains(type) || nativeClasses.Contains(type))
+                //      continue;
+
+                //  w.WriteLine("\tRegisterStrippedType<{0}>({1}, \"{2}\", \"{3}\");", type.qualifiedName, type.persistentTypeID, type.name, type.nativeNamespace);
+                //}
+            }
+            w.WriteLine("}");
         }
 
         private static readonly string[] s_TreatedAsUserAssemblies =
         {
             // Treat analytics as we user assembly. If it is not used, it won't be in the directory,
             // so this should not add to the build size unless it is really used.
-            "UnityEngine.Analytics.dll",
+            "Unity.Analytics.dll",
         };
 
         public static string[] UserAssemblies
@@ -644,6 +649,12 @@ namespace UnityEditor
                 var files = Directory.GetFiles(strippedAssemblyDir, assembly, SearchOption.TopDirectoryOnly);
                 arguments.AddRange(files.Select(f => Path.GetFileName(f)));
             }
+
+            // Workaround: if there are no user assemblies (because the project does not contain scripts), add
+            // UnityEngine, to makes sure we pick up types required by core module. Need to remove this once
+            // we want to be able to strip core module for ECS only players.
+            if (arguments.Count == 0)
+                arguments.Add("UnityEngine.dll");
 
             return arguments.ToArray();
         }

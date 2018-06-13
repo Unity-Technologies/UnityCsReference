@@ -308,6 +308,11 @@ namespace UnityEngine
             get { return SupportedRenderTargetCount(); }
         }
 
+        public static bool supportsSeparatedRenderTargetsBlend
+        {
+            get { return SupportsSeparatedRenderTargetsBlend(); }
+        }
+
         internal static int supportedRandomWriteTargetCount
         {
             get { return SupportedRandomWriteTargetCount(); }
@@ -340,10 +345,30 @@ namespace UnityEngine
             get { return 1; }
         }
 
+        // The enums are only marked as obsolete in the editor.
+        static bool IsObsolete(Enum value)
+        {
+            var fieldInfo = value.GetType().GetField(value.ToString());
+            var attributes = (ObsoleteAttribute[])fieldInfo.GetCustomAttributes(typeof(ObsoleteAttribute), false);
+            return (attributes != null && attributes.Length > 0);
+        }
+
+
+        static bool IsValidEnumValue(Enum value)
+        {
+            if (!Enum.IsDefined(value.GetType(), value))
+                return false;
+
+            if (IsObsolete(value))
+                return false;
+
+            return true;
+        }
+
         // Is render texture format supported?
         public static bool SupportsRenderTextureFormat(RenderTextureFormat format)
         {
-            if (!Enum.IsDefined(typeof(RenderTextureFormat), format))
+            if (!IsValidEnumValue(format))
                 throw new ArgumentException("Failed SupportsRenderTextureFormat; format is not a valid RenderTextureFormat");
 
             return HasRenderTextureNative(format);
@@ -352,7 +377,7 @@ namespace UnityEngine
         // Is render texture format supports blending?
         public static bool SupportsBlendingOnRenderTextureFormat(RenderTextureFormat format)
         {
-            if (!Enum.IsDefined(typeof(RenderTextureFormat), format))
+            if (!IsValidEnumValue(format))
                 throw new ArgumentException("Failed SupportsBlendingOnRenderTextureFormat; format is not a valid RenderTextureFormat");
 
             return SupportsBlendingOnRenderTextureFormatNative(format);
@@ -360,7 +385,7 @@ namespace UnityEngine
 
         public static bool SupportsTextureFormat(TextureFormat format)
         {
-            if (!Enum.IsDefined(typeof(TextureFormat), format))
+            if (!IsValidEnumValue(format))
                 throw new ArgumentException("Failed SupportsTextureFormat; format is not a valid TextureFormat");
 
             return SupportsTextureFormatNative(format);
@@ -549,6 +574,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::SupportedRenderTargetCount")]
         static extern int SupportedRenderTargetCount();
+
+        [FreeFunction("ScriptingGraphicsCaps::SupportsSeparatedRenderTargetsBlend")]
+        static extern bool SupportsSeparatedRenderTargetsBlend();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportedRandomWriteTargetCount")]
         static extern int SupportedRandomWriteTargetCount();

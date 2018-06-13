@@ -54,7 +54,7 @@ namespace UnityEditor
             m_UsedByEffector = serializedObject.FindProperty("m_UsedByEffector");
             m_UsedByComposite = serializedObject.FindProperty("m_UsedByComposite");
             m_Offset = serializedObject.FindProperty("m_Offset");
-            m_AutoTiling  = serializedObject.FindProperty("m_AutoTiling");
+            m_AutoTiling = serializedObject.FindProperty("m_AutoTiling");
 
             m_ShowCompositeRedundants.value = !m_UsedByComposite.boolValue;
             m_ShowCompositeRedundants.valueChanged.AddListener(Repaint);
@@ -79,13 +79,13 @@ namespace UnityEditor
                 m_ShowDensity.target = ShouldShowDensity();
                 if (EditorGUILayout.BeginFadeGroup(m_ShowDensity.faded))
                     EditorGUILayout.PropertyField(m_Density);
-                FixedEndFadeGroup(m_ShowDensity.faded);
+                EditorGUILayout.EndFadeGroup();
 
                 EditorGUILayout.PropertyField(m_Material);
                 EditorGUILayout.PropertyField(m_IsTrigger);
                 EditorGUILayout.PropertyField(m_UsedByEffector);
             }
-            FixedEndFadeGroup(m_ShowCompositeRedundants.faded);
+            EditorGUILayout.EndFadeGroup();
 
             // Only show 'Used By Composite' if all targets are capable of being composited.
             if (targets.Where(x => (x as Collider2D).compositeCapable == false).Count() == 0)
@@ -191,18 +191,8 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox("No Contacts", MessageType.Info);
                 }
             }
-            FixedEndFadeGroup(m_ShowContacts.faded);
-            EditorGUI.indentLevel--;
-        }
-
-        // Fix for nested fade-groups as found here:
-        // http://answers.unity3d.com/questions/1096244/custom-editor-fade-group-inside-fade-group.html
-        static void FixedEndFadeGroup(float value)
-        {
-            if (value == 0.0f || value == 1.0f)
-                return;
-
             EditorGUILayout.EndFadeGroup();
+            EditorGUI.indentLevel--;
         }
 
         internal override void OnForceReloadInspector()

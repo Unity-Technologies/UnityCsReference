@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using UnityEditor.Modules;
 using UnityEditor.Utils;
+using UnityEngine;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -47,13 +48,16 @@ namespace UnityEditor.Scripting.Compilers
             arguments.Add("/langversion:latest");
 
             var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
-            var compilationExtension = platformSupportModule.CreateCompilationExtension();
+            if (platformSupportModule != null)
+            {
+                var compilationExtension = platformSupportModule.CreateCompilationExtension();
 
-            arguments.AddRange(GetClassLibraries().Select(r => "/reference:\"" + r + "\""));
-            arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
-            arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
-            arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
-            arguments.AddRange(compilationExtension.GetAdditionalSourceFiles());
+                arguments.AddRange(GetClassLibraries().Select(r => "/reference:\"" + r + "\""));
+                arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
+                arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
+                arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
+                arguments.AddRange(compilationExtension.GetAdditionalSourceFiles());
+            }
         }
 
         private static void ThrowCompilerNotFoundException(string path)
@@ -71,10 +75,31 @@ namespace UnityEditor.Scripting.Compilers
 
             foreach (string source in _island._files)
             {
-                arguments.Add(PrepareFileName(source).Replace('/', '\\'));
+                if (Application.platform == RuntimePlatform.WindowsEditor)
+                    arguments.Add(PrepareFileName(source).Replace('/', '\\'));
+                else
+                    arguments.Add(PrepareFileName(source).Replace('\\', '/'));
             }
 
-            var csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "Roslyn", "csc.exe").Replace('/', '\\');
+            var useNetCore = true;
+            var csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "Roslyn", "csc.exe");
+            if (Application.platform == RuntimePlatform.WindowsEditor)
+            {
+                csc = csc.Replace('/', '\\');
+            }
+            else
+            {
+                if (UseNetCoreCompiler())
+                {
+                    csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "Roslyn", "csc").Replace('\\', '/');
+                }
+                else
+                {
+                    useNetCore = false;
+                    csc = Paths.Combine(EditorApplication.applicationContentsPath, "Tools", "RoslynNet46", "csc.exe").Replace('\\', '/');
+                }
+            }
+
 
             if (!File.Exists(csc))
                 ThrowCompilerNotFoundException(csc);
@@ -85,10 +110,46 @@ namespace UnityEditor.Scripting.Compilers
 
             RunAPIUpdaterIfRequired(responseFile);
 
-            var psi = new ProcessStartInfo() { Arguments = argsPrefix + "@" + responseFile, FileName = csc, CreateNoWindow = true };
-            var program = new Program(psi);
-            program.Start();
-            return program;
+            if (useNetCore)
+            {
+                var psi = new ProcessStartInfo() { Arguments = argsPrefix + " /shared " + "@" + responseFile, FileName = csc, CreateNoWindow = true };
+                var program = new Program(psi);
+                program.Start();
+                return program;
+            }
+            else
+            {
+                var program = new ManagedProgram(
+                        MonoInstallationFinder.GetMonoBleedingEdgeInstallation(),
+                        "not needed",
+                        csc,
+                        argsPrefix + "@" + responseFile,
+                        false,
+                        null);
+                program.Start();
+                return program;
+            }
+        }
+
+        static bool UseNetCoreCompiler()
+        {
+            bool shouldUse = false;
+            if (Application.platform == RuntimePlatform.OSXEditor)
+            {
+                if (SystemInfo.operatingSystem.StartsWith("Mac OS X 10."))
+                {
+                    var versionText = SystemInfo.operatingSystem.Substring(9);
+                    var version = new Version(versionText);
+
+                    if (version >= new Version(10, 12))
+                        shouldUse = true;
+                }
+                else
+                {
+                    shouldUse = true;
+                }
+            }
+            return shouldUse;
         }
 
         protected override Program StartCompiler()
@@ -107,14 +168,21 @@ namespace UnityEditor.Scripting.Compilers
             if (_island._allowUnsafeCode)
                 arguments.Add("/unsafe");
 
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
             if (!_island._development_player)
             {
-                arguments.Add("/debug:pdbonly");
+                if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
+                    arguments.Add("/debug:pdbonly");
+                else
+                    arguments.Add("/debug:portable");
                 arguments.Add("/optimize+");
             }
             else
             {
-                arguments.Add("/debug:full");
+                if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
+                    arguments.Add("/debug:full");
+                else
+                    arguments.Add("/debug:portable");
                 arguments.Add("/optimize-");
             }
 

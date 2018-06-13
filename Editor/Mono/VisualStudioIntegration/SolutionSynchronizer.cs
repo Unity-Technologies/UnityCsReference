@@ -210,11 +210,6 @@ namespace UnityEditor.VisualStudioIntegration
             if (!externalCodeAlreadyGeneratedProjects)
             {
                 var scriptEditor = ScriptEditorUtility.GetScriptEditorFromPreferences();
-
-                // Do not generate .sln and .csproj for unsupported code editors.
-                if (scriptEditor == ScriptEditorUtility.ScriptEditor.SystemDefault || scriptEditor == ScriptEditorUtility.ScriptEditor.Other)
-                    return;
-
                 GenerateAndWriteSolutionAndProjects(scriptEditor);
             }
 
@@ -300,7 +295,6 @@ namespace UnityEditor.VisualStudioIntegration
             }
             return false;
         }
-
 
         void SyncProject(MonoIsland island,
             Dictionary<string, string> allAssetsProjectParts,
@@ -572,11 +566,11 @@ namespace UnityEditor.VisualStudioIntegration
         /// Get a Project("{guid}") = "MyProject", "MyProject.unityproj", "{projectguid}"
         /// entry for each relevant language
         /// </summary>
-        private string GetProjectEntries(IEnumerable<MonoIsland> islands)
+        internal string GetProjectEntries(IEnumerable<MonoIsland> islands)
         {
             var projectEntries = islands.Select(i => string.Format(
                         DefaultSynchronizationSettings.SolutionProjectEntryTemplate,
-                        SolutionGuid(i), _projectName, Path.GetFileName(ProjectFile(i)), ProjectGuid(i._output)
+                        SolutionGuid(i), Path.GetFileNameWithoutExtension(i._output), Path.GetFileName(ProjectFile(i)), ProjectGuid(i._output)
                         ));
 
             return string.Join(WindowsNewline, projectEntries.ToArray());

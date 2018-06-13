@@ -68,6 +68,10 @@ namespace UnityEditorInternal
         {
             var cacheDirectoryPath = CacheDirectoryPathFor(builder.CacheDirectory);
             Directory.CreateDirectory(cacheDirectoryPath);
+
+            foreach (var previousEditorVersionFile in Directory.GetFiles(builder.CacheDirectory, EditorVersionFilenameFor("*")))
+                File.Delete(previousEditorVersionFile);
+
             var versionFilePath = Path.Combine(builder.CacheDirectory, EditorVersionFilenameFor(currentEditorVersion));
             if (!File.Exists(versionFilePath))
                 File.Create(versionFilePath).Dispose();

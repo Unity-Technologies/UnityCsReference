@@ -7,41 +7,25 @@ using System.Linq;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEditor.Experimental.AssetImporters;
+using UnityEngine.Experimental.UIElements;
 using UnityEngine.StyleSheets;
 
 namespace UnityEditor.StyleSheets
 {
-    [ScriptedImporter(3, "uss", -20)]
+    // Make sure style sheets importer after allowed dependent assets: textures and fonts
+    [ScriptedImporter(version: 4, ext: "uss", importQueueOffset: 1000)]
     class StyleSheetImporter : ScriptedImporter
     {
         public override void OnImportAsset(AssetImportContext ctx)
         {
-            var importer = new StyleSheetImporterImpl();
             string contents = File.ReadAllText(ctx.assetPath);
+
             StyleSheet asset = ScriptableObject.CreateInstance<StyleSheet>();
             asset.hideFlags = HideFlags.NotEditable;
 
-            if (importer.Import(asset, contents))
-            {
-                ctx.AddObjectToAsset("stylesheet", asset);
-
-                // Force the pre processor to rebuild its list of referenced asset paths
-                // as paths may have changed with this import.
-                StyleSheetAssetPostprocessor.ClearReferencedAssets();
-
-                // Clear the style cache to force all USS rules to recompute
-                // and subsequently reload/reimport all images.
-                StyleContext.ClearStyleCache();
-            }
-            else
-            {
-                foreach (string importError in importer.errors.FormatErrors())
-                {
-                    Debug.LogError(importError);
-                }
-            }
+            var importer = new StyleSheetImporterImpl(ctx);
+            importer.Import(asset, contents);
         }
     }
 }

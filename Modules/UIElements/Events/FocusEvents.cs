@@ -17,20 +17,24 @@ namespace UnityEngine.Experimental.UIElements
 
         public FocusChangeDirection direction { get; protected set; }
 
+        protected FocusController m_FocusController;
+
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Capturable;
+            flags = EventFlags.TricklesDown;
             relatedTarget = null;
             direction = FocusChangeDirection.unspecified;
+            m_FocusController = null;
         }
 
-        public static T GetPooled(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction)
+        public static T GetPooled(IEventHandler target, Focusable relatedTarget, FocusChangeDirection direction, FocusController focusController)
         {
             T e = GetPooled();
             e.target = target;
             e.relatedTarget = relatedTarget;
             e.direction = direction;
+            e.m_FocusController = focusController;
             return e;
         }
 
@@ -45,7 +49,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.Capturable;
+            flags = EventFlags.Bubbles | EventFlags.TricklesDown;
         }
 
         public FocusOutEvent()
@@ -56,6 +60,10 @@ namespace UnityEngine.Experimental.UIElements
 
     public class BlurEvent : FocusEventBase<BlurEvent>
     {
+        protected internal override void PreDispatch()
+        {
+            m_FocusController.DoFocusChange(relatedTarget);
+        }
     }
 
     public class FocusInEvent : FocusEventBase<FocusInEvent>
@@ -63,7 +71,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.Capturable;
+            flags = EventFlags.Bubbles | EventFlags.TricklesDown;
         }
 
         public FocusInEvent()
@@ -74,5 +82,9 @@ namespace UnityEngine.Experimental.UIElements
 
     public class FocusEvent : FocusEventBase<FocusEvent>
     {
+        protected internal override void PreDispatch()
+        {
+            m_FocusController.DoFocusChange(target as Focusable);
+        }
     }
 }

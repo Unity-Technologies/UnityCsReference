@@ -2,11 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -19,39 +17,6 @@ namespace UnityEditor.ShortcutManagement
         List<ShortcutEntry> m_Entries = new List<ShortcutEntry>();
         Dictionary<KeyCode, ShortcutEntry> m_ActiveClutches = new Dictionary<KeyCode, ShortcutEntry>();
         HashSet<KeyCode> m_KeysDown = new HashSet<KeyCode>();
-        static Type[] s_Context = { null, null };
-
-        public IShortcutPriorityContext priorityContext
-        {
-            get
-            {
-                while (m_PriorityContexts.Count > 0)
-                {
-                    var ctx = m_PriorityContexts.Peek();
-                    if (
-                        ctx == null
-                        || !ctx.active
-                        || typeof(UnityObject).IsAssignableFrom(ctx.GetType()) && (UnityObject)ctx == null
-                        )
-                    {
-                        // remove an inactive priority context in case e.g., user forgot to clear it when done
-                        // this pattern was chosen to make it more explicit to priority context implementer how to indicate completion
-                        m_PriorityContexts.Pop();
-                    }
-                    else
-                    {
-                        return ctx;
-                    }
-                }
-                return null;
-            }
-            set
-            {
-                if (!m_PriorityContexts.Contains(value))
-                    m_PriorityContexts.Push(value);
-            }
-        }
-        readonly Stack<IShortcutPriorityContext> m_PriorityContexts = new Stack<IShortcutPriorityContext>();
 
         public Trigger(IDirectory directory, IConflictResolver conflictResolver)
         {
@@ -59,7 +24,7 @@ namespace UnityEditor.ShortcutManagement
             m_ConflictResolver = conflictResolver;
         }
 
-        public void HandleKeyEventForContext(Event evt, object context)
+        public void HandleKeyEvent(Event evt, IContextManager contextManager)
         {
             if (evt == null || !evt.isKey || evt.keyCode == KeyCode.None)
                 return;
@@ -73,12 +38,11 @@ namespace UnityEditor.ShortcutManagement
                     m_ActiveClutches.Remove(evt.keyCode);
                     var args = new ShortcutArguments
                     {
-                        context = context as EditorWindow,
+                        context = contextManager.GetContextInstanceOfType(shortcutEntry.context),
                         state = ShortcutState.End,
                     };
                     shortcutEntry.action(args);
                 }
-
                 return;
             }
 
@@ -92,10 +56,21 @@ namespace UnityEditor.ShortcutManagement
             var keyCodeCombination = new KeyCombination(evt);
             m_KeyCombinationSequence.Add(keyCodeCombination);
 
-            s_Context[1] = priorityContext?.GetType() ?? context?.GetType();
-            m_Directory.FindShortcutEntries(m_KeyCombinationSequence, s_Context, m_Entries);
-            if (priorityContext != null && m_Entries.Count(entry => entry.context == null) < m_Entries.Count)
-                m_Entries.RemoveAll(entry => entry.context == null);
+            // Ignore event if sequence is empty
+            if (m_KeyCombinationSequence.Count == 0)
+                return;
+
+            m_Directory.FindShortcutEntries(m_KeyCombinationSequence, contextManager, m_Entries);
+
+            if (m_Entries.Count > 1 && contextManager.priorityContext != null)
+            {
+                var entry = m_Entries.FirstOrDefault(a => a.context == contextManager.priorityContext.GetType());
+                if (entry != null)
+                {
+                    m_Entries.Clear();
+                    m_Entries.Add(entry);
+                }
+            }
 
             switch (m_Entries.Count)
             {
@@ -111,7 +86,7 @@ namespace UnityEditor.ShortcutManagement
                             break;
 
                         var args = new ShortcutArguments();
-                        args.context = context as EditorWindow;
+                        args.context = contextManager.GetContextInstanceOfType(shortcutEntry.context);
                         switch (shortcutEntry.type)
                         {
                             case ShortcutType.Action:

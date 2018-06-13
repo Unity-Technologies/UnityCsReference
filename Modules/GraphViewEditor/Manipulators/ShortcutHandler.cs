@@ -31,7 +31,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void OnKeyDown(KeyDownEvent evt)
         {
-            if (MouseCaptureController.IsMouseCaptureTaken())
+            if (MouseCaptureController.IsMouseCaptured())
                 return;
 
             if (m_Dictionary.ContainsKey(evt.imguiEvent))

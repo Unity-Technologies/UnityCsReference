@@ -28,6 +28,16 @@ namespace UnityEngine
         Windowed = 3,
     }
 
+    public enum TextureCompressionQuality
+    {
+        // Fast compression
+        Fast = 0,
+        // Normal compression (default)
+        Normal = 50,
+        // Best compression
+        Best = 100
+    }
+
     public sealed partial class SleepTimeout
     {
         public const int NeverSleep = -1;
@@ -132,6 +142,31 @@ namespace UnityEngine
 
         [FreeFunction(Name = "RenderBufferScripting::GetNativeRenderBufferPtr", HasExplicitThis = true)]
         extern public IntPtr GetNativeRenderBufferPtr();
+    }
+}
+
+namespace UnityEngineInternal
+{
+    public enum MemorylessMode
+    {
+        Unused,
+        Forced,
+        Automatic,
+    }
+    [NativeHeader("Runtime/Misc/PlayerSettings.h")]
+    public class MemorylessManager
+    {
+        public static MemorylessMode depthMemorylessMode
+        {
+            get { return GetFramebufferDepthMemorylessMode(); }
+            set { SetFramebufferDepthMemorylessMode(value); }
+        }
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        [NativeMethod(Name = "GetFramebufferDepthMemorylessMode")]
+        extern internal static MemorylessMode GetFramebufferDepthMemorylessMode();
+        [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]
+        [NativeMethod(Name = "SetFramebufferDepthMemorylessMode")]
+        extern internal static void SetFramebufferDepthMemorylessMode(MemorylessMode mode);
     }
 }
 

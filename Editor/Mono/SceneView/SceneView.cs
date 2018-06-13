@@ -3,20 +3,19 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditor.AnimatedValues;
-using UnityEditor.SceneManagement;
-using UnityEngine;
-using UnityEditorInternal;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine.Profiling;
-using Object = UnityEngine.Object;
-using UnityEngine.Rendering;
+using UnityEditor.AnimatedValues;
 using UnityEditor.Rendering;
+using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
-using UnityEngine.Experimental.Rendering;
+using UnityEditorInternal;
+using UnityEngine;
+using UnityEngine.Profiling;
+using UnityEngine.Rendering;
+using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEditor
@@ -244,10 +243,14 @@ namespace UnityEditor
             }
             set
             {
+                if (!IsValidCameraMode(value))
+                {
+                    throw new ArgumentException(string.Format("The provided camera mode {0} is not registered!", value));
+                }
                 m_CameraMode = value;
-                #pragma warning disable 618
+#pragma warning disable 618
                 m_RenderMode = value.drawMode;
-                #pragma warning restore 618
+#pragma warning restore 618
                 SetupPBRValidation();
                 if (onCameraModeChanged != null)
                     onCameraModeChanged(m_CameraMode);
@@ -317,6 +320,7 @@ namespace UnityEditor
         private static MouseCursor s_LastCursor = MouseCursor.Arrow;
         private static readonly List<CursorRect> s_MouseRects = new List<CursorRect>();
         private bool s_DraggingCursorIsCached;
+
         internal static void AddCursorRect(Rect rect, MouseCursor cursor)
         {
             if (Event.current.type == EventType.Repaint)
@@ -345,7 +349,7 @@ namespace UnityEditor
         const float kPerspectiveFov = 90;
 
         static ArrayList s_SceneViews = new ArrayList();
-        public static ArrayList sceneViews { get {return s_SceneViews; }}
+        public static ArrayList sceneViews { get { return s_SceneViews; } }
 
         static Material s_AlphaOverlayMaterial;
         static Material s_DeferredOverlayMaterial;
@@ -421,7 +425,6 @@ namespace UnityEditor
                 draggingLocked = DraggingLockedState.LookAt;
             }
         }
-
 
         [RequiredByNativeCode]
         public static bool FrameLastActiveSceneView()
@@ -646,7 +649,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal("toolbar");
             {
                 // render mode popup
-                GUIContent modeContent = EditorGUIUtility.TextContent(m_CameraMode.name);
+                GUIContent modeContent = EditorGUIUtility.TextContent(cameraMode.name);
                 modeContent.tooltip = L10n.Tr("The Draw Mode used to display the Scene.");
                 Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDown, GUILayout.Width(120));
                 if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
@@ -1216,9 +1219,6 @@ namespace UnityEditor
                     Graphics.DrawTexture(r, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
                 }
                 Handles.SetCamera(cameraRect, m_Camera);
-
-                using (var sRGBScope = new GUIUtility.ManualTex2SRGBScope(SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal ? true : false))
-                    HandleSelectionAndOnSceneGUI();
             }
             else
             {
@@ -1295,10 +1295,18 @@ namespace UnityEditor
             var cursor = MouseCursor.Arrow;
             switch (Tools.viewTool)
             {
-                case ViewTool.Pan: cursor = MouseCursor.Pan; break;
-                case ViewTool.Orbit: cursor = MouseCursor.Orbit; break;
-                case ViewTool.FPS: cursor = MouseCursor.FPS; break;
-                case ViewTool.Zoom: cursor = MouseCursor.Zoom; break;
+                case ViewTool.Pan:
+                    cursor = MouseCursor.Pan;
+                    break;
+                case ViewTool.Orbit:
+                    cursor = MouseCursor.Orbit;
+                    break;
+                case ViewTool.FPS:
+                    cursor = MouseCursor.FPS;
+                    break;
+                case ViewTool.Zoom:
+                    cursor = MouseCursor.Zoom;
+                    break;
             }
             if (cursor != MouseCursor.Arrow)
                 AddCursorRect(new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight), cursor);
@@ -1496,7 +1504,7 @@ namespace UnityEditor
             for (int i = 1; i < m_AlbedoSwatchInfos.Length + 1; i++)
             {
                 m_AlbedoSwatchColorStyles[i] = CreateSwatchStyleForColor(m_AlbedoSwatchInfos[i - 1].color);
-                m_AlbedoSwatchDescriptions[i] =  m_AlbedoSwatchInfos[i - 1].name;
+                m_AlbedoSwatchDescriptions[i] = m_AlbedoSwatchInfos[i - 1].name;
                 m_AlbedoSwatchGUIContent[i] = new GUIContent(m_AlbedoSwatchDescriptions[i]);
                 m_AlbedoSwatchLuminanceStrings[i] = CreateSwatchDescriptionForName(m_AlbedoSwatchInfos[i - 1].minLuminance, m_AlbedoSwatchInfos[i - 1].maxLuminance);
             }
@@ -1691,8 +1699,6 @@ namespace UnityEditor
 
             SetupCamera();
             RenderingPath oldRenderingPath = m_Camera.renderingPath;
-            if (evt.type == EventType.Repaint)
-                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
 
             SetupCustomSceneLighting();
 
@@ -1747,32 +1753,12 @@ namespace UnityEditor
                 // Blit to final target RT in deferred mode
                 if (m_Camera.gameObject.activeInHierarchy)
                     Handles.DrawCameraStep2(m_Camera, m_CameraMode.drawMode);
-
-                // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
-                // view won't be able to properly render to the rendertexture as needed.
-                // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
-                using (var sRGBScope = new GUIUtility.ManualTex2SRGBScope(false))
-                    HandleSelectionAndOnSceneGUI();
             }
-
-            // Handle commands
-            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
-                CommandsGUI();
 
             RestoreFogAndShadowDistance(oldFog, oldShadowDistance);
 
             m_Camera.renderingPath = oldRenderingPath;
 
-            if (UseSceneFiltering())
-                Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.ShowFiltered);
-            else
-                Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
-
-            // Draw default scene manipulation tools (Move/Rotate/...)
-            DefaultHandles();
-
-            if (evt.type == EventType.Repaint)
-                GL.sRGBWrite = false;
 
             if (!UseSceneFiltering())
             {
@@ -1791,11 +1777,48 @@ namespace UnityEditor
                 }
             }
 
+            // By this time the 3D scene is done being drawn, and we're left with gizmos, handles and SceneViewGUI stuff.
+            // Reusing the same 3D scene render target, we draw those things and blit them on the back buffer without
+            // doing sRGB conversions on them since they were always intended to draw without sRGB conversions.
+            GUIClip.Push(new Rect(0f, 0f, m_SceneTargetTexture.width, m_SceneTargetTexture.height), Vector2.zero, Vector2.zero, true);
+
+            if (evt.type == EventType.Repaint)
+            {
+                Graphics.SetRenderTarget(m_SceneTargetTexture);
+                GL.Clear(false, true, new Color(0, 0, 0, 0)); // Only clear color. Keep depth intact.
+            }
+
+            // Handle commands
+            if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
+                CommandsGUI();
+
+            // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
+            HandleSelectionAndOnSceneGUI();
+
+            Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
+
+            // Draw default scene manipulation tools (Move/Rotate/...)
+            DefaultHandles();
+
             Handles.SetCameraFilterMode(Camera.current, Handles.CameraFilterMode.Off);
             Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.Off);
 
             // Handle Dragging of stuff over scene view
             HandleDragging();
+
+            if (evt.type == EventType.Repaint)
+                Graphics.SetRenderTarget(null);
+
+            GUIClip.Pop();
+
+            GUI.EndGroup();
+            GUI.BeginGroup(new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight));
+
+            if (evt.type == EventType.Repaint)
+            {
+                // Blit the results with a pre-multiplied alpha shader to compose them correctly on top of the 3D scene on the back buffer
+                Graphics.DrawTexture(guiRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitSceneGUIMaterial);
+            }
 
             RepaintGizmosThatAreRenderedOnTopOfSceneView();
 
@@ -1805,7 +1828,6 @@ namespace UnityEditor
                 // Do not pass the camera transform to the SceneViewMotion calculations.
                 // The camera transform is calculation *output* not *input*.
                 // Avoiding using it as input too avoids errors accumulating.
-                SceneViewMotion.ArrowKeys(this);
                 SceneViewMotion.DoViewTool(this);
             }
 
@@ -2092,6 +2114,14 @@ namespace UnityEditor
             float farClip = Mathf.Max(1000f, 2000f * size);
             m_Camera.nearClipPlane = farClip * 0.000005f;
             m_Camera.farClipPlane = farClip;
+
+            // In 2D mode, camera position z should not go to positive value.
+            if (m_2DMode && m_Camera.transform.position.z >= 0)
+            {
+                var p = m_Camera.transform.position;
+                p.z = -(m_Camera.nearClipPlane + 0.01f);
+                m_Camera.transform.position = p;
+            }
 
             m_Camera.renderingPath = GetSceneViewRenderingPath();
             if (!CheckDrawModeForRenderingPath(m_CameraMode.drawMode))
@@ -2769,6 +2799,26 @@ namespace UnityEditor
                 throw new InvalidOperationException(string.Format("A mode named {0} already exists in section {1}", name, section));
             s_UserDefinedModes.Add(newMode);
             return newMode;
+        }
+
+        private static bool IsValidCameraMode(CameraMode cameraMode)
+        {
+            foreach (var mode in Enum.GetValues(typeof(DrawCameraMode)))
+            {
+                if (SceneRenderModeWindow.DrawCameraModeExists((DrawCameraMode)mode) && cameraMode == GetBuiltinCameraMode((DrawCameraMode)mode))
+                {
+                    return true;
+                }
+            }
+
+            foreach (var tempCameraMode in s_UserDefinedModes)
+            {
+                if (tempCameraMode == cameraMode)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public static void ClearUserDefinedCameraModes()

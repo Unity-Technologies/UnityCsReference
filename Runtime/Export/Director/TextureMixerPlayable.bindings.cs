@@ -66,6 +66,8 @@ namespace UnityEngine.Experimental.Playables
             return GetHandle() == other.GetHandle();
         }
 
+
+        [NativeThrows]
         extern private static bool CreateTextureMixerPlayableInternal(ref PlayableGraph graph, ref PlayableHandle handle);
 
     }

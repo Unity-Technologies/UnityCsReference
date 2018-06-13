@@ -73,13 +73,13 @@ namespace UnityEditor
             public static readonly GUIContent configurationTitle = EditorGUIUtility.TrTextContent("Configuration");
             public static readonly GUIContent optimizationTitle = EditorGUIUtility.TrTextContent("Optimization");
             public static readonly GUIContent loggingTitle = EditorGUIUtility.TrTextContent("Logging*");
+            public static readonly GUIContent legacyTitle = EditorGUIUtility.TrTextContent("Legacy");
             public static readonly GUIContent publishingSettingsTitle = EditorGUIUtility.TrTextContent("Publishing Settings");
 
             public static readonly GUIContent bakeCollisionMeshes = EditorGUIUtility.TrTextContent("Prebake Collision Meshes*", "Bake collision data into the meshes on build time");
             public static readonly GUIContent keepLoadedShadersAlive = EditorGUIUtility.TrTextContent("Keep Loaded Shaders Alive*", "Prevents shaders from being unloaded");
             public static readonly GUIContent preloadedAssets = EditorGUIUtility.TrTextContent("Preloaded Assets*", "Assets to load at start up in the player and kept alive until the player terminates");
             public static readonly GUIContent stripEngineCode = EditorGUIUtility.TrTextContent("Strip Engine Code*", "Strip Unused Engine Code - Note that byte code stripping of managed assemblies is always enabled for the IL2CPP scripting backend.");
-            public static readonly GUIContent iPhoneStrippingLevel = EditorGUIUtility.TrTextContent("Stripping Level*");
             public static readonly GUIContent iPhoneScriptCallOptimization = EditorGUIUtility.TrTextContent("Script Call Optimization*");
             public static readonly GUIContent enableInternalProfiler = EditorGUIUtility.TrTextContent("Enable Internal Profiler* (Deprecated)", "Internal profiler counters should be accessed by scripts using UnityEngine.Profiling::Profiler API.");
             public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TrTextContent("Optimize Mesh Data*", "Remove unused mesh components");
@@ -122,6 +122,8 @@ namespace UnityEditor
             public static readonly GUIContent metalEditorSupport = EditorGUIUtility.TrTextContent("Metal Editor Support*");
             public static readonly GUIContent metalAPIValidation = EditorGUIUtility.TrTextContent("Metal API Validation*");
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
+            public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
+            public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic")};
             public static readonly GUIContent vulkanEditorSupport = EditorGUIUtility.TextContent("Vulkan Editor Support (Experimental)*");
             public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("Enable SetSRGBWrite()*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent vulkanUseSWCommandBuffers = EditorGUIUtility.TrTextContent("Use SW Commandbuffers*", "If set, builds the command buffers in the task executor thread instead of building secondary command buffers for rendering API calls.");
@@ -154,11 +156,15 @@ namespace UnityEditor
             public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent");
             public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
+            public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingWinRTDotNET = EditorGUIUtility.TrTextContent(".NET");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
+            public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
+            public static readonly GUIContent strippingNormal = EditorGUIUtility.TrTextContent("Normal");
+            public static readonly GUIContent strippingAggressive = EditorGUIUtility.TrTextContent("Aggressive (Experimental)");
             public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TrTextContent("Api Compatibility Level*");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TrTextContent(".NET 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
@@ -173,6 +179,7 @@ namespace UnityEditor
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mip maps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent monoNotSupportediOS11WarningGUIContent = EditorGUIUtility.TrTextContent("Mono is not supported on iOS11 and above.");
+            public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
             public static string undoChangedBuildNumberString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS build number"); } }
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
@@ -226,7 +233,6 @@ namespace UnityEditor
         SerializedProperty m_LocationUsageDescription;
         SerializedProperty m_MicrophoneUsageDescription;
 
-        SerializedProperty m_IPhoneStrippingLevel;
         SerializedProperty m_IPhoneScriptCallOptimization;
         SerializedProperty m_AotOptions;
 
@@ -291,6 +297,7 @@ namespace UnityEditor
         SerializedProperty m_MetalAPIValidation;
         SerializedProperty m_MetalFramebufferOnly;
         SerializedProperty m_MetalForceHardShadows;
+        SerializedProperty m_FramebufferDepthMemorylessMode;
 
         SerializedProperty m_VulkanEditorSupport;
 
@@ -323,6 +330,9 @@ namespace UnityEditor
         SerializedProperty m_LightmapEncodingQuality;
         SerializedProperty m_LightmapStreamingEnabled;
         SerializedProperty m_LightmapStreamingPriority;
+
+        // Legacy
+        SerializedProperty m_LegacyClampBlendShapeWeights;
 
         // Localization Cache
         string m_LocalizedTargetName;
@@ -364,21 +374,6 @@ namespace UnityEditor
                 ||  targetGroup == BuildTargetGroup.Android;
         }
 
-        private bool ShouldShowVulkanSettings(BuildTargetGroup targetGroup)
-        {
-            if (targetGroup == BuildTargetGroup.XboxOne)
-                return false;
-
-            // Always show settings on Windows and Linux editors, as the editor may be running on it
-            if (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.LinuxEditor)
-                return true;
-
-            if (targetGroup == BuildTargetGroup.Android || targetGroup == BuildTargetGroup.Standalone)
-                return true;
-
-            return false;
-        }
-
         public SerializedProperty FindPropertyAssert(string name)
         {
             SerializedProperty property = serializedObject.FindProperty(name);
@@ -391,7 +386,6 @@ namespace UnityEditor
         {
             validPlatforms = BuildPlatforms.instance.GetValidPlatforms(true).ToArray();
 
-            m_IPhoneStrippingLevel          = FindPropertyAssert("iPhoneStrippingLevel");
             m_StripEngineCode               = FindPropertyAssert("stripEngineCode");
 
             m_IPhoneScriptCallOptimization  = FindPropertyAssert("iPhoneScriptCallOptimization");
@@ -416,6 +410,7 @@ namespace UnityEditor
             m_MetalAPIValidation            = FindPropertyAssert("metalAPIValidation");
             m_MetalFramebufferOnly          = FindPropertyAssert("metalFramebufferOnly");
             m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
+            m_FramebufferDepthMemorylessMode = FindPropertyAssert("framebufferDepthMemorylessMode");
 
             m_VulkanEditorSupport           = FindPropertyAssert("vulkanEditorSupport");
             m_ApplicationBundleVersion      = serializedObject.FindProperty("bundleVersion");
@@ -488,6 +483,8 @@ namespace UnityEditor
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
 
             m_VideoMemoryForVertexBuffers   = FindPropertyAssert("videoMemoryForVertexBuffers");
+
+            m_LegacyClampBlendShapeWeights  = FindPropertyAssert("legacyClampBlendShapeWeights");
 
             m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
             for (int i = 0; i < validPlatforms.Length; i++)
@@ -845,8 +842,7 @@ namespace UnityEditor
                         m_ShowDefaultIsNativeResolution.target = defaultIsFullScreen;
                         if (EditorGUILayout.BeginFadeGroup(m_ShowDefaultIsNativeResolution.faded))
                             EditorGUILayout.PropertyField(m_DefaultIsNativeResolution);
-                        if (m_ShowDefaultIsNativeResolution.faded != 0 && m_ShowDefaultIsNativeResolution.faded != 1)
-                            EditorGUILayout.EndFadeGroup();
+                        EditorGUILayout.EndFadeGroup();
 
                         m_ShowResolution.target = !(defaultIsFullScreen && m_DefaultIsNativeResolution.boolValue);
                         if (EditorGUILayout.BeginFadeGroup(m_ShowResolution.faded))
@@ -861,8 +857,7 @@ namespace UnityEditor
                             if (EditorGUI.EndChangeCheck() && m_DefaultScreenHeight.intValue < 1)
                                 m_DefaultScreenHeight.intValue = 1;
                         }
-                        if (m_ShowResolution.faded != 0 && m_ShowResolution.faded != 1)
-                            EditorGUILayout.EndFadeGroup();
+                        EditorGUILayout.EndFadeGroup();
                     }
                     if (targetGroup == BuildTargetGroup.Standalone)
                     {
@@ -1427,11 +1422,12 @@ namespace UnityEditor
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
                 OtherSectionRenderingGUI(platform, targetGroup, settingsExtension);
-                OtherSectionVulkanSettingsGUI(targetGroup);
+                OtherSectionVulkanSettingsGUI(targetGroup, settingsExtension);
                 OtherSectionIdentificationGUI(targetGroup, settingsExtension);
                 OtherSectionConfigurationGUI(targetGroup, settingsExtension);
                 OtherSectionOptimizationGUI(targetGroup);
                 OtherSectionLoggingGUI();
+                OtherSectionLegacyGUI();
                 ShowSharedNote();
             }
             EndSettingsBox();
@@ -1563,6 +1559,9 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_MetalFramebufferOnly, Styles.metalFramebufferOnly);
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                     EditorGUILayout.PropertyField(m_MetalForceHardShadows, Styles.metalForceHardShadows);
+
+                int[] memorylessModeValues = {0, 1, 2};
+                BuildEnumPopup(m_FramebufferDepthMemorylessMode, Styles.framebufferDepthMemorylessMode, memorylessModeValues, Styles.memorylessModeNames);
             }
 
             // Multithreaded rendering
@@ -1781,9 +1780,10 @@ namespace UnityEditor
             }
         }
 
-        private void OtherSectionVulkanSettingsGUI(BuildTargetGroup targetGroup)
+        private void OtherSectionVulkanSettingsGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
-            if (!ShouldShowVulkanSettings(targetGroup))
+            // Standalone targets don't have a settingsExtension but support vulkan
+            if (settingsExtension != null && !settingsExtension.ShouldShowVulkanSettings())
                 return;
 
             GUILayout.Label(Styles.vulkanSettingsTitle, EditorStyles.boldLabel);
@@ -2172,18 +2172,25 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.XboxOne ||
-                targetGroup == BuildTargetGroup.WSA;
+                targetGroup == BuildTargetGroup.WSA ||
+                targetGroup == BuildTargetGroup.Standalone;
 
             if (platformSupportsStripping)
             {
                 ScriptingImplementation backend = PlayerSettings.GetScriptingBackend(targetGroup);
+                var availableStrippingLevels = GetAvailableManagedStrippingLevels(backend);
+                ManagedStrippingLevel currentManagedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(targetGroup);
+                ManagedStrippingLevel newManagedStrippingLevel;
+
                 if (targetGroup == BuildTargetGroup.WebGL || backend == ScriptingImplementation.IL2CPP)
                 {
                     EditorGUILayout.PropertyField(m_StripEngineCode, Styles.stripEngineCode);
                 }
-                else if (backend != ScriptingImplementation.WinRTDotNET)
+                if (backend != ScriptingImplementation.WinRTDotNET)
                 {
-                    EditorGUILayout.PropertyField(m_IPhoneStrippingLevel, Styles.iPhoneStrippingLevel);
+                    newManagedStrippingLevel = BuildEnumPopup(Styles.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
+                    if (newManagedStrippingLevel != currentManagedStrippingLevel)
+                        PlayerSettings.SetManagedStrippingLevel(targetGroup, newManagedStrippingLevel);
                 }
             }
 
@@ -2240,6 +2247,38 @@ namespace UnityEditor
                 return wsa_profiles;
 
             return only_2_0_profiles;
+        }
+
+        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Normal, ManagedStrippingLevel.Aggressive };
+        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Normal, ManagedStrippingLevel.Aggressive };
+        static ManagedStrippingLevel[] mono_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Normal };
+        static ManagedStrippingLevel[] il2cpp_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Normal };
+
+        // stripping levels vary based on both scripting backend and runtime version
+        private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
+        {
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+            {
+                if (backend == ScriptingImplementation.IL2CPP)
+                {
+                    return il2cpp_levels;
+                }
+                else
+                {
+                    return mono_levels;
+                }
+            }
+            else
+            {
+                if (backend == ScriptingImplementation.IL2CPP)
+                {
+                    return il2cpp_levels_old_runtime;
+                }
+                else
+                {
+                    return mono_levels_old_runtime;
+                }
+            }
         }
 
         static Il2CppCompilerConfiguration[] m_Il2cppCompilerConfigurations;
@@ -2309,10 +2348,22 @@ namespace UnityEditor
             }
 
             GUILayout.EndVertical();
+
+            EditorGUILayout.Space();
+        }
+
+        private void OtherSectionLegacyGUI()
+        {
+            GUILayout.Label(Styles.legacyTitle, EditorStyles.boldLabel);
+
+            EditorGUILayout.PropertyField(m_LegacyClampBlendShapeWeights, Styles.legacyClampBlendShapeWeights);
+
+            EditorGUILayout.Space();
         }
 
         private static Dictionary<ScriptingImplementation, GUIContent> m_NiceScriptingBackendNames;
         private static Dictionary<ApiCompatibilityLevel, GUIContent> m_NiceApiCompatibilityLevelNames;
+        private static Dictionary<ManagedStrippingLevel, GUIContent> m_NiceManagedStrippingLevelNames;
 
         private static GUIContent[] GetGUIContentsForValues<T>(Dictionary<T, GUIContent> contents, T[] values)
         {
@@ -2367,6 +2418,20 @@ namespace UnityEditor
             }
 
             return GetGUIContentsForValues(m_NiceApiCompatibilityLevelNames, apiCompatibilityLevels);
+        }
+
+        private static GUIContent[] GetNiceManagedStrippingLevelNames(ManagedStrippingLevel[] managedStrippingLevels)
+        {
+            if (m_NiceManagedStrippingLevelNames == null)
+            {
+                m_NiceManagedStrippingLevelNames = new Dictionary<ManagedStrippingLevel, GUIContent>
+                {
+                    { ManagedStrippingLevel.Disabled, Styles.strippingDisabled },
+                    { ManagedStrippingLevel.Normal, Styles.strippingNormal },
+                    { ManagedStrippingLevel.Aggressive, Styles.strippingAggressive }
+                };
+            }
+            return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);
         }
 
         private void AutoAssignProperty(SerializedProperty property, string packageDir, string fileName)

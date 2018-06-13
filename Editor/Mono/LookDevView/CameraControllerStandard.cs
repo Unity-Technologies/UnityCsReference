@@ -5,6 +5,7 @@
 using System;
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -190,8 +191,8 @@ namespace UnityEditor
                     window.Focus();
             }
 
-            m_CameraFlyModeContext.active = m_CurrentViewTool == ViewTool.FPS;
-            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(m_CameraFlyModeContext))
+            var id = GUIUtility.GetControlID(FocusType.Passive);
+            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(m_CameraFlyModeContext, m_CurrentViewTool, id))
             {
                 if (inputSamplingScope.inputVectorChanged)
                     m_FlySpeed = 0;
@@ -218,7 +219,7 @@ namespace UnityEditor
 
         public void DeactivateFlyModeContext()
         {
-            m_CameraFlyModeContext.active = false;
+            ShortcutIntegration.instance.contextManager.ClearPriorityContext();
         }
     }
 }

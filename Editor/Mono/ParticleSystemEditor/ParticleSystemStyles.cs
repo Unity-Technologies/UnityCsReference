@@ -114,10 +114,6 @@ namespace UnityEditor
 
         static GUIStyle FindStyle(string styleName)
         {
-            // Outcomment for testing in EditorResources project
-            //GUISkin skin = EditorGUIUtility.LoadRequired("Builtin Skins/DarkSkin/Skins/ShurikenSkin.guiSkin") as GUISkin;
-            //return skin.GetStyle(styleName);
-
             return styleName;
         }
     }

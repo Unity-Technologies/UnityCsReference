@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
@@ -155,6 +156,29 @@ namespace UnityEngine
         [FreeFunction("MaterialScripting::GetShaderKeywords", HasExplicitThis = true)] extern private string[] GetShaderKeywords();
         [FreeFunction("MaterialScripting::SetShaderKeywords", HasExplicitThis = true)] extern private void SetShaderKeywords(string[] names);
         public string[] shaderKeywords { get { return GetShaderKeywords(); } set { SetShaderKeywords(value); } }
+
+        [FreeFunction("MaterialScripting::GetTexturePropertyNames", HasExplicitThis = true)]
+        extern public String[] GetTexturePropertyNames();
+
+        [FreeFunction("MaterialScripting::GetTexturePropertyNameIDs", HasExplicitThis = true)]
+        extern public int[] GetTexturePropertyNameIDs();
+
+        [FreeFunction("MaterialScripting::GetTexturePropertyNamesInternal", HasExplicitThis = true)]
+        extern private void GetTexturePropertyNamesInternal(object outNames);
+
+        [FreeFunction("MaterialScripting::GetTexturePropertyNameIDsInternal", HasExplicitThis = true)]
+        extern private void GetTexturePropertyNameIDsInternal(object outNames);
+
+        public void GetTexturePropertyNames(List<string> outNames)
+        {
+            GetTexturePropertyNamesInternal(outNames);
+        }
+
+        public void GetTexturePropertyNameIDs(List<int> outNames)
+        {
+            GetTexturePropertyNameIDsInternal(outNames);
+        }
+
     }
 
     public partial class Material : Object

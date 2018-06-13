@@ -379,6 +379,15 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidUseLowAccuracyLocation")]
                 get;
             }
+
+            // Start application in fullscreen mode
+            public static extern bool startInFullscreen
+            {
+                [NativeMethod("GetAndroidStartInFullscreen")]
+                get;
+                [NativeMethod("SetAndroidStartInFullscreen")]
+                set;
+            }
         }
     }
 }

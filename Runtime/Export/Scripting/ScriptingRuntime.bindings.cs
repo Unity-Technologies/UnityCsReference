@@ -2,14 +2,15 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Export/Scripting/ScriptingRuntime.h")]
     [VisibleToOtherModules]
-    internal class ScriptingRuntime
+    internal partial class ScriptingRuntime
     {
-        extern public static string[] GetAllUserAssemblies();
+        public static extern string[] GetAllUserAssemblies();
     }
 }

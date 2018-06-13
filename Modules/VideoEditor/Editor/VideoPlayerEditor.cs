@@ -23,71 +23,80 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIContent dataSourceContent =
+            public readonly GUIContent dataSourceContent =
                 EditorGUIUtility.TrTextContent("Source", "Type of source the movie will be read from.");
-            public GUIContent videoClipContent =
+            public readonly GUIContent videoClipContent =
                 EditorGUIUtility.TrTextContent("Video Clip", "VideoClips can be imported using the asset pipeline.");
-            public GUIContent urlContent =
-                EditorGUIUtility.TrTextContent("URL", "URLs can be http:// or file://. File URLs can be relative [file://] or absolute [file:///].  For file URLs, the prefix is optional.");
-            public GUIContent browseContent = EditorGUIUtility.TrTextContent("Browse...", "Click to set a file:// URL.  http:// URLs have to be written or copy-pasted manually.");
-            public GUIContent playOnAwakeContent =
+            public readonly GUIContent urlContent =
+                EditorGUIUtility.TrTextContent("URL", "URLs");// can be http:// or file://. File URLs can be relative [file://] or absolute [file:///].  For file URLs, the prefix is optional.");
+            public readonly GUIContent browseContent = EditorGUIUtility.TrTextContent("Browse...", "Click to set a file:// URL.  http:// URLs have to be written or copy-pasted manually.");
+            public readonly GUIContent playOnAwakeContent =
                 EditorGUIUtility.TrTextContent("Play On Awake", "Start playback as soon as the game is started.");
-            public GUIContent waitForFirstFrameContent =
+            public readonly GUIContent waitForFirstFrameContent =
                 EditorGUIUtility.TrTextContent("Wait For First Frame", "Wait for first frame to be ready before starting playback. When on, player time will only start increasing when the first image is ready.  When off, the first few frames may be skipped while clip preparation is ongoing.");
-            public GUIContent loopContent =
+            public readonly GUIContent loopContent =
                 EditorGUIUtility.TrTextContent("Loop", "Start playback at the beginning when end is reached.");
-            public GUIContent playbackSpeedContent =
+            public readonly GUIContent skipOnDropContent =
+                EditorGUIUtility.TrTextContent("Skip On Drop", "Allow to skip frames to catch up with current time.");
+            public readonly GUIContent playbackSpeedContent =
                 EditorGUIUtility.TrTextContent("Playback Speed", "Increase or decrease the playback speed. 1.0 is the normal speed.");
-            public GUIContent renderModeContent =
+            public readonly GUIContent renderModeContent =
                 EditorGUIUtility.TrTextContent("Render Mode", "Type of object on which the played images will be drawn.");
-            public GUIContent cameraContent =
+            public readonly GUIContent cameraContent =
                 EditorGUIUtility.TrTextContent("Camera", "Camera where the images will be drawn, behind (Back Plane) or in front of (Front Plane) of the scene.");
-            public GUIContent textureContent =
+            public readonly GUIContent textureContent =
                 EditorGUIUtility.TrTextContent("Target Texture", "RenderTexture where the images will be drawn.  RenderTextures can be created under the Assets folder and the used on other objects.");
-            public GUIContent alphaContent =
+            public readonly GUIContent alphaContent =
                 EditorGUIUtility.TrTextContent("Alpha", "A value less than 1.0 will reveal the content behind the video.");
-            public GUIContent camera3DLayout =
+            public readonly GUIContent camera3DLayout =
                 EditorGUIUtility.TrTextContent("3D Layout", "Layout of 3D content in the source video.");
-            public GUIContent audioOutputModeContent =
+            public readonly GUIContent audioOutputModeContent =
                 EditorGUIUtility.TrTextContent("Audio Output Mode", "Where the audio in the movie will be output.");
-            public GUIContent audioSourceContent =
+            public readonly GUIContent audioSourceContent =
                 EditorGUIUtility.TrTextContent("Audio Source", "AudioSource component that will receive this track's audio samples.");
-            public GUIContent aspectRatioLabel = EditorGUIUtility.TrTextContent("Aspect Ratio");
-            public GUIContent muteLabel = EditorGUIUtility.TrTextContent("Mute");
-            public GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume");
-            public GUIContent controlledAudioTrackCountContent = EditorGUIUtility.TextContent(
+            public readonly GUIContent aspectRatioLabel = EditorGUIUtility.TrTextContent("Aspect Ratio");
+            public readonly GUIContent muteLabel = EditorGUIUtility.TrTextContent("Mute");
+            public readonly GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume");
+            public readonly GUIContent controlledAudioTrackCountContent = EditorGUIUtility.TextContent(
                     "Controlled Tracks|How many audio tracks will the player control.  The actual number of tracks is only known during playback when the source is a URL.");
-            public GUIContent materialRendererContent = EditorGUIUtility.TextContent(
+            public readonly GUIContent materialRendererContent = EditorGUIUtility.TextContent(
                     "Renderer|Renderer that will receive the images. Defaults to the first renderer on the game object.");
-            public GUIContent materialPropertyContent = EditorGUIUtility.TextContent(
+            public readonly GUIContent materialPropertyContent = EditorGUIUtility.TextContent(
                     "Material Property|Texture property of the current Material that will receive the images.");
 
-            public string selectUniformVideoSourceHelp =
+            public readonly string selectUniformVideoSourceHelp =
                 "Select a uniform video source type before a video clip or URL can be selected.";
-            public string rendererMaterialsHaveNoTexPropsHelp =
+            public readonly string rendererMaterialsHaveNoTexPropsHelp =
                 "Renderer materials have no texture properties.";
-            public string someRendererMaterialsHaveNoTexPropsHelp =
+            public readonly string someRendererMaterialsHaveNoTexPropsHelp =
                 "Some selected renderers have materials with no texture properties.";
-            public string invalidTexPropSelectionHelp =
+            public readonly string invalidTexPropSelectionHelp =
                 "Invalid texture property selection.";
-            public string oneInvalidTexPropSelectionHelp =
+            public readonly string oneInvalidTexPropSelectionHelp =
                 "1 selected object has an invalid texture property selection.";
-            public string someInvalidTexPropSelectionsHelp =
+            public readonly string someInvalidTexPropSelectionsHelp =
                 "{0} selected objects have invalid texture property selections.";
-            public string texPropInAllMaterialsHelp =
+            public readonly string texPropInAllMaterialsHelp =
                 "Texture property appears in all renderer materials.";
-            public string texPropInSomeMaterialsHelp =
+            public readonly string texPropInSomeMaterialsHelp =
                 "Texture property appears in {0} out of {1} renderer materials.";
-            public string selectUniformVideoRenderModeHelp =
+            public readonly string selectUniformVideoRenderModeHelp =
                 "Select a uniform video render mode type before a target camera, render texture or material parameter can be selected.";
-            public string selectUniformAudioOutputModeHelp =
+            public readonly string selectUniformAudioOutputModeHelp =
                 "Select a uniform audio target before audio settings can be edited.";
-            public string selectUniformAudioTracksHelp =
+            public readonly string selectUniformAudioTracksHelp =
                 "Only sources with the same number of audio tracks can be edited during multi-selection.";
-            public string selectMovieFile = "Select movie file.";
-            public string audioControlsNotEditableHelp =
+            public readonly string selectMovieFile = "Select movie file.";
+            // FIXME: Array should come from the player.
+            public readonly string[] selectMovieFileFilter =
+            {
+                L10n.Tr("Movie files"), "asf,avi,dv,m4v,mp4,mov,mpg,mpeg,m4v,ogv,vp8,webm,wmv",
+                L10n.Tr("All files"), "*"
+            };
+            public readonly string selectMovieFileRecentPath = "VideoPlayerSelectMovieFileRecentPath";
+            public readonly string audioControlsNotEditableHelp =
                 "Audio controls not editable when using muliple selection.";
-            public string enableDecodingTooltip =
+            public readonly string enableDecodingTooltip =
                 "Enable decoding for this track.  Only effective when not playing.  When playing from a URL, track details are shown only while playing back.";
         }
 
@@ -112,6 +121,7 @@ namespace UnityEditor
         SerializedProperty m_PlayOnAwake;
         SerializedProperty m_WaitForFirstFrame;
         SerializedProperty m_Looping;
+        SerializedProperty m_SkipOnDrop;
         SerializedProperty m_PlaybackSpeed;
         SerializedProperty m_RenderMode;
         SerializedProperty m_TargetTexture;
@@ -133,6 +143,7 @@ namespace UnityEditor
         readonly AnimBool m_ShowRenderer = new AnimBool();
         readonly AnimBool m_ShowMaterialProperty = new AnimBool();
         readonly AnimBool m_DataSourceIsClip = new AnimBool();
+        readonly AnimBool m_DataSourceIsUrl = new AnimBool();
         readonly AnimBool m_ShowAspectRatio = new AnimBool();
         readonly AnimBool m_ShowAudioControls = new AnimBool();
 
@@ -152,6 +163,7 @@ namespace UnityEditor
             m_ShowRenderer.valueChanged.AddListener(Repaint);
             m_ShowMaterialProperty.valueChanged.AddListener(Repaint);
             m_DataSourceIsClip.valueChanged.AddListener(Repaint);
+            m_DataSourceIsUrl.valueChanged.AddListener(Repaint);
             m_ShowAspectRatio.valueChanged.AddListener(Repaint);
             m_ShowAudioControls.valueChanged.AddListener(Repaint);
 
@@ -161,6 +173,7 @@ namespace UnityEditor
             m_PlayOnAwake = serializedObject.FindProperty("m_PlayOnAwake");
             m_WaitForFirstFrame = serializedObject.FindProperty("m_WaitForFirstFrame");
             m_Looping = serializedObject.FindProperty("m_Looping");
+            m_SkipOnDrop = serializedObject.FindProperty("m_SkipOnDrop");
             m_PlaybackSpeed = serializedObject.FindProperty("m_PlaybackSpeed");
             m_RenderMode = serializedObject.FindProperty("m_RenderMode");
             m_TargetTexture = serializedObject.FindProperty("m_TargetTexture");
@@ -189,6 +202,7 @@ namespace UnityEditor
                 targets.Count() > 1 || (m_MaterialPropertyPopupSelection >= 0 && m_MaterialPropertyPopupContent.Length > 0);
 
             m_DataSourceIsClip.value = m_DataSource.intValue == (int)VideoSource.VideoClip;
+            m_DataSourceIsUrl.value = m_DataSource.intValue == (int)VideoSource.Url;
             m_ShowAspectRatio.value = (m_RenderMode.intValue != (int)VideoRenderMode.MaterialOverride) &&
                 (m_RenderMode.intValue != (int)VideoRenderMode.APIOnly);
             m_ShowAudioControls.value = m_AudioOutputMode.intValue != (int)VideoAudioOutputMode.None;
@@ -205,6 +219,7 @@ namespace UnityEditor
             m_ShowRenderer.valueChanged.RemoveListener(Repaint);
             m_ShowMaterialProperty.valueChanged.RemoveListener(Repaint);
             m_DataSourceIsClip.valueChanged.RemoveListener(Repaint);
+            m_DataSourceIsUrl.valueChanged.RemoveListener(Repaint);
             m_ShowAspectRatio.valueChanged.RemoveListener(Repaint);
             m_ShowAudioControls.valueChanged.RemoveListener(Repaint);
         }
@@ -221,6 +236,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_PlayOnAwake, s_Styles.playOnAwakeContent);
             EditorGUILayout.PropertyField(m_WaitForFirstFrame, s_Styles.waitForFirstFrameContent);
             EditorGUILayout.PropertyField(m_Looping, s_Styles.loopContent);
+            EditorGUILayout.PropertyField(m_SkipOnDrop, s_Styles.skipOnDropContent);
             EditorGUILayout.Slider(m_PlaybackSpeed, 0.0f, 10.0f, s_Styles.playbackSpeedContent);
             EditorGUILayout.Space();
 
@@ -242,34 +258,40 @@ namespace UnityEditor
         private void HandleDataSourceField()
         {
             m_DataSourceIsClip.target = m_DataSource.intValue == (int)VideoSource.VideoClip;
+            m_DataSourceIsUrl.target = m_DataSource.intValue == (int)VideoSource.Url;
+
             if (m_DataSource.hasMultipleDifferentValues)
                 EditorGUILayout.HelpBox(s_Styles.selectUniformVideoSourceHelp, MessageType.Warning, false);
-            else if (EditorGUILayout.BeginFadeGroup(m_DataSourceIsClip.faded))
-                EditorGUILayout.PropertyField(m_VideoClip, s_Styles.videoClipContent);
             else
             {
-                EditorGUILayout.PropertyField(m_Url, s_Styles.urlContent);
-                Rect browseRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
-                browseRect.xMin += EditorGUIUtility.labelWidth;
-                browseRect.xMax = browseRect.xMin + GUI.skin.label.CalcSize(s_Styles.browseContent).x + 10;
-                if (EditorGUI.DropdownButton(
-                        browseRect, s_Styles.browseContent, FocusType.Passive, GUISkin.current.button))
+                if (EditorGUILayout.BeginFadeGroup(m_DataSourceIsClip.faded))
+                    EditorGUILayout.PropertyField(m_VideoClip, s_Styles.videoClipContent);
+                EditorGUILayout.EndFadeGroup();
+
+                if (EditorGUILayout.BeginFadeGroup(m_DataSourceIsUrl.faded))
                 {
-                    string[] filter =
+                    EditorGUILayout.PropertyField(m_Url, s_Styles.urlContent);
+                    Rect browseRect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
+                    browseRect.xMin += EditorGUIUtility.labelWidth;
+                    browseRect.xMax = browseRect.xMin + GUI.skin.label.CalcSize(s_Styles.browseContent).x + 10;
+                    if (EditorGUI.DropdownButton(
+                            browseRect, s_Styles.browseContent, FocusType.Passive, GUISkin.current.button))
                     {
-                        // FIXME: Array should come from the player.
-                        "Movie files", "dv,mp4,mpg,mpeg,m4v,ogv,vp8,webm",
-                        "All files", "*"
-                    };
-
-                    string path = EditorUtility.OpenFilePanelWithFilters(
-                            s_Styles.selectMovieFile, "", filter);
-                    if (!string.IsNullOrEmpty(path))
-                        m_Url.stringValue = "file://" + path;
+                        string path = EditorUtility.OpenFilePanelWithFilters(
+                                s_Styles.selectMovieFile,
+                                EditorPrefs.GetString(s_Styles.selectMovieFileRecentPath),
+                                s_Styles.selectMovieFileFilter);
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            m_Url.stringValue = "file://" + path;
+                            serializedObject.ApplyModifiedProperties();
+                            EditorPrefs.SetString(s_Styles.selectMovieFileRecentPath, path);
+                        }
+                        EditorGUIUtility.ExitGUI();
+                    }
                 }
+                EditorGUILayout.EndFadeGroup();
             }
-
-            EditorGUILayout.EndFadeGroup();
         }
 
         private static int GetMaterialPropertyPopupHash(UnityEngine.Object[] objects)
@@ -543,8 +565,8 @@ namespace UnityEditor
                 else
                 {
                     ushort trackCountBefore = (ushort)m_ControlledAudioTrackCount.intValue;
-                    HandleControlledAudioTrackCount();
-                    if (m_ControlledAudioTrackCount.hasMultipleDifferentValues)
+                    bool useControlledAudioTrackCount = HandleControlledAudioTrackCount();
+                    if (useControlledAudioTrackCount && m_ControlledAudioTrackCount.hasMultipleDifferentValues)
                         EditorGUILayout.HelpBox(s_Styles.selectUniformAudioTracksHelp, MessageType.Warning, false);
                     else
                     {
@@ -555,9 +577,19 @@ namespace UnityEditor
                         // HandleControlledAudioTrackCount().  But this adjustment is
                         // only done later so we conservatively only iterate over the
                         // smallest known number of tracks we know are initialized.
-                        ushort trackCount = (ushort)Math.Min(
-                                (ushort)m_ControlledAudioTrackCount.intValue, trackCountBefore);
-                        trackCount = (ushort)Math.Min(trackCount, m_EnabledAudioTracks.arraySize);
+                        ushort trackCount = 0;
+                        if (useControlledAudioTrackCount)
+                        {
+                            trackCount = (ushort)Math.Min(
+                                    (ushort)m_ControlledAudioTrackCount.intValue, trackCountBefore);
+                            trackCount = (ushort)Math.Min(trackCount, m_EnabledAudioTracks.arraySize);
+                        }
+                        else
+                        {
+                            var clip = ((VideoPlayer)target).clip;
+                            if (clip != null)
+                                trackCount = clip.audioTrackCount;
+                        }
 
                         for (ushort trackIdx = 0; trackIdx < trackCount; ++trackIdx)
                         {
@@ -629,13 +661,13 @@ namespace UnityEditor
             return info.content;
         }
 
-        private void HandleControlledAudioTrackCount()
+        private bool HandleControlledAudioTrackCount()
         {
             // Won't show the widget for number of controlled tracks if we're
             // just using VideoClips (for which editing this property doesn't
             // make sense) or mixing VideoClips and URLs.
             if (m_DataSourceIsClip.value || m_DataSource.hasMultipleDifferentValues)
-                return;
+                return false;
 
             VideoPlayer player = (VideoPlayer)target;
             ushort audioTrackCount = serializedObject.isEditingMultipleObjects ? (ushort)0 : player.audioTrackCount;
@@ -664,6 +696,7 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(m_ControlledAudioTrackCount, controlledAudioTrackCountContent);
+            return true;
         }
 
         private void PrepareCompleted(VideoPlayer vp)

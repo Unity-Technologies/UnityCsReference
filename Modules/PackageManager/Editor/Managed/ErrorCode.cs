@@ -2,7 +2,6 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-
 namespace UnityEditor.PackageManager
 {
     public enum ErrorCode
@@ -16,4 +15,3 @@ namespace UnityEditor.PackageManager
         // since we never create errors for successful requests
     }
 }
-

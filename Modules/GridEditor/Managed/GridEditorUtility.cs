@@ -200,6 +200,8 @@ namespace UnityEditorInternal
                 case Grid.CellLayout.Hexagon:
                     DrawSelectedHexGridArea(gridLayout, area, color);
                     break;
+                case Grid.CellLayout.Isometric:
+                case Grid.CellLayout.IsometricZAsY:
                 case Grid.CellLayout.Rectangle:
                     Vector3 cellStride = gridLayout.cellSize + gridLayout.cellGap;
                     Vector3 cellGap = Vector3.one;
@@ -349,6 +351,8 @@ namespace UnityEditorInternal
             {
                 case GridLayout.CellLayout.Hexagon:
                     return GenerateCachedHexagonalGridMesh(gridLayout, color);
+                case GridLayout.CellLayout.Isometric:
+                case GridLayout.CellLayout.IsometricZAsY:
                 case GridLayout.CellLayout.Rectangle:
                     int min = k_GridGizmoVertexCount / -32;
                     int max = min * -1;

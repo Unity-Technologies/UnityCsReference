@@ -27,8 +27,8 @@ namespace UnityEngine.Experimental.UIElements
         {
             switch (phase)
             {
-                case CallbackPhase.CaptureAndTarget:
-                    if (evt.propagationPhase != PropagationPhase.Capture && evt.propagationPhase != PropagationPhase.AtTarget)
+                case CallbackPhase.TrickleDownAndTarget:
+                    if (evt.propagationPhase != PropagationPhase.TrickleDown && evt.propagationPhase != PropagationPhase.AtTarget)
                         return false;
                     break;
 
@@ -76,13 +76,14 @@ namespace UnityEngine.Experimental.UIElements
     internal class EventCallbackFunctor<TEventType, TCallbackArgs> : EventCallbackFunctorBase where TEventType : EventBase<TEventType>, new()
     {
         EventCallback<TEventType, TCallbackArgs> m_Callback;
-        TCallbackArgs m_UserArgs;
         long m_EventTypeId;
+
+        internal TCallbackArgs userArgs { get; set; }
 
         public EventCallbackFunctor(EventCallback<TEventType, TCallbackArgs> callback, TCallbackArgs userArgs, CallbackPhase phase) : base(phase)
         {
+            this.userArgs = userArgs;
             m_Callback = callback;
-            m_UserArgs = userArgs;
             m_EventTypeId = EventBase<TEventType>.TypeId();
         }
 
@@ -96,7 +97,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (PhaseMatches(evt))
             {
-                m_Callback(evt as TEventType, m_UserArgs);
+                m_Callback(evt as TEventType, userArgs);
             }
         }
 

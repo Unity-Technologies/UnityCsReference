@@ -2,23 +2,29 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-//#define PERF_PROFILE
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
+using UnityEditor.AdvancedDropdown;
 using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.VersionControl;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditorInternal.VersionControl;
-using Object = UnityEngine.Object;
-using UnityEditor.VersionControl;
+using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.Scripting;
+
+// includes specific to UIElements/IMGui
 using UnityEngine.Profiling;
+
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Inspector", useTypeNameAsIconName = true)]
-    internal class InspectorWindow : EditorWindow, IHasCustomMenu, ISerializationCallbackReceiver
+    internal class InspectorWindow : EditorWindow, IHasCustomMenu
     {
         internal Vector2 m_ScrollPosition;
         internal InspectorMode   m_InspectorMode = InspectorMode.Normal;
@@ -26,7 +32,9 @@ namespace UnityEditor
         static readonly List<InspectorWindow> m_AllInspectors = new List<InspectorWindow>();
         static bool s_AllOptimizedGUIBlocksNeedsRebuild;
 
+
         const float kBottomToolbarHeight = 17f;
+        const float kAddComponentButtonHeight = 45f;
         internal const int kInspectorPaddingLeft = 4 + 10;
         internal const int kInspectorPaddingRight = 4;
 
@@ -69,6 +77,7 @@ namespace UnityEditor
         private IPreviewable m_SelectedPreview;
 
         private EditorDragging editorDragging;
+
 
 
         internal class Styles
@@ -124,8 +133,7 @@ namespace UnityEditor
             RefreshTitle();
             minSize = new Vector2(275, 50);
 
-            if (!m_AllInspectors.Contains(this))
-                m_AllInspectors.Add(this);
+            AddInspectorWindow(this);
 
             m_PreviewResizer.Init("InspectorPreview");
             m_LabelGUI.OnEnable();
@@ -146,6 +154,7 @@ namespace UnityEditor
 
             EditorApplication.projectWasLoaded += OnProjectWasLoaded;
         }
+
 
         private void OnProjectWasLoaded()
         {
@@ -173,9 +182,8 @@ namespace UnityEditor
 
         protected virtual void OnDisable()
         {
-            m_AllInspectors.Remove(this);
-            if (m_LockTracker != null)
-                m_LockTracker.lockStateChanged.RemoveListener(LockStateChanged);
+            RemoveInspectorWindow(this);
+            m_LockTracker?.lockStateChanged.RemoveListener(LockStateChanged);
 
             EditorApplication.projectWasLoaded -= OnProjectWasLoaded;
         }
@@ -196,16 +204,23 @@ namespace UnityEditor
             return m_AllInspectors;
         }
 
+        [UsedByNativeCode]
+        static private void RedrawFromNative()
+        {
+        }
+
         void OnSelectionChange()
         {
             m_Previews = null;
             m_SelectedPreview = null;
             m_TypeSelectionList = null;
+
             if (m_Parent != null) // parent may be null in some situations (case 970700, 851988)
                 m_Parent.ClearKeyboardControl();
             ScriptAttributeUtility.ClearGlobalCache();
             Repaint();
         }
+
 
         static internal InspectorWindow[] GetAllInspectorWindows()
         {
@@ -230,7 +245,7 @@ namespace UnityEditor
             if (Unsupported.IsDeveloperMode())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Debug-Internal"), m_InspectorMode == InspectorMode.DebugInternal, SetDebugInternal);
 
-            menu.AddSeparator(string.Empty);
+            menu.AddSeparator(String.Empty);
             m_LockTracker.AddItemsToMenu(menu);
         }
 
@@ -264,11 +279,6 @@ namespace UnityEditor
         void SetDebugInternal()
         {
             SetMode(InspectorMode.DebugInternal);
-        }
-
-        void FlipLocked()
-        {
-            isLocked = !isLocked;
         }
 
         public bool isLocked
@@ -337,10 +347,16 @@ namespace UnityEditor
 
             m_Previews = new List<IPreviewable>();
 
-            if (tracker.activeEditors.Length == 0)
+            var activeEditors = tracker.activeEditors;
+            if (activeEditors.Length == 0)
                 return;
 
-            foreach (var editor in tracker.activeEditors)
+            if (EditorStyles.s_Current == null)
+            {
+                EditorStyles.UpdateSkinCache();
+            }
+
+            foreach (var editor in activeEditors)
             {
                 IEnumerable<IPreviewable> previews = GetPreviewsForType(editor);
                 foreach (var preview in previews)
@@ -358,29 +374,7 @@ namespace UnityEditor
             //
             if (m_PreviewableTypes == null)
             {
-                m_PreviewableTypes = new Dictionary<Type, List<Type>>();
-                foreach (var type in EditorAssemblies.GetAllTypesWithInterface<IPreviewable>())
-                {
-                    // we don't want Editor classes with preview here.
-                    if (type.IsSubclassOf(typeof(Editor)))
-                        continue;
-
-                    // Record only the types with a CustomPreviewAttribute.
-                    var attrs = type.GetCustomAttributes(typeof(CustomPreviewAttribute), false) as CustomPreviewAttribute[];
-                    foreach (CustomPreviewAttribute previewAttr in attrs)
-                    {
-                        if (previewAttr.m_Type == null)
-                            continue;
-
-                        List<Type> previewableTypes;
-                        if (!m_PreviewableTypes.TryGetValue(previewAttr.m_Type, out previewableTypes))
-                        {
-                            previewableTypes = new List<Type>();
-                            m_PreviewableTypes.Add(previewAttr.m_Type, previewableTypes);
-                        }
-                        previewableTypes.Add(type);
-                    }
-                }
+                InspectorWindowUtils.GetPreviewableTypes(out m_PreviewableTypes);
             }
 
             return m_PreviewableTypes;
@@ -417,21 +411,29 @@ namespace UnityEditor
 
         private void LockStateChanged(bool lockeState)
         {
-            tracker.RebuildIfNecessary();
-        }
+            if (lockeState)
+            {
+                PrepareLockedObjectsForSerialization();
+            }
+            else
+            {
+                ClearSerializedLockedObjects();
+            }
 
+            tracker.RebuildIfNecessary();
+
+        }
 
         static internal InspectorWindow s_CurrentInspectorWindow;
 
-
         protected virtual void OnGUI()
         {
-            Profiler.BeginSample("InspectorWindow.OnGUI");
-
             CreatePreviewables();
             FlushAllOptimizedGUIBlocksIfNeeded();
 
+
             ResetKeyboardControl();
+
             m_ScrollPosition = EditorGUILayout.BeginVerticalScrollView(m_ScrollPosition);
             {
                 if (Event.current.type == EventType.Repaint)
@@ -443,6 +445,7 @@ namespace UnityEditor
                 Profiler.BeginSample("InspectorWindow.DrawEditors()");
                 DrawEditors(editors);
                 Profiler.EndSample();
+
 
                 if (tracker.hasComponentsWhichCannotBeMultiEdited)
                 {
@@ -484,10 +487,8 @@ namespace UnityEditor
             {
                 DrawVCSShortInfo();
             }
-
-
-            Profiler.EndSample();
         }
+
 
         internal virtual Editor GetLastInteractedEditor()
         {
@@ -598,26 +599,13 @@ namespace UnityEditor
 
         internal Object GetInspectedObject()
         {
-            Editor editor = GetFirstNonImportInspectorEditor(tracker.activeEditors);
+            Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
             if (editor == null)
                 return null;
             return editor.target;
         }
 
-        Editor GetFirstNonImportInspectorEditor(Editor[] editors)
-        {
-            foreach (Editor e in editors)
-            {
-                // Check for target rather than the editor type itself,
-                // because some importers use default inspector
-                if (e.target is AssetImporter)
-                    continue;
-                return e;
-            }
-            return null;
-        }
-
-        private void MoveFocusOnKeyPress()
+        private static void MoveFocusOnKeyPress()
         {
             var key = Event.current.keyCode;
 
@@ -647,7 +635,7 @@ namespace UnityEditor
 
             if (remainingRect.Contains(Event.current.mousePosition))
             {
-                Editor editor = GetFirstNonImportInspectorEditor(editors);
+                Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors);
                 if (editor != null)
                     DoInspectorDragAndDrop(remainingRect, editor.targets);
 
@@ -674,7 +662,7 @@ namespace UnityEditor
         private Object[] GetInspectedAssets()
         {
             // We use this technique to support locking of the inspector. An inspector locks via an editor, so we need to use an editor to get the selection
-            Editor assetEditor = GetFirstNonImportInspectorEditor(tracker.activeEditors);
+            Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
             if (assetEditor != null && assetEditor.targets.Length == 1)
             {
                 string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
@@ -756,9 +744,9 @@ namespace UnityEditor
                         if (previewTitle == styles.preTitle)
                         {
                             string componentTitle = ObjectNames.GetTypeName(currentEditor.target);
-                            if (currentEditor.target is MonoBehaviour)
+                            if (NativeClassExtensionUtilities.ExtendsANativeType(currentEditor.target))
                             {
-                                componentTitle = MonoScript.FromMonoBehaviour(currentEditor.target as MonoBehaviour).GetClass().Name;
+                                componentTitle = MonoScript.FromScriptedObject(currentEditor.target).GetClass().Name;
                             }
                             fullTitle = previewTitle.text + " - " + componentTitle;
                         }
@@ -883,7 +871,7 @@ namespace UnityEditor
         private void DetachPreview()
         {
             Event.current.Use();
-            m_PreviewWindow = ScriptableObject.CreateInstance(typeof(PreviewWindow)) as PreviewWindow;
+            m_PreviewWindow = CreateInstance(typeof(PreviewWindow)) as PreviewWindow;
             m_PreviewWindow.SetParentInspector(this);
             m_PreviewWindow.Show();
             Repaint();
@@ -893,7 +881,7 @@ namespace UnityEditor
         protected virtual void DrawVCSSticky(float offset)
         {
             string message = "";
-            Editor assetEditor = GetFirstNonImportInspectorEditor(tracker.activeEditors);
+            Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
             bool hasRemovedSticky = EditorPrefs.GetBool("vcssticky");
             if (!hasRemovedSticky && !Editor.IsAppropriateFileOpenForEdit(assetEditor.target, out message))
             {
@@ -925,7 +913,7 @@ namespace UnityEditor
                 EditorSettings.externalVersionControl != ExternalVersionControl.AutoDetect &&
                 EditorSettings.externalVersionControl != ExternalVersionControl.Generic)
             {
-                Editor assetEditor = GetFirstNonImportInspectorEditor(tracker.activeEditors);
+                Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
                 string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
                 Asset asset = Provider.GetAssetByPath(assetPath);
                 if (asset == null || !(asset.path.StartsWith("Assets") || asset.path.StartsWith("ProjectSettings")))
@@ -938,7 +926,7 @@ namespace UnityEditor
 
                 //We also need to take into account the global VCS state here, as it being offline (or not connected)
                 //can also cause IsOpenForEdit to return false for checkout-enabled or lock-enabled VCS
-                if (currentState == string.Empty && Provider.onlineState != OnlineState.Online)
+                if (currentState == String.Empty && Provider.onlineState != OnlineState.Online)
                 {
                     currentState = String.Format(s_Styles.VCS_NotConnectedMessage.text, Provider.GetActivePlugin().name);
                 }
@@ -1001,7 +989,7 @@ namespace UnityEditor
 
         protected string BuildTooltip(Asset asset, Asset metaAsset)
         {
-            var sb = new System.Text.StringBuilder();
+            var sb = new StringBuilder();
             if (asset != null)
             {
                 sb.AppendLine("Asset:");
@@ -1036,12 +1024,13 @@ namespace UnityEditor
             if (editors.Length == 0)
                 return;
 
+
+
             // We need to force optimized GUI to dirty when object becomes open for edit
             // e.g. after checkout in version control. If this is not done the optimized
             // GUI will need an extra repaint before it gets ungrayed out.
 
             Object inspectedObject = GetInspectedObject();
-            string msg = String.Empty;
 
             // Force header to be flush with the top of the window
             GUILayout.Space(0);
@@ -1049,41 +1038,16 @@ namespace UnityEditor
             // When inspecting a material asset force visible properties (MaterialEditor can be collapsed when shown on a GameObject)
             if (inspectedObject is Material)
             {
-                // Find material editor. MaterialEditor is in either index 0 or 1.
-                for (int i = 0; i <= 1 && i < editors.Length; i++)
-                {
-                    MaterialEditor me = editors[i] as MaterialEditor;
-                    if (me != null)
-                    {
-                        me.forceVisible = true;
-                        break;
-                    }
-                }
+                ForceVisiblePropertiesForMaterial(editors);
             }
 
-            bool rebuildOptimizedGUIBlocks = false;
-            if (Event.current.type == EventType.Repaint)
-            {
-                if (inspectedObject != null
-                    && m_IsOpenForEdit != Editor.IsAppropriateFileOpenForEdit(inspectedObject, out msg))
-                {
-                    m_IsOpenForEdit = !m_IsOpenForEdit;
-                    rebuildOptimizedGUIBlocks = true;
-                }
-                if (m_InvalidateGUIBlockCache)
-                {
-                    rebuildOptimizedGUIBlocks = true;
-                    m_InvalidateGUIBlockCache = false;
-                }
-            }
-            else if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == EventCommandNames.EyeDropperUpdate)
-            {
-                rebuildOptimizedGUIBlocks = true;
-            }
+            var rebuildOptimizedGUIBlocks = InspectorWindowUtils.GetRebuildOptimizedGUIBlocks(inspectedObject,
+                    ref m_IsOpenForEdit, ref m_InvalidateGUIBlockCache);
 
             Editor.m_AllowMultiObjectAccess = true;
             bool showImportedObjectBarNext = false;
             Rect importedObjectBarRect = new Rect();
+
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)
             {
                 if (ShouldCullEditor(editors, editorIndex))
@@ -1099,13 +1063,32 @@ namespace UnityEditor
                 {
                     // If so, We need to flush the OptimizedGUIBlock every frame, so that EditorGUI.DoTextField() repaint keeps getting called and textFieldInput set to true.
                     // textFieldInput is reset to false at beginning of every repaint in c++ GUIView::DoPaint()
-                    FlushOptimizedGUIBlock(editors[editorIndex]);
+                    InspectorWindowUtils.FlushOptimizedGUIBlock(editors[editorIndex]);
                 }
             }
 
             EditorGUIUtility.ResetGUIState();
 
             // Draw the bar to show that the imported object is below
+            DrawImportedObjectLabel(importedObjectBarRect);
+        }
+
+        static void ForceVisiblePropertiesForMaterial(Editor[] editors)
+        {
+            // Find material editor. MaterialEditor is in either index 0 or 1.
+            for (int i = 0; i <= 1 && i < editors.Length; i++)
+            {
+                MaterialEditor me = editors[i] as MaterialEditor;
+                if (me != null)
+                {
+                    me.forceVisible = true;
+                    break;
+                }
+            }
+        }
+
+        private static void DrawImportedObjectLabel(Rect importedObjectBarRect)
+        {
             if (importedObjectBarRect.height > 0)
             {
                 // Clip the label to avoid a black border at the bottom
@@ -1123,6 +1106,11 @@ namespace UnityEditor
         private void DrawEditor(Editor[] editors, int editorIndex, bool rebuildOptimizedGUIBlock, ref bool showImportedObjectBarNext, ref Rect importedObjectBarRect)
         {
             var editor = editors[editorIndex];
+            if (Event.current.type == EventType.Repaint)
+            {
+                editor.isInspectorDirty = false;
+            }
+
             // Protect us against someone triggering an asset reimport during
             // OnGUI as that will kill all active editors.
             if (editor == null)
@@ -1135,7 +1123,7 @@ namespace UnityEditor
             // Case 891450:
             // - ActiveEditorTracker will automatically create editors for materials of components on tracked game objects
             // - UnityEngine.UI.Mask will destroy this material in OnDisable (e.g. disabling it with the checkbox) causing problems when drawing the material editor
-            if (!target && !(target is MonoBehaviour) && !(target is ScriptableObject))
+            if (target == null && !NativeClassExtensionUtilities.ExtendsANativeType(target))
                 return;
 
             GUIUtility.GetControlID(target.GetInstanceID(), FocusType.Passive);
@@ -1155,7 +1143,9 @@ namespace UnityEditor
                 tracker.SetVisible(editorIndex, wasVisible ? 1 : 0);
             }
             else
+            {
                 wasVisible = wasVisibleState == 1;
+            }
 
             rebuildOptimizedGUIBlock |= editor.isInspectorDirty;
 
@@ -1168,102 +1158,22 @@ namespace UnityEditor
             //set the current PropertyHandlerCache to the current editor
             ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 
-            bool largeHeader = EditorHasLargeHeader(editorIndex, editors);
-
-            // Draw large headers before we do the culling of unsupported editors below,
-            // so the large header is always shown even when the editor can't be.
-            if (largeHeader)
-            {
-                String message = String.Empty;
-                bool IsOpenForEdit = editor.IsOpenForEdit(out message);
-
-                if (showImportedObjectBarNext)
-                {
-                    showImportedObjectBarNext = false;
-                    GUILayout.Space(15);
-                    importedObjectBarRect = GUILayoutUtility.GetRect(16, 16);
-                    importedObjectBarRect.height = 17;
-                }
-
-                wasVisible = true;
-
-                // Header
-                using (new EditorGUI.DisabledScope(!IsOpenForEdit)) // Only disable the entire header if the asset is locked by VCS
-                {
-                    editor.DrawHeader();
-                }
-            }
+            // Dragging handle used for editor reordering
+            var dragRect = DrawEditorHeader(editors, editorIndex, ref showImportedObjectBarNext, ref importedObjectBarRect, editor, target, ref wasVisible);
 
             if (editor.target is AssetImporter)
                 showImportedObjectBarNext = true;
 
-            // Culling of editors that can't be properly shown.
-            // If the current editor is a GenericInspector even though a custom editor for it exists,
-            // then it's either a fallback for a custom editor that doesn't support multi-object editing,
-            // or we're in debug mode.
-            bool multiEditingNotSupported = false;
-            if (editor is GenericInspector && CustomEditorAttributes.FindCustomEditorType(target, false) != null)
-            {
-                if (m_InspectorMode == InspectorMode.DebugInternal)
-                {
-                    // Do nothing
-                }
-                else if (m_InspectorMode == InspectorMode.Normal)
-                {
-                    // If we're not in debug mode and it thus must be a fallback,
-                    // hide the editor and show a notification.
-                    multiEditingNotSupported = true;
-                }
-                else if (target is AssetImporter)
-                {
-                    // If we are in debug mode and it's an importer type,
-                    // hide the editor and show a notification.
-                    multiEditingNotSupported = true;
-                }
-                // If we are in debug mode and it's an NOT importer type,
-                // just show the debug inspector as usual.
-            }
+            var multiEditingSupported = IsMultiEditingSupported(editor, target);
 
-            // Dragging handle used for editor reordering
-            Rect dragRect = new Rect();
 
-            // Draw small headers (the header above each component) after the culling above
-            // so we don't draw a component header for all the components that can't be shown.
-            if (!largeHeader)
-            {
-                // ensure first component's title bar is flush with the header
-                if (editorIndex > 0 && editors[editorIndex - 1].target is GameObject && target is Component)
-                {
-                    GUILayout.Space(
-                        -1f                                                                                   // move back up so line overlaps
-                        - EditorStyles.inspectorBig.margin.bottom - EditorStyles.inspectorTitlebar.margin.top // move back up margins
-                        );
-                }
-
-                using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
-                {
-                    bool isVisible = UnityEditor.EditorGUILayout.InspectorTitlebar(wasVisible, editor.targets, editor.CanBeExpandedViaAFoldout());
-                    if (wasVisible != isVisible)
-                    {
-                        tracker.SetVisible(editorIndex, isVisible ? 1 : 0);
-                        InternalEditorUtility.SetIsInspectorExpanded(target, isVisible);
-                        if (isVisible)
-                            m_LastInteractedEditor = editor;
-                        else if (m_LastInteractedEditor == editor)
-                            m_LastInteractedEditor = null;
-                    }
-                }
-
-                dragRect = GUILayoutUtility.GetLastRect();
-            }
-
-            if (multiEditingNotSupported && wasVisible)
+            if (!multiEditingSupported && wasVisible)
             {
                 GUILayout.Label("Multi-object editing not supported.", EditorStyles.helpBox);
                 return;
             }
 
-            DisplayDeprecationMessageIfNecessary(editor);
+            InspectorWindowUtils.DisplayDeprecationMessageIfNecessary(editor);
 
             // We need to reset again after drawing the header.
             EditorGUIUtility.ResetGUIState();
@@ -1279,72 +1189,15 @@ namespace UnityEditor
                 if (genericEditor)
                     genericEditor.m_InspectorMode = m_InspectorMode;
 
-                // Optimize block code path
-                float height;
-                OptimizedGUIBlock optimizedBlock;
-
                 EditorGUIUtility.hierarchyMode = true;
                 EditorGUIUtility.wideMode = position.width > Editor.k_WideModeMinWidth;
 
                 //set the current PropertyHandlerCache to the current editor
                 ScriptAttributeUtility.propertyHandlerCache = editor.propertyHandlerCache;
 
-                if (editor.GetOptimizedGUIBlock(rebuildOptimizedGUIBlock, wasVisible, out optimizedBlock, out height))
+                if (DoOnInspectorGUI(rebuildOptimizedGUIBlock, editor, wasVisible, ref contentRect))
                 {
-                    contentRect = GUILayoutUtility.GetRect(0, wasVisible ? height : 0);
-                    HandleLastInteractedEditor(contentRect, editor);
-
-                    // Layout events are ignored in the optimized code path
-                    if (Event.current.type == EventType.Layout)
-                    {
-                        return;
-                    }
-
-                    // Try reusing optimized block
-                    if (optimizedBlock.Begin(rebuildOptimizedGUIBlock, contentRect))
-                    {
-                        // Draw content
-                        if (wasVisible)
-                        {
-                            GUI.changed = false;
-                            editor.OnOptimizedInspectorGUI(contentRect);
-                        }
-                    }
-
-                    optimizedBlock.End();
-                }
-                else
-                {
-                    // Render contents if folded out
-                    if (wasVisible)
-                    {
-                        GUIStyle editorWrapper = (editor.UseDefaultMargins() ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
-                        contentRect = EditorGUILayout.BeginVertical(editorWrapper);
-                        {
-                            HandleLastInteractedEditor(contentRect, editor);
-
-                            GUI.changed = false;
-
-                            try
-                            {
-                                editor.OnInspectorGUI();
-                            }
-                            catch (Exception e)
-                            {
-                                if (GUIUtility.ShouldRethrowException(e))
-                                    throw;
-
-                                Debug.LogException(e);
-                            }
-                        }
-                        EditorGUILayout.EndVertical();
-                    }
-
-                    // early out if an event has been used
-                    if (Event.current.type == EventType.Used)
-                    {
-                        return;
-                    }
+                    return;
                 }
             }
 
@@ -1372,6 +1225,178 @@ namespace UnityEditor
             HandleComponentScreenshot(contentRect, editor);
         }
 
+        Rect DrawEditorHeader(Editor[] editors, int editorIndex, ref bool showImportedObjectBarNext, ref Rect importedObjectBarRect, Editor editor, Object target, ref bool wasVisible)
+        {
+            var largeHeader = DrawEditorLargeHeader(editors, editorIndex, ref showImportedObjectBarNext, ref importedObjectBarRect, editor, ref wasVisible);
+
+            // Dragging handle used for editor reordering
+            var dragRect = largeHeader ? new Rect() : DrawEditorSmallHeader(editors, editorIndex, target, editor, wasVisible);
+            return dragRect;
+        }
+
+        bool DrawEditorLargeHeader(Editor[] editors, int editorIndex, ref bool showImportedObjectBarNext, ref Rect importedObjectBarRect, Editor editor, ref bool wasVisible)
+        {
+            bool largeHeader = EditorHasLargeHeader(editorIndex, editors);
+
+            // Draw large headers before we do the culling of unsupported editors below,
+            // so the large header is always shown even when the editor can't be.
+            if (largeHeader)
+            {
+                String message = String.Empty;
+                bool IsOpenForEdit = editor.IsOpenForEdit(out message);
+
+                if (showImportedObjectBarNext)
+                {
+                    showImportedObjectBarNext = false;
+                    GUILayout.Space(15);
+                    importedObjectBarRect = GUILayoutUtility.GetRect(16, 16);
+                    importedObjectBarRect.height = 17;
+                }
+
+                wasVisible = true;
+
+                // Header
+                using (new EditorGUI.DisabledScope(!IsOpenForEdit)) // Only disable the entire header if the asset is locked by VCS
+                {
+                    editor.DrawHeader();
+                }
+            }
+
+            return largeHeader;
+        }
+
+        // Draw small headers (the header above each component) after the culling above
+        // so we don't draw a component header for all the components that can't be shown.
+        Rect DrawEditorSmallHeader(Editor[] editors, int editorIndex, Object target, Editor editor, bool wasVisible)
+        {
+            // ensure first component's title bar is flush with the header
+            if (editorIndex > 0 && editors[editorIndex - 1].target is GameObject && target is Component)
+            {
+                GUILayout.Space(
+                    -1f // move back up so line overlaps
+                    - EditorStyles.inspectorBig.margin.bottom - EditorStyles.inspectorTitlebar.margin.top // move back up margins
+                    );
+            }
+
+            using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
+            {
+                bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, editor.targets, editor.CanBeExpandedViaAFoldout());
+                if (wasVisible != isVisible)
+                {
+                    tracker.SetVisible(editorIndex, isVisible ? 1 : 0);
+                    InternalEditorUtility.SetIsInspectorExpanded(target, isVisible);
+                    if (isVisible)
+                    {
+                        m_LastInteractedEditor = editor;
+                    }
+                    else if (m_LastInteractedEditor == editor)
+                    {
+                        m_LastInteractedEditor = null;
+                    }
+                }
+            }
+
+            return GUILayoutUtility.GetLastRect();
+        }
+
+        bool DoOnInspectorGUI(bool rebuildOptimizedGUIBlock, Editor editor, bool wasVisible, ref Rect contentRect)
+        {
+            OptimizedGUIBlock optimizedBlock;
+            float height;
+            if (editor.GetOptimizedGUIBlock(rebuildOptimizedGUIBlock, wasVisible, out optimizedBlock, out height))
+            {
+                contentRect = GUILayoutUtility.GetRect(0, wasVisible ? height : 0);
+                HandleLastInteractedEditor(contentRect, editor);
+
+                // Layout events are ignored in the optimized code path
+                if (Event.current.type == EventType.Layout)
+                {
+                    return true;
+                }
+
+                // Try reusing optimized block
+                if (optimizedBlock.Begin(rebuildOptimizedGUIBlock, contentRect))
+                {
+                    // Draw content
+                    if (wasVisible)
+                    {
+                        GUI.changed = false;
+                        editor.OnOptimizedInspectorGUI(contentRect);
+                    }
+                }
+
+                optimizedBlock.End();
+            }
+            else
+            {
+                // Render contents if folded out
+                if (wasVisible)
+                {
+                    GUIStyle editorWrapper = (editor.UseDefaultMargins() ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
+                    contentRect = EditorGUILayout.BeginVertical(editorWrapper);
+                    {
+                        HandleLastInteractedEditor(contentRect, editor);
+
+                        GUI.changed = false;
+
+                        try
+                        {
+                            editor.OnInspectorGUI();
+                        }
+                        catch (Exception e)
+                        {
+                            if (GUIUtility.ShouldRethrowException(e))
+                                throw;
+
+                            Debug.LogException(e);
+                        }
+                    }
+                    EditorGUILayout.EndVertical();
+                }
+
+                // early out if an event has been used
+                if (Event.current.type == EventType.Used)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        bool IsMultiEditingSupported(Editor editor, Object target)
+        {
+            // Culling of editors that can't be properly shown.
+            // If the current editor is a GenericInspector even though a custom editor for it exists,
+            // then it's either a fallback for a custom editor that doesn't support multi-object editing,
+            // or we're in debug mode.
+            bool multiEditingSupported = true;
+            if (editor is GenericInspector && CustomEditorAttributes.FindCustomEditorType(target, false) != null)
+            {
+                if (m_InspectorMode == InspectorMode.DebugInternal)
+                {
+                    // Do nothing
+                }
+                else if (m_InspectorMode == InspectorMode.Normal)
+                {
+                    // If we're not in debug mode and it thus must be a fallback,
+                    // hide the editor and show a notification.
+                    multiEditingSupported = false;
+                }
+                else if (target is AssetImporter)
+                {
+                    // If we are in debug mode and it's an importer type,
+                    // hide the editor and show a notification.
+                    multiEditingSupported = false;
+                }
+
+                // If we are in debug mode and it's an NOT importer type,
+                // just show the debug inspector as usual.
+            }
+
+            return multiEditingSupported;
+        }
+
         internal void RepaintImmediately(bool rebuildOptimizedGUIBlocks)
         {
             m_InvalidateGUIBlockCache = rebuildOptimizedGUIBlocks;
@@ -1382,17 +1407,6 @@ namespace UnityEditor
         {
             var target = trackerActiveEditors[editorIndex].target;
             return AssetDatabase.IsMainAsset(target) || AssetDatabase.IsSubAsset(target) || editorIndex == 0 || target is Material;
-        }
-
-        private void DisplayDeprecationMessageIfNecessary(Editor editor)
-        {
-            if (!editor || !editor.target) return;
-
-            var obsoleteAttribute = (ObsoleteAttribute)Attribute.GetCustomAttribute(editor.target.GetType(), typeof(ObsoleteAttribute));
-            if (obsoleteAttribute == null) return;
-
-            string message = String.IsNullOrEmpty(obsoleteAttribute.Message) ? "This component has been marked as obsolete." : obsoleteAttribute.Message;
-            EditorGUILayout.HelpBox(message, obsoleteAttribute.IsError ? MessageType.Error : MessageType.Warning);
         }
 
         private void HandleComponentScreenshot(Rect contentRect, Editor editor)
@@ -1450,6 +1464,7 @@ namespace UnityEditor
 
             Vector2 oldSize = EditorGUIUtility.GetIconSize();
             EditorGUIUtility.SetIconSize(new Vector2(16, 16));
+
             foreach (TypeSelection ts in m_TypeSelectionList.typeSelections)
             {
                 Rect r = GUILayoutUtility.GetRect(16, 16, GUILayout.ExpandWidth(true));
@@ -1462,6 +1477,7 @@ namespace UnityEditor
                     EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
                 GUILayout.Space(4);
             }
+
             EditorGUIUtility.SetIconSize(oldSize);
         }
 
@@ -1480,7 +1496,7 @@ namespace UnityEditor
 
         private void AddComponentButton(Editor[] editors)
         {
-            Editor editor = GetFirstNonImportInspectorEditor(editors);
+            Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors);
             if (editor != null && editor.target != null && editor.target is GameObject && editor.IsEnabled())
             {
                 EditorGUILayout.BeginHorizontal();
@@ -1489,6 +1505,7 @@ namespace UnityEditor
                 Rect rect = GUILayoutUtility.GetRect(content, styles.addComponentButtonStyle);
 
                 // Visually separates the Add Component button from the existing components
+
                 if (Event.current.type == EventType.Repaint)
                     DrawSplitLine(rect.y - 11);
 
@@ -1509,7 +1526,9 @@ namespace UnityEditor
                 if (EditorGUI.DropdownButton(rect, content, FocusType.Passive, styles.addComponentButtonStyle) || openWindow)
                 {
                     if (AddComponentWindow.Show(rect, editor.targets.Select(o => (GameObject)o).ToArray()))
+                    {
                         GUIUtility.ExitGUI();
+                    }
                 }
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
@@ -1520,7 +1539,7 @@ namespace UnityEditor
         {
             if (AnimationMode.InAnimationPlaybackMode())
             {
-                long timeNow = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
+                long timeNow = DateTime.Now.Ticks / TimeSpan.TicksPerMillisecond;
                 if (timeNow - s_LastUpdateWhilePlayingAnimation < delayRepaintWhilePlayingAnimation)
                     return false;
                 s_LastUpdateWhilePlayingAnimation = timeNow;
@@ -1531,7 +1550,7 @@ namespace UnityEditor
 
         private void DrawSplitLine(float y)
         {
-            Rect position = new Rect(0, y, this.m_Pos.width + 1, 1);
+            Rect position = new Rect(0, y, m_Pos.width + 1, 1);
             Rect uv = new Rect(0, 1f, 1, 1f - 1f / EditorStyles.inspectorTitlebar.normal.background.height);
             GUI.DrawTextureWithTexCoords(position, EditorStyles.inspectorTitlebar.normal.background, uv);
         }
@@ -1560,20 +1579,7 @@ namespace UnityEditor
             foreach (var inspector in m_AllInspectors)
             {
                 foreach (var editor in inspector.tracker.activeEditors)
-                    FlushOptimizedGUIBlock(editor);
-            }
-        }
-
-        private static void FlushOptimizedGUIBlock(Editor editor)
-        {
-            if (editor == null)
-                return;
-
-            OptimizedGUIBlock optimizedBlock;
-            float height;
-            if (editor.GetOptimizedGUIBlock(false, false, out optimizedBlock, out height))
-            {
-                optimizedBlock.valid = false;
+                    InspectorWindowUtils.FlushOptimizedGUIBlock(editor);
             }
         }
 
@@ -1597,15 +1603,14 @@ namespace UnityEditor
             }
         }
 
-        void ISerializationCallbackReceiver.OnBeforeSerialize()
+        void PrepareLockedObjectsForSerialization()
         {
-            m_ObjectsLockedBeforeSerialization.Clear();
-
-            m_InstanceIDsLockedBeforeSerialization.Clear();
+            ClearSerializedLockedObjects();
 
             if (m_Tracker != null && m_Tracker.isLocked)
             {
                 m_Tracker.GetObjectsLockedByThisTracker(m_ObjectsLockedBeforeSerialization);
+
                 // take out non persistent and track them in a list of instance IDs, because they wouldn't survive serialization as Objects
                 for (int i = m_ObjectsLockedBeforeSerialization.Count - 1; i >= 0; i--)
                 {
@@ -1616,6 +1621,13 @@ namespace UnityEditor
                     }
                 }
             }
+        }
+
+        void ClearSerializedLockedObjects()
+        {
+            m_ObjectsLockedBeforeSerialization.Clear();
+
+            m_InstanceIDsLockedBeforeSerialization.Clear();
         }
 
         internal void GetObjectsLocked(List<Object> objs)
@@ -1629,14 +1641,12 @@ namespace UnityEditor
             m_Tracker.SetObjectsLockedByThisTracker(objs);
         }
 
-        void ISerializationCallbackReceiver.OnAfterDeserialize()
-        {
-        }
-
         void RestoreLockStateFromSerializedData()
         {
             if (m_Tracker == null)
+            {
                 return;
+            }
 
             // try to retrieve all Objects from their stored instance ids in the list.
             // this is only used for nonpersistent objects (scene objects)
@@ -1648,7 +1658,9 @@ namespace UnityEditor
                     Object instance = EditorUtility.InstanceIDToObject(m_InstanceIDsLockedBeforeSerialization[i]);
                     //don't add null objects (i.e.
                     if (instance)
+                    {
                         m_ObjectsLockedBeforeSerialization.Add(instance);
+                    }
                 }
             }
 
@@ -1666,6 +1678,22 @@ namespace UnityEditor
             // since this method likely got called during OnEnable, and rebuilding the tracker could call OnDisable on all Editors,
             // some of which might not have gotten their enable yet, the rebuilding needs to happen delayed in EditorApplication.update
             new DelayedCallback(tracker.RebuildIfNecessary, 0f);
+        }
+
+        internal static bool AddInspectorWindow(InspectorWindow window)
+        {
+            if (m_AllInspectors.Contains(window))
+            {
+                return false;
+            }
+
+            m_AllInspectors.Add(window);
+            return true;
+        }
+
+        internal static void RemoveInspectorWindow(InspectorWindow window)
+        {
+            m_AllInspectors.Remove(window);
         }
     }
 }

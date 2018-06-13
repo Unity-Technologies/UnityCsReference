@@ -78,7 +78,7 @@ namespace UnityEditor
         {
             GameObject newLayerGO = new GameObject(name);
             var tilemap = newLayerGO.AddComponent<Tilemap>();
-            newLayerGO.AddComponent<TilemapRenderer>();
+            var renderer = newLayerGO.AddComponent<TilemapRenderer>();
             newLayerGO.transform.parent = paletteGO.transform;
             newLayerGO.layer = paletteGO.layer;
 
@@ -88,6 +88,14 @@ namespace UnityEditor
                 case Grid.CellLayout.Hexagon:
                 {
                     tilemap.tileAnchor = Vector3.zero;
+                    break;
+                }
+                case Grid.CellLayout.Isometric:
+                case Grid.CellLayout.IsometricZAsY:
+                {
+                    // Difficult to frame isometric sprites, set generic cell size which suits most cases
+                    paletteGO.GetComponent<Grid>().cellSize = new Vector3(1f, 0.5f, 1f);
+                    renderer.sortOrder = TilemapRenderer.SortOrder.TopRight;
                     break;
                 }
             }

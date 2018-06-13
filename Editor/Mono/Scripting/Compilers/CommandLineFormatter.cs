@@ -17,10 +17,10 @@ namespace UnityEditor.Scripting.Compilers
 
         public static string EscapeCharsQuote(string input)
         {
-            if (input.IndexOf('\'') == -1)
-                return "'" + input + "'";
             if (input.IndexOf('"') == -1)
                 return "\"" + input + "\"";
+            if (input.IndexOf('\'') == -1)
+                return "'" + input + "'";
             return null;
         }
 

@@ -51,18 +51,21 @@ namespace UnityEditor
         [System.Obsolete("HDR is handled automatically now")]
         AutomaticCompressedHDR = -7,
 
-        // DXT1 compresed texture format.
+        // DXT1 compressed texture format.
         DXT1 = 10,
-        // DXT5 compresed texture format.
+        // DXT5 compressed texture format.
         DXT5 = 12,
         // RGB 16 bit texture format.
         RGB16 = 7,
         // RGB 24 bit texture format.
         RGB24 = 3,
         // Alpha 8 bit texture format.
+        // RGBA 32 bit texture format.
         Alpha8 = 1,
         // Red 8 bit texture format.
         R8 = 63,
+        // RG 16 bit texture format.
+        RG16 = 62,
         // RGBA 16 bit texture format.
         ARGB16 = 2,
         // RGBA 32 bit texture format.
@@ -71,8 +74,23 @@ namespace UnityEditor
         ARGB32 = 5,
         // RGBA 16 bit (4444) texture format.
         RGBA16 = 13,
+
+        // R 16 bit texture format.
+        RHalf = 15,
+        // RG 32 bit texture format.
+        RGHalf = 16,
         // RGBA 64 bit texture format.
         RGBAHalf = 17,
+
+        // R 32 bit texture format.
+        RFloat = 18,
+        // RG 64 bit texture format.
+        RGFloat = 19,
+        // RGBA 128 bit texture format.
+        RGBAFloat = 20,
+
+        // RGB 32 bit packed float format.
+        RGB9E5 = 22,
 
         // R BC4 compressed texture format.
         BC4 = 26,
@@ -144,6 +162,10 @@ namespace UnityEditor
         ASTC_RGBA_10x10 = 58,
         // ASTC (block size 12x12) compressed RGBA texture format.
         ASTC_RGBA_12x12 = 59,
+
+        // Nintendo 3DS-flavoured ETC
+        ETC_RGB4_3DS = 60,
+        ETC_RGBA8_3DS = 61,
 
         // ETC1 crunched texture format.
         ETC_RGB4Crunched = 64,

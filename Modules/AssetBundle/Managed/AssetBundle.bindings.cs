@@ -12,6 +12,24 @@ using UnityEngineInternal;
 
 namespace UnityEngine
 {
+    public enum AssetBundleLoadResult
+    {
+        Success,
+        Cancelled,
+        NotMatchingCrc,
+        FailedCache,
+        NotValidAssetBundle,
+        NoSerializedData,
+        NotCompatible,
+        AlreadyLoaded,
+        FailedRead,
+        FailedDecompression,
+        FailedWrite,
+        FailedDeleteRecompressionTarget,
+        RecompressionTargetIsLoaded,
+        RecompressionTargetExistsButNotArchive
+    };
+
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadFromFileAsyncOperation.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadFromMemoryAsyncOperation.h")]
     [NativeHeader("Modules/AssetBundle/Public/AssetBundleLoadFromManagedStreamAsyncOperation.h")]
@@ -384,5 +402,14 @@ namespace UnityEngine
         [NativeThrows]
         [NativeMethod("LoadAssetWithSubAssetsAsync_Internal")]
         private extern AssetBundleRequest LoadAssetWithSubAssetsAsync_Internal(string name, Type type);
+
+        public static AssetBundleRecompressOperation RecompressAssetBundleAsync(string inputPath, string outputPath, BuildCompression method, UInt32 expectedCRC = 0, ThreadPriority priority = ThreadPriority.Low)
+        {
+            return RecompressAssetBundleAsync_Internal(inputPath, outputPath, method, expectedCRC, priority);
+        }
+
+        [NativeThrows]
+        [FreeFunction("RecompressAssetBundleAsync_Internal")]
+        internal static extern AssetBundleRecompressOperation RecompressAssetBundleAsync_Internal(string inputPath, string outputPath, BuildCompression method, UInt32 expectedCRC, ThreadPriority priority);
     }
 }

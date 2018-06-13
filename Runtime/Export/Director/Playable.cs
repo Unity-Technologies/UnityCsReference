@@ -10,6 +10,14 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Playables
 {
+    // This must always be in sync with DirectorWrapMode in Runtime/Director/Core/DirectorTypes.h
+    public enum DirectorWrapMode
+    {
+        Hold = 0,
+        Loop = 1,
+        None = 2
+    }
+
     [RequiredByNativeCode]
     public struct Playable : IPlayable, IEquatable<Playable>
     {

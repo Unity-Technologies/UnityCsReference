@@ -530,7 +530,7 @@ namespace UnityEditor
             public GUIContent material = EditorGUIUtility.TrTextContent("Material", "The material used to render the terrain. This will affect how the color channels of a terrain texture are interpreted.");
             public GUIContent reflectionProbes = EditorGUIUtility.TrTextContent("Reflection Probes", "How reflection probes are used on terrain. Only effective when using built-in standard material or a custom material which supports rendering with reflection.");
             public GUIContent thickness = EditorGUIUtility.TrTextContent("Thickness", "How much the terrain collision volume should extend along the negative Y-axis. Objects are considered colliding with the terrain from the surface to a depth equal to the thickness. This helps prevent high-speed moving objects from penetrating into the terrain without using expensive continuous collision detection.");
-
+            public GUIContent preserveTreePrototypeLayers = EditorGUIUtility.TextContent("Preserve Tree Prototype Layers|Enable this option if you want your tree instances to take on the layer values of their prototype prefabs, rather than the terrain GameObject's layer.");
             public GUIContent drawTrees = EditorGUIUtility.TrTextContent("Draw", "Should trees, grass and details be drawn?");
             public GUIContent detailObjectDistance = EditorGUIUtility.TrTextContent("Detail Distance", "The distance (from camera) beyond which details will be culled.");
             public GUIContent collectDetailPatches = EditorGUIUtility.TrTextContent("Collect Detail Patches", "Should detail patches in the Terrain be removed from memory when not visible?");
@@ -1187,6 +1187,7 @@ namespace UnityEditor
             GUILayout.Label("Tree & Detail Objects", EditorStyles.boldLabel);
             m_Terrain.drawTreesAndFoliage = EditorGUILayout.Toggle(styles.drawTrees, m_Terrain.drawTreesAndFoliage);
             m_Terrain.bakeLightProbesForTrees = EditorGUILayout.Toggle(styles.bakeLightProbesForTrees, m_Terrain.bakeLightProbesForTrees);
+            m_Terrain.preserveTreePrototypeLayers = EditorGUILayout.Toggle(styles.preserveTreePrototypeLayers, m_Terrain.preserveTreePrototypeLayers);
             m_Terrain.detailObjectDistance = EditorGUILayout.Slider(styles.detailObjectDistance, m_Terrain.detailObjectDistance, 0, 250); // former string formatting: ""
             m_Terrain.collectDetailPatches = EditorGUILayout.Toggle(styles.collectDetailPatches, m_Terrain.collectDetailPatches);
             m_Terrain.detailObjectDensity = EditorGUILayout.Slider(styles.detailObjectDensity, m_Terrain.detailObjectDensity, 0.0f, 1.0f);
@@ -1475,21 +1476,11 @@ namespace UnityEditor
         public void InitializeLightingFields()
         {
             m_Lighting = new LightingSettingsInspector(serializedObject);
-            m_Lighting.showSettings = EditorPrefs.GetBool(kDisplayLightingKey, false);
         }
 
         public void RenderLightingFields()
         {
-            bool oldShowLighting = m_Lighting.showSettings;
-
-            if (m_Lighting.Begin())
-            {
-                m_Lighting.RenderTerrainSettings();
-            }
-            m_Lighting.End();
-
-            if (m_Lighting.showSettings != oldShowLighting)
-                EditorPrefs.SetBool(kDisplayLightingKey, m_Lighting.showSettings);
+            m_Lighting.RenderTerrainSettings();
         }
 
         void OnInspectorUpdate()

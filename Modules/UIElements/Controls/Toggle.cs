@@ -7,34 +7,14 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class Toggle : BaseControl<bool>
+    public class Toggle : BaseField<bool>
     {
-        public class ToggleFactory : UxmlFactory<Toggle, ToggleUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Toggle, UxmlTraits> {}
 
-        public class ToggleUxmlTraits : BaseControlUxmlTraits
+        public new class UxmlTraits : BaseField<bool>.UxmlTraits
         {
-            UxmlStringAttributeDescription m_Label;
-            UxmlBoolAttributeDescription m_Value;
-
-            public ToggleUxmlTraits()
-            {
-                m_Value = new UxmlBoolAttributeDescription { name = "value" };
-                m_Label = new UxmlStringAttributeDescription { name = "label" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Label;
-                    yield return m_Value;
-                }
-            }
+            UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
+            UxmlBoolAttributeDescription m_Value = new UxmlBoolAttributeDescription { name = "value" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -46,13 +26,6 @@ namespace UnityEngine.Experimental.UIElements
 
         Action clickEvent;
         private Label m_Label;
-
-        [Obsolete("Use value instead", false)]
-        public bool on
-        {
-            get { return value; }
-            set { this.value = value; }
-        }
 
         public Toggle()
             : this(null) {}

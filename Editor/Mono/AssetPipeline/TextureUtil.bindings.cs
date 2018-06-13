@@ -48,6 +48,9 @@ namespace UnityEditor
         [FreeFunction("IsAnyCompressedTextureFormat")]
         public static extern bool IsCompressedTextureFormat(TextureFormat format);
 
+        [FreeFunction("IsCompressedCrunchTextureFormat")]
+        public static extern bool IsCompressedCrunchTextureFormat(TextureFormat format);
+
         [FreeFunction]
         public static extern TextureFormat GetTextureFormat(Texture texture);
 

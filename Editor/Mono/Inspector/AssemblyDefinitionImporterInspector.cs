@@ -4,13 +4,14 @@
 
 using UnityEngine;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEditorInternal;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Experimental.AssetImporters;
 using UnityEditor.Compilation;
 using System;
+using System.IO;
+using AssemblyFlags = UnityEditor.Scripting.ScriptCompilation.AssemblyFlags;
 
 namespace UnityEditor
 {
@@ -22,9 +23,13 @@ namespace UnityEditor
         {
             public static readonly GUIContent name = EditorGUIUtility.TrTextContent("Name");
             public static readonly GUIContent unityReferences = EditorGUIUtility.TrTextContent("Unity References");
-            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("References");
-            public static readonly GUIContent options = EditorGUIUtility.TrTextContent("Options");
+            public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
+            public static readonly GUIContent references = EditorGUIUtility.TrTextContent("Assembly Definition References");
+            public static readonly GUIContent precompiledReferences = EditorGUIUtility.TrTextContent("Assembly References");
+            public static readonly GUIContent generalOptions = EditorGUIUtility.TrTextContent("General");
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code");
+            public static readonly GUIContent overrideReferences = EditorGUIUtility.TrTextContent("Override References");
+            public static readonly GUIContent autoReferenced = EditorGUIUtility.TrTextContent("Auto Referenced");
             public static readonly GUIContent platforms = EditorGUIUtility.TrTextContent("Platforms");
             public static readonly GUIContent anyPlatform = EditorGUIUtility.TrTextContent("Any Platform");
             public static readonly GUIContent includePlatforms = EditorGUIUtility.TrTextContent("Include Platforms");
@@ -45,6 +50,12 @@ namespace UnityEditor
             True = 1
         }
 
+        internal class DefineConstraint
+        {
+            public string name;
+            public MixedBool displayValue;
+        }
+
         internal class AssemblyDefinitionReference
         {
             public string path
@@ -53,6 +64,21 @@ namespace UnityEditor
             }
             public AssemblyDefinitionAsset asset;
             public CustomScriptAssemblyData data;
+            public MixedBool displayValue;
+        }
+
+        internal class PrecompiledReference
+        {
+            public string path
+            {
+                get { return precompiled.HasValue ? precompiled.Value.Path : null; }
+            }
+            public PrecompiledAssembly? precompiled;
+
+            public string name
+            {
+                get { return precompiled.HasValue ? AssetPath.GetFileName(precompiled.Value.Path) : null; }
+            }
             public MixedBool displayValue;
         }
 
@@ -65,8 +91,12 @@ namespace UnityEditor
             public AssemblyDefinitionAsset asset;
             public string name;
             public List<AssemblyDefinitionReference> references;
+            public List<PrecompiledReference> precompiledReferences;
+            public List<DefineConstraint> defineConstraints;
             public MixedBool[] optionalUnityReferences;
             public MixedBool allowUnsafeCode;
+            public MixedBool overrideReferences;
+            public MixedBool autoReferenced;
             public MixedBool compatibleWithAnyPlatform;
             public MixedBool[] platformCompatibility;
             public bool modified;
@@ -76,6 +106,8 @@ namespace UnityEditor
 
         AssemblyDefintionState m_State;
         ReorderableList m_ReferencesList;
+        ReorderableList m_PrecompiledReferencesList;
+        ReorderableList m_DefineConstraints;
 
         public override bool showImportedObject { get { return false; } }
 
@@ -115,8 +147,27 @@ namespace UnityEditor
                     m_State.name = EditorGUILayout.TextField(Styles.name, m_State.name, EditorStyles.textField);
                 }
 
+
+                GUILayout.Label(Styles.generalOptions, EditorStyles.boldLabel);
+                EditorGUILayout.BeginVertical(GUI.skin.box);
+                m_State.allowUnsafeCode = ToggleWithMixedValue(Styles.allowUnsafeCode, m_State.allowUnsafeCode);
+                m_State.autoReferenced = ToggleWithMixedValue(Styles.autoReferenced, m_State.autoReferenced);
+                m_State.overrideReferences = ToggleWithMixedValue(Styles.overrideReferences, m_State.overrideReferences);
+
+                EditorGUILayout.EndVertical();
+                GUILayout.Space(10f);
+
+                GUILayout.Label(Styles.defineConstraints, EditorStyles.boldLabel);
+                m_DefineConstraints.DoLayoutList();
+
                 GUILayout.Label(Styles.references, EditorStyles.boldLabel);
                 m_ReferencesList.DoLayoutList();
+
+                if (m_State.overrideReferences == MixedBool.True)
+                {
+                    GUILayout.Label(Styles.precompiledReferences, EditorStyles.boldLabel);
+                    m_PrecompiledReferencesList.DoLayoutList();
+                }
 
                 GUILayout.Label(Styles.unityReferences, EditorStyles.boldLabel);
                 EditorGUILayout.BeginVertical(GUI.skin.box);
@@ -129,12 +180,6 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox(optionalUnityReferences[i].AdditinalInformationWhenEnabled, MessageType.Info);
                     }
                 }
-                EditorGUILayout.EndVertical();
-                GUILayout.Space(10f);
-
-                GUILayout.Label(Styles.options, EditorStyles.boldLabel);
-                EditorGUILayout.BeginVertical(GUI.skin.box);
-                m_State.allowUnsafeCode = ToggleWithMixedValue(Styles.allowUnsafeCode, m_State.allowUnsafeCode);
                 EditorGUILayout.EndVertical();
                 GUILayout.Space(10f);
 
@@ -329,15 +374,27 @@ namespace UnityEditor
 
             // Show as many references as the shortest list of references.
             int minReferencesCount = m_TargetStates.Min(t => t.references.Count());
+            int minPrecompiledReferencesCount = m_TargetStates.Min(t => t.precompiledReferences.Count());
+            int minDefineConstraintsCount = m_TargetStates.Min(t => t.defineConstraints.Count());
 
             m_State = new AssemblyDefintionState();
             m_State.name = m_TargetStates[0].name;
             m_State.references = new List<AssemblyDefinitionReference>();
+            m_State.precompiledReferences = new List<PrecompiledReference>();
+            m_State.defineConstraints = new List<DefineConstraint>();
             m_State.modified = m_TargetStates[0].modified;
             m_State.allowUnsafeCode = m_TargetStates[0].allowUnsafeCode;
+            m_State.overrideReferences = m_TargetStates[0].overrideReferences;
+            m_State.autoReferenced = m_TargetStates[0].autoReferenced;
 
             for (int i = 0; i < minReferencesCount; ++i)
                 m_State.references.Add(m_TargetStates[0].references[i]);
+
+            for (int i = 0; i < minPrecompiledReferencesCount; ++i)
+                m_State.precompiledReferences.Add(m_TargetStates[0].precompiledReferences[i]);
+
+            for (int i = 0; i < minDefineConstraintsCount; ++i)
+                m_State.defineConstraints.Add(m_TargetStates[0].defineConstraints[i]);
 
             for (int i = 1; i < m_TargetStates.Length; ++i)
             {
@@ -354,10 +411,38 @@ namespace UnityEditor
                         m_State.references[r].displayValue = MixedBool.Mixed;
                 }
 
+                for (int r = 0; r < minPrecompiledReferencesCount; ++r)
+                {
+                    // If already set to mixed, continue.
+                    if (m_State.precompiledReferences[r].displayValue == MixedBool.Mixed)
+                        continue;
+
+                    // If different from existing value, set to mixed.
+                    if (m_State.precompiledReferences[r].path != targetState.precompiledReferences[r].path)
+                        m_State.precompiledReferences[r].displayValue = MixedBool.Mixed;
+                }
+
+                for (int d = 0; d < m_State.defineConstraints.Count; ++d)
+                {
+                    // If already set to mixed, continue.
+                    if (m_State.defineConstraints[d].displayValue == MixedBool.Mixed)
+                        continue;
+
+                    // If different from existing value, set to mixed.
+                    if (m_State.defineConstraints[d].name != targetState.defineConstraints[d].name)
+                        m_State.defineConstraints[d].displayValue = MixedBool.Mixed;
+                }
+
                 if (m_State.allowUnsafeCode != MixedBool.Mixed)
                 {
                     if (m_State.allowUnsafeCode != targetState.allowUnsafeCode)
                         m_State.allowUnsafeCode = MixedBool.Mixed;
+                }
+
+                if (m_State.overrideReferences != MixedBool.Mixed)
+                {
+                    if (m_State.overrideReferences != targetState.overrideReferences)
+                        m_State.overrideReferences = MixedBool.Mixed;
                 }
 
                 m_State.modified |= targetState.modified;
@@ -370,9 +455,145 @@ namespace UnityEditor
             m_ReferencesList.onAddCallback = AddReferenceListElement;
             m_ReferencesList.onRemoveCallback = RemoveReferenceListElement;
 
-
-            m_ReferencesList.elementHeight = EditorGUIUtility.singleLineHeight + 2;
+            m_ReferencesList.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
             m_ReferencesList.headerHeight = 3;
+
+            m_DefineConstraints = new ReorderableList(m_State.defineConstraints, typeof(DefineConstraint), false, false, true, true);
+            m_DefineConstraints.drawElementCallback = DrawDefineConstraintListElement;
+            m_DefineConstraints.onAddCallback = AddDefineConstraintListElement;
+            m_DefineConstraints.onRemoveCallback = RemoveDefineConstraintListElement;
+
+            m_DefineConstraints.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+            m_DefineConstraints.headerHeight = 3;
+
+            m_PrecompiledReferencesList = new ReorderableList(m_State.precompiledReferences, typeof(PrecompiledReference), false, false, true, true);
+            m_PrecompiledReferencesList.drawElementCallback = DrawPrecompiledReferenceListElement;
+            m_PrecompiledReferencesList.onAddCallback = AddPrecompiledReferenceListElement;
+            m_PrecompiledReferencesList.onRemoveCallback = RemovePrecompiledReferenceListElement;
+
+            m_PrecompiledReferencesList.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+            m_PrecompiledReferencesList.headerHeight = 3;
+        }
+
+        private void DrawDefineConstraintListElement(Rect rect, int index, bool isactive, bool isfocused)
+        {
+            var list = m_DefineConstraints.list;
+            var defineConstraint = list[index] as DefineConstraint;
+
+            rect.height -= EditorGUIUtility.standardVerticalSpacing;
+
+            string noValue = L10n.Tr("(Missing)");
+
+            var label = defineConstraint.name != null ? defineConstraint.name : noValue;
+
+            bool mixed = defineConstraint.displayValue == MixedBool.Mixed;
+            EditorGUI.showMixedValue = mixed;
+            var textFieldValue = EditorGUI.TextField(rect, mixed ? L10n.Tr("(Multiple Values)") : label);
+            EditorGUI.showMixedValue = false;
+
+            if (!string.IsNullOrEmpty(textFieldValue) && textFieldValue != noValue)
+            {
+                defineConstraint.name = textFieldValue;
+                foreach (var state in m_TargetStates)
+                    state.defineConstraints[index] = defineConstraint;
+            }
+        }
+
+        private void AddDefineConstraintListElement(ReorderableList list)
+        {
+            ReorderableList.defaultBehaviours.DoAddButton(list);
+
+            foreach (var state in m_TargetStates)
+            {
+                // Only add references to lists that are smaller or equal to the combined references list size.
+                if (state.defineConstraints.Count < list.count)
+                {
+                    int index = Math.Min(list.index, state.defineConstraints.Count());
+                    state.defineConstraints.Insert(index, list.list[list.index] as DefineConstraint);
+                }
+            }
+        }
+
+        private void RemoveDefineConstraintListElement(ReorderableList list)
+        {
+            foreach (var state in m_TargetStates)
+                state.defineConstraints.RemoveAt(list.index);
+
+            ReorderableList.defaultBehaviours.DoRemoveButton(list);
+        }
+
+        private void RemovePrecompiledReferenceListElement(ReorderableList list)
+        {
+            foreach (var state in m_TargetStates)
+                state.precompiledReferences.RemoveAt(list.index);
+
+            ReorderableList.defaultBehaviours.DoRemoveButton(list);
+        }
+
+        private void AddPrecompiledReferenceListElement(ReorderableList list)
+        {
+            ReorderableList.defaultBehaviours.DoAddButton(list);
+
+            foreach (var state in m_TargetStates)
+            {
+                // Only add references to lists that are smaller or equal to the combined references list size.
+                if (state.precompiledReferences.Count <= list.count)
+                {
+                    int index = Math.Min(list.index, state.precompiledReferences.Count());
+                    state.precompiledReferences.Insert(index, list.list[list.index] as PrecompiledReference);
+                }
+            }
+        }
+
+        private void DrawPrecompiledReferenceListElement(Rect rect, int index, bool isactive, bool isfocused)
+        {
+            var list = m_PrecompiledReferencesList.list;
+            var precompiledReference = list[index] as PrecompiledReference;
+
+            rect.height -= EditorGUIUtility.standardVerticalSpacing;
+            GUIContent label = precompiledReference.precompiled.HasValue ? GUIContent.Temp(precompiledReference.name) : EditorGUIUtility.TrTempContent("(Missing Reference)");
+
+            bool mixed = precompiledReference.displayValue == MixedBool.Mixed;
+            EditorGUI.showMixedValue = mixed;
+
+            var currentSelectedPrecompiledReferences = m_State.precompiledReferences.Select(x => x.name);
+
+            var precompiledAssemblyNames = CompilationPipeline.GetPrecompiledAssemblyNames()
+                .Where(x => !currentSelectedPrecompiledReferences.Contains(x));
+
+            var contextList = precompiledAssemblyNames
+                .OrderBy(x => x).ToList();
+
+            if (!precompiledReference.precompiled.HasValue)
+            {
+                contextList.Insert(0, L10n.Tr("None"));
+
+                if (!precompiledAssemblyNames.Any())
+                {
+                    label = EditorGUIUtility.TrTempContent("No possible references");
+                }
+            }
+            else
+            {
+                contextList.Insert(0, precompiledReference.name);
+            }
+
+            int currentlySelectedIndex = 0;
+            if (precompiledReference.precompiled.HasValue)
+            {
+                currentlySelectedIndex = Array.IndexOf(contextList.ToArray(), precompiledReference.name);
+            }
+
+            int selectedIndex = EditorGUI.Popup(rect, label, currentlySelectedIndex, contextList.ToArray());
+
+            if (selectedIndex > 0)
+            {
+                var selectedAssemblyName = contextList[selectedIndex];
+                precompiledReference.precompiled = EditorCompilationInterface.Instance.GetAllPrecompiledAssemblies()
+                    .Single(x => AssetPath.GetFileName(x.Path) == selectedAssemblyName);
+            }
+
+            EditorGUI.showMixedValue = false;
         }
 
         void UpdateCombinedCompatibility()
@@ -438,7 +659,38 @@ namespace UnityEditor
             state.asset = asset;
             state.name = data.name;
             state.references = new List<AssemblyDefinitionReference>();
+            state.precompiledReferences = new List<PrecompiledReference>();
+            state.defineConstraints = new List<DefineConstraint>();
+            state.autoReferenced = ToMixedBool(data.autoReferenced);
             state.allowUnsafeCode = ToMixedBool(data.allowUnsafeCode);
+            state.overrideReferences = ToMixedBool(data.overrideReferences);
+
+            if (data.defineConstraints != null)
+            {
+                const string not = "!";
+                foreach (var defineConstaint in data.defineConstraints)
+                {
+                    try
+                    {
+                        var symbolName = defineConstaint.StartsWith(not) ? defineConstaint.Substring(1) : defineConstaint;
+                        if (!SymbolNameRestrictions.IsValid(symbolName))
+                        {
+                            throw new AssemblyDefinitionException($"Invalid define constraint {symbolName}", path);
+                        }
+
+                        state.defineConstraints.Add(new DefineConstraint
+                        {
+                            name = defineConstaint,
+                            displayValue = MixedBool.False,
+                        });
+                    }
+                    catch (AssemblyDefinitionException e)
+                    {
+                        Debug.LogException(e, asset);
+                        state.modified = true;
+                    }
+                }
+            }
 
             if (data.references != null)
             {
@@ -470,10 +722,37 @@ namespace UnityEditor
                 }
             }
 
+            var nameToPrecompiledReference = EditorCompilationInterface.Instance.GetAllPrecompiledAssemblies()
+                .Where(x => (x.Flags & AssemblyFlags.UserAssembly) == AssemblyFlags.UserAssembly)
+                .ToDictionary(x => AssetPath.GetFileName(x.Path), x => x);
+            foreach (var precompiledReferenceName in data.precompiledReferences ?? Enumerable.Empty<String>())
+            {
+                try
+                {
+                    var precompiledReference = new PrecompiledReference();
+
+                    var precompiledAssemblyPossibleReference = nameToPrecompiledReference.ContainsKey(precompiledReferenceName);
+                    if (!precompiledAssemblyPossibleReference && !data.overrideReferences)
+                    {
+                        throw new AssemblyDefinitionException(string.Format("Referenced precompiled assembly '{0}' not found", precompiledReferenceName), path);
+                    }
+
+                    precompiledReference.precompiled = nameToPrecompiledReference[precompiledReferenceName];
+                    precompiledReference.displayValue = MixedBool.True;
+                    state.precompiledReferences.Add(precompiledReference);
+                }
+                catch (AssemblyDefinitionException e)
+                {
+                    Debug.LogException(e, asset);
+                    state.precompiledReferences.Add(new PrecompiledReference());
+                    state.modified = true;
+                }
+            }
+
             var platforms = CompilationPipeline.GetAssemblyDefinitionPlatforms();
             state.platformCompatibility = new MixedBool[platforms.Length];
 
-            var OptinalUnityAssemblies =  CustomScriptAssembly.OptinalUnityAssemblies;
+            var OptinalUnityAssemblies = CustomScriptAssembly.OptinalUnityAssemblies;
             state.optionalUnityReferences = new MixedBool[OptinalUnityAssemblies.Length];
 
             if (data.optionalUnityReferences != null)
@@ -534,6 +813,8 @@ namespace UnityEditor
         static void SaveAndUpdateAssemblyDefinitionStates(AssemblyDefintionState combinedState, AssemblyDefintionState[] states)
         {
             int combinedReferenceCount = combinedState.references.Count();
+            int combinedDefineConstraintsCount = combinedState.defineConstraints.Count();
+            int combinedPrecompiledReferenceCount = combinedState.precompiledReferences.Count();
 
             // Update the name if there is only one file selected.
             if (states.Length == 1)
@@ -542,12 +823,32 @@ namespace UnityEditor
             foreach (var state in states)
             {
                 if (combinedState.allowUnsafeCode != MixedBool.Mixed)
+                {
                     state.allowUnsafeCode = combinedState.allowUnsafeCode;
+                }
+
+                if (combinedState.overrideReferences != MixedBool.Mixed)
+                    state.overrideReferences = combinedState.overrideReferences;
+
+                if (combinedState.autoReferenced != MixedBool.Mixed)
+                    state.autoReferenced = combinedState.autoReferenced;
 
                 for (int i = 0; i < combinedReferenceCount; ++i)
                 {
                     if (combinedState.references[i].displayValue != MixedBool.Mixed)
                         state.references[i] = combinedState.references[i];
+                }
+
+                for (int i = 0; i < combinedDefineConstraintsCount; ++i)
+                {
+                    if (combinedState.defineConstraints[i].displayValue != MixedBool.Mixed)
+                        state.defineConstraints[i] = combinedState.defineConstraints[i];
+                }
+
+                for (int i = 0; i < combinedPrecompiledReferenceCount; ++i)
+                {
+                    if (combinedState.precompiledReferences[i].displayValue != MixedBool.Mixed)
+                        state.precompiledReferences[i] = combinedState.precompiledReferences[i];
                 }
 
                 if (combinedState.compatibleWithAnyPlatform != MixedBool.Mixed)
@@ -582,6 +883,17 @@ namespace UnityEditor
             data.name = state.name;
 
             data.references = references.Select(r => r.data.name).ToArray();
+            data.defineConstraints = state.defineConstraints
+                .Where(x => !string.IsNullOrEmpty(x.name))
+                .Select(r => r.name)
+                .ToArray();
+
+            data.autoReferenced = state.autoReferenced == MixedBool.True;
+            data.overrideReferences = state.overrideReferences == MixedBool.True;
+
+            data.precompiledReferences = state.precompiledReferences
+                .Where(x => x.precompiled.HasValue)
+                .Select(r => r.name).ToArray();
 
             List<string> optionalUnityReferences = new List<string>();
 
@@ -625,7 +937,7 @@ namespace UnityEditor
                     return i;
             }
 
-            throw new System.ArgumentException(string.Format("Unknown platform '{0}'", name) , name);
+            throw new System.ArgumentException(string.Format("Unknown platform '{0}'", name), name);
         }
 
         void DrawReferenceListElement(Rect rect, int index, bool selected, bool focused)
@@ -633,7 +945,7 @@ namespace UnityEditor
             var list = m_ReferencesList.list;
             var assemblyDefinitionFile = list[index] as AssemblyDefinitionReference;
 
-            rect.height -= 2;
+            rect.height -= EditorGUIUtility.standardVerticalSpacing;
             var label = assemblyDefinitionFile.data != null ? assemblyDefinitionFile.data.name : "(Missing Reference)";
             var asset = assemblyDefinitionFile.asset;
 

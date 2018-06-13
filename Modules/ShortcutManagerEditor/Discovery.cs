@@ -13,15 +13,15 @@ namespace UnityEditor.ShortcutManagement
         public IEnumerable<ShortcutEntry> GetAllShortcuts()
         {
             var staticMethodsBindings = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            var methods = EditorAssemblies.GetAllMethodsWithAttribute<ShortcutAttribute>(staticMethodsBindings);
+            var methods = EditorAssemblies.GetAllMethodsWithAttribute<ShortcutBaseAttribute>(staticMethodsBindings);
 
             var results = new List<ShortcutEntry>(methods.Count());
             foreach (var methodInfo in methods)
             {
-                var attributes = (ShortcutAttribute[])methodInfo.GetCustomAttributes(typeof(ShortcutAttribute), true);
+                var attributes = (ShortcutBaseAttribute[])methodInfo.GetCustomAttributes(typeof(ShortcutBaseAttribute), true);
                 foreach (var attribute in attributes)
                 {
-                    var shortcutEntry = ShortcutEntry.CreateFromAttribute(methodInfo, attribute);
+                    var shortcutEntry = attribute.CreateShortcutEntry(methodInfo);
                     results.Add(shortcutEntry);
                 }
             }

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
@@ -138,6 +139,7 @@ namespace UnityEngine
 
     [NativeHeader("Runtime/Graphics/Texture2D.h")]
     [NativeHeader("Runtime/Graphics/GeneratedTextures.h")]
+    [UsedByNativeCode]
     public sealed partial class Texture2D : Texture
     {
         extern public int mipmapCount {[NativeName("CountDataMipmaps")] get; }
@@ -218,9 +220,55 @@ namespace UnityEngine
         [FreeFunction(Name = "GetTextureStreamingManager().IsRequestedMipmapLevelLoaded", HasExplicitThis = true)]
         extern public bool IsRequestedMipmapLevelLoaded();
 
+
+        [FreeFunction("Texture2DScripting::UpdateExternalTexture", HasExplicitThis = true)]
+        extern public void UpdateExternalTexture(IntPtr nativeTex);
+
+        [FreeFunction("Texture2DScripting::SetAllPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern private void SetAllPixels32(Color32[] colors, int miplevel);
+
+        [FreeFunction("Texture2DScripting::SetBlockOfPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern private void SetBlockOfPixels32(int x, int y, int blockWidth, int blockHeight, Color32[] colors, int miplevel);
+
+        [FreeFunction("Texture2DScripting::GetRawTextureData", HasExplicitThis = true)]
+        extern public byte[] GetRawTextureData();
+
+        [FreeFunction("Texture2DScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color[] GetPixels(int x, int y, int blockWidth, int blockHeight, int miplevel);
+
+        public Color[] GetPixels(int x, int y, int blockWidth, int blockHeight)
+        {
+            return GetPixels(x, y, blockWidth, blockHeight, 0);
+        }
+
+        [FreeFunction("Texture2DScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color32[] GetPixels32(int miplevel);
+
+        public Color32[] GetPixels32()
+        {
+            return GetPixels32(0);
+        }
+
+        [FreeFunction("Texture2DScripting::PackTextures", HasExplicitThis = true)]
+        extern public Rect[] PackTextures(Texture2D[] textures, int padding, int maximumAtlasSize, bool makeNoLongerReadable);
+
+        public Rect[] PackTextures(Texture2D[] textures, int padding, int maximumAtlasSize)
+        {
+            return PackTextures(textures, padding, maximumAtlasSize, false);
+        }
+
+        public Rect[] PackTextures(Texture2D[] textures, int padding)
+        {
+            return PackTextures(textures, padding, 2048);
+        }
+
+        extern public bool alphaIsTransparency { get; set; }
+
+        extern internal float pixelsPerPoint { get; set; }
     }
 
     [NativeHeader("Runtime/Graphics/CubemapTexture.h")]
+    [ExcludeFromPreset]
     public sealed partial class Cubemap : Texture
     {
         extern public int mipmapCount {[NativeName("CountDataMipmaps")] get; }
@@ -243,9 +291,26 @@ namespace UnityEngine
 
         [NativeName("FixupEdges")]    extern public  void  SmoothEdges([uei.DefaultValue("1")] int smoothRegionWidthInPixels);
         public void SmoothEdges() { SmoothEdges(1); }
+
+        [FreeFunction(Name = "CubemapScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color[] GetPixels(CubemapFace face, int miplevel);
+
+        public Color[] GetPixels(CubemapFace face)
+        {
+            return GetPixels(face, 0);
+        }
+
+        [FreeFunction(Name = "CubemapScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetPixels(Color[] colors, CubemapFace face, int miplevel);
+
+        public void SetPixels(Color[] colors, CubemapFace face)
+        {
+            SetPixels(colors, face, 0);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/Texture3D.h")]
+    [ExcludeFromPreset]
     public sealed partial class Texture3D : Texture
     {
         extern public int depth {[NativeName("GetTextureLayerCount")] get; }
@@ -263,6 +328,38 @@ namespace UnityEngine
 
         [FreeFunction(Name = "Texture3DScripting::Apply", HasExplicitThis = true)]
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
+
+        [FreeFunction(Name = "Texture3DScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color[] GetPixels(int miplevel);
+
+        public Color[] GetPixels()
+        {
+            return GetPixels(0);
+        }
+
+        [FreeFunction(Name = "Texture3DScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color32[] GetPixels32(int miplevel);
+
+        public Color32[] GetPixels32()
+        {
+            return GetPixels32(0);
+        }
+
+        [FreeFunction(Name = "Texture3DScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetPixels(Color[] colors, int miplevel);
+
+        public void SetPixels(Color[] colors)
+        {
+            SetPixels(colors, 0);
+        }
+
+        [FreeFunction(Name = "Texture3DScripting::SetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetPixels32(Color32[] colors, int miplevel);
+
+        public void SetPixels32(Color32[] colors)
+        {
+            SetPixels32(colors, 0);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/Texture2DArray.h")]
@@ -283,6 +380,38 @@ namespace UnityEngine
 
         [FreeFunction(Name = "Texture2DArrayScripting::Apply", HasExplicitThis = true)]
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
+
+        [FreeFunction(Name = "Texture2DArrayScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color[] GetPixels(int arrayElement, int miplevel);
+
+        public Color[] GetPixels(int arrayElement)
+        {
+            return GetPixels(arrayElement, 0);
+        }
+
+        [FreeFunction(Name = "Texture2DArrayScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color32[] GetPixels32(int arrayElement, int miplevel);
+
+        public Color32[] GetPixels32(int arrayElement)
+        {
+            return GetPixels32(arrayElement, 0);
+        }
+
+        [FreeFunction(Name = "Texture2DArrayScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetPixels(Color[] colors, int arrayElement, int miplevel);
+
+        public void SetPixels(Color[] colors, int arrayElement)
+        {
+            SetPixels(colors, arrayElement, 0);
+        }
+
+        [FreeFunction(Name = "Texture2DArrayScripting::SetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetPixels32(Color32[] colors, int arrayElement, int miplevel);
+
+        public void SetPixels32(Color32[] colors, int arrayElement)
+        {
+            SetPixels32(colors, arrayElement, 0);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/CubemapArrayTexture.h")]
@@ -303,11 +432,67 @@ namespace UnityEngine
 
         [FreeFunction(Name = "CubemapArrayScripting::Apply", HasExplicitThis = true)]
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
+
+        [FreeFunction(Name = "CubemapArrayScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color[] GetPixels(CubemapFace face, int arrayElement, int miplevel);
+
+        public Color[] GetPixels(CubemapFace face, int arrayElement)
+        {
+            return GetPixels(face, arrayElement, 0);
+        }
+
+        [FreeFunction(Name = "CubemapArrayScripting::GetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern public Color32[] GetPixels32(CubemapFace face, int arrayElement, int miplevel);
+
+        public Color32[] GetPixels32(CubemapFace face, int arrayElement)
+        {
+            return GetPixels32(face, arrayElement, 0);
+        }
+
+        [FreeFunction(Name = "CubemapArrayScripting::SetPixels", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetPixels(Color[] colors, CubemapFace face, int arrayElement, int miplevel);
+
+        public void SetPixels(Color[] colors, CubemapFace face, int arrayElement)
+        {
+            SetPixels(colors, face, arrayElement, 0);
+        }
+
+        [FreeFunction(Name = "CubemapArrayScripting::SetPixels32", HasExplicitThis = true, ThrowsException = true)]
+        extern public void SetPixels32(Color32[] colors, CubemapFace face, int arrayElement, int miplevel);
+
+        public void SetPixels32(Color32[] colors, CubemapFace face, int arrayElement)
+        {
+            SetPixels32(colors, face, arrayElement, 0);
+        }
+    }
+
+    [NativeHeader("Runtime/Graphics/SparseTexture.h")]
+    public sealed partial class SparseTexture : Texture
+    {
+        extern public int tileWidth { get; }
+        extern public int tileHeight { get; }
+        extern public bool isCreated {[NativeName("IsInitialized")] get; }
+
+        [FreeFunction(Name = "SparseTextureScripting::Create", ThrowsException = true)]
+        extern private static void Internal_Create([Writable] SparseTexture mono, int width, int height, TextureFormat format, bool linear, int mipCount);
+
+        [FreeFunction(Name = "SparseTextureScripting::UpdateTile", HasExplicitThis = true)]
+        extern public void UpdateTile(int tileX, int tileY, int miplevel, Color32[] data);
+
+        [FreeFunction(Name = "SparseTextureScripting::UpdateTileRaw", HasExplicitThis = true)]
+        extern public void UpdateTileRaw(int tileX, int tileY, int miplevel, byte[] data);
+
+        public void UnloadTile(int tileX, int tileY, int miplevel)
+        {
+            UpdateTileRaw(tileX, tileY, miplevel, null);
+        }
     }
 
     [NativeHeader("Runtime/Graphics/RenderTexture.h")]
+    [NativeHeader("Runtime/Graphics/RenderBufferManager.h")]
     [NativeHeader("Runtime/Graphics/GraphicsScriptBindings.h")]
     [NativeHeader("Runtime/Camera/Camera.h")]
+    [UsedByNativeCode]
     public partial class RenderTexture : Texture
     {
         override extern public int width  { get; set; }
@@ -375,5 +560,93 @@ namespace UnityEngine
         [FreeFunction("RenderTextureScripting::Create")] extern private static void Internal_Create([Writable] RenderTexture rt);
 
         [FreeFunction("RenderTextureSupportsStencil")] extern public static bool SupportsStencil(RenderTexture rt);
+
+        [NativeName("SetRenderTextureDescFromScript")]
+        extern private void SetRenderTextureDescriptor(RenderTextureDescriptor desc);
+
+        [NativeName("GetRenderTextureDesc")]
+        extern private RenderTextureDescriptor GetDescriptor();
+
+        [FreeFunction("GetRenderBufferManager().GetTextures().GetTempBuffer")]
+        extern private static RenderTexture GetTemporary_Internal(RenderTextureDescriptor desc);
+
+
+        [FreeFunction("GetRenderBufferManager().GetTextures().ReleaseTempBuffer")]
+        extern public static void ReleaseTemporary(RenderTexture temp);
+
+        extern public int depth
+        {
+            [FreeFunction("RenderTextureScripting::GetDepth", HasExplicitThis = true)] get;
+            [FreeFunction("RenderTextureScripting::SetDepth", HasExplicitThis = true)] set;
+        }
+    }
+
+    [System.Serializable]
+    [UsedByNativeCode]
+    public struct CustomRenderTextureUpdateZone
+    {
+        public Vector3 updateZoneCenter;
+        public Vector3 updateZoneSize;
+        public float rotation;
+        public int passIndex;
+        public bool needSwap;
+    }
+
+    [UsedByNativeCode]
+    [NativeHeader("Runtime/Graphics/CustomRenderTexture.h")]
+    public sealed partial class CustomRenderTexture : RenderTexture
+    {
+        [FreeFunction(Name = "CustomRenderTextureScripting::Create")]
+        extern private static void Internal_CreateCustomRenderTexture([Writable] CustomRenderTexture rt, RenderTextureReadWrite readWrite);
+
+        [NativeName("TriggerUpdate")]
+        extern public void Update(int count);
+
+        public void Update()
+        {
+            Update(1);
+        }
+
+        [NativeName("TriggerInitialization")]
+        extern public void Initialize();
+
+        extern public void ClearUpdateZones();
+
+        extern public Material material { get; set; }
+
+        extern public Material initializationMaterial { get; set; }
+
+        extern public Texture initializationTexture { get; set; }
+
+        [FreeFunction(Name = "CustomRenderTextureScripting::GetUpdateZonesInternal", HasExplicitThis = true)]
+        extern internal void GetUpdateZonesInternal([NotNull] object updateZones);
+
+        public void GetUpdateZones(List<CustomRenderTextureUpdateZone> updateZones)
+        {
+            GetUpdateZonesInternal(updateZones);
+        }
+
+
+
+        [FreeFunction(Name = "CustomRenderTextureScripting::SetUpdateZonesInternal", HasExplicitThis = true)]
+        extern private void SetUpdateZonesInternal(CustomRenderTextureUpdateZone[] updateZones);
+
+        public void SetUpdateZones(CustomRenderTextureUpdateZone[] updateZones)
+        {
+            if (updateZones == null)
+                throw new ArgumentNullException("updateZones");
+
+            SetUpdateZonesInternal(updateZones);
+        }
+
+        extern public CustomRenderTextureInitializationSource initializationSource { get; set; }
+        extern public Color initializationColor { get; set; }
+        extern public CustomRenderTextureUpdateMode updateMode { get; set; }
+        extern public CustomRenderTextureUpdateMode initializationMode { get; set; }
+        extern public CustomRenderTextureUpdateZoneSpace updateZoneSpace { get; set; }
+        extern public int shaderPass { get; set; }
+        extern public uint cubemapFaceMask { get; set; }
+        extern public bool doubleBuffered { get; set; }
+        extern public bool wrapUpdateZones { get; set; }
     }
 }

@@ -14,29 +14,27 @@ namespace UnityEngine.Experimental.UIElements
         // Used to support default cursor in the editor (map to MouseCursor enum)
         internal int defaultCursorId { get; set; }
 
-        public override int GetHashCode()
-        {
-            return texture.GetHashCode() ^ hotspot.GetHashCode() ^ defaultCursorId.GetHashCode();
-        }
-
-        public override bool Equals(object other)
-        {
-            return other is CursorStyle && Equals((CursorStyle)other);
-        }
 
         public bool Equals(CursorStyle other)
         {
-            return texture.Equals(other.texture) && hotspot.Equals(other.hotspot) && defaultCursorId == other.defaultCursorId;
+            return Equals(texture, other.texture) && hotspot.Equals(other.hotspot) && defaultCursorId == other.defaultCursorId;
         }
 
-        public static bool operator==(CursorStyle lhs, CursorStyle rhs)
+        public override bool Equals(object obj)
         {
-            return lhs.texture == rhs.texture && lhs.hotspot == rhs.hotspot;
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is CursorStyle && Equals((CursorStyle)obj);
         }
 
-        public static bool operator!=(CursorStyle lhs, CursorStyle rhs)
+        public override int GetHashCode()
         {
-            return !(lhs == rhs);
+            unchecked
+            {
+                var hashCode = (texture != null ? texture.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ hotspot.GetHashCode();
+                hashCode = (hashCode * 397) ^ defaultCursorId;
+                return hashCode;
+            }
         }
     }
 

@@ -10,7 +10,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         // The VisualContainerFactory creates VisualElements.
         // The <VisualContainer> can substitutes for <VisualElement>
-        public class VisualContainerFactory : VisualElementFactory
+        public new class UxmlFactory : VisualElement.UxmlFactory
         {
             public override string uxmlName
             {

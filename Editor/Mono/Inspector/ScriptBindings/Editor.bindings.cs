@@ -20,6 +20,6 @@ namespace UnityEditor
     public partial class Editor
     {
         // Make a custom editor for /targetObject/ or /objects/.
-        extern public static  Editor CreateEditorWithContext(Object[] targetObjects, Object context, [uei.DefaultValue("null")]  Type editorType);
+        extern public static Editor CreateEditorWithContext(Object[] targetObjects, Object context, [uei.DefaultValue("null")] Type editorType);
     }
 }

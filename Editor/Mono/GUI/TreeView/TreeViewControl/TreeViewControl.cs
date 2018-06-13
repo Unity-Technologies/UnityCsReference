@@ -21,6 +21,8 @@ namespace UnityEditor.IMGUI.Controls
 
     public abstract partial class TreeView
     {
+        public delegate bool DoFoldoutCallback(Rect position, bool expandedState, GUIStyle style);
+
         TreeViewController m_TreeView;
         TreeViewControlDataSource m_DataSource;
         TreeViewControlGUI m_GUI;
@@ -30,6 +32,7 @@ namespace UnityEditor.IMGUI.Controls
         int m_TreeViewKeyControlID;
 
         OverriddenMethods m_OverriddenMethods;
+        protected DoFoldoutCallback foldoutOverride { get; set; }
 
         public TreeView(TreeViewState state)
         {

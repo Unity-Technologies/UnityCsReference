@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
-using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -23,12 +20,14 @@ namespace UnityEditor
 
         static IconSelector s_IconSelector = null;
         static long s_LastClosedTime = 0;
-        static int s_LastInstanceID = -1;
+        static int s_LastInstanceHash = -1;
         static int s_HashIconSelector = "IconSelector".GetHashCode();
         static Styles m_Styles;
         static GUIContent s_Other = EditorGUIUtility.TrTextContent("Other...");
 
         Object m_TargetObject;
+        Object[] m_TargetObjectList;
+        bool m_MultipleSelectedIcons;
         Texture2D m_StartIcon;
         bool m_ShowLabelIcons;
         private GUIContent[] m_LabelLargeIcons;
@@ -81,17 +80,23 @@ namespace UnityEditor
         // Returns true if shown
         internal static bool ShowAtPosition(Object targetObj, Rect activatorRect, bool showLabelIcons)
         {
-            int instanceID = targetObj.GetInstanceID();
+            return ShowAtPosition(new Object[] { targetObj }, activatorRect, showLabelIcons);
+        }
+
+        // Returns true if shown
+        internal static bool ShowAtPosition(Object[] targetObjects, Rect activatorRect, bool showLabelIcons)
+        {
+            int instanceHash = targetObjects.GetHashCode();
             // We could not use realtimeSinceStartUp since it is resetted when entering playmode, we assume an increasing time when comparing time.
             long nowMilliSeconds = System.DateTime.Now.Ticks / System.TimeSpan.TicksPerMillisecond;
             bool justClosed = nowMilliSeconds < s_LastClosedTime + 50;
-            if (instanceID != s_LastInstanceID || !justClosed)
+            if (instanceHash != s_LastInstanceHash || !justClosed)
             {
                 Event.current.Use();
-                s_LastInstanceID = instanceID;
+                s_LastInstanceHash = instanceHash;
                 if (s_IconSelector == null)
                     s_IconSelector = ScriptableObject.CreateInstance<IconSelector>();
-                s_IconSelector.Init(targetObj, activatorRect, showLabelIcons);
+                s_IconSelector.Init(targetObjects, activatorRect, showLabelIcons);
                 return true;
             }
 
@@ -106,12 +111,15 @@ namespace UnityEditor
                 Debug.Log("ERROR: setting callback on hidden IconSelector");
         }
 
-        void Init(Object targetObj, Rect activatorRect, bool showLabelIcons)
+        void Init(Object[] targetObjects, Rect activatorRect, bool showLabelIcons)
         {
-            m_TargetObject = targetObj;
+            m_TargetObject = targetObjects[0];
+            m_TargetObjectList = targetObjects;
             m_StartIcon = EditorGUIUtility.GetIconForObject(m_TargetObject);
             m_ShowLabelIcons = showLabelIcons;
             Rect screenActivatorRect = GUIUtility.GUIToScreenRect(activatorRect);
+
+            SetMultipleSelectedIcons();
 
             // Remove any keyboard control when opening this window
             GUIUtility.keyboardControl = 0;
@@ -131,6 +139,22 @@ namespace UnityEditor
                 k_Height = 126;
 
             ShowAsDropDown(screenActivatorRect, new Vector2(k_Width, k_Height));
+        }
+
+        void SetMultipleSelectedIcons()
+        {
+            m_MultipleSelectedIcons = false;
+            Texture2D firstIcon = EditorGUIUtility.GetIconForObject(m_TargetObjectList[0]);
+
+            foreach (var target in m_TargetObjectList)
+            {
+                Texture2D icon = EditorGUIUtility.GetIconForObject(target);
+                if (icon != firstIcon)
+                {
+                    m_MultipleSelectedIcons = true;
+                    break;
+                }
+            }
         }
 
         private Texture2D ConvertLargeIconToSmallIcon(Texture2D largeIcon, ref bool isLabelIcon)
@@ -190,17 +214,25 @@ namespace UnityEditor
             {
                 // Map to new icon
                 Texture2D largeIcon = ConvertSmallIconToLargeIcon((Texture2D)content.image, labelIcon);
-                Undo.RecordObject(m_TargetObject, "Set Icon On GameObject");
-                EditorGUIUtility.SetIconForObject(m_TargetObject, largeIcon);
-
-                // We assume that we are setting icon in an inspector or annotation window (todo: make repaint delegate)
-                EditorUtility.ForceReloadInspectors();
-                AnnotationWindow.IconChanged();
+                SetIconForSelectedObjects(largeIcon);
 
                 // Close on double click
                 if (Event.current.clickCount == 2)
                     CloseWindow();
             }
+        }
+
+        void SetIconForSelectedObjects(Texture2D icon)
+        {
+            Undo.RecordObjects(m_TargetObjectList, "Set Icon On GameObject");
+
+            foreach (var target in m_TargetObjectList)
+            {
+                EditorGUIUtility.SetIconForObject(target, icon);
+            }
+            SetMultipleSelectedIcons();
+            EditorUtility.ForceReloadInspectors();
+            AnnotationWindow.IconChanged();
         }
 
         void DoTopSection(bool anySelected)
@@ -213,11 +245,7 @@ namespace UnityEditor
             {
                 Rect noneButtonRect = new Rect(93, 6, 43, 12);
                 if (GUI.Button(noneButtonRect, m_NoneButtonContent, m_Styles.noneButton))
-                {
-                    EditorGUIUtility.SetIconForObject(m_TargetObject, null);
-                    EditorUtility.ForceReloadInspectors();
-                    AnnotationWindow.IconChanged();
-                }
+                    SetIconForSelectedObjects(null);
             }
         }
 
@@ -240,7 +268,7 @@ namespace UnityEditor
                 CloseWindow();
             }
 
-            Texture2D selectedIcon = EditorGUIUtility.GetIconForObject(m_TargetObject);
+            Texture2D selectedIcon = m_MultipleSelectedIcons ? null : EditorGUIUtility.GetIconForObject(m_TargetObject);
             bool isSelectionALabelIcon = false;
             if (Event.current.type == EventType.Repaint)
             {
@@ -252,7 +280,7 @@ namespace UnityEditor
 
             GUI.BeginGroup(new Rect(0, 0, position.width, position.height), m_Styles.background);
 
-            DoTopSection(selectedIcon != null);
+            DoTopSection(selectedIcon != null || m_MultipleSelectedIcons);
 
             GUILayout.Space(22);
             GUILayout.BeginHorizontal();
@@ -339,8 +367,7 @@ namespace UnityEditor
                     if (commandName == ObjectSelector.ObjectSelectorUpdatedCommand && ObjectSelector.get.objectSelectorID == id && GUIUtility.keyboardControl == id)
                     {
                         Texture2D icon =  ObjectSelector.GetCurrentObject() as Texture2D;
-                        Undo.RecordObject(m_TargetObject, "Set Icon On GameObject");
-                        EditorGUIUtility.SetIconForObject(m_TargetObject, icon);
+                        SetIconForSelectedObjects(icon);
 
                         GUI.changed = true;
                         evt.Use();

@@ -60,13 +60,17 @@ namespace UnityEngineInternal.Video
         extern public uint GetHeight();
         extern public float GetFrameRate();
         extern public float GetDuration();
-        extern public ulong GetNumFrames();
+        extern public ulong GetFrameCount();
         extern public uint GetPixelAspectRatioNumerator();
         extern public uint GetPixelAspectRatioDenominator();
         extern public VideoPixelFormat GetPixelFormat();
 
         extern public bool CanNotSkipOnDrop();
-        extern public bool GetImage(Texture texture, bool skipOnDrop, out long outputFrameNum);
+        extern public bool GetTexture(Texture texture, out long outputFrameNum);
+
+        public delegate void Callback();
+        extern public void SeekToFrame(long frameIndex, Callback seekCompletedCallback);
+        extern public void SeekToTime(double secs, Callback seekCompletedCallback);
 
         extern public float GetPlaybackSpeed();
         extern public void SetPlaybackSpeed(float value);

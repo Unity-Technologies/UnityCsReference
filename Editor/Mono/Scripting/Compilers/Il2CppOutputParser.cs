@@ -15,7 +15,7 @@ namespace UnityEditor.Scripting.Compilers
         private const string _errorIdentifier = "IL2CPP error";
         private static readonly Regex sErrorRegexWithSourceInformation = new Regex(@"\s*(?<message>.*) in (?<filename>.*):(?<line>\d+)");
 
-        public override IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure)
+        public override IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure, string assemblyName)
         {
             // This code is not unit tested, so modify it with caution.
             var messages = new List<CompilerMessage>();
@@ -50,7 +50,8 @@ namespace UnityEditor.Scripting.Compilers
                         file = sourceFile,
                         line = sourceLine,
                         message = errorMessage.ToString(),
-                        type = CompilerMessageType.Error
+                        type = CompilerMessageType.Error,
+                        assemblyName = assemblyName
                     });
                 }
             }

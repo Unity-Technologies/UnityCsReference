@@ -25,7 +25,12 @@ namespace UnityEditor.PlatformSupport
 
             public override bool Equals(object obj)
             {
-                return ((IconFieldGroupInfo)obj).m_Label == this.m_Label;
+                var info = obj as IconFieldGroupInfo;
+                if (ReferenceEquals(info, null))
+                    return false;
+                if (ReferenceEquals(info, this))
+                    return true;
+                return info.m_Label == m_Label;
             }
 
             public override int GetHashCode()

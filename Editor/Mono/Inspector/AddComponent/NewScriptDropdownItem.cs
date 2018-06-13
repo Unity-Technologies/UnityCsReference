@@ -8,7 +8,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
 
-namespace UnityEditor
+namespace UnityEditor.AdvancedDropdown
 {
     class NewScriptDropdownItem : AdvancedDropdownItem
     {

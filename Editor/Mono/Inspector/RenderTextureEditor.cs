@@ -83,9 +83,13 @@ namespace UnityEditor
 
         public static bool IsHDRFormat(RenderTextureFormat format)
         {
-            return  (format == RenderTextureFormat.ARGBHalf || format == RenderTextureFormat.RGB111110Float || format == RenderTextureFormat.RGFloat ||
-                     format == RenderTextureFormat.ARGBFloat || format == RenderTextureFormat.ARGBFloat || format == RenderTextureFormat.RFloat ||
-                     format == RenderTextureFormat.RGHalf || format == RenderTextureFormat.RHalf);
+            return format == RenderTextureFormat.ARGBHalf ||
+                format == RenderTextureFormat.RGB111110Float ||
+                format == RenderTextureFormat.RGFloat ||
+                format == RenderTextureFormat.ARGBFloat ||
+                format == RenderTextureFormat.RFloat ||
+                format == RenderTextureFormat.RGHalf ||
+                format == RenderTextureFormat.RHalf;
         }
 
         protected void OnRenderTextureGUI(GUIElements guiElements)

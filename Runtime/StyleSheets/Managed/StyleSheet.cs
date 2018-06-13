@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using UnityEngine;
-using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.StyleSheets
@@ -51,6 +48,9 @@ namespace UnityEngine.StyleSheets
         [SerializeField]
         internal string[] strings;
 
+        [SerializeField]
+        internal Object[] assets;
+
         static bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle[] handles, int index, out T value)
         {
             bool result = false;
@@ -78,7 +78,7 @@ namespace UnityEngine.StyleSheets
             {
                 Debug.LogErrorFormat("Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
             }
-            else if (handle.valueIndex < 0 && handle.valueIndex >= list.Length)
+            else if (handle.valueIndex < 0 || handle.valueIndex >= list.Length)
             {
                 Debug.LogError("Accessing invalid property");
             }
@@ -164,6 +164,16 @@ namespace UnityEngine.StyleSheets
         public bool TryReadResourcePath(StyleValueHandle[] handles, int index, out string value)
         {
             return TryCheckAccess(strings, StyleValueType.ResourcePath, handles, index, out value);
+        }
+
+        public Object ReadAssetReference(StyleValueHandle handle)
+        {
+            return CheckAccess(assets, StyleValueType.AssetReference, handle);
+        }
+
+        public bool TryReadAssetReference(StyleValueHandle[] handles, int index, out Object value)
+        {
+            return TryCheckAccess(assets, StyleValueType.AssetReference, handles, index, out value);
         }
     }
 }

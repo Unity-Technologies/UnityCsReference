@@ -30,10 +30,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private const string k_AnimationDuration = "animation-duration";
         private int animationDuration => m_AnimationDuration.GetSpecifiedValueOrDefault(40);
 
-        private bool dragEntered
+        protected bool dragEntered
         {
             get { return m_DragEntered; }
-            set
+            private set
             {
                 if (m_DragEntered == value)
                     return;
@@ -105,7 +105,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             else
             {
                 m_CurrentPreview.style.positionType = PositionType.Relative;
-                m_CurrentPreview.Dirty(ChangeType.Layout);
             }
         }
 
@@ -150,7 +149,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 preview.layout = layout;
                 preview.style.positionType = PositionType.Relative;
-                preview.Dirty(ChangeType.Layout);
             }
         }
 
@@ -271,17 +269,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
-        public bool DragExited()
+        public virtual bool DragExited()
         {
-            // Remove the current preview with some animation
-            RemovePreview(true);
-
-            dragEntered = false;
-
             return true;
         }
 
-        public bool DragPerform(DragPerformEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget)
+        public virtual bool DragPerform(DragPerformEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget, ISelection dragSource)
         {
             HandleDragAndDropEvent(evt, selection);
 
@@ -297,10 +290,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     graphView.elementInsertedToStackNode(this, m_CurrentInsertIndex, droppedElement);
                 }
-                else
-                {
-                    InsertElement(m_CurrentInsertIndex, droppedElement);
-                }
+
+                InsertElement(m_CurrentInsertIndex, droppedElement);
             }
 
             dragEntered = false;
@@ -308,9 +299,24 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
-        public bool DragUpdated(DragUpdatedEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget)
+        public virtual bool DragUpdated(DragUpdatedEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget, ISelection dragSource)
         {
             HandleDragAndDropEvent(evt, selection);
+            return true;
+        }
+
+        public virtual bool DragEnter(DragEnterEvent evt, IEnumerable<ISelectable> selection, IDropTarget enteredTarget, ISelection dragSource)
+        {
+            return true;
+        }
+
+        public virtual bool DragLeave(DragLeaveEvent evt, IEnumerable<ISelectable> selection, IDropTarget leftTarget, ISelection dragSource)
+        {
+            // Remove the current preview with some animation
+            RemovePreview(true);
+
+            dragEntered = false;
+
             return true;
         }
     }

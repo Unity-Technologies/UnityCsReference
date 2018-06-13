@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
@@ -47,6 +48,13 @@ namespace UnityEngine
 
         [NonSerialized]
         internal IntPtr m_Ptr;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal void CopyFrom(Event e)
+        {
+            // Copies the event data without allocating a new event on the native side.
+            CopyFromPtr(e.m_Ptr);
+        }
 
         [Obsolete("Use HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);", true)]
         public Ray mouseRay { get { return new Ray(Vector3.up, Vector3.up); } set {}}

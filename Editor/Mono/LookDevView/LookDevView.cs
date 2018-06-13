@@ -8,12 +8,25 @@ using UnityEditorInternal;
 using UnityEditor.SceneManagement;
 using UnityEditor.ShortcutManagement;
 using UnityEngine.Rendering;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     [EditorWindowTitle(title = "Look Dev", useTypeNameAsIconName = true)]
     internal class LookDevView : EditorWindow, IHasCustomMenu
     {
+        internal class TestUtility
+        {
+            public TestUtility(LookDevView lookDevView)
+            {
+                this.lookDevView = lookDevView;
+            }
+
+            public readonly LookDevView lookDevView;
+
+            public Camera camera => lookDevView.m_PreviewUtilityContexts[lookDevView.m_LookDevConfig.currentEditionContextIndex].m_PreviewUtility[0].camera;
+        }
+
         static readonly Vector2 s_MinWindowSize = new Vector2(300, 60);
 
         // Note: Color init in OnEnable
@@ -239,6 +252,7 @@ namespace UnityEditor
             envLibrary = AssetDatabase.LoadAssetAtPath(assetPath, typeof(LookDevEnvironmentLibrary)) as LookDevEnvironmentLibrary;
         }
 
+        [RequiredByNativeCode]
         public static void OpenInLookDevTool(UnityEngine.Object go)
         {
             LookDevView lookDev = EditorWindow.GetWindow<LookDevView>();
@@ -1318,7 +1332,6 @@ namespace UnityEditor
 
             DrawFullScreenQuad(new Rect(0, 0, previewRect.width, previewRect.height));
 
-            GL.sRGBWrite = false;
             RenderTexture.active = oldActive;
 
             GUI.DrawTexture(previewRect, m_FinalCompositionTexture, ScaleMode.StretchToFill, false);
@@ -1363,7 +1376,6 @@ namespace UnityEditor
                 m_LookDevConfig.lookDevContexts[0].envRotation = (m_LookDevConfig.lookDevContexts[0].envRotation + Time.deltaTime * 360.0f * 0.03f * m_LookDevConfig.envRotationSpeed * m_EnvRotationAcc) % 720.0f; // 720 to match GUI
                 m_LookDevConfig.lookDevContexts[1].envRotation = (m_LookDevConfig.lookDevContexts[1].envRotation + Time.deltaTime * 360.0f * 0.03f * m_LookDevConfig.envRotationSpeed * m_EnvRotationAcc) % 720.0f; // 720 to match GUI
 
-                GL.sRGBWrite = QualitySettings.activeColorSpace == ColorSpace.Linear;
                 switch (m_LookDevConfig.lookDevMode)
                 {
                     case LookDevMode.Single1:
@@ -1378,7 +1390,6 @@ namespace UnityEditor
                         RenderPreviewDualView();
                         break;
                 }
-                GL.sRGBWrite = false;
             }
         }
 

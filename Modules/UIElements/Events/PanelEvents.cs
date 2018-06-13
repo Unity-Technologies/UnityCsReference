@@ -4,11 +4,41 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class AttachToPanelEvent : EventBase<AttachToPanelEvent>, IPropagatableEvent
+    public interface IPanelChangedEvent
     {
     }
 
-    public class DetachFromPanelEvent : EventBase<DetachFromPanelEvent>, IPropagatableEvent
+    public abstract class PanelChangedEventBase<T> : EventBase<T>, IPanelChangedEvent, IPropagatableEvent where T : PanelChangedEventBase<T>, new()
+    {
+        public IPanel originPanel { get; private set; }
+        public IPanel destinationPanel { get; private set; }
+
+        protected override void Init()
+        {
+            base.Init();
+            originPanel = null;
+            destinationPanel = null;
+        }
+
+        public static T GetPooled(IPanel originPanel, IPanel destinationPanel)
+        {
+            T e = GetPooled();
+            e.originPanel = originPanel;
+            e.destinationPanel = destinationPanel;
+            return e;
+        }
+
+        protected PanelChangedEventBase()
+        {
+            Init();
+        }
+    }
+
+    public class AttachToPanelEvent : PanelChangedEventBase<AttachToPanelEvent>
+    {
+    }
+
+    public class DetachFromPanelEvent : PanelChangedEventBase<DetachFromPanelEvent>
     {
     }
 }

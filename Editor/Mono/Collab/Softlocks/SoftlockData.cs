@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Scripting;
 using UnityEditor.Utils;
 using UnityEditor.Web;
 
@@ -19,6 +20,7 @@ namespace UnityEditor.Collaboration
         internal static OnSoftlockUpdate SoftlockSubscriber = null;
 
         // Invoked from C++
+        [RequiredByNativeCode]
         public static void SetSoftlockChanges(string[] assetGUIDs)
         {
             if (null != SoftlockSubscriber)

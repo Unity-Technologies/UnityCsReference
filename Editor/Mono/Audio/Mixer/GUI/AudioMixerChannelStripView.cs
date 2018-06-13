@@ -351,8 +351,6 @@ namespace UnityEditor
             return value;
         }
 
-        public GUIStyle sharedGuiStyle = new GUIStyle();
-
         public GUIStyle GetEffectBarStyle(AudioMixerEffectController effect)
         {
             if (effect.IsSend() || effect.IsReceive() || effect.IsDuckVolume())

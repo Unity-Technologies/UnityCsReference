@@ -75,7 +75,7 @@ namespace UnityEditorInternal
         private List<GroupInfo> m_Groups = null;
 
         const string k_MainGroupName = "";
-        static readonly string k_JobSystemGroupName = L10n.Tr("Unity Job System");
+        static readonly string k_JobSystemGroupName = L10n.Tr("Job System");
         static readonly string k_LoadingGroupName = L10n.Tr("Loading");
 
         internal class Styles

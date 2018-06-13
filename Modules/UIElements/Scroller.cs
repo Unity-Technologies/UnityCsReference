@@ -12,32 +12,12 @@ namespace UnityEngine.Experimental.UIElements
     // ScrollerButton is a repeat button without any skin styles
     public class ScrollerButton : VisualElement
     {
-        public class ScrollerButtonFactory : UxmlFactory<ScrollerButton, ScrollerButtonUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<ScrollerButton, UxmlTraits> {}
 
-        public class ScrollerButtonUxmlTraits : VisualElementUxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlLongAttributeDescription m_Delay;
-            UxmlLongAttributeDescription m_Interval;
-
-            public ScrollerButtonUxmlTraits()
-            {
-                m_Delay = new UxmlLongAttributeDescription { name = "delay" };
-                m_Interval = new UxmlLongAttributeDescription { name = "interval" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Delay;
-                    yield return m_Interval;
-                }
-            }
+            UxmlLongAttributeDescription m_Delay = new UxmlLongAttributeDescription { name = "delay" };
+            UxmlLongAttributeDescription m_Interval = new UxmlLongAttributeDescription { name = "interval" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -65,38 +45,14 @@ namespace UnityEngine.Experimental.UIElements
 
     public class Scroller : VisualElement
     {
-        public class ScrollerFactory : UxmlFactory<Scroller, ScrollerUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<Scroller, UxmlTraits> {}
 
-        public class ScrollerUxmlTraits : VisualElementUxmlTraits
+        public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_LowValue;
-            UxmlFloatAttributeDescription m_HighValue;
-            UxmlEnumAttributeDescription<Slider.Direction> m_Direction;
-            UxmlFloatAttributeDescription m_Value;
-
-            public ScrollerUxmlTraits()
-            {
-                m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
-                m_HighValue = new UxmlFloatAttributeDescription { name = "highValue" };
-                m_Direction = new UxmlEnumAttributeDescription<Slider.Direction> { name = "direction", defaultValue = Slider.Direction.Vertical};
-                m_Value = new UxmlFloatAttributeDescription { name = "value" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_LowValue;
-                    yield return m_HighValue;
-                    yield return m_Direction;
-                    yield return m_Value;
-                }
-            }
+            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
+            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "highValue" };
+            UxmlEnumAttributeDescription<Slider.Direction> m_Direction = new UxmlEnumAttributeDescription<Slider.Direction> { name = "direction", defaultValue = Slider.Direction.Vertical};
+            UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -188,7 +144,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (valueChanged != null)
                 valueChanged(slider.value);
-            this.Dirty(ChangeType.Repaint);
+            this.IncrementVersion(VersionChangeType.Repaint);
         }
 
         public void ScrollPageUp()

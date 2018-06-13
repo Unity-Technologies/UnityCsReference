@@ -22,6 +22,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return !selection.Cast<GraphElement>().Any(ge => ge == null || ge is Group);
         }
 
+        public bool DragLeave(DragLeaveEvent evt, IEnumerable<ISelectable> selection, IDropTarget leftTarget, ISelection dragSource)
+        {
+            RemoveFromClassList("dragEntered");
+
+            return true;
+        }
+
+        public bool DragEnter(DragEnterEvent evt, IEnumerable<ISelectable> selection, IDropTarget enteredTarget, ISelection dragSource)
+        {
+            return true;
+        }
+
         public bool DragExited()
         {
             RemoveFromClassList("dragEntered");
@@ -29,7 +41,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return false;
         }
 
-        public bool DragPerform(DragPerformEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget)
+        public bool DragPerform(DragPerformEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget, ISelection dragSource)
         {
             Group group = parent.GetFirstAncestorOfType<Group>();
 
@@ -51,7 +63,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
-        public bool DragUpdated(DragUpdatedEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget)
+        public bool DragUpdated(DragUpdatedEvent evt, IEnumerable<ISelectable> selection, IDropTarget dropTarget, ISelection dragSource)
         {
             Group group = parent.GetFirstAncestorOfType<Group>();
             bool canDrop = false;

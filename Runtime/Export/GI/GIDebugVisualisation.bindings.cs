@@ -23,7 +23,8 @@ namespace UnityEngineInternal
         BakedEmissive,
         BakedCharting,
         BakedTexelValidity,
-        BakedUVOverlap
+        BakedUVOverlap,
+        BakedLightmapCulling
     }
 
     [NativeHeader("Runtime/Export/GI/GIDebugVisualisation.bindings.h")]

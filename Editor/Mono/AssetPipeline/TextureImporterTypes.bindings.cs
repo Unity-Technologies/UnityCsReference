@@ -255,6 +255,7 @@ namespace UnityEditor
             get {return (TextureImporterSingleChannelComponent)m_SingleChannelComponent; }
             set { m_SingleChannelComponent = (int)value; }
         }
+
         public bool readable
         {
             get {return m_IsReadable != 0; }

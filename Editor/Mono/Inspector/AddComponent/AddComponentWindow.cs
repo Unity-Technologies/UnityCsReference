@@ -6,7 +6,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Scripting;
 
-namespace UnityEditor
+namespace UnityEditor.AdvancedDropdown
 {
     [InitializeOnLoad]
     internal class AddComponentWindow : AdvancedDropdownWindow
@@ -26,6 +26,9 @@ namespace UnityEditor
 
         private DateTime m_ComponentOpenTime;
         private const string kComponentSearch = "ComponentSearchString";
+        private const int kMaxWindowHeight = 395 - 80;
+
+        protected override bool setInitialSelectionPosition { get; } = false;
 
         public const string OpenAddComponentDropdown = "OpenAddComponentDropdown";
 
@@ -43,8 +46,8 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
-            gui = new AddComponentGUI();
             dataSource = new AddComponentDataSource();
+            gui = new AddComponentGUI(dataSource);
             s_AddComponentWindow = this;
             m_Search = EditorPrefs.GetString(kComponentSearch, "");
             showHeader = true;
@@ -56,6 +59,11 @@ namespace UnityEditor
             EditorPrefs.SetString(kComponentSearch, m_Search);
         }
 
+        protected override Vector2 CalculateWindowSize(Rect buttonRect)
+        {
+            return new Vector2(buttonRect.width, kMaxWindowHeight);
+        }
+
         internal static bool Show(Rect rect, GameObject[] gos)
         {
             CloseAllOpenWindows<AddComponentWindow>();
@@ -65,6 +73,15 @@ namespace UnityEditor
             s_AddComponentWindow.m_GameObjects = gos;
             s_AddComponentWindow.m_ComponentOpenTime = DateTime.UtcNow;
             return true;
+        }
+
+        protected override PopupLocationHelper.PopupLocation[] GetLocationPriority()
+        {
+            return new[]
+            {
+                PopupLocationHelper.PopupLocation.Below,
+                PopupLocationHelper.PopupLocation.Above,
+            };
         }
 
         protected override bool SpecialKeyboardHandling(Event evt)
@@ -110,7 +127,10 @@ namespace UnityEditor
         {
             var insp = FirstInspectorWithGameObject();
             if (insp != null)
+            {
+                insp.ShowTab();
                 insp.SendEvent(EditorGUIUtility.CommandEvent(OpenAddComponentDropdown));
+            }
         }
 
         private static InspectorWindow FirstInspectorWithGameObject()

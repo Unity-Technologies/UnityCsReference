@@ -57,18 +57,18 @@ namespace UnityEditorInternal
         protected void InitStyles()
         {
             if (m_AnimationRowEvenStyle == null)
-                m_AnimationRowEvenStyle = new GUIStyle("AnimationRowEven");
+                m_AnimationRowEvenStyle = "AnimationRowEven";
             if (m_AnimationRowOddStyle == null)
-                m_AnimationRowOddStyle = new GUIStyle("AnimationRowOdd");
+                m_AnimationRowOddStyle = "AnimationRowOdd";
             if (m_AnimationSelectionTextField == null)
-                m_AnimationSelectionTextField = new GUIStyle("AnimationSelectionTextField");
+                m_AnimationSelectionTextField = "AnimationSelectionTextField";
             if (m_AnimationLineStyle == null)
             {
-                m_AnimationLineStyle = new GUIStyle(Styles.lineStyle);
+                m_AnimationLineStyle = Styles.lineStyle;
                 m_AnimationLineStyle.padding.left = 0;
             }
             if (m_AnimationCurveDropdown == null)
-                m_AnimationCurveDropdown = new GUIStyle("AnimPropDropdown");
+                m_AnimationCurveDropdown = "AnimPropDropdown";
         }
 
         protected void DoNodeGUI(Rect rect, AnimationWindowHierarchyNode node, bool selected, bool focused, int row)

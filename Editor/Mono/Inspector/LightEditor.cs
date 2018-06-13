@@ -88,6 +88,7 @@ namespace UnityEditor
 
                 public readonly GUIContent AreaWidth = EditorGUIUtility.TrTextContent("Width", "Controls the width in units of the area light.");
                 public readonly GUIContent AreaHeight = EditorGUIUtility.TrTextContent("Height", "Controls the height in units of the area light.");
+                public readonly GUIContent AreaRadius = EditorGUIUtility.TrTextContent("Radius", "Controls the radius in units of the disc area light.");
 
                 public readonly GUIContent BakingWarning = EditorGUIUtility.TrTextContent("Light mode is currently overridden to Realtime mode. Enable Baked Global Illumination to use Mixed or Baked light modes.");
                 public readonly GUIContent IndirectBounceShadowWarning = EditorGUIUtility.TrTextContent("Realtime indirect bounce shadowing is not supported for Spot and Point lights.");
@@ -247,8 +248,15 @@ namespace UnityEditor
 
             public void DrawArea()
             {
-                EditorGUILayout.PropertyField(areaSizeX, s_Styles.AreaWidth);
-                EditorGUILayout.PropertyField(areaSizeY, s_Styles.AreaHeight);
+                if (lightType.intValue == (int)LightType.Area)
+                {
+                    EditorGUILayout.PropertyField(areaSizeX, s_Styles.AreaWidth);
+                    EditorGUILayout.PropertyField(areaSizeY, s_Styles.AreaHeight);
+                }
+                else if (lightType.intValue == (int)LightType.Disc)
+                {
+                    EditorGUILayout.PropertyField(areaSizeX, s_Styles.AreaRadius);
+                }
             }
 
             public void DrawColor()
@@ -416,6 +424,7 @@ namespace UnityEditor
             public readonly GUIContent iconRemove = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove command buffer");
             public readonly GUIContent DisabledLightWarning = EditorGUIUtility.TrTextContent("Lighting has been disabled in at least one Scene view. Any changes applied to lights in the Scene will not be updated in these views until Lighting has been enabled again.");
             public readonly GUIStyle invisibleButton = "InvisibleButton";
+            public readonly GUIContent noDiscLightInEnlighten = EditorGUIUtility.TrTextContent("Only the Progressive lightmapper supports Disc lights. The Enlighten lightmapper doesn't so please consider using a different light shape instead or switch to Progressive in the Lighting window.");
         }
 
         private static Style s_Styles;
@@ -430,6 +439,8 @@ namespace UnityEditor
                 return m_Settings;
             }
         }
+
+        private IMGUI.Controls.SphereBoundsHandle m_BoundsHandle = new IMGUI.Controls.SphereBoundsHandle();
 
         AnimBool m_AnimShowSpotOptions = new AnimBool();
         AnimBool m_AnimShowPointOptions = new AnimBool();
@@ -463,8 +474,8 @@ namespace UnityEditor
         bool spotOptionsValue { get { return settings.typeIsSame && settings.light.type == LightType.Spot; } }
         bool pointOptionsValue { get { return settings.typeIsSame && settings.light.type == LightType.Point; } }
         bool dirOptionsValue { get { return settings.typeIsSame && settings.light.type == LightType.Directional; } }
-        bool areaOptionsValue { get { return settings.typeIsSame && settings.light.type == LightType.Area; } }
-        bool runtimeOptionsValue { get { return settings.typeIsSame && (settings.light.type != LightType.Area && !settings.isCompletelyBaked); } }
+        bool areaOptionsValue { get { return settings.typeIsSame && (settings.light.type == LightType.Area || settings.light.type == LightType.Disc); } }
+        bool runtimeOptionsValue { get { return settings.typeIsSame && ((settings.light.type != LightType.Area || settings.light.type == LightType.Disc) && !settings.isCompletelyBaked); } }
         bool bakedShadowRadius { get { return settings.typeIsSame && (settings.light.type == LightType.Point || settings.light.type == LightType.Spot) && settings.isBakedOrMixed; } }
         bool bakedShadowAngle { get { return settings.typeIsSame && settings.light.type == LightType.Directional && settings.isBakedOrMixed; } }
         bool shadowOptionsValue { get { return settings.shadowTypeIsSame && settings.light.shadows != LightShadows.None; } }
@@ -572,6 +583,9 @@ namespace UnityEditor
             // Light type (shape and usage)
             settings.DrawLightType();
 
+            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten && settings.light.type == LightType.Disc)
+                EditorGUILayout.HelpBox(s_Styles.noDiscLightInEnlighten.text, MessageType.Warning);
+
             EditorGUILayout.Space();
 
             // When we are switching between two light types that don't show the range (directional and area lights)
@@ -637,7 +651,7 @@ namespace UnityEditor
         {
             //NOTE: FadeGroup's dont support nesting. Thus we just multiply the fade values here.
 
-            // Shadows drop-down. Area lights can only be baked and always have shadows.
+            // Shadows drop-down. Rect and disc lights can only be baked and always have shadows.
             float show = 1 - m_AnimShowAreaOptions.faded;
 
             if (EditorGUILayout.BeginFadeGroup(show))
@@ -711,8 +725,22 @@ namespace UnityEditor
                     Vector2 size = Handles.DoRectHandles(t.transform.rotation, t.transform.position, t.areaSize);
                     if (EditorGUI.EndChangeCheck())
                     {
-                        Undo.RecordObject(t, "Adjust Area Light");
+                        Undo.RecordObject(t, "Adjust Rect Light");
                         t.areaSize = size;
+                    }
+                    break;
+                case LightType.Disc:
+                    m_BoundsHandle.radius = t.areaSize.x;
+                    m_BoundsHandle.axes = IMGUI.Controls.PrimitiveBoundsHandle.Axes.X | IMGUI.Controls.PrimitiveBoundsHandle.Axes.Y;
+                    EditorGUI.BeginChangeCheck();
+                    Matrix4x4 mat = new Matrix4x4();
+                    mat.SetTRS(t.transform.position, t.transform.rotation, new Vector3(1, 1, 1));
+                    using (new Handles.DrawingScope(mat))
+                        m_BoundsHandle.DrawHandle();
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(t, "Adjust Disc Light");
+                        t.areaSize = new Vector2(m_BoundsHandle.radius, t.areaSize.y);
                     }
                     break;
                 default:

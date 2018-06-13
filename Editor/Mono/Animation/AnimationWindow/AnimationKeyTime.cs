@@ -41,6 +41,14 @@ namespace UnityEditorInternal
             }
         }
 
+        public float timeRound
+        {
+            get
+            {
+                return (float)frame / frameRate;
+            }
+        }
+
         public static AnimationKeyTime  Time(float time, float frameRate)
         {
             AnimationKeyTime key = new AnimationKeyTime();

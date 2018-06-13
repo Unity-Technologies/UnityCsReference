@@ -10,31 +10,13 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class ObjectField : BaseControl<Object>
+    public class ObjectField : BaseField<Object>
     {
-        public class ObjectFieldFactory : UxmlFactory<ObjectField, ObjectFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<ObjectField, UxmlTraits> {}
 
-        public class ObjectFieldUxmlTraits : BaseControlUxmlTraits
+        public new class UxmlTraits : BaseField<Object>.UxmlTraits
         {
-            UxmlBoolAttributeDescription m_AllowSceneObjects;
-
-            public ObjectFieldUxmlTraits()
-            {
-                m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allowSceneObjects", defaultValue = true };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_AllowSceneObjects;
-                }
-            }
+            UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allowSceneObjects", defaultValue = true };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -44,18 +26,20 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        private Object m_Value;
         public override Object value
         {
             get
             {
-                return m_Value;
+                return base.value;
             }
             set
             {
-                if (m_Value != value)
+                var valueChanged = !EqualityComparer<Object>.Default.Equals(this.value, value);
+                base.value = value;
+
+                // Calling the update only if necessary...
+                if (valueChanged)
                 {
-                    m_Value = value;
                     m_ObjectFieldDisplay.Update();
                 }
             }
@@ -195,7 +179,7 @@ namespace UnityEditor.Experimental.UIElements
                 if (validatedObject != null)
                 {
                     DragAndDrop.visualMode = DragAndDropVisualMode.Generic;
-                    m_ObjectField.SetValueAndNotify(validatedObject);
+                    m_ObjectField.value = validatedObject;
 
                     DragAndDrop.AcceptDrag();
                     RemoveFromClassList("acceptDrop");
@@ -249,16 +233,12 @@ namespace UnityEditor.Experimental.UIElements
             Add(objectSelector);
         }
 
+        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
         public override void SetValueAndNotify(Object newValue)
         {
             if (newValue != value)
             {
-                using (ChangeEvent<Object> evt = ChangeEvent<Object>.GetPooled(value, newValue))
-                {
-                    evt.target = this;
-                    value = newValue;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
-                }
+                value = newValue;
             }
         }
 
@@ -272,7 +252,7 @@ namespace UnityEditor.Experimental.UIElements
 
         private void OnObjectChanged(Object obj)
         {
-            SetValueAndNotify(obj);
+            value = obj;
         }
 
         internal void ShowObjectSelector()

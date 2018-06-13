@@ -53,6 +53,7 @@ namespace UnityEditorInternal
             public static readonly GUIStyle closeButton = "WinBtnClose";
             public static readonly GUIStyle whiteLabel = "ProfilerBadge";
             public static readonly GUIStyle selectedLabel = "ProfilerSelectedLabel";
+            public static readonly GUIStyle noDataOverlayBox = "ProfilerNoDataAvailable";
 
             public static readonly float labelDropShadowOpacity = 0.3f;
             public static readonly float labelLerpToWhiteAmount = 0.5f;
@@ -226,9 +227,9 @@ namespace UnityEditorInternal
                 {
                     r.height -= 1.0f; // do not draw the bottom pixel
                     if (type == ChartType.StackedFill)
-                        DrawChartStacked(selectedFrame, cdata, r);
+                        DrawChartStacked(selectedFrame, cdata, r, active);
                     else
-                        DrawChartLine(selectedFrame, cdata, r);
+                        DrawChartLine(selectedFrame, cdata, r, active);
                 }
                 else
                 {
@@ -277,7 +278,7 @@ namespace UnityEditorInternal
             Handles.Label(new Vector3(r.x + r.width / 2 - 20, r.yMin + 2, 0), "Scale: " + cdata.maxValue);
         }
 
-        private void DrawChartLine(int selectedFrame, ChartViewData cdata, Rect r)
+        private void DrawChartLine(int selectedFrame, ChartViewData cdata, Rect r, bool chartActive)
         {
             for (int i = 0; i < cdata.numSeries; i++)
             {
@@ -288,12 +289,58 @@ namespace UnityEditorInternal
             {
                 DrawMaxValueScale(cdata, r);
             }
+            DrawOverlayBoxes(cdata, r, chartActive);
+
             DrawSelectedFrame(selectedFrame, cdata, r);
 
             DrawLabels(r, cdata, selectedFrame, ChartType.Line);
         }
 
-        private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r)
+        private void DrawOverlayBoxes(ChartViewData cdata, Rect r, bool chartActive)
+        {
+            if (Event.current.type == EventType.Repaint && cdata.dataAvailable != null)
+            {
+                r.height += 2;
+                r.y -= 1;
+
+                int lastFrameWithData = 0;
+                int frameDataLength = cdata.dataAvailable.Length;
+                for (int frame = 0; frame < frameDataLength; frame++)
+                {
+                    bool hasDataForFrame = cdata.dataAvailable[frame];
+                    if (hasDataForFrame)
+                    {
+                        if (lastFrameWithData < frame - 1)
+                        {
+                            DrawOverlayBox(r, lastFrameWithData, frame, frameDataLength, chartActive, Styles.noDataOverlayBox);
+                        }
+                        lastFrameWithData = frame;
+                    }
+                }
+                if (lastFrameWithData < frameDataLength - 1)
+                {
+                    DrawOverlayBox(r, lastFrameWithData, frameDataLength - 1, frameDataLength, chartActive, Styles.noDataOverlayBox);
+                }
+            }
+        }
+
+        private void DrawOverlayBox(Rect r, int startFrame, int endFrame, int frameDataLength, bool chartActive, GUIStyle style, GUIContent content = null)
+        {
+            float gracePixels = -1;
+            float domainSize = frameDataLength - 1;
+            float startYOffest = Mathf.RoundToInt(r.width * startFrame / domainSize) + gracePixels;
+            float endYOffest = Mathf.RoundToInt(r.width * endFrame / domainSize) - gracePixels;
+            Rect noDataRect = r;
+
+            noDataRect.x += Mathf.Max(startYOffest, 0);
+            noDataRect.width = Mathf.Min(endYOffest - startYOffest, r.width - (noDataRect.x - r.x));
+
+            style.Draw(noDataRect, false, false, chartActive, false);
+            if (content != null)
+                GUI.Box(noDataRect, content);
+        }
+
+        private void DrawChartStacked(int selectedFrame, ChartViewData cdata, Rect r, bool chartActive)
         {
             HandleUtility.ApplyWireMaterial();
 
@@ -313,6 +360,7 @@ namespace UnityEditorInternal
                     DrawChartItemStackedOverlay(r, i, cdata, m_StackedSampleSums);
                 DrawChartItemStacked(r, i, cdata, m_StackedSampleSums);
             }
+            DrawOverlayBoxes(cdata, r, chartActive);
 
             DrawSelectedFrame(selectedFrame, cdata, r);
 
@@ -968,6 +1016,7 @@ namespace UnityEditorInternal
         public float[] grid { get; private set; }
         public string[] gridLabels { get; private set; }
         public string[] selectedLabels { get; private set; }
+        public bool[] dataAvailable { get; set; }
         public int firstSelectableFrame { get; private set; }
         public bool hasOverlay { get; set; }
         public float maxValue { get; set; }
@@ -990,6 +1039,8 @@ namespace UnityEditorInternal
 
             if (overlays == null || overlays.Length != numSeries)
                 overlays = new ChartSeriesViewData[numSeries];
+            if (dataAvailable == null && series.Length > 0 && series[0].xValues != null)
+                dataAvailable = new bool[series[0].xValues.Length];
         }
 
         public void AssignSelectedLabels(string[] selectedLabels)

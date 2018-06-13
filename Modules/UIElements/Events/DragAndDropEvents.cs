@@ -17,7 +17,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Capturable | EventFlags.Bubbles;
+            flags = EventFlags.TricklesDown | EventFlags.Bubbles;
         }
 
         public DragExitedEvent()
@@ -30,7 +30,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Capturable;
+            flags = EventFlags.TricklesDown;
         }
 
         public DragEnterEvent()
@@ -43,7 +43,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Capturable;
+            flags = EventFlags.TricklesDown;
         }
 
         public DragLeaveEvent()

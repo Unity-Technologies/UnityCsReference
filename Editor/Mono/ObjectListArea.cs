@@ -101,10 +101,6 @@ namespace UnityEditor
             static GUIStyle GetStyle(string styleName)
             {
                 return styleName; // Implicit construction of GUIStyle
-
-                // For fast testing in editor resources
-                //GUISkin skin = EditorGUIUtility.LoadRequired ("Builtin Skins/DarkSkin/Skins/ProjectBrowserSkin.guiSkin") as GUISkin;
-                //return skin.GetStyle (styleName);
             }
         }
         static Styles s_Styles;
@@ -1659,10 +1655,10 @@ namespace UnityEditor
                 if (string.IsNullOrEmpty(path))
                     return;
 
-                var pathComponents = path.Split('/');
-                if (pathComponents.Length > 1 && pathComponents[0] == UnityEditor.PackageManager.Folders.GetPackagesMountPoint())
+                var packageInfo = PackageManager.Packages.GetForAssetPath(path);
+                if (packageInfo != null)
                 {
-                    hierarchyProperty = new HierarchyProperty(pathComponents[0] + "/" + pathComponents[1]);
+                    hierarchyProperty = new HierarchyProperty(packageInfo.assetPath);
                     if (hierarchyProperty.Find(instanceID, null))
                     {
                         name = hierarchyProperty.name;

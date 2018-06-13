@@ -7,18 +7,15 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Collections.Generic;
-
 using Mono.Cecil;
 using UnityEditor.Modules;
-using UnityEditor.Scripting.Compilers;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor
 {
     internal partial class AssemblyHelper
     {
-        static readonly Type[] ExtendableScriptTypes = { typeof(MonoBehaviour), typeof(ScriptableObject), typeof(Experimental.AssetImporters.ScriptedImporter) };
-
         // Check if assmebly internal name doesn't match file name, and show the warning.
         static public void CheckForAssemblyFileNameMismatch(string assemblyPath)
         {
@@ -79,7 +76,6 @@ namespace UnityEditor
         {
             return assemblyPath.IndexOf("mscorlib.dll") != -1 ||
                 assemblyPath.IndexOf("System.") != -1 ||
-                assemblyPath.IndexOf("Windows.dll") != -1 ||
                 assemblyPath.IndexOf("Microsoft.") != -1 ||
                 assemblyPath.IndexOf("Windows.") != -1 ||
                 assemblyPath.IndexOf("WinRTLegacy.dll") != -1 ||
@@ -225,17 +221,17 @@ namespace UnityEditor
             if (type == null || type.FullName == "System.Object")
                 return false;
 
-            foreach (var extendableScriptType in ExtendableScriptTypes)
-            {
-                if (type.Name == extendableScriptType.Name && type.Namespace == extendableScriptType.Namespace)
-                    return true;
-            }
-
             try
             {
                 var typeDefinition = type.Resolve();
+                var attributes = typeDefinition.CustomAttributes;
+                for (var i = 0; i < attributes.Count; i++)
+                {
+                    if (attributes[i].Constructor.DeclaringType.FullName == "UnityEngine.ExtensionOfNativeClassAttribute")
+                        return true;
+                }
 
-                if (typeDefinition != null)
+                if (typeDefinition.BaseType != null)
                     return IsTypeAUserExtendedScript(typeDefinition.BaseType);
             }
             catch (AssemblyResolutionException)
@@ -263,9 +259,16 @@ namespace UnityEditor
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
             var precompiledAssemblies = UnityEditorInternal.InternalEditorUtility.GetPrecompiledAssemblies(true, group, target);
+
             HashSet<string> searchPaths = new HashSet<string>();
+
             foreach (var asm in precompiledAssemblies)
                 searchPaths.Add(Path.GetDirectoryName(asm.Path));
+
+            precompiledAssemblies = UnityEditorInternal.InternalEditorUtility.GetUnityAssemblies(true, group, target);
+            foreach (var asm in precompiledAssemblies)
+                searchPaths.Add(Path.GetDirectoryName(asm.Path));
+
             foreach (var asmpath in searchPaths)
                 assemblyResolver.AddSearchDirectory(asmpath);
 

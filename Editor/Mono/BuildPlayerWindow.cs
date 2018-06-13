@@ -759,11 +759,10 @@ namespace UnityEditor
                 if (enableBuildScriptsOnly)
                     EditorUserBuildSettings.buildScriptsOnly = EditorGUILayout.Toggle(styles.buildScriptsOnly, EditorUserBuildSettings.buildScriptsOnly);
 
-                GUI.enabled = !developmentBuild;
-                if (enableHeadlessModeToggle)
-                    EditorUserBuildSettings.enableHeadlessMode = EditorGUILayout.Toggle(styles.enableHeadlessMode, EditorUserBuildSettings.enableHeadlessMode && !developmentBuild);
-
                 GUI.enabled = true;
+
+                if (enableHeadlessModeToggle)
+                    EditorUserBuildSettings.enableHeadlessMode = EditorGUILayout.Toggle(styles.enableHeadlessMode, EditorUserBuildSettings.enableHeadlessMode);
 
                 GUILayout.FlexibleSpace();
 
@@ -825,8 +824,24 @@ namespace UnityEditor
         {
             GUILayout.FlexibleSpace();
 
+
             if (canInstallInBuildFolder)
+            {
+                GUILayout.BeginHorizontal();
                 EditorUserBuildSettings.installInBuildFolder = GUILayout.Toggle(EditorUserBuildSettings.installInBuildFolder, "Install in Builds folder\n(for debugging with source code)", GUILayout.ExpandWidth(false));
+
+                var content = new GUIContent(EditorGUI.GUIContents.helpIcon);
+                content.tooltip = "Open documentation for debugging source code";
+                if (GUILayout.Button(content, EditorStyles.iconButton))
+                {
+                    var path = Path.Combine(Directory.GetParent(EditorApplication.applicationPath).FullName, "../../Documentation/BuildDocs/view_build_docs");
+                    if (Application.platform == RuntimePlatform.WindowsEditor)
+                        System.Diagnostics.Process.Start(path + ".cmd");
+                    else
+                        System.Diagnostics.Process.Start("/bin/bash", path);
+                }
+                GUILayout.EndHorizontal();
+            }
             else
                 EditorUserBuildSettings.installInBuildFolder = false;
 
@@ -871,7 +886,7 @@ namespace UnityEditor
             GUI.enabled = enableBuildButton;
             if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
             {
-                CallBuildMethods(true, BuildOptions.ShowBuiltPlayer | BuildOptions.StrictMode);
+                CallBuildMethods(true, BuildOptions.ShowBuiltPlayer);
                 GUIUtility.ExitGUI();
             }
             // Build and Run button

@@ -36,7 +36,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 textInputField.SyncTextEngine();
                 textInputField.UpdateText(editorEngine.text);
-                textInputField.TakeMouseCapture();
+                textInputField.CaptureMouse();
 
                 editorEngine.keyboardOnScreen = TouchScreenKeyboard.Open(!string.IsNullOrEmpty(secureText) ? secureText : textInputField.text,
                         TouchScreenKeyboardType.Default,

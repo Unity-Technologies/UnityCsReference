@@ -268,8 +268,11 @@ namespace UnityEditor.IMGUI.Controls
                 var rowCount = m_TreeView.data.rowCount;
                 if (rowCount != m_RowRects.Count)
                 {
+                    var errorMessage = string.Format(
+                            "Number of rows does not match number of row rects. Did you remember to update the row rects when BuildRootAndRows was called? Number of rows: {0}, number of custom row rects: {1}. Falling back to fixed row height.",
+                            rowCount, m_RowRects.Count);
                     m_RowRects = null;
-                    throw new InvalidOperationException(string.Format("Number of rows does not match number of row rects. Did you remember to update the row rects when BuildRootAndRows was called? Number of rows: {0}, number of custom row rects: {1}. Falling back to fixed row height.", rowCount, m_RowRects.Count));
+                    throw new InvalidOperationException(errorMessage);
                 }
 
                 float topPixel = m_TreeView.state.scrollPos.y;
@@ -349,6 +352,13 @@ namespace UnityEditor.IMGUI.Controls
 
                     DefaultStyles.backgroundEven.Draw(rowRect, false, false, false, false);
                 }
+            }
+
+            protected override bool DoFoldoutButton(Rect foldoutRect, bool expandedState, GUIStyle foldoutStyle)
+            {
+                if (m_Owner.foldoutOverride != null)
+                    return m_Owner.foldoutOverride(foldoutRect, expandedState, foldoutStyle);
+                return base.DoFoldoutButton(foldoutRect, expandedState, foldoutStyle);
             }
 
             // Returns the rect available within the borders

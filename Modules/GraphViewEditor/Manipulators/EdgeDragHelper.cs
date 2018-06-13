@@ -56,10 +56,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_CompatiblePorts != null)
             {
                 // Reset the highlights.
-                foreach (Port compatiblePort in m_CompatiblePorts)
-                {
-                    compatiblePort.highlight = true;
-                }
+                m_GraphView.ports.ForEach((p) => {
+                        p.highlight = true;
+                        p.SetEnabled(true);
+                    });
+                m_CompatiblePorts = null;
             }
 
             // Clean up ghost edge.
@@ -87,10 +88,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_GhostEdge.output = null;
             }
 
+            if (draggedPort != null && !didConnect)
+            {
+                draggedPort.portCapLit = false;
+                draggedPort = null;
+            }
+
             m_GhostEdge = null;
             edgeCandidate = null;
-            draggedPort = null;
-            m_CompatiblePorts = null;
+
             m_GraphView = null;
         }
 
@@ -137,7 +143,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_CompatiblePorts = m_GraphView.GetCompatiblePorts(draggedPort, s_nodeAdapter);
 
             // Only light compatible anchors when dragging an edge.
-            m_GraphView.ports.ForEach((p) => p.highlight = false);
+            m_GraphView.ports.ForEach((p) =>  {
+                    p.highlight = false;
+                    p.SetEnabled(false);
+                });
 
             foreach (Port compatiblePort in m_CompatiblePorts)
             {
@@ -258,7 +267,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Vector2 mousePosition = evt.mousePosition;
 
             // Reset the highlights.
-            m_GraphView.ports.ForEach((p) => p.highlight = true);
+            m_GraphView.ports.ForEach((p) => {
+                    p.highlight = true;
+                    p.SetEnabled(true);
+                });
 
             // Clean up ghost edges.
             if (m_GhostEdge != null)
@@ -343,18 +355,21 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 Rect bounds = compatiblePort.worldBound;
                 float hitboxExtraPadding = bounds.height;
 
-                // Add extra padding for mouse check to the left of input port or right of output port.
-                if (compatiblePort.direction == Direction.Input)
+                if (compatiblePort.orientation == Orientation.Horizontal)
                 {
-                    // Move bounds to the left by hitboxExtraPadding and increase width
-                    // by hitboxExtraPadding.
-                    bounds.x -= hitboxExtraPadding;
-                    bounds.width += hitboxExtraPadding;
-                }
-                else if (compatiblePort.direction == Direction.Output)
-                {
-                    // Just add hitboxExtraPadding to the width.
-                    bounds.width += hitboxExtraPadding;
+                    // Add extra padding for mouse check to the left of input port or right of output port.
+                    if (compatiblePort.direction == Direction.Input)
+                    {
+                        // Move bounds to the left by hitboxExtraPadding and increase width
+                        // by hitboxExtraPadding.
+                        bounds.x -= hitboxExtraPadding;
+                        bounds.width += hitboxExtraPadding;
+                    }
+                    else if (compatiblePort.direction == Direction.Output)
+                    {
+                        // Just add hitboxExtraPadding to the width.
+                        bounds.width += hitboxExtraPadding;
+                    }
                 }
 
                 // Check if mouse is over port.

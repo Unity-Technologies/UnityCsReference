@@ -607,7 +607,7 @@ namespace UnityEditor
                     RenderTextureFormat.Default,
                     RenderTextureReadWrite.sRGB);
 
-            Graphics.Blit(original, tmp, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
+            Graphics.Blit(original, tmp);
 
             RenderTexture.active = tmp;
 

@@ -15,6 +15,7 @@ namespace UnityEngine.Experimental.Playables
     [StaticAccessor("TexturePlayableGraphExtensionsBindings", StaticAccessorType.DoubleColon)]
     internal static class TexturePlayableGraphExtensions
     {
+        [NativeThrows]
         extern internal static bool InternalCreateTextureOutput(ref PlayableGraph graph, string name, out PlayableOutputHandle handle);
     }
 

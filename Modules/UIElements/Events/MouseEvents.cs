@@ -17,6 +17,7 @@ namespace UnityEngine.Experimental.UIElements
         bool ctrlKey { get; }
         bool commandKey { get; }
         bool altKey { get; }
+        bool actionKey { get; }
     }
 
     internal interface IMouseEventInternal
@@ -53,12 +54,27 @@ namespace UnityEngine.Experimental.UIElements
             get { return (modifiers & EventModifiers.Alt) != 0; }
         }
 
+        public bool actionKey
+        {
+            get
+            {
+                if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+                {
+                    return commandKey;
+                }
+                else
+                {
+                    return ctrlKey;
+                }
+            }
+        }
+
         bool IMouseEventInternal.hasUnderlyingPhysicalEvent { get; set; }
 
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.Capturable | EventFlags.Cancellable;
+            flags = EventFlags.Bubbles | EventFlags.TricklesDown | EventFlags.Cancellable;
             modifiers = EventModifiers.None;
             mousePosition = Vector2.zero;
             localMousePosition = Vector2.zero;
@@ -175,7 +191,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Capturable;
+            flags = EventFlags.TricklesDown;
         }
 
         public MouseEnterEvent()
@@ -189,7 +205,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Capturable;
+            flags = EventFlags.TricklesDown;
         }
 
         public MouseLeaveEvent()
@@ -237,12 +253,18 @@ namespace UnityEngine.Experimental.UIElements
     public class ContextualMenuPopulateEvent : MouseEventBase<ContextualMenuPopulateEvent>
     {
         public ContextualMenu menu { get; private set; }
+        public EventBase triggerEvent { get; private set; }
 
-        public static ContextualMenuPopulateEvent GetPooled(EventBase triggerEvent, ContextualMenu menu, IEventHandler target)
+        ContextualMenuManager m_ContextualMenuManager;
+
+        public static ContextualMenuPopulateEvent GetPooled(EventBase triggerEvent, ContextualMenu menu, IEventHandler target, ContextualMenuManager menuManager)
         {
             ContextualMenuPopulateEvent e = GetPooled();
             if (triggerEvent != null)
             {
+                triggerEvent.Acquire();
+                e.triggerEvent = triggerEvent;
+
                 IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
                 if (mouseEvent != null)
                 {
@@ -259,10 +281,12 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     ((IMouseEventInternal)e).hasUnderlyingPhysicalEvent = mouseEventInternal.hasUnderlyingPhysicalEvent;
                 }
-
-                e.target = target;
-                e.menu = menu;
             }
+
+            e.target = target;
+            e.menu = menu;
+            e.m_ContextualMenuManager = menuManager;
+
             return e;
         }
 
@@ -270,11 +294,27 @@ namespace UnityEngine.Experimental.UIElements
         {
             base.Init();
             menu = null;
+            m_ContextualMenuManager = null;
+
+            if (triggerEvent != null)
+            {
+                triggerEvent.Dispose();
+                triggerEvent = null;
+            }
         }
 
         public ContextualMenuPopulateEvent()
         {
             Init();
+        }
+
+        protected internal override void PostDispatch()
+        {
+            if (!isDefaultPrevented && m_ContextualMenuManager != null)
+            {
+                menu.PrepareForDisplay(triggerEvent);
+                m_ContextualMenuManager.DoDisplayMenu(menu, triggerEvent);
+            }
         }
     }
 }

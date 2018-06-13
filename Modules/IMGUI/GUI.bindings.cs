@@ -16,6 +16,7 @@ namespace UnityEngine
         public static extern Color contentColor { get; set; }
         public static extern bool changed { get; set; }
         public static extern bool enabled { get; set; }
+
         public static extern int depth { get; set; }
 
         internal static extern bool usePageScrollbars { get; }

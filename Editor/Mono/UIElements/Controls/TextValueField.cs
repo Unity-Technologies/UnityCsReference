@@ -26,7 +26,7 @@ namespace UnityEditor.Experimental.UIElements
     // Implements a control with a value of type T backed by a text.
     public abstract class TextValueField<T> : TextInputFieldBase<T>, IValueField<T>
     {
-        public class TextValueFieldUxmlTraits : TextInputFieldBaseUxmlTraits {}
+        public new class UxmlTraits : TextInputFieldBase<T>.UxmlTraits {}
 
         protected TextValueField(int maxLength)
             : base(maxLength, Char.MinValue)
@@ -36,14 +36,13 @@ namespace UnityEditor.Experimental.UIElements
         }
 
         private bool m_UpdateTextFromValue;
-        protected T m_Value;
 
         public override T value
         {
-            get { return m_Value; }
+            get { return base.value; }
             set
             {
-                m_Value = value;
+                base.value = value;
                 if (m_UpdateTextFromValue)
                     text = ValueToString(m_Value);
             }
@@ -52,25 +51,26 @@ namespace UnityEditor.Experimental.UIElements
         private void UpdateValueFromText()
         {
             T newValue = StringToValue(text);
-            SetValueAndNotify(newValue);
+            value = newValue;
         }
 
-        public override void SetValueAndNotify(T newValue)
+        public override void SetValueWithoutNotify(T newValue)
         {
-            if (!EqualityComparer<T>.Default.Equals(value, newValue))
-            {
-                using (ChangeEvent<T> evt = ChangeEvent<T>.GetPooled(value, newValue))
-                {
-                    evt.target = this;
-                    value = newValue;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
-                }
-            }
-            else if (!isDelayed && m_UpdateTextFromValue)
+            base.SetValueWithoutNotify(newValue);
+            if (!isDelayed && m_UpdateTextFromValue)
             {
                 // Value is the same but the text might not be in sync
                 // In the case of an expression like 2+2, the text might not be equal to the result
                 text = ValueToString(m_Value);
+            }
+        }
+
+        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
+        public override void SetValueAndNotify(T newValue)
+        {
+            if (!EqualityComparer<T>.Default.Equals(value, newValue))
+            {
+                value = newValue;
             }
         }
 

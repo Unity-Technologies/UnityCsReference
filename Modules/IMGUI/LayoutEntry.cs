@@ -24,6 +24,8 @@ namespace UnityEngine
         // Can this element stretch?
         public int stretchWidth, stretchHeight;
 
+        public bool consideredForMargin = true;
+
         // The style to use.
         GUIStyle m_Style = GUIStyle.none;
 

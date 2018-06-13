@@ -572,7 +572,7 @@ namespace UnityEditor
                 Matrix4x4 transform = Matrix4x4.identity;
                 if (ps.main.simulationSpace == ParticleSystemSimulationSpace.Local)
                 {
-                    transform = ps.GetLocalToWorldMatrix();
+                    transform = ps.localToWorldMatrix;
                 }
 
                 for (int i = 0; i < count; i++)

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Mono.Cecil;
+using UnityEngine;
 
 namespace UnityEditor.Modules
 {
@@ -13,6 +14,8 @@ namespace UnityEditor.Modules
     {
         public virtual CSharpCompiler GetCsCompiler(bool buildingForEditor, string assemblyName)
         {
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+                return CSharpCompiler.Microsoft;
             return CSharpCompiler.Mono;
         }
 

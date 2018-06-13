@@ -43,6 +43,14 @@ namespace UnityEngine
         internal static Action cleanupRoots;
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal static Func<Exception, bool> endContainerGUIFromException;
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal static Action enabledStateChanged;
+
+        [RequiredByNativeCode]
+        private static void MarkGUIChanged()
+        {
+            enabledStateChanged?.Invoke();
+        }
 
         public static int GetControlID(FocusType focus)
         {
@@ -256,12 +264,10 @@ namespace UnityEngine
                 throw new ArgumentException("You can only call GUI functions from inside OnGUI.");
         }
 
-        internal static Vector2 s_EditorScreenPointOffset = Vector2.zero;
-
         // Convert a point from GUI position to screen space.
         public static Vector2 GUIToScreenPoint(Vector2 guiPoint)
         {
-            return GUIClip.UnclipToWindow(guiPoint) + s_EditorScreenPointOffset;
+            return InternalWindowToScreenPoint(GUIClip.UnclipToWindow(guiPoint));
         }
 
         // Convert a rect from GUI position to screen space.
@@ -276,7 +282,7 @@ namespace UnityEngine
         // Convert a point from screen space to GUI position.
         public static Vector2 ScreenToGUIPoint(Vector2 screenPoint)
         {
-            return GUIClip.ClipToWindow(screenPoint) - s_EditorScreenPointOffset;
+            return GUIClip.ClipToWindow(InternalScreenToWindowPoint(screenPoint));
         }
 
         // Convert a rect from screen space to GUI position.
@@ -307,26 +313,10 @@ namespace UnityEngine
             GUI.matrix = newMat * mat;
         }
 
-        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
-        internal struct ManualTex2SRGBScope : IDisposable
+        public static Rect AlignRectToDevice(Rect rect)
         {
-            private bool m_Disposed;
-            private readonly bool m_WasEnabled;
-
-            public ManualTex2SRGBScope(bool enabled)
-            {
-                m_Disposed = false;
-                m_WasEnabled = manualTex2SRGBEnabled;
-                manualTex2SRGBEnabled = enabled;
-            }
-
-            public void Dispose()
-            {
-                if (m_Disposed)
-                    return;
-                m_Disposed = true;
-                manualTex2SRGBEnabled = m_WasEnabled;
-            }
+            int width, height;
+            return AlignRectToDevice(rect, out width, out height);
         }
     }
 

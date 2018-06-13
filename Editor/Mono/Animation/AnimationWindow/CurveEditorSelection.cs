@@ -70,7 +70,11 @@ namespace UnityEditor
 
         public override bool Equals(object _other)
         {
-            CurveSelection other = (CurveSelection)_other;
+            CurveSelection other = _other as CurveSelection;
+            if (ReferenceEquals(other, null))
+                return false;
+            if (ReferenceEquals(other, this))
+                return true;
             return other.curveID == curveID && other.key == key && other.type == type;
         }
 

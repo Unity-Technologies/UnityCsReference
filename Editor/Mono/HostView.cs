@@ -3,14 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using System;
-using System.Collections.Generic;
-using System.Collections;
 using System.Reflection;
 using UnityEditor.Experimental.UIElements.Debugger;
-using UnityEditorInternal;
-using UnityEngineInternal;
 
 namespace UnityEditor
 {
@@ -40,8 +35,7 @@ namespace UnityEditor
                 DeregisterSelectedPane(true);
                 m_ActualView = value;
                 RegisterSelectedPane();
-                if (actualViewChanged != null)
-                    actualViewChanged(this);
+                actualViewChanged?.Invoke(this);
             }
         }
 
@@ -100,22 +94,28 @@ namespace UnityEditor
                 // Fix annoying GUILayout issue: When using guilayout in Utility windows there was always padded 10 px at the top! Todo: Fix this in EditorResources
                 background.padding.top = 0;
             }
-            GUILayout.BeginVertical(background);
 
-            if (actualView)
-                actualView.m_Pos = screenPosition;
+            using (new GUILayout.VerticalScope(background))
+            {
+                if (actualView)
+                    actualView.m_Pos = screenPosition;
 
-            Invoke("OnGUI");
-            EditorGUIUtility.ResetGUIState();
+                try
+                {
+                    Invoke("OnGUI");
+                }
+                finally
+                {
+                    EditorGUIUtility.ResetGUIState();
 
-            if (m_ActualView != null)
-                if (m_ActualView.m_FadeoutTime != 0 && Event.current.type == EventType.Repaint)
-                    m_ActualView.DrawNotification();
+                    if (m_ActualView != null)
+                        if (m_ActualView.m_FadeoutTime != 0 && Event.current.type == EventType.Repaint)
+                            m_ActualView.DrawNotification();
 
-            GUILayout.EndVertical();
-            DoWindowDecorationEnd();
-
-            EditorGUI.ShowRepaints();
+                    DoWindowDecorationEnd();
+                    EditorGUI.ShowRepaints();
+                }
+            }
         }
 
         protected override bool OnFocus()
@@ -123,14 +123,14 @@ namespace UnityEditor
             Invoke("OnFocus");
 
             // Callback could have killed us. If so, die now...
-            if (this == null)
+            if (!this)
                 return false;
 
             Repaint();
             return true;
         }
 
-        void OnLostFocus()
+        internal void OnLostFocus()
         {
             EditorGUI.EndEditingActiveTextField();
             Invoke("OnLostFocus");
@@ -196,10 +196,9 @@ namespace UnityEditor
 
             System.Type t = obj.GetType();
 
-            System.Reflection.MethodInfo method = null;
             while (t != null)
             {
-                method = t.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                var method = t.GetMethod(methodName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                 if (method != null)
                     return method;
 
@@ -256,7 +255,8 @@ namespace UnityEditor
             bool isExitGUIException = false;
             try
             {
-                Invoke("OnGUI");
+                using (new PerformanceTracker(actualView.GetType().Name + ".OnGUI"))
+                    Invoke("OnGUI");
             }
             catch (TargetInvocationException e)
             {
@@ -269,7 +269,8 @@ namespace UnityEditor
                 // We can't reset gui state after ExitGUI we just want to bail completely
                 if (!isExitGUIException)
                 {
-                    if (actualView != null && actualView.m_FadeoutTime != 0 && Event.current != null && Event.current.type == EventType.Repaint)
+                    bool isRepaint = (Event.current != null && Event.current.type == EventType.Repaint);
+                    if (actualView != null && actualView.m_FadeoutTime != 0 && isRepaint)
                         actualView.DrawNotification();
 
                     EndOffsetArea();
@@ -278,10 +279,8 @@ namespace UnityEditor
 
                     DoWindowDecorationEnd();
 
-                    if (Event.current.type == EventType.Repaint)
-                    {
+                    if (isRepaint)
                         overlay.Draw(onGUIPosition, GUIContent.none, 0);
-                    }
                 }
             }
         }
@@ -295,8 +294,7 @@ namespace UnityEditor
         protected void Invoke(string methodName, object obj)
         {
             System.Reflection.MethodInfo mi = GetPaneMethod(methodName, obj);
-            if (mi != null)
-                mi.Invoke(obj, null);
+            mi?.Invoke(obj, null);
         }
 
         protected void RegisterSelectedPane()
@@ -308,6 +306,7 @@ namespace UnityEditor
             visualTree.Add(m_ActualView.rootVisualContainer);
             panel.getViewDataDictionary = m_ActualView.GetViewDataDictionary;
             panel.savePersistentViewData = m_ActualView.SavePersistentViewData;
+            panel.name = m_ActualView.GetType().Name;
 
             if (GetPaneMethod("Update") != null)
                 EditorApplication.update += SendUpdate;
@@ -330,7 +329,8 @@ namespace UnityEditor
             catch (TargetInvocationException ex)
             {
                 // We need to catch these so the window initialization doesn't get screwed
-                Debug.LogError(ex.InnerException.GetType().Name + ":" + ex.InnerException.Message);
+                if (ex.InnerException != null)
+                    Debug.LogError(ex.InnerException.GetType().Name + ":" + ex.InnerException.Message);
             }
 
             UpdateViewMargins(m_ActualView);
@@ -371,7 +371,7 @@ namespace UnityEditor
         void SendUpdate() { Invoke("Update"); }
         void SendModKeysChanged() { Invoke("ModifierKeysChanged"); }
 
-        internal RectOffset borderSize { get { return GetBorderSize(); } }
+        internal RectOffset borderSize => GetBorderSize();
 
         protected virtual RectOffset GetBorderSize() { return m_BorderSize; }
 
@@ -397,8 +397,7 @@ namespace UnityEditor
             GenericMenu menu = new GenericMenu();
 
             IHasCustomMenu menuProviderFactoryThingy = view as IHasCustomMenu;
-            if (menuProviderFactoryThingy != null)
-                menuProviderFactoryThingy.AddItemsToMenu(menu);
+            menuProviderFactoryThingy?.AddItemsToMenu(menu);
 
             AddDefaultItemsToMenu(menu, view);
             menu.DropDown(pos);

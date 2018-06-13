@@ -11,8 +11,13 @@ namespace UnityEngine.Experimental.UIElements
     {
         void HandleEvent(EventBase evt);
 
-        bool HasCaptureHandlers();
+        bool HasTrickleDownHandlers();
 
+        bool HasBubbleUpHandlers();
+
+        [Obsolete("Use HasTrickleDownHandlers instead of HasCaptureHandlers.")]
+        bool HasCaptureHandlers();
+        [Obsolete("Use HasBubbleUpHandlers instead of HasBubbleHandlers.")]
         bool HasBubbleHandlers();
     }
 
@@ -20,40 +25,80 @@ namespace UnityEngine.Experimental.UIElements
     {
         EventCallbackRegistry m_CallbackRegistry;
 
-        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase<TEventType>, new()
+        [Obsolete("Use TrickleDown instead of Capture.")]
+        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture) where TEventType : EventBase<TEventType>, new()
+        {
+            TrickleDown td = (TrickleDown)useCapture;
+            RegisterCallback<TEventType>(callback, td);
+        }
+
+        public void RegisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (m_CallbackRegistry == null)
             {
                 m_CallbackRegistry = new EventCallbackRegistry();
             }
 
-            m_CallbackRegistry.RegisterCallback<TEventType>(callback, useCapture);
+            m_CallbackRegistry.RegisterCallback<TEventType>(callback, useTrickleDown);
         }
 
-        public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, Capture useCapture = Capture.NoCapture) where TEventType : EventBase<TEventType>, new()
+        [Obsolete("Use TrickleDown instead of Capture.")]
+        public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, Capture useCapture) where TEventType : EventBase<TEventType>, new()
+        {
+            TrickleDown td = (TrickleDown)useCapture;
+            RegisterCallback<TEventType, TUserArgsType>(callback, userArgs, td);
+        }
+
+        public void RegisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TUserArgsType userArgs, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (m_CallbackRegistry == null)
             {
                 m_CallbackRegistry = new EventCallbackRegistry();
             }
 
-            m_CallbackRegistry.RegisterCallback<TEventType, TUserArgsType>(callback, userArgs, useCapture);
+            m_CallbackRegistry.RegisterCallback<TEventType, TUserArgsType>(callback, userArgs, useTrickleDown);
         }
 
-        public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase<TEventType>, new()
+        [Obsolete("Use TrickleDown instead of Capture.")]
+        public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, Capture useCapture) where TEventType : EventBase<TEventType>, new()
+        {
+            TrickleDown td = (TrickleDown)useCapture;
+            UnregisterCallback<TEventType>(callback, td);
+        }
+
+        public void UnregisterCallback<TEventType>(EventCallback<TEventType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (m_CallbackRegistry != null)
             {
-                m_CallbackRegistry.UnregisterCallback(callback, useCapture);
+                m_CallbackRegistry.UnregisterCallback(callback, useTrickleDown);
             }
         }
 
-        public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, Capture useCapture = Capture.NoCapture) where TEventType : EventBase<TEventType>, new()
+        [Obsolete("Use TrickleDown instead of Capture.")]
+        public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, Capture useCapture) where TEventType : EventBase<TEventType>, new()
+        {
+            TrickleDown td = (TrickleDown)useCapture;
+            UnregisterCallback<TEventType, TUserArgsType>(callback, td);
+        }
+
+        public void UnregisterCallback<TEventType, TUserArgsType>(EventCallback<TEventType, TUserArgsType> callback, TrickleDown useTrickleDown = TrickleDown.NoTrickleDown) where TEventType : EventBase<TEventType>, new()
         {
             if (m_CallbackRegistry != null)
             {
-                m_CallbackRegistry.UnregisterCallback(callback, useCapture);
+                m_CallbackRegistry.UnregisterCallback(callback, useTrickleDown);
             }
+        }
+
+        internal bool TryGetUserArgs<TEventType, TCallbackArgs>(EventCallback<TEventType, TCallbackArgs> callback, TrickleDown useTrickleDown, out TCallbackArgs userData) where TEventType : EventBase<TEventType>, new()
+        {
+            userData = default(TCallbackArgs);
+
+            if (m_CallbackRegistry != null)
+            {
+                return m_CallbackRegistry.TryGetUserArgs(callback, useTrickleDown, out userData);
+            }
+
+            return false;
         }
 
         public virtual void HandleEvent(EventBase evt)
@@ -79,14 +124,26 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public bool HasCaptureHandlers()
+        public bool HasTrickleDownHandlers()
         {
-            return m_CallbackRegistry != null && m_CallbackRegistry.HasCaptureHandlers();
+            return m_CallbackRegistry != null && m_CallbackRegistry.HasTrickleDownHandlers();
         }
 
-        public bool HasBubbleHandlers()
+        public bool HasBubbleUpHandlers()
         {
             return m_CallbackRegistry != null && m_CallbackRegistry.HasBubbleHandlers();
+        }
+
+        [Obsolete("Use HasTrickleDownHandlers instead of HasCaptureHandlers.")]
+        public bool HasCaptureHandlers()
+        {
+            return HasTrickleDownHandlers();
+        }
+
+        [Obsolete("Use HasBubbleUpHandlers instead of HasBubbleHandlers.")]
+        public bool HasBubbleHandlers()
+        {
+            return HasBubbleUpHandlers();
         }
 
         protected internal virtual void ExecuteDefaultActionAtTarget(EventBase evt) {}

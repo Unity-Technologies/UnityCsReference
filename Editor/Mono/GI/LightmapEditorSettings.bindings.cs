@@ -192,7 +192,15 @@ namespace UnityEditor
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
-        extern static internal bool GetInputSystemHash(Renderer renderer, out Hash128 inputSystemHash);
+        extern static internal bool GetInputSystemHash(int instanceID, out Hash128 inputSystemHash);
+
+        [FreeFunction]
+        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
+        extern static internal bool GetLightmapIndex(int instanceID, out int lightmapIndex);
+
+        [FreeFunction]
+        [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
+        extern static internal Hash128[] GetMainSystemHashes();
 
         [FreeFunction]
         [NativeHeader("Editor/Src/GI/EditorHelpers.h")]

@@ -17,8 +17,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public RectangleSelector()
         {
-            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
-            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
             m_Rectangle = new RectangleSelect();
             m_Rectangle.style.positionType = PositionType.Absolute;
             m_Rectangle.style.positionTop = 0;
@@ -81,7 +82,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (CanStartManipulation(e))
             {
-                if (!e.shiftKey)
+                if (!e.actionKey)
                 {
                     graphView.ClearSelection();
                 }
@@ -92,7 +93,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_Rectangle.end = m_Rectangle.start;
 
                 m_Active = true;
-                target.TakeMouseCapture(); // We want to receive events even when mouse is not over ourself.
+                target.CaptureMouse(); // We want to receive events even when mouse is not over ourself.
                 e.StopImmediatePropagation();
             }
         }
@@ -138,7 +139,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (selection.Contains(selectable))
                 {
-                    if (e.shiftKey) // invert selection on shift only
+                    if (e.actionKey) // invert selection on shift only
                         graphView.RemoveFromSelection(selectable);
                 }
                 else
@@ -146,7 +147,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             m_Active = false;
-            target.ReleaseMouseCapture();
+            target.ReleaseMouse();
             e.StopPropagation();
         }
 
@@ -164,7 +165,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             public Vector2 start { get; set; }
             public Vector2 end { get; set; }
 
-            public override void DoRepaint()
+            protected override void DoRepaint(IStylePainter painter)
             {
                 VisualElement t = parent;
                 Vector2 screenStart = start;

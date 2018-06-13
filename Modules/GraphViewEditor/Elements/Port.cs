@@ -348,7 +348,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             tpl.CloneTree(this, null);
             m_ConnectorBox = this.Q(name: "connector");
             m_ConnectorText = this.Q<Label>(name: "type");
-            m_ConnectorText.clippingOptions = ClippingOptions.NoClipping;
 
             m_ConnectorBoxCap = this.Q(name: "cap");
 

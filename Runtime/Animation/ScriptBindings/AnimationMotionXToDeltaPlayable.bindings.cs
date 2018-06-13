@@ -10,6 +10,7 @@ using UnityEngine.Playables;
 
 namespace UnityEngine.Animations
 {
+    [NativeHeader("Runtime/Animation/ScriptBindings/AnimationMotionXToDeltaPlayable.bindings.h")]
     [NativeHeader("Runtime/Animation/Director/AnimationMotionXToDeltaPlayable.h")]
     [RequiredByNativeCode]
     internal struct AnimationMotionXToDeltaPlayable : IPlayable, IEquatable<AnimationMotionXToDeltaPlayable>
@@ -63,7 +64,7 @@ namespace UnityEngine.Animations
             return GetHandle() == other.GetHandle();
         }
 
-        // Bindings methods.
+        [FreeFunction("AnimationMotionXToDeltaPlayableBindings::CreateHandleInternal", ThrowsException = true)]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
     }
 }

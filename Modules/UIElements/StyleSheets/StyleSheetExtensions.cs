@@ -15,9 +15,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
     {
         public static void Apply<T>(this StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleValue<T> property, HandlesApplicatorFunction<T> applicatorFunc)
         {
+            // TODO: initial value for property is sometimes different than default(T)
             if (handles[0].valueType == StyleValueType.Keyword && handles[0].valueIndex == (int)StyleValueKeyword.Unset)
             {
-                StyleSheetApplicator.ApplyDefault(specificity, ref property);
+                StyleSheetApplicator.ApplyValue(specificity, ref property);
             }
             else
             {
@@ -27,11 +28,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         public static void ApplyShorthand(this StyleSheet sheet, StyleValueHandle[] handles, int specificity, VisualElementStylesData styleData, ShorthandApplicatorFunction applicatorFunc)
         {
-            // Do not apply anything if shorthand is equal to unset
-            if (handles[0].valueType != StyleValueType.Keyword && handles[0].valueIndex != (int)StyleValueKeyword.Unset)
-            {
-                applicatorFunc(sheet, handles, specificity, styleData);
-            }
+            // applicatorFunc should handle Unset.
+            applicatorFunc(sheet, handles, specificity, styleData);
         }
 
         public static string ReadAsString(this StyleSheet sheet, StyleValueHandle handle)

@@ -451,6 +451,7 @@ namespace UnityEditor
                 GUILayoutUtility.GetRect(GUIContent.none, s_Styles.staticDropdown, GUILayout.ExpandWidth(false)),
                 GUIContent.none,
                 GameObjectUtility.GetStaticEditorFlags(go),
+                false,
                 out changedFlags, out changedToValue,
                 s_Styles.staticDropdown
                 );

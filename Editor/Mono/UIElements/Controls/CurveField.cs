@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
@@ -12,11 +11,11 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class CurveField : BaseControl<AnimationCurve>
+    public class CurveField : BaseField<AnimationCurve>
     {
-        public class CurveFieldFactory : UxmlFactory<CurveField, CurveFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<CurveField, UxmlTraits> {}
 
-        public class CurveFieldUxmlTraits : BaseControlUxmlTraits {}
+        public new class UxmlTraits : BaseField<AnimationCurve>.UxmlTraits {}
 
         private const string k_CurveColorProperty = "curve-color";
         public Rect ranges { get; set; }
@@ -31,7 +30,6 @@ namespace UnityEditor.Experimental.UIElements
         }
 
         private bool m_ValueNull;
-        private AnimationCurve m_Value;
         private bool m_TextureDirty;
 
         public enum RenderMode
@@ -68,43 +66,40 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        internal static AnimationCurve CopyCurve(AnimationCurve other)
+        {
+            AnimationCurve curveCopy = new AnimationCurve();
+            curveCopy.keys = other.keys;
+            curveCopy.preWrapMode = other.preWrapMode;
+            curveCopy.postWrapMode = other.postWrapMode;
+            return curveCopy;
+        }
+
         public override AnimationCurve value
         {
             get
             {
                 if (m_ValueNull) return null;
-                AnimationCurve curveCopy = new AnimationCurve();
-                curveCopy.keys = m_Value.keys;
-                curveCopy.preWrapMode = m_Value.preWrapMode;
-                curveCopy.postWrapMode = m_Value.postWrapMode;
 
-                return curveCopy;
+                return CopyCurve(m_Value);
             }
             set
             {
                 //I need to have total ownership of the curve, I won't be able to know if it is changed outside. so I'm duplicating it.
-
                 if (value != null || !m_ValueNull) // let's not reinitialize an initialized curve
                 {
-                    m_ValueNull = value == null;
-                    if (!m_ValueNull)
+                    using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(m_Value, value))
                     {
-                        m_Value.keys = value.keys;
-                        m_Value.preWrapMode = value.preWrapMode;
-                        m_Value.postWrapMode = value.postWrapMode;
-                    }
-                    else
-                    {
-                        m_Value.keys = new Keyframe[0];
-                        m_Value.preWrapMode = WrapMode.Once;
-                        m_Value.postWrapMode = WrapMode.Once;
+                        evt.target = this;
+                        SetValueWithoutNotify(value);
+                        UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
                 }
                 m_TextureDirty = true;
 
-                Dirty(ChangeType.Repaint);
+                IncrementVersion(VersionChangeType.Repaint);
 
-                m_Content?.Dirty(ChangeType.Repaint);
+                m_Content?.IncrementVersion(VersionChangeType.Repaint);
             }
         }
         CurveFieldContent m_Content;
@@ -130,13 +125,26 @@ namespace UnityEditor.Experimental.UIElements
             m_TextureDirty = true;
         }
 
+        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
         public override void SetValueAndNotify(AnimationCurve newValue)
         {
-            using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(value, newValue))
+            value = newValue;
+        }
+
+        public override void SetValueWithoutNotify(AnimationCurve newValue)
+        {
+            m_ValueNull = newValue == null;
+            if (!m_ValueNull)
             {
-                evt.target = this;
-                value = newValue;
-                UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
+                m_Value.keys = newValue.keys;
+                m_Value.preWrapMode = newValue.preWrapMode;
+                m_Value.postWrapMode = newValue.postWrapMode;
+            }
+            else
+            {
+                m_Value.keys = new Keyframe[0];
+                m_Value.preWrapMode = WrapMode.Once;
+                m_Value.postWrapMode = WrapMode.Once;
             }
         }
 
@@ -183,17 +191,7 @@ namespace UnityEditor.Experimental.UIElements
         void OnCurveChanged(AnimationCurve curve)
         {
             CurveEditorWindow.curve = m_Value;
-            SetValueAndNotify(m_Value);
-        }
-
-        private void SendChangeEvent(AnimationCurve newValue)
-        {
-            using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(value, newValue))
-            {
-                evt.target = this;
-                value = newValue;
-                UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
-            }
+            value = m_Value;
         }
 
         public override void OnPersistentDataReady()
@@ -436,7 +434,7 @@ namespace UnityEditor.Experimental.UIElements
         }
 
         Mesh m_Mesh = null;
-        public override void DoRepaint()
+        protected override void DoRepaint(IStylePainter painter)
         {
             if (renderMode == RenderMode.Mesh)
             {
@@ -447,7 +445,7 @@ namespace UnityEditor.Experimental.UIElements
                 SetupStandardRepaint();
             }
 
-            base.DoRepaint();
+            base.DoRepaint(painter);
         }
 
         class CurveFieldContent : VisualElement
@@ -481,9 +479,9 @@ namespace UnityEditor.Experimental.UIElements
                 m_Mat = null;
             }
 
-            public override void DoRepaint()
+            protected override void DoRepaint(IStylePainter painter)
             {
-                base.DoRepaint();
+                base.DoRepaint(painter);
 
                 if (m_Mesh != null)
                 {
@@ -509,9 +507,10 @@ namespace UnityEditor.Experimental.UIElements
                     m_Mat.SetFloat("_ZoomCorrection", realWidth / CurveField.k_EdgeWidth);
 
                     m_Mat.SetColor("_Color", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? curveColor.gamma : curveColor);
-                    m_Mat.SetPass(0);
 
-                    Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
+                    var stylePainter = (IStylePainterInternal)painter;
+                    var meshParams = MeshStylePainterParameters.GetDefault(m_Mesh, m_Mat);
+                    stylePainter.DrawMesh(meshParams);
                 }
             }
         }

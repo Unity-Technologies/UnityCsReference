@@ -20,4 +20,3 @@ namespace UnityEditor.PackageManager
         }
     }
 }
-

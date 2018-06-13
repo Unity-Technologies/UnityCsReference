@@ -73,18 +73,13 @@ namespace UnityEngine.Networking
                     dst[i] = src[kSDASocketStorageOffset + i];
                 }
 
-                // Convert the byte[] pointer to an IntPtr
-                IntPtr st = new IntPtr(BitConverter.ToInt64(dst, 0));
-                if (st == IntPtr.Zero)
-                    throw new ArgumentException("XboxOneEndPoint has an invalid SOCKET_STORAGE pointer");
-
                 byte[] SocketAddressFamily = new byte[2]; // short
-                System.Runtime.InteropServices.Marshal.Copy(st, SocketAddressFamily, 0, SocketAddressFamily.Length);
+                Buffer.BlockCopy(dst, 0, SocketAddressFamily, 0, SocketAddressFamily.Length);
 
                 System.Net.Sockets.AddressFamily a = (System.Net.Sockets.AddressFamily)((((int)SocketAddressFamily[1]) << 8) + (int)SocketAddressFamily[0]);
                 if (a != System.Net.Sockets.AddressFamily.InterNetworkV6)
                     throw new ArgumentException("XboxOneEndPoint has corrupt or invalid SOCKET_STORAGE pointer");
-                return Internal_ConnectEndPoint(hostId, st, kSockAddrStorageLength, exceptionConnectionId, out error);
+                return Internal_ConnectEndPoint(hostId, dst, kSockAddrStorageLength, exceptionConnectionId, out error);
             }
             else
             {
@@ -109,10 +104,7 @@ namespace UnityEngine.Networking
                     dst[i] = src[i];
                 }
 
-                IntPtr unmanagedPointer = Marshal.AllocHGlobal(dst.Length);
-                Marshal.Copy(dst, 0, unmanagedPointer, dst.Length);
-                int result = Internal_ConnectEndPoint(hostId, unmanagedPointer, kSceSockAddrSize, exceptionConnectionId, out error);
-                Marshal.FreeHGlobal(unmanagedPointer);
+                int result = Internal_ConnectEndPoint(hostId, dst, kSceSockAddrSize, exceptionConnectionId, out error);
                 return result;
             }
         }

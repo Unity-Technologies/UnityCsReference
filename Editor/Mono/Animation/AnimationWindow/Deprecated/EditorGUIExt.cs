@@ -392,6 +392,9 @@ namespace UnityEditor
                     slider.Draw(position, GUIContent.none, id);
                     thumb.Draw(thumbRect, GUIContent.none, id);
 
+                    EditorGUIUtility.AddCursorRect(thumbMinRect, horiz ? MouseCursor.ResizeHorizontal : MouseCursor.ResizeVertical, state != null && state.whereWeDrag == 1 ? id : -1);
+                    EditorGUIUtility.AddCursorRect(thumbMaxRect, horiz ? MouseCursor.ResizeHorizontal : MouseCursor.ResizeVertical, state != null && state.whereWeDrag == 2 ? id : -1);
+
                     // if the mouse is outside this control, just bail out...
                     if (GUIUtility.hotControl != id ||
                         !position.Contains(evt.mousePosition) || minVisual - maxVisual == 0)
@@ -414,7 +417,7 @@ namespace UnityEditor
                     thumbPos = horiz ? thumbRect.x : thumbRect.y;
 
                     int currentSide = mousePos > thumbPos ? 4 : 3;
-                    if (currentSide != state.whereWeDrag)
+                    if (state != null && currentSide != state.whereWeDrag)
                         return;
 
                     // If we have a scrollSize, we do pgup/pgdn style movements
@@ -434,7 +437,8 @@ namespace UnityEditor
                             else
                                 value -= size * sign * .9f;
                         }
-                        state.whereWeDrag = -1;
+                        if (state != null)
+                            state.whereWeDrag = -1;
                         GUI.changed = true;
                     }
                     value = Mathf.Clamp(value, minLimit, maxLimit - size);

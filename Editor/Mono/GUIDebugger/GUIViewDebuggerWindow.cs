@@ -128,7 +128,7 @@ namespace UnityEditor
                 m_PaddingHighlighter.RemoveFromHierarchy();
                 m_ContentHighlighter.RemoveFromHierarchy();
 
-                parent.Dirty(ChangeType.Repaint);
+                parent.MarkDirtyRepaint();
             }
         }
 

@@ -40,6 +40,7 @@ namespace UnityEditor
                     m_Panel = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor, DataWatchService.sharedInstance);
                     m_Panel.cursorManager = m_CursorManager;
                     m_Panel.contextualMenuManager = s_ContextualMenuManager;
+                    m_Panel.panelDebug = new PanelDebug(m_Panel);
                 }
 
                 return m_Panel;
@@ -51,6 +52,7 @@ namespace UnityEditor
         protected IMGUIContainer imguiContainer { get; private set; }
 
         int m_DepthBufferBits = 0;
+        int m_AntiAliasing = 0;
         EventInterests m_EventInterests;
         bool m_AutoRepaintOnSceneChange = false;
         private bool m_BackgroundValid = false;
@@ -73,7 +75,7 @@ namespace UnityEditor
         protected override void SetWindow(ContainerWindow win)
         {
             base.SetWindow(win);
-            Internal_Init(m_DepthBufferBits);
+            Internal_Init(m_DepthBufferBits, m_AntiAliasing);
             if (win)
                 Internal_SetWindow(win);
             Internal_SetAutoRepaint(m_AutoRepaintOnSceneChange);
@@ -87,7 +89,7 @@ namespace UnityEditor
 
         internal void RecreateContext()
         {
-            Internal_Recreate(m_DepthBufferBits);
+            Internal_Recreate(m_DepthBufferBits, m_AntiAliasing);
             m_BackgroundValid = false;
         }
 
@@ -143,6 +145,12 @@ namespace UnityEditor
             set { m_DepthBufferBits = value; }
         }
 
+        public int antiAliasing
+        {
+            get { return m_AntiAliasing; }
+            set { m_AntiAliasing = value; }
+        }
+
         [Obsolete("AA is not supported on GUIViews", false)]
         public int antiAlias
         {
@@ -161,9 +169,15 @@ namespace UnityEditor
         protected virtual void OnDisable()
         {
             if (imguiContainer.HasMouseCapture())
-                MouseCaptureController.ReleaseMouseCapture();
+                MouseCaptureController.ReleaseMouse();
             visualTree.Remove(imguiContainer);
             imguiContainer = null;
+
+            if (m_Panel != null)
+            {
+                m_Panel.Dispose();
+                /// We don't set <c>m_Panel</c> to null to prevent it from being re-created from <c>panel</c>.
+            }
         }
 
         protected virtual void OldOnGUI() {}
@@ -196,8 +210,6 @@ namespace UnityEditor
         protected override void OnDestroy()
         {
             Internal_Close();
-
-            UIElementsUtility.RemoveCachedPanel(this.GetInstanceID());
 
             base.OnDestroy();
         }

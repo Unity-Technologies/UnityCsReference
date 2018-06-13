@@ -72,9 +72,27 @@ namespace UnityEngine.Audio
             InternalSetTarget(ref m_Handle, value);
         }
 
-        // Bindings methods.
+        public bool GetEvaluateOnSeek()
+        {
+            return InternalGetEvaluateOnSeek(ref m_Handle);
+        }
+
+        public void SetEvaluateOnSeek(bool value)
+        {
+            InternalSetEvaluateOnSeek(ref m_Handle, value);
+        }
+
+        [NativeThrows]
         extern private static AudioSource InternalGetTarget(ref PlayableOutputHandle output);
+
+        [NativeThrows]
         extern private static void InternalSetTarget(ref PlayableOutputHandle output, AudioSource target);
+
+        [NativeThrows]
+        extern private static bool InternalGetEvaluateOnSeek(ref PlayableOutputHandle output);
+
+        [NativeThrows]
+        extern private static void InternalSetEvaluateOnSeek(ref PlayableOutputHandle output, bool value);
 
     }
 }

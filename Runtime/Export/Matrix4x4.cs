@@ -6,11 +6,15 @@ using System;
 using System.Runtime.InteropServices;
 using scm = System.ComponentModel;
 using uei = UnityEngine.Internal;
+using UnityEngine.Scripting;
+using UnityEngine.Bindings;
 
 namespace UnityEngine
 {
     // A standard 4x4 transformation matrix.
     [StructLayout(LayoutKind.Sequential)]
+    [RequiredByNativeCode(Optional = true, GenerateProxy = true)]
+    [NativeClass("Matrix4x4f")]
     public partial struct Matrix4x4 : IEquatable<Matrix4x4>
     {
         // memory layout:
@@ -24,39 +28,55 @@ namespace UnityEngine
         //            3  | m03 m13 m23 m33
 
         ///*undocumented*
+        [NativeName("m_Data[0]")]
         public float m00;
         ///*undocumented*
+        [NativeName("m_Data[1]")]
         public float m10;
         ///*undocumented*
+        [NativeName("m_Data[2]")]
         public float m20;
         ///*undocumented*
+        [NativeName("m_Data[3]")]
         public float m30;
 
         ///*undocumented*
+        [NativeName("m_Data[4]")]
         public float m01;
         ///*undocumented*
+        [NativeName("m_Data[5]")]
         public float m11;
         ///*undocumented*
+        [NativeName("m_Data[6]")]
         public float m21;
         ///*undocumented*
+        [NativeName("m_Data[7]")]
         public float m31;
 
         ///*undocumented*
+        [NativeName("m_Data[8]")]
         public float m02;
         ///*undocumented*
+        [NativeName("m_Data[9]")]
         public float m12;
         ///*undocumented*
+        [NativeName("m_Data[10]")]
         public float m22;
         ///*undocumented*
+        [NativeName("m_Data[11]")]
         public float m32;
 
         ///*undocumented*
+        [NativeName("m_Data[12]")]
         public float m03;
         ///*undocumented*
+        [NativeName("m_Data[13]")]
         public float m13;
         ///*undocumented*
+        [NativeName("m_Data[14]")]
         public float m23;
         ///*undocumented*
+        [NativeName("m_Data[15]")]
         public float m33;
 
         public Matrix4x4(Vector4 column0, Vector4 column1, Vector4 column2, Vector4 column3)

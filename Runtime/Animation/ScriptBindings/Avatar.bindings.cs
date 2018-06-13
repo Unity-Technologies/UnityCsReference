@@ -11,7 +11,7 @@ using System.Collections;
 
 namespace UnityEngine
 {
-    public enum BodyDoF
+    public enum BodyDof
     {
         SpineFrontBack = 0,
         SpineLeftRight,
@@ -22,10 +22,10 @@ namespace UnityEngine
         UpperChestFrontBack,
         UpperChestLeftRight,
         UpperChestRollLeftRight,
-        LastBodyDoF
+        LastBodyDof
     }
 
-    public enum HeadDoF
+    public enum HeadDof
     {
         NeckFrontBack = 0,
         NeckLeftRight,
@@ -39,10 +39,10 @@ namespace UnityEngine
         RightEyeInOut,
         JawDownUp,
         JawLeftRight,
-        LastHeadDoF
+        LastHeadDof
     }
 
-    public enum LegDoF
+    public enum LegDof
     {
         UpperLegFrontBack = 0,
         UpperLegInOut,
@@ -52,10 +52,10 @@ namespace UnityEngine
         FootCloseOpen,
         FootInOut,
         ToesUpDown,
-        LastLegDoF
+        LastLegDof
     }
 
-    public enum ArmDoF
+    public enum ArmDof
     {
         ShoulderDownUp = 0,
         ShoulderFrontBack,
@@ -66,19 +66,19 @@ namespace UnityEngine
         ForeArmRollInOut,
         HandDownUp,
         HandInOut,
-        LastArmDoF
+        LastArmDof
     }
 
-    public enum FingerDoF
+    public enum FingerDof
     {
         ProximalDownUp = 0,
         ProximalInOut,
         IntermediateCloseOpen,
         DistalCloseOpen,
-        LastFingerDoF
+        LastFingerDof
     }
 
-    public enum HumanPartDoF
+    public enum HumanPartDof
     {
         Body = 0,
         Head,
@@ -96,32 +96,32 @@ namespace UnityEngine
         RightMiddle,
         RightRing,
         RightLittle,
-        LastHumanPartDoF
+        LastHumanPartDof
     }
 
-    internal enum DoF
+    internal enum Dof
     {
-        BodyDoFStart = 0,
-        HeadDoFStart = (int)BodyDoFStart + (int)BodyDoF.LastBodyDoF,
-        LeftLegDoFStart = (int)HeadDoFStart + (int)HeadDoF.LastHeadDoF,
-        RightLegDoFStart = (int)LeftLegDoFStart + (int)LegDoF.LastLegDoF,
-        LeftArmDoFStart = (int)RightLegDoFStart + (int)LegDoF.LastLegDoF,
-        RightArmDoFStart = (int)LeftArmDoFStart + (int)ArmDoF.LastArmDoF,
+        BodyDofStart = 0,
+        HeadDofStart = (int)BodyDofStart + (int)BodyDof.LastBodyDof,
+        LeftLegDofStart = (int)HeadDofStart + (int)HeadDof.LastHeadDof,
+        RightLegDofStart = (int)LeftLegDofStart + (int)LegDof.LastLegDof,
+        LeftArmDofStart = (int)RightLegDofStart + (int)LegDof.LastLegDof,
+        RightArmDofStart = (int)LeftArmDofStart + (int)ArmDof.LastArmDof,
 
-        LeftThumbDoFStart = (int)RightArmDoFStart + (int)ArmDoF.LastArmDoF,
-        LeftIndexDoFStart = (int)LeftThumbDoFStart + (int)FingerDoF.LastFingerDoF,
-        LeftMiddleDoFStart = (int)LeftIndexDoFStart + (int)FingerDoF.LastFingerDoF,
+        LeftThumbDofStart = (int)RightArmDofStart + (int)ArmDof.LastArmDof,
+        LeftIndexDofStart = (int)LeftThumbDofStart + (int)FingerDof.LastFingerDof,
+        LeftMiddleDofStart = (int)LeftIndexDofStart + (int)FingerDof.LastFingerDof,
 
-        LeftRingDoFStart = (int)LeftMiddleDoFStart + (int)FingerDoF.LastFingerDoF,
-        LeftLittleDoFStart = (int)LeftRingDoFStart + (int)FingerDoF.LastFingerDoF,
+        LeftRingDofStart = (int)LeftMiddleDofStart + (int)FingerDof.LastFingerDof,
+        LeftLittleDofStart = (int)LeftRingDofStart + (int)FingerDof.LastFingerDof,
 
-        RightThumbDoFStart = (int)LeftLittleDoFStart + (int)FingerDoF.LastFingerDoF,
-        RightIndexDoFStart = (int)RightThumbDoFStart + (int)FingerDoF.LastFingerDoF,
-        RightMiddleDoFStart = (int)RightIndexDoFStart + (int)FingerDoF.LastFingerDoF,
-        RightRingDoFStart = (int)RightMiddleDoFStart + (int)FingerDoF.LastFingerDoF,
-        RightLittleDoFStart = (int)RightRingDoFStart + (int)FingerDoF.LastFingerDoF,
+        RightThumbDofStart = (int)LeftLittleDofStart + (int)FingerDof.LastFingerDof,
+        RightIndexDofStart = (int)RightThumbDofStart + (int)FingerDof.LastFingerDof,
+        RightMiddleDofStart = (int)RightIndexDofStart + (int)FingerDof.LastFingerDof,
+        RightRingDofStart = (int)RightMiddleDofStart + (int)FingerDof.LastFingerDof,
+        RightLittleDofStart = (int)RightRingDofStart + (int)FingerDof.LastFingerDof,
 
-        LastDoF = (int)RightLittleDoFStart + (int)FingerDoF.LastFingerDoF
+        LastDof = (int)RightLittleDofStart + (int)FingerDof.LastFingerDof
     }
 
     // Human Body Bones

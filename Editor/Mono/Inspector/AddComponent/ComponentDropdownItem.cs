@@ -4,27 +4,12 @@
 
 using UnityEngine;
 
-namespace UnityEditor
+namespace UnityEditor.AdvancedDropdown
 {
     internal class ComponentDropdownItem : AdvancedDropdownItem
     {
         private string m_MenuPath;
         private bool m_IsLegacy;
-
-        private static class Styles
-        {
-            public static GUIStyle itemStyle = new GUIStyle("PR Label");
-
-            static Styles()
-            {
-                itemStyle.alignment = TextAnchor.MiddleLeft;
-                itemStyle.padding.left = 0;
-                itemStyle.fixedHeight = 20;
-                itemStyle.margin = new RectOffset(0, 0, 0, 0);
-            }
-        }
-
-        public override GUIStyle lineStyle => Styles.itemStyle;
 
         internal ComponentDropdownItem() : base("ROOT", -1)
         {

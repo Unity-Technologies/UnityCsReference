@@ -90,10 +90,6 @@ namespace UnityEditor
             static GUIStyle GetStyle(string styleName)
             {
                 return styleName; // Implicit construction of GUIStyle
-
-                // For faster testing of GUISkin changes in editor resources load directly from skin
-                //GUISkin skin = EditorGUIUtility.LoadRequired ("Builtin Skins/DarkSkin/Skins/Presets.guiSkin") as GUISkin;
-                //return skin.GetStyle (styleName);
             }
         }
         static Styles s_Styles;

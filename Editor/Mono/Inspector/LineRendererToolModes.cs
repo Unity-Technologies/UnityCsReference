@@ -40,7 +40,7 @@ namespace UnityEditor
 
         public static LayerMask raycastMask
         {
-            get { return EditorPrefs.GetInt("LineRendererEditorRaycastMask", 0); }
+            get { return EditorPrefs.GetInt("LineRendererEditorRaycastMask", -1); }
             set { EditorPrefs.SetInt("LineRendererEditorRaycastMask", value); }
         }
 

@@ -71,6 +71,20 @@ namespace UnityEditor
             }
         }
 
+        internal static Material s_GUITextureBlitSceneGUI;
+        internal static Material GUITextureBlitSceneGUIMaterial
+        {
+            get
+            {
+                if (!s_GUITextureBlitSceneGUI)
+                {
+                    Shader shader = LoadRequired("SceneView/GUITextureBlitSceneGUI.shader") as Shader;
+                    s_GUITextureBlitSceneGUI = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+                }
+                return s_GUITextureBlitSceneGUI;
+            }
+        }
+
         // Are GUIStyle fonts bold right now?
         internal static int s_FontIsBold = -1;
 
@@ -609,7 +623,9 @@ namespace UnityEditor
                 icon = InnerLoadGeneratedIconOrNormalIcon(name);
             }
 
-            if (icon != null && !Mathf.Approximately(icon.pixelsPerPoint, GUIUtility.pixelsPerPoint))
+            if (icon != null &&
+                !Mathf.Approximately(icon.pixelsPerPoint, GUIUtility.pixelsPerPoint) && //scaling are different
+                !Mathf.Approximately(GUIUtility.pixelsPerPoint % 1, 0)) //screen scaling is non-integer
             {
                 icon.filterMode = FilterMode.Bilinear;
             }
@@ -1391,19 +1407,6 @@ namespace UnityEditor
             Color tintColor = (isProSkin) ? new Color(0.12f, 0.12f, 0.12f, 1.333f) : new Color(0.6f, 0.6f, 0.6f, 1.333f);
             GUI.color = GUI.color * tintColor;
             Rect splitterRect = new Rect(dragRect.x - 1, dragRect.y, 1, dragRect.height);
-            GUI.DrawTexture(splitterRect, whiteTexture);
-            GUI.color = orgColor;
-        }
-
-        internal static void DrawVerticalSplitter(Rect dragRect)
-        {
-            if (Event.current.type != EventType.Repaint)
-                return;
-
-            Color orgColor = GUI.color;
-            Color tintColor = (isProSkin) ? new Color(0.12f, 0.12f, 0.12f, 1.333f) : new Color(0.6f, 0.6f, 0.6f, 1.333f);
-            GUI.color = GUI.color * tintColor;
-            Rect splitterRect = new Rect(dragRect.x, dragRect.y + 1, dragRect.width, 1f);
             GUI.DrawTexture(splitterRect, whiteTexture);
             GUI.color = orgColor;
         }

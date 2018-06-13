@@ -83,7 +83,7 @@ namespace UnityEngine.Experimental.UIElements
             if (CanStartManipulation(evt))
             {
                 m_Active = true;
-                target.TakeMouseCapture();
+                target.CaptureMouse();
                 lastMousePosition = evt.localMousePosition;
 
                 if (IsRepeatable())
@@ -127,7 +127,7 @@ namespace UnityEngine.Experimental.UIElements
             if (m_Active && CanStopManipulation(evt))
             {
                 m_Active = false;
-                target.ReleaseMouseCapture();
+                target.ReleaseMouse();
 
                 if (IsRepeatable())
                 {

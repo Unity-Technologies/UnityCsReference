@@ -7,11 +7,11 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class PopupWindow : BaseTextElement
+    public class PopupWindow : TextElement
     {
-        public class PopupWindowFactory : UxmlFactory<PopupWindow, PopupWindowUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<PopupWindow, UxmlTraits> {}
 
-        public class PopupWindowUxmlTraits : BaseTextElementUxmlTraits
+        public new class UxmlTraits : TextElement.UxmlTraits
         {
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {

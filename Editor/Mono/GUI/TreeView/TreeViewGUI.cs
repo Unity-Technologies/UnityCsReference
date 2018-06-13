@@ -65,6 +65,7 @@ namespace UnityEditor.IMGUI.Controls
                 lineStyle.onNormal.background = transparent;
                 lineStyle.onActive.background = transparent;
                 lineStyle.onFocused.background = transparent;
+                lineStyle.hover.background = null;
                 lineStyle.alignment = TextAnchor.UpperLeft;     // We use UpperLeft to use same alignment as labels and controls so it is consistent when used in multi column treeviews
                 lineStyle.padding.top = 2;                      // Use a value that centers the text when the rect height is EditorGUIUtility.singleLineHeight
                 lineStyle.fixedHeight = 0;                      // Ensure drop marker rendering fits to entire rect
@@ -340,12 +341,17 @@ namespace UnityEditor.IMGUI.Controls
             EditorGUI.BeginChangeCheck();
             {
                 bool expandedState = expansionAnimator.IsAnimating(item.id) ? expansionAnimator.isExpanding : m_TreeView.data.IsExpanded(item);
-                newExpandedValue = GUI.Toggle(foldoutRect, expandedState, GUIContent.none, foldoutStyle);
+                newExpandedValue = DoFoldoutButton(foldoutRect, expandedState, foldoutStyle);
             }
             if (EditorGUI.EndChangeCheck())
             {
                 m_TreeView.UserInputChangedExpandedState(item, row, newExpandedValue);
             }
+        }
+
+        protected virtual bool DoFoldoutButton(Rect foldoutRect, bool expandedState, GUIStyle foldoutStyle)
+        {
+            return GUI.Toggle(foldoutRect, expandedState, GUIContent.none, foldoutStyle);
         }
 
         protected virtual void OnContentGUI(Rect rect, int row, TreeViewItem item, string label, bool selected, bool focused, bool useBoldFont, bool isPinging)

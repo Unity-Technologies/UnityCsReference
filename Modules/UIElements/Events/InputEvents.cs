@@ -12,7 +12,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.Bubbles | EventFlags.Capturable;
+            flags = EventFlags.Bubbles | EventFlags.TricklesDown;
             previousData = default(string);
             newData = default(string);
         }

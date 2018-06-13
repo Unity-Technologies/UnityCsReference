@@ -3,46 +3,21 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class ColorField : BaseControl<Color>
+    public class ColorField : BaseField<Color>
     {
-        public class ColorFieldFactory : UxmlFactory<ColorField, ColorFieldUxmlTraits> {}
+        public new class UxmlFactory : UxmlFactory<ColorField, UxmlTraits> {}
 
-        public class ColorFieldUxmlTraits : BaseControlUxmlTraits
+        public new class UxmlTraits : BaseField<Color>.UxmlTraits
         {
-            UxmlColorAttributeDescription m_Value;
-            UxmlBoolAttributeDescription m_ShowEyeDropper;
-            UxmlBoolAttributeDescription m_ShowAlpha;
-            UxmlBoolAttributeDescription m_Hdr;
-
-            public ColorFieldUxmlTraits()
-            {
-                m_Value = new UxmlColorAttributeDescription { name = "value" };
-                m_ShowEyeDropper = new UxmlBoolAttributeDescription { name = "showEyeDropper", defaultValue = true };
-                m_ShowAlpha = new UxmlBoolAttributeDescription { name = "showAlpha", defaultValue = true };
-                m_Hdr = new UxmlBoolAttributeDescription { name = "hdr" };
-            }
-
-            public override IEnumerable<UxmlAttributeDescription> uxmlAttributesDescription
-            {
-                get
-                {
-                    foreach (var attr in base.uxmlAttributesDescription)
-                    {
-                        yield return attr;
-                    }
-
-                    yield return m_Value;
-                    yield return m_ShowEyeDropper;
-                    yield return m_ShowAlpha;
-                    yield return m_Hdr;
-                }
-            }
+            UxmlColorAttributeDescription m_Value = new UxmlColorAttributeDescription { name = "value" };
+            UxmlBoolAttributeDescription m_ShowEyeDropper = new UxmlBoolAttributeDescription { name = "showEyeDropper", defaultValue = true };
+            UxmlBoolAttributeDescription m_ShowAlpha = new UxmlBoolAttributeDescription { name = "showAlpha", defaultValue = true };
+            UxmlBoolAttributeDescription m_Hdr = new UxmlBoolAttributeDescription { name = "hdr" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -55,18 +30,6 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        private Color m_Value;
-
-        public override Color value
-        {
-            get { return m_Value; }
-            set
-            {
-                m_Value = value;
-                Dirty(ChangeType.Repaint);
-            }
-        }
-
         public bool showEyeDropper { get; set; }
         public bool showAlpha { get; set; }
         public bool hdr { get; set; }
@@ -76,27 +39,40 @@ namespace UnityEditor.Experimental.UIElements
 
         private IMGUIContainer m_ColorField;
 
+        // Since the ColorField is containing a child in the focus ring,
+        //     it must make sure the child focus follow the focusIndex
+        public override int focusIndex
+        {
+            get { return base.focusIndex; }
+            set
+            {
+                base.focusIndex = value;
+                if (m_ColorField != null)
+                {
+                    m_ColorField.focusIndex = value;
+                }
+            }
+        }
+
+
         public ColorField()
         {
             showEyeDropper = true;
             showAlpha = true;
 
-            m_ColorField = new IMGUIContainer(OnGUIHandler) { name = "InternalColorField" };
-            // Disable focus on the IMGUIContainer, it's handled by the parent VisualElement
-            m_ColorField.focusIndex = -1;
+            // The focus on a color field is implemented like a BaseCompoundField : the ColorField and its inner child
+            // are both put in the focus ring. When the ColorField is receiving the Focus, it is "delegating" it to the inner child,
+            // which is, in this case, the IMGUIContainer.
+            m_ColorField = new IMGUIContainer(OnGUIHandler) { name = "InternalColorField", useUIElementsFocusStyle = true };
             Add(m_ColorField);
         }
 
+        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
         public override void SetValueAndNotify(Color newValue)
         {
             if (value != newValue)
             {
-                using (ChangeEvent<Color> evt = ChangeEvent<Color>.GetPooled(value, newValue))
-                {
-                    evt.target = this;
-                    value = newValue;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
-                }
+                value = newValue;
             }
         }
 
@@ -105,15 +81,24 @@ namespace UnityEditor.Experimental.UIElements
             base.ExecuteDefaultAction(evt);
 
             if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            {
                 m_SetKbControl = true;
+                // Make sure the inner IMGUIContainer is receiving the focus
+                m_ColorField.Focus();
+            }
+
             if (evt.GetEventTypeId() == BlurEvent.TypeId())
+            {
                 m_ResetKbControl = true;
+            }
         }
 
         protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
             if (evt.GetEventTypeId() == KeyDownEvent.TypeId())
+            {
                 m_ColorField.HandleEvent(evt);
+            }
         }
 
         private void OnGUIHandler()
@@ -121,11 +106,11 @@ namespace UnityEditor.Experimental.UIElements
             // Dirty repaint on eye dropper update to preview the color under the cursor
             if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == EventCommandNames.EyeDropperUpdate)
             {
-                Dirty(ChangeType.Repaint);
+                IncrementVersion(VersionChangeType.Repaint);
             }
 
             Color newColor = EditorGUILayout.ColorField(GUIContent.none, value, showEyeDropper, showAlpha, hdr);
-            SetValueAndNotify(newColor);
+            value = newColor;
             if (m_SetKbControl)
             {
                 GUIUtility.SetKeyboardControlToFirstControlId();

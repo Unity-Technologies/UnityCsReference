@@ -10,47 +10,48 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public class GradientField : BaseControl<Gradient>
+    public class GradientField : BaseField<Gradient>
     {
-        public class GradientFieldFactory : UxmlFactory<GradientField, GradientFieldUxmlTraits> {}
+        static readonly GradientColorKey k_WhiteKeyBegin = new GradientColorKey(Color.white, 0);
+        static readonly GradientColorKey k_WhiteKeyEnd = new GradientColorKey(Color.white, 1);
+        static readonly GradientAlphaKey k_AlphaKeyBegin = new GradientAlphaKey(1, 0);
+        static readonly GradientAlphaKey k_AlphaKeyEnd = new GradientAlphaKey(1, 1);
+        public new class UxmlFactory : UxmlFactory<GradientField, UxmlTraits> {}
 
-        public class GradientFieldUxmlTraits : BaseControlUxmlTraits {}
+        public new class UxmlTraits : BaseField<Gradient>.UxmlTraits {}
 
         private bool m_ValueNull;
-        Gradient m_Value;
         public override Gradient value
         {
             get
             {
                 if (m_ValueNull) return null;
-                Gradient gradientCopy = new Gradient();
-                gradientCopy.colorKeys = m_Value.colorKeys;
-                gradientCopy.alphaKeys = m_Value.alphaKeys;
-                gradientCopy.mode = m_Value.mode;
 
-                return m_Value;
+                return GradientCopy(m_Value);
             }
             set
             {
                 if (value != null || !m_ValueNull)  // let's not reinitialize an initialized gradient
                 {
-                    m_ValueNull = value == null;
-                    if (!m_ValueNull)
+                    using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(m_Value, value))
                     {
-                        m_Value.colorKeys = value.colorKeys;
-                        m_Value.alphaKeys = value.alphaKeys;
-                        m_Value.mode = value.mode;
-                    }
-                    else // restore the internal gradient to the default state.
-                    {
-                        m_Value.colorKeys = new GradientColorKey[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) };
-                        m_Value.alphaKeys = new GradientAlphaKey[] { new GradientAlphaKey(1, 0), new GradientAlphaKey(1, 1) };
-                        m_Value.mode = GradientMode.Blend;
+                        evt.target = this;
+                        SetValueWithoutNotify(value);
+                        UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
                 }
 
                 UpdateGradientTexture();
             }
+        }
+
+        internal static Gradient GradientCopy(Gradient other)
+        {
+            Gradient gradientCopy = new Gradient();
+            gradientCopy.colorKeys = other.colorKeys;
+            gradientCopy.alphaKeys = other.alphaKeys;
+            gradientCopy.mode = other.mode;
+            return gradientCopy;
         }
 
         public GradientField()
@@ -110,38 +111,39 @@ namespace UnityEditor.Experimental.UIElements
 
                 style.backgroundImage = gradientTexture;
 
-                Dirty(ChangeType.Repaint); // since the Texture2D object can be reused, force dirty because the backgroundImage change will only trigger the Dirty if the Texture2D objects are different.
+                IncrementVersion(VersionChangeType.Repaint); // since the Texture2D object can be reused, force dirty because the backgroundImage change will only trigger the Dirty if the Texture2D objects are different.
             }
         }
 
         void OnGradientChanged(Gradient newValue)
         {
-            SetValueAndNotify(newValue);
+            value = newValue;
 
             GradientPreviewCache.ClearCache(); // needed because GradientEditor itself uses the cache and will no invalidate it on changes.
-            Dirty(ChangeType.Repaint);
+            IncrementVersion(VersionChangeType.Repaint);
         }
 
-        public override void SetValueAndNotify(Gradient newValue)
+        public override void SetValueWithoutNotify(Gradient newValue)
         {
-            using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(value, newValue))
+            m_ValueNull = newValue == null;
+            if (!m_ValueNull)
             {
-                evt.target = this;
-                value = newValue;
-                UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
+                m_Value.colorKeys = newValue.colorKeys;
+                m_Value.alphaKeys = newValue.alphaKeys;
+                m_Value.mode = newValue.mode;
+            }
+            else // restore the internal gradient to the default state.
+            {
+                m_Value.colorKeys = new[] { k_WhiteKeyBegin, k_WhiteKeyEnd };
+                m_Value.alphaKeys = new[] { k_AlphaKeyBegin, k_AlphaKeyEnd };
+                m_Value.mode = GradientMode.Blend;
             }
         }
 
-        public override void DoRepaint()
+        [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
+        public override void SetValueAndNotify(Gradient newValue)
         {
-            //Start by drawing the checkerboard background for alpha gradients.
-            Texture2D backgroundTexture = GradientEditor.GetBackgroundTexture();
-            var painter = elementPanel.stylePainter;
-            var painterParams = painter.GetDefaultTextureParameters(this);
-            painterParams.texture = backgroundTexture;
-            painter.DrawTexture(painterParams);
-
-            base.DoRepaint();
+            value = newValue;
         }
     }
 }

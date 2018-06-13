@@ -32,6 +32,8 @@ namespace UnityEditor
         public override bool Equals(object o)
         {
             var other = o as ActiveEditorTracker;
+            if (ReferenceEquals(other, null))
+                return false;
             return m_Property.m_IntPtr == other.m_Property.m_IntPtr;
         }
 

@@ -14,8 +14,7 @@ namespace UnityEngine.U2D
     [StaticAccessor("GetSpriteAtlasManager()", StaticAccessorType.Dot)]
     public class SpriteAtlasManager
     {
-        public delegate void RequestAtlasCallback(string tag, System.Action<SpriteAtlas> action);
-        public static event RequestAtlasCallback atlasRequested = null;
+        public static event Action<string, Action<SpriteAtlas>> atlasRequested = null;
 
         [RequiredByNativeCode]
         private static bool RequestAtlas(string tag)
@@ -26,6 +25,14 @@ namespace UnityEngine.U2D
                 return true;
             }
             return false;
+        }
+
+        public static event Action<SpriteAtlas> atlasRegistered = null;
+
+        [RequiredByNativeCode]
+        private static void PostRegisteredAtlas(SpriteAtlas spriteAtlas)
+        {
+            atlasRegistered?.Invoke(spriteAtlas);
         }
 
         extern internal static void Register(SpriteAtlas spriteAtlas);
@@ -41,6 +48,8 @@ namespace UnityEngine.U2D
         extern public bool isVariant {[NativeMethod("IsVariant")] get; }
         extern public string tag { get; }
         extern public int spriteCount { get; }
+
+        extern public bool CanBindTo(Sprite sprite);
 
         extern public Sprite GetSprite(string name);
         public int GetSprites(Sprite[] sprites) { return GetSpritesScripting(sprites); }

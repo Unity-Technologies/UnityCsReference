@@ -19,6 +19,7 @@ namespace UnityEditor.Scripting.Compilers
             message.line = 0;
             message.column = 0;
             message.normalizedStatus = default(NormalizedCompilerStatus);
+            message.assemblyName = "n/a";
 
             return message;
         }
@@ -32,16 +33,17 @@ namespace UnityEditor.Scripting.Compilers
             message.column = Int32.Parse(m.Groups["column"].Value);
             message.type = (m.Groups["type"].Value == erroridentifier) ? CompilerMessageType.Error : CompilerMessageType.Warning;
             message.normalizedStatus = default(NormalizedCompilerStatus);
+            message.assemblyName = "n/a";
 
             return message;
         }
 
-        public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, bool compilationHadFailure)
+        public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, bool compilationHadFailure, string assemblyName)
         {
-            return Parse(errorOutput, new string[0], compilationHadFailure);
+            return Parse(errorOutput, new string[0], compilationHadFailure, assemblyName);
         }
 
-        public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure)
+        public virtual IEnumerable<CompilerMessage> Parse(string[] errorOutput, string[] standardOutput, bool compilationHadFailure, string assemblyName)
         {
             var hasErrors = false;
             var msgs = new List<CompilerMessage>();
@@ -63,6 +65,7 @@ namespace UnityEditor.Scripting.Compilers
                 }
                 CompilerMessage message = CreateCompilerMessageFromMatchedRegex(line, m, GetErrorIdentifier());
                 message.normalizedStatus = NormalizedStatusFor(m);
+                message.assemblyName = assemblyName;
 
                 if (message.type == CompilerMessageType.Error)
                     hasErrors = true;

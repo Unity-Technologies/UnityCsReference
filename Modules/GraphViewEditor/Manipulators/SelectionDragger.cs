@@ -59,6 +59,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
+            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
             panSpeed = new Vector2(1, 1);
             clampToParentEdges = false;
 
@@ -95,25 +97,51 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private GraphView m_GraphView;
 
-        private Dictionary<GraphElement, Rect> m_OriginalPos;
+        class OriginalPos
+        {
+            public Rect pos;
+            public Scope scope;
+            public StackNode stack;
+            public int stackIndex;
+            public bool dragStarted;
+        }
+
+        private Dictionary<GraphElement, OriginalPos> m_OriginalPos;
         private Vector2 m_originalMouse;
 
-        static void SendDragAndDropEvent(IDragAndDropEvent evt, List<ISelectable> selection, IDropTarget dropTarget)
+        static void SendDragAndDropEvent(IDragAndDropEvent evt, List<ISelectable> selection, IDropTarget dropTarget, ISelection dragSource)
         {
-            if (dropTarget ==  null || !dropTarget.CanAcceptDrop(selection))
+            if (dropTarget == null)
+            {
                 return;
+            }
+
             EventBase e = evt as EventBase;
+            if (e.GetEventTypeId() == DragExitedEvent.TypeId())
+            {
+                dropTarget.DragExited();
+            }
+
+            if (!dropTarget.CanAcceptDrop(selection))
+            {
+                return;
+            }
+
             if (e.GetEventTypeId() == DragPerformEvent.TypeId())
             {
-                dropTarget.DragPerform(evt as DragPerformEvent, selection, dropTarget);
+                dropTarget.DragPerform(evt as DragPerformEvent, selection, dropTarget, dragSource);
             }
             else if (e.GetEventTypeId() == DragUpdatedEvent.TypeId())
             {
-                dropTarget.DragUpdated(evt as DragUpdatedEvent, selection, dropTarget);
+                dropTarget.DragUpdated(evt as DragUpdatedEvent, selection, dropTarget, dragSource);
             }
-            else if (e.GetEventTypeId() == DragExitedEvent.TypeId())
+            else if (e.GetEventTypeId() == DragEnterEvent.TypeId())
             {
-                dropTarget.DragExited();
+                dropTarget.DragEnter(evt as DragEnterEvent, selection, dropTarget, dragSource);
+            }
+            else if (e.GetEventTypeId() == DragLeaveEvent.TypeId())
+            {
+                dropTarget.DragLeave(evt as DragLeaveEvent, selection, dropTarget, dragSource);
             }
         }
 
@@ -164,12 +192,21 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
 
                 // Only start manipulating if the clicked element is movable, selected and that the mouse is in its clickable region (it must be deselected otherwise).
-                if (!clickedElement.IsMovable() || !m_GraphView.selection.Contains(clickedElement) || !clickedElement.HitTest(clickedElement.WorldToLocal(e.mousePosition)))
+                if (!clickedElement.IsMovable() || !clickedElement.HitTest(clickedElement.WorldToLocal(e.mousePosition)))
                     return;
+
+                // If we hit this, this likely because the element has just been unselected
+                // It is important for this manipulator to receive the event so the previous one did not stop it
+                // but we shouldn't let it propagate to other manipulators to avoid a re-selection
+                if (!m_GraphView.selection.Contains(clickedElement))
+                {
+                    e.StopImmediatePropagation();
+                    return;
+                }
 
                 selectedElement = clickedElement;
 
-                m_OriginalPos = new Dictionary<GraphElement, Rect>();
+                m_OriginalPos = new Dictionary<GraphElement, OriginalPos>();
 
                 foreach (ISelectable s in m_GraphView.selection)
                 {
@@ -177,9 +214,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (ce == null || !ce.IsMovable())
                         continue;
 
+                    StackNode stackNode = null;
                     if (ce.parent is StackNode)
                     {
-                        StackNode stackNode = ce.parent as StackNode;
+                        stackNode = ce.parent as StackNode;
 
                         if (stackNode.IsSelected(m_GraphView))
                             continue;
@@ -187,7 +225,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                     Rect geometry = ce.GetPosition();
                     Rect geometryInContentViewSpace = ce.shadow.parent.ChangeCoordinatesTo(m_GraphView.contentViewContainer, geometry);
-                    m_OriginalPos[ce] = geometryInContentViewSpace;
+                    m_OriginalPos[ce] = new OriginalPos
+                    {
+                        pos = geometryInContentViewSpace,
+                        scope = ce.GetContainingScope(),
+                        stack = stackNode,
+                        stackIndex = stackNode != null ? stackNode.IndexOf(ce) : -1
+                    };
                 }
 
                 m_originalMouse = e.mousePosition;
@@ -200,7 +244,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 }
 
                 m_Active = true;
-                target.TakeMouseCapture(); // We want to receive events even when mouse is not over ourself.
+                target.CaptureMouse(); // We want to receive events even when mouse is not over ourself.
                 e.StopImmediatePropagation();
             }
         }
@@ -258,33 +302,28 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_PanSchedule.Pause();
             }
 
-            // We need to monitor the mouse diff "by hand" because we stop positionning the graph elements once the
+            // We need to monitor the mouse diff "by hand" because we stop positioning the graph elements once the
             // mouse has gone out.
             m_MouseDiff = m_originalMouse - e.mousePosition;
 
-            foreach (KeyValuePair<GraphElement, Rect> v in m_OriginalPos)
+            foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
             {
                 GraphElement ce = v.Key;
 
-                // Detach the selected element from its parent before dragging it
-                // TODO: Make it more generic
-                if (ce.parent is StackNode)
+                // Protect against stale visual elements that have been deparented since the start of the manipulation
+                if (ce.shadow.parent == null)
+                    continue;
+
+                if (!v.Value.dragStarted)
                 {
-                    StackNode stackNode = ce.parent as StackNode;
+                    var stackParent = ce.GetFirstAncestorOfType<StackNode>();
+                    if (stackParent != null)
+                        stackParent.OnStartDragging(ce);
 
-                    ce.RemoveFromHierarchy();
-
-                    m_GraphView.AddElement(ce);
-                    // Reselect it because RemoveFromHierarchy unselected it
-                    ce.Select(m_GraphView, true);
-
-                    if (m_GraphView.elementRemovedFromStackNode != null)
-                    {
-                        m_GraphView.elementRemovedFromStackNode(stackNode, ce);
-                    }
+                    v.Value.dragStarted = true;
                 }
 
-                MoveElement(ce, v.Value);
+                MoveElement(ce, v.Value.pos);
             }
 
             List<ISelectable> selection = m_GraphView.selection;
@@ -294,17 +333,25 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             IDropTarget dropTarget = GetDropTargetAt(e.mousePosition, selection.OfType<VisualElement>());
 
-            if (m_PrevDropTarget != dropTarget && m_PrevDropTarget != null)
+            if (m_PrevDropTarget != dropTarget)
             {
-                using (DragExitedEvent eexit = DragExitedEvent.GetPooled(e))
+                if (m_PrevDropTarget != null)
                 {
-                    SendDragAndDropEvent(eexit, selection, m_PrevDropTarget);
+                    using (DragLeaveEvent eexit = DragLeaveEvent.GetPooled(e))
+                    {
+                        SendDragAndDropEvent(eexit, selection, m_PrevDropTarget, m_GraphView);
+                    }
+                }
+
+                using (DragEnterEvent eenter = DragEnterEvent.GetPooled(e))
+                {
+                    SendDragAndDropEvent(eenter, selection, dropTarget, m_GraphView);
                 }
             }
 
             using (DragUpdatedEvent eupdated = DragUpdatedEvent.GetPooled(e))
             {
-                SendDragAndDropEvent(eupdated, selection, dropTarget);
+                SendDragAndDropEvent(eupdated, selection, dropTarget, m_GraphView);
             }
 
             m_PrevDropTarget = dropTarget;
@@ -318,9 +365,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             m_GraphView.viewTransform.position -= m_PanDiff;
             m_ItemPanDiff += m_PanDiff;
 
-            foreach (KeyValuePair<GraphElement, Rect> v in m_OriginalPos)
+            foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
             {
-                MoveElement(v.Key, v.Value);
+                MoveElement(v.Key, v.Value.pos);
             }
         }
 
@@ -344,7 +391,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (m_Active)
                 {
-                    target.ReleaseMouseCapture();
+                    target.ReleaseMouse();
                     selectedElement = null;
                     m_Active = false;
                     m_PrevDropTarget = null;
@@ -362,11 +409,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (selectedElement == null)
                     {
                         m_MovedElements.Clear();
-                        foreach (GraphElement ce in m_OriginalPos.Keys)
+                        foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
                         {
-                            ce.UpdatePresenterPosition();
+                            GraphElement ge = v.Key;
+                            StackNode stackNode = v.Value.stack;
+                            ge.UpdatePresenterPosition();
 
-                            m_MovedElements.Add(ce);
+                            if (stackNode != null && m_GraphView.elementRemovedFromStackNode != null)
+                            {
+                                m_GraphView.elementRemovedFromStackNode(stackNode, ge);
+                            }
+
+                            m_MovedElements.Add(ge);
                         }
 
                         var graphView = target as GraphView;
@@ -387,13 +441,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                     if (selection.Count > 0 && m_PrevDropTarget != null)
                     {
-                        using (DragPerformEvent drop = DragPerformEvent.GetPooled(evt))
+                        if (m_PrevDropTarget.CanAcceptDrop(selection))
                         {
-                            SendDragAndDropEvent(drop, selection, m_PrevDropTarget);
+                            using (DragPerformEvent drop = DragPerformEvent.GetPooled(evt))
+                            {
+                                SendDragAndDropEvent(drop, selection, m_PrevDropTarget, m_GraphView);
+                            }
+                        }
+                        else
+                        {
+                            using (DragExitedEvent dexit = DragExitedEvent.GetPooled(evt))
+                            {
+                                SendDragAndDropEvent(dexit, selection, m_PrevDropTarget, m_GraphView);
+                            }
                         }
                     }
 
-                    target.ReleaseMouseCapture();
+                    target.ReleaseMouse();
                     evt.StopPropagation();
                 }
                 selectedElement = null;
@@ -408,9 +472,21 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
 
             // Reset the items to their original pos.
-            foreach (KeyValuePair<GraphElement, Rect> v in m_OriginalPos)
+            foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
             {
-                v.Key.SetPosition(v.Value);
+                OriginalPos originalPos = v.Value;
+                if (originalPos.stack != null)
+                {
+                    originalPos.stack.InsertElement(originalPos.stackIndex, v.Key);
+                }
+                else
+                {
+                    if (originalPos.scope != null)
+                    {
+                        originalPos.scope.AddElement(v.Key);
+                    }
+                    v.Key.SetPosition(originalPos.pos);
+                }
             }
 
             m_PanSchedule.Pause();
@@ -422,7 +498,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_GraphView.UpdateViewTransform(p, s);
             }
 
-            target.ReleaseMouseCapture();
+            using (DragExitedEvent dexit = new DragExitedEvent())
+            {
+                List<ISelectable> selection = m_GraphView.selection;
+                SendDragAndDropEvent(dexit, selection, m_PrevDropTarget, m_GraphView);
+            }
+
+            target.ReleaseMouse();
             e.StopPropagation();
         }
     }

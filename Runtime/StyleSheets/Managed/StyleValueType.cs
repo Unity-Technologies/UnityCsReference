@@ -13,6 +13,7 @@ namespace UnityEngine.StyleSheets
         Float,
         Color,
         ResourcePath, // When using resource("...")
+        AssetReference,
         Enum, // A literal value that is not quoted
         String // A quoted value or any other value that is not recognized as a primitive
     }

@@ -3,8 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -19,16 +22,36 @@ namespace UnityEditor
     public sealed partial class EditorApplication
     {
         // Load the level at /path/ in play mode.
-        public static extern  void LoadLevelInPlayMode(string path);
+        [Obsolete("Use EditorSceneManager.LoadSceneInPlayMode instead.")]
+        public static void LoadLevelInPlayMode(string path)
+        {
+            LoadSceneParameters parameters = new LoadSceneParameters {loadSceneMode = LoadSceneMode.Single};
+            EditorSceneManager.LoadSceneInPlayMode(path, parameters);
+        }
 
         // Load the level at /path/ additively in play mode.
-        public static extern  void LoadLevelAdditiveInPlayMode(string path);
+        [Obsolete("Use EditorSceneManager.LoadSceneInPlayMode instead.")]
+        public static void LoadLevelAdditiveInPlayMode(string path)
+        {
+            LoadSceneParameters parameters = new LoadSceneParameters {loadSceneMode = LoadSceneMode.Additive};
+            EditorSceneManager.LoadSceneInPlayMode(path, parameters);
+        }
 
         // Load the level at /path/ in play mode asynchronously.
-        public static extern AsyncOperation LoadLevelAsyncInPlayMode(string path);
+        [Obsolete("Use EditorSceneManager.LoadSceneAsyncInPlayMode instead.")]
+        public static AsyncOperation LoadLevelAsyncInPlayMode(string path)
+        {
+            LoadSceneParameters parameters = new LoadSceneParameters {loadSceneMode = LoadSceneMode.Single};
+            return EditorSceneManager.LoadSceneAsyncInPlayMode(path, parameters);
+        }
 
         // Load the level at /path/ additively in play mode asynchronously.
-        public static extern  AsyncOperation LoadLevelAdditiveAsyncInPlayMode(string path);
+        [Obsolete("Use EditorSceneManager.LoadSceneAsyncInPlayMode instead.")]
+        public static AsyncOperation LoadLevelAdditiveAsyncInPlayMode(string path)
+        {
+            LoadSceneParameters parameters = new LoadSceneParameters {loadSceneMode = LoadSceneMode.Additive};
+            return EditorSceneManager.LoadSceneAsyncInPlayMode(path, parameters);
+        }
 
         // Open another project.
         public static void OpenProject(string projectPath, params string[] args)
@@ -72,10 +95,12 @@ namespace UnityEditor
         }
 
         // Is editor currently compiling scripts? (RO)
-        public static extern bool isCompiling
+        public static bool isCompiling
         {
-            [FreeFunction("IsCompiling")]
-            get;
+            get
+            {
+                return EditorCompilationInterface.IsCompiling();
+            }
         }
 
         // Is editor currently updating? (RO)
@@ -105,7 +130,15 @@ namespace UnityEditor
 
         // Prevents loading of assemblies when it is inconvenient.
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        public static extern  void LockReloadAssemblies();
+        public static extern void LockReloadAssemblies();
+
+        //  Must be called after LockReloadAssemblies, to reenable loading of assemblies.
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        public static extern void UnlockReloadAssemblies();
+
+        //  Check if assemblies are unlocked.
+        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
+        internal static extern bool CanReloadAssemblies();
 
         // Invokes the menu item in the specified path.
         public static extern  bool ExecuteMenuItem(string menuItemPath);
@@ -115,10 +148,6 @@ namespace UnityEditor
 
         // Like ExecuteMenuItem, but applies action to specified GameObjects if the menu action supports it.
         internal static extern  bool ExecuteMenuItemWithTemporaryContext(string menuItemPath, Object[] objects);
-
-        //  Must be called after LockReloadAssemblies, to reenable loading of assemblies.
-        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        public static extern  void UnlockReloadAssemblies();
 
         // Path to the Unity editor contents folder (RO)
         [ThreadAndSerializationSafe]

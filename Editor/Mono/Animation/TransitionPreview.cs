@@ -66,13 +66,6 @@ namespace UnityEditor
             return ret;
         }
 
-        void SetMotion(AnimatorState state, int layerIndex, Motion motion)
-        {
-            AnimatorControllerLayer[] layers = m_Controller.layers;
-            state.motion = motion;
-            m_Controller.layers = layers;
-        }
-
         class TransitionInfo
         {
             AnimatorState m_SrcState;
@@ -157,8 +150,8 @@ namespace UnityEditor
 
         private bool MustResample(TransitionInfo info)
         {
-            bool isInPlayback = m_AvatarPreview != null  && m_AvatarPreview.Animator != null && m_AvatarPreview.Animator.recorderMode == AnimatorRecorderMode.Playback;
-            return mustResample || !info.IsEqual(m_RefTransitionInfo) || !isInPlayback;
+            bool isInPlayback = m_AvatarPreview != null && m_AvatarPreview.Animator != null && m_AvatarPreview.Animator.recorderMode == AnimatorRecorderMode.Playback;
+            return !isInPlayback || mustResample || !info.IsEqual(m_RefTransitionInfo);
         }
 
         private void WriteParametersInController()
@@ -202,7 +195,6 @@ namespace UnityEditor
 
             ClearController();
 
-
             Motion sourceStateMotion = m_RefSrcState.motion;
             Init(previewObject, sourceStateMotion != null ? sourceStateMotion : m_RefDstState.motion);
 
@@ -212,11 +204,10 @@ namespace UnityEditor
                 return;
             }
 
-
             // since transform might change during sampling, and could alter the default valuesarray, and break recording
             m_AvatarPreview.Animator.allowConstantClipSamplingOptimization = false;
 
-            /// sample all frames
+            // sample all frames
 
             m_StateMachine.defaultState = m_DstState;
             m_Transition.mute = true;
@@ -236,7 +227,8 @@ namespace UnityEditor
 
             float currentStateDuration = m_AvatarPreview.Animator.GetCurrentAnimatorStateInfo(m_LayerIndex).length;
 
-            if (m_LayerIndex > 0) m_AvatarPreview.Animator.stabilizeFeet = false;
+            if (m_LayerIndex > 0)
+                m_AvatarPreview.Animator.stabilizeFeet = false;
             float maxDuration = (currentStateDuration * m_RefTransition.exitTime) + (m_Transition.duration * (m_RefTransition.hasFixedDuration ? 1.0f : currentStateDuration)) + nextStateDuration;
 
             // case 546812 disable previewer if the duration is too big, otherwise it hang Unity. 2000.0f is an arbitrary choice, it can be increase if needed.
@@ -276,7 +268,6 @@ namespace UnityEditor
             m_LeftStateTimeA = 0;
 
             m_AvatarPreview.Animator.Update(0.0f);
-
 
             while (!hasFinished && currentTime < maxDuration)
             {
@@ -318,7 +309,6 @@ namespace UnityEditor
                     m_RightStateTimeB = currentTime;
                 }
 
-
                 if (m_AvatarPreview.Animator.IsInTransition(m_LayerIndex))
                 {
                     stepTime = nextStateStepTime;
@@ -345,7 +335,6 @@ namespace UnityEditor
                 m_MustSampleMotions = false;
                 m_SrcPivotList.Clear();
                 m_DstPivotList.Clear();
-
 
                 stepTime = nextStateStepTime;
                 m_StateMachine.defaultState  = m_DstState;
@@ -384,13 +373,11 @@ namespace UnityEditor
                     currentTime += stepTime * 2;
                 }
 
-
                 m_Transition.mute = false;
                 AnimatorController.SetAnimatorController(m_AvatarPreview.Animator, m_Controller);
                 m_AvatarPreview.Animator.Update(0.0000001f);
                 WriteParametersInController();
             }
-
 
             m_Timeline.StopTime = m_AvatarPreview.timeControl.stopTime = endTime;
             m_AvatarPreview.timeControl.currentTime = m_Timeline.Time;

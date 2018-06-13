@@ -208,7 +208,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (m_InsertIndex != -1)
             {
-                DragAndDrop.visualMode = evt.ctrlKey ? DragAndDropVisualMode.Copy : DragAndDropVisualMode.Move;
+                DragAndDrop.visualMode = DragAndDropVisualMode.Move;
             }
 
             evt.StopPropagation();

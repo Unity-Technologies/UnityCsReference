@@ -443,7 +443,7 @@ namespace UnityEditor
                 // Setup particle system based on type
                 ParticleSystem ps = go.GetComponent<ParticleSystem>();
                 if (defaultType != SubModuleUI.SubEmitterType.None)
-                    ps.SetupDefaultType((int)defaultType);
+                    ps.SetupDefaultType((ParticleSystemSubEmitterType)defaultType);
 
                 SessionState.SetFloat("CurrentEmitterAreaScroll", m_EmitterAreaScrollPos.x);
 

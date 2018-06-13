@@ -3,34 +3,50 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEditor.ShortcutManagement;
 using UnityEngine;
 
 namespace UnityEditor
 {
-    class CameraFlyModeContext : IShortcutPriorityContext
+    [ReserveModifiers(ShortcutModifiers.Shift)]
+    class CameraFlyModeContext : IShortcutToolContext
     {
         public struct InputSamplingScope : IDisposable
         {
-            public bool currentlyMoving => m_Context.active && !Mathf.Approximately(currentInputVector.sqrMagnitude, 0f);
+            bool active => m_ArrowKeysActive || m_Context.active;
 
-            public Vector3 currentInputVector => m_Context.active ? s_CurrentInputVector : Vector3.zero;
+            public bool currentlyMoving => active && !Mathf.Approximately(currentInputVector.sqrMagnitude, 0f);
 
-            public bool inputVectorChanged => m_Context.active && !Mathf.Approximately((s_CurrentInputVector - m_Context.m_PreviousVector).sqrMagnitude, 0f);
+            public Vector3 currentInputVector => active ? s_CurrentInputVector : Vector3.zero;
 
+            public bool inputVectorChanged => active && !Mathf.Approximately((s_CurrentInputVector - m_Context.m_PreviousVector).sqrMagnitude, 0f);
+
+            readonly bool m_ArrowKeysActive;
             bool m_Disposed;
             readonly CameraFlyModeContext m_Context;
 
-            public InputSamplingScope(CameraFlyModeContext context)
+            // controlID will get hotControl if using arrow keys while shortcut context is not active
+            // passing a value of zero disables the arrow keys
+            public InputSamplingScope(CameraFlyModeContext context, ViewTool currentViewTool, int controlID, bool orthographic = false)
             {
+                m_ArrowKeysActive = false;
                 m_Disposed = false;
                 m_Context = context;
+                m_Context.active = currentViewTool == ViewTool.FPS;
+
+                if (m_Context.active)
+                {
+                    ShortcutIntegration.instance.contextManager.SetPriorityContext(context);
+                }
+                else
+                {
+                    ShortcutIntegration.instance.contextManager.ClearPriorityContext();
+                    m_ArrowKeysActive = DoArrowKeys(controlID, orthographic);
+                }
 
                 if (currentlyMoving && Mathf.Approximately(m_Context.m_PreviousVector.sqrMagnitude, 0f))
                     s_Timer.Begin();
-
-                if (context.active)
-                    ShortcutController.priorityContext = context;
             }
 
             public void Dispose()
@@ -39,6 +55,49 @@ namespace UnityEditor
                     return;
                 m_Disposed = true;
                 m_Context.m_PreviousVector = currentInputVector;
+            }
+
+            static readonly Dictionary<KeyCode, Action<bool, ShortcutArguments>> s_ArrowKeyBindings =
+                new Dictionary<KeyCode, Action<bool, ShortcutArguments>>
+            {
+                { KeyCode.UpArrow, (orthographic, args) => { if (orthographic) WalkUp(args); else WalkForward(args); } },
+                { KeyCode.DownArrow, (orthographic, args) => { if (orthographic) WalkDown(args); else WalkBackward(args); } },
+                { KeyCode.LeftArrow, (orthographic, args) => WalkLeft(args) },
+                { KeyCode.RightArrow, (orthographic, args) => WalkRight(args) },
+            };
+            static readonly HashSet<KeyCode> s_ArrowKeysDown = new HashSet<KeyCode>();
+
+            bool DoArrowKeys(int id, bool orthographic)
+            {
+                if (id == 0 || GUIUtility.hotControl != 0 && GUIUtility.hotControl != id)
+                    return false;
+                if (EditorGUI.actionKey)
+                    return false;
+
+                Action<bool, ShortcutArguments> action;
+                var evt = Event.current;
+                switch (evt.GetTypeForControl(id))
+                {
+                    case EventType.KeyDown:
+                        if (!s_ArrowKeyBindings.TryGetValue(evt.keyCode, out action))
+                            return false;
+                        action(orthographic, new ShortcutArguments { state = ShortcutState.Begin });
+                        GUIUtility.hotControl = id;
+                        s_ArrowKeysDown.Add(evt.keyCode);
+                        evt.Use();
+                        return true;
+                    case EventType.KeyUp:
+                        if (!s_ArrowKeyBindings.TryGetValue(evt.keyCode, out action))
+                            return false;
+                        action(orthographic, new ShortcutArguments { state = ShortcutState.End });
+                        s_ArrowKeysDown.Remove(evt.keyCode);
+                        if (s_ArrowKeysDown.Count == 0)
+                            GUIUtility.hotControl = 0;
+                        evt.Use();
+                        return true;
+                    default:
+                        return GUIUtility.hotControl == id;
+                }
             }
         }
 

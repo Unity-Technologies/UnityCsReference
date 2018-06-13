@@ -29,9 +29,11 @@ namespace UnityEngine
         extern public float minParticleSize { get; set; }
         extern public float maxParticleSize { get; set; }
         extern public Vector3 pivot { get; set; }
+        extern public Vector3 flip { get; set; }
         extern public SpriteMaskInteraction maskInteraction { get; set; }
         extern public Material trailMaterial { get; set; }
         extern public bool enableGPUInstancing { get; set; }
+        extern public bool allowRoll { get; set; }
 
         public void BakeMesh(Mesh mesh, bool useTransform = false) { BakeMesh(mesh, Camera.main, useTransform); }
         extern public void BakeMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Collaboration
 {
@@ -42,6 +43,7 @@ namespace UnityEditor.Collaboration
             OnAsyncSignalReceived(AsyncState.WaitForJobComplete);
         }
 
+        [RequiredByNativeCode]
         public static void OnChannelMessageHandled()
         {
             OnAsyncSignalReceived(AsyncState.WaitForChannelMessageHandled);

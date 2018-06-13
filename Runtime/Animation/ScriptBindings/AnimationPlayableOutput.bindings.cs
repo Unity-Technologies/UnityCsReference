@@ -73,8 +73,10 @@ namespace UnityEngine.Animations
             InternalSetTarget(ref m_Handle, value);
         }
 
-        // Bindings methods.
+        [NativeThrows]
         extern private static Animator InternalGetTarget(ref PlayableOutputHandle handle);
+
+        [NativeThrows]
         extern private static void InternalSetTarget(ref PlayableOutputHandle handle, Animator target);
     }
 }

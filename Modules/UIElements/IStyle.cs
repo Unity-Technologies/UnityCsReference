@@ -15,7 +15,7 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<float> maxHeight { get; set; }
         StyleValue<float> minWidth { get; set; }
         StyleValue<float> minHeight { get; set; }
-        StyleValue<float> flex { get; set; }
+        StyleValue<Flex> flex { get; set; }
         StyleValue<float> flexBasis { get; set; }
         StyleValue<float> flexGrow { get; set; }
         StyleValue<float> flexShrink { get; set; }

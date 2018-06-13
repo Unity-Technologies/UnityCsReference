@@ -18,7 +18,10 @@ namespace UnityEngine
     [StructLayout(LayoutKind.Sequential)]
     public partial struct Vector3 : IEquatable<Vector3>
     {
+        // *Undocumented*
         public const float kEpsilon = 0.00001F;
+        // *Undocumented*
+        public const float kEpsilonNormalSqrt = 1e-15F;
 
         // X component of the vector.
         public float x;
@@ -222,10 +225,12 @@ namespace UnityEngine
         // Returns the angle in degrees between /from/ and /to/. This is always the smallest
         public static float Angle(Vector3 from, Vector3 to)
         {
-            float dot = Mathf.Clamp(Dot(from.normalized, to.normalized), -1F, 1F);
-            if (Mathf.Abs(dot) > (1F - kEpsilon))
-                return dot > 0F ? 0F : 180F;
+            // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
+            float denominator = Mathf.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
+            if (denominator < kEpsilonNormalSqrt)
+                return 0F;
 
+            float dot = Mathf.Clamp(Dot(from, to) / denominator, -1F, 1F);
             return Mathf.Acos(dot) * Mathf.Rad2Deg;
         }
 

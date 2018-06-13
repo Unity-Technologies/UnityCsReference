@@ -30,27 +30,14 @@ namespace UnityEngine
         [RequiredByNativeCode]
         static Type GetParentTypeDisallowingMultipleInclusion(Type type)
         {
-            var typeStack = new Stack<Type>();
+            Type result = null;
             while (type != null && type != typeof(MonoBehaviour))
             {
-                typeStack.Push(type);
-                type = type
-                    .BaseType;
+                if (Attribute.IsDefined(type, typeof(DisallowMultipleComponent)))
+                    result = type;
+                type = type.BaseType;
             }
-
-
-            Type baseType = null;
-            while (typeStack.Count > 0)
-            {
-                baseType = typeStack.Pop();
-                object[] attrs = baseType.GetCustomAttributes(typeof(DisallowMultipleComponent), false);
-                int count = attrs.Length;
-                if (count != 0)
-                    return baseType;
-            }
-
-
-            return null;
+            return result;
         }
 
         [RequiredByNativeCode]

@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
-using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Yoga;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
@@ -285,6 +284,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             style.positionType = PositionType.Absolute;
             style.positionLeft = newPos.x;
             style.positionTop = newPos.y;
+        }
+
+        public override void UpdatePresenterPosition()
+        {
+            base.UpdatePresenterPosition();
+            foreach (GraphElement element in containedElements)
+            {
+                element.UpdatePresenterPosition();
+            }
         }
     }
 }
