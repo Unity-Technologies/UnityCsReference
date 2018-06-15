@@ -447,8 +447,9 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
 
             bool showOpenButton = true;
+            var importerEditor = this as AssetImporterEditor;
             // only show open button for the main object of an asset and for AssetImportInProgressProxy (asset not yet imported)
-            if (!(this is AssetImporterEditor) && !(targets[0] is AssetImportInProgressProxy))
+            if (importerEditor == null && !(targets[0] is AssetImportInProgressProxy))
             {
                 var assetPath = AssetDatabase.GetAssetPath(targets[0]);
                 // Don't show open button if the target is not an asset
@@ -463,13 +464,16 @@ namespace UnityEditor
 
             if (showOpenButton && !ShouldHideOpenButton())
             {
-                if (GUILayout.Button(s_Styles.open, EditorStyles.miniButton))
+                using (new EditorGUI.DisabledScope(importerEditor != null && importerEditor.assetTarget == null))
                 {
-                    if (this is AssetImporterEditor)
-                        AssetDatabase.OpenAsset((this as AssetImporterEditor).assetTargets);
-                    else
-                        AssetDatabase.OpenAsset(targets);
-                    GUIUtility.ExitGUI();
+                    if (GUILayout.Button(s_Styles.open, EditorStyles.miniButton))
+                    {
+                        if (importerEditor != null)
+                            AssetDatabase.OpenAsset(importerEditor.assetTargets);
+                        else
+                            AssetDatabase.OpenAsset(targets);
+                        GUIUtility.ExitGUI();
+                    }
                 }
             }
         }

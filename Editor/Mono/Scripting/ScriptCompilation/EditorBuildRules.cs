@@ -8,6 +8,7 @@ using System.Linq;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
 using File = System.IO.File;
+using UnityEditor.Utils;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -721,7 +722,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             TargetAssembly resultAssembly = null;
 
             var extension = AssetPath.GetExtension(scriptPath).Substring(1).ToLower();
-            var lowerPath = "/" + scriptPath.ToLower();
+            var lowerPath = ("/" + scriptPath.ToLower()).ConvertSeparatorsToUnity();
             int highestPathDepth = -1;
 
             foreach (var assembly in predefinedTargetAssemblies)
