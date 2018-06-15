@@ -1343,7 +1343,7 @@ namespace UnityEditor
             if (state.ToolMode == (ToolMode)(-1))
                 state.ToolMode = ToolMode.Select;
 
-            if (m_ParticleSelection == null)
+            if ((m_ParticleSelection == null) || (m_LastVertices.Length != cloth.vertices.Length))
             {
                 GenerateSelectionMesh();
             }

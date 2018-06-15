@@ -90,11 +90,13 @@ namespace UnityEditor.Scripting.Compilers
             // Provider.GetAssetByPath() can fail i.e. the asset database GUID can not be found for the input asset path
             foreach (var f in files)
             {
-                var assetPath = f.Replace(tempOutputPath, "");
+                var rawAssetPath = f.Replace(tempOutputPath, "");
+                // VCS assets path separator is '/' , file path might be '\' or '/'
+                var assetPath = (Path.DirectorySeparatorChar == '\\') ? rawAssetPath.Replace(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) : rawAssetPath;
                 var foundAsset = assetList.Where(asset => (asset.path == assetPath));
                 if (!foundAsset.Any())
                 {
-                    Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to add file to list): {0}", assetPath);
+                    Debug.LogErrorFormat("[API Updater] Files cannot be updated (failed to add file to list): {0}", rawAssetPath);
                     ScriptUpdatingManager.ReportExpectedUpdateFailure();
                     return;
                 }

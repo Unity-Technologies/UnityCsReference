@@ -813,10 +813,20 @@ namespace UnityEditorInternal.VersionControl
 
                 if (item.Asset != null)
                 {
-                    Rect overlayRect = iconRect;
-                    overlayRect.width += 12;
-                    overlayRect.x -= 6;
-                    Overlay.DrawOverlay(item.Asset, overlayRect);
+                    bool drawOverlay = true;
+                    string vcsType = EditorSettings.externalVersionControl;
+                    if (vcsType == ExternalVersionControl.Disabled ||
+                        vcsType == ExternalVersionControl.AutoDetect ||
+                        vcsType == ExternalVersionControl.Generic)
+                        drawOverlay = false; // no overlays for these version control systems
+
+                    if (drawOverlay)
+                    {
+                        Rect overlayRect = iconRect;
+                        overlayRect.width += 12;
+                        overlayRect.x -= 6;
+                        Overlay.DrawOverlay(item.Asset, overlayRect);
+                    }
                 }
             }
 

@@ -40,12 +40,6 @@ namespace UnityEditorInternal.VersionControl
             if (Event.current.type != EventType.Repaint)
                 return;
 
-            string vcsType = EditorSettings.externalVersionControl;
-            if (vcsType == ExternalVersionControl.Disabled ||
-                vcsType == ExternalVersionControl.AutoDetect ||
-                vcsType == ExternalVersionControl.Generic)
-                return; // no icons for these version control systems
-
             DrawOverlays(asset, null, itemRect);
         }
 
@@ -56,12 +50,6 @@ namespace UnityEditorInternal.VersionControl
 
             if (Event.current.type != EventType.Repaint)
                 return;
-
-            string vcsType = EditorSettings.externalVersionControl;
-            if (vcsType == ExternalVersionControl.Disabled ||
-                vcsType == ExternalVersionControl.AutoDetect ||
-                vcsType == ExternalVersionControl.Generic)
-                return; // no icons for these version control systems
 
             DrawOverlays(asset, metaAsset, itemRect);
         }
@@ -112,16 +100,19 @@ namespace UnityEditorInternal.VersionControl
             Rect bottomRight = new Rect(itemRect.xMax - iconWidth + offsetX, itemRect.yMax - iconWidth + offsetY, iconWidth, iconWidth);
             Rect syncRect = new Rect(itemRect.xMax - iconWidth + syncOffsetX, itemRect.yMax - iconWidth + offsetY, iconWidth, iconWidth);
 
-            Asset.States unmodifiedState = Asset.States.Local | Asset.States.MetaFile | Asset.States.ReadOnly | Asset.States.Synced;
-            bool isMetaUnmodifiedState = metaAsset == null || (metaAsset.state & unmodifiedState) == unmodifiedState;
+            Asset.States assetState = asset.state;
+            Asset.States metaState = metaAsset != null ? metaAsset.state : Asset.States.None;
 
-            Asset.States localMetaState = metaAsset == null ? Asset.States.None : metaAsset.state & (Asset.States.AddedLocal | Asset.States.CheckedOutLocal | Asset.States.DeletedLocal | Asset.States.LockedLocal);
-            Asset.States remoteMetaState = metaAsset == null ? Asset.States.None : metaAsset.state & (Asset.States.AddedRemote | Asset.States.CheckedOutRemote | Asset.States.DeletedRemote | Asset.States.LockedRemote);
+            Asset.States unmodifiedState = Asset.States.Local | Asset.States.MetaFile | Asset.States.ReadOnly | Asset.States.Synced;
+            bool isMetaUnmodifiedState = metaAsset == null || (metaState & unmodifiedState) == unmodifiedState;
+
+            Asset.States localMetaState = metaAsset == null ? Asset.States.None : metaState & (Asset.States.AddedLocal | Asset.States.CheckedOutLocal | Asset.States.DeletedLocal | Asset.States.LockedLocal);
+            Asset.States remoteMetaState = metaAsset == null ? Asset.States.None : metaState & (Asset.States.AddedRemote | Asset.States.CheckedOutRemote | Asset.States.DeletedRemote | Asset.States.LockedRemote);
 
             bool keepFolderMetaParans = asset.isFolder && Provider.isVersioningFolders;
 
             // Local state overlay
-            if (asset.IsState(Asset.States.AddedLocal))
+            if (Asset.IsState(assetState, Asset.States.AddedLocal))
             {
                 DrawOverlay(Asset.States.AddedLocal, topLeft);
 
@@ -129,15 +120,15 @@ namespace UnityEditorInternal.VersionControl
                 if (metaAsset != null && (localMetaState & Asset.States.AddedLocal) == 0 && !isMetaUnmodifiedState)
                     DrawMetaOverlay(topLeft, false);
             }
-            else if (asset.IsState(Asset.States.DeletedLocal))
+            else if (Asset.IsState(assetState, Asset.States.DeletedLocal))
             {
                 DrawOverlay(Asset.States.DeletedLocal, topLeft);
 
                 // Meta overlay if meta file is not deleted but asset is and meta file is still present or missing (ie. should have been there)
-                if (metaAsset != null && (localMetaState & Asset.States.DeletedLocal) == 0 && metaAsset.IsState(Asset.States.Local | Asset.States.Missing))
+                if (metaAsset != null && (localMetaState & Asset.States.DeletedLocal) == 0 && Asset.IsState(metaState, Asset.States.Local | Asset.States.Missing))
                     DrawMetaOverlay(topLeft, false);
             }
-            else if (asset.IsState(Asset.States.LockedLocal))
+            else if (Asset.IsState(assetState, Asset.States.LockedLocal))
             {
                 DrawOverlay(Asset.States.LockedLocal, topLeft);
 
@@ -145,7 +136,7 @@ namespace UnityEditorInternal.VersionControl
                 if (metaAsset != null && (localMetaState & Asset.States.LockedLocal) == 0 && !isMetaUnmodifiedState)
                     DrawMetaOverlay(topLeft, false);
             }
-            else if (asset.IsState(Asset.States.CheckedOutLocal))
+            else if (Asset.IsState(assetState, Asset.States.CheckedOutLocal))
             {
                 DrawOverlay(Asset.States.CheckedOutLocal, topLeft);
 
@@ -153,55 +144,55 @@ namespace UnityEditorInternal.VersionControl
                 if (metaAsset != null && (localMetaState & Asset.States.CheckedOutLocal) == 0 && !isMetaUnmodifiedState)
                     DrawMetaOverlay(topLeft, false);
             }
-            else if (asset.IsState(Asset.States.Local) && !(asset.IsState(Asset.States.OutOfSync) || asset.IsState(Asset.States.Synced)))
+            else if (Asset.IsState(assetState, Asset.States.Local) && !(Asset.IsState(assetState, Asset.States.OutOfSync) || Asset.IsState(assetState, Asset.States.Synced)))
             {
                 DrawOverlay(Asset.States.Local, bottomLeft);
 
                 // Meta overlay if meta file is not local only or unmodified.
-                if (metaAsset != null && (metaAsset.IsUnderVersionControl || !metaAsset.IsState(Asset.States.Local)))
+                if (metaAsset != null && (metaAsset.IsUnderVersionControl || !Asset.IsState(metaState, Asset.States.Local)))
                     DrawMetaOverlay(bottomLeft, false);
             }
             // From here the local asset have no state that need a local state overlay. We use the meta state if there is one instead.
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.AddedLocal))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.AddedLocal))
             {
                 DrawOverlay(Asset.States.AddedLocal, topLeft);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(topLeft, false);
             }
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.DeletedLocal))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.DeletedLocal))
             {
                 DrawOverlay(Asset.States.DeletedLocal, topLeft);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(topLeft, false);
             }
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.LockedLocal))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.LockedLocal))
             {
                 DrawOverlay(Asset.States.LockedLocal, topLeft);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(topLeft, false);
             }
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.CheckedOutLocal))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.CheckedOutLocal))
             {
                 DrawOverlay(Asset.States.CheckedOutLocal, topLeft);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(topLeft, false);
             }
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.Local) && !(metaAsset.IsState(Asset.States.OutOfSync) || metaAsset.IsState(Asset.States.Synced))
-                     && !(asset.IsState(Asset.States.Conflicted) || (metaAsset != null && metaAsset.IsState(Asset.States.Conflicted))))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.Local) && !(Asset.IsState(metaState, Asset.States.OutOfSync) || Asset.IsState(metaState, Asset.States.Synced))
+                     && !(Asset.IsState(assetState, Asset.States.Conflicted) || (metaAsset != null && Asset.IsState(metaState, Asset.States.Conflicted))))
             {
                 DrawOverlay(Asset.States.Local, bottomLeft);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(bottomLeft, false);
             }
 
-            if (asset.IsState(Asset.States.Conflicted) || (metaAsset != null && metaAsset.IsState(Asset.States.Conflicted)))
+            if (Asset.IsState(assetState, Asset.States.Conflicted) || (metaAsset != null && Asset.IsState(metaState, Asset.States.Conflicted)))
                 DrawOverlay(Asset.States.Conflicted, bottomLeft);
 
-            if ((asset.isFolder == false && asset.IsState(Asset.States.Updating)) || (metaAsset != null && metaAsset.IsState(Asset.States.Updating)))
+            if ((asset.isFolder == false && Asset.IsState(assetState, Asset.States.Updating)) || (metaAsset != null && Asset.IsState(metaState, Asset.States.Updating)))
                 DrawOverlay(Asset.States.Updating, bottomRight);
 
             // Remote state overlay
-            if (asset.IsState(Asset.States.AddedRemote))
+            if (Asset.IsState(assetState, Asset.States.AddedRemote))
             {
                 DrawOverlay(Asset.States.AddedRemote, topRight);
 
@@ -209,7 +200,7 @@ namespace UnityEditorInternal.VersionControl
                 if (metaAsset != null && (remoteMetaState & Asset.States.AddedRemote) == 0)
                     DrawMetaOverlay(topRight, true);
             }
-            else if (asset.IsState(Asset.States.DeletedRemote))
+            else if (Asset.IsState(assetState, Asset.States.DeletedRemote))
             {
                 DrawOverlay(Asset.States.DeletedRemote, topRight);
 
@@ -217,7 +208,7 @@ namespace UnityEditorInternal.VersionControl
                 if (metaAsset != null && (remoteMetaState & Asset.States.DeletedRemote) == 0)
                     DrawMetaOverlay(topRight, true);
             }
-            else if (asset.IsState(Asset.States.LockedRemote))
+            else if (Asset.IsState(assetState, Asset.States.LockedRemote))
             {
                 DrawOverlay(Asset.States.LockedRemote, topRight);
 
@@ -225,7 +216,7 @@ namespace UnityEditorInternal.VersionControl
                 if (metaAsset != null && (remoteMetaState & Asset.States.LockedRemote) == 0)
                     DrawMetaOverlay(topRight, true);
             }
-            else if (asset.IsState(Asset.States.CheckedOutRemote))
+            else if (Asset.IsState(assetState, Asset.States.CheckedOutRemote))
             {
                 DrawOverlay(Asset.States.CheckedOutRemote, topRight);
 
@@ -234,32 +225,32 @@ namespace UnityEditorInternal.VersionControl
                     DrawMetaOverlay(topRight, true);
             }
             // From here the remote asset have no state that need a remote state overlay. We use the meta state if there is one instead.
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.AddedRemote))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.AddedRemote))
             {
                 DrawOverlay(Asset.States.AddedRemote, topRight);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(topRight, true);
             }
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.DeletedRemote))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.DeletedRemote))
             {
                 DrawOverlay(Asset.States.DeletedRemote, topRight);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(topRight, true);
             }
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.LockedRemote))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.LockedRemote))
             {
                 DrawOverlay(Asset.States.LockedRemote, topRight);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(topRight, true);
             }
-            else if (metaAsset != null && metaAsset.IsState(Asset.States.CheckedOutRemote))
+            else if (metaAsset != null && Asset.IsState(metaState, Asset.States.CheckedOutRemote))
             {
                 DrawOverlay(Asset.States.CheckedOutRemote, topRight);
                 if (keepFolderMetaParans)
                     DrawMetaOverlay(topRight, true);
             }
 
-            if (asset.IsState(Asset.States.OutOfSync) || (metaAsset != null && metaAsset.IsState(Asset.States.OutOfSync)))
+            if (Asset.IsState(assetState, Asset.States.OutOfSync) || (metaAsset != null && Asset.IsState(metaState, Asset.States.OutOfSync)))
                 DrawOverlay(Asset.States.OutOfSync, syncRect);
         }
 
