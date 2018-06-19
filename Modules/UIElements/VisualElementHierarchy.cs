@@ -46,11 +46,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal bool ShouldClip()
         {
-            // Suppress "use of obsolete enum" warning
-            #pragma warning disable 0618
-            return style.overflow != Overflow.Visible ||
-                clippingOptions != ClippingOptions.NoClipping;
-            #pragma warning restore 0618
+            return style.overflow != Overflow.Visible || clippingOptions != ClippingOptions.NoClipping;
         }
 
         // parent in visual tree

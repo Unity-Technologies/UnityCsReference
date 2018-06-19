@@ -24,7 +24,8 @@ namespace UnityEditor
         public extern void Repaint();
         public extern void Focus();
         public extern void RepaintImmediately();
-        public extern void CaptureRenderDoc();
+        public extern void CaptureRenderDocScene();
+        public extern void CaptureRenderDocFullContent();
 
         internal extern bool mouseRayInvisible {[NativeMethod("IsMouseRayInvisible")] get; [NativeMethod("SetMouseRayInvisible")] set; }
         internal extern bool disableInputEvents {[NativeMethod("AreInputEventsDisabled")] get; [NativeMethod("SetDisableInputEvents")] set; }

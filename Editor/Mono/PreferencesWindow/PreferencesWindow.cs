@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor.VersionControl;
 using UnityEditor.Modules;
 using UnityEditorInternal;
 using System.Collections.Generic;
@@ -12,12 +11,9 @@ using System.IO;
 using System.Reflection;
 using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 using UnityEditor.Connect;
 using UnityEditor.ShortcutManagement;
-using Directory = System.IO.Directory;
 using UnityEditor.Collaboration;
-using UnityEditor.Web;
 
 namespace UnityEditor
 {
@@ -72,11 +68,10 @@ namespace UnityEditor
             public static readonly GUIContent verifySavingAssets = EditorGUIUtility.TrTextContent("Verify Saving Assets");
             public static readonly GUIContent scriptChangesDuringPlay = EditorGUIUtility.TrTextContent("Script Changes While Playing");
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Skin");
-            public static readonly GUIContent[] editorSkinOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional"), };
+            public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alpha Numeric Sorting");
 
             // External Tools
-            public static readonly GUIContent downloadMonoDevelopInstaller = EditorGUIUtility.TrTextContent("Download MonoDevelop Installer");
             public static readonly GUIContent addUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
             public static readonly GUIContent editorAttaching = EditorGUIUtility.TrTextContent("Editor Attaching");
             public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
@@ -213,11 +208,12 @@ namespace UnityEditor
         private const string kRecentScriptAppsKey = "RecentlyUsedScriptApp";
         private const string kRecentImageAppsKey = "RecentlyUsedImageApp";
 
-        private const string m_ExpressNotSupportedMessage =
-            "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
-            "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
-            "\n(This does work with Visual Studio Pro)";
-        private const string kKeyCollisionFormat = "Key {0} can't be used for action \"{1}\" because it's already used for action \"{2}\"";
+        private static readonly string k_ExpressNotSupportedMessage = L10n.Tr(
+                "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
+                "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
+                "\n(This does work with Visual Studio Pro)"
+                );
+        private static readonly string k_KeyCollisionFormat = L10n.Tr("Key {0} can't be used for action \"{1}\" because it's already used for action \"{2}\"");
 
         private const int kRecentAppsCount = 10;
 
@@ -428,7 +424,7 @@ namespace UnityEditor
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
                 GUILayout.Label("", constants.warningIcon);
-                GUILayout.Label(m_ExpressNotSupportedMessage, constants.errorLabel);
+                GUILayout.Label(k_ExpressNotSupportedMessage, constants.errorLabel);
                 GUILayout.EndHorizontal();
             }
 
@@ -666,6 +662,9 @@ namespace UnityEditor
             return retval;
         }
 
+        private readonly List<KeyValuePair<string, object>> m_SortedKeyEntries =
+            new List<KeyValuePair<string, object>>();
+
         private object ShowShortcutsAndKeys(int controlID)
         {
             int current = 0;
@@ -674,35 +673,32 @@ namespace UnityEditor
             PrefKey currentPrefKey = null;
             var shortcutProfileManager = ShortcutIntegration.instance.profileManager;
 
-            foreach (ShortcutEntry shortcut in shortcutProfileManager.GetAllShortcuts())
+            m_SortedKeyEntries.Clear();
+            m_SortedKeyEntries.AddRange(
+                shortcutProfileManager.GetAllShortcuts().Select(
+                    s => new KeyValuePair<string, object>(s.identifier.path, s)
+                    )
+                );
+            m_SortedKeyEntries.AddRange(
+                Settings.Prefs<PrefKey>().Select(pk => new KeyValuePair<string, object>(pk.Key, pk.Value))
+                );
+            m_SortedKeyEntries.Sort((k1, k2) => k1.Key.CompareTo(k2.Key));
+            foreach (var keyEntry in m_SortedKeyEntries)
             {
                 ++current;
-                selected = (current == m_SelectedShortcut);
+                selected = current == m_SelectedShortcut;
+                bool legacy = typeof(PrefKey).IsAssignableFrom(keyEntry.Value.GetType());
                 if (selected)
-                    currentShortcutEntry = shortcut;
-
-                using (var changeCheckScope = new EditorGUI.ChangeCheckScope())
                 {
-                    if (GUILayout.Toggle(selected, shortcut.identifier.path, constants.keysElement))
-                    {
-                        m_ValidKeyChange = !selected;
-                        m_SelectedShortcut = current;
-                    }
-
-                    if (changeCheckScope.changed)
-                        GUIUtility.keyboardControl = controlID;
+                    if (legacy)
+                        currentPrefKey = (PrefKey)keyEntry.Value;
+                    else
+                        currentShortcutEntry = (ShortcutEntry)keyEntry.Value;
                 }
-            }
-            foreach (KeyValuePair<string, PrefKey> keypair in Settings.Prefs<PrefKey>())
-            {
-                ++current;
-                selected = (current == m_SelectedShortcut);
-                if (selected)
-                    currentPrefKey = keypair.Value;
 
                 using (var changeCheckScope = new EditorGUI.ChangeCheckScope())
                 {
-                    if (GUILayout.Toggle(selected, keypair.Key, constants.keysElement))
+                    if (GUILayout.Toggle(selected, keyEntry.Key, constants.keysElement))
                     {
                         m_ValidKeyChange = !selected;
                         m_SelectedShortcut = current;
@@ -776,7 +772,7 @@ namespace UnityEditor
             if (collisions.Any())
             {
                 m_ValidKeyChange = false;
-                m_InvalidKeyMessage = string.Format(kKeyCollisionFormat, BuildDescription(e), identifier, collisions[0].identifier);
+                m_InvalidKeyMessage = string.Format(k_KeyCollisionFormat, BuildDescription(e), identifier, collisions[0].identifier);
                 return;
             }
 
@@ -794,20 +790,19 @@ namespace UnityEditor
             if (collision.Key != null)
             {
                 m_ValidKeyChange = false;
-                m_InvalidKeyMessage = string.Format(kKeyCollisionFormat, BuildDescription(e), identifier, collision.Key);
+                m_InvalidKeyMessage = string.Format(k_KeyCollisionFormat, BuildDescription(e), identifier, collision.Key);
             }
         }
 
         private void ShowShortcutConfiguration(int controlID, ShortcutEntry selectedShortcut)
         {
             // TODO: chords
-            Event e = selectedShortcut.combinations.First().ToKeyboardEvent();
+            Event e = selectedShortcut.combinations.FirstOrDefault().ToKeyboardEvent();
             GUI.changed = false;
 
             // FIXME: Are we going to support/enforce paths like this?
-            var splitKey = selectedShortcut.identifier.path.Split(kShortcutIdentifierSplitters, 2);
-            GUILayout.Label(splitKey[0], EditorStyles.boldLabel);
-            GUILayout.Label(splitKey[1], EditorStyles.boldLabel);
+            foreach (var label in selectedShortcut.identifier.path.Split(kShortcutIdentifierSplitters, 2))
+                GUILayout.Label(label, EditorStyles.boldLabel);
 
             using (new GUILayout.HorizontalScope())
             {
@@ -1317,7 +1312,7 @@ namespace UnityEditor
         void AppsListClick(object userData, string[] options, int selected)
         {
             AppsListUserData ud = (AppsListUserData)userData;
-            if (options[selected] == "Browse...")
+            if (options[selected] == L10n.Tr("Browse..."))
             {
                 string path = EditorUtility.OpenFilePanel("Browse for application", "", InternalEditorUtility.GetApplicationExtensionForRuntimePlatform(Application.platform));
                 if (path.Length != 0)

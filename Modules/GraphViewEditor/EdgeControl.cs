@@ -770,6 +770,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected virtual void DrawEdge(IStylePainter painter)
         {
+            var stylePainter = (IStylePainterInternal)painter;
+            stylePainter.DrawImmediate(Draw);
+        }
+
+        void Draw()
+        {
             if (edgeWidth <= 0)
                 return;
 
@@ -805,9 +811,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             lineMat.SetColor("_InputColor", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? inputColor.gamma : inputColor);
             lineMat.SetColor("_OutputColor", (QualitySettings.activeColorSpace == ColorSpace.Linear) ? outputColor.gamma : outputColor);
 
-            var stylePainter = (IStylePainterInternal)painter;
-            var meshParams = MeshStylePainterParameters.GetDefault(m_Mesh, lineMat);
-            stylePainter.DrawMesh(meshParams);
+            lineMat.SetPass(0);
+            Graphics.DrawMeshNow(m_Mesh, Matrix4x4.identity);
         }
 
         private void RecomputeMesh()

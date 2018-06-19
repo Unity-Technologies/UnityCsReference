@@ -9,7 +9,7 @@ using UnityEditor;
 using Object = UnityEngine.Object;
 using uei = UnityEngine.Internal;
 
-namespace UnityEditor.Experimental.Animations
+namespace UnityEditor.Animations
 {
     [NativeHeader("Editor/Src/Animation/EditorCurveBinding.bindings.h")]
     [NativeHeader("Editor/Src/Animation/GameObjectRecorder.h")]

@@ -31,19 +31,6 @@ namespace UnityEditor.CrashReporting
             }
         }
 
-        public static string NativeCrashSubmissionUrl
-        {
-            get
-            {
-                if (!string.IsNullOrEmpty(ServiceBaseUrl))
-                {
-                    return new Uri(new Uri(ServiceBaseUrl), "symbolicate").ToString();
-                }
-
-                return string.Empty;
-            }
-        }
-
         public static string SignedUrlSourceUrl
         {
             get

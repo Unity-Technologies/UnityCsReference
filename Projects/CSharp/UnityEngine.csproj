@@ -8,7 +8,7 @@
     <OutputType>Library</OutputType>
     <RootNamespace>UnityEngine</RootNamespace>
     <AssemblyName>UnityEngine</AssemblyName>
-    <TargetFrameworkVersion>v2.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <LangVersion>6</LangVersion>
@@ -40,6 +40,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Core" />
     <Reference Include="System" >
       <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\System.dll</HintPath>
     </Reference>
@@ -226,8 +227,8 @@
   <Compile Include="..\..\Runtime\Export\Coroutines.cs">
     <Link>Runtime\Export\Coroutines.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\CrashReporter.bindings.cs">
-    <Link>Runtime\Export\CrashReporter.bindings.cs</Link>
+  <Compile Include="..\..\Runtime\Export\CrashReport.bindings.cs">
+    <Link>Runtime\Export\CrashReport.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\CullingGroup.bindings.cs">
     <Link>Runtime\Export\CullingGroup.bindings.cs</Link>
@@ -898,6 +899,9 @@
   <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.bindings.cs">
     <Link>Runtime\Export\Unsafe\UnsafeUtility.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtility.cs">
+    <Link>Runtime\Export\Unsafe\UnsafeUtility.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Unsafe\UnsafeUtilityPatched.cs">
     <Link>Runtime\Export\Unsafe\UnsafeUtilityPatched.cs</Link>
   </Compile>
@@ -1237,8 +1241,8 @@
   <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs">
     <Link>Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\CrashReporting\CrashReportHandler.bindings.cs">
-    <Link>Modules\CrashReporting\CrashReportHandler.bindings.cs</Link>
+  <Compile Include="..\..\Modules\CrashReporting\CrashReporter.bindings.cs">
+    <Link>Modules\CrashReporting\CrashReporter.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\Director\ScriptBindings\PlayableDirector.bindings.cs">
     <Link>Modules\Director\ScriptBindings\PlayableDirector.bindings.cs</Link>

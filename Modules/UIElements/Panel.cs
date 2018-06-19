@@ -62,7 +62,7 @@ namespace UnityEngine.Experimental.UIElements
 
     internal class RepaintData
     {
-        public Matrix4x4 currentTransform { get; set; }
+        public Matrix4x4 currentOffset { get; set; } = Matrix4x4.identity;
         public Vector2 mousePosition { get; set; }
         public Rect currentWorldClip { get; set; }
         public Event repaintEvent { get; set; }
@@ -167,6 +167,8 @@ namespace UnityEngine.Experimental.UIElements
         internal bool disposed { get; private set; }
         internal bool allowPixelCaching { get; set; }
         public abstract bool keepPixelCacheOnWorldBoundChange { get; set; }
+
+        internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
         public IPanelDebug panelDebug { get; set; }
     }
@@ -490,14 +492,17 @@ namespace UnityEngine.Experimental.UIElements
         {
             m_VisualTreeUpdater.SetUpdater(updater, phase);
         }
+
+        internal override IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase)
+        {
+            return m_VisualTreeUpdater.GetUpdater(phase);
+        }
     }
 
     // internal data used to cache render state
     internal class RenderData
     {
         public RenderTexture pixelCache;
-
-        public Matrix4x4 worldTransForm = Matrix4x4.identity;
         public Rect lastLayout;
     }
 }

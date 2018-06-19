@@ -444,8 +444,6 @@ namespace UnityEditor.Experimental.UIElements
             {
                 SetupStandardRepaint();
             }
-
-            base.DoRepaint(painter);
         }
 
         class CurveFieldContent : VisualElement
@@ -481,8 +479,6 @@ namespace UnityEditor.Experimental.UIElements
 
             protected override void DoRepaint(IStylePainter painter)
             {
-                base.DoRepaint(painter);
-
                 if (m_Mesh != null)
                 {
                     if (m_Mat == null)

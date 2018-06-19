@@ -11,6 +11,8 @@ namespace UnityEngine.Experimental.UIElements
     [StructLayout(LayoutKind.Sequential)]
     internal partial class ImmediateStylePainter : IStylePainterInternal
     {
+        public VisualElement currentElement { get; set; }
+
         public void DrawRect(RectStylePainterParameters painterParams)
         {
             Rect screenRect = painterParams.rect;
@@ -106,6 +108,48 @@ namespace UnityEngine.Experimental.UIElements
 
             mat.SetPass(pass);
             Graphics.DrawMeshNow(mesh, Matrix4x4.identity);
+        }
+
+        public void DrawImmediate(System.Action callback)
+        {
+            callback();
+        }
+
+        public void DrawBackground()
+        {
+            IStyle style = currentElement.style;
+            if (style.backgroundColor != Color.clear)
+            {
+                var painterParams = RectStylePainterParameters.GetDefault(currentElement);
+                painterParams.border.SetWidth(0.0f);
+                DrawRect(painterParams);
+            }
+
+            if (style.backgroundImage.value != null)
+            {
+                var painterParams = TextureStylePainterParameters.GetDefault(currentElement);
+                painterParams.border.SetWidth(0.0f);
+                DrawTexture(painterParams);
+            }
+        }
+
+        public void DrawBorder()
+        {
+            IStyle style = currentElement.style;
+            if (style.borderColor != Color.clear && (style.borderLeftWidth > 0.0f || style.borderTopWidth > 0.0f || style.borderRightWidth > 0.0f || style.borderBottomWidth > 0.0f))
+            {
+                var painterParams = RectStylePainterParameters.GetDefault(currentElement);
+                painterParams.color = style.borderColor;
+                DrawRect(painterParams);
+            }
+        }
+
+        public void DrawText(string text)
+        {
+            if (!string.IsNullOrEmpty(text) && currentElement.contentRect.width > 0.0f && currentElement.contentRect.height > 0.0f)
+            {
+                DrawText(TextStylePainterParameters.GetDefault(currentElement, text));
+            }
         }
 
         Color m_OpacityColor = Color.white;

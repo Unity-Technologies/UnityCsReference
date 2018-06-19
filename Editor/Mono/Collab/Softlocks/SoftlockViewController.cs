@@ -18,7 +18,7 @@ namespace UnityEditor
     {
         private static SoftlockViewController s_Instance;
         public GUIStyle k_Style = null;
-        public GUIStyle k_StyleEmpty = new GUIStyle(); // For tooltips only.
+        public GUIStyle k_StyleEmpty = GUIStyle.none; // For tooltips only.
         public GUIContent k_Content = null;
 
         // Stores UI strings for reuse and Editor (inspector) references to trigger

@@ -36,7 +36,7 @@ namespace UnityEngine.Experimental.UIElements
 
             Rect clipRect = visualTree.ShouldClip() ? visualTree.layout : GUIClip.topmostRect;
 
-            PaintSubTree(m_StylePainter, visualTree, Matrix4x4.identity, false, false, clipRect);
+            PaintSubTree(visualTree, Matrix4x4.identity, false, false, clipRect);
 
             m_RepaintList.Clear();
         }
@@ -73,28 +73,13 @@ namespace UnityEngine.Experimental.UIElements
             return false;
         }
 
-        // get the AA aligned bound
-        private Rect ComputeAAAlignedBound(Rect position, Matrix4x4 mat)
-        {
-            Rect p = position;
-            Vector3 v0 = mat.MultiplyPoint3x4(new Vector3(p.x, p.y, 0.0f));
-            Vector3 v1 = mat.MultiplyPoint3x4(new Vector3(p.x + p.width, p.y, 0.0f));
-            Vector3 v2 = mat.MultiplyPoint3x4(new Vector3(p.x, p.y + p.height, 0.0f));
-            Vector3 v3 = mat.MultiplyPoint3x4(new Vector3(p.x + p.width, p.y + p.height, 0.0f));
-            return Rect.MinMaxRect(
-                Mathf.Min(v0.x, Mathf.Min(v1.x, Mathf.Min(v2.x, v3.x))),
-                Mathf.Min(v0.y, Mathf.Min(v1.y, Mathf.Min(v2.y, v3.y))),
-                Mathf.Max(v0.x, Mathf.Max(v1.x, Mathf.Max(v2.x, v3.x))),
-                Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
-        }
-
-        private bool ShouldUsePixelCache(VisualElement root)
+        internal bool ShouldUsePixelCache(VisualElement root)
         {
             return panel.allowPixelCaching && root.clippingOptions == VisualElement.ClippingOptions.ClipAndCacheContents &&
                 root.worldBound.size.magnitude > Mathf.Epsilon;
         }
 
-        private void PaintSubTree(IStylePainterInternal stylePainter, VisualElement root, Matrix4x4 offset, bool shouldClip, bool shouldCache, Rect currentGlobalClip)
+        private void PaintSubTree(VisualElement root, Matrix4x4 offset, bool shouldClip, bool shouldCache, Rect currentGlobalClip)
         {
             if (root == null || root.panel != panel)
                 return;
@@ -106,7 +91,7 @@ namespace UnityEngine.Experimental.UIElements
             // update clip
             if (root.ShouldClip())
             {
-                var worldBound = ComputeAAAlignedBound(root.rect, offset * root.worldTransform);
+                var worldBound = VisualElement.ComputeAAAlignedBound(root.rect, offset * root.worldTransform);
                 // are we and our children clipped?
                 if (!worldBound.Overlaps(currentGlobalClip))
                 {
@@ -135,6 +120,9 @@ namespace UnityEngine.Experimental.UIElements
                 m_WhinedOnceAboutRotatedClipSpaceThisFrame = true;
             }
 
+            var prevElement = m_StylePainter.currentElement;
+            m_StylePainter.currentElement = root;
+
             var repaintData = panel.repaintData;
             if (ShouldUsePixelCache(root))
             {
@@ -145,8 +133,8 @@ namespace UnityEngine.Experimental.UIElements
                 Rect alignedRect;
                 int textureWidth, textureHeight;
                 repaintData.currentWorldClip = currentGlobalClip;
-                repaintData.currentTransform = offset * root.worldTransform;
-                using (new GUIClip.ParentClipScope(repaintData.currentTransform, currentGlobalClip))
+                repaintData.currentOffset = offset;
+                using (new GUIClip.ParentClipScope(offset * root.worldTransform, currentGlobalClip))
                 {
                     alignedRect = GUIUtility.AlignRectToDevice(root.rect, out textureWidth, out textureHeight);
                 }
@@ -180,7 +168,6 @@ namespace UnityEngine.Experimental.UIElements
                                     RenderTextureFormat.ARGB32,
                                     RenderTextureReadWrite.Linear);
                     }
-
 
                     bool hasRoundedBorderRects = (root.style.borderTopLeftRadius > 0 ||
                                                   root.style.borderTopRightRadius > 0 ||
@@ -217,30 +204,27 @@ namespace UnityEngine.Experimental.UIElements
 
                         // reset clipping
                         var textureClip = new Rect(0, 0, worldAlignedRect.width, worldAlignedRect.height);
-                        repaintData.currentTransform = offsetWorldTransform;
+                        repaintData.currentOffset = childrenOffset;
 
-                        using (new GUIClip.ParentClipScope(repaintData.currentTransform, textureClip))
+                        using (new GUIClip.ParentClipScope(offsetWorldTransform, textureClip))
                         {
                             // Paint self
                             repaintData.currentWorldClip = textureClip;
 
-                            stylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
-                            root.Repaint(stylePainter);
-                            stylePainter.opacity = 1.0f;
+                            m_StylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
+                            root.Repaint(m_StylePainter);
+                            m_StylePainter.opacity = 1.0f;
 
-                            PaintSubTreeChildren(stylePainter, root, childrenOffset, shouldClip, shouldCache, textureClip);
+                            PaintSubTreeChildren(root, childrenOffset, shouldClip, shouldCache, textureClip);
                         }
 
                         if (hasRoundedBorderRects)
                         {
                             RenderTexture.active = root.renderData.pixelCache;
 
-                            // Fix up transform for subtree to match texture upper left.
-                            repaintData.currentTransform = Matrix4x4.identity;
-
                             bool oldManualTex2SRGBEnabled = GUIUtility.manualTex2SRGBEnabled;
                             GUIUtility.manualTex2SRGBEnabled = false;
-                            using (new GUIClip.ParentClipScope(repaintData.currentTransform, textureClip))
+                            using (new GUIClip.ParentClipScope(Matrix4x4.identity, textureClip))
                             {
                                 GL.Clear(true, true, new Color(0, 0, 0, 0));
 
@@ -267,14 +251,13 @@ namespace UnityEngine.Experimental.UIElements
                                 // No border is drawn but the rounded corners are clipped properly.
                                 // Use premultiply alpha to avoid blending again.
                                 textureParams.usePremultiplyAlpha = true;
-                                stylePainter.DrawTexture(textureParams);
+                                m_StylePainter.DrawTexture(textureParams);
                             }
 
                             // Redraw the border (border was already drawn in first root.DoRepaint call).
-                            repaintData.currentTransform = offsetWorldTransform;
-                            using (new GUIClip.ParentClipScope(repaintData.currentTransform, textureClip))
+                            using (new GUIClip.ParentClipScope(offsetWorldTransform, textureClip))
                             {
-                                stylePainter.DrawBorder(root);
+                                m_StylePainter.DrawBorder();
                             }
                             GUIUtility.manualTex2SRGBEnabled = oldManualTex2SRGBEnabled;
                         }
@@ -292,11 +275,11 @@ namespace UnityEngine.Experimental.UIElements
 
                 // now actually paint the texture to previous group
                 repaintData.currentWorldClip = currentGlobalClip;
-                repaintData.currentTransform = offset * root.worldTransform;
+                repaintData.currentOffset = offset;
 
                 bool oldManualTex2SRGBEnabled2 = GUIUtility.manualTex2SRGBEnabled;
                 GUIUtility.manualTex2SRGBEnabled = false;
-                using (new GUIClip.ParentClipScope(repaintData.currentTransform, currentGlobalClip))
+                using (new GUIClip.ParentClipScope(offset * root.worldTransform, currentGlobalClip))
                 {
                     var painterParams = new TextureStylePainterParameters
                     {
@@ -308,37 +291,39 @@ namespace UnityEngine.Experimental.UIElements
                         usePremultiplyAlpha = true
                     };
 
-                    stylePainter.DrawTexture(painterParams);
+                    m_StylePainter.DrawTexture(painterParams);
                 }
                 GUIUtility.manualTex2SRGBEnabled = oldManualTex2SRGBEnabled2;
             }
             else
             {
-                repaintData.currentTransform = offset * root.worldTransform;
+                repaintData.currentOffset = offset;
 
-                using (new GUIClip.ParentClipScope(repaintData.currentTransform, currentGlobalClip))
+                using (new GUIClip.ParentClipScope(offset * root.worldTransform, currentGlobalClip))
                 {
                     repaintData.currentWorldClip = currentGlobalClip;
                     repaintData.mousePosition = root.worldTransform.inverse.MultiplyPoint3x4(repaintData.repaintEvent.mousePosition);
 
-                    stylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
+                    m_StylePainter.opacity = root.style.opacity.GetSpecifiedValueOrDefault(1.0f);
+                    root.Repaint(m_StylePainter);
+                    m_StylePainter.opacity = 1.0f;
 
-                    root.Repaint(stylePainter);
-                    stylePainter.opacity = 1.0f;
 
-                    PaintSubTreeChildren(stylePainter, root, offset, shouldClip, shouldCache, currentGlobalClip);
+                    PaintSubTreeChildren(root, offset, shouldClip, shouldCache, currentGlobalClip);
                 }
             }
+
+            m_StylePainter.currentElement = prevElement;
         }
 
-        private void PaintSubTreeChildren(IStylePainterInternal stylePainter, VisualElement root, Matrix4x4 offset, bool shouldClip, bool shouldCache, Rect textureClip)
+        private void PaintSubTreeChildren(VisualElement root, Matrix4x4 offset, bool shouldClip, bool shouldCache, Rect textureClip)
         {
             int count = root.shadow.childCount;
             for (int i = 0; i < count; i++)
             {
                 VisualElement child = root.shadow[i];
 
-                PaintSubTree(stylePainter, child, offset, shouldClip, shouldCache, textureClip);
+                PaintSubTree(child, offset, shouldClip, shouldCache, textureClip);
 
                 if (count != root.shadow.childCount)
                 {

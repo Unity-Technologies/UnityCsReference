@@ -6,13 +6,15 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.CrashReportHandler
 {
-    [NativeHeader("Modules/CrashReporting/CrashReportHandler.h")]
+    [NativeHeader("Modules/CrashReporting/Public/CrashReporter.h")]
+    [StaticAccessor("CrashReporting::CrashReporter::Get()", StaticAccessorType.Dot)]
     public partial class CrashReportHandler
     {
         private CrashReportHandler()
         {
         }
 
+        [NativeProperty("Enabled")]
         public static extern bool enableCaptureExceptions { get; set; }
     }
 }

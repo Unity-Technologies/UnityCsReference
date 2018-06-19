@@ -644,9 +644,14 @@ namespace UnityEditor
             }
         }
 
+        static class Styles
+        {
+            public static readonly GUIStyle toolbar = "toolbar";
+        }
+
         void DoToolbarGUI()
         {
-            GUILayout.BeginHorizontal("toolbar");
+            GUILayout.BeginHorizontal(Styles.toolbar);
             {
                 // render mode popup
                 GUIContent modeContent = EditorGUIUtility.TextContent(cameraMode.name);
@@ -661,11 +666,11 @@ namespace UnityEditor
 
                 EditorGUILayout.Space();
 
-                in2DMode = GUILayout.Toggle(in2DMode, m_2DModeContent, "toolbarbutton");
+                in2DMode = GUILayout.Toggle(in2DMode, m_2DModeContent, EditorStyles.toolbarButton);
 
                 EditorGUILayout.Space();
 
-                m_SceneLighting = GUILayout.Toggle(m_SceneLighting, m_Lighting, "toolbarbutton");
+                m_SceneLighting = GUILayout.Toggle(m_SceneLighting, m_Lighting, EditorStyles.toolbarButton);
                 if (cameraMode.drawMode == DrawCameraMode.ShadowCascades) // cascade visualization requires actual lights with shadows
                     m_SceneLighting = true;
 
@@ -720,7 +725,7 @@ namespace UnityEditor
                     {
                         if (GUILayout.Button(m_RenderDocContent, EditorStyles.toolbarButton))
                         {
-                            m_Parent.CaptureRenderDoc();
+                            m_Parent.CaptureRenderDocScene();
                             GUIUtility.ExitGUI();
                         }
                     }

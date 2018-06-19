@@ -84,6 +84,16 @@ namespace UnityEditor
                 }
             }
 
+            if (CrashReporting.CrashReportingSettings.enabled)
+            {
+                const string moduleName = "CrashReporting";
+                const string requiredMessage = "Required by Performance Reporting Service (See Services Window)";
+                nativeModules.Add(moduleName);
+                strippingInfo.AddModule(moduleName);
+                strippingInfo.RegisterDependency(StrippingInfo.ModuleName(moduleName), requiredMessage);
+                strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
+            }
+
             if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(target))
             {
                 const string moduleName = "VR";

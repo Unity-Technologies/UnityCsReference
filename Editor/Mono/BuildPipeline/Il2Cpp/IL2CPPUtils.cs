@@ -170,7 +170,10 @@ namespace UnityEditorInternal
                 fileInfo.IsReadOnly = false;
             }
 
-            AssemblyStripper.StripAssemblies(managedDir, m_PlatformProvider, m_RuntimeClassRegistry);
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
+
+            var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+            AssemblyStripper.StripAssemblies(managedDir, m_PlatformProvider, m_RuntimeClassRegistry, managedStrippingLevel);
 
             // The IL2CPP editor integration here is responsible to give il2cpp.exe an empty directory to use.
             FileUtil.CreateOrCleanDirectory(outputDirectory);

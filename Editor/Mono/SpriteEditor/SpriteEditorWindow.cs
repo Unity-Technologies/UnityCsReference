@@ -247,7 +247,8 @@ namespace UnityEditor
             };
             m_ModuleViewElement = new VisualElement()
             {
-                name = "moduleViewElement"
+                name = "moduleViewElement",
+                pickingMode = PickingMode.Ignore
             };
             m_MainViewElement.Add(m_MainViewIMGUIElement);
             m_MainViewElement.Add(m_ModuleViewElement);

@@ -22,6 +22,13 @@ namespace UnityEngine.Experimental.UIElements
         void DrawText(TextStylePainterParameters painterParams);
         void DrawMesh(MeshStylePainterParameters painterParameters);
 
+        // The DrawImmediate method allow for inserting direct-GL calls at the right spot in the draw chain.
+        void DrawImmediate(System.Action callback);
+
+        void DrawBackground();
+        void DrawBorder();
+        void DrawText(string text);
+
         float opacity { get; set; }
     }
 
@@ -177,6 +184,23 @@ namespace UnityEngine.Experimental.UIElements
         {
             return GetDefault(te, te.text);
         }
+
+        public TextNativeSettings GetTextNativeSettings(float scaling)
+        {
+            return new TextNativeSettings
+            {
+                text = text,
+                font = font,
+                size = fontSize,
+                scaling = scaling,
+                style = fontStyle,
+                color = fontColor,
+                anchor = anchor,
+                wordWrap = wordWrap,
+                wordWrapWidth = wordWrapWidth,
+                richText = richText
+            };
+        }
     }
 
     internal struct MeshStylePainterParameters
@@ -223,6 +247,23 @@ namespace UnityEngine.Experimental.UIElements
                 cursorIndex = 0
             };
             return painterParams;
+        }
+
+        internal TextNativeSettings GetTextNativeSettings(float scaling)
+        {
+            return new TextNativeSettings
+            {
+                text = text,
+                font = font,
+                size = fontSize,
+                scaling = scaling,
+                style = fontStyle,
+                color = Color.white, // N/A
+                anchor = anchor,
+                wordWrap = true,
+                wordWrapWidth = wordWrapWidth,
+                richText = richText
+            };
         }
     }
 }

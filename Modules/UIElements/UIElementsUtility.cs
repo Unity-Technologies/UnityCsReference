@@ -51,7 +51,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (s_ContainerStack.Count > 0)
             {
-                s_ContainerStack.Peek().MakeDirtyLayout();
+                s_ContainerStack.Peek().MarkDirtyLayout();
             }
         }
 

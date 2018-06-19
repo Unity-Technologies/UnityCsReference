@@ -9,19 +9,26 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    public abstract class BaseCompoundField<T> : BaseField<T>
+    /// <summary>
+    ///  This is the base class for the compound fields of type TMain.
+    /// </summary>
+    /// <typeparam name="TValue">The type of the object to be represented by the fields (example: Vector3)</typeparam>
+    /// <typeparam name="TField">The type of a single field in the compound field. (example: for a Vector3, this is FloatField)</typeparam>
+    /// <typeparam name="TFieldValue">The basic type of an individual object contained in the TField. (example: for a FloatField, this is a float)</typeparam>
+    public abstract class BaseCompositeField<TValue, TField, TFieldValue> : BaseField<TValue>
+        where TField : TextValueField<TFieldValue>, new()
     {
-        public new class UxmlTraits : BaseField<T>.UxmlTraits {}
+        public new class UxmlTraits : BaseField<TValue>.UxmlTraits {}
 
-        public class FieldDescription
+        internal struct FieldDescription
         {
-            public delegate void WriteDelegate(ref T val, float fieldValue);
+            public delegate void WriteDelegate(ref TValue val, TFieldValue fieldValue);
 
             internal readonly string name;
-            internal readonly Func<T, float> read;
+            internal readonly Func<TValue, TFieldValue> read;
             internal readonly WriteDelegate write;
 
-            public FieldDescription(string name, Func<T, float> read, WriteDelegate write)
+            public FieldDescription(string name, Func<TValue, TFieldValue> read, WriteDelegate write)
             {
                 this.name = name;
                 this.read = read;
@@ -37,47 +44,39 @@ namespace UnityEditor.Experimental.UIElements
                 base.focusIndex = value;
                 if ((m_Fields != null) && (m_Fields.Count > 0))
                 {
-                    foreach (FloatField field in m_Fields)
+                    foreach (var field in m_Fields)
                     {
                         field.focusIndex = value;
                     }
                 }
             }
         }
-        protected static FieldDescription[] s_FieldDescriptions;
-        protected List<FloatField> m_Fields;
-
+        protected List<TField> m_Fields;
         internal abstract FieldDescription[] DescribeFields();
 
-        protected BaseCompoundField()
+        protected BaseCompositeField()
         {
             AddToClassList("compositeField");
-            if (s_FieldDescriptions == null)
-                s_FieldDescriptions = DescribeFields();
 
-            if (s_FieldDescriptions == null)
-            {
-                Debug.LogError("Describe fields MUST return a non null array of field descriptions");
-                return;
-            }
-
-            m_Fields = new List<FloatField>(s_FieldDescriptions.Length);
-            foreach (FieldDescription desc in s_FieldDescriptions)
+            m_Fields = new List<TField>();
+            FieldDescription[] fieldDescriptions = DescribeFields();
+            foreach (var desc in fieldDescriptions)
             {
                 var fieldContainer = new VisualElement();
                 fieldContainer.AddToClassList("field");
                 fieldContainer.Add(new Label(desc.name));
-                var field = new FloatField();
+                var field = new TField();
                 fieldContainer.Add(field);
                 field.OnValueChanged(e =>
                     {
-                        T cur = value;
+                        TValue cur = value;
                         desc.write(ref cur, e.newValue);
                         value = cur;
                     });
                 m_Fields.Add(field);
                 shadow.Add(fieldContainer);
             }
+
             UpdateDisplay();
         }
 
@@ -86,25 +85,39 @@ namespace UnityEditor.Experimental.UIElements
             get { return null; }
         }
 
+        public override TValue value
+        {
+            get { return base.value; }
+            set
+            {
+                base.value = value;
+                UpdateDisplay();
+            }
+        }
+
         private void UpdateDisplay()
         {
-            if (s_FieldDescriptions != null)
+            if (m_Fields.Count != 0)
             {
-                for (int i = 0; i < s_FieldDescriptions.Length; i++)
+                var i = 0;
+                FieldDescription[] fieldDescriptions = DescribeFields();
+                foreach (var fd in fieldDescriptions)
                 {
-                    m_Fields[i].value = (s_FieldDescriptions[i].read(m_Value));
+                    m_Fields[i].value = (fd.read(m_Value));
+                    i++;
                 }
             }
         }
 
-        public override void SetValueWithoutNotify(T newValue)
+        public override void SetValueWithoutNotify(TValue newValue)
         {
-            T previousValue = m_Value;
+            var valueChanged = !EqualityComparer<TValue>.Default.Equals(m_Value, newValue);
+
             // Make sure to call the base class to set the value...
             base.SetValueWithoutNotify(newValue);
 
             // Before Updating the display, just check if the value changed...
-            if (!EqualityComparer<T>.Default.Equals(previousValue, newValue))
+            if (valueChanged)
             {
                 UpdateDisplay();
             }

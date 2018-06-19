@@ -394,7 +394,7 @@ namespace UnityEditorInternal
                         else
                             existingKeyframe.value = value;
 
-                        state.SaveCurve(curve, undoLabel);
+                        state.SaveCurve(curve.clip, curve, undoLabel);
                         curvesChanged = true;
                     }
                 }
@@ -610,13 +610,13 @@ namespace UnityEditorInternal
         private void AddKeysAtCurrentTime(object obj) { AddKeysAtCurrentTime((List<AnimationWindowCurve>)obj); }
         private void AddKeysAtCurrentTime(List<AnimationWindowCurve> curves)
         {
-            AnimationWindowUtility.AddKeyframes(state, curves.ToArray(), state.time);
+            AnimationWindowUtility.AddKeyframes(state, curves, state.time);
         }
 
         private void DeleteKeysAtCurrentTime(object obj) { DeleteKeysAtCurrentTime((List<AnimationWindowCurve>)obj); }
         private void DeleteKeysAtCurrentTime(List<AnimationWindowCurve> curves)
         {
-            AnimationWindowUtility.RemoveKeyframes(state, curves.ToArray(), state.time);
+            AnimationWindowUtility.RemoveKeyframes(state, curves, state.time);
         }
 
         private void ChangeRotationInterpolation(System.Object interpolationMode)

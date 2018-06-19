@@ -112,6 +112,11 @@ namespace UnityEngine.Experimental.UIElements
             m_UpdaterArray[phase] = updater;
         }
 
+        public IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase)
+        {
+            return m_UpdaterArray[phase];
+        }
+
         private void SetDefaultUpdaters()
         {
             SetUpdater<VisualTreePersistentDataUpdater>(VisualTreeUpdatePhase.PersistentData);

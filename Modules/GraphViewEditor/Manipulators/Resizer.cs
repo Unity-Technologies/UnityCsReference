@@ -37,7 +37,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             style.paddingTop = 14;
             style.width = 20;
             style.height = 20;
-            style.backgroundSize = ScaleMode.ScaleAndCrop;
 
             m_Active = false;
 
@@ -47,6 +46,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             ClearClassList();
             AddToClassList("resizer");
+
+            var icon = new VisualElement() {
+                style = { backgroundSize = ScaleMode.ScaleAndCrop }
+            };
+            icon.AddToClassList("resizer-icon");
+            Add(icon);
         }
 
         void OnMouseDown(MouseDownEvent e)
@@ -203,14 +208,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 e.StopPropagation();
             }
-        }
-
-        protected override void DoRepaint(IStylePainter painter)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            var textureParam = TextureStylePainterParameters.GetDefault(this);
-            textureParam.rect = contentRect;
-            stylePainter.DrawTexture(textureParam);
         }
     }
 }

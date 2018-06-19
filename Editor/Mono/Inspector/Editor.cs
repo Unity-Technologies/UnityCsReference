@@ -369,7 +369,7 @@ namespace UnityEditor
             get { return m_PropertyHandlerCache; }
         }
 
-        static class Styles
+        static class BaseStyles
         {
             public static readonly GUIContent open = EditorGUIUtility.TrTextContent("Open");
             public static readonly GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
@@ -377,7 +377,7 @@ namespace UnityEditor
             public static readonly GUIStyle centerStyle = new GUIStyle();
             public static readonly GUIStyle postLargeHeaderBackground = "IN BigTitle Post";
 
-            static Styles()
+            static BaseStyles()
             {
                 centerStyle.alignment = TextAnchor.MiddleCenter;
                 // modify header bottom padding on a mutable copy here
@@ -666,9 +666,9 @@ namespace UnityEditor
                 EditorGUIUtility.ResetGUIState();
                 GUILayout.Space(
                     -1f                                      // move up to cover up bottom pixel of header box
-                    - Styles.inspectorBig.margin.bottom
-                    - Styles.inspectorBig.padding.bottom
-                    - Styles.inspectorBig.overflow.bottom    // move up to bottom of content area in header
+                    - BaseStyles.inspectorBig.margin.bottom
+                    - BaseStyles.inspectorBig.padding.bottom
+                    - BaseStyles.inspectorBig.overflow.bottom    // move up to bottom of content area in header
                     );
 
                 // align with controls in the Inspector
@@ -676,7 +676,7 @@ namespace UnityEditor
                 EditorGUIUtility.hierarchyMode = true;
                 EditorGUIUtility.wideMode = EditorGUIUtility.contextWidth > k_WideModeMinWidth;
 
-                EditorGUILayout.BeginVertical(Styles.postLargeHeaderBackground, GUILayout.ExpandWidth(true));
+                EditorGUILayout.BeginVertical(BaseStyles.postLargeHeaderBackground, GUILayout.ExpandWidth(true));
                 finishedDefaultHeaderGUI(this);
                 EditorGUILayout.EndVertical();
             }
@@ -716,7 +716,7 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(importerEditor != null && importerEditor.assetTarget == null))
                 {
-                    if (GUILayout.Button(Styles.open, EditorStyles.miniButton))
+                    if (GUILayout.Button(BaseStyles.open, EditorStyles.miniButton))
                     {
                         if (importerEditor != null)
                             AssetDatabase.OpenAsset(importerEditor.assetTargets);
@@ -752,9 +752,9 @@ namespace UnityEditor
 
             if (HasPreviewGUI())
                 // OnPreviewGUI must have all events; not just Repaint, or else the control IDs will mis-match.
-                OnPreviewGUI(iconRect, Styles.inspectorBigInner);
+                OnPreviewGUI(iconRect, BaseStyles.inspectorBigInner);
             else if (icon)
-                GUI.Label(iconRect, icon, Styles.centerStyle);
+                GUI.Label(iconRect, icon, BaseStyles.centerStyle);
         }
 
         internal virtual void OnHeaderTitleGUI(Rect titleRect, string header)
@@ -802,7 +802,7 @@ namespace UnityEditor
 
         internal static Rect DrawHeaderGUI(Editor editor, string header, float leftMargin)
         {
-            GUILayout.BeginHorizontal(Styles.inspectorBig);
+            GUILayout.BeginHorizontal(BaseStyles.inspectorBig);
             GUILayout.Space(kImageSectionWidth - 6);
             GUILayout.BeginVertical();
             GUILayout.Space(19);
@@ -827,7 +827,7 @@ namespace UnityEditor
             if (editor)
                 editor.OnHeaderIconGUI(iconRect);
             else
-                GUI.Label(iconRect, AssetPreview.GetMiniTypeThumbnail(typeof(UnityObject)), Styles.centerStyle);
+                GUI.Label(iconRect, AssetPreview.GetMiniTypeThumbnail(typeof(UnityObject)), BaseStyles.centerStyle);
 
             if (editor)
                 editor.DrawPostIconContent(iconRect);

@@ -352,6 +352,12 @@ namespace UnityEngine
         [FreeFunction("SetStackTraceLogType")]
         extern public static void SetStackTraceLogType(LogType logType, StackTraceLogType stackTraceType);
 
+        extern public static string consoleLogPath
+        {
+            [FreeFunction("GetConsoleLogPath")]
+            get;
+        }
+
         // Priority of background loading thread.
         extern public static ThreadPriority backgroundLoadingPriority
         {

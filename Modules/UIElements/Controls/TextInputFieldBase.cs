@@ -240,16 +240,13 @@ namespace UnityEngine.Experimental.UIElements
                 if (touchScreenEditor != null && !string.IsNullOrEmpty(touchScreenEditor.secureText))
                     drawText = "".PadRight(touchScreenEditor.secureText.Length, maskChar);
 
-                base.DoRepaint(painter);
-
                 text = drawText;
             }
             else
             {
                 if (!hasFocus)
                 {
-                    base.DoRepaint(painter);
-                    painter.DrawText(this, text);
+                    stylePainter.DrawText(text);
                 }
                 else
                     DrawWithTextSelectionAndCursor(stylePainter, text);
@@ -271,12 +268,15 @@ namespace UnityEngine.Experimental.UIElements
 
             IStyle style = this.style;
 
+            float textScaling = TextNative.ComputeTextScaling(worldTransform);
+
             var textParams = TextStylePainterParameters.GetDefault(this, text);
             textParams.text = " ";
             textParams.wordWrapWidth = 0.0f;
             textParams.wordWrap = false;
 
-            float lineHeight = TextNative.ComputeTextHeight(textParams);
+            var textNativeSettings = textParams.GetTextNativeSettings(textScaling);
+            float lineHeight = TextNative.ComputeTextHeight(textNativeSettings);
             float contentWidth = contentRect.width;
 
             Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
@@ -287,9 +287,6 @@ namespace UnityEngine.Experimental.UIElements
             int selectionEndIndex = string.IsNullOrEmpty(Input.compositionString)
                 ? selectIndex
                 : cursorIndex + Input.compositionString.Length;
-
-            // Draw the background as in VisualElement
-            painter.DrawBackground(this);
 
             CursorPositionStylePainterParameters cursorParams;
 
@@ -307,11 +304,10 @@ namespace UnityEngine.Experimental.UIElements
                 cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                 cursorParams.text = editorEngine.text;
                 cursorParams.wordWrapWidth = contentWidth;
-                cursorParams.cursorIndex = min;
 
-                Vector2 minPos = TextNative.GetCursorPosition(cursorParams);
-                cursorParams.cursorIndex = max;
-                Vector2 maxPos = TextNative.GetCursorPosition(cursorParams);
+                textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
+                Vector2 minPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, min);
+                Vector2 maxPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, max);
 
                 minPos -= scrollOffset;
                 maxPos -= scrollOffset;
@@ -344,9 +340,6 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            // Draw the border as in VisualElement
-            painter.DrawBorder(this);
-
             // Draw the text with the scroll offset
             if (!string.IsNullOrEmpty(editorEngine.text) && contentRect.width > 0.0f && contentRect.height > 0.0f)
             {
@@ -364,7 +357,8 @@ namespace UnityEngine.Experimental.UIElements
                 cursorParams.wordWrapWidth = contentWidth;
                 cursorParams.cursorIndex = cursorIndex;
 
-                Vector2 cursorPosition = TextNative.GetCursorPosition(cursorParams);
+                textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
+                Vector2 cursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
                 cursorPosition -= scrollOffset;
                 var painterParams = new RectStylePainterParameters
                 {
@@ -382,7 +376,8 @@ namespace UnityEngine.Experimental.UIElements
                 cursorParams.wordWrapWidth = contentWidth;
                 cursorParams.cursorIndex = editorEngine.altCursorPosition;
 
-                Vector2 altCursorPosition = TextNative.GetCursorPosition(cursorParams);
+                textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
+                Vector2 altCursorPosition = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, cursorParams.cursorIndex);
                 altCursorPosition -= scrollOffset;
 
                 var painterParams = new RectStylePainterParameters

@@ -190,37 +190,46 @@ namespace UnityEditor
         extern public static EditorCurveBinding[] GetObjectReferenceCurveBindings([NotNull] AnimationClip clip);
 
         extern public static ObjectReferenceKeyframe[] GetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
-        extern public static void SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes);
 
-        extern public static AnimationCurve GetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
-        extern public static void SetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve);
-
-        // Todo. Should be converted to c++.
-        internal static void SetEditorCurves(AnimationClip clip, EditorCurveBinding[] bindings, AnimationCurve[] curves)
+        public static void SetObjectReferenceCurve(AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes)
         {
-            if (clip == null)
-                throw new ArgumentNullException("clip");
-            if (curves == null)
-                throw new ArgumentNullException("curves");
-            if (bindings == null)
-                throw new ArgumentNullException("bindings");
-
-            if (bindings.Length != curves.Length)
-                throw new ArgumentException("bindings and curves array sizes do not match");
-
-            for (int i = 0; i < bindings.Length; ++i)
-            {
-                Internal_SetEditorCurve(clip, bindings[i], curves[i], false);
-
-                if (onCurveWasModified != null)
-                    onCurveWasModified(clip, bindings[i], curves[i] != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
-            }
-
-            Internal_SyncEditorCurves(clip);
+            Internal_SetObjectReferenceCurve(clip, binding, keyframes, true);
+            Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
         }
 
-        extern private static void Internal_SetEditorCurve(AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve, bool syncEditorCurve);
-        extern private static void Internal_SyncEditorCurves(AnimationClip clip);
+        internal static void SetObjectReferenceCurveNoSync(AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes)
+        {
+            Internal_SetObjectReferenceCurve(clip, binding, keyframes, false);
+            Internal_InvokeOnCurveWasModified(clip, binding, keyframes != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
+        }
+
+        extern private static void Internal_SetObjectReferenceCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, ObjectReferenceKeyframe[] keyframes, bool updateMuscleClip);
+
+        extern public static AnimationCurve GetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding);
+
+        public static void SetEditorCurve(AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve)
+        {
+            Internal_SetEditorCurve(clip, binding, curve, true);
+            Internal_InvokeOnCurveWasModified(clip, binding, curve != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
+        }
+
+        internal static void SetEditorCurveNoSync(AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve)
+        {
+            Internal_SetEditorCurve(clip, binding, curve, false);
+            Internal_InvokeOnCurveWasModified(clip, binding, curve != null ? CurveModifiedType.CurveModified : CurveModifiedType.CurveDeleted);
+        }
+
+        extern private static void Internal_SetEditorCurve([NotNull] AnimationClip clip, EditorCurveBinding binding, AnimationCurve curve, bool syncEditorCurves);
+
+        extern internal static void SyncEditorCurves([NotNull] AnimationClip clip);
+
+        private static void Internal_InvokeOnCurveWasModified(AnimationClip clip, EditorCurveBinding binding, CurveModifiedType type)
+        {
+            if (onCurveWasModified != null)
+            {
+                onCurveWasModified(clip, binding, type);
+            }
+        }
 
         [NativeThrows]
         extern internal static void UpdateTangentsFromModeSurrounding([NotNull] AnimationCurve curve, int index);

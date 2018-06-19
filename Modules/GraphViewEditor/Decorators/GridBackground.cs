@@ -98,6 +98,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         protected override void DoRepaint(IStylePainter painter)
         {
+            var stylePainter = (IStylePainterInternal)painter;
+            stylePainter.DrawImmediate(Draw);
+        }
+
+        void Draw()
+        {
             VisualElement target = parent;
 
             var graphView = target as GraphView;

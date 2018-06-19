@@ -72,7 +72,11 @@ namespace Unity.Collections
         internal static void IsBlittableAndThrow()
         {
             if (!UnsafeUtility.IsBlittable<T>())
-                throw new ArgumentException(string.Format("{0} used in NativeArray<{0}> must be blittable", typeof(T)));
+            {
+                throw new ArgumentException(
+                    string.Format("{0} used in NativeArray<{0}> must be blittable.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForValueTypeNonBlittable<T>()));
+            }
         }
 
         [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]

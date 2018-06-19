@@ -710,9 +710,9 @@ namespace UnityEditor
 
             // Note: keywords must be based on Material value not on MaterialProperty due to multi-edit & material animation
             // (MaterialProperty value might come from renderer material property block)
-            bool useDistortion = (material.GetFloat("_DistortionEnabled") > 0.0f) && !hasZWrite;
-            SetKeyword(material, "_NORMALMAP", material.GetTexture("_BumpMap") && (useLighting || useDistortion));
-            SetKeyword(material, "_METALLICGLOSSMAP", (material.GetTexture("_MetallicGlossMap") != null) && useLighting);
+            bool useDistortion = !hasZWrite && (material.GetFloat("_DistortionEnabled") > 0.0f);
+            SetKeyword(material, "_NORMALMAP", (useLighting || useDistortion) && material.GetTexture("_BumpMap"));
+            SetKeyword(material, "_METALLICGLOSSMAP", useLighting && (material.GetTexture("_MetallicGlossMap") != null));
 
             material.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             SetKeyword(material, "_EMISSION", material.GetFloat("_EmissionEnabled") > 0.0f);

@@ -407,18 +407,28 @@ namespace UnityEditorInternal
                 Undo.RegisterCompleteObjectUndo(m_KeySelection, undoLabel);
         }
 
-        public void SaveCurve(AnimationWindowCurve curve)
+        public void SaveCurve(AnimationClip clip, AnimationWindowCurve curve)
         {
-            SaveCurve(curve, kEditCurveUndoLabel);
+            SaveCurve(clip, curve, kEditCurveUndoLabel);
         }
 
-        public void SaveCurve(AnimationWindowCurve curve, string undoLabel)
+        public void SaveCurve(AnimationClip clip, AnimationWindowCurve curve, string undoLabel)
         {
             if (!curve.animationIsEditable)
                 Debug.LogError("Curve is not editable and shouldn't be saved.");
 
-            Undo.RegisterCompleteObjectUndo(curve.clip, undoLabel);
-            AnimationRecording.SaveModifiedCurve(curve, curve.clip);
+            Undo.RegisterCompleteObjectUndo(clip, undoLabel);
+            AnimationWindowUtility.SaveCurve(clip, curve);
+            Repaint();
+        }
+
+        public void SaveCurves(AnimationClip clip, ICollection<AnimationWindowCurve> curves, string undoLabel)
+        {
+            if (curves.Count == 0)
+                return;
+
+            Undo.RegisterCompleteObjectUndo(clip, undoLabel);
+            AnimationWindowUtility.SaveCurves(clip, curves);
             Repaint();
         }
 
@@ -457,8 +467,7 @@ namespace UnityEditorInternal
                 }
             }
 
-            foreach (AnimationWindowCurve curve in saveCurves)
-                SaveCurve(curve, undoLabel);
+            SaveCurves(activeAnimationClip, saveCurves, undoLabel);
         }
 
         public void RemoveCurve(AnimationWindowCurve curve, string undoLabel)
@@ -812,17 +821,20 @@ namespace UnityEditorInternal
         {
             SaveKeySelection(kEditCurveUndoLabel);
 
+            HashSet<AnimationWindowCurve> curves = new HashSet<AnimationWindowCurve>();
+
             foreach (AnimationWindowKeyframe keyframe in keys)
             {
                 if (!keyframe.curve.animationIsEditable)
                     continue;
 
+                curves.Add(keyframe.curve);
+
                 UnselectKey(keyframe);
                 keyframe.curve.m_Keyframes.Remove(keyframe);
-
-                // TODO: optimize by not saving curve for each keyframe
-                SaveCurve(keyframe.curve, kEditCurveUndoLabel);
             }
+
+            SaveCurves(activeAnimationClip, curves, kEditCurveUndoLabel);
 
             ResampleAnimation();
         }
@@ -1150,7 +1162,7 @@ namespace UnityEditorInternal
                     newKeyframe.curve.m_Keyframes.Add(newKeyframe);
                     SelectKey(newKeyframe);
                     // TODO: Optimize to only save curve once instead once per keyframe
-                    SaveCurve(newKeyframe.curve, kEditCurveUndoLabel);
+                    SaveCurve(newKeyframe.curve.clip, newKeyframe.curve, kEditCurveUndoLabel);
 
                     lastTargetCurve = newKeyframe.curve;
                     lastTime = newKeyframe.time;
@@ -1362,6 +1374,19 @@ namespace UnityEditorInternal
             HandleHierarchySelectionChanged(selectedInstanceIDs, triggerSceneSelectionSync);
         }
 
+        public void SelectHierarchyItems(IEnumerable<int> hierarchyNodeIDs, bool additive, bool triggerSceneSelectionSync)
+        {
+            if (!additive)
+                ClearHierarchySelection();
+
+            hierarchyState.selectedIDs.AddRange(hierarchyNodeIDs);
+
+            int[] selectedInstanceIDs = hierarchyState.selectedIDs.ToArray();
+
+            // We need to manually trigger this event, because injecting data to m_SelectedInstanceIDs directly doesn't trigger one via TreeView
+            HandleHierarchySelectionChanged(selectedInstanceIDs, triggerSceneSelectionSync);
+        }
+
         public void UnSelectHierarchyItem(DopeLine dopeline)
         {
             UnSelectHierarchyItem(dopeline.hierarchyNodeID);
@@ -1383,13 +1408,21 @@ namespace UnityEditorInternal
             return true;
         }
 
-        public List<int> GetAffectedHierarchyIDs(List<AnimationWindowKeyframe> keyframes)
+        public HashSet<int> GetAffectedHierarchyIDs(List<AnimationWindowKeyframe> keyframes)
         {
-            List<int> hierarchyIDs = new List<int>();
+            HashSet<int> hierarchyIDs = new HashSet<int>();
 
-            foreach (DopeLine dopeline in GetAffectedDopelines(keyframes))
-                if (!hierarchyIDs.Contains(dopeline.hierarchyNodeID))
-                    hierarchyIDs.Add(dopeline.hierarchyNodeID);
+            foreach (AnimationWindowKeyframe keyframe in keyframes)
+            {
+                var curve = keyframe.curve;
+
+                int hierarchyID = AnimationWindowUtility.GetPropertyNodeID(0, curve.path, curve.type, curve.propertyName);
+                if (hierarchyIDs.Add(hierarchyID))
+                {
+                    string propertyGroupName = AnimationWindowUtility.GetPropertyGroupName(curve.propertyName);
+                    hierarchyIDs.Add(AnimationWindowUtility.GetPropertyNodeID(0, curve.path, curve.type, propertyGroupName));
+                }
+            }
 
             return hierarchyIDs;
         }
@@ -1438,7 +1471,7 @@ namespace UnityEditorInternal
             if (rootGameObject == null)
                 return;
 
-            List<int> selectedGameObjectIDs = new List<int>();
+            List<int> selectedGameObjectIDs = new List<int>(selectedNodeIDs.Length);
             foreach (var selectedNodeID in selectedNodeIDs)
             {
                 AnimationWindowHierarchyNode node = hierarchyData.FindItem(selectedNodeID) as AnimationWindowHierarchyNode;
@@ -1491,8 +1524,9 @@ namespace UnityEditorInternal
                             int frame = AnimationKeyTime.Time(key.time, clipFrameRate).frame;
                             key.time = AnimationKeyTime.Frame(frame, value).time;
                         }
-                        SaveCurve(curve, kEditCurveUndoLabel);
                     }
+
+                    SaveCurves(activeAnimationClip, allCurves, kEditCurveUndoLabel);
 
                     AnimationEvent[] events = AnimationUtility.GetAnimationEvents(activeAnimationClip);
                     foreach (AnimationEvent ev in events)

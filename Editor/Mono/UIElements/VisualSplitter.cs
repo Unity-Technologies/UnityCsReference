@@ -167,8 +167,6 @@ namespace UnityEditor.Experimental.UIElements
 
         protected override void DoRepaint(IStylePainter painter)
         {
-            base.DoRepaint(painter);
-
             for (int i = 0; i < shadow.childCount - 1; ++i)
             {
                 VisualElement visualElement = shadow[i];

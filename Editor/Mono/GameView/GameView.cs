@@ -562,7 +562,7 @@ namespace UnityEditor
                     {
                         if (GUILayout.Button(Styles.renderdocContent, EditorStyles.toolbarButton))
                         {
-                            m_Parent.CaptureRenderDoc();
+                            m_Parent.CaptureRenderDocScene();
                             GUIUtility.ExitGUI();
                         }
                     }

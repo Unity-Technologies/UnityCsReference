@@ -43,5 +43,11 @@ namespace UnityEngine.Connect
             get;
             set;
         }
+
+        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
+        public extern static bool disableServicesWindow
+        {
+            get;
+        }
     }
 }

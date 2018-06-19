@@ -51,7 +51,6 @@ namespace UnityEditor.ShortcutManagement
         readonly Identifier m_Identifier;
 
         readonly List<KeyCombination> m_DefaultCombinations = new List<KeyCombination>();
-        public readonly KeyCombination? prefKeyMigratedValue;
         List<KeyCombination> m_OverridenCombinations;
 
         readonly Action<ShortcutArguments> m_Action;
@@ -68,14 +67,13 @@ namespace UnityEditor.ShortcutManagement
         public Type context => m_Context;
         public ShortcutType type => m_Type;
 
-        internal ShortcutEntry(Identifier id, List<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type, KeyCombination? prefKeyMigratedValue = null)
+        internal ShortcutEntry(Identifier id, List<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type)
         {
             m_Identifier = id;
             m_DefaultCombinations = new List<KeyCombination>(defaultCombination);
             m_Context = context ?? ContextManager.globalContextType;
             m_Action = action;
             m_Type = type;
-            this.prefKeyMigratedValue = prefKeyMigratedValue;
         }
 
         public override string ToString()

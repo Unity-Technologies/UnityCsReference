@@ -176,7 +176,6 @@ namespace UnityEditor
 
         internal static extern BuildTargetGroup GetBuildTargetGroupByName(string platform);
 
-        [FreeFunction]
         internal static extern BuildTarget GetBuildTargetByName(string platform);
 
         [FreeFunction]
@@ -444,6 +443,9 @@ namespace UnityEditor
 
         internal static AssetBundleManifest BuildAssetBundles(string outputPath, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform)
         {
+            if (isBuildingPlayer)
+                throw new InvalidOperationException("Cannot build asset bundles while a build is in progress.");
+
             if (!System.IO.Directory.Exists(outputPath))
                 throw new ArgumentException("The output path \"" + outputPath + "\" doesn't exist");
 
@@ -461,6 +463,9 @@ namespace UnityEditor
 
         internal static AssetBundleManifest BuildAssetBundles(string outputPath, AssetBundleBuild[] builds, BuildAssetBundleOptions assetBundleOptions, BuildTargetGroup targetPlatformGroup, BuildTarget targetPlatform)
         {
+            if (isBuildingPlayer)
+                throw new InvalidOperationException("Cannot build asset bundles while a build is in progress.");
+
             if (!System.IO.Directory.Exists(outputPath))
                 throw new ArgumentException("The output path \"" + outputPath + "\" doesn't exist");
 
@@ -487,9 +492,6 @@ namespace UnityEditor
 
         [FreeFunction]
         public static extern bool IsBuildTargetSupported(BuildTargetGroup buildTargetGroup, BuildTarget target);
-
-        [FreeFunction]
-        internal static extern bool IsBuildTargetCompatibleWithOS(BuildTarget target);
 
         [FreeFunction]
         internal static extern string GetBuildTargetAdvancedLicenseName(BuildTarget target);

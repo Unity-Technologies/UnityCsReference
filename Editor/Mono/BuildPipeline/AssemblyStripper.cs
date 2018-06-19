@@ -54,7 +54,7 @@ namespace UnityEditorInternal
             return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
         }
 
-        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist, BuildTargetGroup buildTargetGroup)
+        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist, BuildTargetGroup buildTargetGroup, ManagedStrippingLevel managedStrippingLevel)
         {
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
@@ -81,11 +81,75 @@ namespace UnityEditorInternal
             args.Add($"--dotnetprofile={GetProfileArgumentValueForLinker(buildTargetGroup)}");
             args.Add("--use-editor-options");
 
+
+            // One final check to make sure we only run aggressive on latest runtime.
+            if ((managedStrippingLevel == ManagedStrippingLevel.Aggressive) && (PlayerSettingsEditor.IsLatestApiCompatibility(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))))
+            {
+                // Prepare the arguments to run the UnityLinker.  When in aggressive mode, need to also
+                // supply the IL2CPP compiler platform and compiler architecture.  When the scripting backend
+                // is not IL2CPP, we have to map those strings and use a utility function to figure out proper strings.
+
+                // Currently only need to do this on the non aot platforms of Android, Windows, Mac, Linux.
+                var compilerPlatform = "";
+                var compilerArchitecture = "";
+                Il2CppNativeCodeBuilder il2cppNativeCodeBuilder = platformProvider.CreateIl2CppNativeCodeBuilder();
+                if (il2cppNativeCodeBuilder != null)
+                {
+                    compilerPlatform = il2cppNativeCodeBuilder.CompilerPlatform;
+                    compilerArchitecture = il2cppNativeCodeBuilder.CompilerArchitecture;
+                }
+                else
+                {
+                    GetUnityLinkerPlatformStringsFromBuildTarget(platformProvider.target, out compilerPlatform, out compilerArchitecture);
+                }
+                args.Add("--aggressive");
+                args.Add($"--platform={compilerPlatform}");
+                if (platformProvider.target != BuildTarget.Android)
+                    args.Add($"--architecture={compilerArchitecture}");
+            }
+
             var additionalArgs = System.Environment.GetEnvironmentVariable("UNITYLINKER_ADDITIONAL_ARGS");
             if (!string.IsNullOrEmpty(additionalArgs))
                 args.Add(additionalArgs);
 
             return RunAssemblyLinker(args, out output, out error, linkerPath, workingDirectory);
+        }
+
+        private static void GetUnityLinkerPlatformStringsFromBuildTarget(BuildTarget target, out string platform, out string architecture)
+        {
+            switch (target)
+            {
+                case BuildTarget.StandaloneWindows64:
+                    platform = "WindowsDesktop";
+                    architecture = "x64";
+                    break;
+                case BuildTarget.StandaloneWindows:
+                    platform = "WindowsDesktop";
+                    architecture = "x86";
+                    break;
+                case BuildTarget.Android:
+                    // Do not supply architecture for Android.
+                    // The build pipeline bundles multiple architectures for Android.
+                    // Can't narrow down to a specific architecture at strip time, we work around
+                    // that fact in the UnityLinker.
+                    platform = "Android";
+                    architecture = "";
+                    break;
+                case BuildTarget.StandaloneLinux:
+                    platform = "Linux";
+                    architecture = "x86";
+                    break;
+                case BuildTarget.StandaloneLinux64:
+                    platform = "Linux";
+                    architecture = "x64";
+                    break;
+                case BuildTarget.StandaloneOSX:
+                    platform = "MacOSX";
+                    architecture = "x64";
+                    break;
+                default:
+                    throw new NotSupportedException($"Aggressive stripping is not supported for mono backend on {target}.");
+            }
         }
 
         private static bool RunAssemblyLinker(IEnumerable<string> args, out string @out, out string err, string linkerPath, string workingDirectory)
@@ -105,7 +169,7 @@ namespace UnityEditorInternal
             return rcr.GetUserAssemblies().Where(s => rcr.IsDLLUsed(s)).Select(s => Path.Combine(managedDir, s)).ToList();
         }
 
-        internal static void StripAssemblies(string managedAssemblyFolderPath, IIl2CppPlatformProvider platformProvider, RuntimeClassRegistry rcr)
+        internal static void StripAssemblies(string managedAssemblyFolderPath, IIl2CppPlatformProvider platformProvider, RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel)
         {
             var assemblies = GetUserAssemblies(rcr, managedAssemblyFolderPath);
             assemblies.AddRange(Directory.GetFiles(managedAssemblyFolderPath, "I18N*.dll", SearchOption.TopDirectoryOnly));
@@ -116,7 +180,7 @@ namespace UnityEditorInternal
                 managedAssemblyFolderPath
             };
 
-            RunAssemblyStripper(assemblies, managedAssemblyFolderPath, assembliesToStrip, searchDirs, MonoLinker2Path, platformProvider, rcr);
+            RunAssemblyStripper(assemblies, managedAssemblyFolderPath, assembliesToStrip, searchDirs, MonoLinker2Path, platformProvider, rcr, managedStrippingLevel);
         }
 
         internal static void GenerateInternalCallSummaryFile(string icallSummaryPath, string managedAssemblyFolderPath, string strippedDLLPath)
@@ -174,7 +238,7 @@ namespace UnityEditorInternal
             return IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup));
         }
 
-        private static void RunAssemblyStripper(IEnumerable assemblies, string managedAssemblyFolderPath, string[] assembliesToStrip, string[] searchDirs, string monoLinkerPath, IIl2CppPlatformProvider platformProvider, RuntimeClassRegistry rcr)
+        private static void RunAssemblyStripper(IEnumerable assemblies, string managedAssemblyFolderPath, string[] assembliesToStrip, string[] searchDirs, string monoLinkerPath, IIl2CppPlatformProvider platformProvider, RuntimeClassRegistry rcr, ManagedStrippingLevel managedStrippingLevel)
         {
             string output;
             string error;
@@ -230,7 +294,8 @@ namespace UnityEditorInternal
                         monoLinkerPath,
                         platformProvider,
                         blacklists,
-                        buildTargetGroup))
+                        buildTargetGroup,
+                        managedStrippingLevel))
                     throw new Exception("Error in stripping assemblies: " + assemblies + ", " + error);
 
                 if (platformProvider.supportsEngineStripping)
@@ -318,14 +383,14 @@ namespace UnityEditorInternal
             return sb.ToString();
         }
 
-        static public void InvokeFromBuildPlayer(BuildTarget buildTarget, RuntimeClassRegistry usedClasses, ManagedStrippingLevel strippingLevel)
+        static public void InvokeFromBuildPlayer(BuildTarget buildTarget, RuntimeClassRegistry usedClasses, ManagedStrippingLevel managedStrippingLevel)
         {
             var stagingAreaData = Paths.Combine("Temp", "StagingArea", "Data");
 
             var platformProvider = new BaseIl2CppPlatformProvider(buildTarget, Path.Combine(stagingAreaData, "Libraries"));
 
             var managedAssemblyFolderPath = Path.GetFullPath(Path.Combine(stagingAreaData, "Managed"));
-            AssemblyStripper.StripAssemblies(managedAssemblyFolderPath, platformProvider, usedClasses);
+            AssemblyStripper.StripAssemblies(managedAssemblyFolderPath, platformProvider, usedClasses, managedStrippingLevel);
         }
     }
 }

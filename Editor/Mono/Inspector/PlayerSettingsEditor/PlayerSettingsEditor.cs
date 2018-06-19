@@ -583,6 +583,7 @@ namespace UnityEditor
         {
             EditorGUILayout.PropertyField(m_CompanyName);
             EditorGUILayout.PropertyField(m_ProductName);
+            EditorGUILayout.PropertyField(m_ApplicationBundleVersion, EditorGUIUtility.TrTextContent("Version"));
             EditorGUILayout.Space();
 
             // Get icons and icon sizes for selected platform (or default)
@@ -1770,7 +1771,6 @@ namespace UnityEditor
                 GUILayout.Label(Styles.macAppStoreTitle, EditorStyles.boldLabel);
 
                 PlayerSettingsEditor.ShowApplicationIdentifierUI(serializedObject, BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'", Styles.undoChangedBundleIdentifierString);
-                EditorGUILayout.PropertyField(m_ApplicationBundleVersion, EditorGUIUtility.TrTextContent("Version*", "'CFBundleShortVersionString'"));
                 PlayerSettingsEditor.ShowBuildNumberUI(serializedObject, BuildTargetGroup.Standalone, "Build", "'CFBundleVersion'", Styles.undoChangedBuildNumberString);
 
                 EditorGUILayout.PropertyField(m_MacAppStoreCategory, Styles.macAppStoreCategory);

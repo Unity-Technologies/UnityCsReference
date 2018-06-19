@@ -428,13 +428,21 @@ namespace UnityEditor
                     m_PreviewObjects[index][i] = m_LookDevView.previewUtilityContexts[index].m_PreviewUtility[i].InstantiatePrefabInScene(m_OriginalGameObject[index]);
                     m_PreviewObjects[index][i].transform.position = new Vector3(0.0f, 0.0f, 0.0f);
                     m_PreviewObjects[index][i].transform.rotation = Quaternion.identity;
-                    EditorUtility.InitInstantiatedPreviewRecursive(m_PreviewObjects[index][i]);
+                    InitInstantiatedPreviewRecursiveWithoutHidding(m_PreviewObjects[index][i]);
                     DisableRendererProperties(m_PreviewObjects[index][i]); // Avoid light probe influence from the main scene (but still have the default probe lighting)
                     PreviewRenderUtility.SetEnabledRecursive(m_PreviewObjects[index][i], false);
                 }
 
                 UpdateCurrentObjectArray();
             }
+        }
+
+        public static void InitInstantiatedPreviewRecursiveWithoutHidding(GameObject go)
+        {
+            go.hideFlags = HideFlags.DontSave;
+            go.layer = Camera.PreviewCullingLayer;
+            foreach (Transform c in go.transform)
+                InitInstantiatedPreviewRecursiveWithoutHidding(c.gameObject);
         }
 
         public void OnEnable()

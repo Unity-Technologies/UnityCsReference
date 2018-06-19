@@ -9,9 +9,9 @@ using UnityEngine;
 namespace UnityEditor
 {
     // Common GUIStyles used for EditorGUI controls.
-    public sealed partial class EditorStyles
+    public sealed class EditorStyles
     {
-        // Style used for the labelled on all EditorGUI overloads that take a prefix label
+        // Style used for the labeled on all EditorGUI overloads that take a prefix label
         public static GUIStyle label { get { return s_Current.m_Label; } }
         internal GUIStyle m_Label;
 
@@ -46,7 +46,6 @@ namespace UnityEditor
         // Style for link label.
         internal static GUIStyle linkLabel { get { return s_Current.m_LinkLabel; } }
         private GUIStyle m_LinkLabel;
-
 
         // Style for white label.
         public static GUIStyle whiteLabel { get { return s_Current.m_WhiteLabel; } }
@@ -83,6 +82,9 @@ namespace UnityEditor
         // Style used for the rightmost button in a horizontal group.
         public static GUIStyle miniButtonRight { get { return s_Current.m_MiniButtonRight; } }
         private GUIStyle m_MiniButtonRight;
+
+        public static GUIStyle miniPullDown { get { return s_Current.m_MiniPullDown; } }
+        private GUIStyle m_MiniPullDown;
 
         // Style used for EditorGUI::ref::TextField
         public static GUIStyle textField  { get { return s_Current.m_TextField; } }
@@ -329,6 +331,7 @@ namespace UnityEditor
             m_MiniButtonLeft = GetStyle("miniButtonLeft");
             m_MiniButtonMid = GetStyle("miniButtonMid");
             m_MiniButtonRight = GetStyle("miniButtonRight");
+            m_MiniPullDown = GetStyle("MiniPullDown");
             m_Toolbar = GetStyle("toolbar");
             m_ToolbarButton = GetStyle("toolbarbutton");
             m_ToolbarPopup = GetStyle("toolbarPopup");
@@ -380,37 +383,43 @@ namespace UnityEditor
             m_TextFieldDropDown = GetStyle("TextFieldDropDown");
             m_TextFieldDropDownText = GetStyle("TextFieldDropDownText");
 
-            m_LinkLabel = new GUIStyle(m_Label);
+            m_LinkLabel = new GUIStyle(m_Label)
+            {
+                normal = {textColor = new Color(0.25f, 0.5f, 0.9f, 1f)},
+                stretchWidth = false
+            };
+
             // Match selection color which works nicely for both light and dark skins
-            m_LinkLabel.normal.textColor = new Color(0.25f, 0.5f, 0.9f, 1f);
-            m_LinkLabel.stretchWidth = false;
 
-            m_TextArea = new GUIStyle(m_TextField);
-            m_TextArea.wordWrap = true;
+            m_TextArea = new GUIStyle(m_TextField) {wordWrap = true};
 
-            m_InspectorDefaultMargins = new GUIStyle();
-            m_InspectorDefaultMargins.padding = new RectOffset(
-                    InspectorWindow.kInspectorPaddingLeft,
-                    InspectorWindow.kInspectorPaddingRight, 0, 0);
+            m_InspectorDefaultMargins = new GUIStyle
+            {
+                padding = new RectOffset(
+                        InspectorWindow.kInspectorPaddingLeft,
+                        InspectorWindow.kInspectorPaddingRight, 0, 0)
+            };
 
             // For the full width margins, use padding from right side in both sides,
             // though adjust for overdraw by adding one in left side to get even margins.
-            m_InspectorFullWidthMargins = new GUIStyle();
-            m_InspectorFullWidthMargins.padding = new RectOffset(
-                    InspectorWindow.kInspectorPaddingRight + 1,
-                    InspectorWindow.kInspectorPaddingRight, 0, 0);
+            m_InspectorFullWidthMargins = new GUIStyle
+            {
+                padding = new RectOffset(
+                        InspectorWindow.kInspectorPaddingRight + 1,
+                        InspectorWindow.kInspectorPaddingRight, 0, 0)
+            };
 
             // Derive centered grey mini label from base minilabel
-            m_CenteredGreyMiniLabel = new GUIStyle(m_MiniLabel);
-            m_CenteredGreyMiniLabel.alignment = TextAnchor.MiddleCenter;
-            m_CenteredGreyMiniLabel.normal.textColor = Color.grey;
+            m_CenteredGreyMiniLabel = new GUIStyle(m_MiniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                normal = {textColor = Color.grey}
+            };
         }
 
         private GUIStyle GetStyle(string styleName)
         {
-            GUIStyle s = GUI.skin.FindStyle(styleName);
-            if (s == null)
-                s = EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).FindStyle(styleName);
+            GUIStyle s = GUI.skin.FindStyle(styleName) ?? EditorGUIUtility.GetBuiltinSkin(EditorSkin.Inspector).FindStyle(styleName);
             if (s == null)
             {
                 Debug.LogError("Missing built-in guistyle " + styleName);

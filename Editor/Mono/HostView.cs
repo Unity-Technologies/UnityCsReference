@@ -25,6 +25,13 @@ namespace UnityEditor
         [System.NonSerialized]
         protected readonly RectOffset m_BorderSize = new RectOffset(); // added as member to prevent allocation
 
+        static class Styles
+        {
+            public static readonly GUIStyle dockAreaOverlay = "dockareaoverlay";
+            public static readonly GUIStyle paneOptions = "PaneOptions";
+            public static readonly GUIStyle tabWindowBackground = "TabWindowBackground";
+        }
+
         internal EditorWindow actualView
         {
             get { return m_ActualView; }
@@ -246,11 +253,10 @@ namespace UnityEditor
 
             DoWindowDecorationStart();
 
-            GUIStyle overlay = "dockareaoverlay";
             if (actualView is GameView) // GameView exits GUI, so draw overlay border earlier
-                GUI.Box(onGUIPosition, GUIContent.none, overlay);
+                GUI.Box(onGUIPosition, GUIContent.none, Styles.dockAreaOverlay);
 
-            BeginOffsetArea(new Rect(onGUIPosition.x + 2, onGUIPosition.y + DockArea.kTabHeight, onGUIPosition.width - 4, onGUIPosition.height - DockArea.kTabHeight - 2), GUIContent.none, "TabWindowBackground");
+            BeginOffsetArea(new Rect(onGUIPosition.x + 2, onGUIPosition.y + DockArea.kTabHeight, onGUIPosition.width - 4, onGUIPosition.height - DockArea.kTabHeight - 2), GUIContent.none, Styles.tabWindowBackground);
             EditorGUIUtility.ResetGUIState();
             bool isExitGUIException = false;
             try
@@ -280,7 +286,7 @@ namespace UnityEditor
                     DoWindowDecorationEnd();
 
                     if (isRepaint)
-                        overlay.Draw(onGUIPosition, GUIContent.none, 0);
+                        Styles.dockAreaOverlay.Draw(onGUIPosition, GUIContent.none, 0);
                 }
             }
         }
@@ -377,9 +383,9 @@ namespace UnityEditor
 
         protected void ShowGenericMenu()
         {
-            GUIStyle gs = "PaneOptions";
+            GUIStyle gs = Styles.paneOptions;
             Rect paneMenu = new Rect(position.width - gs.fixedWidth - 4, Mathf.Floor(background.margin.top + 20 - gs.fixedHeight), gs.fixedWidth, gs.fixedHeight);
-            if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, "PaneOptions"))
+            if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, gs))
                 PopupGenericMenu(m_ActualView, paneMenu);
 
             // Give panes an option of showing a small button next to the generic menu (used for inspector lock icon
@@ -390,6 +396,24 @@ namespace UnityEditor
 
                 mi.Invoke(m_ActualView, lockButton);
             }
+
+            // Developer-mode render doc button to enable capturing any HostView content/panels
+            if (Unsupported.IsDeveloperMode() && UnityEditorInternal.RenderDoc.IsLoaded() && UnityEditorInternal.RenderDoc.IsSupported())
+            {
+                Rect renderDocRect = new Rect(position.width - gs.fixedWidth - (mi == null ? 20 : 36), Mathf.Floor(background.margin.top + 4), 17, 16);
+                RenderDocCaptureButton(renderDocRect);
+            }
+        }
+
+        static GUIContent s_RenderDocContent;
+        private void RenderDocCaptureButton(Rect r)
+        {
+            if (s_RenderDocContent == null)
+                s_RenderDocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture this view in RenderDoc");
+
+            Rect r2 = new Rect(r.xMax - r.width, r.y, r.width, r.height);
+            if (GUI.Button(r2, s_RenderDocContent, EditorStyles.iconButton))
+                CaptureRenderDocFullContent();
         }
 
         public void PopupGenericMenu(EditorWindow view, Rect pos)

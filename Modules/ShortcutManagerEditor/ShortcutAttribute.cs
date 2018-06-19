@@ -65,24 +65,7 @@ namespace UnityEditor.ShortcutManagement
                     };
             }
 
-            KeyCombination? prefKeyMigratedValue = null;
-            var prefKeyAttr = methodInfo.GetCustomAttributes(typeof(FormerlyPrefKeyAsAttribute), false).FirstOrDefault() as FormerlyPrefKeyAsAttribute;
-            if (prefKeyAttr != null)
-            {
-                var prefKeyDefaultValue = new KeyCombination(Event.KeyboardEvent(prefKeyAttr.defaultValue));
-                string name;
-                Event keyboardEvent;
-                if (
-                    PrefKey.TryParseUniquePrefString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent)
-                    )
-                {
-                    var prefKeyCurrentValue = new KeyCombination(keyboardEvent);
-                    if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
-                        prefKeyMigratedValue = prefKeyCurrentValue;
-                }
-            }
-
-            return new ShortcutEntry(identifier, defaultCombination, action, context, type, prefKeyMigratedValue);
+            return new ShortcutEntry(identifier, defaultCombination, action, context, type);
         }
     }
 

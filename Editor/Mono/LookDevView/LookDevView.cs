@@ -1347,7 +1347,7 @@ namespace UnityEditor
                     if (currentObject == null)
                         continue;
 
-                    EditorUtility.InitInstantiatedPreviewRecursive(currentObject); // hide objects in hierarchy
+                    LookDevConfig.InitInstantiatedPreviewRecursiveWithoutHidding(currentObject);
                     LookDevConfig.DisableRendererProperties(currentObject);
                     PreviewRenderUtility.SetEnabledRecursive(currentObject, false);
                 }

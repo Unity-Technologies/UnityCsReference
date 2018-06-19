@@ -1003,11 +1003,8 @@ namespace UnityEditorInternal
 
             if (dopeline.isMasterDopeline)
             {
-                state.ClearHierarchySelection();
-
-                List<int> hierarchyIDs = state.GetAffectedHierarchyIDs(state.selectedKeys);
-                foreach (int id in hierarchyIDs)
-                    state.SelectHierarchyItem(id, true, true);
+                HashSet<int> hierarchyIDs = state.GetAffectedHierarchyIDs(state.selectedKeys);
+                state.SelectHierarchyItems(hierarchyIDs, true, true);
             }
 
             if (evt.clickCount == 2 && evt.button == 0 && !Event.current.shift && !EditorGUI.actionKey)
@@ -1031,7 +1028,7 @@ namespace UnityEditorInternal
         {
             float timeAtMousePosition = state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToClipFrame);
             AnimationKeyTime mouseKeyTime = AnimationKeyTime.Time(timeAtMousePosition, state.frameRate);
-            AnimationWindowUtility.AddKeyframes(state, dopeline.curves.ToArray(), mouseKeyTime);
+            AnimationWindowUtility.AddKeyframes(state, dopeline.curves, mouseKeyTime);
 
             Event.current.Use();
         }
@@ -1224,7 +1221,7 @@ namespace UnityEditorInternal
                 CreateNewPPtrKeyframe(AnimationKeyTime.Frame(startFrame + i, targetCurve.clip.frameRate).time, value, targetCurve);
             }
 
-            state.SaveCurve(targetCurve, undoLabel);
+            state.SaveCurve(targetCurve.clip, targetCurve, undoLabel);
             DragAndDrop.AcceptDrag();
         }
 
@@ -1321,7 +1318,7 @@ namespace UnityEditorInternal
         private void AddKeyToDopeline(object obj) { AddKeyToDopeline((AddKeyToDopelineContext)obj); }
         private void AddKeyToDopeline(AddKeyToDopelineContext context)
         {
-            AnimationWindowUtility.AddKeyframes(state, context.dopeline.curves.ToArray(), context.time);
+            AnimationWindowUtility.AddKeyframes(state, context.dopeline.curves, context.time);
         }
 
         private void DeleteKeys(object obj) { DeleteKeys((List<AnimationWindowKeyframe>)obj); }
@@ -1395,8 +1392,8 @@ namespace UnityEditorInternal
 
                                 owner.state.ClearHierarchySelection();
 
-                                List<AnimationWindowKeyframe> toBeUnselected = new List<AnimationWindowKeyframe>();
-                                List<AnimationWindowKeyframe> toBeSelected = new List<AnimationWindowKeyframe>();
+                                HashSet<AnimationWindowKeyframe> toBeUnselected = new HashSet<AnimationWindowKeyframe>();
+                                HashSet<AnimationWindowKeyframe> toBeSelected = new HashSet<AnimationWindowKeyframe>();
 
                                 foreach (DopeLine dopeline in owner.state.dopelines)
                                 {
@@ -1474,6 +1471,7 @@ namespace UnityEditorInternal
         public void UpdateCurves(List<ChangedCurve> changedCurves, string undoText)
         {
             Undo.RegisterCompleteObjectUndo(state.activeAnimationClip, undoText);
+
             foreach (ChangedCurve changedCurve in changedCurves)
             {
                 AnimationWindowCurve curve = state.allCurves.Find(c => changedCurve.curveId == c.GetHashCode());

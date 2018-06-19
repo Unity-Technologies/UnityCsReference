@@ -87,6 +87,7 @@ namespace UnityEditor.Modules
                     config.Set("vr-device-list", vrDeviceList);
                 }
             }
+            config.Set("hdr-display-enabled", PlayerSettings.useHDRDisplay ? "1" : "0");
         }
 
         public virtual string GetExtension(BuildTarget target, BuildOptions options)

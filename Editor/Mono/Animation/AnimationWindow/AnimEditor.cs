@@ -1037,7 +1037,7 @@ namespace UnityEditor
                 foreach (var kvp in curvesToUpdate)
                 {
                     Undo.RegisterCompleteObjectUndo(kvp.Key, AnimationWindowState.kEditCurveUndoLabel);
-                    AnimationUtility.SetEditorCurves(kvp.Key, kvp.Value.bindings.ToArray(), kvp.Value.curves.ToArray());
+                    AnimationWindowUtility.SaveCurves(kvp.Key, kvp.Value.bindings, kvp.Value.curves);
                 }
 
                 m_State.ResampleAnimation();

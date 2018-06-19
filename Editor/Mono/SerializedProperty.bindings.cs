@@ -352,6 +352,24 @@ namespace UnityEditor
         [FreeFunction("SerializedPropertyBindings::EqualContentsInternal")]
         private extern static bool EqualContentsInternal(SerializedProperty x, SerializedProperty y);
 
+
+        // See if raw data inside both serialized property is equal.
+        public static bool DataEquals(SerializedProperty x, SerializedProperty y)
+        {
+            if (x == null)
+                return (y == null || y.m_NativePropertyPtr == IntPtr.Zero);
+            if (y == null)
+                return (x == null || x.m_NativePropertyPtr == IntPtr.Zero);
+
+            x.Verify();
+            y.Verify();
+
+            return DataEqualsInternal(x, y);
+        }
+
+        [FreeFunction("SerializedPropertyBindings::DataEqualsInternal")]
+        private extern static bool DataEqualsInternal(SerializedProperty x, SerializedProperty y);
+
         // Does this property represent multiple different values due to multi-object editing? (RO)
         public bool hasMultipleDifferentValues
         {

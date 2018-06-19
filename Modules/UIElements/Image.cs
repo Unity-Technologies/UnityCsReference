@@ -106,9 +106,6 @@ namespace UnityEngine.Experimental.UIElements
 
         protected override void DoRepaint(IStylePainter painter)
         {
-            //we paint the bg color, borders, etc
-            base.DoRepaint(painter);
-
             Texture current = image.GetSpecifiedValueOrDefault(null);
             if (current == null)
             {

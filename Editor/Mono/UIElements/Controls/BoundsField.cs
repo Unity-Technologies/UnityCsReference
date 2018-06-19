@@ -80,5 +80,15 @@ namespace UnityEditor.Experimental.UIElements
                 m_ExtentsField.SetValueWithoutNotify(m_Value.extents);
             }
         }
+        protected internal override void ExecuteDefaultAction(EventBase evt)
+        {
+            base.ExecuteDefaultAction(evt);
+
+            // Focus first field if any
+            if (evt.GetEventTypeId() == FocusEvent.TypeId())
+            {
+                m_CenterField.Focus();
+            }
+        }
     }
 }

@@ -12,16 +12,85 @@ using UnityEngine;
 using Object = UnityEngine.Object;
 
 using TangentMode = UnityEditor.AnimationUtility.TangentMode;
+using CurveModifiedType = UnityEditor.AnimationUtility.CurveModifiedType;
 
 namespace UnityEditorInternal
 {
     static internal class AnimationWindowUtility
     {
+        public static void SaveCurve(AnimationClip clip, AnimationWindowCurve curve)
+        {
+            if (!curve.animationIsEditable)
+                throw new ArgumentException("Curve is not editable and shouldn't be saved.");
+
+            if (curve.isPPtrCurve)
+            {
+                ObjectReferenceKeyframe[] objectCurve = curve.ToObjectCurve();
+
+                if (objectCurve.Length == 0)
+                    objectCurve = null;
+
+                AnimationUtility.SetObjectReferenceCurve(clip, curve.binding, objectCurve);
+            }
+            else
+            {
+                AnimationCurve animationCurve = curve.ToAnimationCurve();
+
+                if (animationCurve.keys.Length == 0)
+                    animationCurve = null;
+
+                AnimationUtility.SetEditorCurve(clip, curve.binding, animationCurve);
+            }
+        }
+
+        public static void SaveCurves(AnimationClip clip, IEnumerable<AnimationWindowCurve> curves)
+        {
+            foreach (AnimationWindowCurve curve in curves)
+            {
+                if (!curve.animationIsEditable)
+                    throw new ArgumentException("Curve is not editable and shouldn't be saved.");
+
+                if (curve.isPPtrCurve)
+                {
+                    ObjectReferenceKeyframe[] objectCurve = curve.ToObjectCurve();
+
+                    if (objectCurve.Length == 0)
+                        objectCurve = null;
+
+                    AnimationUtility.SetObjectReferenceCurveNoSync(clip, curve.binding, objectCurve);
+                }
+                else
+                {
+                    AnimationCurve animationCurve = curve.ToAnimationCurve();
+
+                    if (animationCurve.keys.Length == 0)
+                        animationCurve = null;
+
+                    AnimationUtility.SetEditorCurveNoSync(clip, curve.binding, animationCurve);
+                }
+            }
+
+            AnimationUtility.SyncEditorCurves(clip);
+        }
+
+        public static void SaveCurves(AnimationClip clip, IList<EditorCurveBinding> bindings, IList<AnimationCurve> curves)
+        {
+            if (bindings.Count != curves.Count)
+                throw new ArgumentException("bindings and curves array sizes do not match");
+
+            for (int i = 0; i < bindings.Count; ++i)
+            {
+                AnimationUtility.SetEditorCurveNoSync(clip, bindings[i], curves[i]);
+            }
+
+            AnimationUtility.SyncEditorCurves(clip);
+        }
+
         public static void CreateDefaultCurves(AnimationWindowState state, EditorCurveBinding[] properties)
         {
             properties = RotationCurveInterpolation.ConvertRotationPropertiesToDefaultInterpolation(state.activeAnimationClip, properties);
             foreach (EditorCurveBinding prop in properties)
-                state.SaveCurve(CreateDefaultCurve(state, prop));
+                state.SaveCurve(state.activeAnimationClip, CreateDefaultCurve(state, prop));
         }
 
         public static AnimationWindowCurve CreateDefaultCurve(AnimationWindowState state, EditorCurveBinding binding)
@@ -117,10 +186,10 @@ namespace UnityEditorInternal
         public static void AddSelectedKeyframes(AnimationWindowState state, AnimationKeyTime time)
         {
             List<AnimationWindowCurve> curves = state.activeCurves.Count > 0 ? state.activeCurves : state.allCurves;
-            AddKeyframes(state, curves.ToArray(), time);
+            AddKeyframes(state, curves, time);
         }
 
-        public static void AddKeyframes(AnimationWindowState state, AnimationWindowCurve[] curves, AnimationKeyTime time)
+        public static void AddKeyframes(AnimationWindowState state, IList<AnimationWindowCurve> curves, AnimationKeyTime time)
         {
             string undoLabel = "Add Key";
             state.SaveKeySelection(undoLabel);
@@ -138,14 +207,13 @@ namespace UnityEditorInternal
                 AnimationWindowKeyframe keyframe = AnimationWindowUtility.AddKeyframeToCurve(curve, value, curve.valueType, shiftedMouseKeyTime);
 
                 if (keyframe != null)
-                {
-                    state.SaveCurve(curve, undoLabel);
                     state.SelectKey(keyframe);
-                }
             }
+
+            state.SaveCurves(state.activeAnimationClip, curves, undoLabel);
         }
 
-        public static void RemoveKeyframes(AnimationWindowState state, AnimationWindowCurve[] curves, AnimationKeyTime time)
+        public static void RemoveKeyframes(AnimationWindowState state, IList<AnimationWindowCurve> curves, AnimationKeyTime time)
         {
             string undoLabel = "Remove Key";
             state.SaveKeySelection(undoLabel);
@@ -156,9 +224,9 @@ namespace UnityEditorInternal
                     continue;
 
                 curve.RemoveKeyframe(time);
-
-                state.SaveCurve(curve, undoLabel);
             }
+
+            state.SaveCurves(state.activeAnimationClip, curves, undoLabel);
         }
 
         public static AnimationWindowKeyframe AddKeyframeToCurve(AnimationWindowCurve curve, object value, Type type, AnimationKeyTime time)

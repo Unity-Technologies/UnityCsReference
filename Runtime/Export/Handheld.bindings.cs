@@ -304,7 +304,7 @@ namespace UnityEngine
         }
 
         // Specifies if text input field above the keyboard will be hidden when
-        public static bool hideInput
+        extern public static bool hideInput
         {
             [NativeName("isInputHidden")]
             get;

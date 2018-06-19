@@ -17,7 +17,17 @@ namespace UnityEditor
     {
         SerializedProperty m_Property;
 
-        private SerializedProperty Get(string property) { return m_Property.FindPropertyRelative(property); }
+        Dictionary<string, SerializedProperty> m_CachedProp = new Dictionary<string, SerializedProperty>();
+        SerializedProperty Get(string property)
+        {
+            SerializedProperty prop;
+            if (!m_CachedProp.TryGetValue(property, out prop))
+            {
+                prop = m_Property.FindPropertyRelative(property);
+                m_CachedProp.Add(property, prop);
+            }
+            return prop;
+        }
 
         public AnimationClipInfoProperties(SerializedProperty prop) { m_Property = prop; }
 
@@ -57,42 +67,13 @@ namespace UnityEditor
             if (mask == null)
                 return false;
 
-            SerializedProperty bodyMask = Get("bodyMask");
-
-            if (bodyMask != null && bodyMask.isArray)
+            using (SerializedObject source = new SerializedObject(mask))
             {
-                for (AvatarMaskBodyPart i = 0; i < AvatarMaskBodyPart.LastBodyPart; i++)
-                {
-                    if (mask.GetHumanoidBodyPartActive(i) != (bodyMask.GetArrayElementAtIndex((int)i).intValue != 0))
-                        return true;
-                }
-            }
-            else
-            {
-                return true;
-            }
-
-            SerializedProperty transformMask = Get("transformMask");
-
-            if (transformMask != null && transformMask.isArray)
-            {
-                if (transformMask.arraySize > 0 && (mask.transformCount != transformMask.arraySize))
+                if (!SerializedProperty.DataEquals(bodyMaskProperty, source.FindProperty("m_Mask")))
                     return true;
 
-                int size = transformMask.arraySize;
-                for (int i = 0; i < size; i++)
-                {
-                    SerializedProperty pathProperty = transformMask.GetArrayElementAtIndex(i).FindPropertyRelative("m_Path");
-                    SerializedProperty weightProperty = transformMask.GetArrayElementAtIndex(i).FindPropertyRelative("m_Weight");
-
-                    if (mask.GetTransformPath(i) != pathProperty.stringValue ||
-                        mask.GetTransformActive(i) != (weightProperty.floatValue > 0.5f))
-                        return true;
-                }
-            }
-            else
-            {
-                return true;
+                if (!SerializedProperty.DataEquals(transformMaskProperty, source.FindProperty("m_Elements")))
+                    return true;
             }
 
             return false;
@@ -110,7 +91,7 @@ namespace UnityEditor
                 }
             }
 
-            SerializedProperty transformMask = Get("transformMask");
+            var transformMask = transformMaskProperty;
 
             if (transformMask != null && transformMask.isArray)
             {
@@ -147,7 +128,7 @@ namespace UnityEditor
                 }
             }
 
-            SerializedProperty transformMask = Get("transformMask");
+            SerializedProperty transformMask = transformMaskProperty;
             ModelImporter.UpdateTransformMask(mask, transformMask);
         }
 

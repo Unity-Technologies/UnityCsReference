@@ -5882,7 +5882,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         public static bool DropdownButton(Rect position, GUIContent content, FocusType focusType)
         {
-            return DropdownButton(position, content, focusType, "MiniPullDown");
+            return DropdownButton(position, content, focusType, EditorStyles.miniPullDown);
         }
 
         public static bool DropdownButton(Rect position, GUIContent content, FocusType focusType, GUIStyle style)

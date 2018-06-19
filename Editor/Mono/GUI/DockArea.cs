@@ -22,6 +22,9 @@ namespace UnityEditor
             public static StyleBlock tabFocusedCloseButton = EditorResources.GetStyle("tab-close-button.focus");
             public static StyleBlock tabHighlight = EditorResources.GetStyle("tab-highlight");
             public static readonly GUIStyle buttonClose = "WinBtnClose";
+            public static readonly GUIStyle dockarea = "dockarea";
+            public static readonly GUIStyle tabWindowBackground = "TabWindowBackground";
+            public static readonly GUIStyle dragTab = "dragTab";
 
             public static readonly Color tabFadedColor = tabCloseButton.GetColor(StyleKeyword.backgroundColor);
             public static readonly Color tabFadedFocusedColor = tabFocusedCloseButton.GetColor(StyleKeyword.backgroundColor);
@@ -322,10 +325,10 @@ namespace UnityEditor
             if (window.rootView.GetType() != typeof(MainView))
             {
                 customBorder = true;
-                background = windowPosition.y == 0 ? "dockareaStandalone" : "dockarea";
+                background = windowPosition.y == 0 ? "dockareaStandalone" : Styles.dockarea;
             }
             else
-                background = "dockarea";
+                background = Styles.dockarea;
 
             if (sp)
             {
@@ -365,7 +368,7 @@ namespace UnityEditor
             }
 
             if (tabStyle == null)
-                tabStyle = "dragtab";
+                tabStyle = Styles.dragTab;
 
             if (m_Panes.Count > 0)
             {
@@ -374,7 +377,7 @@ namespace UnityEditor
                 // Contents:
                 // scroll it by -1, -1 so we top & left 1px gets culled (they are drawn already by the us, so we want to
                 // not have them here (thing that the default skin relies on)
-                BeginOffsetArea(new Rect(r.x + 2, r.y + kTabHeight, r.width - 4, r.height - kTabHeight - 2), GUIContent.none, "TabWindowBackground");
+                BeginOffsetArea(new Rect(r.x + 2, r.y + kTabHeight, r.width - 4, r.height - kTabHeight - 2), GUIContent.none, Styles.tabWindowBackground);
 
                 Vector2 basePos = GUIUtility.GUIToScreenPoint(Vector2.zero);
                 Rect p = borderSize.Remove(position);
@@ -392,7 +395,7 @@ namespace UnityEditor
             DragTab(new Rect(r.x + 1, r.y, r.width - kWindowButtonsWidth, kTabHeight), tabStyle);
 
             // TODO: Make this nice - right now this is meant to be overridden by Panes in Layout if they want something else. Inspector does this
-            tabStyle = "dragtab";
+            tabStyle = Styles.dragTab;
 
             ShowGenericMenu();
 
@@ -885,6 +888,12 @@ namespace UnityEditor
 
     internal class MaximizedHostView : HostView
     {
+        private static class Styles
+        {
+            public static readonly GUIStyle dockarea = "dockarea";
+            public static readonly GUIStyle dragTab = "dragTab";
+        }
+
         protected override void OldOnGUI()
         {
             ClearBackground();
@@ -892,13 +901,13 @@ namespace UnityEditor
             EditorGUIUtility.ResetGUIState();
 
             Rect r = new Rect(-2, 0, position.width + 4, position.height);
-            background = "dockarea";
+            background = Styles.dockarea;
             r = background.margin.Remove(r);
             Rect backRect = new Rect(r.x + 1, r.y, r.width - 2, DockArea.kTabHeight);
             if (Event.current.type == EventType.Repaint)
             {
                 background.Draw(r, GUIContent.none, false, false, false, false);
-                GUIStyle s = "dragTab";
+                GUIStyle s = Styles.dragTab;
                 s.Draw(backRect, actualView.titleContent, false, false, true, hasFocus);
             }
 

@@ -23,7 +23,7 @@ namespace UnityEditor.Build.Content
         extern public static AssetBundleBuild[] GenerateAssetBundleBuilds();
 
         [FreeFunction("BuildPipeline::PrepareScene")]
-        extern public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder);
+        extern private static SceneDependencyInfo PrepareSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder);
 
         [FreeFunction("BuildPipeline::GetPlayerObjectIdentifiersInAsset")]
         extern public static ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
@@ -43,8 +43,20 @@ namespace UnityEditor.Build.Content
         [FreeFunction("BuildPipeline::GetTypeForObjects")]
         extern public static System.Type[] GetTypeForObjects(ObjectIdentifier[] objectIDs);
 
+        [FreeFunction("BuildPipeline::IsBuildInProgress")]
+        extern internal static bool IsBuildInProgress();
+
+        public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder)
+        {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call PrepareScene while a build is in progress");
+            return PrepareSceneInternal(scenePath, settings, usageSet, outputFolder);
+        }
+
         public static WriteResult WriteSerializedFile(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap)
         {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call WriteSerializedFile while a build is in progress");
             if (string.IsNullOrEmpty(outputFolder))
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (writeCommand == null)
@@ -56,6 +68,8 @@ namespace UnityEditor.Build.Content
 
         public static WriteResult WriteSerializedFile(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, AssetBundleInfo bundleInfo)
         {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call WriteSerializedFile while a build is in progress");
             if (string.IsNullOrEmpty(outputFolder))
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (writeCommand == null)
@@ -75,6 +89,8 @@ namespace UnityEditor.Build.Content
 
         public static WriteResult WriteSceneSerializedFile(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap)
         {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call WriteSceneSerializedFile while a build is in progress");
             if (string.IsNullOrEmpty(outputFolder))
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (string.IsNullOrEmpty(scenePath))
@@ -92,6 +108,8 @@ namespace UnityEditor.Build.Content
 
         public static WriteResult WriteSceneSerializedFile(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo)
         {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call WriteSceneSerializedFile while a build is in progress");
             if (string.IsNullOrEmpty(outputFolder))
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (string.IsNullOrEmpty(scenePath))
@@ -111,6 +129,8 @@ namespace UnityEditor.Build.Content
 
         public static WriteResult WriteSceneSerializedFile(string outputFolder, string scenePath, string processedScene, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap, PreloadInfo preloadInfo, SceneBundleInfo sceneBundleInfo)
         {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call WriteSceneSerializedFile while a build is in progress");
             if (string.IsNullOrEmpty(outputFolder))
                 throw new ArgumentException("String is null or empty.", "outputFolder");
             if (string.IsNullOrEmpty(scenePath))

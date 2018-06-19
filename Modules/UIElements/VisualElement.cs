@@ -317,7 +317,9 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        internal bool isWorldTransformDirty { get; set; } = true;
+        internal bool isWorldTransformClipDirty { get; set; } = true;
+
+        private Matrix4x4 m_WorldTransform = Matrix4x4.identity;
 
         /// <summary>
         /// Returns a matrix that cumulates the following operations (in order):
@@ -334,21 +336,78 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                if (isWorldTransformDirty)
+                if (isWorldTransformClipDirty)
                 {
-                    var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
-                    if (shadow.parent != null)
-                    {
-                        renderData.worldTransForm = shadow.parent.worldTransform * offset * transform.matrix;
-                    }
-                    else
-                    {
-                        renderData.worldTransForm = offset * transform.matrix;
-                    }
-                    isWorldTransformDirty = false;
+                    UpdateWorldTransformAndClip();
+                    isWorldTransformClipDirty = false;
                 }
-                return renderData.worldTransForm;
+                return m_WorldTransform;
             }
+        }
+
+        private Rect m_WorldClip = Rect.zero;
+        internal Rect worldClip
+        {
+            get
+            {
+                if (isWorldTransformClipDirty)
+                {
+                    UpdateWorldTransformAndClip();
+                    isWorldTransformClipDirty = false;
+                }
+                return m_WorldClip;
+            }
+        }
+
+        private void UpdateWorldTransformAndClip()
+        {
+            // Update world transform
+            var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
+            if (shadow.parent != null)
+            {
+                m_WorldTransform = shadow.parent.worldTransform * offset * transform.matrix;
+            }
+            else
+            {
+                m_WorldTransform = offset * transform.matrix;
+            }
+
+            // Update world clip
+            if (shadow.parent != null)
+            {
+                m_WorldClip = shadow.parent.worldClip;
+
+                if (ShouldClip())
+                {
+                    var localClip = ComputeAAAlignedBound(rect, m_WorldTransform);
+
+                    float x1 = Mathf.Max(localClip.x, m_WorldClip.x);
+                    float x2 = Mathf.Min(localClip.x + localClip.width, m_WorldClip.x + m_WorldClip.width);
+                    float y1 = Mathf.Max(localClip.y, m_WorldClip.y);
+                    float y2 = Mathf.Min(localClip.y + localClip.height, m_WorldClip.y + m_WorldClip.height);
+
+                    m_WorldClip = new Rect(x1, y1, x2 - x1, y2 - y1);
+                }
+            }
+            else
+            {
+                m_WorldClip = panel != null ? panel.visualTree.rect : GUIClip.topmostRect;
+            }
+        }
+
+        // get the AA aligned bound
+        internal static Rect ComputeAAAlignedBound(Rect position, Matrix4x4 mat)
+        {
+            Rect p = position;
+            Vector3 v0 = mat.MultiplyPoint3x4(new Vector3(p.x, p.y, 0.0f));
+            Vector3 v1 = mat.MultiplyPoint3x4(new Vector3(p.x + p.width, p.y, 0.0f));
+            Vector3 v2 = mat.MultiplyPoint3x4(new Vector3(p.x, p.y + p.height, 0.0f));
+            Vector3 v3 = mat.MultiplyPoint3x4(new Vector3(p.x + p.width, p.y + p.height, 0.0f));
+            return Rect.MinMaxRect(
+                Mathf.Min(v0.x, Mathf.Min(v1.x, Mathf.Min(v2.x, v3.x))),
+                Mathf.Min(v0.y, Mathf.Min(v1.y, Mathf.Min(v2.y, v3.y))),
+                Mathf.Max(v0.x, Mathf.Max(v1.x, Mathf.Max(v2.x, v3.x))),
+                Mathf.Max(v0.y, Mathf.Max(v1.y, Mathf.Max(v2.y, v3.y))));
         }
 
         // which pseudo states would change the current VE styles if added
@@ -756,14 +815,15 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return;
             }
-            DoRepaint(painter);
+            var stylePainter = (IStylePainterInternal)painter;
+            stylePainter.DrawBackground();
+            DoRepaint(stylePainter);
+            stylePainter.DrawBorder();
         }
 
         protected virtual void DoRepaint(IStylePainter painter)
         {
-            var stylePainter = (IStylePainterInternal)painter;
-            stylePainter.DrawBackground(this);
-            stylePainter.DrawBorder(this);
+            // Implemented by subclasses
         }
 
         private void GetFullHierarchicalPersistenceKey(StringBuilder key)
@@ -1249,60 +1309,6 @@ namespace UnityEngine.Experimental.UIElements
             {
                 manipulator.target = null;
             }
-        }
-    }
-
-    internal static class StylePainterExtensionMethods
-    {
-        internal static void DrawBackground(this IStylePainter painter, VisualElement ve)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            IStyle style = ve.style;
-            if (style.backgroundColor != Color.clear)
-            {
-                var painterParams = RectStylePainterParameters.GetDefault(ve);
-                painterParams.border.SetWidth(0.0f);
-                stylePainter.DrawRect(painterParams);
-            }
-
-            if (style.backgroundImage.value != null)
-            {
-                var painterParams = TextureStylePainterParameters.GetDefault(ve);
-                painterParams.border.SetWidth(0.0f);
-                stylePainter.DrawTexture(painterParams);
-            }
-        }
-
-        internal static void DrawBorder(this IStylePainter painter, VisualElement ve)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            IStyle style = ve.style;
-            if (style.borderColor != Color.clear && (style.borderLeftWidth > 0.0f || style.borderTopWidth > 0.0f || style.borderRightWidth > 0.0f || style.borderBottomWidth > 0.0f))
-            {
-                var painterParams = RectStylePainterParameters.GetDefault(ve);
-                painterParams.color = style.borderColor;
-                stylePainter.DrawRect(painterParams);
-            }
-        }
-
-        internal static void DrawText(this IStylePainter painter, VisualElement ve, string text)
-        {
-            var stylePainter = (IStylePainterInternal)painter;
-            if (!string.IsNullOrEmpty(text) && ve.contentRect.width > 0.0f && ve.contentRect.height > 0.0f)
-            {
-                stylePainter.DrawText(TextStylePainterParameters.GetDefault(ve, text));
-            }
-        }
-
-        internal static void DrawText(this IStylePainter painter, TextElement te)
-        {
-            DrawText(painter, te, te.text);
-        }
-
-        internal static void SetBorderFromStyle(this IStylePainter painter, ref BorderParameters border, IStyle style)
-        {
-            border.SetWidth(style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth);
-            border.SetRadius(style.borderTopLeftRadius, style.borderTopRightRadius, style.borderBottomRightRadius, style.borderBottomLeftRadius);
         }
     }
 }

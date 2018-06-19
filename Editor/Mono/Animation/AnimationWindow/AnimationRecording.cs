@@ -783,31 +783,5 @@ namespace UnityEditorInternal
 
             state.SaveCurve(curve);
         }
-
-        static public void SaveModifiedCurve(AnimationWindowCurve curve, AnimationClip clip)
-        {
-            curve.m_Keyframes.Sort((a, b) => a.time.CompareTo(b.time));
-
-            if (curve.isPPtrCurve)
-            {
-                ObjectReferenceKeyframe[] objectCurve = curve.ToObjectCurve();
-
-                if (objectCurve.Length == 0)
-                    objectCurve = null;
-
-                AnimationUtility.SetObjectReferenceCurve(clip, curve.binding, objectCurve);
-            }
-            else
-            {
-                AnimationCurve animationCurve = curve.ToAnimationCurve();
-
-                if (animationCurve.keys.Length == 0)
-                    animationCurve = null;
-                else
-                    QuaternionCurveTangentCalculation.UpdateTangentsFromMode(animationCurve, clip, curve.binding);
-
-                AnimationUtility.SetEditorCurve(clip, curve.binding, animationCurve);
-            }
-        }
     }
 }

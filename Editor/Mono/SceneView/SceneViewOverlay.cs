@@ -78,6 +78,11 @@ namespace UnityEditor
             m_SceneView.BeginWindows();
         }
 
+        static class Styles
+        {
+            public static readonly GUIStyle sceneViewOverlayTransparentBackground = "SceneViewOverlayTransparentBackground";
+        }
+
         public void End()
         {
             if (!m_SceneView.m_ShowSceneViewWindows)
@@ -91,7 +96,7 @@ namespace UnityEditor
                 m_WindowRect.y = 0;
                 m_WindowRect.width = m_SceneView.position.width;
                 m_WindowRect.height = m_SceneView.position.height;
-                m_WindowRect = GUILayout.Window("SceneViewOverlay".GetHashCode(), m_WindowRect, WindowTrampoline, "", "SceneViewOverlayTransparentBackground");
+                m_WindowRect = GUILayout.Window("SceneViewOverlay".GetHashCode(), m_WindowRect, WindowTrampoline, "", Styles.sceneViewOverlayTransparentBackground);
             }
 
             m_SceneView.EndWindows();

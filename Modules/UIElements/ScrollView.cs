@@ -297,9 +297,9 @@ namespace UnityEngine.Experimental.UIElements
             if (contentContainer.layout.height - layout.height > 0)
             {
                 if (evt.delta.y < 0)
-                    verticalScroller.ScrollPageUp();
+                    verticalScroller.ScrollPageUp(Mathf.Abs(evt.delta.y));
                 else if (evt.delta.y > 0)
-                    verticalScroller.ScrollPageDown();
+                    verticalScroller.ScrollPageDown(Mathf.Abs(evt.delta.y));
             }
 
             evt.StopPropagation();

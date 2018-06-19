@@ -123,7 +123,7 @@ namespace UnityEngine.Experimental.UIElements
             this.valueChanged = valueChanged;
 
             // Add children in correct order
-            slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider", persistenceKey = "Slider"};
+            slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider", persistenceKey = "Slider", pageSize = 20.0f};
             Add(slider);
             lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
             Add(lowButton);
@@ -149,12 +149,22 @@ namespace UnityEngine.Experimental.UIElements
 
         public void ScrollPageUp()
         {
-            value -= (slider.pageSize * (slider.lowValue < slider.highValue ? 1f : -1f));
+            ScrollPageUp(1.0f);
         }
 
         public void ScrollPageDown()
         {
-            value += (slider.pageSize * (slider.lowValue < slider.highValue ? 1f : -1f));
+            ScrollPageDown(1.0f);
+        }
+
+        public void ScrollPageUp(float factor)
+        {
+            value -= factor * (slider.pageSize * (slider.lowValue < slider.highValue ? 1f : -1f));
+        }
+
+        public void ScrollPageDown(float factor)
+        {
+            value += factor * (slider.pageSize * (slider.lowValue < slider.highValue ? 1f : -1f));
         }
     }
 }

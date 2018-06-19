@@ -112,18 +112,29 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsBlittable(data.GetType().GetElementType()))
-                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(array) must be blittable", data.GetType().GetElementType()));
+            if (!UnsafeUtility.IsArrayBlittable(data))
+            {
+                throw new ArgumentException(
+                    string.Format("Array passed to ComputeBuffer.SetData(array) must be blittable.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+            }
 
             InternalSetData(data, 0, 0, data.Length, UnsafeUtility.SizeOf(data.GetType().GetElementType()));
         }
 
         // Set buffer data.
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
-        public void SetData<T>(List<T> data)
+        public void SetData<T>(List<T> data) where T : struct
         {
             if (data == null)
                 throw new ArgumentNullException("data");
+
+            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            {
+                throw new ArgumentException(
+                    string.Format("List<{0}> passed to ComputeBuffer.SetData(List<>) must be blittable.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+            }
 
             if (!UnsafeUtility.IsBlittable(typeof(T)))
                 throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(List<>)) must be blittable", typeof(T)));
@@ -145,8 +156,12 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsBlittable(data.GetType().GetElementType()))
-                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(array) must be blittable", data.GetType().GetElementType()));
+            if (!UnsafeUtility.IsArrayBlittable(data))
+            {
+                throw new ArgumentException(
+                    string.Format("Array passed to ComputeBuffer.SetData(array) must be blittable.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+            }
 
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
@@ -156,13 +171,17 @@ namespace UnityEngine
 
         // Set partial buffer data
         [System.Security.SecuritySafeCritical] // due to Marshal.SizeOf
-        public void SetData<T>(List<T> data, int managedBufferStartIndex, int computeBufferStartIndex, int count)
+        public void SetData<T>(List<T> data, int managedBufferStartIndex, int computeBufferStartIndex, int count) where T : struct
         {
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsBlittable(typeof(T)))
-                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(List<>)) must be blittable", typeof(T)));
+            if (!UnsafeUtility.IsGenericListBlittable<T>())
+            {
+                throw new ArgumentException(
+                    string.Format("List<{0}> passed to ComputeBuffer.SetData(List<>) must be blittable.\n{1}",
+                        typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
+            }
 
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Count)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count arguments (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));
@@ -195,8 +214,12 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsBlittable(data.GetType().GetElementType()))
-                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.GetData(array) must be blittable", data.GetType().GetElementType()));
+            if (!UnsafeUtility.IsArrayBlittable(data))
+            {
+                throw new ArgumentException(
+                    string.Format("Array passed to ComputeBuffer.GetData(array) must be blittable.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+            }
 
             InternalGetData(data, 0, 0, data.Length, Marshal.SizeOf(data.GetType().GetElementType()));
         }
@@ -208,8 +231,12 @@ namespace UnityEngine
             if (data == null)
                 throw new ArgumentNullException("data");
 
-            if (!UnsafeUtility.IsBlittable(data.GetType().GetElementType()))
-                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.GetData(array) must be blittable", data.GetType().GetElementType()));
+            if (!UnsafeUtility.IsArrayBlittable(data))
+            {
+                throw new ArgumentException(
+                    string.Format("Array passed to ComputeBuffer.GetData(array) must be blittable.\n{0}",
+                        UnsafeUtility.GetReasonForArrayNonBlittable(data)));
+            }
 
             if (managedBufferStartIndex < 0 || computeBufferStartIndex < 0 || count < 0 || managedBufferStartIndex + count > data.Length)
                 throw new ArgumentOutOfRangeException(String.Format("Bad indices/count argument (managedBufferStartIndex:{0} computeBufferStartIndex:{1} count:{2})", managedBufferStartIndex, computeBufferStartIndex, count));

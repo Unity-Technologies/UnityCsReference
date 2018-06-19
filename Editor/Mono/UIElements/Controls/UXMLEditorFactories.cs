@@ -42,6 +42,11 @@ namespace UnityEditor.Experimental.UIElements
                 new PropertyControl<float>.UxmlFactory(),
                 new PropertyControl<double>.UxmlFactory(),
                 new PropertyControl<string>.UxmlFactory(),
+
+                new RectIntField.UxmlFactory(),
+                new Vector2IntField.UxmlFactory(),
+                new Vector3IntField.UxmlFactory(),
+                new BoundsIntField.UxmlFactory(),
                 new VisualSplitter.UxmlFactory()
             };
 

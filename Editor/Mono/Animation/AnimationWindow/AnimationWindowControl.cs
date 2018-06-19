@@ -37,7 +37,7 @@ namespace UnityEditorInternal
             public void SaveCurve(AnimationWindowCurve curve)
             {
                 Undo.RegisterCompleteObjectUndo(curve.clip, "Edit Candidate Curve");
-                AnimationRecording.SaveModifiedCurve(curve, curve.clip);
+                AnimationWindowUtility.SaveCurve(curve.clip, curve);
             }
 
             public void AddPropertyModification(EditorCurveBinding binding, PropertyModification propertyModification, bool keepPrefabOverride)
@@ -78,7 +78,7 @@ namespace UnityEditorInternal
 
             public void SaveCurve(AnimationWindowCurve curve)
             {
-                m_State.SaveCurve(curve);
+                m_State.SaveCurve(curve.clip, curve);
             }
 
             public void AddPropertyModification(EditorCurveBinding binding, PropertyModification propertyModification, bool keepPrefabOverride)
@@ -613,7 +613,7 @@ namespace UnityEditorInternal
                     curves.Add(curve);
             }
 
-            AnimationWindowUtility.AddKeyframes(state, curves.ToArray(), time);
+            AnimationWindowUtility.AddKeyframes(state, curves, time);
 
             EndKeyModification();
 
@@ -824,7 +824,7 @@ namespace UnityEditorInternal
         {
             BeginKeyModification();
 
-            AnimationWindowUtility.AddKeyframes(state, state.allCurves.ToArray(), time);
+            AnimationWindowUtility.AddKeyframes(state, state.allCurves, time);
             ClearCandidates();
 
             EndKeyModification();

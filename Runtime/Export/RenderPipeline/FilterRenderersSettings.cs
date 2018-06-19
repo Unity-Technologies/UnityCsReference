@@ -10,9 +10,10 @@ namespace UnityEngine.Experimental.Rendering
     [StructLayout(LayoutKind.Sequential)]
     public struct FilterRenderersSettings
     {
-        RenderQueueRange m_RenderQueueRange;
-        int m_LayerMask;
-        UInt32 m_RenderingLayerMask;
+        RenderQueueRange    m_RenderQueueRange;
+        int                 m_LayerMask;
+        UInt32              m_RenderingLayerMask;
+        private Int32       m_ExcludeMotionVectorObjects;
 
         public FilterRenderersSettings(bool initializeValues = false) : this()
         {
@@ -21,6 +22,7 @@ namespace UnityEngine.Experimental.Rendering
                 m_RenderQueueRange = RenderQueueRange.all;
                 m_LayerMask = ~0;
                 m_RenderingLayerMask = UInt32.MaxValue;
+                m_ExcludeMotionVectorObjects = 0;
             }
         }
 
@@ -40,6 +42,12 @@ namespace UnityEngine.Experimental.Rendering
         {
             get { return m_RenderingLayerMask; }
             set { m_RenderingLayerMask = value; }
+        }
+
+        public bool excludeMotionVectorObjects
+        {
+            get { return m_ExcludeMotionVectorObjects != 0; }
+            set { m_ExcludeMotionVectorObjects = value ? 1 : 0; }
         }
     }
 }

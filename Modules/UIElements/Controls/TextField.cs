@@ -117,8 +117,6 @@ namespace UnityEngine.Experimental.UIElements
                 if (!hasFocus)
                 {
                     // We don't have the focus, don't draw the selection and cursor
-                    stylePainter.DrawBackground(this);
-                    stylePainter.DrawBorder(this);
                     if (!string.IsNullOrEmpty(drawText) && contentRect.width > 0.0f && contentRect.height > 0.0f)
                     {
                         var textParams = TextStylePainterParameters.GetDefault(this, text);

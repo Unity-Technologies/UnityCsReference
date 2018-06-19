@@ -454,7 +454,7 @@ namespace UnityEditor
                     particleMat = GraphicsSettings.renderPipelineAsset.GetDefaultParticleMaterial();
 
                 if (particleMat == null)
-                    particleMat = AssetDatabase.GetBuiltinExtraResource<Material>("Default-Particle.mat");
+                    particleMat = AssetDatabase.GetBuiltinExtraResource<Material>("Default-ParticleSystem.mat");
                 renderer.materials = new[] {particleMat, null};
 
                 Undo.RegisterCreatedObjectUndo(go, "Create ParticleSystem");

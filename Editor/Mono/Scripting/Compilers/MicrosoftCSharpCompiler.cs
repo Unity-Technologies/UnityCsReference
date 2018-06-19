@@ -15,6 +15,8 @@ namespace UnityEditor.Scripting.Compilers
 {
     internal class MicrosoftCSharpCompiler : ScriptCompilerBase
     {
+        public static readonly string ReponseFilename = "csc.rsp";
+
         public MicrosoftCSharpCompiler(MonoIsland island, bool runUpdater) : base(island, runUpdater)
         {
         }
@@ -104,7 +106,12 @@ namespace UnityEditor.Scripting.Compilers
             if (!File.Exists(csc))
                 ThrowCompilerNotFoundException(csc);
 
-            AddCustomResponseFileIfPresent(arguments, "csc.rsp");
+            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
+            if (!AddCustomResponseFileIfPresent(arguments, ReponseFilename) && PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.WinRTDotNET)
+            {
+                if (AddCustomResponseFileIfPresent(arguments, "mcs.rsp"))
+                    UnityEngine.Debug.LogWarning(string.Format("Using obsolete custom response file 'mcs.rsp'. Please use '{0}' instead.", ReponseFilename));
+            }
 
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
 

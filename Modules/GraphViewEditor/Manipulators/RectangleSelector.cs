@@ -167,6 +167,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             protected override void DoRepaint(IStylePainter painter)
             {
+                var stylePainter = (IStylePainterInternal)painter;
+                stylePainter.DrawImmediate(Draw);
+            }
+
+            void Draw()
+            {
                 VisualElement t = parent;
                 Vector2 screenStart = start;
                 Vector2 screenEnd = end;

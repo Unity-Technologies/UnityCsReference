@@ -258,6 +258,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private static Vector3[] s_CachedRect = new Vector3[4];
         protected override void DoRepaint(IStylePainter painter)
         {
+            var stylePainter = (IStylePainterInternal)painter;
+            stylePainter.DrawImmediate(DrawContent);
+        }
+
+        void DrawContent()
+        {
             var gView = graphView;
             VisualElement container = gView.contentViewContainer;
 
@@ -278,8 +284,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Refresh MiniMap rects
             CalculateRects(container);
 
-            // Let the base call draw the background and so on
-            base.DoRepaint(painter);
 
             // Display elements in the MiniMap
             Color currentColor = Handles.color;

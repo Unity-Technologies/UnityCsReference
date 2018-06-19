@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -19,32 +18,56 @@ namespace UnityEngine.Experimental.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((Toggle)ve).m_Label.text = m_Label.GetValueFromBag(bag);
+                ((Toggle)ve).text = m_Label.GetValueFromBag(bag);
                 ((Toggle)ve).value = m_Value.GetValueFromBag(bag);
             }
         }
 
-        Action clickEvent;
+        Action m_ClickEvent;
+
         private Label m_Label;
 
         public Toggle()
-            : this(null) {}
-
-        public Toggle(System.Action clickEvent)
         {
-            this.clickEvent = clickEvent;
+            // Allocate and add the checkmark to the hierarchy
+            var checkMark = new VisualElement() { name = "Checkmark", pickingMode = PickingMode.Ignore };
+            Add(checkMark);
 
-            m_Label = new Label();
-            Add(m_Label);
+            // Set-up the label and text...
+            text = null;
 
-            // Click-once behaviour
             this.AddManipulator(new Clickable(OnClick));
+        }
+
+        [Obsolete("Use Toggle() with OnValueChanged() instead.", false)]
+        public Toggle(System.Action clickEvent) : this()
+        {
+            OnToggle(clickEvent);
         }
 
         public string text
         {
-            get { return m_Label.text; }
-            set { m_Label.text = value; }
+            get { return m_Label?.text; }
+            set
+            {
+                if (!string.IsNullOrEmpty(value))
+                {
+                    // Lazy allocation of label if needed...
+                    if (m_Label == null)
+                    {
+                        m_Label = new Label();
+                        m_Label.pickingMode = PickingMode.Ignore;
+                        Add(m_Label);
+                    }
+
+                    m_Label.text = value;
+                }
+                else if (m_Label != null)
+                {
+                    Remove(m_Label);
+                    m_Label = null;
+                }
+            }
         }
 
         public override bool value
@@ -63,27 +86,46 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     pseudoStates &= ~PseudoStates.Checked;
                 }
+                base.value = value;
             }
         }
 
+        [Obsolete("Use OnValueChanged() instead.", false)]
         public void OnToggle(Action clickEvent)
         {
-            this.clickEvent = clickEvent;
+            if ((clickEvent != null) && (this.m_ClickEvent == null))
+            {
+                // Forward the clickEvent by the InternalOnValueChanged notification
+                OnValueChanged(InternalOnValueChanged);
+            }
+            else if ((clickEvent == null) && (this.m_ClickEvent != null))
+            {
+                // Don't need to keep being notified...
+                UnregisterCallback<ChangeEvent<bool>>(InternalOnValueChanged);
+            }
+
+            this.m_ClickEvent = clickEvent;
+        }
+
+        void InternalOnValueChanged(ChangeEvent<bool> evt)
+        {
+            m_ClickEvent?.Invoke();
         }
 
         private void OnClick()
         {
             value = !value;
-            if (clickEvent != null)
-                clickEvent();
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.ExecuteDefaultActionAtTarget(evt);
 
-            if ((evt as KeyDownEvent)?.character == '\n')
+            if (((evt as KeyDownEvent)?.character == '\n') || ((evt as KeyDownEvent)?.character == ' '))
+            {
                 OnClick();
+                evt.StopPropagation();
+            }
         }
     }
 }

@@ -132,7 +132,7 @@ namespace UnityEditor
                         EditorGUILayout.PropertyField(m_AngularDrag);
                         EditorGUILayout.PropertyField(m_GravityScale);
                     }
-                    FixedEndFadeGroup(m_ShowIsKinematic.faded);
+                    EditorGUILayout.EndFadeGroup();
 
                     if (!m_ShowIsKinematic.target)
                         EditorGUILayout.PropertyField(m_UseFullKinematicContacts);
@@ -158,7 +158,7 @@ namespace UnityEditor
                     if (constraints == RigidbodyConstraints2D.FreezeAll)
                         EditorGUILayout.HelpBox("Rather than turning on all constraints, you may want to consider removing the Rigidbody2D component which makes any colliders static.  This gives far better performance overall.", MessageType.Info);
                 }
-                FixedEndFadeGroup(m_ShowIsStatic.faded);
+                EditorGUILayout.EndFadeGroup();
             }
 
             serializedObject.ApplyModifiedProperties();
@@ -195,7 +195,7 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox("Cannot show Info properties when multiple bodies are selected.", MessageType.Info);
                 }
             }
-            FixedEndFadeGroup(m_ShowInfo.faded);
+            EditorGUILayout.EndFadeGroup();
         }
 
         void ShowContacts(Rigidbody2D body)
@@ -233,18 +233,8 @@ namespace UnityEditor
                     EditorGUILayout.HelpBox("No Contacts", MessageType.Info);
                 }
             }
-            FixedEndFadeGroup(m_ShowContacts.faded);
-            EditorGUI.indentLevel--;
-        }
-
-        // Fix for nested fade-groups as found here:
-        // http://answers.unity3d.com/questions/1096244/custom-editor-fade-group-inside-fade-group.html
-        static void FixedEndFadeGroup(float value)
-        {
-            if (value == 0.0f || value == 1.0f)
-                return;
-
             EditorGUILayout.EndFadeGroup();
+            EditorGUI.indentLevel--;
         }
 
         void ConstraintToggle(Rect r, string label, RigidbodyConstraints2D value, int bit)

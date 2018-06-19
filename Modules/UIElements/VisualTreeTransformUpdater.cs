@@ -21,12 +21,12 @@ namespace UnityEngine.Experimental.UIElements
             if ((versionChangeType & VersionChangeType.Transform) != VersionChangeType.Transform)
                 return;
 
-            if (ve.isWorldTransformDirty)
+            if (ve.isWorldTransformClipDirty)
                 return;
 
             ++m_Version;
 
-            ve.isWorldTransformDirty = true;
+            ve.isWorldTransformClipDirty = true;
 
             PropagateToChildren(ve);
         }
@@ -37,10 +37,10 @@ namespace UnityEngine.Experimental.UIElements
             for (int i = 0; i < count; i++)
             {
                 var child = ve.shadow[i];
-                if (child.isWorldTransformDirty)
+                if (child.isWorldTransformClipDirty)
                     continue;
 
-                child.isWorldTransformDirty = true;
+                child.isWorldTransformClipDirty = true;
                 PropagateToChildren(child);
             }
         }

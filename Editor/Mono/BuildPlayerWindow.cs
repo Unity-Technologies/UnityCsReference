@@ -246,6 +246,16 @@ namespace UnityEditor
             GUIUtility.ExitGUI();
         }
 
+        // TODO: Move this into platform extension dll
+        private bool IsBuildTargetCompatibleWithOS(BuildTarget target)
+        {
+            // Windows Store can only be used on Windows
+            if (target == BuildTarget.WSAPlayer && SystemInfo.operatingSystemFamily != OperatingSystemFamily.Windows)
+                return false;
+
+            return true;
+        }
+
         private void ActiveBuildTargetsGUI()
         {
             GUILayout.BeginVertical();
@@ -268,7 +278,7 @@ namespace UnityEditor
                         continue;
 
                     // Some build targets are only compatible with specific OS
-                    if (!BuildPipeline.IsBuildTargetCompatibleWithOS(gt.defaultTarget))
+                    if (!IsBuildTargetCompatibleWithOS(gt.defaultTarget))
                         continue;
 
                     ShowOption(gt, gt.title, even ? styles.evenRow : styles.oddRow);
@@ -488,7 +498,8 @@ namespace UnityEditor
             { "OSXStandalone", "Mac" },
             { "WindowsStandalone", "Windows" },
             { "LinuxStandalone", "Linux" },
-            { "Facebook", "Facebook-Games"}
+            { "Facebook", "Facebook-Games"},
+            { "Metro", "UWP-IL2CPP"}
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {

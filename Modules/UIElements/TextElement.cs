@@ -58,9 +58,8 @@ namespace UnityEngine.Experimental.UIElements
 
         protected override void DoRepaint(IStylePainter painter)
         {
-            painter.DrawBackground(this);
-            painter.DrawBorder(this);
-            painter.DrawText(this);
+            var stylePainter = (IStylePainterInternal)painter;
+            stylePainter.DrawText(text);
         }
 
         public Vector2 MeasureTextSize(string textToMeasure, float width, MeasureMode widthMode, float height,
@@ -73,6 +72,11 @@ namespace UnityEngine.Experimental.UIElements
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
+
+            // TODO: This scaling parameter should depend on the real scaling of the text (dpi scaling * world scaling)
+            //       because depending of its value, the glyphs may align on different pixels which can change the
+            //       measure. The resulting measure should then be divided by this scaling to obtain the local measure.
+            float scaling = 1;
 
             Font usedFont = ve.style.font;
             if (textToMeasure == null || usedFont == null)
@@ -91,7 +95,7 @@ namespace UnityEngine.Experimental.UIElements
                 textParams.wordWrap = false;
                 textParams.richText = true;
 
-                measuredWidth = TextNative.ComputeTextWidth(textParams);
+                measuredWidth = TextNative.ComputeTextWidth(textParams.GetTextNativeSettings(scaling));
 
                 if (widthMode == MeasureMode.AtMost)
                 {
@@ -111,7 +115,7 @@ namespace UnityEngine.Experimental.UIElements
                 textParams.wordWrapWidth = measuredWidth;
                 textParams.richText = true;
 
-                measuredHeight = TextNative.ComputeTextHeight(textParams);
+                measuredHeight = TextNative.ComputeTextHeight(textParams.GetTextNativeSettings(scaling));
 
                 if (heightMode == MeasureMode.AtMost)
                 {

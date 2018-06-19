@@ -97,10 +97,9 @@ namespace UnityEngine.Experimental.UIElements
 
         protected override void DoRepaint(IStylePainter painter)
         {
-            base.DoRepaint(painter);
-
             lastWorldClip = elementPanel.repaintData.currentWorldClip;
-            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent);
+            var stylePainter = (IStylePainterInternal)painter;
+            stylePainter.DrawImmediate(HandleIMGUIEvent);
         }
 
         // global GUI values.
@@ -374,7 +373,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public void MakeDirtyLayout()
+        public void MarkDirtyLayout()
         {
             IncrementVersion(VersionChangeType.Layout);
         }
@@ -403,6 +402,13 @@ namespace UnityEngine.Experimental.UIElements
                 evt.StopPropagation();
                 evt.PreventDefault();
             }
+        }
+
+        // This is the IStylePainterInternal.DrawImmediate callback
+        internal void HandleIMGUIEvent()
+        {
+            var offset = elementPanel.repaintData.currentOffset;
+            HandleIMGUIEvent(elementPanel.repaintData.repaintEvent, offset * worldTransform, ComputeAAAlignedBound(worldClip, offset));
         }
 
         internal bool HandleIMGUIEvent(Event e)
@@ -562,7 +568,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 // during repaint, we must use in case the current transform is not relative to Panel
                 // this is to account for the pixel caching feature
-                transform = container.elementPanel.repaintData.currentTransform;
+                transform =  container.elementPanel.repaintData.currentOffset * container.worldTransform;
             }
         }
     }

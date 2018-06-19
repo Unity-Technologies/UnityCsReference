@@ -111,6 +111,31 @@ namespace UnityEditor.Connect
             instance.EnableService(serviceName, enabled);
         }
 
+        [RequiredByNativeCode]
+        public static void OnServicesConfigChanged()
+        {
+            instance.ReloadWindow();
+        }
+
+        public void ReloadWindow()
+        {
+            var unityConnectEditorWindows = Resources.FindObjectsOfTypeAll(typeof(UnityConnectEditorWindow)) as UnityConnectEditorWindow[];
+            if (unityConnectEditorWindows != null)
+            {
+                foreach (var w in unityConnectEditorWindows)
+                {
+                    try
+                    {
+                        w.Reload();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogException(ex, w);
+                    }
+                }
+            }
+        }
+
         public bool AddService(UnityConnectServiceData cloudService)
         {
             if (m_Services.ContainsKey(cloudService.serviceName))
@@ -236,6 +261,11 @@ namespace UnityEditor.Connect
 
         public ServiceInfo[] GetAllServiceInfos()
         {
+            if (UnityEngine.Connect.UnityConnectSettings.disableServicesWindow)
+            {
+                return new ServiceInfo[0];
+            }
+
             return m_Services.Select(item => new ServiceInfo(item.Value.serviceName, item.Value.serviceUrl, item.Value.serviceJsGlobalObjectName, item.Value.serviceJsGlobalObject.IsServiceEnabled())).ToArray();
         }
 

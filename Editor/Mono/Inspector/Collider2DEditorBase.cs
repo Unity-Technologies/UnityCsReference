@@ -81,6 +81,7 @@ namespace UnityEditor
                     EditorGUILayout.PropertyField(m_Density);
                 EditorGUILayout.EndFadeGroup();
 
+
                 EditorGUILayout.PropertyField(m_Material);
                 EditorGUILayout.PropertyField(m_IsTrigger);
                 EditorGUILayout.PropertyField(m_UsedByEffector);

@@ -56,9 +56,6 @@ namespace UnityEditor
         Editor m_LastInteractedEditor;
         bool m_IsOpenForEdit = false;
 
-        private static Styles s_Styles;
-        internal static Styles styles { get { return s_Styles ?? (s_Styles = new Styles()); } }
-
         [SerializeField]
         PreviewResizer m_PreviewResizer = new PreviewResizer();
         [SerializeField]
@@ -80,30 +77,30 @@ namespace UnityEditor
 
 
 
-        internal class Styles
+        internal static class Styles
         {
-            public readonly GUIStyle preToolbar = "preToolbar";
-            public readonly GUIStyle preToolbar2 = "preToolbar2";
-            public readonly GUIStyle preDropDown = "preDropDown";
-            public readonly GUIStyle dragHandle = "RL DragHandle";
-            public readonly GUIStyle lockButton = "IN LockButton";
-            public readonly GUIStyle insertionMarker = "InsertionMarker";
-            public readonly GUIContent preTitle = EditorGUIUtility.TrTextContent("Preview");
-            public readonly GUIContent labelTitle = EditorGUIUtility.TrTextContent("Asset Labels");
-            public readonly GUIContent addComponentLabel = EditorGUIUtility.TrTextContent("Add Component");
-            public GUIStyle preBackground = "preBackground";
-            public GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
-            public GUIStyle addComponentButtonStyle = "AC Button";
-            public GUIStyle previewMiniLabel = new GUIStyle(EditorStyles.whiteMiniLabel);
-            public GUIStyle typeSelection = new GUIStyle("PR Label");
-            public GUIStyle lockedHeaderButton = "preButton";
-            public GUIStyle stickyNote = new GUIStyle("VCS_StickyNote");
-            public GUIStyle stickyNoteArrow = new GUIStyle("VCS_StickyNoteArrow");
-            public GUIStyle stickyNotePerforce = new GUIStyle("VCS_StickyNoteP4");
-            public GUIStyle stickyNoteLabel = new GUIStyle("VCS_StickyNoteLabel");
-            public readonly GUIContent VCS_NotConnectedMessage = EditorGUIUtility.TrTextContent("VCS Plugin {0} is enabled but not connected");
+            public static readonly GUIStyle preToolbar = "preToolbar";
+            public static readonly GUIStyle preToolbar2 = "preToolbar2";
+            public static readonly GUIStyle preDropDown = "preDropDown";
+            public static readonly GUIStyle dragHandle = "RL DragHandle";
+            public static readonly GUIStyle lockButton = "IN LockButton";
+            public static readonly GUIStyle insertionMarker = "InsertionMarker";
+            public static readonly GUIContent preTitle = EditorGUIUtility.TrTextContent("Preview");
+            public static readonly GUIContent labelTitle = EditorGUIUtility.TrTextContent("Asset Labels");
+            public static readonly GUIContent addComponentLabel = EditorGUIUtility.TrTextContent("Add Component");
+            public static GUIStyle preBackground = "preBackground";
+            public static GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
+            public static GUIStyle addComponentButtonStyle = "AC Button";
+            public static GUIStyle previewMiniLabel = new GUIStyle(EditorStyles.whiteMiniLabel);
+            public static GUIStyle typeSelection = new GUIStyle("PR Label");
+            public static GUIStyle lockedHeaderButton = "preButton";
+            public static GUIStyle stickyNote = new GUIStyle("VCS_StickyNote");
+            public static GUIStyle stickyNoteArrow = new GUIStyle("VCS_StickyNoteArrow");
+            public static GUIStyle stickyNotePerforce = new GUIStyle("VCS_StickyNoteP4");
+            public static GUIStyle stickyNoteLabel = new GUIStyle("VCS_StickyNoteLabel");
+            public static readonly GUIContent VCS_NotConnectedMessage = EditorGUIUtility.TrTextContent("VCS Plugin {0} is enabled but not connected");
 
-            public Styles()
+            static Styles()
             {
                 typeSelection.padding.left = 12;
             }
@@ -406,7 +403,7 @@ namespace UnityEditor
 
         protected virtual void ShowButton(Rect r)
         {
-            m_LockTracker.ShowButton(r, styles.lockButton);
+            m_LockTracker.ShowButton(r, Styles.lockButton);
         }
 
         private void LockStateChanged(bool lockeState)
@@ -509,7 +506,7 @@ namespace UnityEditor
             // if not found use first editor that can show a preview otherwise return null.
 
             IPreviewable lastInteractedEditor = GetLastInteractedEditor();
-            Type lastType = (lastInteractedEditor != null) ? lastInteractedEditor.GetType() : null;
+            Type lastType = lastInteractedEditor?.GetType();
 
             IPreviewable firstEditorThatHasPreview = null;
             IPreviewable similarEditorAsLast = null;
@@ -698,7 +695,7 @@ namespace UnityEditor
             Event evt = Event.current;
 
             // Preview / Asset Labels toolbar
-            Rect rect = EditorGUILayout.BeginHorizontal(GUIContent.none, styles.preToolbar, GUILayout.Height(kBottomToolbarHeight));
+            Rect rect = EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.preToolbar, GUILayout.Height(kBottomToolbarHeight));
             Rect dragRect;
             Rect dragIconRect = new Rect();
             const float dragPadding = 3f;
@@ -711,22 +708,22 @@ namespace UnityEditor
                 if (hasPreview)
                 {
                     GUIContent userDefinedTitle = previewEditor.GetPreviewTitle();
-                    title = userDefinedTitle ?? styles.preTitle;
+                    title = userDefinedTitle ?? Styles.preTitle;
                 }
                 else
                 {
-                    title = styles.labelTitle;
+                    title = Styles.labelTitle;
                 }
 
                 dragIconRect.x = dragRect.x + dragPadding;
-                dragIconRect.y = dragRect.y + (kBottomToolbarHeight - s_Styles.dragHandle.fixedHeight) / 2 + 1;
+                dragIconRect.y = dragRect.y + (kBottomToolbarHeight - Styles.dragHandle.fixedHeight) / 2 + 1;
                 dragIconRect.width = dragRect.width - dragPadding * 2;
-                dragIconRect.height = s_Styles.dragHandle.fixedHeight;
+                dragIconRect.height = Styles.dragHandle.fixedHeight;
 
                 //If we have more than one component with Previews, show a DropDown menu.
                 if (editorsWithPreviews.Length > 1)
                 {
-                    Vector2 foldoutSize = styles.preDropDown.CalcSize(title);
+                    Vector2 foldoutSize = Styles.preDropDown.CalcSize(title);
                     float maxFoldoutWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
                     float foldoutWidth = Mathf.Min(maxFoldoutWidth, foldoutSize.x);
                     Rect foldoutRect = new Rect(dragRect.x, dragRect.y, foldoutWidth, foldoutSize.y);
@@ -738,10 +735,10 @@ namespace UnityEditor
                     for (int index = 0; index < editorsWithPreviews.Length; index++)
                     {
                         IPreviewable currentEditor = editorsWithPreviews[index];
-                        GUIContent previewTitle = currentEditor.GetPreviewTitle() ?? styles.preTitle;
+                        GUIContent previewTitle = currentEditor.GetPreviewTitle() ?? Styles.preTitle;
 
                         string fullTitle;
-                        if (previewTitle == styles.preTitle)
+                        if (previewTitle == Styles.preTitle)
                         {
                             string componentTitle = ObjectNames.GetTypeName(currentEditor.target);
                             if (NativeClassExtensionUtilities.ExtendsANativeType(currentEditor.target))
@@ -762,7 +759,7 @@ namespace UnityEditor
                         }
                     }
 
-                    if (GUI.Button(foldoutRect, title, styles.preDropDown))
+                    if (GUI.Button(foldoutRect, title, Styles.preDropDown))
                     {
                         EditorUtility.DisplayCustomMenu(foldoutRect, panelOptions, selectedPreview, OnPreviewSelected, editorsWithPreviews);
                     }
@@ -770,17 +767,17 @@ namespace UnityEditor
                 else
                 {
                     float maxLabelWidth = (dragIconRect.xMax - dragRect.xMin) - dragPadding - minDragWidth;
-                    float labelWidth = Mathf.Min(maxLabelWidth, styles.preToolbar2.CalcSize(title).x);
+                    float labelWidth = Mathf.Min(maxLabelWidth, Styles.preToolbar2.CalcSize(title).x);
                     Rect labelRect = new Rect(dragRect.x, dragRect.y, labelWidth, dragRect.height);
 
                     dragIconRect.xMin = labelRect.xMax + dragPadding;
 
-                    GUI.Label(labelRect, title, styles.preToolbar2);
+                    GUI.Label(labelRect, title, Styles.preToolbar2);
                 }
 
                 if (hasPreview && Event.current.type == EventType.Repaint)
                 {
-                    s_Styles.dragHandle.Draw(dragIconRect, GUIContent.none, false, false, false, false);
+                    Styles.dragHandle.Draw(dragIconRect, GUIContent.none, false, false, false, false);
                 }
 
                 if (hasPreview && m_PreviewResizer.GetExpandedBeforeDragging())
@@ -823,7 +820,7 @@ namespace UnityEditor
                 return;
 
             // The preview / label area (not including the toolbar)
-            GUILayout.BeginVertical(styles.preBackground, GUILayout.Height(previewSize));
+            GUILayout.BeginVertical(Styles.preBackground, GUILayout.Height(previewSize));
             {
                 // Draw preview
                 if (hasPreview)
@@ -889,19 +886,19 @@ namespace UnityEditor
                 rect.y -= offset;
                 if (Event.current.type == EventType.Repaint)
                 {
-                    styles.stickyNote.Draw(rect, false, false, false, false);
+                    Styles.stickyNote.Draw(rect, false, false, false, false);
 
                     Rect iconRect = new Rect(rect.x, rect.y + rect.height / 2 - 32, 64, 64);
                     if (EditorSettings.externalVersionControl == "Perforce") // TODO: remove hardcoding of perforce
                     {
-                        styles.stickyNotePerforce.Draw(iconRect, false, false, false, false);
+                        Styles.stickyNotePerforce.Draw(iconRect, false, false, false, false);
                     }
 
                     Rect textRect = new Rect(rect.x + iconRect.width, rect.y, rect.width - iconRect.width, rect.height);
-                    GUI.Label(textRect, EditorGUIUtility.TrTextContent("<b>Under Version Control</b>\nCheck out this asset in order to make changes."), styles.stickyNoteLabel);
+                    GUI.Label(textRect, EditorGUIUtility.TrTextContent("<b>Under Version Control</b>\nCheck out this asset in order to make changes."), Styles.stickyNoteLabel);
 
                     Rect arrowRect = new Rect(rect.x + rect.width / 2, rect.y + 80, 19, 14);
-                    styles.stickyNoteArrow.Draw(arrowRect, false, false, false, false);
+                    Styles.stickyNoteArrow.Draw(arrowRect, false, false, false, false);
                 }
             }
         }
@@ -928,14 +925,14 @@ namespace UnityEditor
                 //can also cause IsOpenForEdit to return false for checkout-enabled or lock-enabled VCS
                 if (currentState == String.Empty && Provider.onlineState != OnlineState.Online)
                 {
-                    currentState = String.Format(s_Styles.VCS_NotConnectedMessage.text, Provider.GetActivePlugin().name);
+                    currentState = String.Format(Styles.VCS_NotConnectedMessage.text, Provider.GetActivePlugin().name);
                 }
 
                 bool showMetaState = metaAsset != null && (metaAsset.state & ~Asset.States.MetaFile) != asset.state;
                 bool showAssetState = currentState != "";
 
                 float labelHeight = showMetaState && showAssetState ? kBottomToolbarHeight * 2 : kBottomToolbarHeight;
-                GUILayout.Label(GUIContent.none, styles.preToolbar, GUILayout.Height(labelHeight));
+                GUILayout.Label(GUIContent.none, Styles.preToolbar, GUILayout.Height(labelHeight));
 
                 var rect = GUILayoutUtility.GetLastRect();
 
@@ -950,7 +947,7 @@ namespace UnityEditor
                         assetRect.height = kBottomToolbarHeight;
                         DrawVCSShortInfoAsset(asset, BuildTooltip(asset, null), assetRect, icon, currentState);
 
-                        Texture2D metaIcon = InternalEditorUtility.GetIconForFile(metaAsset.path) as Texture2D;
+                        Texture2D metaIcon = InternalEditorUtility.GetIconForFile(metaAsset.path);
                         assetRect.y += kBottomToolbarHeight;
                         DrawVCSShortInfoAsset(metaAsset, BuildTooltip(null, metaAsset), assetRect, metaIcon, currentMetaState);
                     }
@@ -961,7 +958,7 @@ namespace UnityEditor
                 }
                 else if (currentMetaState != "" && isLayoutOrRepaint)
                 {
-                    Texture2D metaIcon = InternalEditorUtility.GetIconForFile(metaAsset.path) as Texture2D;
+                    Texture2D metaIcon = InternalEditorUtility.GetIconForFile(metaAsset.path);
                     DrawVCSShortInfoAsset(metaAsset, BuildTooltip(asset, metaAsset), rect, metaIcon, currentMetaState);
                 }
 
@@ -973,7 +970,7 @@ namespace UnityEditor
                     {
                         float buttonWidth = 80;
                         Rect buttonRect = new Rect(rect.x + rect.width - buttonWidth, rect.y, buttonWidth, rect.height);
-                        if (GUI.Button(buttonRect, "Check out", styles.lockedHeaderButton))
+                        if (GUI.Button(buttonRect, "Check out", Styles.lockedHeaderButton))
                         {
                             EditorPrefs.SetBool("vcssticky", true);
                             // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
@@ -1016,7 +1013,7 @@ namespace UnityEditor
             Rect textRect = new Rect(rect.x + 26, rect.y, rect.width - 31, rect.height);
             GUIContent content = GUIContent.Temp(currentState);
             content.tooltip = tooltip;
-            EditorGUI.LabelField(textRect, content, styles.preToolbar2);
+            EditorGUI.LabelField(textRect, content, Styles.preToolbar2);
         }
 
         private void DrawEditors(Editor[] editors)
@@ -1468,7 +1465,7 @@ namespace UnityEditor
             foreach (TypeSelection ts in m_TypeSelectionList.typeSelections)
             {
                 Rect r = GUILayoutUtility.GetRect(16, 16, GUILayout.ExpandWidth(true));
-                if (GUI.Button(r, ts.label, styles.typeSelection))
+                if (GUI.Button(r, ts.label, Styles.typeSelection))
                 {
                     Selection.objects = ts.objects;
                     Event.current.Use();
@@ -1501,8 +1498,8 @@ namespace UnityEditor
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                var content = s_Styles.addComponentLabel;
-                Rect rect = GUILayoutUtility.GetRect(content, styles.addComponentButtonStyle);
+                var content = Styles.addComponentLabel;
+                Rect rect = GUILayoutUtility.GetRect(content, Styles.addComponentButtonStyle);
 
                 // Visually separates the Add Component button from the existing components
 
@@ -1523,7 +1520,7 @@ namespace UnityEditor
                         break;
                 }
 
-                if (EditorGUI.DropdownButton(rect, content, FocusType.Passive, styles.addComponentButtonStyle) || openWindow)
+                if (EditorGUI.DropdownButton(rect, content, FocusType.Passive, Styles.addComponentButtonStyle) || openWindow)
                 {
                     if (AddComponentWindow.Show(rect, editor.targets.Select(o => (GameObject)o).ToArray()))
                     {
@@ -1649,7 +1646,7 @@ namespace UnityEditor
             }
 
             // try to retrieve all Objects from their stored instance ids in the list.
-            // this is only used for nonpersistent objects (scene objects)
+            // this is only used for non persistent objects (scene objects)
 
             if (m_InstanceIDsLockedBeforeSerialization.Count > 0)
             {

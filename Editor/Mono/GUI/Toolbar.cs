@@ -163,6 +163,12 @@ namespace UnityEditor
             public readonly static GUIStyle collabButtonStyle = new GUIStyle("Dropdown") { padding = { left = 24 } }; // move text to make room for rotating icon
             public static readonly GUIStyle dropdown = "Dropdown";
             public static readonly GUIStyle appToolbar = "AppToolbar";
+            public static readonly GUIStyle command = "Command";
+            public static readonly GUIStyle buttonLeft = "ButtonLeft";
+            public static readonly GUIStyle buttonRight = "ButtonRight";
+            public static readonly GUIStyle commandLeft = "CommandLeft";
+            public static readonly GUIStyle commandMid = "CommandMid";
+            public static readonly GUIStyle commandRight = "CommandRight";
         }
 
         protected override void OnEnable()
@@ -418,7 +424,7 @@ namespace UnityEditor
             }
             s_ShownToolIcons[0] = s_ViewToolIcons[(int)Tools.viewTool + (displayTool == 0 ? s_ShownToolIcons.Length - 1 : 0)];
 
-            displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, s_ToolControlNames, "Command", GUI.ToolbarButtonSize.FitToContents);
+            displayTool = GUI.Toolbar(rect, displayTool, s_ShownToolIcons, s_ToolControlNames, Styles.command, GUI.ToolbarButtonSize.FitToContents);
             if (GUI.changed)
             {
                 Tools.current = (Tool)displayTool;
@@ -429,11 +435,11 @@ namespace UnityEditor
         void DoPivotButtons(Rect rect)
         {
             GUI.SetNextControlName("ToolbarToolPivotPositionButton");
-            Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, s_PivotIcons, "ButtonLeft");
+            Tools.pivotMode = (PivotMode)EditorGUI.CycleButton(new Rect(rect.x, rect.y, rect.width / 2, rect.height), (int)Tools.pivotMode, s_PivotIcons, Styles.buttonLeft);
             if (Tools.current == Tool.Scale && Selection.transforms.Length < 2)
                 GUI.enabled = false;
             GUI.SetNextControlName("ToolbarToolPivotOrientationButton");
-            PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, s_PivotRotation, "ButtonRight");
+            PivotRotation tempPivot = (PivotRotation)EditorGUI.CycleButton(new Rect(rect.x + rect.width / 2, rect.y, rect.width / 2, rect.height), (int)Tools.pivotRotation, s_PivotRotation, Styles.buttonRight);
             if (Tools.pivotRotation != tempPivot)
             {
                 Tools.pivotRotation = tempPivot;
@@ -459,7 +465,7 @@ namespace UnityEditor
             Color c = GUI.color + new Color(.01f, .01f, .01f, .01f);
             GUI.contentColor = new Color(1.0f / c.r, 1.0f / c.g, 1.0f / c.g, 1.0f / c.a);
             GUI.SetNextControlName("ToolbarPlayModePlayButton");
-            GUILayout.Toggle(isOrWillEnterPlaymode, s_PlayIcons[buttonOffset], "CommandLeft");
+            GUILayout.Toggle(isOrWillEnterPlaymode, s_PlayIcons[buttonOffset], Styles.commandLeft);
             GUI.backgroundColor = Color.white;
             if (GUI.changed)
             {
@@ -471,7 +477,7 @@ namespace UnityEditor
             GUI.changed = false;
 
             GUI.SetNextControlName("ToolbarPlayModePauseButton");
-            bool isPaused = GUILayout.Toggle(EditorApplication.isPaused, s_PlayIcons[buttonOffset + 1], "CommandMid");
+            bool isPaused = GUILayout.Toggle(EditorApplication.isPaused, s_PlayIcons[buttonOffset + 1], Styles.commandMid);
             if (GUI.changed)
             {
                 EditorApplication.isPaused = isPaused;
@@ -480,7 +486,7 @@ namespace UnityEditor
 
             // Step playmode
             GUI.SetNextControlName("ToolbarPlayModeStepButton");
-            if (GUILayout.Button(s_PlayIcons[buttonOffset + 2], "CommandRight"))
+            if (GUILayout.Button(s_PlayIcons[buttonOffset + 2], Styles.commandRight))
             {
                 EditorApplication.Step();
                 GUIUtility.ExitGUI();
@@ -490,8 +496,7 @@ namespace UnityEditor
 
         void DoLayersDropDown(Rect rect)
         {
-            GUIStyle dropStyle = "DropDown";
-            if (EditorGUI.DropdownButton(rect, s_LayerContent, FocusType.Passive, dropStyle))
+            if (EditorGUI.DropdownButton(rect, s_LayerContent, FocusType.Passive, Styles.dropdown))
             {
                 if (LayerVisibilityWindow.ShowAtPosition(rect))
                 {
@@ -503,7 +508,7 @@ namespace UnityEditor
         void DoLayoutDropDown(Rect rect)
         {
             // Layout DropDown
-            if (EditorGUI.DropdownButton(rect, GUIContent.Temp(lastLoadedLayoutName), FocusType.Passive, "DropDown"))
+            if (EditorGUI.DropdownButton(rect, GUIContent.Temp(lastLoadedLayoutName), FocusType.Passive, Styles.dropdown))
             {
                 Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(rect.x, rect.y));
                 rect.x = temp.x;

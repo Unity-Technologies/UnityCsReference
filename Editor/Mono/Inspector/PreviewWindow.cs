@@ -61,18 +61,17 @@ namespace UnityEditor
             bool hasPreview = (editor != null) && editor.HasPreviewGUI();
 
             // Toolbar
-            Rect labelRect;
-            Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, styles.preToolbar, GUILayout.Height(17));
+            Rect toolbarRect = EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.preToolbar, GUILayout.Height(17));
             {
                 GUILayout.FlexibleSpace();
-                labelRect = GUILayoutUtility.GetLastRect();
+                var labelRect = GUILayoutUtility.GetLastRect();
                 // Label
                 string label = string.Empty;
                 if ((editor != null))
                 {
                     label = editor.GetPreviewTitle().text;
                 }
-                GUI.Label(labelRect, label, styles.preToolbar2);
+                GUI.Label(labelRect, label, Styles.preToolbar2);
                 if (hasPreview)
                     editor.OnPreviewSettings();
             } EditorGUILayout.EndHorizontal();
@@ -92,7 +91,7 @@ namespace UnityEditor
 
             // Draw background
             if (Event.current.type == EventType.Repaint)
-                styles.preBackground.Draw(previewPosition, false, false, false, false);
+                Styles.preBackground.Draw(previewPosition, false, false, false, false);
 
             // Draw preview
             if ((editor != null) && editor.HasPreviewGUI())
