@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
@@ -23,7 +24,7 @@ namespace UnityEditor.ShortcutManagement
     class ShortcutProfileManager : IShortcutProfileManager
     {
         const string k_UserProfileId = "UserProfile";
-        IEnumerable<ShortcutEntry> entries;
+        readonly List<ShortcutEntry> m_Entries;
         ShortcutProfile m_ActiveProfile = new ShortcutProfile();
         public event Action<IShortcutProfileManager> shortcutsModified;
 
@@ -32,35 +33,19 @@ namespace UnityEditor.ShortcutManagement
 
         public ShortcutProfileManager(IEnumerable<ShortcutEntry> baseProfile)
         {
-            entries = baseProfile.ToList();
+            m_Entries = baseProfile.ToList();
         }
 
         public IEnumerable<ShortcutEntry> GetAllShortcuts()
         {
-            return entries;
+            return m_Entries;
         }
 
-        internal void ApplyProfile(ShortcutProfile shortcutProfile, bool migratePrefKeys = false)
+        internal void ApplyProfile(ShortcutProfile shortcutProfile)
         {
-            // pref keys should only be migrated when the default user profile is applied
-            if (migratePrefKeys)
-            {
-                foreach (var entry in entries)
-                {
-                    if (entry.prefKeyMigratedValue != null)
-                    {
-                        var overrideEntry = new SerializableShortcutEntry
-                        {
-                            identifier = entry.identifier,
-                            keyCombination = new List<KeyCombination> { entry.prefKeyMigratedValue.Value }
-                        };
-                        entry.ApplyOverride(overrideEntry);
-                    }
-                }
-            }
             foreach (var shortcutOverride in shortcutProfile.entries)
             {
-                var entry = entries.FirstOrDefault(e => e.identifier.Equals(shortcutOverride.identifier));
+                var entry = m_Entries.FirstOrDefault(e => e.identifier.Equals(shortcutOverride.identifier));
                 if (entry != null)
                 {
                     entry.ApplyOverride(shortcutOverride);
@@ -71,7 +56,7 @@ namespace UnityEditor.ShortcutManagement
 
         public void ResetToDefault()
         {
-            foreach (var entry in entries)
+            foreach (var entry in m_Entries)
             {
                 entry.ResetToDefault();
             }
@@ -80,12 +65,48 @@ namespace UnityEditor.ShortcutManagement
         public void ApplyActiveProfile()
         {
             m_ActiveProfile = new ShortcutProfile(k_UserProfileId);
-            ApplyProfile(m_ActiveProfile, true);
+            ApplyProfile(m_ActiveProfile);
+            MigrateUserSpecifiedPrefKeys(
+                EditorAssemblies.GetAllMethodsWithAttribute<FormerlyPrefKeyAsAttribute>(), m_Entries
+                );
+        }
+
+        internal static void MigrateUserSpecifiedPrefKeys(
+            IEnumerable<MethodInfo> methodsWithFormerlyPrefKeyAs, List<ShortcutEntry> entries
+            )
+        {
+            foreach (var method in methodsWithFormerlyPrefKeyAs)
+            {
+                var shortcutAttr =
+                    Attribute.GetCustomAttribute(method, typeof(ShortcutAttribute), true) as ShortcutAttribute;
+                if (shortcutAttr == null)
+                    continue;
+
+                var entry = entries.Find(e => string.Equals(e.identifier.path, shortcutAttr.identifier));
+                // ignore former PrefKeys if the shortcut profile has already loaded and applied an override
+                if (entry == null || entry.overridden)
+                    continue;
+
+                var prefKeyAttr =
+                    (FormerlyPrefKeyAsAttribute)Attribute.GetCustomAttribute(method, typeof(FormerlyPrefKeyAsAttribute));
+                var prefKeyDefaultValue = new KeyCombination(Event.KeyboardEvent(prefKeyAttr.defaultValue));
+                string name;
+                Event keyboardEvent;
+                var parsed = PrefKey.TryParseUniquePrefString(
+                        EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent
+                        );
+                if (!parsed)
+                    continue;
+                var prefKeyCurrentValue = new KeyCombination(keyboardEvent);
+                // only migrate pref keys that the user actually overwrote
+                if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
+                    entry.SetOverride(new List<KeyCombination> { prefKeyCurrentValue });
+            }
         }
 
         public void ModifyShortcutEntry(Identifier identifier, List<KeyCombination> combinationSequence)
         {
-            var shortcutEntry = entries.FirstOrDefault(e => e.identifier.Equals(identifier));
+            var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
             shortcutEntry.SetOverride(combinationSequence);
 
             SerializableShortcutEntry profileEntry = null;

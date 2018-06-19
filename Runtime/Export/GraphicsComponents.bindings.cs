@@ -111,8 +111,10 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Mesh/MeshFilter.h")]
     public sealed partial class MeshFilter : Component
     {
+        [RequiredByNativeCode]  // MeshFilter is used in the VR Splash screen.
+        private void DontStripMeshFilter() {}
+
         extern public Mesh sharedMesh { get; set; }
-        [RequiredByNativeCode]  // Used in the VR Splash screen.
         extern public Mesh mesh {[NativeName("GetInstantiatedMeshFromScript")] get; [NativeName("SetInstantiatedMesh")] set; }
     }
 

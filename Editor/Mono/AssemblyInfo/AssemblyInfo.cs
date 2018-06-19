@@ -89,5 +89,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.004")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.005")]
 [assembly: InternalsVisibleTo("com.unity.editor.resources-testable")]
+[assembly: InternalsVisibleTo("Unity.XR.Remoting.Editor")]
 
 [assembly: AssemblyIsEditorAssembly]

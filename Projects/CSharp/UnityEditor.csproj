@@ -3707,6 +3707,9 @@
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildSettings.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\BuildSettings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageCache.bindings.cs">
+    <Link>Modules\BuildPipeline\Editor\Managed\BuildUsageCache.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageTagGlobal.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\BuildUsageTagGlobal.cs</Link>
   </Compile>

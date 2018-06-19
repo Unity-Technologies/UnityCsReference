@@ -38,7 +38,7 @@ namespace UnityEngine.Experimental.Animations
 
         private bool IsValidInternal(ref AnimationStream stream)
         {
-            return stream.isValid && createdByNative;
+            return stream.isValid && createdByNative && hasHandleIndex;
         }
 
         private bool createdByNative
@@ -82,7 +82,6 @@ namespace UnityEngine.Experimental.Animations
         {
             return IsValidInternal(ref stream) &&
                 IsSameVersionAsStream(ref stream) &&
-                hasHandleIndex &&
                 hasSkeletonIndex;
         }
 
@@ -95,7 +94,7 @@ namespace UnityEngine.Experimental.Animations
                 return;
 
             // Handle create directly by user are never valid
-            if (!createdByNative)
+            if (!createdByNative || !hasHandleIndex)
                 throw new InvalidOperationException("The TransformStreamHandle is invalid. Please use proper function to create the handle.");
 
             if (!IsSameVersionAsStream(ref stream) || (hasHandleIndex && !hasSkeletonIndex))
@@ -172,7 +171,7 @@ namespace UnityEngine.Experimental.Animations
 
         private bool IsValidInternal(ref AnimationStream stream)
         {
-            return stream.isValid && createdByNative;
+            return stream.isValid && createdByNative && hasHandleIndex && hasBindType;
         }
 
         private bool createdByNative
@@ -221,8 +220,6 @@ namespace UnityEngine.Experimental.Animations
         {
             return IsValidInternal(ref stream) &&
                 IsSameVersionAsStream(ref stream) &&
-                hasBindType &&
-                hasHandleIndex &&
                 hasValueArrayIndex;
         }
 
@@ -235,7 +232,7 @@ namespace UnityEngine.Experimental.Animations
                 return;
 
             // Handle create directly by user are never valid
-            if (!createdByNative || !hasBindType)
+            if (!createdByNative || !hasHandleIndex || !hasBindType)
                 throw new InvalidOperationException("The PropertyStreamHandle is invalid. Please use proper function to create the handle.");
 
             if (!IsSameVersionAsStream(ref stream) || (hasHandleIndex && !hasValueArrayIndex))
@@ -327,10 +324,11 @@ namespace UnityEngine.Experimental.Animations
 
         public bool IsValid(AnimationStream stream)
         {
+            // [case 1032369] Cannot call native code before validating that handle was created in native and has a valid handle index
             return stream.isValid &&
                 createdByNative &&
-                HasValidTransform(ref stream) &&
-                hasTransformSceneHandleDefinitionIndex;
+                hasTransformSceneHandleDefinitionIndex &&
+                HasValidTransform(ref stream);
         }
 
         private bool createdByNative
@@ -348,19 +346,13 @@ namespace UnityEngine.Experimental.Animations
             // Verify stream.
             stream.CheckIsValid();
 
-            var hasValidTransform = HasValidTransform(ref stream);
-            if (createdByNative && hasValidTransform && hasTransformSceneHandleDefinitionIndex)
-                return;
-
             // Handle create directly by user are never valid
-            if (!createdByNative)
+            if (!createdByNative || !hasTransformSceneHandleDefinitionIndex)
                 throw new InvalidOperationException("The TransformSceneHandle is invalid. Please use proper function to create the handle.");
 
-            if (!hasValidTransform)
+            // [case 1032369] Cannot call native code before validating that handle was created in native and has a valid handle index
+            if (!HasValidTransform(ref stream))
                 throw new NullReferenceException("The transform is invalid.");
-
-            if (!hasTransformSceneHandleDefinitionIndex)
-                throw new InvalidOperationException("The TransformSceneHandle cannot be resolved.");
         }
 
         public Vector3 GetPosition(AnimationStream stream)
@@ -471,10 +463,11 @@ namespace UnityEngine.Experimental.Animations
 
         private bool IsValidInternal(ref AnimationStream stream)
         {
+            // [case 1032369] Cannot call native code before validating that handle was created in native and has a valid handle index
             return stream.isValid &&
                 createdByNative &&
-                HasValidTransform(ref stream) &&
-                hasHandleIndex;
+                hasHandleIndex &&
+                HasValidTransform(ref stream);
         }
 
         private bool createdByNative
@@ -503,19 +496,13 @@ namespace UnityEngine.Experimental.Animations
             // Verify stream.
             stream.CheckIsValid();
 
-            var hasValidTransform = HasValidTransform(ref stream);
-            if (createdByNative && hasValidTransform && hasHandleIndex)
-                return;
-
             // Handle create directly by user are never valid
-            if (!createdByNative)
+            if (!createdByNative || !hasHandleIndex)
                 throw new InvalidOperationException("The PropertySceneHandle is invalid. Please use proper function to create the handle.");
 
-            if (!hasValidTransform)
+            // [case 1032369] Cannot call native code before validating that handle was created in native and has a valid handle index
+            if (!HasValidTransform(ref stream))
                 throw new NullReferenceException("The transform is invalid.");
-
-            if (!hasHandleIndex)
-                throw new InvalidOperationException("The PropertySceneHandle cannot be resolved.");
         }
 
         public float GetFloat(AnimationStream stream)

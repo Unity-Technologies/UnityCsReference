@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
@@ -34,6 +35,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public string Filename { get; private set; }
             public SupportedLanguage Language { get; set; }
             public AssemblyFlags Flags { get; private set; }
+            public string PathPrefix { get; private set; }
             public Func<string, int> PathFilter { get; private set; }
             public Func<BuildTarget, EditorScriptCompilationOptions, bool> IsCompatibleFunc { get; private set; }
             public List<TargetAssembly> References { get; private set; }
@@ -50,6 +52,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                   SupportedLanguage language,
                                   AssemblyFlags flags,
                                   TargetAssemblyType type,
+                                  string pathPrefix,
                                   Func<string, int> pathFilter,
                                   Func<BuildTarget, EditorScriptCompilationOptions, bool> compatFunc,
                                   ScriptCompilerOptions compilerOptions) : this()
@@ -57,6 +60,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Language = language;
                 Filename = name;
                 Flags = flags;
+                PathPrefix = pathPrefix;
                 PathFilter = pathFilter;
                 IsCompatibleFunc = compatFunc;
                 Type = type;
@@ -151,6 +155,35 @@ namespace UnityEditor.Scripting.ScriptCompilation
             };
         }
 
+        internal static bool FastStartsWith(string str, string prefix, string prefixLowercase)
+        {
+            int strLength = str.Length;
+            int prefixLength = prefix.Length;
+
+            if (prefixLength > strLength)
+                return false;
+
+            int lastPrefixCharIndex = prefixLength - 1;
+
+            // Check last char in prefix is equal. Since we are comparing
+            // file paths against directory paths, the last char will be '/'.
+            if (str[lastPrefixCharIndex] != prefix[lastPrefixCharIndex])
+                return false;
+
+            for (int i = 0; i < prefixLength; ++i)
+            {
+                if (str[i] == prefix[i])
+                    continue;
+
+                char strC = char.ToLower(str[i], CultureInfo.InvariantCulture);
+
+                if (strC != prefixLowercase[i])
+                    return false;
+            }
+
+            return true;
+        }
+
         public static TargetAssembly[] CreateTargetAssemblies(IEnumerable<CustomScriptAssembly> customScriptAssemblies)
         {
             if (customScriptAssemblies == null)
@@ -168,16 +201,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var targetAssemblies = new List<TargetAssembly>();
             var nameToTargetAssembly = new Dictionary<string, TargetAssembly>();
 
+
             // Create TargetAssemblies
             foreach (var customAssembly in customScriptAssemblies)
             {
-                var pathPrefixLowerCase = customAssembly.PathPrefix.ToLower();
+                var lowerPathPrefix = customAssembly.PathPrefix.ToLower(CultureInfo.InvariantCulture);
 
                 var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll",
                         null,
                         customAssembly.AssemblyFlags,
                         TargetAssemblyType.Custom,
-                        path => path.StartsWith(pathPrefixLowerCase) ? pathPrefixLowerCase.Length : -1,
+                        customAssembly.PathPrefix,
+                        path => FastStartsWith(path, customAssembly.PathPrefix, lowerPathPrefix) ? customAssembly.PathPrefix.Length : -1,
                         (BuildTarget target, EditorScriptCompilationOptions options) => customAssembly.IsCompatibleWith(target, options),
                         customAssembly.CompilerOptions)
                 {
@@ -641,6 +676,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         language,
                         AssemblyFlags.FirstPass,
                         TargetAssemblyType.Predefined,
+                        null,
                         FilterAssemblyInFirstpassFolder,
                         null,
                         scriptCompilerOptions);
@@ -651,12 +687,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         TargetAssemblyType.Predefined,
                         null,
                         null,
+                        null,
                         scriptCompilerOptions);
 
                 var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll",
                         language,
                         AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass,
                         TargetAssemblyType.Predefined,
+                        null,
                         FilterAssemblyInFirstpassEditorFolder,
                         IsCompatibleWithEditor,
                         scriptCompilerOptions)
@@ -668,6 +706,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         language,
                         AssemblyFlags.EditorOnly,
                         TargetAssemblyType.Predefined,
+                        null,
                         FilterAssemblyInEditorFolder,
                         IsCompatibleWithEditor,
                         scriptCompilerOptions)
@@ -705,6 +744,26 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return assemblies.ToArray();
+        }
+
+        internal static TargetAssembly[] GetTargetAssembliesWithScripts(IEnumerable<string> allScripts,
+            string projectDirectory,
+            TargetAssembly[] customTargetAssemblies,
+            ScriptAssemblySettings settings)
+        {
+            var uniqueTargetAssemblies = new HashSet<TargetAssembly>();
+
+            foreach (var script in allScripts)
+            {
+                var targetAssembly = GetTargetAssembly(script, projectDirectory, customTargetAssemblies);
+
+                if (!IsCompatibleWithPlatform(targetAssembly, settings))
+                    continue;
+
+                uniqueTargetAssemblies.Add(targetAssembly);
+            }
+
+            return uniqueTargetAssemblies.ToArray();
         }
 
         internal static TargetAssembly GetTargetAssembly(string scriptPath, string projectDirectory, TargetAssembly[] customTargetAssemblies)
@@ -758,11 +817,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             // CustomScriptAssembly paths are absolute, so we convert the scriptPath to an absolute path, if necessary.
             bool isPathAbsolute = AssetPath.IsPathRooted(scriptPath);
-            var lowerFullPath = isPathAbsolute ? AssetPath.GetFullPath(scriptPath).ToLower() : AssetPath.Combine(projectDirectory, scriptPath).ToLower();
+            var fullPath = isPathAbsolute ? AssetPath.GetFullPath(scriptPath) : AssetPath.Combine(projectDirectory, scriptPath);
 
             foreach (var assembly in customTargetAssemblies)
             {
-                int pathDepth = assembly.PathFilter(lowerFullPath);
+                int maxPathDepth = assembly.PathPrefix.Length;
+
+                if (maxPathDepth <= highestPathDepth)
+                    continue;
+
+                int pathDepth = assembly.PathFilter(fullPath);
 
                 if (pathDepth <= highestPathDepth)
                     continue;
@@ -804,15 +868,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static int FilterAssemblyInEditorFolder(string pathName)
         {
             const string editorSegment = "/editor/";
-            int editorSegmentIndex = pathName.IndexOf(editorSegment);
+            int editorSegmentIndex = pathName.IndexOf(editorSegment, StringComparison.InvariantCulture);
             if (editorSegmentIndex == -1) return -1;
 
             return editorSegmentIndex + editorSegment.Length;
         }
 
-        static int FilterAssemblyPathBeginsWith(string pathName, string prefix)
+        static int FilterAssemblyPathBeginsWith(string pathName, string lowerPrefix)
         {
-            return pathName.StartsWith(prefix) ? prefix.Length : -1;
+            return FastStartsWith(pathName, lowerPrefix, lowerPrefix) ? lowerPrefix.Length : -1;
         }
     }
 }

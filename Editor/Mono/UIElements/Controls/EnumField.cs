@@ -105,12 +105,15 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
+        protected internal override void ExecuteDefaultActionAtTarget(EventBase evt)
         {
-            base.ExecuteDefaultAction(evt);
+            base.ExecuteDefaultActionAtTarget(evt);
 
             if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
+            {
                 ShowMenu();
+                evt.StopPropagation();
+            }
         }
 
         private void ShowMenu()

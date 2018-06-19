@@ -1155,17 +1155,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public TargetAssemblyInfo[] GetTargetAssembliesWithScripts(EditorScriptCompilationOptions options)
         {
-            var scriptAssemblies = GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | options);
-            var targetAssemblies = new TargetAssemblyInfo[scriptAssemblies.Length];
+            ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(EditorScriptCompilationOptions.BuildingForEditor | options);
+            var targetAssemblies = EditorBuildRules.GetTargetAssembliesWithScripts(allScripts, projectDirectory, customTargetAssemblies, settings);
 
-            for (int i = 0; i < scriptAssemblies.Length; ++i)
-            {
-                var scriptAssembly = scriptAssemblies[i];
-                targetAssemblies[i].Name = scriptAssembly.Filename;
-                targetAssemblies[i].Flags = scriptAssembly.Flags;
-            }
+            var targetAssemblyInfos = new TargetAssemblyInfo[targetAssemblies.Length];
 
-            return targetAssemblies;
+            for (int i = 0; i < targetAssemblies.Length; ++i)
+                targetAssemblyInfos[i] = ToTargetAssemblyInfo(targetAssemblies[i]);
+
+            return targetAssemblyInfos;
         }
 
         public ScriptAssembly[] GetAllScriptAssembliesForLanguage<T>(EditorScriptCompilationOptions additionalOptions) where T : SupportedLanguage

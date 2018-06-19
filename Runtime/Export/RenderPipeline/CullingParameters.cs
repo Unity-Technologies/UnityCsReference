@@ -119,8 +119,9 @@ namespace UnityEngine.Experimental.Rendering
         ForceEvenIfCameraIsNotActive = 1 << 0,
         OcclusionCull = 1 << 1,
         NeedsLighting = 1 << 2,
-        Stereo = 1 << 3,
-        DisablePerObjectCulling = 1 << 4
+        NeedsReflectionProbes = 1 << 3,
+        Stereo = 1 << 4,
+        DisablePerObjectCulling = 1 << 5
     };
 
 
