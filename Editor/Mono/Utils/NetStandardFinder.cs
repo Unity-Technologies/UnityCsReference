@@ -28,6 +28,12 @@ namespace UnityEditor.Utils
             return Path.Combine(prefix, Path.Combine(GetCompatShimsDirectory(), "netstandard"));
         }
 
+        public static string GetNetStandardExtensionsDirectory()
+        {
+            var prefix = GetNetStandardInstallation();
+            return Path.Combine(prefix, Path.Combine("Extensions", "2.0.0"));
+        }
+
         public static string GetDotNetFrameworkCompatShimsDirectory()
         {
             var prefix = GetNetStandardInstallation();
