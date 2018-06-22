@@ -256,6 +256,9 @@ namespace UnityEngine.Networking
 
         public static byte[] SerializeFormSections(List<IMultipartFormSection> multipartFormSections, byte[] boundary)
         {
+            if (multipartFormSections == null || multipartFormSections.Count == 0)
+                return null;
+
             byte[] crlf = System.Text.Encoding.UTF8.GetBytes("\r\n");
             byte[] dDash = WWWForm.DefaultEncoding.GetBytes("--");
 
@@ -302,7 +305,12 @@ namespace UnityEngine.Networking
                 formData.AddRange(section.sectionData);
             }
 
-            formData.TrimExcess();
+            // end sections with boundary delimiter (https://tools.ietf.org/html/rfc2046)
+            formData.AddRange(crlf);
+            formData.AddRange(dDash);
+            formData.AddRange(boundary);
+            formData.AddRange(dDash);
+            formData.AddRange(crlf);
             return formData.ToArray();
         }
 

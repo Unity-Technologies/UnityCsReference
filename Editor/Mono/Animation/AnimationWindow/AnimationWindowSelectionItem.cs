@@ -168,6 +168,25 @@ namespace UnityEditorInternal
             }
         }
 
+        public virtual bool canCreateClips
+        {
+            get
+            {
+                Component animationPlayer = this.animationPlayer;
+                if (animationPlayer == null)
+                    return false;
+
+                Animator animator = animationPlayer as Animator;
+                if (animator != null)
+                {
+                    // Need a valid state machine to create clips in the Animator.
+                    return (animator.runtimeAnimatorController != null);
+                }
+
+                return true;
+            }
+        }
+
         public virtual bool canSyncSceneSelection { get { return true; } }
 
         public List<AnimationWindowCurve> curves

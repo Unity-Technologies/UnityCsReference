@@ -9,6 +9,7 @@ using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using Mono.Cecil;
 
 namespace UnityEditor
 {
@@ -74,6 +75,21 @@ namespace UnityEditor
             }
 
             return finalImporters.ToArray();
+        }
+
+        internal string HasDiscouragedReferences()
+        {
+            if (!isNativePlugin)
+            {
+                var assemblyDefinition = AssemblyDefinition.ReadAssembly(assetPath, new ReaderParameters());
+                foreach (var reference in assemblyDefinition.MainModule.AssemblyReferences)
+                {
+                    // We don't use AssemblyHelper.IsUnityEngineModule here, because that would require loading the assembly, which may not even be present.
+                    if (reference.Name.StartsWith("UnityEngine.") && reference.Name.EndsWith("Module"))
+                        return reference.Name;
+                }
+            }
+            return null;
         }
 
         public static PluginImporter[] GetImporters(BuildTarget platform)
