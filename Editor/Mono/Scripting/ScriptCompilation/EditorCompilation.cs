@@ -950,6 +950,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return allScripts != null && allScripts.Count > 0;
         }
 
+        public bool DoesProjectHaveAnyCustomScriptAssemblies()
+        {
+            foreach (var script in allScripts)
+            {
+                var targetAssembly = EditorBuildRules.GetTargetAssembly(script, projectDirectory, customTargetAssemblies);
+
+                if (targetAssembly.Type == EditorBuildRules.TargetAssemblyType.Custom)
+                    return true;
+            }
+
+            return false;
+        }
+
         ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
             var defines = InternalEditorUtility.GetCompilationDefines(options, buildTargetGroup, buildTarget);

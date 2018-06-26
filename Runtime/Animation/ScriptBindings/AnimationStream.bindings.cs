@@ -33,9 +33,7 @@ namespace UnityEngine.Experimental.Animations
         private System.IntPtr output;
         private System.IntPtr workspace;
         private System.IntPtr inputStreamAccessor;
-        private System.IntPtr streamHandles;
-        private System.IntPtr transformSceneHandles;
-        private System.IntPtr propertySceneHandles;
+        private System.IntPtr animationHandleBinder;
 
         internal const int InvalidIndex = ~0;
 
@@ -53,9 +51,7 @@ namespace UnityEngine.Experimental.Animations
                     input != System.IntPtr.Zero &&
                     output != System.IntPtr.Zero &&
                     workspace != System.IntPtr.Zero &&
-                    streamHandles != System.IntPtr.Zero &&
-                    transformSceneHandles != System.IntPtr.Zero &&
-                    propertySceneHandles != System.IntPtr.Zero;
+                    animationHandleBinder != System.IntPtr.Zero;
             }
         }
 

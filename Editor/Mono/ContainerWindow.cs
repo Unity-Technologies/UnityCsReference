@@ -163,6 +163,7 @@ namespace UnityEditor
             // Guard against destroy window or window in the process of being destroyed.
             if (this && m_WindowPtr.m_IntPtr != IntPtr.Zero)
                 InternalClose();
+            DestroyImmediate(this, true);
         }
 
         internal bool IsNotDocked()

@@ -18,7 +18,7 @@ namespace UnityEngine.XR.WSA
             }
         }
 
-        public static void Connect(string clientName)
+        public static void Connect(string clientName, int maxBitRate = 9999)
         {
         }
 

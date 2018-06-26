@@ -21,6 +21,13 @@ namespace UnityEditor.IMGUI.Controls
 
     public abstract partial class TreeView
     {
+        public delegate List<int> GetNewSelectionFunction(TreeViewItem clickedItem, bool keepMultiSelection, bool useActionKeyAsShift);
+
+        protected GetNewSelectionFunction getNewSelectionOverride
+        {
+            set { m_TreeView.getNewSelectionOverride = (x, y, z) => value(x, y, z); }
+        }
+
         TreeViewController m_TreeView;
         TreeViewControlDataSource m_DataSource;
         TreeViewControlGUI m_GUI;

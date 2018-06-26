@@ -1053,6 +1053,7 @@ namespace UnityEngine.Rendering
         Direct3D12 = 18,
         N3DS = 19,
         Vulkan = 21,
+        Switch = 22,
         XboxOneD3D12 = 23
     }
 

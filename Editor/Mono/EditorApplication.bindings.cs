@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using UnityEngine.Bindings;
 using Object = UnityEngine.Object;
@@ -72,10 +73,12 @@ namespace UnityEditor
         }
 
         // Is editor currently compiling scripts? (RO)
-        public static extern bool isCompiling
+        public static bool isCompiling
         {
-            [FreeFunction("IsCompiling")]
-            get;
+            get
+            {
+                return EditorCompilationInterface.IsCompiling();
+            }
         }
 
         // Is editor currently updating? (RO)

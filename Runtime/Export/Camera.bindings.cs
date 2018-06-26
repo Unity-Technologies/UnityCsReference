@@ -86,10 +86,12 @@ namespace UnityEngine
         extern public void ResetReplacementShader();
 
         internal enum ProjectionMatrixMode{ Explicit, Implicit, PhysicalPropertiesBased };
+        extern internal ProjectionMatrixMode projectionMatrixMode { get; }
         extern public bool usePhysicalProperties { get; set; }
         extern public Vector2 sensorSize  { get; set; }
         extern public Vector2 lensShift  { get; set; }
         extern public float focalLength  { get; set; }
+        extern internal Vector3 GetLocalSpaceAim();
         [NativeProperty("NormalizedViewportRect")] extern public Rect rect      { get; set; }
         [NativeProperty("ScreenViewportRect")]     extern public Rect pixelRect { get; set; }
 
@@ -132,9 +134,9 @@ namespace UnityEngine
         public Vector3 ViewportToWorldPoint(Vector3 position) { return ViewportToWorldPoint(position, MonoOrStereoscopicEye.Mono); }
         public Vector3 ScreenToWorldPoint(Vector3 position) { return ScreenToWorldPoint(position, MonoOrStereoscopicEye.Mono); }
         extern public Vector3 ScreenToViewportPoint(Vector3 position);
-        extern internal Vector3 ViewportToWorldPointWithoutGateFit(Vector3 position);
         extern public Vector3 ViewportToScreenPoint(Vector3 position);
 
+        extern internal Vector2 GetFrustumPlaneSizeAt(float distance);
         extern private Ray ViewportPointToRay(Vector2 pos, MonoOrStereoscopicEye eye);
         public Ray ViewportPointToRay(Vector3 pos, MonoOrStereoscopicEye eye) { return ViewportPointToRay((Vector2)pos, eye); }
         public Ray ViewportPointToRay(Vector3 pos) { return ViewportPointToRay(pos, MonoOrStereoscopicEye.Mono); }
@@ -156,6 +158,8 @@ namespace UnityEngine
             CalculateFrustumCornersInternal(viewport, z, eye, outCorners);
         }
 
+        extern public static float FocalLengthToFOV(float focalLength, float sensorSize);
+        extern public static float FOVToFocalLength(float fov, float sensorSize);
         extern public static Camera main {[FreeFunction("FindMainCamera")] get; }
         extern public static Camera current {[FreeFunction("GetCurrentCameraPtr")] get; }
 

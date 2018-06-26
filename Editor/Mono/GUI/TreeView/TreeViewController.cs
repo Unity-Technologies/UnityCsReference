@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.AnimatedValues;
@@ -26,7 +27,6 @@ namespace UnityEditor.IMGUI.Controls
      3) The root item might not be visible; its up to the data source to deliver a set of visible items from the tree
 
      */
-
 
     [System.Serializable]
     public class TreeViewState
@@ -1124,9 +1124,13 @@ namespace UnityEditor.IMGUI.Controls
             return firstIndex != -1 && lastIndex != -1;
         }
 
+        public Func<TreeViewItem, bool, bool, List<int>> getNewSelectionOverride { private get; set; }
+
         // Returns list of selected ids
         List<int> GetNewSelection(TreeViewItem clickedItem, bool keepMultiSelection, bool useShiftAsActionKey)
         {
+            if (getNewSelectionOverride != null)
+                return getNewSelectionOverride(clickedItem, keepMultiSelection, useShiftAsActionKey);
             // Get ids from items
             var visibleRows = data.GetRows();
             List<int> allIDs = new List<int>(visibleRows.Count);

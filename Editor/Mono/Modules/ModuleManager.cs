@@ -400,7 +400,7 @@ namespace UnityEditor.Modules
                     else
                         InternalEditorUtility.RegisterPrecompiledAssembly(Path.GetFileName(dllpath), dllpath);
                 }
-                BuildPipeline.SetPlaybackEngineDirectory(target, BuildOptions.None /* TODO */, engine.basePath);
+                BuildPipeline.SetPlaybackEngineDirectory(buildTargetGroup, target, BuildOptions.None /* TODO */, engine.basePath);
                 InternalEditorUtility.SetPlatformPath(engine.basePath);
                 s_PackageManager.LoadPackage(engine);
             }

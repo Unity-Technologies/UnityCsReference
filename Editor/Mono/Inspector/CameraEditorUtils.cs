@@ -15,15 +15,20 @@ namespace UnityEditor
 
         static int s_MovingHandleId = 0;
         static Vector3 s_InitialFarMid;
-        static readonly int[] s_FrustrumHandleIds =
+        static readonly int[] s_FrustumHandleIds =
         {
-            "CameraEditor_FrustrumHandleTop".GetHashCode(),
-            "CameraEditor_FrustrumHandleBottom".GetHashCode(),
-            "CameraEditor_FrustrumHandleLeft".GetHashCode(),
-            "CameraEditor_FrustrumHandleRight".GetHashCode()
+            "CameraEditor_FrustumHandleTop".GetHashCode(),
+            "CameraEditor_FrustumHandleBottom".GetHashCode(),
+            "CameraEditor_FrustumHandleLeft".GetHashCode(),
+            "CameraEditor_FrustumHandleRight".GetHashCode()
         };
 
         public static void HandleFrustum(Camera c)
+        {
+            HandleFrustum(c, 0);
+        }
+
+        public static void HandleFrustum(Camera c, int cameraEditorTargetIndex)
         {
             Color orgHandlesColor = Handles.color;
             Color slidersColor = k_ColorThemeCameraGizmo;
@@ -47,12 +52,12 @@ namespace UnityEditor
             Vector3 farMid = Vector3.Lerp(leftBottomFar, rightTopFar, 0.5f);
             if (s_MovingHandleId != 0)
             {
-                if (!s_FrustrumHandleIds.Contains(GUIUtility.hotControl))
+                if (!s_FrustumHandleIds.Contains(GUIUtility.hotControl - cameraEditorTargetIndex))
                     s_MovingHandleId = GUIUtility.hotControl;
                 else
                     farMid = s_InitialFarMid;
             }
-            else if (s_FrustrumHandleIds.Contains(GUIUtility.hotControl))
+            else if (s_FrustumHandleIds.Contains(GUIUtility.hotControl - cameraEditorTargetIndex))
             {
                 s_MovingHandleId = GUIUtility.hotControl;
                 s_InitialFarMid = farMid;
@@ -61,17 +66,17 @@ namespace UnityEditor
             // FOV handles
             // Top and bottom handles
             float halfHeight = -1.0f;
-            Vector3 changedPosition = MidPointPositionSlider(s_FrustrumHandleIds[0], leftTopFar, rightTopFar, c.transform.up);
+            Vector3 changedPosition = MidPointPositionSlider(s_FrustumHandleIds[0] + cameraEditorTargetIndex, leftTopFar, rightTopFar, c.transform.up);
             if (!GUI.changed)
-                changedPosition = MidPointPositionSlider(s_FrustrumHandleIds[1], leftBottomFar, rightBottomFar, -c.transform.up);
+                changedPosition = MidPointPositionSlider(s_FrustumHandleIds[1] + cameraEditorTargetIndex, leftBottomFar, rightBottomFar, -c.transform.up);
             if (GUI.changed)
                 halfHeight = (changedPosition - farMid).magnitude;
 
             // Left and right handles
             GUI.changed = false;
-            changedPosition = MidPointPositionSlider(s_FrustrumHandleIds[2], rightBottomFar, rightTopFar, c.transform.right);
+            changedPosition = MidPointPositionSlider(s_FrustumHandleIds[2] + cameraEditorTargetIndex, rightBottomFar, rightTopFar, c.transform.right);
             if (!GUI.changed)
-                changedPosition = MidPointPositionSlider(s_FrustrumHandleIds[3], leftBottomFar, leftTopFar, -c.transform.right);
+                changedPosition = MidPointPositionSlider(s_FrustumHandleIds[3] + cameraEditorTargetIndex, leftBottomFar, leftTopFar, -c.transform.right);
             if (GUI.changed)
                 halfHeight = (changedPosition - farMid).magnitude / frustumAspect;
 
@@ -126,24 +131,54 @@ namespace UnityEditor
 
             if (far != null)
             {
-                far[0] = new Vector3(0, 0, camera.farClipPlane); // leftBottomFar
-                far[1] = new Vector3(0, 1, camera.farClipPlane); // leftTopFar
-                far[2] = new Vector3(1, 1, camera.farClipPlane); // rightTopFar
-                far[3] = new Vector3(1, 0, camera.farClipPlane); // rightBottomFar
-                for (int i = 0; i < 4; ++i)
-                    far[i] = camera.ViewportToWorldPointWithoutGateFit(far[i]);
+                if (camera.projectionMatrixMode == (int)Camera.ProjectionMatrixMode.Explicit)
+                {
+                    far[0] = new Vector3(0, 0, camera.farClipPlane); // leftBottomFar
+                    far[1] = new Vector3(0, 1, camera.farClipPlane); // leftTopFar
+                    far[2] = new Vector3(1, 1, camera.farClipPlane); // rightTopFar
+                    far[3] = new Vector3(1, 0, camera.farClipPlane); // rightBottomFar
+                    for (int i = 0; i < 4; ++i)
+                        far[i] = camera.ViewportToWorldPoint(far[i]);
+                }
+                else
+                {
+                    CalculateFrustumPlaneAt(camera, camera.farClipPlane, far);
+                }
             }
 
             if (near != null)
             {
-                near[0] = new Vector3(0, 0, camera.nearClipPlane); // leftBottomNear
-                near[1] = new Vector3(0, 1, camera.nearClipPlane); // leftTopNear
-                near[2] = new Vector3(1, 1, camera.nearClipPlane); // rightTopNear
-                near[3] = new Vector3(1, 0, camera.nearClipPlane); // rightBottomNear
-                for (int i = 0; i < 4; ++i)
-                    near[i] = camera.ViewportToWorldPointWithoutGateFit(near[i]);
+                if (camera.projectionMatrixMode == (int)Camera.ProjectionMatrixMode.Explicit)
+                {
+                    near[0] = new Vector3(0, 0, camera.nearClipPlane); // leftBottomNear
+                    near[1] = new Vector3(0, 1, camera.nearClipPlane); // leftTopNear
+                    near[2] = new Vector3(1, 1, camera.nearClipPlane); // rightTopNear
+                    near[3] = new Vector3(1, 0, camera.nearClipPlane); // rightBottomNear
+                    for (int i = 0; i < 4; ++i)
+                        near[i] = camera.ViewportToWorldPoint(near[i]);
+                }
+                else
+                {
+                    CalculateFrustumPlaneAt(camera, camera.nearClipPlane, near);
+                }
             }
             return true;
+        }
+
+        private static void CalculateFrustumPlaneAt(Camera camera, float distance, Vector3[] plane)
+        {
+            Vector2 planeSize = camera.GetFrustumPlaneSizeAt(distance) * .5f;
+            Vector3 rightOffset = camera.gameObject.transform.right * planeSize.x;
+            Vector3 upOffset = camera.gameObject.transform.up * planeSize.y;
+            Vector3 localAim = camera.GetLocalSpaceAim() * distance;
+            localAim.z = -localAim.z;
+
+            Vector3 planePosition = camera.cameraToWorldMatrix.MultiplyPoint(localAim);
+
+            plane[0] = planePosition - rightOffset - upOffset; // leftBottom
+            plane[1] = planePosition - rightOffset + upOffset; // leftTop
+            plane[2] = planePosition + rightOffset + upOffset; // rightTop
+            plane[3] = planePosition + rightOffset - upOffset; // rightBottom
         }
 
         public static bool IsViewportRectValidToRender(Rect normalizedViewPortRect)
@@ -163,8 +198,7 @@ namespace UnityEditor
             if (normalizedViewPortRect.width <= 0f || normalizedViewPortRect.height <= 0f)
                 return -1f;
 
-            return camera.usePhysicalProperties ?
-                camera.sensorSize.x / camera.sensorSize.y : GameViewAspectRatio * normalizedViewPortRect.width / normalizedViewPortRect.height;
+            return GameViewAspectRatio * normalizedViewPortRect.width / normalizedViewPortRect.height;
         }
 
         public static Vector3 PerspectiveClipToWorld(Matrix4x4 clipToWorld, Vector3 viewPositionWS, Vector3 positionCS)

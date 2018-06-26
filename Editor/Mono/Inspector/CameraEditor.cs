@@ -632,6 +632,12 @@ namespace UnityEditor
 
             // Apply normalizedviewport rect of camera
             Rect normalizedViewPortRect = c.rect;
+            // clamp normalized rect in [0,1]
+            normalizedViewPortRect.xMin = Math.Max(normalizedViewPortRect.xMin, 0f);
+            normalizedViewPortRect.yMin = Math.Max(normalizedViewPortRect.yMin, 0f);
+            normalizedViewPortRect.xMax = Math.Min(normalizedViewPortRect.xMax, 1f);
+            normalizedViewPortRect.yMax = Math.Min(normalizedViewPortRect.yMax, 1f);
+
             previewSize.x *= Mathf.Max(normalizedViewPortRect.width, 0f);
             previewSize.y *= Mathf.Max(normalizedViewPortRect.height, 0f);
 
@@ -741,7 +747,7 @@ namespace UnityEditor
 
             SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Camera Preview"), OnOverlayGUI, (int)SceneViewOverlay.Ordering.Camera, target, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
 
-            CameraEditorUtils.HandleFrustum(c);
+            CameraEditorUtils.HandleFrustum(c, referenceTargetIndex);
         }
     }
 }
