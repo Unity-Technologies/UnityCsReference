@@ -9,7 +9,7 @@ using System.Linq;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    internal class VisualTreeBindingsUpdater : BaseVisualTreeUpdater
+    internal class VisualTreeBindingsUpdater : BaseVisualTreeHierarchyTrackerUpdater
     {
         public override string description
         {
@@ -39,24 +39,37 @@ namespace UnityEngine.Experimental.UIElements
             m_ElementsToAdd.Remove(ve);
         }
 
+        void StartTrackingRecursive(VisualElement ve)
+        {
+            var u = GetUpdaterFromElement(ve);
+            if (u != null)
+            {
+                StartTracking(ve);
+            }
+
+            int count = ve.shadow.childCount;
+            for (int i = 0; i < count; i++)
+            {
+                var child = ve.shadow[i];
+                StartTrackingRecursive(child);
+            }
+        }
+
+        void StopTrackingRecursive(VisualElement ve)
+        {
+            StopTracking(ve);
+
+            int count = ve.shadow.childCount;
+            for (int i = 0; i < count; i++)
+            {
+                var child = ve.shadow[i];
+                StopTrackingRecursive(child);
+            }
+        }
+
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            if ((versionChangeType & VersionChangeType.Hierarchy) == VersionChangeType.Hierarchy)
-            {
-                if (ve.parent == null)
-                {
-                    StopTracking(ve);
-                }
-                else
-                {
-                    var u = GetUpdaterFromElement(ve);
-
-                    if (u != null)
-                    {
-                        StartTracking(ve);
-                    }
-                }
-            }
+            base.OnVersionChanged(ve, versionChangeType);
 
             if ((versionChangeType & VersionChangeType.Bindings) == VersionChangeType.Bindings)
             {
@@ -70,6 +83,21 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     StopTracking(ve);
                 }
+            }
+        }
+
+        protected override void OnHierarchyChange(VisualElement ve, HierarchyChangeType type)
+        {
+            switch (type)
+            {
+                case HierarchyChangeType.Add:
+                    StartTrackingRecursive(ve);
+                    break;
+                case HierarchyChangeType.Remove:
+                    StopTrackingRecursive(ve);
+                    break;
+                default:
+                    break;
             }
         }
 
@@ -98,6 +126,8 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void Update()
         {
+            base.Update();
+
             PerformTrackingOperations();
 
             if (m_ElementsWithBindings.Count > 0)

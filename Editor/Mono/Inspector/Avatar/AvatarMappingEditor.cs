@@ -66,18 +66,11 @@ namespace UnityEditor
             public GUIContent dotFrameDotted = EditorGUIUtility.IconContent("AvatarInspector/DotFrameDotted");
             public GUIContent dotSelection = EditorGUIUtility.IconContent("AvatarInspector/DotSelection");
 
-            public GUIStyle box = new GUIStyle("box");
+            public GUIStyle box = "AvatarMappingBox";
             public GUIStyle toolbar = "TE Toolbar";
             public GUIStyle toolbarDropDown = "TE ToolbarDropDown";
 
-            public GUIStyle errorLabel = new GUIStyle(EditorStyles.wordWrappedMiniLabel);
-
-            public Styles()
-            {
-                box.padding = new RectOffset(0, 0, 0, 0);
-                box.margin = new RectOffset(0, 0, 0, 0);
-                errorLabel.normal.textColor = new Color(0.6f, 0, 0, 1);
-            }
+            public GUIStyle errorLabel = "AvatarMappingErrorLabel";
         }
 
         internal static Styles styles { get { if (s_Styles == null) s_Styles = new Styles(); return s_Styles; } }

@@ -83,10 +83,11 @@ namespace UnityEditor
             m_AnchorMin = so.FindProperty("m_AnchorMin");
             m_AnchorMax = so.FindProperty("m_AnchorMax");
 
-            m_InitValues = new Vector2[so.targetObjects.Length, 4];
-            for (int i = 0; i < so.targetObjects.Length; i++)
+            var targetObjects = so.targetObjects;
+            m_InitValues = new Vector2[targetObjects.Length, 4];
+            for (int i = 0; i < targetObjects.Length; i++)
             {
-                RectTransform gui = so.targetObjects[i] as RectTransform;
+                RectTransform gui = targetObjects[i] as RectTransform;
                 m_InitValues[i, 0] = gui.anchorMin;
                 m_InitValues[i, 1] = gui.anchorMax;
                 m_InitValues[i, 2] = gui.anchoredPosition;
@@ -280,9 +281,10 @@ namespace UnityEditor
         {
             anchorMin.serializedObject.ApplyModifiedProperties();
 
-            for (int i = 0; i < anchorMin.serializedObject.targetObjects.Length; i++)
+            var targetObjects = anchorMin.serializedObject.targetObjects;
+            for (int i = 0; i < targetObjects.Length; i++)
             {
-                RectTransform gui = anchorMin.serializedObject.targetObjects[i] as RectTransform;
+                RectTransform gui = targetObjects[i] as RectTransform;
                 Undo.RecordObject(gui, "Change Rectangle Anchors");
 
                 if (doPosition)

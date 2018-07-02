@@ -57,7 +57,7 @@ namespace UnityEditor
         internal static extern void Internal_SetCurrentCamera(Camera cam);
 
         [FreeFunction("Internal_SetSceneViewColors")]
-        internal static extern void SetSceneViewColors(Color wire, Color wireOverlay, Color selectedOutline, Color selectedWire);
+        internal static extern void SetSceneViewColors(Color wire, Color wireOverlay, Color selectedOutline, Color selectedChildrenOutline, Color selectedWire);
 
         [FreeFunction("Internal_EnableCameraFx")]
         internal static extern void EnableCameraFx(Camera cam, bool fx);

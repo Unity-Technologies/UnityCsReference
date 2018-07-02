@@ -21,11 +21,11 @@ namespace UnityEditor
 
         internal static class GameObjectStyles
         {
-            public static GUIStyle disabledLabel = new GUIStyle("PR DisabledLabel");
-            public static GUIStyle prefabLabel = new GUIStyle("PR PrefabLabel");
-            public static GUIStyle disabledPrefabLabel = new GUIStyle("PR DisabledPrefabLabel");
-            public static GUIStyle brokenPrefabLabel = new GUIStyle("PR BrokenPrefabLabel");
-            public static GUIStyle disabledBrokenPrefabLabel = new GUIStyle("PR DisabledBrokenPrefabLabel");
+            public static GUIStyle disabledLabel = "PR DisabledLabel";
+            public static GUIStyle prefabLabel = "PR PrefabLabel";
+            public static GUIStyle disabledPrefabLabel = "PR DisabledPrefabLabel";
+            public static GUIStyle brokenPrefabLabel = "PR BrokenPrefabLabel";
+            public static GUIStyle disabledBrokenPrefabLabel = "PR DisabledBrokenPrefabLabel";
             public static GUIContent loadSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneLoadIn"), "Load scene");
             public static GUIContent unloadSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneLoadOut"), "Unload scene");
             public static GUIContent saveSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneSave"), "Save scene");
@@ -33,28 +33,6 @@ namespace UnityEditor
             public static GUIStyle sceneHeaderBg = "ProjectBrowserTopBarBg";
 
             public static readonly int kSceneHeaderIconsInterval = 2;
-
-            static GameObjectStyles()
-            {
-                disabledLabel.alignment = TextAnchor.MiddleLeft;
-                prefabLabel.alignment = TextAnchor.MiddleLeft;
-                disabledPrefabLabel.alignment = TextAnchor.MiddleLeft;
-                brokenPrefabLabel.alignment = TextAnchor.MiddleLeft;
-                disabledBrokenPrefabLabel.alignment = TextAnchor.MiddleLeft;
-                ClearSelectionTexture(disabledLabel);
-                ClearSelectionTexture(prefabLabel);
-                ClearSelectionTexture(disabledPrefabLabel);
-                ClearSelectionTexture(brokenPrefabLabel);
-                ClearSelectionTexture(disabledBrokenPrefabLabel);
-            }
-
-            static void ClearSelectionTexture(GUIStyle style)
-            {
-                var transparent = style.hover.background;
-                style.onNormal.background = transparent;
-                style.onActive.background = transparent;
-                style.onFocused.background = transparent;
-            }
         }
 
         private float m_PrevScollPos;

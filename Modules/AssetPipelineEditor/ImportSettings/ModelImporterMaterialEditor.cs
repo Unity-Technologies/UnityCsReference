@@ -30,6 +30,8 @@ namespace UnityEditor
 
         SerializedProperty m_SupportsEmbeddedMaterials;
 
+        SerializedProperty m_SRGBMaterialColor;
+
         private bool m_HasEmbeddedMaterials = false;
 
         static class Styles
@@ -99,6 +101,8 @@ namespace UnityEditor
 
             public static GUIContent RemapOptions = EditorGUIUtility.TrTextContent("On Demand Remap");
             public static GUIContent RemapMaterialsInProject = EditorGUIUtility.TrTextContent("Search and Remap", "Click on this button to search and remap the materials from the project.");
+
+            public static GUIContent SRGBMaterialColor = EditorGUIUtility.TrTextContent("sRGB Albedo Colors", "Albedo colors in gamma space. Disable this for projects using linear color space.");
         }
 
         public ModelImporterMaterialEditor(AssetImporterEditor panelContainer)
@@ -156,6 +160,8 @@ namespace UnityEditor
             m_HasEmbeddedTextures = serializedObject.FindProperty("m_HasEmbeddedTextures");
 
             m_SupportsEmbeddedMaterials = serializedObject.FindProperty("m_SupportsEmbeddedMaterials");
+
+            m_SRGBMaterialColor = serializedObject.FindProperty("m_SRGBMaterialColor");
 
             UpdateShowAllMaterialNameOptions();
         }
@@ -373,6 +379,8 @@ namespace UnityEditor
             {
                 if (m_ImportMaterials.boolValue)
                 {
+                    EditorGUILayout.PropertyField(m_SRGBMaterialColor, Styles.SRGBMaterialColor);
+
                     EditorGUILayout.Popup(m_MaterialLocation, Styles.MaterialLocationOpt, Styles.MaterialLocation);
                     if (!m_MaterialLocation.hasMultipleDifferentValues)
                     {

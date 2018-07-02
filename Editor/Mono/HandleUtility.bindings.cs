@@ -26,8 +26,8 @@ namespace UnityEditor
 
         private static extern void Internal_Repaint();
 
-        // Register a callback for GfxDevice cleanup event
-        private static extern void RegisterGfxDeviceCleanup();
+        // Register a callback for GfxDevice cleanup event. It checks if the callback wasn't already registered in native code.
+        private static extern void RegisterGfxDeviceCleanupIfNeeded();
 
         // Test a mesh for intersection against a ray
         internal static extern bool IntersectRayMesh(Ray ray, Mesh mesh, Matrix4x4 matrix, out RaycastHit hit);

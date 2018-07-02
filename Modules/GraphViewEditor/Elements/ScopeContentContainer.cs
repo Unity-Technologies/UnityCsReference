@@ -34,12 +34,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 if (subElement.panel != panel)
                     continue;
+                if (subElement.parent == null)
+                    continue;
 
-                Rect boundingRect = new Rect(0, 0, subElement.GetPosition().width, subElement.GetPosition().height);
+                Rect boundingRect = subElement.GetPosition();
 
                 if (Scope.IsValidRect(boundingRect))
                 {
-                    boundingRect = subElement.ChangeCoordinatesTo(viewport, boundingRect);
+                    boundingRect = subElement.parent.ChangeCoordinatesTo(viewport, boundingRect);
 
                     // Use the first element with a valid geometry as reference to compute the bounding box of contained elements
                     if (!Scope.IsValidRect(contentRectInViewportSpace))

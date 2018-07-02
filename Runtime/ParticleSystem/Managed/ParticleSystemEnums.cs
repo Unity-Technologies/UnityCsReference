@@ -323,6 +323,14 @@ namespace UnityEngine
         PingPong = 2,               // Animate the emission point around the shape, alternating between clockwise and counter-clockwise directions.
         BurstSpread = 3             // Distribute new particles around the shape evenly.
     }
+
+    // Ring Buffer modes
+    public enum ParticleSystemRingBufferMode
+    {
+        Disabled = 0,
+        PauseUntilReplaced = 1,     // When particles reach the end of their life, pause until replaced.
+        LoopUntilReplaced = 2       // When particles reach the fade out time, loop back to the fade in time. When replaced, play to the end of their life before actually being replaced.
+    }
 }
 
 namespace UnityEngine.Rendering

@@ -122,7 +122,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
+        public void AddElements(IEnumerable<GraphElement> elements)
+        {
+            foreach (GraphElement element in elements)
+            {
+                AddElementInternal(element);
+            }
+            OnElementsAdded(elements);
+        }
+
         public void AddElement(GraphElement element)
+        {
+            AddElementInternal(element);
+            OnElementsAdded(new[] {element});
+        }
+
+        private void AddElementInternal(GraphElement element)
         {
             if (element == null)
                 throw new ArgumentException("Cannot add null element");
@@ -152,15 +167,33 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // To update the scope geometry whenever the added element's geometry changes
             element.RegisterCallback<GeometryChangedEvent>(OnSubElementGeometryChanged);
             ScheduleUpdateGeometryFromContent();
-
-            OnElementAdded(element);
         }
 
-        protected virtual void OnElementAdded(GraphElement element)
+        protected virtual void OnElementsAdded(IEnumerable<GraphElement> elements)
         {
         }
 
+        public void RemoveElementsWithoutNotification(IEnumerable<GraphElement> elements)
+        {
+            foreach (GraphElement element in elements)
+            {
+                RemoveElementInternal(element);
+            }
+        }
+
+        public void RemoveElements(IEnumerable<GraphElement> elements)
+        {
+            RemoveElementsWithoutNotification(elements);
+            OnElementsRemoved(elements);
+        }
+
         public void RemoveElement(GraphElement element)
+        {
+            RemoveElementInternal(element);
+            OnElementsRemoved(new[] {element});
+        }
+
+        private void RemoveElementInternal(GraphElement element)
         {
             if (element == null)
                 throw new ArgumentException("Cannot remove null element from this scope");
@@ -171,11 +204,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             element.UnregisterCallback<GeometryChangedEvent>(OnSubElementGeometryChanged);
             m_ContainedElements.Remove(element);
             ScheduleUpdateGeometryFromContent();
-
-            OnElementRemoved(element);
         }
 
-        protected virtual void OnElementRemoved(GraphElement element)
+        protected virtual void OnElementsRemoved(IEnumerable<GraphElement> elements)
         {
         }
 
@@ -228,14 +259,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 // Dirty the layout of the content container to recompute the content bounding rect
                 m_ContentContainer.yogaNode.MarkDirty();
 
-                // Foce the layout to be computed right away
+                // Force the layout to be computed right away
                 this.yogaNode.CalculateLayout();
 
                 MarkYogaNodeSeen(yogaNode);
 
                 if (m_ContainedElements.Count > 0)
                 {
-                    // Match the top lef corner of the content container to the top left corner of the bounding box of the contained elements
+                    // Match the top left corner of the content container to the top left corner of the bounding box of the contained elements
                     Rect elemRectInLocalSpace = containedElementsRect;
 
                     float xOffset = elemRectInLocalSpace.x;
@@ -260,7 +291,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public override void SetPosition(Rect newPos)
         {
-            if (!IsValidRect(newPos) || m_Position == newPos.position)
+            if ((!IsValidRect(newPos) && m_ContainedElements.Any()) || m_Position == newPos.position)
                 return;
 
             if (m_ContainedElements.Count == 0)
@@ -278,7 +309,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        private void SetScopePositionOnly(Rect newPos)
+        protected virtual void SetScopePositionOnly(Rect newPos)
         {
             m_Position = newPos.position;
             style.positionType = PositionType.Absolute;

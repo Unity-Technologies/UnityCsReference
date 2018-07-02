@@ -444,14 +444,11 @@ namespace UnityEditor
 
             public Styles()
             {
-                viewLabelStyleLeftAligned = new GUIStyle("SC ViewLabel");
-                viewLabelStyleCentered = new GUIStyle("SC ViewLabel");
+                viewLabelStyleLeftAligned = "SC ViewLabelLeftAligned";
+                viewLabelStyleCentered = "SC ViewLabelCentered";
                 unlockedRotationIcon = EditorGUIUtility.TrIconContent("LockIcon", "Click to lock the rotation in the current direction.");
                 lockedRotationIcon = EditorGUIUtility.TrIconContent("LockIcon-On", "Click to unlock the rotation.");
-                lockStyle = new GUIStyle("label");
-                lockStyle.alignment = TextAnchor.MiddleCenter;
-                viewLabelStyleLeftAligned.alignment = TextAnchor.MiddleLeft;
-                viewLabelStyleCentered.alignment = TextAnchor.MiddleCenter;
+                lockStyle = "CenteredLabel";
                 viewAxisLabelStyle = "SC ViewAxisLabel";
             }
         }

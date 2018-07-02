@@ -160,7 +160,7 @@ namespace UnityEditor
 
         static class Styles
         {
-            public readonly static GUIStyle collabButtonStyle = new GUIStyle("Dropdown") { padding = { left = 24 } }; // move text to make room for rotating icon
+            public readonly static GUIStyle collabButtonStyle = "OffsetDropDown";
             public static readonly GUIStyle dropdown = "Dropdown";
             public static readonly GUIStyle appToolbar = "AppToolbar";
             public static readonly GUIStyle command = "Command";

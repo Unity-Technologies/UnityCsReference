@@ -28,6 +28,10 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            // Since we are not doing anything if we are not displayed in the inspector, early out. This help keeps multi selection snappier.
+            if (hideInspector)
+                return;
+
             base.OnEnable();
 
             m_Materials = serializedObject.FindProperty("m_Materials");

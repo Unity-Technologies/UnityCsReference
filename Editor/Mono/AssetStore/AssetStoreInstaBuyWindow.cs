@@ -54,7 +54,6 @@ namespace UnityEditor
             w.m_PaymentMethodCard = paymentMethodCard;
             w.m_PaymentMethodExpire = paymentMethodExpire;
             w.m_PriceText = priceText;
-            UsabilityAnalytics.Track(string.Format("/AssetStore/ShowInstaBuy/{0}/{1}", w.m_Asset.packageID, w.m_Asset.id));
             return w;
         }
 
@@ -71,7 +70,6 @@ namespace UnityEditor
             w.m_Purchasing = PurchaseStatus.StartBuild;
             w.m_BuildAttempts = 1;
             asset.previewInfo.buildProgress = 0f;
-            UsabilityAnalytics.Track(string.Format("/AssetStore/ShowInstaFree/{0}/{1}", w.m_Asset.packageID, w.m_Asset.id));
         }
 
         private static GUIContent s_AssetStoreLogo;
@@ -218,7 +216,6 @@ namespace UnityEditor
             if (GUILayout.Button("Just put to basket..."))
             {
                 AssetStore.Open(string.Format("content/{0}/basketpurchase", m_Asset.packageID));
-                UsabilityAnalytics.Track(string.Format("/AssetStore/PutToBasket/{0}/{1}", m_Asset.packageID, m_Asset.id));
                 m_Asset = null;
                 this.Close();
                 GUIUtility.ExitGUI();
@@ -226,7 +223,6 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Cancel"))
             {
-                UsabilityAnalytics.Track(string.Format("/AssetStore/CancelInstaBuy/{0}/{1}", m_Asset.packageID, m_Asset.id));
                 m_Asset = null;
                 this.Close();
                 GUIUtility.ExitGUI();
@@ -273,14 +269,12 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Close"))
             {
-                UsabilityAnalytics.Track(string.Format("/AssetStore/PurchaseOk/{0}/{1}", m_Asset.packageID, m_Asset.id));
                 m_Asset = null;
                 this.Close();
             }
             GUILayout.Space(5);
             if (GUILayout.Button("Import package"))
             {
-                UsabilityAnalytics.Track(string.Format("/AssetStore/PurchaseOkImport/{0}/{1}", m_Asset.packageID, m_Asset.id));
                 m_BuildAttempts = 1;
                 m_Asset.previewInfo.buildProgress = 0f;
                 m_Purchasing = PurchaseStatus.StartBuild;
@@ -361,7 +355,6 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Close"))
             {
-                UsabilityAnalytics.Track(string.Format("/AssetStore/DeclinedAbort/{0}/{1}", m_Asset.packageID, m_Asset.id));
                 m_Asset = null;
                 Close();
             }
@@ -369,7 +362,6 @@ namespace UnityEditor
             if (GUILayout.Button("Put to basket"))
             {
                 AssetStore.Open(string.Format("content/{0}/basketpurchase", m_Asset.packageID));
-                UsabilityAnalytics.Track(string.Format("/AssetStore/DeclinedPutToBasket/{0}/{1}", m_Asset.packageID, m_Asset.id));
                 m_Asset = null;
                 Close();
             }
@@ -434,7 +426,6 @@ namespace UnityEditor
                         EditorUtility.DisplayDialog("Purchase failed", msg + " This purchase has been cancelled.",
                             "Add this item to basket", "Cancel");
                 });
-            UsabilityAnalytics.Track(string.Format("/AssetStore/InstaBuy/{0}/{1}", m_Asset.packageID, m_Asset.id));
         }
 
         void BuildPackage()

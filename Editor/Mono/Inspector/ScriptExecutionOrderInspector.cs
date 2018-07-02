@@ -94,32 +94,15 @@ namespace UnityEditor
             public GUIContent defaultTimeContent = EditorGUIUtility.TrTextContent("Default Time", "All scripts not in the custom order are executed at the default time.");
             public GUIStyle toolbar = "TE Toolbar";
             public GUIStyle toolbarDropDown = "TE ToolbarDropDown";
-            public GUIStyle boxBackground = "TE NodeBackground";
+            public GUIStyle boxBackground = "TE BoxBackground";
             public GUIStyle removeButton = "InvisibleButton";
-            public GUIStyle elementBackground = new GUIStyle("OL Box");
-            public GUIStyle defaultTime = new GUIStyle(EditorStyles.inspectorBig);
+            public GUIStyle elementBackground = "TE ElementBackground";
+            public GUIStyle defaultTime = "TE DefaultTime";
             public GUIStyle draggingHandle = "WindowBottomResize";
-            public GUIStyle dropField = new GUIStyle(EditorStyles.objectFieldThumb);
-
-            public Styles()
-            {
-                boxBackground.margin = new RectOffset();
-                boxBackground.padding = new RectOffset(1, 1, 1, 0);
-
-                elementBackground.overflow = new RectOffset(1, 1, 1, 0);
-
-                defaultTime.alignment = TextAnchor.MiddleCenter;
-                defaultTime.overflow = new RectOffset(0, 0, 1, 0);
-
-                // Drop field style that has extra overflow and is only visible when "on".
-                // Used to draw a blue glow when dragging scripts into the ordering to
-                // indicate that drag-and-drop is supported.
-                dropField.overflow = new RectOffset(2, 2, 2, 2);
-                dropField.normal.background = null;
-                dropField.hover.background = null;
-                dropField.active.background = null;
-                dropField.focused.background = null;
-            }
+            // Drop field style that has extra overflow and is only visible when "on".
+            // Used to draw a blue glow when dragging scripts into the ordering to
+            // indicate that drag-and-drop is supported.
+            public GUIStyle dropField = "TE DropField";
         }
 
         [MenuItem("CONTEXT/MonoManager/Reset")]

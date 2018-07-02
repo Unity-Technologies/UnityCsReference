@@ -183,7 +183,6 @@ namespace UnityEditorInternal
 
         private void DoSlicing()
         {
-            DoAnalytics();
             switch (s_Setting.slicingType)
             {
                 case SpriteEditorMenuSetting.SlicingType.GridByCellCount:
@@ -193,31 +192,6 @@ namespace UnityEditorInternal
                 case SpriteEditorMenuSetting.SlicingType.Automatic:
                     DoAutomaticSlicing();
                     break;
-            }
-        }
-
-        private void DoAnalytics()
-        {
-            UsabilityAnalytics.Event("Sprite Editor", "Slice", "Type", (int)s_Setting.slicingType);
-            int width, height;
-            m_TextureDataProvider.GetTextureActualWidthAndHeight(out width, out height);
-            UsabilityAnalytics.Event("Sprite Editor", "Slice", "Texture Width", width);
-            UsabilityAnalytics.Event("Sprite Editor", "Slice", "Texture Height", height);
-
-            if (s_Setting.slicingType == SpriteEditorMenuSetting.SlicingType.Automatic)
-            {
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Auto Slicing Method", (int)s_Setting.autoSlicingMethod);
-            }
-            else
-            {
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Grid Slicing Size X", (int)s_Setting.gridSpriteSize.x);
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Grid Slicing Size Y", (int)s_Setting.gridSpriteSize.y);
-
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Grid Slicing Offset X", (int)s_Setting.gridSpriteOffset.x);
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Grid Slicing Offset Y", (int)s_Setting.gridSpriteOffset.y);
-
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Grid Slicing Padding X", (int)s_Setting.gridSpritePadding.x);
-                UsabilityAnalytics.Event("Sprite Editor", "Slice", "Grid Slicing Padding Y", (int)s_Setting.gridSpritePadding.y);
             }
         }
 

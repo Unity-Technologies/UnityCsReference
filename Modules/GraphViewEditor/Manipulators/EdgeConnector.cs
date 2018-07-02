@@ -42,6 +42,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
             target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            target.RegisterCallback<MouseCaptureOutEvent>(OnCaptureOut);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -91,6 +92,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        void OnCaptureOut(MouseCaptureOutEvent e)
+        {
+            m_Active = false;
+            if (m_EdgeCandidate != null)
+                Abort();
+        }
+
         protected virtual void OnMouseMove(MouseMoveEvent e)
         {
             if (!m_Active) return;
@@ -112,6 +120,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 Abort();
 
             m_Active = false;
+            m_EdgeCandidate = null;
             target.ReleaseMouse();
             e.StopPropagation();
         }

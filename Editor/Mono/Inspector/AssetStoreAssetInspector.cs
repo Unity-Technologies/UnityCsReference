@@ -285,7 +285,6 @@ namespace UnityEditor
             if (activeAsset.id != 0)
             {
                 AssetStore.Open(string.Format("content/{0}?assetID={1}", activeAsset.packageID, activeAsset.id));
-                UsabilityAnalytics.Track(string.Format("/AssetStore/ViewInStore/{0}/{1}", activeAsset.packageID, activeAsset.id));
             }
         }
 

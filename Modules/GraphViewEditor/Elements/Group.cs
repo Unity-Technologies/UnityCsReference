@@ -87,23 +87,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return true;
         }
 
-        protected override void OnElementAdded(GraphElement element)
+        protected override void OnElementsAdded(IEnumerable<GraphElement> elements)
         {
             GraphView gv = GetFirstAncestorOfType<GraphView>();
 
-            if (gv != null && gv.elementAddedToGroup != null)
+            if (gv != null && gv.elementsAddedToGroup != null)
             {
-                gv.elementAddedToGroup(this, element);
+                gv.elementsAddedToGroup(this, elements);
             }
         }
 
-        protected override void OnElementRemoved(GraphElement element)
+        protected override void OnElementsRemoved(IEnumerable<GraphElement> elements)
         {
             GraphView gv = GetFirstAncestorOfType<GraphView>();
 
-            if (gv != null && gv.elementRemovedFromGroup != null)
+            if (gv != null && gv.elementsRemovedFromGroup != null)
             {
-                gv.elementRemovedFromGroup(this, element);
+                gv.elementsRemovedFromGroup(this, elements);
             }
         }
 
@@ -130,7 +130,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (!m_EditTitleCancelled)
             {
+                string oldName = title;
                 title = m_TitleEditor.text;
+                OnGroupRenamed(oldName, title);
             }
 
             m_EditTitleCancelled = false;
@@ -154,6 +156,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             m_TitleEditor.SelectAll();
             m_TitleEditor.Focus();
+        }
+
+        protected virtual void OnGroupRenamed(string oldName, string newName)
+        {
         }
     }
 }

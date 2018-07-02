@@ -245,11 +245,7 @@ namespace UnityEditorInternal
         public void Init(Rect rect, AudioProfilerGroupViewBackend backend)
         {
             if (m_HeaderStyle == null)
-            {
-                m_HeaderStyle = new GUIStyle("OL title");
-            }
-
-            m_HeaderStyle.alignment = TextAnchor.MiddleLeft;
+                m_HeaderStyle = "OL title";
 
             if (m_TreeView != null)
                 return;
@@ -894,11 +890,7 @@ namespace UnityEditorInternal
         public void Init(Rect rect, AudioProfilerClipViewBackend backend)
         {
             if (m_HeaderStyle == null)
-            {
-                m_HeaderStyle = new GUIStyle("OL title");
-            }
-
-            m_HeaderStyle.alignment = TextAnchor.MiddleLeft;
+                m_HeaderStyle = "OL title";
 
             if (m_TreeView != null)
                 return;

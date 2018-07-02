@@ -34,7 +34,7 @@ namespace UnityEditor
         int m_DepthBufferBits = 0;
 
         [HideInInspector]
-        int m_AntiAliasing = 0;
+        int m_AntiAliasing = 1;
 
         [SerializeField]
         [HideInInspector]

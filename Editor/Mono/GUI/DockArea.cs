@@ -4,6 +4,7 @@
 
 using System;
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Experimental;
@@ -18,23 +19,32 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static StyleBlock tabCloseButton = EditorResources.GetStyle("tab-close-button");
-            public static StyleBlock tabFocusedCloseButton = EditorResources.GetStyle("tab-close-button.focus");
-            public static StyleBlock tabHighlight = EditorResources.GetStyle("tab-highlight");
-            public static readonly GUIStyle buttonClose = "WinBtnClose";
-            public static readonly GUIStyle dockarea = "dockarea";
-            public static readonly GUIStyle tabWindowBackground = "TabWindowBackground";
-            public static readonly GUIStyle dragTab = "dragTab";
+            public static readonly GUIContent closeIcon = new GUIContent(EditorGUIUtility.IconContent("LookDevClose"));
+            public static readonly StyleBlock tabHighlight = EditorResources.GetStyle("tab-highlight");
+            public static readonly StyleBlock tabCloseButton = EditorResources.GetStyle("tab-close-button");
 
-            public static readonly Color tabFadedColor = tabCloseButton.GetColor(StyleKeyword.backgroundColor);
-            public static readonly Color tabFadedFocusedColor = tabFocusedCloseButton.GetColor(StyleKeyword.backgroundColor);
+            private static readonly StyleBlock tab = EditorResources.GetStyle("tab");
+            public static readonly float tabMinWidth = tab.GetFloat(StyleKeyword.minWidth, 50.0f);
+            public static readonly float tabMaxWidth = tab.GetFloat(StyleKeyword.maxWidth, 150.0f);
+            public static readonly float tabWidthPadding = tab.GetFloat(StyleKeyword.paddingRight);
+
+            public static readonly float tabDragWidth = EditorResources.GetStyle("tab-drag").GetFloat(StyleKeyword.width, 100.0f);
+            public static readonly float tabDropdownOptions = EditorResources.GetStyle("tab-dropdown-options").GetFloat(StyleKeyword.width, 40.0f);
+
+            private static StyleBlock tabScrollButton = EditorResources.GetStyle("tab-scroll-button");
+            private static StyleBlock tabScrollButtonHover = EditorResources.GetStyle("tab-scroll-button.hover");
+            public static readonly Color tabScrollButtonBackgroundColor = tabScrollButton.GetColor(StyleKeyword.backgroundColor);
+            public static readonly float tabScrollButtonTopMargin = tabScrollButton.GetFloat(StyleKeyword.marginTop, 1.0f);
+            public static readonly Color tabScrollButtonBlendColor = tabScrollButton.GetColor(StyleKeyword.color, Color.white);
+            public static readonly Color tabScrollButtonHoverBlendColor = tabScrollButtonHover.GetColor(StyleKeyword.color, Color.white);
+            public static readonly Texture2D tabScrollPrevButtonImg = EditorGUIUtility.LoadIconRequired("tab_prev");
+            public static readonly Texture2D tabScrollNextButtonImg = EditorGUIUtility.LoadIconRequired("tab_next");
         }
 
-        internal const float kTabHeight = 18;
+        internal const float kTabHeight = 20;
         internal const float kDockHeight = 39;
-        const float kSideBorders = 2.0f;
-        const float kBottomBorders = 2.0f;
-        const float kWindowButtonsWidth = 40.0f; // Context & Lock Inspector Buttons
+        internal const float kSideBorders = 2.0f;
+        internal const float kBottomBorders = 2.0f;
 
         // Which pane window would we drop the currently dragged pane over
         static int s_PlaceholderPos;
@@ -50,21 +60,22 @@ namespace UnityEditor
         // A view that shouldn't be docked to (to make sure we don't attach to a single view with only the tab that we're dragging)
         static internal View s_IgnoreDockingForView = null;
 
-        static DropInfo s_DropInfo = null;
+        private static DropInfo s_DropInfo = null;
+        private static readonly Hashtable s_GUIContents = new Hashtable();
 
-        [SerializeField]
-        internal List<EditorWindow> m_Panes = new List<EditorWindow>();
-        [SerializeField]
-        internal int m_Selected;
-        [SerializeField]
-        internal int m_LastSelected;
+        [SerializeField] internal List<EditorWindow> m_Panes = new List<EditorWindow>();
+        [SerializeField] internal int m_Selected;
+        [SerializeField] internal int m_LastSelected;
 
-        [NonSerialized]
-        internal GUIStyle tabStyle = null;
+        [NonSerialized] internal GUIStyle tabStyle = null;
 
-        bool m_IsBeingDestroyed;
-
-        Rect tabRect => new Rect(0, 0, position.width, kTabHeight);
+        private bool m_IsBeingDestroyed;
+        private Rect m_ScrollLeftRect;
+        private Rect m_ScrollRightRect;
+        private float m_TotalTabWidth;
+        private float m_ScrollOffset;
+        private float m_HoldScrollOffset;
+        private double m_HoldScrollTimestamp;
 
         public int selected
         {
@@ -85,7 +96,7 @@ namespace UnityEditor
                 Debug.LogError("m_Panes is filled in DockArea constructor.");
         }
 
-        void RemoveNullWindows()
+        private void RemoveNullWindows()
         {
             List<EditorWindow> result = new List<EditorWindow>();
             foreach (EditorWindow i in m_Panes)
@@ -94,6 +105,7 @@ namespace UnityEditor
                     result.Add(i);
             }
             m_Panes = result;
+            s_GUIContents.Clear();
         }
 
         protected override void OnDestroy()
@@ -118,6 +130,7 @@ namespace UnityEditor
             }
 
             m_Panes.Clear();
+            s_GUIContents.Clear();
 
             base.OnDestroy();
         }
@@ -168,6 +181,7 @@ namespace UnityEditor
             DeregisterSelectedPane(true);
             m_Panes.Insert(idx, pane);
             selected = idx;
+            s_GUIContents.Clear();
 
             var sp = parent as SplitView;
             if (sp)
@@ -186,6 +200,7 @@ namespace UnityEditor
                 return; // Pane is not in the window
 
             m_Panes.Remove(pane);
+            s_GUIContents.Clear();
 
             // Fixup last selected index
             if (idx == m_LastSelected)
@@ -208,7 +223,7 @@ namespace UnityEditor
             RegisterSelectedPane();
         }
 
-        void KillIfEmpty()
+        private void KillIfEmpty()
         {
             // if we're empty, remove ourselves
             if (m_Panes.Count != 0)
@@ -240,9 +255,8 @@ namespace UnityEditor
                 Rect scr = background.margin.Remove(screenPosition);
                 Vector2 pos = mouseScreenPosition - new Vector2(scr.x, scr.y);
 
-                Rect tr = tabRect;
-                int mPos = GetTabAtMousePos(pos, tr);
-                float w = GetTabWidth(tr.width);
+                Rect tr = new Rect(0, 0, m_TotalTabWidth, kTabHeight);
+                int mPos = GetTabAtMousePos(tabStyle, pos, tr);
 
                 if (s_PlaceholderPos != mPos)
                 {
@@ -253,7 +267,7 @@ namespace UnityEditor
                 DropInfo di = new DropInfo(this)
                 {
                     type = DropInfo.Type.Tab,
-                    rect = new Rect(pos.x - w * .25f + scr.x, tr.y + scr.y, w, tr.height)
+                    rect = new Rect(pos.x - Styles.tabDragWidth * .25f + scr.x, tr.y + scr.y, Styles.tabDragWidth, tr.height - 5f)
                 };
 
                 return di;
@@ -264,22 +278,217 @@ namespace UnityEditor
         public bool PerformDrop(EditorWindow w, DropInfo info, Vector2 screenPos)
         {
             s_OriginalDragSource.RemoveTab(w, s_OriginalDragSource != this);
-            int pos2 = s_PlaceholderPos > m_Panes.Count ? m_Panes.Count : s_PlaceholderPos;
-            AddTab(pos2, w);
-            selected = pos2;
+            int tabInsertIndex = s_PlaceholderPos == -1 || s_PlaceholderPos > m_Panes.Count ? m_Panes.Count : s_PlaceholderPos;
+            AddTab(tabInsertIndex, w);
+            selected = tabInsertIndex;
             return true;
         }
 
         protected override void OldOnGUI()
         {
             ClearBackground();
-            // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
 
             // Exit if the window was destroyed after entering play mode or on domain-reload.
             if (window == null)
                 return;
 
+            HandleSplitView();
+
+            background = "dockarea";
+            Rect dockAreaRect = background.margin.Remove(new Rect(0, 0, position.width, position.height));
+            dockAreaRect.x = background.margin.left;
+            dockAreaRect.y = background.margin.top;
+            Rect wPos = windowPosition;
+            Rect containerWindowPosition = window.position;
+            containerWindowPosition.width = Mathf.FloorToInt(containerWindowPosition.width);
+            containerWindowPosition.height = Mathf.FloorToInt(containerWindowPosition.height);
+
+            bool floatingWindow = window.rootView.GetType() != typeof(MainView);
+            bool customBorder = floatingWindow && windowPosition.y == 0;
+            bool isBottomTab = wPos.yMax == containerWindowPosition.height;
+
+            UpdateDockAreaFromLocation(wPos, containerWindowPosition, ref dockAreaRect);
+            DrawDockAreaBackground(customBorder, dockAreaRect);
+            FixDockAreaRectBorders(customBorder, ref dockAreaRect);
+            HandleTabScrolling(dockAreaRect);
+
+            var viewRect = UpdateViewRect(dockAreaRect, isBottomTab, customBorder, floatingWindow);
+            var tabAreaRect = new Rect(dockAreaRect.x + 1, dockAreaRect.y - 1f, dockAreaRect.width - Styles.tabDropdownOptions, kTabHeight);
+            DrawTabs(tabAreaRect);
+            ShowGenericMenu(tabAreaRect.yMin + (floatingWindow ? 10f : 8f));
+
+            DrawView(viewRect, dockAreaRect, customBorder, floatingWindow, isBottomTab);
+            DrawTabScrollers(tabAreaRect, dockAreaRect);
+
+            EditorGUI.ShowRepaints();
+            Highlighter.ControlHighlightGUI(this);
+        }
+
+        private float GetViewMarginTopOffset(bool isBottomTab, bool customBorder)
+        {
+            float viewMarginTopOffset = 3f;
+            if (isBottomTab)
+                viewMarginTopOffset = 2f;
+            if (customBorder)
+                viewMarginTopOffset = 0f;
+            return viewMarginTopOffset;
+        }
+
+        private void UpdateDockAreaFromLocation(Rect windowPosition, Rect containerPosition, ref Rect dockAreaRect)
+        {
+            float sideBorder = kSideBorders;
+            if (windowPosition.x == 0)
+            {
+                dockAreaRect.x -= sideBorder;
+                dockAreaRect.width += sideBorder;
+            }
+            if (windowPosition.xMax == containerPosition.width)
+            {
+                dockAreaRect.width += sideBorder;
+            }
+        }
+
+        private void DrawView(Rect viewRect, Rect dockAreaRect, bool customBorder, bool floatingWindow, bool isBottomTab)
+        {
+            if (m_Panes.Count <= 0)
+                return;
+            var of = 0f + (customBorder ? 1f : -1f) + (floatingWindow && isBottomTab ? 1f : 0f);
+            dockAreaRect.y += of;
+            dockAreaRect.height -= of;
+            if (floatingWindow && isBottomTab)
+                dockAreaRect.height += 2; // Hide floating window bottom border
+
+            InvokeOnGUI(dockAreaRect, viewRect);
+            RenderToHMDIfNecessary();
+        }
+
+        private void DrawTabs(Rect tabAreaRect)
+        {
+            using (new GUI.ClipScope(tabAreaRect, new Vector2(-m_ScrollOffset, 0)))
+            {
+                if (tabStyle == null)
+                    tabStyle = "dragtab";
+
+                var totalTabWidth = DragTab(tabAreaRect, m_ScrollOffset, tabStyle);
+                if (totalTabWidth > 0f)
+                    m_TotalTabWidth = totalTabWidth;
+                tabStyle = "dragtab";
+            }
+        }
+
+        private Rect UpdateViewRect(Rect dockAreaRect, bool isBottomTab, bool customBorder, bool floatingWindow)
+        {
+            const float viewMarginLeftOffset = 2f;
+            float viewMarginTopOffset = GetViewMarginTopOffset(isBottomTab, customBorder);
+            var viewRect = new Rect(
+                    dockAreaRect.x + viewMarginLeftOffset,
+                    dockAreaRect.y + kTabHeight - viewMarginTopOffset + (customBorder ? -1f : -0f),
+                    dockAreaRect.width - viewMarginLeftOffset * 2f,
+                    dockAreaRect.height - kTabHeight + viewMarginTopOffset - (customBorder ? -1f : 1f) + (floatingWindow && isBottomTab ? 1f : 0f));
+
+            if (selected >= 0 && selected < m_Panes.Count)
+            {
+                m_Panes[selected].m_Pos.width = viewRect.width;
+                m_Panes[selected].m_Pos.height = viewRect.height;
+            }
+
+            return viewRect;
+        }
+
+        private void DrawDockAreaBackground(bool customBorder, Rect dockAreaRect)
+        {
+            if (Event.current.type == EventType.Repaint)
+            {
+                var b = background.fixedHeight;
+                background.fixedHeight = 17 + (customBorder ? 4f : 0f);
+                background.Draw(dockAreaRect, GUIContent.none, 0);
+                background.fixedHeight = b;
+            }
+        }
+
+        private static void FixDockAreaRectBorders(bool customBorder, ref Rect dockAreaRect)
+        {
+            if (!customBorder)
+                return;
+            dockAreaRect.y += 2f;
+            dockAreaRect.height -= 2f;
+        }
+
+        private void SetupHoldScrollerUpdate(float clickOffset)
+        {
+            m_HoldScrollOffset = clickOffset;
+            m_HoldScrollTimestamp = EditorApplication.timeSinceStartup;
+            EditorApplication.update += OnMouseDownHoldScroller;
+        }
+
+        private void HandleTabScrolling(Rect dockAreaRect)
+        {
+            if (Event.current.type == EventType.MouseDown)
+            {
+                const float scrollOffsetShift = 20f;
+                if (m_ScrollLeftRect.Contains(Event.current.mousePosition))
+                {
+                    SetupHoldScrollerUpdate(-2f);
+                    m_ScrollOffset = Mathf.Max(0f, m_ScrollOffset - scrollOffsetShift);
+                    Event.current.Use();
+                }
+                else if (m_ScrollRightRect.Contains(Event.current.mousePosition))
+                {
+                    SetupHoldScrollerUpdate(2f);
+                    m_ScrollOffset = Mathf.Min(m_ScrollOffset + scrollOffsetShift, m_TotalTabWidth - dockAreaRect.width + Styles.tabDropdownOptions);
+                    Event.current.Use();
+                }
+            }
+            else if (Event.current.type == EventType.MouseUp)
+            {
+                m_HoldScrollOffset = 0f;
+                EditorApplication.update -= OnMouseDownHoldScroller;
+            }
+        }
+
+        private void DrawTabScroller(Rect scrollRect, Texture2D tabScrollButtonImg)
+        {
+            using (new GUI.ColorScope(Styles.tabScrollButtonBackgroundColor))
+                GUI.DrawTexture(scrollRect, EditorGUIUtility.whiteTexture);
+            bool hoverRightScroller = scrollRect.Contains(Event.current.mousePosition);
+            Color hoverBlendColor = hoverRightScroller ? Styles.tabScrollButtonHoverBlendColor : Styles.tabScrollButtonBlendColor;
+            using (new GUI.ColorScope(hoverBlendColor))
+                GUI.DrawTexture(scrollRect, tabScrollButtonImg, ScaleMode.ScaleToFit);
+            MarkHotRegion(scrollRect);
+        }
+
+        private void DrawTabScrollers(Rect tabAreaRect, Rect dockAreaRect)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            if (m_TotalTabWidth <= tabAreaRect.xMax)
+                m_ScrollOffset = 0;
+
+            if (m_ScrollOffset > 0f)
+            {
+                m_ScrollLeftRect = new Rect(tabAreaRect.xMin,
+                        tabAreaRect.yMin + Styles.tabScrollButtonTopMargin,
+                        16f, 17f);
+                DrawTabScroller(m_ScrollLeftRect, Styles.tabScrollPrevButtonImg);
+            }
+            else
+                m_ScrollLeftRect.width = 0;
+
+            if (m_TotalTabWidth > tabAreaRect.xMax && m_ScrollOffset < m_TotalTabWidth - dockAreaRect.width + Styles.tabDropdownOptions)
+            {
+                m_ScrollRightRect = new Rect(tabAreaRect.xMax - 11f,
+                        tabAreaRect.yMin + Styles.tabScrollButtonTopMargin,
+                        16f, 17f);
+                DrawTabScroller(m_ScrollRightRect, Styles.tabScrollNextButtonImg);
+            }
+            else
+                m_ScrollRightRect.width = 0;
+        }
+
+        private void HandleSplitView()
+        {
             // Add CursorRects
             SplitView sp = parent as SplitView;
 
@@ -321,14 +530,6 @@ namespace UnityEditor
                 // reset
                 sp = (SplitView)parent;
             }
-            bool customBorder = false;
-            if (window.rootView.GetType() != typeof(MainView))
-            {
-                customBorder = true;
-                background = windowPosition.y == 0 ? "dockareaStandalone" : Styles.dockarea;
-            }
-            else
-                background = Styles.dockarea;
 
             if (sp)
             {
@@ -338,87 +539,29 @@ namespace UnityEditor
                 if (e.type == EventType.Used)
                     Event.current.Use();
             }
-            Rect r = background.margin.Remove(new Rect(0, 0, position.width, position.height));
-            r.x = background.margin.left;
-            r.y = background.margin.top;
-            Rect wPos = windowPosition;
-            Rect containerWindowPosition = window.position;
-            containerWindowPosition.width = Mathf.FloorToInt(containerWindowPosition.width);
-            containerWindowPosition.height = Mathf.FloorToInt(containerWindowPosition.height);
-
-            float sideBorder = kSideBorders;
-            if (wPos.x == 0)
-            {
-                r.x -= sideBorder;
-                r.width += sideBorder;
-            }
-            if (wPos.xMax == containerWindowPosition.width)
-            {
-                r.width += sideBorder;
-            }
-
-            if (wPos.yMax == containerWindowPosition.height)
-            {
-                r.height += customBorder ? 2f : kBottomBorders;
-            }
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                background.Draw(r, GUIContent.none, 0);
-            }
-
-            if (tabStyle == null)
-                tabStyle = Styles.dragTab;
-
-            if (m_Panes.Count > 0)
-            {
-                // Set up the pane's position, so its GUI can use this
-
-                // Contents:
-                // scroll it by -1, -1 so we top & left 1px gets culled (they are drawn already by the us, so we want to
-                // not have them here (thing that the default skin relies on)
-                BeginOffsetArea(new Rect(r.x + 2, r.y + kTabHeight, r.width - 4, r.height - kTabHeight - 2), GUIContent.none, Styles.tabWindowBackground);
-
-                Vector2 basePos = GUIUtility.GUIToScreenPoint(Vector2.zero);
-                Rect p = borderSize.Remove(position);
-                p.x = basePos.x;
-                p.y = basePos.y;
-
-                if (selected >= 0 && selected < m_Panes.Count)
-                {
-                    m_Panes[selected].m_Pos = p;
-                }
-
-                EndOffsetArea();
-            }
-
-            DragTab(new Rect(r.x + 1, r.y, r.width - kWindowButtonsWidth, kTabHeight), tabStyle);
-
-            // TODO: Make this nice - right now this is meant to be overridden by Panes in Layout if they want something else. Inspector does this
-            tabStyle = Styles.dragTab;
-
-            ShowGenericMenu();
-
-            if (m_Panes.Count > 0)
-            {
-                RenderToHMDIfNecessary(r);
-                InvokeOnGUI(r);
-            }
-
-            EditorGUI.ShowRepaints();
-            Highlighter.ControlHighlightGUI(this);
         }
 
-        void RenderToHMDIfNecessary(Rect onGUIPosition)
+        private void OnMouseDownHoldScroller()
         {
-            if (!XRSettings.isDeviceActive ||
-                (actualView is GameView) ||
+            if (m_HoldScrollOffset == 0f)
+                return;
+
+            double timeSinceStartup = EditorApplication.timeSinceStartup;
+            float dt = (float)(timeSinceStartup - m_HoldScrollTimestamp);
+            float maxScrollOffset = m_TotalTabWidth - position.width + Styles.tabDropdownOptions;
+            m_HoldScrollTimestamp = timeSinceStartup;
+            m_ScrollOffset = Mathf.Max(0f, Mathf.Min(m_ScrollOffset + m_HoldScrollOffset * dt * 250.0f, maxScrollOffset));
+            Repaint();
+        }
+
+        private void RenderToHMDIfNecessary()
+        {
+            if (Event.current.type != EventType.Repaint ||
+                !XRSettings.isDeviceActive ||
                 !EditorApplication.isPlaying ||
                 EditorApplication.isPaused ||
-                Event.current.type != EventType.Repaint)
-            {
+                (actualView is GameView))
                 return;
-            }
 
             foreach (var pane in m_Panes)
             {
@@ -445,7 +588,7 @@ namespace UnityEditor
             base.SetActualViewPosition(adjustedDockAreaClientRect);
         }
 
-        void Maximize(object userData)
+        private void Maximize(object userData)
         {
             EditorWindow editorWindow = userData as EditorWindow;
             if (editorWindow != null)
@@ -524,21 +667,49 @@ namespace UnityEditor
             AddTab(win);
         }
 
-        float GetTabWidth(float width)
+        private float GetTabWidth(GUIStyle tabStyle, int tabIndex)
         {
-            int count = m_Panes.Count;
-            if (s_DropInfo != null && System.Object.ReferenceEquals(s_DropInfo.dropArea, this))
-                count++;
-            if (m_Panes.IndexOf(s_DragPane) != -1)
-                count--;
+            Debug.Assert(0 <= tabIndex && tabIndex < m_Panes.Count);
 
-            return Mathf.Min(width / count, 100);
+            float minWidth, expectedWidth;
+            tabStyle.CalcMinMaxWidth(m_Panes[tabIndex].titleContent, out minWidth, out expectedWidth);
+            return Mathf.Max(Mathf.Min(expectedWidth, Styles.tabMaxWidth), Styles.tabMinWidth) + Styles.tabWidthPadding;
         }
 
-        int GetTabAtMousePos(Vector2 mousePos, Rect position)
+        private int GetTabAtMousePos(GUIStyle tabStyle, Vector2 mousePos, Rect tabAreaRect)
         {
-            int sel = (int)Mathf.Min((mousePos.x - position.xMin) / GetTabWidth(position.width), 100);
-            return sel;
+            Rect tabRect = Rect.zero;
+            return GetTabAtMousePos(tabStyle, mousePos + new Vector2(m_ScrollOffset, 0), tabAreaRect, 0f, ref tabRect);
+        }
+
+        private int GetTabAtMousePos(GUIStyle tabStyle, Vector2 mousePos, float scrollOffset, Rect tabAreaRect)
+        {
+            Rect tabRect = Rect.zero;
+            return GetTabAtMousePos(tabStyle, mousePos, tabAreaRect, scrollOffset, ref tabRect);
+        }
+
+        private int GetTabAtMousePos(GUIStyle tabStyle, Vector2 mousePos, Rect tabAreaRect, float scrollOffset, ref Rect tabRect)
+        {
+            if (!tabAreaRect.Contains(mousePos - new Vector2(scrollOffset, 0)))
+                return -1;
+
+            float xPos = tabAreaRect.xMin;
+            for (int i = 0; i < m_Panes.Count; i++)
+            {
+                if (s_DragPane == m_Panes[i])
+                    continue;
+
+                float tabWidth = GetTabWidth(tabStyle, i);
+                if (xPos <= mousePos.x && mousePos.x < xPos + tabWidth)
+                {
+                    tabRect = new Rect(xPos, tabAreaRect.yMin, tabWidth, tabAreaRect.height);
+                    return i;
+                }
+
+                xPos += tabWidth;
+            }
+
+            return -1;
         }
 
         // Hack to get around Unity crashing when we have circular references in saved stuff
@@ -550,7 +721,7 @@ namespace UnityEditor
                 i.m_Parent = this;
         }
 
-        static void CheckDragWindowExists()
+        private static void CheckDragWindowExists()
         {
             if (s_DragMode == 1 && !PaneDragTab.get.m_Window)
             {
@@ -562,12 +733,10 @@ namespace UnityEditor
             }
         }
 
-        void DragTab(Rect pos, GUIStyle tabStyle)
+        private float DragTab(Rect tabAreaRect, float scrollOffset, GUIStyle tabStyle)
         {
-            int id = GUIUtility.GetControlID(FocusType.Passive);
-            float elemWidth = GetTabWidth(pos.width);
-
             Event evt = Event.current;
+            int id = GUIUtility.GetControlID(FocusType.Passive);
 
             // Detect if hotcontrol was cleared while dragging (happens when pressing Esc).
             // We do not listen for the Escape keydown event because it is sent to the dragged window (not this dockarea)
@@ -577,13 +746,14 @@ namespace UnityEditor
                 ResetDragVars();
             }
 
+            float xPos = 0f;
             switch (evt.GetTypeForControl(id))
             {
                 case EventType.MouseDown:
-                    if (pos.Contains(evt.mousePosition) && GUIUtility.hotControl == 0)
+                    if (GUIUtility.hotControl == 0)
                     {
-                        int sel = GetTabAtMousePos(evt.mousePosition, pos);
-                        if (sel < m_Panes.Count)
+                        int sel = GetTabAtMousePos(tabStyle, evt.mousePosition, scrollOffset, tabAreaRect);
+                        if (sel != -1 && sel < m_Panes.Count)
                         {
                             switch (evt.button)
                             {
@@ -605,13 +775,12 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.ContextClick:
-                    if (pos.Contains(evt.mousePosition) && GUIUtility.hotControl == 0)
+                    if (GUIUtility.hotControl == 0)
                     {
-                        int sel = GetTabAtMousePos(evt.mousePosition, pos);
-                        if (sel < m_Panes.Count)
+                        int sel = GetTabAtMousePos(tabStyle, evt.mousePosition, scrollOffset, tabAreaRect);
+                        if (sel != -1 && sel < m_Panes.Count)
                             PopupGenericMenu(m_Panes[sel], new Rect(evt.mousePosition.x, evt.mousePosition.y, 0, 0));
                     }
-
                     break;
                 case EventType.MouseDrag:
                     if (GUIUtility.hotControl == id)
@@ -620,7 +789,7 @@ namespace UnityEditor
                         evt.Use();
                         Rect screenRect = screenPosition;
 
-                        // if we're not tabdragging yet, check to see if we should start
+                        // if we're not tab dragging yet, check to see if we should start
 
                         // check if we're allowed to drag tab
                         bool dragAllowed = (window.showMode != ShowMode.MainWindow || AllowTabAction());
@@ -635,8 +804,9 @@ namespace UnityEditor
                             s_IgnoreDockingForView = m_Panes.Count == 1 ? this : null;
 
                             s_OriginalDragSource = this;
+                            float tabWidth = GetTabWidth(tabStyle, selected);
                             PaneDragTab.get.Show(
-                                new Rect(pos.x + screenRect.x + elemWidth * selected, pos.y + screenRect.y, elemWidth, pos.height),
+                                new Rect(tabAreaRect.x + screenRect.x + tabWidth * selected, tabAreaRect.y + screenRect.y, tabWidth, tabAreaRect.height - 5f),
                                 s_DragPane.titleContent,
                                 position.size,
                                 GUIUtility.GUIToScreenPoint(evt.mousePosition)
@@ -739,7 +909,7 @@ namespace UnityEditor
                         }
                         else
                         {
-                            HandleTabCloseButton(pos, Event.current.mousePosition);
+                            HandleTabCloseButton(tabStyle, tabAreaRect, Event.current.mousePosition, scrollOffset);
                         }
                         GUIUtility.hotControl = 0;
                         evt.Use();
@@ -748,27 +918,26 @@ namespace UnityEditor
                     break;
 
                 case EventType.Repaint:
-                    float xPos = pos.xMin;
+                    xPos = tabAreaRect.xMin;
                     if (actualView)
                     {
                         for (int i = 0, drawNum = 0; i < m_Panes.Count; i++)
                         {
-                            // if we're dragging the tab we're about to draw, don't do that (handled by some window)
+                            // If we're dragging the tab we're about to draw, don't do that (handled by some window)
                             if (s_DragPane == m_Panes[i])
                                 continue;
 
                             // If we need space for inserting a tab here, skip some horizontal
                             if (s_DropInfo != null && ReferenceEquals(s_DropInfo.dropArea, this) && s_PlaceholderPos == drawNum)
-                                xPos += elemWidth;
+                                xPos += Styles.tabDragWidth;
 
-                            DrawTab(pos, tabStyle, elemWidth, i, xPos);
+                            xPos += DrawTab(tabAreaRect, tabStyle, i, xPos);
                             drawNum++;
-                            xPos += elemWidth;
                         }
                     }
                     else
                     {
-                        Rect r = new Rect(xPos, pos.yMin, elemWidth, pos.height);
+                        Rect r = new Rect(xPos, tabAreaRect.yMin, Styles.tabDragWidth, tabAreaRect.height);
                         float roundR = Mathf.Round(r.x);
                         Rect r2 = new Rect(roundR, r.y, Mathf.Round(r.x + r.width) - roundR, r.height);
                         tabStyle.Draw(r2, "Failed to load", false, false, true, false);
@@ -776,16 +945,42 @@ namespace UnityEditor
                     break;
             }
             selected = Mathf.Clamp(selected, 0, m_Panes.Count - 1);
+
+            return xPos;
         }
 
-        private void DrawTab(Rect tabRegionRect, GUIStyle tabStyle, float elemWidth, int tabIndex, float xPos)
+        private GUIContent GetTruncatedTabContent(int tabIndex)
         {
-            Rect tabPositionRect = new Rect(xPos, tabRegionRect.yMin, elemWidth, tabRegionRect.height);
+            var tabContent = m_Panes[tabIndex].titleContent;
+            if (tabContent.text.Length > 10)
+            {
+                var text = tabContent.text;
+                GUIContent gc = (GUIContent)s_GUIContents[text];
+                if (gc != null)
+                    return gc;
+
+                int cappedMaxChars = tabStyle.GetNumCharactersThatFitWithinWidth(text, Styles.tabMaxWidth);
+                if (text.Length > cappedMaxChars)
+                {
+                    gc = new GUIContent(text.Substring(0, Mathf.Min(cappedMaxChars - 2, text.Length)) + "\u2026", tabContent.image,
+                            String.IsNullOrEmpty(tabContent.tooltip) ? text : tabContent.tooltip);
+                    s_GUIContents[text] = gc;
+                    return gc;
+                }
+            }
+            return tabContent;
+        }
+
+        private float DrawTab(Rect tabRegionRect, GUIStyle tabStyle, int tabIndex, float xPos)
+        {
+            float tabWidth = GetTabWidth(tabStyle, tabIndex);
+            Rect tabPositionRect = new Rect(xPos, tabRegionRect.yMin, tabWidth, tabRegionRect.height);
             float roundedPosX = Mathf.Round(tabPositionRect.x);
             float roundedWidth = Mathf.Round(tabPositionRect.x + tabPositionRect.width) - roundedPosX;
 
             Rect tabContentRect = new Rect(roundedPosX, tabPositionRect.y, roundedWidth, tabPositionRect.height);
-            tabStyle.Draw(tabContentRect, m_Panes[tabIndex].titleContent, false, false, tabIndex == selected, hasFocus);
+            tabStyle.Draw(tabContentRect, false, false, tabIndex == selected, hasFocus);
+            GUI.Label(tabPositionRect, GetTruncatedTabContent(tabIndex), tabStyle);
 
             if (m_Panes[tabIndex] == EditorWindow.focusedWindow)
             {
@@ -793,24 +988,24 @@ namespace UnityEditor
                 DrawTabHighlight(tabHighlightRect);
             }
 
-            MarkHotRegion(tabContentRect);
-            DrawCloseButton(tabContentRect, tabIndex == selected);
+            var hotTabContentRect = tabContentRect;
+            hotTabContentRect.xMin += 2f;
+            hotTabContentRect.xMax -= 2f;
+            MarkHotRegion(GUIClip.UnclipToWindow(hotTabContentRect));
+            DrawCloseButton(tabContentRect);
+
+            return tabWidth;
         }
 
-        private void HandleTabCloseButton(Rect dockAreaRect, Vector2 mousePos)
+        private void HandleTabCloseButton(GUIStyle tabStyle, Rect dockAreaRect, Vector2 mousePos, float scrollOffset)
         {
-            float elemWidth = GetTabWidth(dockAreaRect.width);
-            Rect tabPositionRect = new Rect(dockAreaRect.xMin, dockAreaRect.yMin, elemWidth, dockAreaRect.height);
-            for (int i = 0; i < m_Panes.Count; ++i)
-            {
-                if (tabPositionRect.Contains(mousePos) && GetTabCloseButtonRect(tabPositionRect).Contains(mousePos))
-                {
-                    Close(m_Panes[i]);
-                    break;
-                }
+            Rect tabRect = Rect.zero;
+            int tabIndex = GetTabAtMousePos(tabStyle, mousePos, dockAreaRect, scrollOffset, ref tabRect);
+            if (tabIndex == -1)
+                return;
 
-                tabPositionRect.x += elemWidth;
-            }
+            if (GetTabCloseButtonRect(tabRect).Contains(mousePos))
+                Close(m_Panes[tabIndex]);
         }
 
         private Rect GetTabCloseButtonRect(Rect tabContentRect)
@@ -823,17 +1018,12 @@ namespace UnityEditor
             return new Rect(buttonLeft, buttonTop, buttonSize, buttonSize);
         }
 
-        private void DrawCloseButton(Rect tabContentRect, bool focused)
+        private void DrawCloseButton(Rect tabContentRect)
         {
-            if (!tabContentRect.Contains(Event.current.mousePosition))
+            if (s_DragMode != 0 || !tabContentRect.Contains(Event.current.mousePosition))
                 return;
             var closeButtonRect = GetTabCloseButtonRect(tabContentRect);
-            var hoverButton = closeButtonRect.Contains(Event.current.mousePosition);
-            Color orgColor = GUI.color;
-            GUI.color = GUI.color * (focused ? Styles.tabFadedFocusedColor : Styles.tabFadedColor);
-            GUI.DrawTexture(closeButtonRect, EditorGUIUtility.whiteTexture);
-            GUI.color = orgColor;
-            Styles.buttonClose.Draw(closeButtonRect, hoverButton, true, true, false);
+            GUI.DrawTexture(closeButtonRect, Styles.closeIcon.image, ScaleMode.ScaleToFit);
         }
 
         private void DrawTabHighlight(Rect tabHighlightRect)
@@ -841,15 +1031,15 @@ namespace UnityEditor
             var tabLineMargin = Styles.tabHighlight.GetRect(StyleKeyword.margin);
             var tabHighlightColor = Styles.tabHighlight.GetColor(StyleKeyword.color);
             var tabHighlightHeight = Styles.tabHighlight.GetInt(StyleKeyword.height);
-            Color orgColor = GUI.color;
-            GUI.color = GUI.color * tabHighlightColor;
-            for (int i = 0; i < tabHighlightHeight; ++i)
+            using (new GUI.ColorScope(tabHighlightColor))
             {
-                var left = (tabHighlightRect.x + tabLineMargin.left) + i;
-                var width = (tabHighlightRect.width - tabLineMargin.left - tabLineMargin.right) - (i + i);
-                GUI.DrawTexture(new Rect(left, tabHighlightRect.y + (tabHighlightHeight - i), width, 1.0f), EditorGUIUtility.whiteTexture);
+                for (int i = 0; i < tabHighlightHeight; ++i)
+                {
+                    var left = (tabHighlightRect.x + tabLineMargin.left) + i;
+                    var width = (tabHighlightRect.width - tabLineMargin.left - tabLineMargin.right) - (i + i);
+                    GUI.DrawTexture(new Rect(left, tabHighlightRect.y + (tabHighlightHeight - i), width, 1.0f), EditorGUIUtility.whiteTexture);
+                }
             }
-            GUI.color = orgColor;
         }
 
         protected override RectOffset GetBorderSize()
@@ -876,7 +1066,7 @@ namespace UnityEditor
             return m_BorderSize;
         }
 
-        static void ResetDragVars()
+        private static void ResetDragVars()
         {
             s_DragPane = null;
             s_DropInfo = null;
@@ -888,10 +1078,10 @@ namespace UnityEditor
 
     internal class MaximizedHostView : HostView
     {
-        private static class Styles
+        static class Styles
         {
-            public static readonly GUIStyle dockarea = "dockarea";
             public static readonly GUIStyle dragTab = "dragTab";
+            public static readonly GUIStyle background = "dockarea";
         }
 
         protected override void OldOnGUI()
@@ -900,26 +1090,33 @@ namespace UnityEditor
             // Call reset GUI state as first thing so GUI.color is correct when drawing window decoration.
             EditorGUIUtility.ResetGUIState();
 
-            Rect r = new Rect(-2, 0, position.width + 4, position.height);
-            background = Styles.dockarea;
-            r = background.margin.Remove(r);
-            Rect backRect = new Rect(r.x + 1, r.y, r.width - 2, DockArea.kTabHeight);
+            Rect maximizedViewRect = new Rect(-2, 0, position.width + 4, position.height);
+            maximizedViewRect = Styles.background.margin.Remove(maximizedViewRect);
+
+            Rect backRect = new Rect(maximizedViewRect.x + 1, maximizedViewRect.y, maximizedViewRect.width - 2, DockArea.kTabHeight);
             if (Event.current.type == EventType.Repaint)
             {
-                background.Draw(r, GUIContent.none, false, false, false, false);
-                GUIStyle s = Styles.dragTab;
-                s.Draw(backRect, actualView.titleContent, false, false, true, hasFocus);
+                Styles.background.Draw(maximizedViewRect, GUIContent.none, false, false, false, false);
+                Styles.dragTab.Draw(backRect, actualView.titleContent, false, false, true, hasFocus);
             }
 
             if (Event.current.type == EventType.ContextClick && backRect.Contains(Event.current.mousePosition))
-            {
                 PopupGenericMenu(actualView, new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 0, 0));
-            }
-            ShowGenericMenu();
-            if (actualView)
-                actualView.m_Pos = borderSize.Remove(screenPosition);
 
-            InvokeOnGUI(r);
+            ShowGenericMenu(backRect.yMin + 6f);
+
+            const float topBottomPadding = 3f;
+            Rect viewRect = maximizedViewRect;
+            viewRect.y = backRect.yMax - topBottomPadding;
+            viewRect.height = position.height - backRect.yMax + topBottomPadding;
+
+            if (actualView)
+            {
+                actualView.m_Pos.width = viewRect.width;
+                actualView.m_Pos.height = viewRect.height;
+            }
+
+            InvokeOnGUI(maximizedViewRect, viewRect);
         }
 
         protected override RectOffset GetBorderSize()
@@ -960,4 +1157,4 @@ namespace UnityEditor
             }
         }
     }
-} // namespace
+}

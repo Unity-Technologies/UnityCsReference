@@ -420,6 +420,7 @@ namespace UnityEngine
         {
             public delegate void RequestLightsDelegate(Light[] requests, NativeArray<LightDataGI> lightsOutput);
             public static void SetDelegate(RequestLightsDelegate del)   { s_RequestLightsDelegate = del != null ? del : s_DefaultDelegate; }
+            public static RequestLightsDelegate GetDelegate()           { return s_RequestLightsDelegate; }
             public static void ResetDelegate()                          { s_RequestLightsDelegate = s_DefaultDelegate; }
 
             [UnityEngine.Scripting.UsedByNativeCode]

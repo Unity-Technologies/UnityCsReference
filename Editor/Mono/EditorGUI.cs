@@ -2267,7 +2267,7 @@ namespace UnityEditor
                 TargetChoiceHandler.AddSetToValueOfTargetMenuItems(pm, propertyWithPath, TargetChoiceHandler.SetToValueOfTarget);
             }
 
-            if (property.serializedObject.targetObjects.Length == 1 && property.isInstantiatedPrefab)
+            if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab)
             {
                 pm.AddItem(EditorGUIUtility.TrTextContent("Revert Value to Prefab"), false, TargetChoiceHandler.SetPrefabOverride, propertyWithPath);
             }
@@ -4591,6 +4591,8 @@ namespace UnityEditor
                 else if (enabled != thisEnabled)
                 {
                     enabled = -2;
+                    // Early out: mix value mode
+                    break;
                 }
             }
 
@@ -4867,7 +4869,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     {
                         style.Draw(drawRect, content, id, foldout);
                     }
-
                     break;
                 case EventType.KeyDown:
                     if (GUIUtility.keyboardControl == id)
@@ -5151,7 +5152,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
-            if (property.serializedObject.targetObjects.Length == 1 && property.isInstantiatedPrefab)
+            if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab)
             {
                 EditorGUIUtility.SetBoldDefaultFont(property.prefabOverride);
             }
@@ -8862,19 +8863,15 @@ This warning only shows up in development builds.", helpTopic, pageName);
             // when using the FadeGroupScope, make sure to only show the content when 'visible' is set to true,
             // otherwise only the hide animation will run, and then the content will be visible again.
             public bool visible { get; protected set; }
-            readonly float m_Value;
 
             public FadeGroupScope(float value)
             {
                 visible = BeginFadeGroup(value);
-                m_Value = value;
             }
 
             protected override void CloseScope()
             {
-                // See comments with BeginFadeGroup
-                if (m_Value != 0 && m_Value != 1)
-                    EndFadeGroup();
+                EndFadeGroup();
             }
         }
 
@@ -8882,19 +8879,25 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             GUILayoutFadeGroup g = (GUILayoutFadeGroup)GUILayoutUtility.BeginLayoutGroup(GUIStyle.none, null, typeof(GUILayoutFadeGroup));
             g.isVertical = true;
-            g.resetCoords = true;
+            g.resetCoords = false;
             g.fadeValue = value;
             g.wasGUIEnabled = GUI.enabled;
             g.guiColor = GUI.color;
             g.consideredForMargin = value > 0;
-            if (value != 0.0f && value != 1.0f && Event.current.type == EventType.MouseDown)
+
+            if (value != 0.0f && value != 1.0f)
             {
-                Event.current.Use();
+                g.resetCoords = true;
+                GUI.BeginGroup(g.rect);
+
+                if (Event.current.type == EventType.MouseDown)
+                {
+                    Event.current.Use();
+                }
             }
 
             // We don't want the fade group gui clip to be used for calculating the label width of controls in this fade group, so we lock the context width.
             EditorGUIUtility.LockContextWidth();
-            GUI.BeginGroup(g.rect);
 
             return value != 0;
         }
@@ -8911,7 +8914,11 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 return;
             }
 
-            GUI.EndGroup();
+            if (g.fadeValue != 0.0f && g.fadeValue != 1.0f)
+            {
+                GUI.EndGroup();
+            }
+
             EditorGUIUtility.UnlockContextWidth();
             GUI.enabled = g.wasGUIEnabled;
             GUI.color = g.guiColor;

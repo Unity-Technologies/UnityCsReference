@@ -268,7 +268,7 @@ namespace UnityEditor.VersionControl
             PopulateListControl(pendingList, task, changeIcon);
         }
 
-        void PopulateListControl(ListControl list, Task task, Texture2D icon)
+        internal void PopulateListControl(ListControl list, Task task, Texture2D icon)
         {
             // We try to correct the existing list by removing/adding entries.
             // This way the entries will keep their children while the children are updated

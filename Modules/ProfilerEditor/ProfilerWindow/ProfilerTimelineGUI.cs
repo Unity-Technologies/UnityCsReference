@@ -87,10 +87,10 @@ namespace UnityEditorInternal
             public GUIStyle leftPane = "ProfilerTimelineLeftPane";
             public GUIStyle rightPane = "ProfilerRightPane";
             public GUIStyle foldout = "ProfilerTimelineFoldout";
-            public GUIStyle profilerGraphBackground = new GUIStyle("ProfilerScrollviewBackground");
+            public GUIStyle profilerGraphBackground = "ProfilerGraphBackground";
             public GUIStyle timelineTick = "AnimationTimelineTick";
             public GUIStyle rectangleToolSelection = "RectangleToolSelection";
-            public GUIStyle timeAreaToolbar = new GUIStyle(EditorStyles.toolbar);
+            public GUIStyle timeAreaToolbar = "TimeAreaToolbar";
             public GUIStyle digDownArrow = "ProfilerTimelineDigDownArrow";
             public GUIStyle rollUpArrow = "ProfilerTimelineRollUpArrow";
             public GUIStyle bottomShadow =  "BottomShadowInwards";
@@ -105,16 +105,6 @@ namespace UnityEditorInternal
             Color m_OutOfRangeColorLight = new Color32(160, 160, 160, 127);
             Color m_OutOfRangeColorDark = new Color32(40, 40, 40, 127);
             public Color outOfRangeColor => EditorGUIUtility.isProSkin ? m_OutOfRangeColorDark : m_OutOfRangeColorLight;
-
-            internal Styles()
-            {
-                bar.normal.background = bar.hover.background = bar.active.background = EditorGUIUtility.whiteTexture;
-                bar.normal.textColor = bar.hover.textColor = bar.active.textColor = Color.black;
-                profilerGraphBackground.overflow.left = -((int)Chart.kSideWidth - 1);
-                leftPane.padding.left = 15;
-                timeAreaToolbar.padding.right = 0;
-                timeAreaToolbar.padding.left = 0;
-            }
         }
 
         private static Styles ms_Styles;

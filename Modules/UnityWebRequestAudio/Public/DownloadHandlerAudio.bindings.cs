@@ -53,6 +53,7 @@ namespace UnityEngine.Networking
 
     }
 
+    [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/UnityWebRequestAudio/Public/DownloadHandlerMovieTexture.h")]
     [NativeHeader("Runtime/Video/MovieTexture.h")]  // for BIND_MANAGED_TYPE_NAME

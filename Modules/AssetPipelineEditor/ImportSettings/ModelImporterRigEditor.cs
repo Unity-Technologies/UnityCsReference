@@ -9,7 +9,9 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using Object = UnityEngine.Object;
 using System.IO;
+using System.Linq;
 using UnityEditor.Experimental.AssetImporters;
+using UnityEditor.IMGUI.Controls;
 
 namespace UnityEditor
 {
@@ -23,7 +25,6 @@ namespace UnityEditor
 
         Avatar m_Avatar;
 
-        SerializedProperty m_OptimizeGameObjects;
         SerializedProperty m_AnimationType;
         SerializedProperty m_AvatarSource;
         SerializedProperty m_CopyAvatar;
@@ -38,6 +39,8 @@ namespace UnityEditor
 
         SerializedProperty m_RigImportErrors;
         SerializedProperty m_RigImportWarnings;
+
+        SerializedProperty m_OptimizeGameObjects;
 
         private static bool importMessageFoldout = false;
 
@@ -61,11 +64,12 @@ namespace UnityEditor
 
         private MappingRelevantSettings[] oldModelSettings = null;
         private MappingRelevantSettings[] newModelSettings = null;
+        bool m_ExtraExposedTransformFoldout = false;
 
-        private class Styles
+        static class Styles
         {
-            public GUIContent AnimationType = EditorGUIUtility.TrTextContent("Animation Type", "The type of animation to support / import.");
-            public GUIContent[] AnimationTypeOpt =
+            public static GUIContent AnimationType = EditorGUIUtility.TrTextContent("Animation Type", "The type of animation to support / import.");
+            public static GUIContent[] AnimationTypeOpt =
             {
                 EditorGUIUtility.TrTextContent("None", "No animation present."),
                 EditorGUIUtility.TrTextContent("Legacy", "Legacy animation system."),
@@ -73,8 +77,8 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Humanoid", "Humanoid Mecanim animation system.")
             };
 
-            public GUIContent AnimLabel = EditorGUIUtility.TrTextContent("Generation", "Controls how animations are imported.");
-            public GUIContent[] AnimationsOpt =
+            public static GUIContent AnimLabel = EditorGUIUtility.TrTextContent("Generation", "Controls how animations are imported.");
+            public static GUIContent[] AnimationsOpt =
             {
                 EditorGUIUtility.TrTextContent("Don't Import", "No animation or skinning is imported."),
                 EditorGUIUtility.TrTextContent("Store in Original Roots (Deprecated)", "Animations are stored in the root objects of your animation package (these might be different from the root objects in Unity)."),
@@ -82,38 +86,30 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Store in Root (Deprecated)", "Animations are stored in the scene's transform root objects. Use this when animating anything that has a hierarchy."),
                 EditorGUIUtility.TrTextContent("Store in Root (New)")
             };
-            public GUIStyle helpText = new GUIStyle(EditorStyles.helpBox);
 
-            public GUIContent avatar = EditorGUIUtility.TrTextContent("Animator");
-            public GUIContent configureAvatar = EditorGUIUtility.TrTextContent("Configure...");
-            public GUIContent avatarValid = EditorGUIUtility.TrTextContent("\u2713");
-            public GUIContent avatarInvalid = EditorGUIUtility.TrTextContent("\u2715");
-            public GUIContent avatarPending = EditorGUIUtility.TrTextContent("...");
+            public static GUIContent avatar = EditorGUIUtility.TrTextContent("Animator");
+            public static GUIContent configureAvatar = EditorGUIUtility.TrTextContent("Configure...");
+            public static GUIContent avatarValid = EditorGUIUtility.TrTextContent("\u2713");
+            public static GUIContent avatarInvalid = EditorGUIUtility.TrTextContent("\u2715");
+            public static GUIContent avatarPending = EditorGUIUtility.TrTextContent("...");
 
 
-            public GUIContent UpdateMuscleDefinitionFromSource = EditorGUIUtility.TrTextContent("Update", "Update the copy of the muscle definition from the source.");
-            public GUIContent RootNode = EditorGUIUtility.TrTextContent("Root node", "Specify the root node used to extract the animation translation.");
+            public static GUIContent UpdateMuscleDefinitionFromSource = EditorGUIUtility.TrTextContent("Update", "Update the copy of the muscle definition from the source.");
+            public static GUIContent RootNode = EditorGUIUtility.TrTextContent("Root node", "Specify the root node used to extract the animation translation.");
 
-            public GUIContent AvatarDefinition = EditorGUIUtility.TrTextContent("Avatar Definition", "Choose between Create From This Model or Copy From Other Avatar. The first one create an Avatar for this file and the second one use an Avatar from another file to import animation.");
+            public static GUIContent AvatarDefinition = EditorGUIUtility.TrTextContent("Avatar Definition", "Choose between Create From This Model or Copy From Other Avatar. The first one create an Avatar for this file and the second one use an Avatar from another file to import animation.");
 
-            public GUIContent[] AvatarDefinitionOpt =
+            public static GUIContent[] AvatarDefinitionOpt =
             {
                 EditorGUIUtility.TrTextContent("Create From This Model", "Create an Avatar based on the model from this file."),
                 EditorGUIUtility.TrTextContent("Copy From Other Avatar", "Copy an Avatar from another file to import muscle clip. No avatar will be created.")
             };
 
-            public GUIContent UpdateReferenceClips = EditorGUIUtility.TrTextContent("Update reference clips", "Click on this button to update all the @convention file referencing this file. Should set all these files to Copy From Other Avatar, set the source Avatar to this one and reimport all these files.");
+            public static GUIContent UpdateReferenceClips = EditorGUIUtility.TrTextContent("Update reference clips", "Click on this button to update all the @convention file referencing this file. Should set all these files to Copy From Other Avatar, set the source Avatar to this one and reimport all these files.");
 
-            public GUIContent ImportMessages = EditorGUIUtility.TrTextContent("Import Messages");
-
-            public Styles()
-            {
-                helpText.normal.background = null;
-                helpText.alignment = TextAnchor.MiddleLeft;
-                helpText.padding = new RectOffset(0, 0, 0, 0);
-            }
+            public static GUIContent ImportMessages = EditorGUIUtility.TrTextContent("Import Messages");
+            public static GUIContent ExtraExposedTransform = EditorGUIUtility.TrTextContent("Extra Transforms to Expose", "Select the list of transforms to expose in the optmized GameObject hierarchy.");
         }
-        static Styles styles;
 
         public ModelImporterRigEditor(AssetImporterEditor panelContainer)
             : base(panelContainer)
@@ -215,6 +211,7 @@ namespace UnityEditor
         {
             base.ResetValues();
             ResetAvatar();
+            m_ExposeTransformEditor.ResetExposedTransformList();
         }
 
         void ResetAvatar()
@@ -228,10 +225,10 @@ namespace UnityEditor
 
         void LegacyGUI()
         {
-            EditorGUILayout.Popup(m_LegacyGenerateAnimations, styles.AnimationsOpt, styles.AnimLabel);
+            EditorGUILayout.Popup(m_LegacyGenerateAnimations, Styles.AnimationsOpt, Styles.AnimLabel);
             // Show warning and fix button for deprecated import formats
             if (m_LegacyGenerateAnimations.intValue == 1 || m_LegacyGenerateAnimations.intValue == 2 || m_LegacyGenerateAnimations.intValue == 3)
-                EditorGUILayout.HelpBox("The animation import setting \"" + styles.AnimationsOpt[m_LegacyGenerateAnimations.intValue].text + "\" is deprecated.", MessageType.Warning);
+                EditorGUILayout.HelpBox("The animation import setting \"" + Styles.AnimationsOpt[m_LegacyGenerateAnimations.intValue].text + "\" is deprecated.", MessageType.Warning);
         }
 
         // Show copy avatar bool as a dropdown
@@ -240,7 +237,7 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             int copyValue = m_CopyAvatar.boolValue ? 1 : 0;
             EditorGUI.showMixedValue = m_CopyAvatar.hasMultipleDifferentValues;
-            copyValue = EditorGUILayout.Popup(styles.AvatarDefinition, copyValue, styles.AvatarDefinitionOpt);
+            copyValue = EditorGUILayout.Popup(Styles.AvatarDefinition, copyValue, Styles.AvatarDefinitionOpt);
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
                 m_CopyAvatar.boolValue = (copyValue == 1);
@@ -258,7 +255,7 @@ namespace UnityEditor
                     EditorGUI.BeginChangeCheck();
                     using (new EditorGUI.DisabledScope(!m_CanMultiEditTransformList))
                     {
-                        rootIndex = EditorGUILayout.Popup(styles.RootNode, rootIndex, m_RootMotionBoneList);
+                        rootIndex = EditorGUILayout.Popup(Styles.RootNode, rootIndex, m_RootMotionBoneList);
                     }
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -330,13 +327,13 @@ namespace UnityEditor
             if (m_Avatar && !HasModified())
             {
                 if (m_Avatar.isHuman)
-                    validationContent = styles.avatarValid;
+                    validationContent = Styles.avatarValid;
                 else
-                    validationContent = styles.avatarInvalid;
+                    validationContent = Styles.avatarInvalid;
             }
             else
             {
-                validationContent = styles.avatarPending;
+                validationContent = Styles.avatarPending;
                 GUILayout.Label("The avatar can be configured after settings have been applied.", EditorStyles.helpBox);
             }
 
@@ -347,7 +344,7 @@ namespace UnityEditor
             // Configure button
             using (new EditorGUI.DisabledScope(m_Avatar == null))
             {
-                if (GUI.Button(new Rect(r.xMax - buttonWidth, r.y + 1, buttonWidth, r.height - 1), styles.configureAvatar, EditorStyles.miniButton))
+                if (GUI.Button(new Rect(r.xMax - buttonWidth, r.y + 1, buttonWidth, r.height - 1), Styles.configureAvatar, EditorStyles.miniButton))
                 {
                     if (!isLocked)
                     {
@@ -420,7 +417,7 @@ With this option, this model will not create any avatar but only import animatio
 
             if (sourceAvatar != null && !m_AvatarSource.hasMultipleDifferentValues && !m_AvatarCopyIsUpToDate)
             {
-                if (GUILayout.Button(styles.UpdateMuscleDefinitionFromSource, EditorStyles.miniButton))
+                if (GUILayout.Button(Styles.UpdateMuscleDefinitionFromSource, EditorStyles.miniButton))
                 {
                     AvatarSetupTool.ClearAll(serializedObject);
                     CopyHumanDescriptionFromOtherModel(sourceAvatar);
@@ -445,7 +442,7 @@ With this option, this model will not create any avatar but only import animatio
             }
 
             // Show only button if some clip reference this avatar.
-            if (paths.Length > 0 && GUILayout.Button(styles.UpdateReferenceClips, GUILayout.Width(150)))
+            if (paths.Length > 0 && GUILayout.Button(Styles.UpdateReferenceClips, GUILayout.Width(150)))
             {
                 foreach (string path in paths)
                     SetupReferencedClip(path);
@@ -465,9 +462,6 @@ With this option, this model will not create any avatar but only import animatio
 
         public override void OnInspectorGUI()
         {
-            if (styles == null)
-                styles = new Styles();
-
             string errors = m_RigImportErrors.stringValue;
             string warnings = m_RigImportWarnings.stringValue;
 
@@ -488,7 +482,7 @@ With this option, this model will not create any avatar but only import animatio
 
             // Animation type
             EditorGUI.BeginChangeCheck();
-            EditorGUILayout.Popup(m_AnimationType, styles.AnimationTypeOpt, styles.AnimationType);
+            EditorGUILayout.Popup(m_AnimationType, Styles.AnimationTypeOpt, Styles.AnimationType);
             if (EditorGUI.EndChangeCheck())
             {
                 m_AvatarSource.objectReferenceValue = null;
@@ -528,14 +522,17 @@ With this option, this model will not create any avatar but only import animatio
             {
                 EditorGUILayout.PropertyField(m_OptimizeGameObjects);
                 if (m_OptimizeGameObjects.boolValue &&
-                    serializedObject.targetObjects.Length == 1) // SerializedProperty can't handle multiple string arrays properly.
+                    serializedObject.targetObjectsCount == 1) // SerializedProperty can't handle multiple string arrays properly.
                 {
-                    EditorGUILayout.Space();
-
-                    // Do not allow multi edit of exposed transform list if all rigs doesn't match
-                    using (new EditorGUI.DisabledScope(!m_CanMultiEditTransformList))
+                    bool wasChanged = GUI.changed;
+                    m_ExtraExposedTransformFoldout = EditorGUILayout.Foldout(m_ExtraExposedTransformFoldout, Styles.ExtraExposedTransform, true);
+                    GUI.changed = wasChanged;
+                    if (m_ExtraExposedTransformFoldout)
                     {
-                        m_ExposeTransformEditor.OnGUI();
+                        // Do not allow multi edit of exposed transform list if all rigs doesn't match
+                        using (new EditorGUI.DisabledScope(!m_CanMultiEditTransformList))
+                            using (new EditorGUI.IndentLevelScope())
+                                m_ExposeTransformEditor.OnGUI();
                     }
                 }
             }
@@ -544,7 +541,7 @@ With this option, this model will not create any avatar but only import animatio
             {
                 EditorGUILayout.Space();
 
-                importMessageFoldout = EditorGUILayout.Foldout(importMessageFoldout, styles.ImportMessages, true);
+                importMessageFoldout = EditorGUILayout.Foldout(importMessageFoldout, Styles.ImportMessages, true);
 
                 if (importMessageFoldout)
                 {

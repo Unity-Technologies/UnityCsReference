@@ -152,6 +152,8 @@ namespace UnityEditor
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics (Pro Only)");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols*");
+            public static readonly GUIContent scriptingRuntimeVersionActive = EditorGUIUtility.TrTextContent("Active Scripting Runtime Version*", "The scripting runtime version currently in use by the Editor.");
+            public static readonly GUIContent scriptingRuntimeVersionActiveWarning = EditorGUIUtility.TrTextContent("The scripting runtime version currently in use by the Editor does not match the version specified by the project. An Editor restart is required for requested changes to take effect.");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
             public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent");
             public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
@@ -1212,7 +1214,8 @@ namespace UnityEditor
             new Dictionary<BuildTargetGroup, List<ColorGamut>>
         {
             { BuildTargetGroup.Standalone, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } },
-            { BuildTargetGroup.iOS, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } }
+            { BuildTargetGroup.iOS, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } },
+            { BuildTargetGroup.tvOS, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } }
         };
 
         private static bool IsColorGamutSupportedOnTargetGroup(BuildTargetGroup targetGroup, ColorGamut gamut)
@@ -1945,6 +1948,7 @@ namespace UnityEditor
             var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
             var scriptingRuntimeVersionNames = new[] {Styles.scriptingRuntimeVersionLegacy, Styles.scriptingRuntimeVersionLatest};
             var newScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
+
             if (EditorApplication.isPlaying)
             {
                 var current = PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? Styles.scriptingRuntimeVersionLegacy : Styles.scriptingRuntimeVersionLatest;
@@ -1955,13 +1959,25 @@ namespace UnityEditor
                 newScriptingRuntimeVersions = BuildEnumPopup(Styles.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
             }
 
+            if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
+            {
+                var activeScriptingRuntime = EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? Styles.scriptingRuntimeVersionLegacy : Styles.scriptingRuntimeVersionLatest;
+                BuildDisabledEnumPopup(activeScriptingRuntime, Styles.scriptingRuntimeVersionActive);
+
+                EditorGUILayout.HelpBox(Styles.scriptingRuntimeVersionActiveWarning.text, MessageType.Warning);
+            }
+
             if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
             {
-                if (EditorUtility.DisplayDialog(
-                        LocalizationDatabase.GetLocalizedString("Restart required"),
-                        LocalizationDatabase.GetLocalizedString("Changing scripting runtime version requires a restart of the Editor to take effect. Do you wish to proceed?"),
-                        LocalizationDatabase.GetLocalizedString("Restart"),
-                        LocalizationDatabase.GetLocalizedString("Cancel")))
+                if (newScriptingRuntimeVersions == EditorApplication.scriptingRuntimeVersion)
+                {
+                    PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+                }
+                else if (EditorUtility.DisplayDialog(
+                             LocalizationDatabase.GetLocalizedString("Restart required"),
+                             LocalizationDatabase.GetLocalizedString("Changing scripting runtime version requires a restart of the Editor to take effect. Do you wish to proceed?"),
+                             LocalizationDatabase.GetLocalizedString("Restart"),
+                             LocalizationDatabase.GetLocalizedString("Cancel")))
                 {
                     PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
                     EditorCompilationInterface.Instance.CleanScriptAssemblies();

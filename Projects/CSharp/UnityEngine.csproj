@@ -248,6 +248,9 @@
   <Compile Include="..\..\Runtime\Export\DiagnosticSwitch.cs">
     <Link>Runtime\Export\DiagnosticSwitch.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Diagnostics\DiagnosticsUtils.bindings.cs">
+    <Link>Runtime\Export\Diagnostics\DiagnosticsUtils.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Director\CameraPlayable.bindings.cs">
     <Link>Runtime\Export\Director\CameraPlayable.bindings.cs</Link>
   </Compile>
@@ -1735,6 +1738,9 @@
   </Compile>
   <Compile Include="..\..\Modules\UIElements\VisualElementUtils.cs">
     <Link>Modules\UIElements\VisualElementUtils.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\VisualTreeHierarchyTracker.cs">
+    <Link>Modules\UIElements\VisualTreeHierarchyTracker.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\VisualTreeLayoutUpdater.cs">
     <Link>Modules\UIElements\VisualTreeLayoutUpdater.cs</Link>

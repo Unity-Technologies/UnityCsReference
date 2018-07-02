@@ -77,6 +77,7 @@ namespace UnityEditor
         static readonly PrefColor kSceneViewWire = new PrefColor("Scene/Wireframe", 0.0f, 0.0f, 0.0f, 0.5f);
         static readonly PrefColor kSceneViewWireOverlay = new PrefColor("Scene/Wireframe Overlay", 0.0f, 0.0f, 0.0f, 0.25f);
         static readonly PrefColor kSceneViewSelectedOutline = new PrefColor("Scene/Selected Outline", 255.0f / 255.0f, 102.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f);
+        static readonly PrefColor kSceneViewSelectedChildrenOutline = new PrefColor("Scene/Selected Children Outline", 94.0f / 255.0f, 119.0f / 255.0f, 155.0f / 255.0f, 0.0f / 255.0f);
         static readonly PrefColor kSceneViewSelectedWire = new PrefColor("Scene/Wireframe Selected", 94.0f / 255.0f, 119.0f / 255.0f, 155.0f / 255.0f, 64.0f / 255.0f);
 
         static readonly PrefColor kSceneViewMaterialValidateLow = new PrefColor("Scene/Material Validator Value Too Low", 255.0f / 255.0f, 0.0f, 0.0f, 1.0f);
@@ -1112,7 +1113,7 @@ namespace UnityEditor
                 return;
 
             // Set scene view colors
-            Handles.SetSceneViewColors(kSceneViewWire, kSceneViewWireOverlay, kSceneViewSelectedOutline, kSceneViewSelectedWire);
+            Handles.SetSceneViewColors(kSceneViewWire, kSceneViewWireOverlay, kSceneViewSelectedOutline, kSceneViewSelectedChildrenOutline, kSceneViewSelectedWire);
 
             // Setup shader replacement if needed by overlay mode
             if (m_CameraMode.drawMode == DrawCameraMode.Overdraw)
@@ -1793,12 +1794,12 @@ namespace UnityEditor
                 GL.Clear(false, true, new Color(0, 0, 0, 0)); // Only clear color. Keep depth intact.
             }
 
+            // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
+            HandleSelectionAndOnSceneGUI();
+
             // Handle commands
             if (evt.type == EventType.ExecuteCommand || evt.type == EventType.ValidateCommand)
                 CommandsGUI();
-
-            // Calling OnSceneGUI before DefaultHandles, so users can use events before the Default Handles
-            HandleSelectionAndOnSceneGUI();
 
             Handles.SetCameraFilterMode(Camera.current, UseSceneFiltering() ? Handles.CameraFilterMode.ShowFiltered : Handles.CameraFilterMode.Off);
 

@@ -146,6 +146,58 @@ namespace UnityEditor.Collaboration
             }
         }
 
+        // Instance of VersionControl interface implementation
+        private static IVersionControl s_VersionControlInstance;
+
+        public static void SetVersionControl(IVersionControl instance)
+        {
+            s_VersionControlInstance = instance;
+            // Initialize version control based on whether collab is enabled
+            if (s_Instance != null)
+            {
+                if (s_Instance.IsCollabEnabledForCurrentProject())
+                {
+                    instance.OnEnableVersionControl();
+                }
+                else
+                {
+                    instance.OnDisableVersionControl();
+                }
+            }
+        }
+
+        [UsedByNativeCode]
+        static void OnEnableVersionControl()
+        {
+            if (s_VersionControlInstance != null)
+            {
+                s_VersionControlInstance.OnEnableVersionControl();
+            }
+        }
+
+        [UsedByNativeCode]
+        static void OnDisableVersionControl()
+        {
+            if (s_VersionControlInstance != null)
+            {
+                s_VersionControlInstance.OnDisableVersionControl();
+            }
+        }
+
+        [UsedByNativeCode]
+        static ChangeItem[] GetChanges()
+        {
+            if (s_VersionControlInstance != null)
+            {
+                return s_VersionControlInstance.GetChanges();
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        // Static constructor for Collab
         static Collab()
         {
             s_Instance = new Collab();

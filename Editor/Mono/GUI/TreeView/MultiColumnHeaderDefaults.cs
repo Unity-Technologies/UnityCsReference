@@ -19,40 +19,14 @@ namespace UnityEditor.IMGUI.Controls
 
         public static class DefaultStyles
         {
-            public static GUIStyle columnHeader;
-            public static GUIStyle columnHeaderRightAligned;
-            public static GUIStyle columnHeaderCenterAligned;
-            public static GUIStyle background;
-            internal static GUIStyle arrowStyle;
-
-            static DefaultStyles()
-            {
-                // Use bar background with 1 pixel line at the bottom to let items have someting to clip against when scrolled
-                background = new GUIStyle("ProjectBrowserTopBarBg");
-                background.fixedHeight = 0;
-                background.border = new RectOffset(3, 3, 3, 3);
-
-                // Column header uses same colors as label, but slightly dimmed to let list items stand out more (similar to win 10)
-                // Use middle alignment to ensure labels are aligned regardless of icon size
-                columnHeader = new GUIStyle(EditorStyles.label);
-                columnHeader.alignment = TextAnchor.MiddleLeft;
-                columnHeader.padding = new RectOffset(4, 4, 0, 0);
-                Color col = columnHeader.normal.textColor;
-                col.a = 0.8f;
-                columnHeader.normal.textColor = col;
-
-                columnHeaderRightAligned = new GUIStyle(columnHeader);
-                columnHeaderRightAligned.alignment = TextAnchor.MiddleRight;
-
-                columnHeaderCenterAligned = new GUIStyle(columnHeader);
-                columnHeaderCenterAligned.alignment = TextAnchor.MiddleCenter;
-
-                // Arrow uses same colors as label (derived)
-                arrowStyle = new GUIStyle(EditorStyles.label);
-                arrowStyle.padding = new RectOffset();
-                arrowStyle.fixedWidth = 13f;
-                arrowStyle.alignment = TextAnchor.UpperCenter; // arrow is alligned at top
-            }
+            // Column header uses same colors as label, but slightly dimmed to let list items stand out more (similar to win 10)
+            // Use middle alignment to ensure labels are aligned regardless of icon size
+            public static GUIStyle columnHeader = "MultiColumnHeader";
+            public static GUIStyle columnHeaderRightAligned = "MultiColumnHeaderRight";
+            public static GUIStyle columnHeaderCenterAligned = "MultiColumnHeaderCenter";
+            public static GUIStyle background = "MultiColumnTopBar"; // Use bar background with 1 pixel line at the bottom to let items have someting to clip against when scrolled
+            // Arrow uses same colors as label (derived) aligned at top
+            internal static GUIStyle arrowStyle = "MultiColumnArrow";
         }
     }
 }

@@ -196,6 +196,7 @@ namespace UnityEditor
             var go = CreateGameObject(null, "Disc Light", typeof(Light));
 
             go.GetComponent<Light>().type = LightType.Disc;
+            go.GetComponent<Light>().shadows = LightShadows.Soft;
             go.GetComponent<Transform>().SetLocalEulerAngles(new Vector3(90, 0, 0), RotationOrder.OrderZXY);
 
             Place(go, parent);

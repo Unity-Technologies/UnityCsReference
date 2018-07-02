@@ -56,7 +56,7 @@ namespace UnityEditor
         {
             get
             {
-                return !isRealtimeLightmap && Unsupported.IsDeveloperMode() && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU;
+                return !isRealtimeLightmap && Unsupported.IsDeveloperMode() && LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten;
             }
         }
 
@@ -223,9 +223,24 @@ namespace UnityEditor
         const string kEditorPrefsInFlight = "LightingWindowGlobalMapsIF";
         const string kEditorPrefsMaterialTextures = "LightingWindowGlobalMapsMT";
 
-        private string SizeString(float size)
+        private static string SizeString(float size)
         {
-            return size.ToString("0.0") + " MB";
+            int inValue = (int)size;
+            if (inValue < 0)
+                return "unknown";
+            float val = (float)inValue;
+            string[] scale = new string[] { "TB", "GB", "MB", "KB", "Bytes" };
+            int idx = scale.Length - 1;
+            while (val > 1000.0f && idx >= 0)
+            {
+                val /= 1000f;
+                idx--;
+            }
+
+            if (idx < 0)
+                return "<error>";
+
+            return string.Format("{0:#.##} {1}", val, scale[idx]);
         }
 
         private float SumSizes(float[] sizes)
@@ -246,8 +261,6 @@ namespace UnityEditor
             return sum;
         }
 
-        enum Precision { Tenths, Hundredths }
-
         private void DebugInfoSection(LightmapData[] lightmaps)
         {
             if (!showDebugInfo)
@@ -255,28 +268,28 @@ namespace UnityEditor
 
             Lightmapping.ResetExplicitlyShownMemLabels();
             float oldWidth = EditorGUIUtility.labelWidth;
-            EditorGUIUtility.labelWidth = 400f;
+            EditorGUIUtility.labelWidth = 400.0f;
 
             System.UInt64[] dummyCounts = new System.UInt64[0];
             {
                 MemLabels labels = Lightmapping.GetTransmissionTexturesMemLabels();
-                ShowObjectNamesSizesAndCounts("Transmission textures", kEditorPrefsTransmissionTextures, labels.labels, labels.sizes, dummyCounts, Precision.Tenths);
+                ShowObjectNamesSizesAndCounts("Transmission textures", kEditorPrefsTransmissionTextures, labels.labels, labels.sizes, dummyCounts);
             }
 
             {
                 MemLabels labels = Lightmapping.GetMaterialTexturesMemLabels();
-                ShowObjectNamesSizesAndCounts("Albedo/emissive textures", kEditorPrefsMaterialTextures, labels.labels, labels.sizes, dummyCounts, Precision.Hundredths);
+                ShowObjectNamesSizesAndCounts("Albedo/emissive textures", kEditorPrefsMaterialTextures, labels.labels, labels.sizes, dummyCounts);
             }
 
             {
                 GeoMemLabels labels = Lightmapping.GetGeometryMemory();
-                ShowObjectNamesSizesAndCounts("Geometry data", kEditorPrefsGeometryData, labels.labels, labels.sizes, labels.triCounts, Precision.Hundredths);
+                ShowObjectNamesSizesAndCounts("Geometry data", kEditorPrefsGeometryData, labels.labels, labels.sizes, labels.triCounts);
             }
 
             {
                 MemLabels labels = Lightmapping.GetNotShownMemLabels();
                 string remainingEntriesFoldoutName = Lightmapping.isProgressiveLightmapperDone ? "Leaks" : "In-flight";
-                ShowObjectNamesSizesAndCounts(remainingEntriesFoldoutName, kEditorPrefsInFlight, labels.labels, labels.sizes, dummyCounts, Precision.Tenths);
+                ShowObjectNamesSizesAndCounts(remainingEntriesFoldoutName, kEditorPrefsInFlight, labels.labels, labels.sizes, dummyCounts);
             }
 
             {
@@ -306,7 +319,7 @@ namespace UnityEditor
                     foreach (var i in lightmapIndices)
                     {
                         LightmapMemory lightmapMemory = Lightmapping.GetLightmapMemory(i.Value);
-                        totalLightmapsSize += lightmapMemory.lightmapDataSize;
+                        totalLightmapsSize += lightmapMemory.lightmapDataSizeCPU;
                         totalLightmapsSize += lightmapMemory.lightmapTexturesSize;
                     }
                 }
@@ -319,6 +332,14 @@ namespace UnityEditor
                 EditorGUILayout.FoldoutTitlebar(true, new GUIContent(foldoutNameFull), true);
 
                 EditorGUIUtility.labelWidth = oldWidth;
+            }
+            {
+                float gpuMemory = Lightmapping.ComputeTotalGPUMemoryUsageInBytes();
+                if (gpuMemory > 0.0f)
+                {
+                    string foldoutNameGPU = String.Format("Total GPU memory ({0})", SizeString(gpuMemory));
+                    EditorGUILayout.FoldoutTitlebar(true, new GUIContent(foldoutNameGPU), true);
+                }
             }
         }
 
@@ -354,7 +375,7 @@ namespace UnityEditor
                 GUILayout.Label("N/A mrays/sec", EditorStyles.miniLabel);
 
             LightmapMemory lightmapMemory = Lightmapping.GetLightmapMemory(index);
-            GUILayout.Label("Lightmap data: " + lightmapMemory.lightmapDataSize.ToString("0.0") + " MB", EditorStyles.miniLabel);
+            GUILayout.Label("Lightmap data: " + SizeString(lightmapMemory.lightmapDataSizeCPU), EditorStyles.miniLabel);
 
             GUILayout.EndVertical();
             GUILayout.Space(5);
@@ -367,10 +388,15 @@ namespace UnityEditor
                 lightmapTexturesSizeContent = EditorGUIUtility.TrTextContent("Lightmap textures: N/A", "This lightmap has converged and is not owned by the Progressive Lightmapper anymore.");
             GUILayout.Label(lightmapTexturesSizeContent, EditorStyles.miniLabel);
 
+            GUIContent GPUSizeContent = null;
+            if (lightmapMemory.lightmapDataSizeGPU > 0.0f)
+                GPUSizeContent = EditorGUIUtility.TrTextContent("GPU memory: " + SizeString(lightmapMemory.lightmapDataSizeGPU));
+            GUILayout.Label(GPUSizeContent, EditorStyles.miniLabel);
+
             GUILayout.EndVertical();
         }
 
-        private void ShowObjectNamesSizesAndCounts(string foldoutName, string editorPrefsName, string[] objectNames, float[] sizes, System.UInt64[] counts, Precision precision)
+        private void ShowObjectNamesSizesAndCounts(string foldoutName, string editorPrefsName, string[] objectNames, float[] sizes, System.UInt64[] counts)
         {
             Debug.Assert(objectNames.Length == sizes.Length);
 
@@ -419,10 +445,9 @@ namespace UnityEditor
                 GUILayout.EndVertical();
 
                 GUILayout.BeginVertical();
-                string format = (precision == Precision.Tenths) ? "0.0" : "0.00";
                 for (int i = 0; i < sizes.Length; ++i)
                 {
-                    GUILayout.Label(sizes[i].ToString(format) + " MB", EditorStyles.miniLabel);
+                    GUILayout.Label(SizeString(sizes[i]), EditorStyles.miniLabel);
                 }
                 GUILayout.EndVertical();
 

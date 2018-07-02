@@ -45,7 +45,7 @@ namespace UnityEditor
                 bool bold = false;
                 foreach (var serializedProperty in properties)
                 {
-                    if (serializedProperty.serializedObject.targetObjects.Length == 1 && serializedProperty.isInstantiatedPrefab)
+                    if (serializedProperty.serializedObject.targetObjectsCount == 1 && serializedProperty.isInstantiatedPrefab)
                     {
                         if (serializedProperty.prefabOverride)
                         {

@@ -22,25 +22,14 @@ namespace UnityEditor
 
         internal static class Styles
         {
-            public static GUIStyle title                     = new GUIStyle(EditorStyles.largeLabel);
+            public static GUIStyle title                     = "LargeBoldLabel";
             public static GUIStyle bottomBarBg               = "ProjectBrowserBottomBarBg";
-            public static GUIStyle topBarBg                  = new GUIStyle("ProjectBrowserHeaderBgTop");
-            public static GUIStyle loadingTextStyle          = new GUIStyle(EditorStyles.label);
+            public static GUIStyle topBarBg                  = "OT TopBar";
+            public static GUIStyle loadingTextStyle          = "CenteredLabel";
             public static GUIContent allText                 = EditorGUIUtility.TrTextContent("All");
             public static GUIContent noneText                = EditorGUIUtility.TrTextContent("None");
             public static GUIContent includeDependenciesText = EditorGUIUtility.TrTextContent("Include dependencies");
             public static GUIContent header                  = EditorGUIUtility.TrTextContent("Items to Export");
-
-            static Styles()
-            {
-                topBarBg.fixedHeight = 0;
-                topBarBg.border.top = topBarBg.border.bottom = 2;
-
-                title.fontStyle = FontStyle.Bold;
-                title.alignment = TextAnchor.MiddleLeft;
-
-                loadingTextStyle.alignment = TextAnchor.MiddleCenter;
-            }
         }
 
         public PackageExport()

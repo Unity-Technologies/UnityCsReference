@@ -74,7 +74,6 @@ namespace UnityEngine.Experimental.UIElements
             UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "pickingMode" };
             UxmlStringAttributeDescription m_Tooltip = new UxmlStringAttributeDescription { name = "tooltip" };
             protected UxmlIntAttributeDescription m_FocusIndex = new UxmlIntAttributeDescription { name = "focusIndex", defaultValue = VisualElement.defaultFocusIndex };
-            UxmlBoolAttributeDescription m_Visible = new UxmlBoolAttributeDescription { name = "visible", defaultValue = true };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -88,7 +87,6 @@ namespace UnityEngine.Experimental.UIElements
                 ve.pickingMode = m_PickingMode.GetValueFromBag(bag);
                 ve.focusIndex = m_FocusIndex.GetValueFromBag(bag);
                 ve.tooltip = m_Tooltip.GetValueFromBag(bag);
-                ve.visible = m_Visible.GetValueFromBag(bag);
             }
         }
 
@@ -428,7 +426,7 @@ namespace UnityEngine.Experimental.UIElements
                     if ((triggerPseudoMask & m_PseudoStates) != 0
                         || (dependencyPseudoMask & ~m_PseudoStates) != 0)
                     {
-                        IncrementVersion(VersionChangeType.Styles);
+                        IncrementVersion(VersionChangeType.StyleSheet);
                     }
                 }
             }
@@ -445,7 +443,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (m_Name == value)
                     return;
                 m_Name = value;
-                IncrementVersion(VersionChangeType.Styles);
+                IncrementVersion(VersionChangeType.StyleSheet);
             }
         }
 
@@ -631,9 +629,6 @@ namespace UnityEngine.Experimental.UIElements
 
             if (panel != null)
             {
-                //we need to notify the current panel that its topology has changed
-                IncrementVersion(VersionChangeType.Hierarchy);
-
                 using (var e = DetachFromPanelEvent.GetPooled(panel, p))
                 {
                     e.target = this;
@@ -658,7 +653,7 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             // styles are dependent on topology
-            IncrementVersion(VersionChangeType.Styles | VersionChangeType.Hierarchy | VersionChangeType.Transform);
+            IncrementVersion(VersionChangeType.StyleSheet | VersionChangeType.Layout | VersionChangeType.Transform);
 
             // persistent data key may have changed or needs initialization
             if (!string.IsNullOrEmpty(persistenceKey))
@@ -677,33 +672,31 @@ namespace UnityEngine.Experimental.UIElements
 
         private VersionChangeType GetVersionChange(ChangeType type)
         {
-            VersionChangeType versionChangeType = VersionChangeType.All;
+            VersionChangeType versionChangeType = 0;
 
-            if ((type & ChangeType.PersistentData) != ChangeType.PersistentData &&
-                (type & ChangeType.PersistentDataPath) != ChangeType.PersistentDataPath)
+            if ((type & (ChangeType.PersistentData | ChangeType.PersistentDataPath)) > 0)
             {
-                versionChangeType &= ~VersionChangeType.PersistentData;
+                versionChangeType |= VersionChangeType.PersistentData;
             }
 
-            if ((type & ChangeType.Layout) != ChangeType.Layout)
+            if ((type & ChangeType.Layout) == ChangeType.Layout)
             {
-                versionChangeType &= ~VersionChangeType.Layout;
+                versionChangeType |= VersionChangeType.Layout;
             }
 
-            if ((type & ChangeType.Styles) != ChangeType.Styles &&
-                (type & ChangeType.StylesPath) != ChangeType.StylesPath)
+            if ((type & (ChangeType.Styles | ChangeType.StylesPath)) > 0)
             {
-                versionChangeType &= ~VersionChangeType.Styles;
+                versionChangeType |= VersionChangeType.StyleSheet;
             }
 
-            if ((type & ChangeType.Transform) != ChangeType.Transform)
+            if ((type & ChangeType.Transform) == ChangeType.Transform)
             {
-                versionChangeType &= ~VersionChangeType.Transform;
+                versionChangeType |= VersionChangeType.Transform;
             }
 
-            if ((type & ChangeType.Repaint) != ChangeType.Repaint)
+            if ((type & ChangeType.Repaint) == ChangeType.Repaint)
             {
-                versionChangeType &= ~VersionChangeType.Repaint;
+                versionChangeType |= VersionChangeType.Repaint;
             }
 
             return versionChangeType;
@@ -1113,7 +1106,7 @@ namespace UnityEngine.Experimental.UIElements
                 onStylesResolved(m_Style);
             }
             OnStyleResolved(m_Style);
-            IncrementVersion(VersionChangeType.Repaint);
+            IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
         }
 
         public void ResetPositionProperties()
@@ -1158,7 +1151,7 @@ namespace UnityEngine.Experimental.UIElements
             if (m_ClassList != null && m_ClassList.Count > 0)
             {
                 m_ClassList.Clear();
-                IncrementVersion(VersionChangeType.Styles);
+                IncrementVersion(VersionChangeType.StyleSheet);
             }
         }
 
@@ -1169,7 +1162,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (m_ClassList.Add(className))
             {
-                IncrementVersion(VersionChangeType.Styles);
+                IncrementVersion(VersionChangeType.StyleSheet);
             }
         }
 
@@ -1177,7 +1170,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (m_ClassList != null && m_ClassList.Remove(className))
             {
-                IncrementVersion(VersionChangeType.Styles);
+                IncrementVersion(VersionChangeType.StyleSheet);
             }
         }
 

@@ -39,20 +39,15 @@ namespace UnityEditor
         {
             public GUIStyle ConsoleEntryBackEven  = "CN EntryBackEven";
             public GUIStyle ConsoleEntryBackOdd   = "CN EntryBackOdd";
-            public GUIStyle title                 = new GUIStyle(EditorStyles.largeLabel);
+            public GUIStyle title                 = "LargeBoldLabel";
             public GUIStyle bottomBarBg           = "ProjectBrowserBottomBarBg";
-            public GUIStyle topBarBg              = new GUIStyle("ProjectBrowserHeaderBgTop");
+            public GUIStyle topBarBg              = "OT TopBar";
             public GUIStyle textureIconDropShadow = "ProjectBrowserTextureIconDropShadow";
             public Color    lineColor;
 
             public Constants()
             {
                 lineColor = EditorGUIUtility.isProSkin ? new Color(0.1f, 0.1f, 0.1f) : new Color(0.4f, 0.4f, 0.4f);
-                topBarBg.fixedHeight = 0;
-                topBarBg.border.top = topBarBg.border.bottom = 2;
-
-                title.fontStyle = FontStyle.Bold;
-                title.alignment = TextAnchor.MiddleLeft;
             }
         }
         static Constants ms_Constants;

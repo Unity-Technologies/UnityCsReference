@@ -30,27 +30,16 @@ namespace UnityEditor
 
             public static readonly GUIContent inspectedWindowLabel = EditorGUIUtility.TrTextContent("Inspected View: ");
 
-            public static readonly GUIStyle listItem = new GUIStyle("PR Label");
-            public static readonly GUIStyle listItemBackground = new GUIStyle("CN EntryBackOdd");
-            public static readonly GUIStyle listBackgroundStyle = new GUIStyle("CN Box");
-            public static readonly GUIStyle boxStyle = new GUIStyle("CN Box");
-            public static readonly GUIStyle stackframeStyle = new GUIStyle(EditorStyles.label);
-            public static readonly GUIStyle stacktraceBackground = new GUIStyle("CN Box");
-            public static readonly GUIStyle centeredText = new GUIStyle("PR Label");
+            public static readonly GUIStyle listItem = "PR Label";
+            public static readonly GUIStyle listItemBackground = "CN EntryBackOdd";
+            public static readonly GUIStyle listBackgroundStyle = "CN Box";
+            public static readonly GUIStyle boxStyle = "CN Box";
+            public static readonly GUIStyle stackframeStyle = "CN StacktraceStyle";
+            public static readonly GUIStyle stacktraceBackground = "CN StacktraceBackground";
+            public static readonly GUIStyle centeredText = "CN CenteredText";
 
             public static readonly Color contentHighlighterColor = new Color(0.62f, 0.77f, 0.90f, 0.5f);
             public static readonly Color paddingHighlighterColor = new Color(0.76f, 0.87f, 0.71f, 0.5f);
-
-            static Styles()
-            {
-                stackframeStyle.margin = new RectOffset(0, 0, 0, 0);
-                stackframeStyle.padding = new RectOffset(0, 0, 0, 0);
-                stacktraceBackground.padding = new RectOffset(5, 5, 5, 5);
-
-                centeredText.alignment = TextAnchor.MiddleCenter;
-                centeredText.stretchHeight = true;
-                centeredText.stretchWidth = true;
-            }
         }
 
         static GUIViewDebuggerWindow s_ActiveInspector;

@@ -7,6 +7,7 @@ using UnityEditor;
 
 namespace UnityEditor
 {
+    [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
     [CustomEditor(typeof(MovieTexture))]
     [CanEditMultipleObjects]
     internal class MovieTextureInspector : TextureInspector

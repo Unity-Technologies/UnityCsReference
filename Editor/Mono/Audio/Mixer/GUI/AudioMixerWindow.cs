@@ -113,9 +113,9 @@ namespace UnityEditor
             public GUIContent infoText;
             public GUIContent selectAudioMixer;
             public GUIContent output;
-            public GUIStyle toolbarObjectField = new GUIStyle("ShurikenObjectField");
-            public GUIStyle toolbarLabel = new GUIStyle(EditorStyles.miniLabel);
-            public GUIStyle mixerHeader = new GUIStyle(EditorStyles.largeLabel);
+            public GUIStyle toolbarObjectField = "AM ToolbarObjectField";
+            public GUIStyle toolbarLabel = "AM ToolbarLabel";
+            public GUIStyle mixerHeader = "AM MixerHeader";
 
             public GUIContents()
             {
@@ -124,18 +124,6 @@ namespace UnityEditor
                 infoText = EditorGUIUtility.TrTextContent("Create an AudioMixer asset from the Project Browser to get started");
                 selectAudioMixer = EditorGUIUtility.TrTextContent("", "Select an Audio Mixer");
                 output = EditorGUIUtility.TrTextContent("Output", "Select an Audio Mixer Group from another Audio Mixer to output to. If 'None' is selected then output is routed directly to the Audio Listener.");
-                toolbarLabel.alignment = TextAnchor.MiddleLeft;
-                toolbarObjectField.normal.textColor = toolbarLabel.normal.textColor;
-
-                mixerHeader.fontStyle = FontStyle.Bold;
-                mixerHeader.fontSize = 17;
-                mixerHeader.margin = new RectOffset();
-                mixerHeader.padding = new RectOffset();
-                mixerHeader.alignment = TextAnchor.MiddleLeft;
-                if (!EditorGUIUtility.isProSkin)
-                    mixerHeader.normal.textColor = new Color(0.4f, 0.4f, 0.4f, 1.0f);
-                else
-                    mixerHeader.normal.textColor = new Color(0.7f, 0.7f, 0.7f, 1.0f);
             }
         }
         private static GUIContents s_GuiContents;

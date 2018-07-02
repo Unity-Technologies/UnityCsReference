@@ -13,41 +13,15 @@ namespace UnityEditor.AdvancedDropdown
     {
         private static class Styles
         {
-            public static GUIStyle itemStyle = new GUIStyle("PR Label");
-            public static GUIStyle header = new GUIStyle(EditorStyles.inspectorBig);
-            public static GUIStyle headerArrow = new GUIStyle();
-            public static GUIStyle checkMark = new GUIStyle("PR Label");
-            public static GUIStyle lineSeparator = new GUIStyle();
+            public static GUIStyle itemStyle = "DD ItemStyle";
+            public static GUIStyle header = "DD HeaderStyle";
+            public static GUIStyle headerArrow = "DefaultCenteredLargeText";
+            public static GUIStyle checkMark = "DD ItemCheckmark";
+            public static GUIStyle lineSeparator = "DefaultLineSeparator";
 
             public static GUIContent checkMarkContent = new GUIContent("✔");
             public static GUIContent arrowRightContent = new GUIContent("▸");
             public static GUIContent arrowLeftContent = new GUIContent("◂");
-
-            static Styles()
-            {
-                itemStyle.alignment = TextAnchor.MiddleLeft;
-                itemStyle.padding = new RectOffset(0, 0, 0, 0);
-                itemStyle.margin = new RectOffset(0, 0, 0, 0);
-                itemStyle.fixedHeight += 1;
-
-                header.font = EditorStyles.boldLabel.font;
-                header.margin = new RectOffset(0, 0, 0, 0);
-                header.border = new RectOffset(0, 0, 3, 3);
-                header.padding = new RectOffset(6, 6, 6, 6);
-                header.contentOffset = Vector2.zero;
-
-                headerArrow.alignment = TextAnchor.MiddleCenter;
-                headerArrow.fontSize = 20;
-
-                lineSeparator.fixedHeight = 1;
-                lineSeparator.margin.bottom = 2;
-                lineSeparator.margin.top = 2;
-
-                checkMark.alignment = TextAnchor.MiddleCenter;
-                checkMark.padding = new RectOffset(0, 0, 0, 0);
-                checkMark.margin = new RectOffset(0, 0, 0, 0);
-                checkMark.fixedHeight += 1;
-            }
         }
 
         //This should ideally match line height

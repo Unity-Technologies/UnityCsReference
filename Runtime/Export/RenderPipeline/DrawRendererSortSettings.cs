@@ -6,21 +6,30 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Experimental.Rendering
 {
+    public enum DrawRendererSortMode
+    {
+        Perspective,
+        Orthographic,
+        CustomAxis
+    }
+
     // match DrawRendererSortSettings on C++ side
     [StructLayout(LayoutKind.Sequential)]
     public struct DrawRendererSortSettings
     {
         public Matrix4x4 worldToCameraMatrix;
         public Vector3 cameraPosition;
+        public Vector3 cameraCustomSortAxis;
         public SortFlags flags;
-        private int _sortOrthographic;
+        public DrawRendererSortMode sortMode;
         private Matrix4x4 _previousVPMatrix;
         private Matrix4x4 _nonJitteredVPMatrix;
 
+        [System.Obsolete("Use sortMode instead")]
         public bool sortOrthographic
         {
-            get { return _sortOrthographic != 0; }
-            set { _sortOrthographic = value ? 1 : 0; }
+            get { return sortMode == DrawRendererSortMode.Orthographic; }
+            set { sortMode = value ? DrawRendererSortMode.Orthographic : DrawRendererSortMode.Perspective; }
         }
     }
 }

@@ -45,7 +45,7 @@ namespace UnityEditor.Scripting.Compilers
 
         string GetBooCompilerDirectory()
         {
-            if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
                 return GetMonoProfileLibDirectory();
 
             return Path.Combine(MonoInstallationFinder.GetProfilesDirectory(MonoInstallationFinder.MonoBleedingEdgeInstallation), k_UnityScriptProfileDirectory);
@@ -53,7 +53,7 @@ namespace UnityEditor.Scripting.Compilers
 
         string GetBooProfileDirectory()
         {
-            if (PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
                 return BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
 
             return k_UnityScriptProfileDirectory;

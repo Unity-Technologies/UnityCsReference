@@ -803,15 +803,6 @@ namespace UnityEditorInternal
 
         private void DoSpriteDropAfterGeneratingNewDopeline(AnimationClip animationClip, EditorCurveBinding? spriteBinding)
         {
-            if (DragAndDrop.objectReferences.Length == 1)
-            {
-                UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop single sprite into empty dopesheet", "null", 1);
-            }
-            else
-            {
-                UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop multiple sprites into empty dopesheet", "null", 1);
-            }
-
             // Create the new curve for our sprites
             AnimationWindowCurve newCurve = new AnimationWindowCurve(animationClip, (EditorCurveBinding)spriteBinding, typeof(Sprite));
 
@@ -1185,11 +1176,6 @@ namespace UnityEditorInternal
 
             if (perform)
             {
-                if (DragAndDrop.objectReferences.Length == 1)
-                    UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop single sprite into existing dopeline", "null", 1);
-                else
-                    UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop multiple sprites into existing dopeline", "null", 1);
-
                 float time = Mathf.Max(state.PixelToTime(Event.current.mousePosition.x, AnimationWindowState.SnapMode.SnapToClipFrame), 0f);
                 AnimationWindowCurve targetCurve = GetCurveOfType(dopeLine, targetType);
                 PerformDragAndDrop(targetCurve, time);

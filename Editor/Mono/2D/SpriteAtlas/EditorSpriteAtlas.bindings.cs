@@ -15,10 +15,10 @@ namespace UnityEditor.U2D
     public class SpriteAtlasUtility
     {
         [FreeFunction("CollectAllSpriteAtlasesAndPack")]
-        extern public static void PackAllAtlases(BuildTarget target);
+        extern public static void PackAllAtlases(BuildTarget target, bool canCancel = true);
 
         [FreeFunction("PackSpriteAtlases")]
-        extern public static void PackAtlases(SpriteAtlas[] atlases, BuildTarget target);
+        extern public static void PackAtlases(SpriteAtlas[] atlases, BuildTarget target, bool canCancel = true);
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -95,5 +95,6 @@ namespace UnityEditor.U2D
         extern internal static Texture2D[] GetPreviewTextures(this SpriteAtlas spriteAtlas);
         extern internal static Texture2D[] GetPreviewAlphaTextures(this SpriteAtlas spriteAtlas);
         extern internal static TextureFormat GetTextureFormat(this SpriteAtlas spriteAtlas, BuildTarget target);
+        extern internal static Sprite[] GetPackedSprites(this SpriteAtlas spriteAtlas);
     }
 }

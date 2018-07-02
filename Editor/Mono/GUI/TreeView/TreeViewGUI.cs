@@ -48,40 +48,14 @@ namespace UnityEditor.IMGUI.Controls
         internal static class Styles
         {
             public static GUIStyle foldout = "IN Foldout";
-            public static GUIStyle insertion = new GUIStyle("PR Insertion");
-            public static GUIStyle ping = new GUIStyle("PR Ping");
+            public static GUIStyle insertion = "TV Insertion";
+            public static GUIStyle ping = "TV Ping";
             public static GUIStyle toolbarButton = "ToolbarButton";
-            public static GUIStyle lineStyle = new GUIStyle("PR Label");
-            public static GUIStyle lineBoldStyle;
-            public static GUIStyle selectionStyle = new GUIStyle("PR Label");
+            public static GUIStyle lineStyle = "TV Line";
+            public static GUIStyle lineBoldStyle = "TV LineBold";
+            public static GUIStyle selectionStyle = "TV Selection";
             public static GUIContent content = new GUIContent(EditorGUIUtility.FindTexture(EditorResources.folderIconName));
 
-            static Styles()
-            {
-                // We want to render selection separately from text and icon, so clear background textures
-
-                // TODO: Fix in new style setup
-                var transparent = lineStyle.hover.background;
-                lineStyle.onNormal.background = transparent;
-                lineStyle.onActive.background = transparent;
-                lineStyle.onFocused.background = transparent;
-                lineStyle.hover.background = null;
-                lineStyle.alignment = TextAnchor.UpperLeft;     // We use UpperLeft to use same alignment as labels and controls so it is consistent when used in multi column treeviews
-                lineStyle.padding.top = 2;                      // Use a value that centers the text when the rect height is EditorGUIUtility.singleLineHeight
-                lineStyle.fixedHeight = 0;                      // Ensure drop marker rendering fits to entire rect
-
-                lineBoldStyle = new GUIStyle(lineStyle);
-                lineBoldStyle.font = EditorStyles.boldLabel.font;
-                lineBoldStyle.fontStyle = EditorStyles.boldLabel.fontStyle;
-                ping.padding.left = 16;
-                ping.padding.right = 16;
-                ping.fixedHeight = 16; // needed because otherwise height becomes the largest mip map size in the icon
-
-                selectionStyle.fixedHeight = 0;
-                selectionStyle.border = new RectOffset();
-
-                insertion.overflow = new RectOffset(4, 0, 0, 0);
-            }
 
             public static float foldoutWidth
             {

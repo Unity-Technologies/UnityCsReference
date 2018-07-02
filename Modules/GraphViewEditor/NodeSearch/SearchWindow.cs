@@ -38,34 +38,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         class Styles
         {
-            public GUIStyle header = EditorStyles.inspectorBig;
-            public GUIStyle componentButton = new GUIStyle("PR Label");
-            public GUIStyle groupButton;
+            public GUIStyle header = "AC BoldHeader";
+            public GUIStyle componentButton = "AC ComponentButton";
+            public GUIStyle groupButton = "AC GroupButton";
             public GUIStyle background = "grey_border";
             public GUIStyle previewBackground = "PopupCurveSwatchBackground";
-            public GUIStyle previewHeader = new GUIStyle(EditorStyles.label);
-            public GUIStyle previewText = new GUIStyle(EditorStyles.wordWrappedLabel);
+            public GUIStyle previewHeader = "AC PreviewHeader";
+            public GUIStyle previewText = "AC PreviewText";
             public GUIStyle rightArrow = "AC RightArrow";
             public GUIStyle leftArrow = "AC LeftArrow";
-
-            public Styles()
-            {
-                header.font = EditorStyles.boldLabel.font;
-
-                componentButton.alignment = TextAnchor.MiddleLeft;
-                componentButton.padding.left -= 15;
-                componentButton.fixedHeight = 20;
-
-                groupButton = new GUIStyle(componentButton);
-                groupButton.padding.left += 17;
-
-                previewText.padding.left += 3;
-                previewText.padding.right += 3;
-                previewHeader.padding.left += 3 - 2;
-                previewHeader.padding.right += 3;
-                previewHeader.padding.top += 3;
-                previewHeader.padding.bottom += 2;
-            }
         }
 
         // Constants

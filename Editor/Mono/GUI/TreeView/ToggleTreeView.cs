@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
@@ -15,16 +16,22 @@ internal abstract class ToggleTreeViewItem : TreeViewItem
 
 internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
 {
-    static class Style
+    static class Styles
     {
         public static GUIContent toggleAll = EditorGUIUtility.TrTextContent("Toggle All");
         public static GUIContent expandAll = EditorGUIUtility.TrTextContent("Expand All");
         public static GUIContent collapseAll = EditorGUIUtility.TrTextContent("Collapse All");
         public static GUIContent toggle = EditorGUIUtility.TrTextContent("", "Maintain Alt/Option key to enable or disable all children");
+
+        public static GUIContent filterSelected = new GUIContent(EditorGUIUtility.FindTexture("FilterSelectedOnly"), "Filter selected only");
+
+        public static GUIStyle searchEnabledButton = "ToolbarButtonFlat";
     }
 
-    SearchField m_SearchField;
+    static string s_Regex = "(?:(.*) |^)(s:)(false|true)(?: (.*)|$)";
+
     Func<T> m_RebuildRoot;
+    List<TreeViewItem> m_DefaultRows;
 
     public enum Column
     {
@@ -45,9 +52,6 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
 
         foldoutOverride = DoFoldoutButtonOverride;
 
-        m_SearchField = new SearchField();
-        m_SearchField.downOrUpArrowKeyPressed += SetFocusAndEnsureSelectedItem;
-
         Reload();
     }
 
@@ -55,29 +59,82 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
 
     public float totalHeightIncludingSearchBarAndBottomBar => totalHeight + 18f + EditorGUI.kSingleLineHeight;
 
-    public override void OnGUI(Rect rect)
+    protected override IList<TreeViewItem> BuildRows(TreeViewItem root)
     {
-        var searchFieldRect = rect;
-        searchFieldRect.yMax = searchFieldRect.yMin + 20f;
-        EditorGUI.BeginChangeCheck();
-        var search = m_SearchField.OnGUI(searchFieldRect, searchString);
-        if (EditorGUI.EndChangeCheck())
+        // Reuse cached list (for capacity)
+        if (m_DefaultRows == null)
+            m_DefaultRows = new List<TreeViewItem>(100);
+        m_DefaultRows.Clear();
+
+        if (hasSearch)
+            SearchFullTree(m_DefaultRows);
+        else
+            AddExpandedRows(root, m_DefaultRows);
+        return m_DefaultRows;
+    }
+
+    void SearchFullTree(List<TreeViewItem> rows)
+    {
+        if (rows == null)
+            throw new ArgumentException("Invalid list: cannot be null", nameof(rows));
+
+        var search = searchString;
+        bool searchEnabledState = false;
+        bool searchedEnabledState = false;
+        var match = Regex.Match(search, s_Regex);
+        if (match.Success)
         {
-            bool wasSearching = hasSearch;
-            searchString = search;
-            if (wasSearching && !hasSearch)
+            search = match.Groups[1].Value + match.Groups[4].Value;
+            searchEnabledState = true;
+            searchedEnabledState = match.Groups[3].Value == "true";
+        }
+
+        var stack = new Stack<TreeViewItem>();
+        stack.Push(rootItem);
+        while (stack.Count > 0)
+        {
+            TreeViewItem current = stack.Pop();
+            if (current.children != null)
             {
-                foreach (var item in GetSelection())
+                foreach (var child in current.children)
                 {
-                    FrameItem(item);
+                    if (child != null)
+                    {
+                        if (!searchEnabledState || ((ToggleTreeViewItem)child).nodeState == searchedEnabledState)
+                            if (DoesItemMatchSearch(child, search))
+                                rows.Add(child);
+
+                        stack.Push(child);
+                    }
                 }
             }
         }
 
+        rows.Sort((x, y) => EditorUtility.NaturalCompare(x.displayName, y.displayName));
+    }
+
+    protected override bool DoesItemMatchSearch(TreeViewItem item, string search)
+    {
+        return string.IsNullOrEmpty(search) || base.DoesItemMatchSearch(item, search);
+    }
+
+    public override void OnGUI(Rect rect)
+    {
+        var searchFieldRect = DrawSearchField(rect);
+
         var baseGUIRect = rect;
         baseGUIRect.yMin = searchFieldRect.yMax;
         baseGUIRect.yMax = baseGUIRect.yMin + totalHeight;
-        base.OnGUI(EditorGUI.IndentedRect(baseGUIRect));
+        DrawTreeViewGUI(baseGUIRect);
+
+        var bottomRect = rect;
+        bottomRect.yMin = bottomRect.yMax - EditorGUI.kSingleLineHeight + 3f;
+        BottomGUI(EditorGUI.IndentedRect(bottomRect));
+    }
+
+    void DrawTreeViewGUI(Rect rect)
+    {
+        base.OnGUI(EditorGUI.IndentedRect(rect));
         if (HasFocus() && Event.current.type == EventType.KeyDown
             && (Event.current.keyCode == KeyCode.Space || Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter))
         {
@@ -95,10 +152,49 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
                 }
             }
         }
+    }
 
-        var bottomRect = rect;
-        bottomRect.yMin = bottomRect.yMax - EditorGUI.kSingleLineHeight + 3f;
-        BottomGUI(EditorGUI.IndentedRect(bottomRect));
+    Rect DrawSearchField(Rect rect)
+    {
+        var fieldRect = rect;
+        fieldRect.yMax = fieldRect.yMin + 20f;
+        fieldRect = EditorGUI.IndentedRect(fieldRect);
+        if (Event.current.type == EventType.Repaint)
+            EditorStyles.helpBox.Draw(fieldRect, GUIContent.none, 0);
+
+        var buttonRect = fieldRect;
+        buttonRect.xMin = buttonRect.xMax - 22f - 6f;
+        buttonRect.xMax = buttonRect.xMin + 22f;
+        using (new EditorGUI.DisabledScope(Regex.IsMatch(searchString, s_Regex)))
+        {
+            if (GUI.Button(buttonRect, Styles.filterSelected, Styles.searchEnabledButton))
+            {
+                searchString = "s:true " + searchString;
+            }
+        }
+
+        EditorGUI.BeginChangeCheck();
+        var searchRect = fieldRect;
+        searchRect.y += 3f;
+        searchRect.height -= 2f;
+        searchRect.xMin += 7f;
+        searchRect.xMax = buttonRect.xMin - 2f;
+        var search = EditorGUI.ToolbarSearchField(searchRect, searchString, false);
+        if (EditorGUI.EndChangeCheck())
+        {
+            bool wasSearching = hasSearch;
+            searchString = search;
+            if (wasSearching && !hasSearch)
+            {
+                foreach (var item in GetSelection())
+                {
+                    FrameItem(item);
+                }
+            }
+        }
+
+        fieldRect.yMax -= 2f;
+        return fieldRect;
     }
 
     protected virtual void BottomGUI(Rect rect)
@@ -106,11 +202,11 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
         using (new EditorGUI.DisabledScope(!hasNodes))
         {
             var buttonRect = rect;
-            var buttonSize = EditorStyles.miniButton.CalcSize(Style.toggleAll);
+            var buttonSize = EditorStyles.miniButton.CalcSize(Styles.toggleAll);
             buttonRect.yMin = buttonRect.yMax - buttonSize.y;
             buttonRect.xMax = buttonRect.xMin + buttonSize.x;
             buttonRect.y += 2f;
-            if (GUI.Button(buttonRect, Style.toggleAll, EditorStyles.miniButton))
+            if (GUI.Button(buttonRect, Styles.toggleAll, EditorStyles.miniButton))
             {
                 ToggleAll();
             }
@@ -118,18 +214,18 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
             // lets make sure expand and collapse buttons are always enabled when there is any node.
             var enabledGUI = GUI.enabled;
             GUI.enabled = hasNodes;
-            buttonSize = EditorStyles.miniButton.CalcSize(Style.collapseAll);
+            buttonSize = EditorStyles.miniButton.CalcSize(Styles.collapseAll);
             buttonRect.xMax = rect.xMax;
             buttonRect.xMin = buttonRect.xMax - buttonSize.x;
-            if (GUI.Button(buttonRect, Style.collapseAll, EditorStyles.miniButton))
+            if (GUI.Button(buttonRect, Styles.collapseAll, EditorStyles.miniButton))
             {
                 CollapseAll();
             }
 
-            buttonSize = EditorStyles.miniButton.CalcSize(Style.expandAll);
+            buttonSize = EditorStyles.miniButton.CalcSize(Styles.expandAll);
             buttonRect.xMax = buttonRect.xMin - 2f;
             buttonRect.xMin = buttonRect.xMax - buttonSize.x;
-            if (GUI.Button(buttonRect, Style.expandAll, EditorStyles.miniButton))
+            if (GUI.Button(buttonRect, Styles.expandAll, EditorStyles.miniButton))
             {
                 ExpandAll();
             }
@@ -186,7 +282,7 @@ internal class ToggleTreeView<T> : TreeView where T : ToggleTreeViewItem, new()
 
             // center the toggle button in the cell
             cellRect.xMin = cellRect.xMin + cellRect.width / 2f - 8f;
-            isActive = GUI.Toggle(cellRect, isActive, Style.toggle);
+            isActive = GUI.Toggle(cellRect, isActive, Styles.toggle);
             if (change.changed)
             {
                 var selection = GetSelection();

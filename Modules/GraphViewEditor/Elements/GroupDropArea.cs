@@ -4,15 +4,14 @@
 
 using System.Linq;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements.GraphView
 {
     internal class GroupDropArea : VisualElement, IDropTarget
     {
-        public GroupDropArea()
-        {
-        }
+        List<GraphElement> m_RemovedElements = null;
 
         public bool CanAcceptDrop(List<ISelectable> selection)
         {
@@ -25,7 +24,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public bool DragLeave(DragLeaveEvent evt, IEnumerable<ISelectable> selection, IDropTarget leftTarget, ISelection dragSource)
         {
             RemoveFromClassList("dragEntered");
-
             return true;
         }
 
@@ -37,7 +35,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public bool DragExited()
         {
             RemoveFromClassList("dragEntered");
-
+            m_RemovedElements = null;
             return false;
         }
 
@@ -45,21 +43,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             Group group = parent.GetFirstAncestorOfType<Group>();
 
-            foreach (ISelectable selectedElement in selection)
+            List<GraphElement> elemsToAdd =
+                selection
+                .Cast<GraphElement>()
+                .Where(e => e != group && !group.containedElements.Contains(e) && !(e.GetContainingScope() is Group))
+                .ToList();     // ToList required here as the enumeration might be done again *after* the elements are added to the group
+
+            if (elemsToAdd.Any())
             {
-                if (selectedElement != group)
-                {
-                    var selectedGraphElement = selectedElement as GraphElement;
-
-                    if (group.containedElements.Contains(selectedGraphElement) || selectedGraphElement.GetContainingScope() is Group)
-                        continue;
-
-                    group.AddElement(selectedGraphElement);
-                }
+                group.AddElements(elemsToAdd);
             }
 
             RemoveFromClassList("dragEntered");
-
+            m_RemovedElements = null;
             return true;
         }
 
@@ -67,6 +63,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             Group group = parent.GetFirstAncestorOfType<Group>();
             bool canDrop = false;
+            bool areElementsDraggedOut = false;
 
             foreach (ISelectable selectedElement in selection)
             {
@@ -79,16 +76,24 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     if (group.containedElements.Contains(selectedGraphElement))
                     {
-                        group.RemoveElement(selectedGraphElement);
+                        areElementsDraggedOut = true;
+                        if (m_RemovedElements == null)
+                        {
+                            m_RemovedElements = new List<GraphElement>();
+                        }
+                        m_RemovedElements.Add(selectedGraphElement);
                     }
                 }
-                else
+
+                if (!group.containedElements.Contains(selectedGraphElement) && !(selectedGraphElement.GetContainingScope() is Group))
                 {
-                    if (!group.containedElements.Contains(selectedGraphElement) && !(selectedGraphElement.GetContainingScope() is Group))
-                    {
-                        canDrop = true;
-                    }
+                    canDrop = true;
                 }
+            }
+
+            if (areElementsDraggedOut)
+            {
+                group.RemoveElementsWithoutNotification(m_RemovedElements);
             }
 
             if (canDrop)

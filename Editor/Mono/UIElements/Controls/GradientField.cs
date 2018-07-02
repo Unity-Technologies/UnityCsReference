@@ -40,8 +40,6 @@ namespace UnityEditor.Experimental.UIElements
                         UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
                 }
-
-                UpdateGradientTexture();
             }
         }
 
@@ -138,6 +136,7 @@ namespace UnityEditor.Experimental.UIElements
                 m_Value.alphaKeys = new[] { k_AlphaKeyBegin, k_AlphaKeyEnd };
                 m_Value.mode = GradientMode.Blend;
             }
+            UpdateGradientTexture();
         }
 
         [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]

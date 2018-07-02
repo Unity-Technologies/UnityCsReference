@@ -85,7 +85,7 @@ namespace UnityEditorInternal
             public readonly GUIStyle footerBackground = "RL Footer";
             public readonly GUIStyle boxBackground = "RL Background";
             public readonly GUIStyle preButton = "RL FooterButton";
-            public GUIStyle elementBackground = new GUIStyle("RL Element");
+            public readonly GUIStyle elementBackground = "RL Element";
             public const int padding = 6;
             public const int dragHandleWidth = 20;
             private static GUIContent s_ListIsEmpty = EditorGUIUtility.TrTextContent("List is Empty");

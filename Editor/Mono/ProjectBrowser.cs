@@ -774,6 +774,7 @@ namespace UnityEditor
                 "AnimationClip",
                 "AudioClip",
                 "AudioMixer",
+                "ComputeShader",
                 "Font",
                 "GUISkin",
                 "Material",
@@ -1484,6 +1485,15 @@ namespace UnityEditor
             }
         }
 
+        [UsedByNativeCode]
+        internal static string GetSelectedPath()
+        {
+            if (s_LastInteractedProjectBrowser == null)
+                return string.Empty;
+
+            return s_LastInteractedProjectBrowser.m_SelectedPath;
+        }
+
         // Also called from C++ (used for AssetsMenu check if selection is Packages folder)
         [UsedByNativeCode]
         internal static bool SelectionIsPackagesRootFolder()
@@ -1718,22 +1728,10 @@ namespace UnityEditor
             else
             {
                 string displayPath = m_SelectedPath;
-                string rootPath = "Assets/";
-                if (m_SelectedPath.StartsWith(rootPath, StringComparison.CurrentCultureIgnoreCase))
-                    displayPath = m_SelectedPath.Substring(rootPath.Length);
-                else if (m_SelectedPath.StartsWith(PackageManager.Folders.GetPackagesMountPoint() + "/", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    rootPath = PackageManager.Folders.GetPackagesMountPoint() + "/";
-                    var packageInfo = PackageManager.Packages.GetForAssetPath(m_SelectedPath);
-                    if (packageInfo != null && !string.IsNullOrEmpty(packageInfo.displayName))
-                        displayPath = Regex.Replace(m_SelectedPath, @"^" + packageInfo.assetPath, packageInfo.displayName);
-                    else
-                        displayPath = m_SelectedPath.Substring(rootPath.Length);
-                }
 
                 if (m_SearchFilter.GetState() == SearchFilter.State.FolderBrowsing)
                 {
-                    m_SelectedPathSplitted.Add(new GUIContent(rootPath + displayPath, AssetDatabase.GetCachedIcon(m_SelectedPath)));
+                    m_SelectedPathSplitted.Add(new GUIContent(displayPath, AssetDatabase.GetCachedIcon(m_SelectedPath)));
                 }
                 else
                 {
@@ -1753,13 +1751,13 @@ namespace UnityEditor
                         m_SelectedPathSplitted.Reverse ();
                          */
 
-                        string[] split = displayPath.Split('/');
-                        string[] splitPath = m_SelectedPath.Split('/');
-                        string curPath = rootPath;
-                        for (int i = 0, j = 1; i < split.Length; ++i, ++j)
+                        var split = displayPath.Split('/');
+                        var splitPath = m_SelectedPath.Split('/');
+                        var curPath = string.Empty;
+                        for (var i = 0; i < split.Length; ++i)
                         {
-                            curPath += splitPath[j];
-                            Texture icon = AssetDatabase.GetCachedIcon(curPath);
+                            curPath += splitPath[i];
+                            var icon = AssetDatabase.GetCachedIcon(curPath);
 
                             m_SelectedPathSplitted.Add(new GUIContent(split[i], icon));
                             curPath += "/";

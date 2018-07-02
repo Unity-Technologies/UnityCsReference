@@ -45,12 +45,14 @@ namespace UnityEditor
         protected void DoInspectorEditButtons()
         {
             T joint = (T)target;
+            EditorGUI.BeginDisabledGroup(joint.gameObject.activeSelf == false);
             EditMode.DoEditModeInspectorModeButton(
                 EditMode.SceneViewEditMode.JointAngularLimits,
                 "Edit Joint Angular Limits",
                 Styles.editAngularLimitsButton,
                 this
                 );
+            EditorGUI.EndDisabledGroup();
         }
 
         internal override Bounds GetWorldBoundsOfTarget(UnityObject targetObject)

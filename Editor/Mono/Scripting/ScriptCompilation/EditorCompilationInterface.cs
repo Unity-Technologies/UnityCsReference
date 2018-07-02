@@ -253,6 +253,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static bool DoesProjectHaveAnyCustomScriptAssemblies()
+        {
+            return Instance.DoesProjectHaveAnyCustomScriptAssemblies();
+        }
+
+        [RequiredByNativeCode]
         public static EditorCompilation.AssemblyCompilerMessages[] GetCompileMessages()
         {
             return Instance.GetCompileMessages();

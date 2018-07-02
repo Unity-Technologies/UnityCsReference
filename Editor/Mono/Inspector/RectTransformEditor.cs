@@ -35,7 +35,7 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIStyle measuringLabelStyle = new GUIStyle("PreOverlayLabel");
+            public GUIStyle measuringLabelStyle = "PreOverlayLabel";
 
             public GUIContent anchorsContent = EditorGUIUtility.TrTextContent("Anchors");
             public GUIContent anchorMinContent = EditorGUIUtility.TrTextContent("Min", "The normalized position in the parent rectangle that the lower left corner is anchored to.");

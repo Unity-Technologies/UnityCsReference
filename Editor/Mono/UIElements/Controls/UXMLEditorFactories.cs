@@ -29,6 +29,10 @@ namespace UnityEditor.Experimental.UIElements
                 new ObjectField.UxmlFactory(),
                 new ColorField.UxmlFactory(),
                 new EnumField.UxmlFactory(),
+                new MaskField.UxmlFactory(),
+                new LayerMaskField.UxmlFactory(),
+                new LayerField.UxmlFactory(),
+                new TagField.UxmlFactory(),
                 new GradientField.UxmlFactory(),
 
                 // Compounds

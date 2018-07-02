@@ -37,7 +37,7 @@ namespace UnityEditor.U2D
 
         class Styles
         {
-            public readonly GUIStyle dropzoneStyle = new GUIStyle("BoldLabel");
+            public readonly GUIStyle dropzoneStyle = "DropzoneStyle";
             public readonly GUIStyle preDropDown = "preDropDown";
             public readonly GUIStyle previewButton = "preButton";
             public readonly GUIStyle previewSlider = "preSlider";
@@ -86,9 +86,6 @@ namespace UnityEditor.U2D
 
             public Styles()
             {
-                dropzoneStyle.alignment = TextAnchor.MiddleCenter;
-                dropzoneStyle.border = new RectOffset(10, 10, 10, 10);
-
                 paddingOptions = new GUIContent[paddingValues.Length];
                 for (var i = 0; i < paddingValues.Length; ++i)
                     paddingOptions[i] = EditorGUIUtility.TextContent(paddingValues[i].ToString());

@@ -22,8 +22,22 @@ namespace UnityEditor.Build.Content
         [FreeFunction("BuildPipeline::GenerateAssetBundleBuilds")]
         extern public static AssetBundleBuild[] GenerateAssetBundleBuilds();
 
+        public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder)
+        {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call PrepareScene while a build is in progress");
+            return PrepareSceneInternal(scenePath, settings, usageSet, null, outputFolder);
+        }
+
+        public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, string outputFolder)
+        {
+            if (IsBuildInProgress())
+                throw new InvalidOperationException("Cannot call PrepareScene while a build is in progress");
+            return PrepareSceneInternal(scenePath, settings, usageSet, usageCache, outputFolder);
+        }
+
         [FreeFunction("BuildPipeline::PrepareScene")]
-        extern private static SceneDependencyInfo PrepareSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder);
+        extern private static SceneDependencyInfo PrepareSceneInternal(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, BuildUsageCache usageCache, string outputFolder);
 
         [FreeFunction("BuildPipeline::GetPlayerObjectIdentifiersInAsset")]
         extern public static ObjectIdentifier[] GetPlayerObjectIdentifiersInAsset(GUID asset, BuildTarget target);
@@ -34,8 +48,13 @@ namespace UnityEditor.Build.Content
         [FreeFunction("BuildPipeline::GetPlayerDependenciesForObjects")]
         extern public static ObjectIdentifier[] GetPlayerDependenciesForObjects(ObjectIdentifier[] objectIDs, BuildTarget target, TypeDB typeDB);
 
+        public static void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet)
+        {
+            CalculateBuildUsageTags(objectIDs, dependentObjectIDs, globalUsage, usageSet, null);
+        }
+
         [FreeFunction("BuildPipeline::CalculateBuildUsageTags")]
-        extern public static void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet);
+        extern public static void CalculateBuildUsageTags(ObjectIdentifier[] objectIDs, ObjectIdentifier[] dependentObjectIDs, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildUsageCache usageCache);
 
         [FreeFunction("BuildPipeline::GetTypeForObject")]
         extern public static System.Type GetTypeForObject(ObjectIdentifier objectID);
@@ -45,13 +64,6 @@ namespace UnityEditor.Build.Content
 
         [FreeFunction("BuildPipeline::IsBuildInProgress")]
         extern internal static bool IsBuildInProgress();
-
-        public static SceneDependencyInfo PrepareScene(string scenePath, BuildSettings settings, BuildUsageTagSet usageSet, string outputFolder)
-        {
-            if (IsBuildInProgress())
-                throw new InvalidOperationException("Cannot call PrepareScene while a build is in progress");
-            return PrepareSceneInternal(scenePath, settings, usageSet, outputFolder);
-        }
 
         public static WriteResult WriteSerializedFile(string outputFolder, WriteCommand writeCommand, BuildSettings settings, BuildUsageTagGlobal globalUsage, BuildUsageTagSet usageSet, BuildReferenceMap referenceMap)
         {

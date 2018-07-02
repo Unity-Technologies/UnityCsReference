@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.Bindings;
+using UnityEngine.U2D;
 
 namespace UnityEditor.Experimental.U2D
 {
@@ -21,9 +22,13 @@ namespace UnityEditor.Experimental.U2D
             SetSpriteIDScripting(sprite, guid.ToString());
         }
 
-        [FreeFunction("SpriteEditorExtension::GetSpriteIDScripting")]
         private static extern string GetSpriteIDScripting([NotNull] Sprite sprite);
-        [FreeFunction("SpriteEditorExtension::SetSpriteIDScripting")]
         private static extern void SetSpriteIDScripting([NotNull] Sprite sprite, string spriteID);
+        internal static extern SpriteAtlas GetActiveAtlas([NotNull] this Sprite sprite);
+        internal static extern string GetActiveAtlasName([NotNull] this Sprite sprite);
+        internal static extern Texture2D GetActiveAtlasTexture([NotNull] this Sprite sprite);
+        internal static extern Rect GetActiveAtlasTextureRect([NotNull] this Sprite sprite);
+        internal static extern Vector2 GetActiveAtlasTextureRectOffset([NotNull] this Sprite sprite);
+        internal static extern Texture2D GetActiveAtlasAlphaTexture([NotNull] this Sprite sprite);
     }
 }

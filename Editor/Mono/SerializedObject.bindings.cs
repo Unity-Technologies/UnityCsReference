@@ -120,6 +120,9 @@ namespace UnityEditor
         // The inspected objects (RO).
         public extern Object[] targetObjects { get; }
 
+        // The inspected objects (RO).
+        internal extern int targetObjectsCount { get; }
+
         // The context object (used to resolve scene references via ExposedReference<>)
         [NativeProperty("ContextObject")]
         public extern Object context { get; }

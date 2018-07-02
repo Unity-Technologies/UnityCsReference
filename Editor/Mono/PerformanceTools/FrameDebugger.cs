@@ -1414,7 +1414,7 @@ namespace UnityEditor
             public GUIStyle entryEven = "OL EntryBackEven";
             public GUIStyle entryOdd = "OL EntryBackOdd";
             public GUIStyle rowText = "OL Label";
-            public GUIStyle rowTextRight = new GUIStyle("OL Label");
+            public GUIStyle rowTextRight = "OL RightLabel";
             public GUIContent recordButton = new GUIContent(EditorGUIUtility.TrTextContent("Record", "Record profiling information"));
             public GUIContent prevFrame = new GUIContent(EditorGUIUtility.TrIconContent("Profiler.PrevFrame", "Go back one frame"));
             public GUIContent nextFrame = new GUIContent(EditorGUIUtility.TrIconContent("Profiler.NextFrame", "Go one frame forwards"));
@@ -1452,7 +1452,6 @@ namespace UnityEditor
 
             public Styles()
             {
-                rowTextRight.alignment = TextAnchor.MiddleRight;
                 recordButton.text = "Enable";
                 recordButton.tooltip = "Enable Frame Debugging";
                 prevFrame.tooltip = "Previous event";

@@ -859,5 +859,11 @@ namespace UnityEditor
         }
 
         public extern bool SearchAndRemapMaterials(ModelImporterMaterialName nameOption, ModelImporterMaterialSearch searchOption);
+
+        public extern bool useSRGBMaterialColor
+        {
+            get;
+            set;
+        }
     }
 }

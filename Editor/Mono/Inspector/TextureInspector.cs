@@ -82,8 +82,7 @@ namespace UnityEditor
                 previewButton = "preButton";
                 previewSlider = "preSlider";
                 previewSliderThumb = "preSliderThumb";
-                previewLabel = new GUIStyle("preLabel");
-                previewLabel.alignment = TextAnchor.UpperCenter; // UpperCenter centers the mip icons vertically better than MiddleCenter
+                previewLabel = "preLabelUpper";
             }
         }
         static Styles s_Styles;

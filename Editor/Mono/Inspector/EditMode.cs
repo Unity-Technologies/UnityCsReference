@@ -16,17 +16,8 @@ namespace UnityEditorInternal
     {
         private static class Styles
         {
-            public static readonly GUIStyle multiButtonStyle;
-            public static readonly GUIStyle singleButtonStyle;
-
-            static Styles()
-            {
-                multiButtonStyle = "Command";
-
-                singleButtonStyle = new GUIStyle("Button");
-                singleButtonStyle.padding = multiButtonStyle.padding;
-                singleButtonStyle.margin = multiButtonStyle.margin;
-            }
+            public static readonly GUIStyle multiButtonStyle = "Command";
+            public static readonly GUIStyle singleButtonStyle = "EditModeSingleButton";
         }
 
         private const string kEditModeStringKey = "EditModeState";

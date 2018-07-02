@@ -47,19 +47,14 @@ namespace UnityEditor
             public GUIContent feetSpacing = EditorGUIUtility.TrTextContent("Feet Spacing");
             public GUIContent hasTranslationDoF = EditorGUIUtility.TrTextContent("Translation DoF");
 
-            public GUIStyle box = new GUIStyle("OL box noexpand");
-            public GUIStyle title = new GUIStyle("OL TITLE");
+            public GUIStyle box = "OL box noexpand";
+            public GUIStyle title = "OL TITLE";
 
             public GUIStyle toolbar = "TE Toolbar";
             public GUIStyle toolbarDropDown = "TE ToolbarDropDown";
 
             public GUIContent muscle = EditorGUIUtility.TrTextContent("Muscles");
             public GUIContent resetMuscle = EditorGUIUtility.TrTextContent("Reset");
-
-            public Styles()
-            {
-                box.padding = new RectOffset(0, 0, 4, 4);
-            }
         }
 
         static Styles styles { get { if (s_Styles == null) s_Styles = new Styles(); return s_Styles; } }

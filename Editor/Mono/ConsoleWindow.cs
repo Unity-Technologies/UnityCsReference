@@ -76,11 +76,11 @@ namespace UnityEditor
 
                 MiniButton = "ToolbarButton";
                 Toolbar = "Toolbar";
-                LogStyle = new GUIStyle("CN EntryInfo");
+                LogStyle = "CN EntryInfo";
                 LogSmallStyle = "CN EntryInfoSmall";
-                WarningStyle = new GUIStyle("CN EntryWarn");
+                WarningStyle = "CN EntryWarn";
                 WarningSmallStyle = "CN EntryWarnSmall";
-                ErrorStyle = new GUIStyle("CN EntryError");
+                ErrorStyle = "CN EntryError";
                 ErrorSmallStyle = "CN EntryErrorSmall";
                 IconLogStyle = "CN EntryInfoIcon";
                 IconLogSmallStyle = "CN EntryInfoIconSmall";

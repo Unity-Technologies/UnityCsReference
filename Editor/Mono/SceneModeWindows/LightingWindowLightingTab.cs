@@ -496,6 +496,9 @@ namespace UnityEditor
                             GUILayout.Label("(Raw Bake Time: " + timeRawH.ToString("0") + ":" + timeRawM.ToString("00") + ":" + timeRawS.ToString("00") + ", Overhead: " + oHeadTimeH.ToString("0") + ":" + oHeadTimeM.ToString("00") + ":" + oHeadTimeS.ToString("00") + ")", Styles.LabelStyle);
                     }
                 }
+                string deviceName = Lightmapping.GetLightmapBakeGPUDeviceName();
+                if (deviceName.Length > 0)
+                    GUILayout.Label("Baking device: " + deviceName, Styles.LabelStyle);
                 GUILayout.EndVertical();
             }
 

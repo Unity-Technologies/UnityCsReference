@@ -1693,21 +1693,12 @@ namespace UnityEditor
 
             public static GUIStyle none = new GUIStyle();
             public static GUIStyle labelTickMarksY = "CurveEditorLabelTickMarks";
-            public static GUIStyle labelTickMarksX;
+            public static GUIStyle labelTickMarksX = "CurveEditorLabelTickmarksOverflow";
             public static GUIStyle selectionRect = "SelectionRect";
 
             public static GUIStyle dragLabel = "ProfilerBadge";
-            public static GUIStyle axisLabelNumberField = new GUIStyle(EditorStyles.miniTextField);
-            public static GUIStyle rightAlignedLabel = new GUIStyle(EditorStyles.label);
-
-            static Styles()
-            {
-                axisLabelNumberField.alignment = TextAnchor.UpperRight;
-                labelTickMarksY.contentOffset = Vector2.zero; // TODO: Fix this in style when Editor has been merged to Trunk (31/8/2011)
-                labelTickMarksX = new GUIStyle(labelTickMarksY);
-                labelTickMarksX.clipping = TextClipping.Overflow;
-                rightAlignedLabel.alignment = TextAnchor.UpperRight;
-            }
+            public static GUIStyle axisLabelNumberField = "AxisLabelNumberField";
+            public static GUIStyle rightAlignedLabel = "CurveEditorRightAlignedLabel";
         }
 
         Vector2 GetGUIPoint(CurveWrapper cw, Vector3 point)

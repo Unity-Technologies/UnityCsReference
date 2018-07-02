@@ -34,16 +34,10 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIStyle preBackground = "preBackground";
-            public GUIStyle preBackgroundSolid = new GUIStyle("preBackground");
-            public GUIStyle previewMiniLabel = new GUIStyle(EditorStyles.whiteMiniLabel);
-            public GUIStyle dropShadowLabelStyle = new GUIStyle("PreOverlayLabel");
-
-            public Styles()
-            {
-                preBackgroundSolid.overflow = preBackgroundSolid.border;
-                previewMiniLabel.alignment = TextAnchor.UpperCenter;
-            }
+            public GUIStyle preBackground = "PreBackground";
+            public GUIStyle preBackgroundSolid = "PreBackgroundSolid";
+            public GUIStyle previewMiniLabel = "PreMiniLabel";
+            public GUIStyle dropShadowLabelStyle = "PreOverlayLabel";
         }
         static Styles s_Styles;
 

@@ -676,9 +676,9 @@ namespace UnityEditor
         }
 
         // Make a Scene View cone frustrum handle
-        internal static Vector3 ConeFrustrumHandle(Quaternion rotation, Vector3 position, Vector3 radiusAngleRange)
+        internal static Vector3 ConeFrustrumHandle(Quaternion rotation, Vector3 position, Vector3 radiusAngleRange, ConeHandles showHandles = ConeHandles.All)
         {
-            return DoConeFrustrumHandle(rotation, position, radiusAngleRange);
+            return DoConeFrustrumHandle(rotation, position, radiusAngleRange, showHandles);
         }
 
         // Slide a handle in a 2D plane

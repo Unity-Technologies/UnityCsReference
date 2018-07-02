@@ -17,20 +17,12 @@ namespace UnityEditor
         internal static event Action<HostView> actualViewChanged;
 
         internal GUIStyle background;
-        [SerializeField]
-        private EditorWindow m_ActualView;
+        [SerializeField] private EditorWindow m_ActualView;
 
-        [System.NonSerialized]
-        private Rect m_BackgroundClearRect = new Rect(0, 0, 0, 0);
-        [System.NonSerialized]
-        protected readonly RectOffset m_BorderSize = new RectOffset(); // added as member to prevent allocation
+        [System.NonSerialized] private Rect m_BackgroundClearRect = new Rect(0, 0, 0, 0);
+        [System.NonSerialized] protected readonly RectOffset m_BorderSize = new RectOffset();
 
-        static class Styles
-        {
-            public static readonly GUIStyle dockAreaOverlay = "dockareaoverlay";
-            public static readonly GUIStyle paneOptions = "PaneOptions";
-            public static readonly GUIStyle tabWindowBackground = "TabWindowBackground";
-        }
+        private bool m_IsGameView;
 
         internal EditorWindow actualView
         {
@@ -41,6 +33,7 @@ namespace UnityEditor
                     return;
                 DeregisterSelectedPane(true);
                 m_ActualView = value;
+                m_IsGameView = m_ActualView is GameView;
                 RegisterSelectedPane();
                 actualViewChanged?.Invoke(this);
             }
@@ -164,7 +157,7 @@ namespace UnityEditor
             };
         }
 
-        // Messages sent by Unity to editorwindows today.
+        // Messages sent by Unity to editor windows today.
         // The implementation is not very good, but oh well... it gets the message across.
         internal void OnProjectChange()
         {
@@ -237,7 +230,12 @@ namespace UnityEditor
             GUI.BeginGroup(screenRect, content, style);
         }
 
-        public void InvokeOnGUI(Rect onGUIPosition)
+        static class HostViewStyles
+        {
+            public static readonly GUIStyle overlay = "dockareaoverlay";
+        }
+
+        public void InvokeOnGUI(Rect onGUIPosition, Rect viewRect)
         {
             // Handle window reloading.
             if (Unsupported.IsDeveloperMode() &&
@@ -253,10 +251,10 @@ namespace UnityEditor
 
             DoWindowDecorationStart();
 
-            if (actualView is GameView) // GameView exits GUI, so draw overlay border earlier
-                GUI.Box(onGUIPosition, GUIContent.none, Styles.dockAreaOverlay);
+            if (m_IsGameView) // GameView exits GUI, so draw overlay border earlier
+                GUI.Box(onGUIPosition, GUIContent.none, HostViewStyles.overlay);
 
-            BeginOffsetArea(new Rect(onGUIPosition.x + 2, onGUIPosition.y + DockArea.kTabHeight, onGUIPosition.width - 4, onGUIPosition.height - DockArea.kTabHeight - 2), GUIContent.none, Styles.tabWindowBackground);
+            BeginOffsetArea(viewRect, GUIContent.none, "TabWindowBackground");
             EditorGUIUtility.ResetGUIState();
             bool isExitGUIException = false;
             try
@@ -286,7 +284,7 @@ namespace UnityEditor
                     DoWindowDecorationEnd();
 
                     if (isRepaint)
-                        Styles.dockAreaOverlay.Draw(onGUIPosition, GUIContent.none, 0);
+                        HostViewStyles.overlay.Draw(onGUIPosition, GUIContent.none, 0);
                 }
             }
         }
@@ -381,19 +379,19 @@ namespace UnityEditor
 
         protected virtual RectOffset GetBorderSize() { return m_BorderSize; }
 
-        protected void ShowGenericMenu()
+        protected void ShowGenericMenu(float topOffset)
         {
-            GUIStyle gs = Styles.paneOptions;
-            Rect paneMenu = new Rect(position.width - gs.fixedWidth - 4, Mathf.Floor(background.margin.top + 20 - gs.fixedHeight), gs.fixedWidth, gs.fixedHeight);
-            if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, gs))
+            GUIStyle gs = "PaneOptions";
+            Rect paneMenu = new Rect(position.width - gs.fixedWidth - 4, topOffset, gs.fixedWidth, gs.fixedHeight);
+            if (EditorGUI.DropdownButton(paneMenu, GUIContent.none, FocusType.Passive, "PaneOptions"))
                 PopupGenericMenu(m_ActualView, paneMenu);
 
             // Give panes an option of showing a small button next to the generic menu (used for inspector lock icon
-            System.Reflection.MethodInfo mi = GetPaneMethod("ShowButton", m_ActualView);
+            MethodInfo mi = GetPaneMethod("ShowButton", m_ActualView);
             if (mi != null)
             {
-                object[] lockButton = { new Rect(position.width - gs.fixedWidth - 20, Mathf.Floor(background.margin.top + 4), 16, 16) };
-
+                const float rightOffset = 18f;
+                object[] lockButton = { new Rect(position.width - gs.fixedWidth - rightOffset, topOffset - 4f, 16, 16) };
                 mi.Invoke(m_ActualView, lockButton);
             }
 

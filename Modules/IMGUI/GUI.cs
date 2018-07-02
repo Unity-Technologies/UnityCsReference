@@ -1721,9 +1721,39 @@ namespace UnityEngine
                 BeginClip(position);
             }
 
+            internal ClipScope(Rect position, Vector2 scrollOffset)
+            {
+                BeginClip(position, scrollOffset, new Vector2(), false);
+            }
+
             protected override void CloseScope()
             {
                 EndClip();
+            }
+        }
+
+        internal struct ColorScope : IDisposable
+        {
+            private bool m_Disposed;
+            private Color m_PreviousColor;
+
+            public ColorScope(Color newColor)
+            {
+                m_Disposed = false;
+                m_PreviousColor = GUI.color;
+                GUI.color = newColor;
+            }
+
+            public ColorScope(float r, float g, float b, float a = 1.0f) : this(new Color(r, g, b, a))
+            {
+            }
+
+            public void Dispose()
+            {
+                if (m_Disposed)
+                    return;
+                m_Disposed = true;
+                GUI.color = m_PreviousColor;
             }
         }
     }

@@ -8,6 +8,7 @@ using UnityEditor.Experimental.AssetImporters;
 
 namespace UnityEditor
 {
+    [System.Obsolete("MovieImporter is deprecated. Use VideoClipImporter instead.", false)]
     [CustomEditor(typeof(MovieImporter))]
     internal class MovieImporterInspector : AssetImporterEditor
     {

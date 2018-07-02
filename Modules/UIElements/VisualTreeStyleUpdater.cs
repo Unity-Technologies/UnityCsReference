@@ -49,7 +49,7 @@ namespace UnityEngine.Experimental.UIElements
         public void DirtyStyleSheets()
         {
             PropagateDirtyStyleSheets(visualTree);
-            visualTree.IncrementVersion(VersionChangeType.Styles); // dirty all styles
+            visualTree.IncrementVersion(VersionChangeType.StyleSheet); // dirty all styles
         }
 
         private static void PropagateDirtyStyleSheets(VisualElement element)
@@ -68,7 +68,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public override void OnVersionChanged(VisualElement ve, VersionChangeType versionChangeType)
         {
-            if ((versionChangeType & VersionChangeType.Styles) != VersionChangeType.Styles)
+            if ((versionChangeType & VersionChangeType.StyleSheet) != VersionChangeType.StyleSheet)
                 return;
 
             ++m_Version;

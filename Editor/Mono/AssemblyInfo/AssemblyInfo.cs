@@ -10,6 +10,10 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]
 [assembly: InternalsVisibleTo("Unity.CollabProxy.Editor")]
 [assembly: InternalsVisibleTo("Unity.CollabProxy.EditorTests")]
+[assembly: InternalsVisibleTo("Unity.CollabProxy.UI")]
+[assembly: InternalsVisibleTo("Unity.CollabProxy.UI.Tests")]
+[assembly: InternalsVisibleTo("Unity.CollabProxy.Client")]
+[assembly: InternalsVisibleTo("Unity.CollabProxy.Client.Tests")]
 [assembly: InternalsVisibleTo("UnityEditor.Advertisements")]
 [assembly: InternalsVisibleTo("Unity.PackageManager")]
 [assembly: InternalsVisibleTo("Unity.PackageManagerStandalone")]
@@ -88,6 +92,5 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.003")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.004")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridgeDev.005")]
-[assembly: InternalsVisibleTo("com.unity.editor.resources-testable")]
 
 [assembly: AssemblyIsEditorAssembly]

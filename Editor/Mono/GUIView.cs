@@ -52,7 +52,7 @@ namespace UnityEditor
         protected IMGUIContainer imguiContainer { get; private set; }
 
         int m_DepthBufferBits = 0;
-        int m_AntiAliasing = 0;
+        int m_AntiAliasing = 1;
         EventInterests m_EventInterests;
         bool m_AutoRepaintOnSceneChange = false;
         private bool m_BackgroundValid = false;

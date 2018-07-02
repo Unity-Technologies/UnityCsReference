@@ -71,36 +71,29 @@ namespace UnityEditor
 
         class Styles
         {
-            public readonly GUIStyle block = new GUIStyle("MeTransitionBlock");
-            public GUIStyle leftBlock = new GUIStyle("MeTransitionBlock");
-            public GUIStyle rightBlock = new GUIStyle("MeTransitionBlock");
-            public GUIStyle timeBlockRight = new GUIStyle("MeTimeLabel");
-            public GUIStyle timeBlockLeft = new GUIStyle("MeTimeLabel");
+            public readonly GUIStyle block = "MeTransitionBlock";
+            public readonly GUIStyle leftBlock = "MeTransitionBlock";
+            public readonly GUIStyle rightBlock = "MeTransitionBlock";
+            public readonly GUIStyle timeBlockRight = "MeTimeBlockRight";
+            public readonly GUIStyle timeBlockLeft = "MeTimeBlockLeft";
 
-            public readonly GUIStyle offLeft = new GUIStyle("MeTransOffLeft");
-            public readonly GUIStyle offRight = new GUIStyle("MeTransOffRight");
-            public readonly GUIStyle onLeft = new GUIStyle("MeTransOnLeft");
-            public readonly GUIStyle onRight = new GUIStyle("MeTransOnRight");
-            public readonly GUIStyle offOn = new GUIStyle("MeTransOff2On");
-            public readonly GUIStyle onOff = new GUIStyle("MeTransOn2Off");
-            public readonly GUIStyle background = new GUIStyle("MeTransitionBack");
-            public readonly GUIStyle header = new GUIStyle("MeTransitionHead");
+            public readonly GUIStyle offLeft = "MeTransOffLeft";
+            public readonly GUIStyle offRight = "MeTransOffRight";
+            public readonly GUIStyle onLeft = "MeTransOnLeft";
+            public readonly GUIStyle onRight = "MeTransOnRight";
+            public readonly GUIStyle offOn = "MeTransOff2On";
+            public readonly GUIStyle onOff = "MeTransOn2Off";
+            public readonly GUIStyle background = "MeTransitionBack";
+            public readonly GUIStyle header = "MeTransitionHead";
 
-            public readonly GUIStyle handLeft = new GUIStyle("MeTransitionHandleLeft");
-            public readonly GUIStyle handRight = new GUIStyle("MeTransitionHandleRight");
-            public readonly GUIStyle handLeftPrev = new GUIStyle("MeTransitionHandleLeftPrev");
+            public readonly GUIStyle handLeft = "MeTransitionHandleLeft";
+            public readonly GUIStyle handRight = "MeTransitionHandleRight";
+            public readonly GUIStyle handLeftPrev = "MeTransitionHandleLeftPrev";
 
-            public readonly GUIStyle playhead = new GUIStyle("MeTransPlayhead");
+            public readonly GUIStyle playhead = "MeTransPlayhead";
 
-            public readonly GUIStyle selectHead = new GUIStyle("MeTransitionSelectHead");
-            public readonly GUIStyle select = new GUIStyle("MeTransitionSelect");
-
-            public Styles()
-            {
-                timeBlockRight.alignment = TextAnchor.MiddleRight;
-                timeBlockRight.normal.background = null;
-                timeBlockLeft.normal.background = null;
-            }
+            public readonly GUIStyle selectHead = "MeTransitionSelectHead";
+            public readonly GUIStyle select = "MeTransitionSelect";
         }
         private Styles styles;
 

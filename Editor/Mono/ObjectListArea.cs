@@ -50,21 +50,21 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIStyle resultsLabel = new GUIStyle("PR Label");
+            public GUIStyle resultsLabel = GetStyle("OL ResultLabel");
             public GUIStyle resultsGridLabel = GetStyle("ProjectBrowserGridLabel");
-            public GUIStyle resultsGrid = "ObjectPickerResultsGrid";
-            public GUIStyle background = "ObjectPickerBackground";
+            public GUIStyle resultsGrid = GetStyle("ObjectPickerResultsGrid");
+            public GUIStyle background = GetStyle("ObjectPickerBackground");
             public GUIStyle previewTextureBackground = "ObjectPickerPreviewBackground";
             public GUIStyle groupHeaderMiddle = GetStyle("ProjectBrowserHeaderBgMiddle");
             public GUIStyle groupHeaderTop = GetStyle("ProjectBrowserHeaderBgTop");
-            public GUIStyle groupHeaderLabel = "Label";
-            public GUIStyle groupHeaderLabelCount = "MiniLabel";
-            public GUIStyle groupFoldout = "IN Foldout";
-            public GUIStyle toolbarBack = "ObjectPickerToolbar";
-            public GUIStyle resultsFocusMarker;
-            public GUIStyle miniRenameField = new GUIStyle("PR TextField");
-            public GUIStyle ping = new GUIStyle("PR Ping");
-            public GUIStyle miniPing = new GUIStyle("PR Ping");
+            public GUIStyle groupHeaderLabel = GetStyle("Label");
+            public GUIStyle groupHeaderLabelCount = GetStyle("MiniLabel");
+            public GUIStyle groupFoldout = GetStyle("IN Foldout");
+            public GUIStyle toolbarBack = GetStyle("ObjectPickerToolbar");
+            public GUIStyle resultsFocusMarker = GetStyle("OL ResultFocusMarker");
+            public GUIStyle miniRenameField = GetStyle("OL MiniRenameField");
+            public GUIStyle ping = GetStyle("OL Ping");
+            public GUIStyle miniPing = GetStyle("OL MiniPing");
             public GUIStyle iconDropShadow = GetStyle("ProjectBrowserIconDropShadow");
             public GUIStyle textureIconDropShadow = GetStyle("ProjectBrowserTextureIconDropShadow");
             public GUIStyle iconAreaBg = GetStyle("ProjectBrowserIconAreaBg");
@@ -77,26 +77,6 @@ namespace UnityEditor
             public GUIStyle subAssetExpandButton = GetStyle("ProjectBrowserSubAssetExpandBtn");
 
             public GUIContent m_AssetStoreNotAvailableText = EditorGUIUtility.TrTextContent("The Asset Store is not available");
-
-            public Styles()
-            {
-                // Use same colors as resultsGridLabel but with flexible size
-                resultsFocusMarker = new GUIStyle(resultsGridLabel);
-                resultsFocusMarker.fixedHeight = resultsFocusMarker.fixedWidth = 0;
-
-                // Mini-label version for icon view
-                miniRenameField.font = EditorStyles.miniLabel.font;
-                miniRenameField.alignment = TextAnchor.LowerCenter;
-
-                ping.fixedHeight = 16f;
-                ping.padding.right = 10;
-
-                // Mini-ping version for icon view
-                miniPing.font = EditorStyles.miniLabel.font;
-                miniPing.alignment = TextAnchor.MiddleCenter;
-
-                resultsLabel.alignment = TextAnchor.MiddleLeft;
-            }
 
             static GUIStyle GetStyle(string styleName)
             {

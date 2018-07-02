@@ -95,11 +95,6 @@ namespace UnityEditor.Experimental.UIElements
                         UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
                 }
-                m_TextureDirty = true;
-
-                IncrementVersion(VersionChangeType.Repaint);
-
-                m_Content?.IncrementVersion(VersionChangeType.Repaint);
             }
         }
         CurveFieldContent m_Content;
@@ -146,6 +141,11 @@ namespace UnityEditor.Experimental.UIElements
                 m_Value.preWrapMode = WrapMode.Once;
                 m_Value.postWrapMode = WrapMode.Once;
             }
+            m_TextureDirty = true;
+
+            IncrementVersion(VersionChangeType.Repaint);
+
+            m_Content?.IncrementVersion(VersionChangeType.Repaint);
         }
 
         protected override void OnStyleResolved(ICustomStyle style)

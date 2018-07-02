@@ -178,7 +178,7 @@ namespace UnityEditor
             var wasBold = EditorGUIUtility.GetBoldDefaultFont();
             SerializedProperty itr = m_Object.GetIterator();
             bool useBold = false;
-            if (m_Object.targetObjects.Length == 1)
+            if (m_Object.targetObjectsCount == 1)
             {
                 bool validItr = itr.Next(true);
                 while (validItr)

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 
 namespace UnityEngine

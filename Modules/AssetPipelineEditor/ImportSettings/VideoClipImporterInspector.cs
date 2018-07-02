@@ -21,14 +21,7 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIStyle labelStyle = new GUIStyle(EditorStyles.label);
-
-            public Styles()
-            {
-                Color fontColor = new Color(0.7f, 0.7f, 0.7f);
-                labelStyle.padding.right += 4;
-                labelStyle.normal.textColor = fontColor;
-            }
+            public GUIStyle labelStyle = "VideoClipImporterLabel";
         }
 
         private Styles m_Styles = new Styles();
@@ -745,9 +738,11 @@ namespace UnityEditor
 
             if (m_UseLegacyImporter.boolValue)
             {
+#pragma warning disable 0618
                 EditorGUILayout.PropertyField(
                     m_IsColorLinear, MovieImporterInspector.linearTextureContent);
                 EditorGUILayout.Slider(m_Quality, 0.0f, 1.0f);
+#pragma warning restore 0618
             }
             else
             {

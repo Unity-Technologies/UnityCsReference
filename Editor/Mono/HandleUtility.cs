@@ -60,7 +60,7 @@ namespace UnityEditor
         // Returns the parameter for the projection of the /point/ on the given line
         public static float PointOnLineParameter(Vector3 point, Vector3 linePoint, Vector3 lineDirection)
         {
-            return (Vector3.Dot(lineDirection , (point - linePoint))) / lineDirection.sqrMagnitude;
+            return (Vector3.Dot(lineDirection, (point - linePoint))) / lineDirection.sqrMagnitude;
         }
 
         // Project /point/ onto a line.
@@ -126,7 +126,8 @@ namespace UnityEditor
             Vector2 point = Event.current.mousePosition;
 
             float retval = DistancePointLine(point, p1, p2);
-            if (retval < 0) retval = 0.0f;
+            if (retval < 0)
+                retval = 0.0f;
             return retval;
         }
 
@@ -631,7 +632,6 @@ namespace UnityEditor
             }
         }
         static Material s_HandleMaterial;
-        static bool s_CallbackRegistered = false;
 
         // Called by native code
         [RequiredByNativeCode]
@@ -645,11 +645,7 @@ namespace UnityEditor
         {
             if (!s_HandleWireMaterial)
             {
-                if (!s_CallbackRegistered)
-                {
-                    RegisterGfxDeviceCleanup();
-                    s_CallbackRegistered = true;
-                }
+                RegisterGfxDeviceCleanupIfNeeded();
 
                 s_HandleWireMaterial = (Material)EditorGUIUtility.LoadRequired("SceneView/HandleLines.mat");
                 s_HandleWireMaterial2D = (Material)EditorGUIUtility.LoadRequired("SceneView/2DHandleLines.mat");

@@ -152,7 +152,7 @@ namespace UnityEditor
 
         public void RenderMeshSettings(bool showLightmapSettings)
         {
-            if (m_SerializedObject == null || m_GameObjectsSerializedObject == null || m_GameObjectsSerializedObject.targetObjects.Length == 0)
+            if (m_SerializedObject == null || m_GameObjectsSerializedObject == null || m_GameObjectsSerializedObject.targetObjectsCount == 0)
                 return;
 
             m_GameObjectsSerializedObject.Update();
@@ -259,7 +259,7 @@ namespace UnityEditor
 
         public void RenderTerrainSettings()
         {
-            if (m_SerializedObject == null || m_GameObjectsSerializedObject == null || m_GameObjectsSerializedObject.targetObjects.Length == 0)
+            if (m_SerializedObject == null || m_GameObjectsSerializedObject == null || m_GameObjectsSerializedObject.targetObjectsCount == 0)
                 return;
 
             m_GameObjectsSerializedObject.Update();

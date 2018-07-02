@@ -91,19 +91,14 @@ namespace UnityEditor
             public static GUIStyle preBackground = "preBackground";
             public static GUIStyle addComponentArea = EditorStyles.inspectorTitlebar;
             public static GUIStyle addComponentButtonStyle = "AC Button";
-            public static GUIStyle previewMiniLabel = new GUIStyle(EditorStyles.whiteMiniLabel);
-            public static GUIStyle typeSelection = new GUIStyle("PR Label");
+            public static GUIStyle previewMiniLabel = EditorStyles.whiteMiniLabel;
+            public static GUIStyle typeSelection = "IN TypeSelection";
             public static GUIStyle lockedHeaderButton = "preButton";
-            public static GUIStyle stickyNote = new GUIStyle("VCS_StickyNote");
-            public static GUIStyle stickyNoteArrow = new GUIStyle("VCS_StickyNoteArrow");
-            public static GUIStyle stickyNotePerforce = new GUIStyle("VCS_StickyNoteP4");
-            public static GUIStyle stickyNoteLabel = new GUIStyle("VCS_StickyNoteLabel");
+            public static GUIStyle stickyNote = "VCS_StickyNote";
+            public static GUIStyle stickyNoteArrow = "VCS_StickyNoteArrow";
+            public static GUIStyle stickyNotePerforce = "VCS_StickyNoteP4";
+            public static GUIStyle stickyNoteLabel = "VCS_StickyNoteLabel";
             public static readonly GUIContent VCS_NotConnectedMessage = EditorGUIUtility.TrTextContent("VCS Plugin {0} is enabled but not connected");
-
-            static Styles()
-            {
-                typeSelection.padding.left = 12;
-            }
         }
 
         internal InspectorWindow()
@@ -966,7 +961,7 @@ namespace UnityEditor
                 bool openForEdit = Editor.IsAppropriateFileOpenForEdit(assetEditor.target, out message);
                 if (!openForEdit)
                 {
-                    if (Provider.isActive)  //Only ofer a checkout button if we think we're in a state to open the file for edit
+                    if (Provider.isActive)  //Only offer a checkout button if we think we're in a state to open the file for edit
                     {
                         float buttonWidth = 80;
                         Rect buttonRect = new Rect(rect.x + rect.width - buttonWidth, rect.y, buttonWidth, rect.height);
@@ -1178,7 +1173,7 @@ namespace UnityEditor
             Rect contentRect = new Rect();
             bool excludedClass = ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
             if (excludedClass)
-                EditorGUILayout.HelpBox("The module which implements this component type has been force excluded in player settings. This object will be removed in play mode and from any builds you make.", MessageType.Warning);
+                EditorGUILayout.HelpBox("The built-in package which implements this component type has been disabled in Package Manager. This object will be removed in play mode and from any builds you make.", MessageType.Warning);
 
             using (new EditorGUI.DisabledScope(!editor.IsEnabled() || excludedClass))
             {

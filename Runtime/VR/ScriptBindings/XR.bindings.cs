@@ -18,6 +18,13 @@ namespace UnityEngine.XR
         OcclusionMesh = 4,
     }
 
+    // Offsets must match UnityXRTrackingOriginType in XRTypes.h
+    public enum TrackingOriginMode
+    {
+        Device,
+        Floor,
+        Unknown
+    }
     [NativeHeader("Runtime/VR/ScriptBindings/XR.bindings.h")]
     [NativeHeader("Runtime/Interfaces/IVRDevice.h")]
     [NativeHeader("Runtime/VR/VRModule.h")]
@@ -168,6 +175,10 @@ namespace UnityEngine.XR
             [NativeName("SetProjectionZoomFactor")]
             [StaticAccessor("GetIVRDevice()", StaticAccessorType.ArrowWithDefaultReturnIfNull)]
             set;
+        }
+        extern public static TrackingOriginMode trackingOriginMode
+        {
+            get;
         }
     }
 

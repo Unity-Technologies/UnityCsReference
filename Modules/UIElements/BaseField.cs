@@ -66,7 +66,6 @@ namespace UnityEngine.Experimental.UIElements
                         SetValueWithoutNotify(value);
                         UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
-                    MarkDirtyRepaint();
                 }
             }
         }
@@ -93,6 +92,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if (!string.IsNullOrEmpty(persistenceKey))
                 SavePersistentData();
+            MarkDirtyRepaint();
         }
 
         public IBinding binding { get; set; }

@@ -249,24 +249,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        protected virtual bool hasMultipleSelectionSupport { get { return false; } }
+
         public bool CanAcceptDrop(List<ISelectable> selection)
         {
             IEnumerable<GraphElement> draggedElements = selection.OfType<GraphElement>();
+            int proposedIndex = -1;
+            const int maxIndex = 1;
 
-            // TODO: Can only move one at a time for now, let's try to have multiple dragSelection support soon
+            if (hasMultipleSelectionSupport)
+                return draggedElements.Any(x => AcceptsElementInternal(x, ref proposedIndex, maxIndex));
+
             if (draggedElements.Count() != 1)
                 return false;
 
             GraphElement draggedElement = draggedElements.FirstOrDefault();
-            int proposedIndex = -1;
-            int maxIndex = 1;
 
-            if (draggedElement == null || draggedElement == this || !AcceptsElementInternal(draggedElement, ref proposedIndex, maxIndex))
-            {
-                return false;
-            }
-
-            return true;
+            return draggedElement != null && draggedElement != this && AcceptsElementInternal(draggedElement, ref proposedIndex, maxIndex);
         }
 
         public virtual bool DragExited()

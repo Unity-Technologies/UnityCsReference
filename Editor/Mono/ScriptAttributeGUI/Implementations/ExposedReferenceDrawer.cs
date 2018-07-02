@@ -37,7 +37,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
     public BaseExposedPropertyDrawer()
     {
         if (kDropDownStyle == null)
-            kDropDownStyle = new GUIStyle("ShurikenDropdown");
+            kDropDownStyle = "ShurikenDropdown";
     }
 
     static ExposedPropertyMode GetExposedPropertyMode(string propertyName)

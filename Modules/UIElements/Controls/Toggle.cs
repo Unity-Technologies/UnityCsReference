@@ -69,25 +69,17 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
         }
-
-        public override bool value
+        public override void SetValueWithoutNotify(bool newValue)
         {
-            get
+            if (newValue)
             {
-                return (pseudoStates & PseudoStates.Checked) == PseudoStates.Checked;
+                pseudoStates |= PseudoStates.Checked;
             }
-            set
+            else
             {
-                if (value)
-                {
-                    pseudoStates |= PseudoStates.Checked;
-                }
-                else
-                {
-                    pseudoStates &= ~PseudoStates.Checked;
-                }
-                base.value = value;
+                pseudoStates &= ~PseudoStates.Checked;
             }
+            base.SetValueWithoutNotify(newValue);
         }
 
         [Obsolete("Use OnValueChanged() instead.", false)]

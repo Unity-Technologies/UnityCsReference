@@ -44,8 +44,9 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
     internal struct LightmapMemory
     {
-        [NativeName("m_LightmapDataSize")]     public float lightmapDataSize;
-        [NativeName("m_LightmapTexturesSize")] public float lightmapTexturesSize;
+        [NativeName("m_LightmapDataSizeCPU")]   public float lightmapDataSizeCPU;
+        [NativeName("m_LightmapTexturesSize")]  public float lightmapTexturesSize;
+        [NativeName("m_LightmapDataSizeGPU")]   public float lightmapDataSizeGPU;
     }
 
     internal struct MemLabels
@@ -232,7 +233,10 @@ namespace UnityEditor
         internal static extern GeoMemLabels GetGeometryMemory();
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
-        internal static extern float ComputeTotalMemoryUsageInMB();
+        internal static extern float ComputeTotalCPUMemoryUsageInBytes();
+
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern float ComputeTotalGPUMemoryUsageInBytes();
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float GetLightmapBakeTimeRaw();
@@ -246,6 +250,9 @@ namespace UnityEditor
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float GetLightmapBakePerformance(int lightmapIndex);
+
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern string GetLightmapBakeGPUDeviceName();
 
         // Exports the current state of the scene to the dynamic GI workflow.
         [FreeFunction]

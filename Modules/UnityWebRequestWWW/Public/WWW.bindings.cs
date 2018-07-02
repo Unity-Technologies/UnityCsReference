@@ -15,6 +15,7 @@ namespace UnityEngine.Networking
         [FreeFunction("UnityWebRequestCreateAudioClip")]
         internal extern static AudioClip InternalCreateAudioClipUsingDH(DownloadHandler dh, string url, bool stream, bool compressed, AudioType audioType);
 
+        [System.Obsolete("MovieTexture is deprecated. Use VideoPlayer instead.", false)]
         [FreeFunction("UnityWebRequestCreateMovieTexture")]
         internal extern static MovieTexture InternalCreateMovieTextureUsingDH(DownloadHandler dh);
     }

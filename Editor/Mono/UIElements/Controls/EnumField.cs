@@ -74,12 +74,12 @@ namespace UnityEditor.Experimental.UIElements
         private void Initialize(Enum defaultValue)
         {
             m_TextElement = new TextElement();
+            m_TextElement.pickingMode = PickingMode.Ignore;
             Add(m_TextElement);
             if (defaultValue != null)
             {
                 Init(defaultValue);
             }
-            RegisterCallback<MouseDownEvent>(OnMouseDown, TrickleDown.TrickleDown);
         }
 
         public EnumField()
@@ -98,12 +98,6 @@ namespace UnityEditor.Experimental.UIElements
             value = defaultValue;
         }
 
-        private void OnMouseDown(MouseDownEvent evt)
-        {
-            if (evt.button == (int)MouseButton.LeftMouse)
-                ShowMenu();
-        }
-
         [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
         public override void SetValueAndNotify(Enum newValue)
         {
@@ -117,8 +111,7 @@ namespace UnityEditor.Experimental.UIElements
         {
             base.ExecuteDefaultActionAtTarget(evt);
 
-            if ((evt.GetEventTypeId() == KeyDownEvent.TypeId()) &&
-                (evt as KeyDownEvent)?.character == '\n')
+            if ((evt as MouseDownEvent)?.button == (int)MouseButton.LeftMouse || (evt as KeyDownEvent)?.character == '\n')
             {
                 ShowMenu();
                 evt.StopPropagation();

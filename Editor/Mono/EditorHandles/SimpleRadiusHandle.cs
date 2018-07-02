@@ -27,7 +27,7 @@ namespace UnityEditor
             return radius;
         }
 
-        internal static float DoSimpleRadiusHandle(Quaternion rotation, Vector3 position, float radius, bool hemisphere)
+        internal static float DoSimpleRadiusHandle(Quaternion rotation, Vector3 position, float radius, bool hemisphere, float arc = 360.0f)
         {
             Vector3 forward = rotation * Vector3.forward;
             Vector3 up = rotation * Vector3.up;
@@ -46,10 +46,13 @@ namespace UnityEditor
             // Radius handles at disc
             temp = GUI.changed;
             GUI.changed = false;
-            radius = SizeSlider(position, up, radius);
-            radius = SizeSlider(position, -up, radius);
             radius = SizeSlider(position, right, radius);
-            radius = SizeSlider(position, -right, radius);
+            if (arc >= 90.0f)
+                radius = SizeSlider(position, up, radius);
+            if (arc >= 180.0f)
+                radius = SizeSlider(position, -right, radius);
+            if (arc >= 270.0f)
+                radius = SizeSlider(position, -up, radius);
             if (GUI.changed)
                 radius = Mathf.Max(0.0f, radius);
             GUI.changed |= temp;
@@ -57,10 +60,20 @@ namespace UnityEditor
             // Draw gizmo
             if (radius > 0)
             {
-                DrawWireDisc(position, forward, radius);
-                DrawWireArc(position, up, -right, hemisphere ? 180 : 360, radius);
-                DrawWireArc(position, right, up, hemisphere ? 180 : 360, radius);
-                //DrawPeriphery (position, radius);
+                DrawWireArc(position, forward, right, arc, radius);
+                DrawWireArc(position, up, forward, hemisphere ? 90 : 180, radius);
+
+                for (int quarter = 0; quarter < 4; quarter++)
+                {
+                    if (arc >= (90.0f * quarter))
+                    {
+                        Vector3 normal = Matrix4x4.Rotate(Quaternion.Euler(0.0f, 0.0f, 90.0f * quarter)) * up;
+                        DrawWireArc(position, normal, forward, hemisphere ? 90 : 180, radius);
+                    }
+                }
+
+                Vector3 capNormal = Matrix4x4.Rotate(Quaternion.Euler(0.0f, 0.0f, arc)) * up;
+                DrawWireArc(position, capNormal, forward, hemisphere ? 90 : 180, radius);
             }
             return radius;
         }

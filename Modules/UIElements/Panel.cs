@@ -44,20 +44,21 @@ namespace UnityEngine.Experimental.UIElements
     internal enum VersionChangeType
     {
         //Some data was bound
-        Bindings = 1 << 6,
+        Bindings = 1 << 7,
         // persistent data ready
-        PersistentData = 1 << 5,
+        PersistentData = 1 << 6,
         // changes to hierarchy
-        Hierarchy = 1 << 4,
+        Hierarchy = 1 << 5,
         // changes to layout
-        Layout = 1 << 3,
+        Layout = 1 << 4,
+        // changes to StyleSheet, USS class
+        StyleSheet = 1 << 3,
         // changes to styles, colors and other render properties
         Styles = 1 << 2,
         // transforms are invalid
         Transform = 1 << 1,
         // pixels in the target have been changed, just repaint, only makes sense on the Panel
         Repaint = 1 << 0,
-        All = Repaint | Transform | Layout | Styles | PersistentData
     }
 
     internal class RepaintData
@@ -469,7 +470,7 @@ namespace UnityEngine.Experimental.UIElements
             if (!Mathf.Approximately(currentPixelsPerPoint, GUIUtility.pixelsPerPoint))
             {
                 currentPixelsPerPoint = GUIUtility.pixelsPerPoint;
-                visualTree.IncrementVersion(VersionChangeType.Styles);
+                visualTree.IncrementVersion(VersionChangeType.StyleSheet);
             }
 
             repaintData.repaintEvent = e;

@@ -476,7 +476,7 @@ namespace UnityEditor
             public static readonly GUIStyle hueDialThumb = "ColorPickerHueRingThumb";
             public static readonly GUIStyle sliderBackground = "ColorPickerSliderBackground";
             public static readonly GUIStyle sliderThumb = "ColorPickerHorizThumb";
-            public static readonly GUIStyle background = new GUIStyle("ColorPickerBackground");
+            public static readonly GUIStyle background = "ColorPickerBackground";
             public static readonly GUIStyle exposureSwatch = "ColorPickerExposureSwatch";
             public static readonly GUIStyle selectedExposureSwatchStroke = "ColorPickerCurrentExposureSwatchBorder";
 

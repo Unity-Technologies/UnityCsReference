@@ -26,22 +26,15 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        public override Object value
+        public override void SetValueWithoutNotify(Object newValue)
         {
-            get
-            {
-                return base.value;
-            }
-            set
-            {
-                var valueChanged = !EqualityComparer<Object>.Default.Equals(this.value, value);
-                base.value = value;
+            var valueChanged = !EqualityComparer<Object>.Default.Equals(this.value, newValue);
 
-                // Calling the update only if necessary...
-                if (valueChanged)
-                {
-                    m_ObjectFieldDisplay.Update();
-                }
+            base.SetValueWithoutNotify(newValue);
+
+            if (valueChanged)
+            {
+                m_ObjectFieldDisplay.Update();
             }
         }
 

@@ -26,7 +26,7 @@ namespace UnityEditorInternal.Profiling
 
             public static readonly GUIStyle header = "OL title";
             public static readonly GUIStyle label = "OL label";
-            public static readonly GUIStyle toolbar = new GUIStyle(EditorStyles.toolbar);
+            public static readonly GUIStyle toolbar = EditorStyles.toolbar;
             public static readonly GUIStyle tooltip = "AnimationEventTooltip";
             public static readonly GUIStyle tooltipArrow = "AnimationEventTooltipArrow";
             public static readonly GUIStyle viewTypeToolbarDropDown = new GUIStyle(EditorStyles.toolbarDropDown);

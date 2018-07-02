@@ -288,6 +288,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 child.SetEnabledFromHierarchy(m_Owner.enabledInHierarchy);
 
+                child.IncrementVersion(VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
 
@@ -325,6 +326,8 @@ namespace UnityEngine.Experimental.UIElements
                     }
                 }
 
+                // Child is detached from the panel, notify using the panel directly.
+                m_Owner.elementPanel?.OnVersionChanged(child, VersionChangeType.Hierarchy);
                 m_Owner.IncrementVersion(VersionChangeType.Hierarchy);
             }
 
@@ -336,6 +339,7 @@ namespace UnityEngine.Experimental.UIElements
                     {
                         e.shadow.SetParent(null);
                         e.m_LogicalParent = null;
+                        m_Owner.elementPanel?.OnVersionChanged(e, VersionChangeType.Hierarchy);
                     }
 
                     ReleaseChildList();

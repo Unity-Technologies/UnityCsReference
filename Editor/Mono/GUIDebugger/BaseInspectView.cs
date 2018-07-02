@@ -24,14 +24,7 @@ namespace UnityEditor
             public static readonly GUIContent instructionsLabel = EditorGUIUtility.TrTextContent("Instructions");
             public static readonly GUIContent emptyViewLabel = EditorGUIUtility.TrTextContent("Select an Instruction on the left to see details");
 
-            public static readonly GUIStyle centeredLabel = new GUIStyle("PR Label");
-
-            static Styles()
-            {
-                centeredLabel.alignment = TextAnchor.MiddleCenter;
-                centeredLabel.padding.right = 0;
-                centeredLabel.padding.left = 0;
-            }
+            public static readonly GUIStyle centeredLabel = "IN CenteredLabel";
         }
 
         protected ListViewState listViewState { get { return m_ListViewState; } }

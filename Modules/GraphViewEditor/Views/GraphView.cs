@@ -67,8 +67,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public GraphViewChanged graphViewChanged { get; set; }
 
         public Action<Group, string> groupTitleChanged { get; set; }
-        public Action<Group, GraphElement> elementAddedToGroup { get; set; }
-        public Action<Group, GraphElement> elementRemovedFromGroup { get; set; }
+        public Action<Group, IEnumerable<GraphElement>> elementsAddedToGroup { get; set; }
+        public Action<Group, IEnumerable<GraphElement>> elementsRemovedFromGroup { get; set; }
 
         public Action<StackNode, int, GraphElement> elementInsertedToStackNode { get; set; }
         public Action<StackNode, GraphElement> elementRemovedFromStackNode { get; set; }
@@ -227,6 +227,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void RestoreSavedSelection(IGraphViewSelection graphViewSelection)
         {
+            if (m_PersistedSelection == null)
+                return;
             if (graphViewSelection.selectedElements.Count == selection.Count && graphViewSelection.version == m_SavedSelectionVersion)
                 return;
 
@@ -256,8 +258,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         internal void RestorePersistedSelection()
         {
-            if (m_PersistedSelection != null)
-                RestoreSavedSelection(m_PersistedSelection);
+            RestoreSavedSelection(m_PersistedSelection);
         }
 
         private void UndoRedoPerformed()

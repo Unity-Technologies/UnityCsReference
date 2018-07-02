@@ -770,6 +770,9 @@
   <Compile Include="..\..\Editor\Mono\Collab\CollabChangeAction.cs">
     <Link>Editor\Mono\Collab\CollabChangeAction.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Collab\CollabChangeItem.cs">
+    <Link>Editor\Mono\Collab\CollabChangeItem.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Collab\CollabDialogs.cs">
     <Link>Editor\Mono\Collab\CollabDialogs.cs</Link>
   </Compile>
@@ -790,6 +793,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Collab\CollabTesting.cs">
     <Link>Editor\Mono\Collab\CollabTesting.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Collab\IVersionControl.cs">
+    <Link>Editor\Mono\Collab\IVersionControl.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Collab\RevisionsService.cs">
     <Link>Editor\Mono\Collab\RevisionsService.cs</Link>
@@ -3164,6 +3170,9 @@
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\BaseCompositeField.cs">
     <Link>Editor\Mono\UIElements\Controls\BaseCompositeField.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\BasePopupField.cs">
+    <Link>Editor\Mono\UIElements\Controls\BasePopupField.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\BindingExtensions.cs">
     <Link>Editor\Mono\UIElements\Controls\BindingExtensions.cs</Link>
   </Compile>
@@ -3197,8 +3206,17 @@
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\IntegerField.cs">
     <Link>Editor\Mono\UIElements\Controls\IntegerField.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\LayerField.cs">
+    <Link>Editor\Mono\UIElements\Controls\LayerField.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\LayerMaskField.cs">
+    <Link>Editor\Mono\UIElements\Controls\LayerMaskField.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\LongField.cs">
     <Link>Editor\Mono\UIElements\Controls\LongField.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\MaskField.cs">
+    <Link>Editor\Mono\UIElements\Controls\MaskField.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\ObjectField.cs">
     <Link>Editor\Mono\UIElements\Controls\ObjectField.cs</Link>
@@ -3208,6 +3226,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\PropertyControl.cs">
     <Link>Editor\Mono\UIElements\Controls\PropertyControl.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\TagField.cs">
+    <Link>Editor\Mono\UIElements\Controls\TagField.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\TextValueField.cs">
     <Link>Editor\Mono\UIElements\Controls\TextValueField.cs</Link>
@@ -3299,8 +3320,8 @@
   <Compile Include="..\..\Editor\Mono\UnityConnect\Services\UnetAccess.cs">
     <Link>Editor\Mono\UnityConnect\Services\UnetAccess.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnect.cs">
-    <Link>Editor\Mono\UnityConnect\UnityConnect.cs</Link>
+  <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnect.bindings.cs">
+    <Link>Editor\Mono\UnityConnect\UnityConnect.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\UnityConnect\UnityConnectConsentView.cs">
     <Link>Editor\Mono\UnityConnect\UnityConnectConsentView.cs</Link>
@@ -3569,9 +3590,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\StateMachineBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\StateMachineBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\UnityConnectBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\UnityConnectBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\UnityStatsBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\UnityStatsBindings.gen.cs</Link>
   </Compile>
@@ -3718,6 +3736,9 @@
   </Compile>
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildSettings.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\BuildSettings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageCache.bindings.cs">
+    <Link>Modules\BuildPipeline\Editor\Managed\BuildUsageCache.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\BuildPipeline\Editor\Managed\BuildUsageTagGlobal.cs">
     <Link>Modules\BuildPipeline\Editor\Managed\BuildUsageTagGlobal.cs</Link>

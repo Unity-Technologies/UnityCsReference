@@ -314,9 +314,11 @@ namespace UnityEngine
         [FreeFunction("OpenURL")]
         extern public static void OpenURL(string url);
 
-        [Obsolete("For internal use only")]
-        [FreeFunction("Application_Bindings::ForceCrash")]
-        extern public static void ForceCrash(int mode);
+        [Obsolete("Use UnityEngine.Diagnostics.Utils.ForceCrash")]
+        public static void ForceCrash(int mode)
+        {
+            UnityEngine.Diagnostics.Utils.ForceCrash((UnityEngine.Diagnostics.ForcedCrashCategory)mode);
+        }
 
         // Instructs game to try to render at a specified frame rate.
         extern public static int targetFrameRate

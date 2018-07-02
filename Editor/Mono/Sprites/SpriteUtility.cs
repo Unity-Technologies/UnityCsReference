@@ -139,11 +139,8 @@ namespace UnityEditor
                         bool createGameObject = true;
                         if (s_DragType == DragType.SpriteAnimation && sprites.Count > 1)
                         {
-                            UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop multiple sprites to scene", "null", 1);
                             createGameObject = AddAnimationToGO((GameObject)s_SceneDragObjects[0], sprites.ToArray(), saveFileDialog);
                         }
-                        else
-                            UsabilityAnalytics.Event("Sprite Drag and Drop", "Drop single sprite to scene", "null", 1);
 
                         if (createGameObject)
                         {

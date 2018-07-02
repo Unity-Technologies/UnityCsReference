@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.StyleSheets;
+using UnityEngine.Video;
 
 namespace UnityEditorInternal
 {
@@ -71,7 +72,7 @@ namespace UnityEditorInternal
                 case "asf": case "asx": case "avi": case "dat": case "divx": case "dvx": case "mlv": case "m2l":
                 case "m2t": case "m2ts": case "m2v": case "m4e": case "mjp": case "mov": case "movie":
                 case "mp21": case "mpe": case "mpv2": case "ogm": case "qt": case "rm": case "rmvb": case "wmw": case "xvid":
-                    return AssetDatabase.GetCachedIcon(fileName) as Texture2D ?? EditorGUIUtility.FindTexture(typeof(MovieTexture));
+                    return AssetDatabase.GetCachedIcon(fileName) as Texture2D ?? EditorGUIUtility.FindTexture(typeof(VideoClip));
 
                 case "colors": case "gradients":
                 case "curves": case "curvesnormalized": case "particlecurves": case "particlecurvessigned": case "particledoublecurves": case "particledoublecurvessigned":

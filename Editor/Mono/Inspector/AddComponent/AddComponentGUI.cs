@@ -10,15 +10,7 @@ namespace UnityEditor.AdvancedDropdown
     {
         private static class Styles
         {
-            public static GUIStyle itemStyle = new GUIStyle("PR Label");
-
-            static Styles()
-            {
-                itemStyle.alignment = TextAnchor.MiddleLeft;
-                itemStyle.padding.left = 0;
-                itemStyle.fixedHeight = 20;
-                itemStyle.margin = new RectOffset(0, 0, 0, 0);
-            }
+            public static GUIStyle itemStyle = "DD LargeItemStyle";
         }
 
         private Vector2 m_IconSize = new Vector2(16, 16);

@@ -46,6 +46,8 @@ public sealed partial class Asset
         Updating = 8192,
         ReadOnly = 16384,
         MetaFile = 32768,
+        MovedLocal = 65536,
+        MovedRemote = 131072
     }
 
     [ThreadAndSerializationSafe ()]

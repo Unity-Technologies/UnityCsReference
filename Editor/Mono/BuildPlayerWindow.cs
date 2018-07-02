@@ -34,7 +34,7 @@ namespace UnityEditor
             public GUIStyle platformSelector = "PlayerSettingsPlatform";
             public GUIStyle toggle = "Toggle";
             public GUIStyle levelString = "PlayerSettingsLevel";
-            public GUIStyle levelStringCounter = new GUIStyle("Label");
+            public GUIStyle levelStringCounter = "RightAlignedLabel";
             public Vector2 toggleSize;
 
             public GUIContent becauseYouAreNot = EditorGUIUtility.TrTextContent("Because you are not a member of this project this build will not access Unity services.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
@@ -138,8 +138,6 @@ namespace UnityEditor
 
             public Styles()
             {
-                levelStringCounter.alignment = TextAnchor.MiddleRight;
-
                 if (Unsupported.IsSourceBuild() && (
                         buildTargetNotInstalled.GetLength(0) != notLicensedMessages.GetLength(0) ||
                         buildTargetNotInstalled.GetLength(0) != BuildPlatforms.instance.buildPlatforms.Length))

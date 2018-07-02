@@ -17,7 +17,7 @@ namespace UnityEditor
         {
             if (s_EditColliderButtonStyle == null)
             {
-                s_EditColliderButtonStyle = new GUIStyle("Button");
+                s_EditColliderButtonStyle = "IN EditColliderButton";
                 s_EditColliderButtonStyle.padding = new RectOffset(0, 0, 0, 0);
                 s_EditColliderButtonStyle.margin = new RectOffset(0, 0, 0, 0);
             }

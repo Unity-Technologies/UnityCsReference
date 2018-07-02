@@ -47,26 +47,26 @@ namespace UnityEditor
 
         public class Styles
         {
-            public GUIStyle headerStyle = new GUIStyle(EditorStyles.boldLabel);
-            public GUIStyle reorderableListLabel = new GUIStyle("PR Label");
+            public GUIStyle headerStyle = GetStyle("AM HeaderStyle");
+            public GUIStyle reorderableListLabel = GetStyle("ReorderableList");
             public GUIStyle regionBg = GetStyle("RegionBg");
             public GUIStyle channelStripVUMeterBg = GetStyle("ChannelStripVUMeterBg");
-            public GUIStyle channelStripAreaBackground = "CurveEditorBackground"; //"flow background";
+            public GUIStyle channelStripAreaBackground = GetStyle("CurveEditorBackground"); //"flow background";
             public GUIStyle channelStripBg = GetStyle("ChannelStripBg");
             public GUIStyle duckingMarker = GetStyle("ChannelStripDuckingMarker");
             public GUIStyle channelStripAttenuationMarkerSquare = GetStyle("ChannelStripAttenuationMarkerSquare");
-            public GUIStyle channelStripHeaderStyle;
+            public GUIStyle channelStripHeaderStyle = GetStyle("AM ChannelStripHeaderStyle");
             public GUIStyle soloToggle = GetStyle("SoloToggle");
             public GUIStyle muteToggle = GetStyle("MuteToggle");
             public GUIStyle bypassToggle = GetStyle("BypassToggle");
             public GUIStyle circularToggle = GetStyle("CircularToggle");
-            public GUIStyle totalVULevel = new GUIStyle(EditorStyles.label);
-            public GUIStyle attenuationBar = "ChannelStripAttenuationBar";
-            public GUIStyle effectBar = "ChannelStripEffectBar";
-            public GUIStyle sendReturnBar = "ChannelStripSendReturnBar";
-            public GUIStyle effectName = new GUIStyle(EditorStyles.miniLabel);
-            public GUIStyle vuValue = new GUIStyle(EditorStyles.miniLabel);
-            public GUIStyle mixerHeader = new GUIStyle(EditorStyles.largeLabel);
+            public GUIStyle totalVULevel = GetStyle("AM TotalVuLabel");
+            public GUIStyle attenuationBar =  GetStyle("ChannelStripAttenuationBar");
+            public GUIStyle effectBar =  GetStyle("ChannelStripEffectBar");
+            public GUIStyle sendReturnBar =  GetStyle("ChannelStripSendReturnBar");
+            public GUIStyle effectName =  GetStyle("AM EffectName");
+            public GUIStyle vuValue =  GetStyle("AM VuValue");
+            public GUIStyle mixerHeader =  GetStyle("AM MixerHeader2");
             public GUIStyle warningOverlay = GetStyle("WarningOverlay");
             public Texture2D scrollShadowTexture = EditorGUIUtility.FindTexture("ScrollShadow");
             public Texture2D leftToRightShadowTexture = EditorGUIUtility.FindTexture("LeftToRightShadow");
@@ -92,52 +92,7 @@ namespace UnityEditor
 
             public Styles()
             {
-                headerStyle.alignment = TextAnchor.MiddleLeft;
-
-                Texture2D transparent = reorderableListLabel.hover.background;
-                reorderableListLabel.normal.background = transparent;
-                reorderableListLabel.active.background = transparent;
-                reorderableListLabel.focused.background = transparent;
-                reorderableListLabel.onNormal.background = transparent;
-                reorderableListLabel.onHover.background = transparent;
-                reorderableListLabel.onActive.background = transparent;
-                reorderableListLabel.onFocused.background = transparent;
-                reorderableListLabel.padding.left = reorderableListLabel.padding.right = 0;
-                reorderableListLabel.alignment = TextAnchor.MiddleLeft;
-
                 scrollShadowTexture = EditorGUIUtility.FindTexture("ScrollShadow");
-
-                channelStripHeaderStyle = new GUIStyle(EditorStyles.boldLabel);
-                channelStripHeaderStyle.alignment = TextAnchor.MiddleLeft;
-                channelStripHeaderStyle.fontSize = 11;
-                channelStripHeaderStyle.fontStyle = FontStyle.Bold;
-                channelStripHeaderStyle.wordWrap = false;
-                channelStripHeaderStyle.clipping = TextClipping.Clip;
-                channelStripHeaderStyle.padding = new RectOffset(4, 4, 4, 4);
-
-                totalVULevel.alignment = TextAnchor.MiddleRight;
-                totalVULevel.padding.right = 20;
-
-                effectName.padding.left = 4;
-                effectName.padding.top = 2;
-
-                vuValue.padding.left = 4;
-                vuValue.padding.right = 4;
-                vuValue.padding.top = 0;
-                vuValue.alignment = TextAnchor.MiddleRight;
-                vuValue.clipping = TextClipping.Overflow;
-
-                warningOverlay.alignment = TextAnchor.MiddleCenter;
-
-                mixerHeader.fontStyle = FontStyle.Bold;
-                mixerHeader.fontSize = 17;
-                mixerHeader.margin = new RectOffset();
-                mixerHeader.padding = new RectOffset();
-                mixerHeader.alignment = TextAnchor.UpperLeft;
-                if (EditorGUIUtility.isProSkin)
-                    mixerHeader.normal.textColor = new Color(0.7f, 0.7f, 0.7f, 1.0f);
-                else
-                    mixerHeader.normal.textColor = new Color(0.2f, 0.2f, 0.2f, 1.0f);
             }
         }
         static Styles s_Styles;

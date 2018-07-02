@@ -51,17 +51,20 @@ namespace UnityEditor
                 m_EulerAngles = t.GetLocalEulerAngles(t.rotationOrder);
                 m_OldRotationOrder = t.rotationOrder;
             }
+
+            var targetRotationOrder = t.rotationOrder;
             bool differentRotation = false;
             bool differentRotationOrder = false;
             for (int i = 1; i < targets.Length; i++)
             {
                 Transform otherTransform = (targets[i] as Transform);
-                Vector3 otherLocalEuler = otherTransform.GetLocalEulerAngles(otherTransform.rotationOrder);
-                differentRotation |= (otherLocalEuler.x != localEuler.x ||
-                                      otherLocalEuler.y != localEuler.y ||
-                                      otherLocalEuler.z != localEuler.z);
+                if (!differentRotation)
+                {
+                    Vector3 otherLocalEuler = otherTransform.GetLocalEulerAngles(otherTransform.rotationOrder);
+                    differentRotation = (otherLocalEuler.x != localEuler.x || otherLocalEuler.y != localEuler.y || otherLocalEuler.z != localEuler.z);
+                }
 
-                differentRotationOrder |= otherTransform.rotationOrder != t.rotationOrder;
+                differentRotationOrder |= otherTransform.rotationOrder != targetRotationOrder;
             }
 
             Rect r = EditorGUILayout.GetControlRect(true, EditorGUIUtility.singleLineHeight * (EditorGUIUtility.wideMode ? 1 : 2));

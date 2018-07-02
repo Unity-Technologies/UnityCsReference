@@ -34,26 +34,8 @@ namespace UnityEditorInternal
 
         public class Styles
         {
-            public GUIStyle reorderableListLabel = new GUIStyle("PR Label");
-            public GUIStyle reorderableListLabelRightAligned;
-
-            public Styles()
-            {
-                Texture2D transparent = reorderableListLabel.hover.background;
-                reorderableListLabel.normal.background = transparent;
-                reorderableListLabel.active.background = transparent;
-                reorderableListLabel.focused.background = transparent;
-                reorderableListLabel.onNormal.background = transparent;
-                reorderableListLabel.onHover.background = transparent;
-                reorderableListLabel.onActive.background = transparent;
-                reorderableListLabel.onFocused.background = transparent;
-                reorderableListLabel.padding.left = reorderableListLabel.padding.right = 0;
-                reorderableListLabel.alignment = TextAnchor.MiddleLeft;
-
-                reorderableListLabelRightAligned = new GUIStyle(reorderableListLabel);
-                reorderableListLabelRightAligned.alignment = TextAnchor.MiddleRight;
-                reorderableListLabelRightAligned.clipping = TextClipping.Overflow;
-            }
+            public GUIStyle reorderableListLabel = "ReorderableList";
+            public GUIStyle reorderableListLabelRightAligned = "ReorderableListRightAligned";
         }
         static Styles s_Styles;
 

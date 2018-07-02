@@ -78,7 +78,6 @@ namespace UnityEditor
             w.m_LoginCallback = callback;
             w.m_LoginReason = loginReason;
             w.m_LoginRemoteMessage = null;
-            UsabilityAnalytics.Track("/AssetStore/Login");
         }
 
         static GUIContent s_AssetStoreLogo;

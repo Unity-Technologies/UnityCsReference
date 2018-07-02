@@ -17,7 +17,7 @@ namespace UnityEditor
     {
         static class Styles
         {
-            public static readonly GUIStyle background = new GUIStyle("CurveEditorBackground");
+            public static readonly GUIStyle background = "CurveEditorBackground";
         }
 
         private bool m_PaletteNeedsSave;

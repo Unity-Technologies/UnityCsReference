@@ -49,17 +49,8 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIStyle searchBg = new GUIStyle("ProjectBrowserTopBarBg");
-            public GUIStyle bottomBarBg = new GUIStyle("ProjectBrowserBottomBarBg");
-            public Styles()
-            {
-                searchBg.border = new RectOffset(0, 0, 2, 2);
-                searchBg.fixedHeight = 0;
-
-                bottomBarBg.alignment = TextAnchor.MiddleLeft;
-                bottomBarBg.fontSize = EditorStyles.label.fontSize;
-                bottomBarBg.padding = new RectOffset(5, 5, 0, 0);
-            }
+            public GUIStyle searchBg = "OT TopBar";
+            public GUIStyle bottomBarBg = "OT BottomBar";
         }
         static Styles s_Styles;
 

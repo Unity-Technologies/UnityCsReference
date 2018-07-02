@@ -208,6 +208,7 @@ namespace UnityEditorInternal
                         // Cancel dragging on ESC
                         if (evt.keyCode == KeyCode.Escape)
                         {
+                            Tools.UnlockHandlePosition();
                             s_ScaleDrawLength = 1.0f;
                         }
                     }
@@ -216,6 +217,7 @@ namespace UnityEditorInternal
                     if (GUIUtility.hotControl == id && (evt.button == 0 || evt.button == 2))
                     {
                         GUIUtility.hotControl = 0;
+                        Tools.UnlockHandlePosition();
                         s_ScaleDrawLength = 1.0f;
                         evt.Use();
                         EditorGUIUtility.SetWantsMouseJumping(0);

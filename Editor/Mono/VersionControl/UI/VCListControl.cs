@@ -1005,7 +1005,7 @@ namespace UnityEditorInternal.VersionControl
         }
 
         // Is the item selected?
-        bool IsSelected(ListItem item)
+        internal bool IsSelected(ListItem item)
         {
             if (item.Asset != null)
                 return selectList.ContainsKey(item.Asset.path.ToLower());
@@ -1174,10 +1174,13 @@ namespace UnityEditorInternal.VersionControl
 
         void SelectedRemove(ListItem item)
         {
-            string name = item.Asset.path.ToLower();
-            // Remove item and twin
+            string name = item.Asset != null ? item.Asset.path.ToLower() : c_changeKeyPrefix + item.Change.id.ToString();
+            // Remove item
             selectList.Remove(name);
-            selectList.Remove(name.EndsWith(c_metaSuffix) ? name.Substring(0, name.Length - 5) : name + c_metaSuffix);
+
+            // Remove twin item of asset
+            if (item.Asset != null)
+                selectList.Remove(name.EndsWith(c_metaSuffix) ? name.Substring(0, name.Length - 5) : name + c_metaSuffix);
 
             // Sync with core selection list.
             name = name.EndsWith(c_metaSuffix) ? name.Substring(0, name.Length - 5) : name;
@@ -1199,7 +1202,7 @@ namespace UnityEditorInternal.VersionControl
         }
 
         // Toggle the selected state of the item
-        void SelectedToggle(ListItem item)
+        internal void SelectedToggle(ListItem item)
         {
             if (IsSelected(item))
                 SelectedRemove(item);
@@ -1314,18 +1317,21 @@ namespace UnityEditorInternal.VersionControl
         }
 
         // Display name rules for items.
-        string DisplayName(ListItem item)
+        internal string DisplayName(ListItem item)
         {
             string name = item.Name;
 
             // Select first nonblank line
             string n = "";
+            string submitMsg = "";
+
             while (n == "")
             {
                 int i = name.IndexOf('\n');
                 if (i < 0) break;
                 n = name.Substring(0, i).Trim();
                 name = name.Substring(i + 1);
+                submitMsg = name.Trim(new char[] { '\n', '\t' });
             }
 
             if (n != "")
@@ -1341,7 +1347,7 @@ namespace UnityEditorInternal.VersionControl
                 }
             }
 
-            return name;
+            return name + " " + submitMsg;
         }
 
         private bool HasHiddenMetaFile(ListItem item)

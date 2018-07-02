@@ -357,9 +357,9 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     int currentCount = GUIClip.Internal_GetCount();
                     if (currentCount > guiClipCount)
-                        Debug.LogError("GUI Error: You are pushing more GUIClips than you are popping. Make sure they are balanced)");
+                        Debug.LogError("GUI Error: You are pushing more GUIClips than you are popping. Make sure they are balanced.");
                     else if (currentCount < guiClipCount)
-                        Debug.LogError("GUI Error: You are popping more GUIClips than you are pushing. Make sure they are balanced)");
+                        Debug.LogError("GUI Error: You are popping more GUIClips than you are pushing. Make sure they are balanced.");
                 }
             }
 

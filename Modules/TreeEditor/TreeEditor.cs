@@ -1899,9 +1899,9 @@ namespace TreeEditor
             GUILayout.FlexibleSpace();
             for (int i = 0; i < names.Length; i++)
             {
-                GUIStyle buttonStyle = new GUIStyle("ButtonMid");
-                if (i == 0) buttonStyle = new GUIStyle("ButtonLeft");
-                if (i == names.Length - 1) buttonStyle = new GUIStyle("ButtonRight");
+                GUIStyle buttonStyle = "ButtonMid";
+                if (i == 0) buttonStyle = "ButtonLeft";
+                if (i == names.Length - 1) buttonStyle = "ButtonRight";
 
                 if (names[i] != null)
                 {
@@ -1924,8 +1924,7 @@ namespace TreeEditor
             labelContent.image = styles.warningIcon.image;
             GUILayout.Label(labelContent, EditorStyles.wordWrappedMiniLabel);
 
-            GUIStyle helpButtonStyle = new GUIStyle("minibutton");
-            helpButtonStyle.wordWrap = true;
+            GUIStyle helpButtonStyle = "wordwrapminibutton";
 
             GUIContent buttonContent = TreeEditorHelper.GetGUIContent("Convert to procedural group. All hand editing will be lost!|");
             if (GUILayout.Button(buttonContent, helpButtonStyle))

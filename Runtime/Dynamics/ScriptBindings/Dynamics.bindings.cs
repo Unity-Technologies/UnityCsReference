@@ -1648,6 +1648,11 @@ namespace UnityEngine
                 throw new ArgumentException("Physics.RebuildBroadphaseRegions requires the subdivisions to be greater than zero and less than 17.");
             }
 
+            if (worldBounds.extents.x < 0 || worldBounds.extents.y < 0 || worldBounds.extents.z < 0)
+            {
+                throw new ArgumentException("Physics.RebuildBroadphaseRegions requires the world bounds to be non-empty, and have positive extents.");
+            }
+
             Internal_RebuildBroadphaseRegions(worldBounds, subdivisions);
         }
     }

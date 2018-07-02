@@ -491,7 +491,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             if (anyChanged)
             {
                 m_CurPanel.Value.Panel.visualTree.IncrementVersion(VersionChangeType.Transform);
-                m_CurPanel.Value.Panel.visualTree.IncrementVersion(VersionChangeType.Styles);
+                m_CurPanel.Value.Panel.visualTree.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
                 m_CurPanel.Value.Panel.visualTree.IncrementVersion(VersionChangeType.Layout);
                 m_CurPanel.Value.Panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
                 m_CurPanel.Value.View.RepaintImmediately();
@@ -741,8 +741,8 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             internal const float SizeRectHeight = 350;
             internal const float SplitterSize = 2;
             internal const float LabelWidth = 150;
-            public static GUIStyle KSizeLabel = new GUIStyle { alignment = TextAnchor.MiddleCenter };
-            public static GUIStyle KInspectorTitle = new GUIStyle(EditorStyles.whiteLargeLabel) { alignment = TextAnchor.MiddleCenter };
+            public static GUIStyle KSizeLabel = "DefaultCenteredText";
+            public static GUIStyle KInspectorTitle = "WhiteLargeCenterLabel";
 
             public static readonly GUIContent elementStylesContent = EditorGUIUtility.TrTextContent("Element styles");
             public static readonly GUIContent showDefaultsContent = EditorGUIUtility.TrTextContent("Show defaults");

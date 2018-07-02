@@ -83,9 +83,15 @@ namespace UnityEditor.Collaboration
 
         public extern void ClearErrors();
 
+        public extern void ForceRefresh(bool refreshAssetDatabase);
+
         public extern void SetCollabEnabledForCurrentProject(bool enabled);
 
         public extern bool IsCollabEnabledForCurrentProject();
+
+        public extern bool IsAssetIgnored(string path);
+
+        public extern bool ShouldTrackAsset(string path);
 
         [ThreadAndSerializationSafe]
         public extern string GetProjectPath();
