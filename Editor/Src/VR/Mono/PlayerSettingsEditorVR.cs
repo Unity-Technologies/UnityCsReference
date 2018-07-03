@@ -529,7 +529,7 @@ namespace UnityEditorInternal.VR
         {
             if (targetGroup == BuildTargetGroup.Android)
             {
-                if (PlayerSettings.Android.androidTangoEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
+                if (PlayerSettings.Android.ARCoreEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
                 {
                     EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);
                 }
@@ -557,7 +557,7 @@ namespace UnityEditorInternal.VR
             // Google Tango settings
             EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
 
-            if (PlayerSettings.Android.androidTangoEnabled)
+            if (PlayerSettings.Android.ARCoreEnabled)
             {
                 EditorGUI.indentLevel++;
 

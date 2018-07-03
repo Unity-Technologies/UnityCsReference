@@ -59,6 +59,7 @@ namespace UnityEditor.VisualStudioIntegration
             {"cginc", ScriptingLanguage.None},
             {"hlsl", ScriptingLanguage.None},
             {"glslinc", ScriptingLanguage.None},
+            {"template", ScriptingLanguage.None},
         };
 
         private static readonly string[] reimportSyncExtensions = new[] { ".dll", ".asmdef" };

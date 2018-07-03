@@ -53,7 +53,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         private static readonly PropertyInfo[] k_FieldInfos = typeof(IStyle).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         private static readonly PropertyInfo[] k_SortedFieldInfos = k_FieldInfos.OrderBy(f => f.Name).ToArray();
 
-        [MenuItem("Window/Debug/UIElements Debugger", false, 6, true)]
+        [MenuItem("Window/Analysis/UIElements Debugger", false, 101, true)]
         public static void Open()
         {
             GetWindow<UIElementsDebugger>().Show();

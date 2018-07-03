@@ -1312,7 +1312,7 @@ namespace UnityEditor
         void AppsListClick(object userData, string[] options, int selected)
         {
             AppsListUserData ud = (AppsListUserData)userData;
-            if (options[selected] == "Browse...")
+            if (options[selected] == L10n.Tr("Browse..."))
             {
                 string path = EditorUtility.OpenFilePanel("Browse for application", "", InternalEditorUtility.GetApplicationExtensionForRuntimePlatform(Application.platform));
                 if (path.Length != 0)

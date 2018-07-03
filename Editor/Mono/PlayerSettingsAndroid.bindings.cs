@@ -227,7 +227,7 @@ namespace UnityEditor
             public static extern bool androidIsGame { get; set; }
 
             // Google Tango mixed reality support
-            internal static extern bool androidTangoEnabled { get; set; }
+            public static extern bool ARCoreEnabled { get; set; }
 
             // Whether Android banner is added to the APK
             internal static extern bool androidBannerEnabled { get; set; }

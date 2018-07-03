@@ -71,6 +71,11 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("collabUserAction", parameters);
         }
 
+        internal static bool SendCollabOperation(object parameters)
+        {
+            return EditorAnalytics.SendEvent("collabOperation", parameters);
+        }
+
         public extern static bool enabled
         {
             get;
