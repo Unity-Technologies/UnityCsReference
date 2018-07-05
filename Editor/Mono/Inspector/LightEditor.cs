@@ -580,16 +580,11 @@ namespace UnityEditor
         void ShadowsGUI()
         {
             //NOTE: FadeGroup's dont support nesting. Thus we just multiply the fade values here.
-
-            // Shadows drop-down. Area lights can only be baked and always have shadows.
-            float show = 1 - m_AnimShowAreaOptions.faded;
-
-            if (EditorGUILayout.BeginFadeGroup(show))
-                settings.DrawShadowsType();
-            EditorGUILayout.EndFadeGroup();
+            settings.DrawShadowsType();
 
             EditorGUI.indentLevel += 1;
-            show *= m_AnimShowShadowOptions.faded;
+
+            float show = m_AnimShowAreaOptions.faded;
 
             // Baked Shadow radius
             if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowRadiusOptions.faded))
