@@ -280,8 +280,27 @@ namespace UnityEngineInternal.Input
     {
         public static NativeUpdateCallback onUpdate;
         public static NativeEventCallback onEvents;
-        public static NativeDeviceDiscoveredCallback onDeviceDiscovered;
 
+        static NativeDeviceDiscoveredCallback m_OnDeviceDiscoveredCallback;
+        public static event NativeDeviceDiscoveredCallback onDeviceDiscovered
+        {
+            add
+            {
+                m_OnDeviceDiscoveredCallback += value;
+                hasDeviceDiscoveredCallback = m_OnDeviceDiscoveredCallback != null;
+            }
+            remove
+            {
+                m_OnDeviceDiscoveredCallback -= value;
+                hasDeviceDiscoveredCallback = m_OnDeviceDiscoveredCallback != null;
+            }
+        }
+
+        static NativeInputSystem()
+        {
+            // This property is backed by a native field, and so it's state is preserved over domain reload.  Reset it on initialization to keep it current.
+            hasDeviceDiscoveredCallback = false;
+        }
 
         [RequiredByNativeCode]
         internal static void NotifyUpdate(NativeInputUpdateType updateType)
@@ -300,15 +319,9 @@ namespace UnityEngineInternal.Input
         }
 
         [RequiredByNativeCode]
-        internal static bool HasDeviceDiscoveredHandler()
-        {
-            return onDeviceDiscovered != null;
-        }
-
-        [RequiredByNativeCode]
         internal static void NotifyDeviceDiscovered(NativeInputDeviceInfo deviceInfo)
         {
-            NativeDeviceDiscoveredCallback callback = onDeviceDiscovered;
+            NativeDeviceDiscoveredCallback callback = m_OnDeviceDiscoveredCallback;
             if (callback != null)
                 callback(deviceInfo);
         }
