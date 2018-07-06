@@ -2339,18 +2339,20 @@ namespace UnityEditor
             InitListArea();
         }
 
+        internal static int GetFolderInstanceID(string folderPath)
+        {
+            return folderPath == PackageManager.Folders.GetPackagesMountPoint()
+                ? kPackagesFolderInstanceId
+                : AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath);
+        }
+
         static int[] GetFolderInstanceIDs(string[] folders)
         {
             int[] folderInstanceIDs = new int[folders.Length];
 
             for (int i = 0; i < folders.Length; ++i)
             {
-                if (folders[i] == PackageManager.Folders.GetPackagesMountPoint())
-                {
-                    folderInstanceIDs[i] = kPackagesFolderInstanceId;
-                    continue;
-                }
-                folderInstanceIDs[i] = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folders[i]);
+                folderInstanceIDs[i] = GetFolderInstanceID(folders[i]);
             }
             return folderInstanceIDs;
         }
@@ -2388,7 +2390,8 @@ namespace UnityEditor
             if (folderWasSelected)
             {
                 SearchViewState state = GetSearchViewState();
-                if (state == SearchViewState.AllAssets || state == SearchViewState.AssetStore)
+                if (state == SearchViewState.AllAssets || state == SearchViewState.InAssetsOnly ||
+                    state == SearchViewState.InPackagesOnly || state == SearchViewState.AssetStore)
                 {
                     // Clear all except folders if folder is set
                     string[] folders = m_SearchFilter.folders;
@@ -2530,12 +2533,7 @@ namespace UnityEditor
                     rect.width = size.x;
                     if (GUI.Button(rect, folderContent, style))
                     {
-                        if (folderPath == PackageManager.Folders.GetPackagesMountPoint())
-                        {
-                            ShowFolderContents(kPackagesFolderInstanceId, false);
-                            continue;
-                        }
-                        ShowFolderContents(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(folderPath), false);
+                        ShowFolderContents(GetFolderInstanceID(folderPath), false);
                     }
 
                     rect.x += size.x + 3f;
@@ -2694,15 +2692,20 @@ namespace UnityEditor
         {
             int folderInstanceID = 0;
 
-            string assetPath = AssetDatabase.GetAssetPath(instanceID);
-            if (!String.IsNullOrEmpty(assetPath))
+            if (instanceID == kPackagesFolderInstanceId)
+                folderInstanceID = kPackagesFolderInstanceId;
+            else
             {
-                string containingFolder = ProjectWindowUtil.GetContainingFolder(assetPath);
-                if (!String.IsNullOrEmpty(containingFolder))
-                    folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(containingFolder);
+                string assetPath = AssetDatabase.GetAssetPath(instanceID);
+                if (!String.IsNullOrEmpty(assetPath))
+                {
+                    string containingFolder = ProjectWindowUtil.GetContainingFolder(assetPath);
+                    if (!String.IsNullOrEmpty(containingFolder))
+                        folderInstanceID = GetFolderInstanceID(containingFolder);
 
-                if (folderInstanceID == 0)
-                    folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
+                    if (folderInstanceID == 0)
+                        folderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
+                }
             }
 
             // Could be a scene gameobject

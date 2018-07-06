@@ -34,6 +34,8 @@ namespace UnityEngine
         extern public RenderingPath renderingPath { get; set; }
         extern public RenderingPath actualRenderingPath {[NativeName("CalculateRenderingPath")] get;  }
 
+        extern public void Reset();
+
         extern public bool allowHDR { get; set; }
         extern public bool allowMSAA { get; set; }
         extern public bool allowDynamicResolution { get; set; }

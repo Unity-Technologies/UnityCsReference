@@ -558,6 +558,10 @@ namespace UnityEditor
         {
             List<int> ancestors = new List<int>();
 
+            // Ensure we handle packages root folder
+            if (instanceID == ProjectBrowser.kPackagesFolderInstanceId)
+                return ancestors.ToArray();
+
             // Ensure we add the main asset as ancestor if input is a subasset
             int mainAssetInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(AssetDatabase.GetAssetPath(instanceID));
             bool isSubAsset = mainAssetInstanceID != instanceID;
@@ -568,7 +572,7 @@ namespace UnityEditor
             string currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(mainAssetInstanceID));
             while (!string.IsNullOrEmpty(currentFolderPath))
             {
-                int currentInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(currentFolderPath);
+                int currentInstanceID = ProjectBrowser.GetFolderInstanceID(currentFolderPath);
                 ancestors.Add(currentInstanceID);
                 currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(currentInstanceID));
             }

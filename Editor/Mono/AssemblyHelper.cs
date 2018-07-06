@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using Mono.Cecil;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.Compilers;
+using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor
@@ -263,9 +264,16 @@ namespace UnityEditor
             var group = EditorUserBuildSettings.activeBuildTargetGroup;
             var target = EditorUserBuildSettings.activeBuildTarget;
             var precompiledAssemblies = UnityEditorInternal.InternalEditorUtility.GetPrecompiledAssemblies(true, group, target);
+
             HashSet<string> searchPaths = new HashSet<string>();
+
             foreach (var asm in precompiledAssemblies)
                 searchPaths.Add(Path.GetDirectoryName(asm.Path));
+
+            precompiledAssemblies = UnityEditorInternal.InternalEditorUtility.GetUnityAssemblies(true, group, target);
+            foreach (var asm in precompiledAssemblies)
+                searchPaths.Add(Path.GetDirectoryName(asm.Path));
+
             foreach (var asmpath in searchPaths)
                 assemblyResolver.AddSearchDirectory(asmpath);
 
