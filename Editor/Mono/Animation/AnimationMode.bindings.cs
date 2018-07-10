@@ -138,25 +138,31 @@ namespace UnityEditor
         extern public static void EndSampling();
 
         [NativeThrows]
-        extern public static void SampleAnimationClip(GameObject gameObject, AnimationClip clip, float time);
+        extern public static void SampleAnimationClip([NotNull] GameObject gameObject, [NotNull] AnimationClip clip, float time);
 
         [NativeThrows]
-        extern internal static void SampleCandidateClip(GameObject gameObject, AnimationClip clip, float time);
+        extern internal static void SampleCandidateClip([NotNull] GameObject gameObject, [NotNull] AnimationClip clip, float time);
 
         [NativeThrows]
         extern public static void AddPropertyModification(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
 
         [NativeThrows]
-        extern internal static void InitializePropertyModificationForGameObject(GameObject gameObject, AnimationClip clip);
+        extern internal static void AddTransformTR([NotNull] GameObject root, string path);
 
         [NativeThrows]
-        extern internal static void InitializePropertyModificationForObject(Object target, AnimationClip clip);
+        extern internal static void AddTransformTRS([NotNull] GameObject root, string path);
 
         [NativeThrows]
-        extern internal static void RevertPropertyModificationsForGameObject(GameObject gameObject);
+        extern internal static void InitializePropertyModificationForGameObject([NotNull] GameObject gameObject, [NotNull] AnimationClip clip);
 
         [NativeThrows]
-        extern internal static void RevertPropertyModificationsForObject(Object target);
+        extern internal static void InitializePropertyModificationForObject([NotNull] Object target, [NotNull] AnimationClip clip);
+
+        [NativeThrows]
+        extern internal static void RevertPropertyModificationsForGameObject([NotNull] GameObject gameObject);
+
+        [NativeThrows]
+        extern internal static void RevertPropertyModificationsForObject([NotNull] Object target);
 
         extern private static bool Internal_InAnimationMode(Object driver);
 

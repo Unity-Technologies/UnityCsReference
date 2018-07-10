@@ -85,15 +85,6 @@ namespace UnityEditorInternal
             FileUtil.CopyDirectoryRecursive(sourceFolder, destinationFolder);
         }
 
-        internal static string editorIl2cppFolder
-        {
-            get
-            {
-                var dir = @"il2cpp";
-                return Path.GetFullPath(Path.Combine(EditorApplication.applicationContentsPath, dir));
-            }
-        }
-
         internal static string ApiCompatibilityLevelToDotNetProfileArgument(ApiCompatibilityLevel compatibilityLevel)
         {
             switch (compatibilityLevel)
@@ -105,8 +96,6 @@ namespace UnityEditorInternal
                     return "net20";
 
                 case ApiCompatibilityLevel.NET_4_6:
-                    return "unityjit";
-
                 case ApiCompatibilityLevel.NET_Standard_2_0:
                     return "unityaot";
 
@@ -136,6 +125,17 @@ namespace UnityEditorInternal
                 default:
                     return false;
             }
+        }
+
+        internal static string GetIl2CppFolder()
+        {
+            var pathOverride = Debug.GetDiagnosticSwitch("VMIl2CppPath") as string;
+            if (!string.IsNullOrEmpty(pathOverride))
+                return pathOverride;
+            else
+                return Path.GetFullPath(Path.Combine(
+                        EditorApplication.applicationContentsPath,
+                        "il2cpp"));
         }
     }
 
@@ -214,10 +214,7 @@ namespace UnityEditorInternal
 
                 arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
                 arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(GetCppOutputDirectoryInStagingArea())));
-                if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_4_6)
-                    arguments.Add("--dotnetprofile=\"unityjit\"");
-                if (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup) == ApiCompatibilityLevel.NET_Standard_2_0)
-                    arguments.Add("--dotnetprofile=\"unityaot\"");
+                arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
                 Action<ProcessStartInfo> setupStartInfo = il2CppNativeCodeBuilder.SetupStartInfo;
                 var managedDir = Path.GetFullPath(Path.Combine(m_StagingAreaData, "Managed"));
 
@@ -300,16 +297,7 @@ namespace UnityEditorInternal
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
 
-            switch (PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))
-            {
-                case ApiCompatibilityLevel.NET_4_6:
-                    arguments.Add("--dotnetprofile=\"unityjit\"");
-                    break;
-
-                case ApiCompatibilityLevel.NET_Standard_2_0:
-                    arguments.Add("--dotnetprofile=\"unityaot\"");
-                    break;
-            }
+            arguments.Add(string.Format("--dotnetprofile=\"{0}\"", IL2CPPUtils.ApiCompatibilityLevelToDotNetProfileArgument(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))));
 
             if (IL2CPPUtils.EnableIL2CPPDebugger(buildTargetGroup) && platformSupportsManagedDebugging)
                 arguments.Add("--enable-debugger");
@@ -329,6 +317,12 @@ namespace UnityEditorInternal
                 arguments.Add(additionalArgs);
 
             additionalArgs = System.Environment.GetEnvironmentVariable("IL2CPP_ADDITIONAL_ARGS");
+            if (!string.IsNullOrEmpty(additionalArgs))
+            {
+                arguments.Add(additionalArgs);
+            }
+
+            additionalArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs") as string;
             if (!string.IsNullOrEmpty(additionalArgs))
             {
                 arguments.Add(additionalArgs);
@@ -389,16 +383,19 @@ namespace UnityEditorInternal
 
         private string GetIl2CppExe()
         {
-            return m_PlatformProvider.il2CppFolder + "/build/il2cpp.exe";
+            return IL2CPPUtils.GetIl2CppFolder() + "/build/il2cpp.exe";
         }
 
         private string GetIl2CppCoreExe()
         {
-            return m_PlatformProvider.il2CppFolder + "/build/il2cppcore/il2cppcore.dll";
+            return IL2CPPUtils.GetIl2CppFolder() + "/build/il2cppcore/il2cppcore.dll";
         }
 
         private bool ShouldUseIl2CppCore()
         {
+            if (!m_PlatformProvider.supportsUsingIl2cppCore)
+                return false;
+
             bool shouldUse = false;
             if (Application.platform == RuntimePlatform.OSXEditor)
             {
@@ -437,10 +434,10 @@ namespace UnityEditorInternal
         bool enableArrayBoundsCheck { get; }
         bool enableDivideByZeroCheck { get; }
         string nativeLibraryFileName { get; }
-        string il2CppFolder { get; }
         string moduleStrippingInformationFolder { get; }
         bool supportsEngineStripping { get; }
         bool supportsManagedDebugging { get; }
+        bool supportsUsingIl2cppCore { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -494,6 +491,11 @@ namespace UnityEditorInternal
             get { return false; }
         }
 
+        public virtual bool supportsUsingIl2cppCore
+        {
+            get { return true; }
+        }
+
         public virtual BuildReport buildReport
         {
             get { return null; }
@@ -504,8 +506,8 @@ namespace UnityEditorInternal
             get
             {
                 return new[] {
-                    GetFolderInPackageOrDefault("bdwgc/include"),
-                    GetFolderInPackageOrDefault("libil2cpp/include")
+                    Path.Combine(libraryFolder, "bdwgc/include"),
+                    Path.Combine(libraryFolder, "libil2cpp/include")
                 };
             }
         }
@@ -528,22 +530,6 @@ namespace UnityEditorInternal
             get { return "a"; }
         }
 
-        public virtual string il2CppFolder
-        {
-            get
-            {
-                var il2CppPackage = FindIl2CppPackage();
-                if (il2CppPackage == null)
-                {
-                    return Path.GetFullPath(Path.Combine(
-                            EditorApplication.applicationContentsPath,
-                            "il2cpp"));
-                }
-
-                return il2CppPackage.basePath;
-            }
-        }
-
         public virtual string moduleStrippingInformationFolder
         {
             get { return Path.Combine(BuildPipeline.GetPlaybackEngineDirectory(EditorUserBuildSettings.activeBuildTarget, 0), "Whitelists"); }
@@ -562,31 +548,6 @@ namespace UnityEditorInternal
         public virtual CompilerOutputParserBase CreateIl2CppOutputParser()
         {
             return null;
-        }
-
-        protected string GetFolderInPackageOrDefault(string path)
-        {
-            var il2CppPackage = FindIl2CppPackage();
-            if (il2CppPackage == null)
-                return Path.Combine(libraryFolder, path);
-
-            var folder = Path.Combine(il2CppPackage.basePath, path);
-            return !Directory.Exists(folder) ? Path.Combine(libraryFolder, path) : folder;
-        }
-
-        protected string GetFileInPackageOrDefault(string path)
-        {
-            var il2CppPackage = FindIl2CppPackage();
-            if (il2CppPackage == null)
-                return Path.Combine(libraryFolder, path);
-
-            var file = Path.Combine(il2CppPackage.basePath, path);
-            return !File.Exists(file) ? Path.Combine(libraryFolder, path) : file;
-        }
-
-        private static PackageInfo FindIl2CppPackage()
-        {
-            return ModuleManager.packageManager.unityExtensions.FirstOrDefault(e => e.name == "IL2CPP");
         }
     }
 

@@ -165,62 +165,6 @@ namespace UnityEditor
             return item.userData >= 0 && item.userData < terrain.terrainData.detailPrototypes.Length;
         }
     }
-
-    class TerrainSplatContextMenus
-    {
-        [MenuItem("CONTEXT/TerrainEngineSplats/Add Texture...")]
-        static internal void AddSplat(MenuCommand item)
-        {
-            TerrainSplatEditor.ShowTerrainSplatEditor("Add Terrain Texture", "Add", (Terrain)item.context, -1);
-        }
-
-        [MenuItem("CONTEXT/TerrainEngineSplats/Edit Texture...")]
-        static internal void EditSplat(MenuCommand item)
-        {
-            Terrain terrain = (Terrain)item.context;
-            string title = "Edit Terrain Texture";
-
-            switch (terrain.materialType)
-            {
-                case Terrain.MaterialType.BuiltInLegacyDiffuse:
-                    title += " (Diffuse)";
-                    break;
-                case Terrain.MaterialType.BuiltInLegacySpecular:
-                    title += " (Specular)";
-                    break;
-                case Terrain.MaterialType.BuiltInStandard:
-                    title += " (Standard)";
-                    break;
-                case Terrain.MaterialType.Custom:
-                    title += " (Custom)";
-                    break;
-            }
-
-            TerrainSplatEditor.ShowTerrainSplatEditor(title, "Apply", (Terrain)item.context, item.userData);
-        }
-
-        [MenuItem("CONTEXT/TerrainEngineSplats/Edit Texture...", true)]
-        static internal bool EditSplatCheck(MenuCommand item)
-        {
-            Terrain terrain = (Terrain)item.context;
-            return item.userData >= 0 && item.userData < terrain.terrainData.splatPrototypes.Length;
-        }
-
-        [MenuItem("CONTEXT/TerrainEngineSplats/Remove Texture")]
-        static internal void RemoveSplat(MenuCommand item)
-        {
-            Terrain terrain = (Terrain)item.context;
-            TerrainEditorUtility.RemoveSplatTexture(terrain.terrainData, item.userData);
-        }
-
-        [MenuItem("CONTEXT/TerrainEngineSplats/Remove Texture", true)]
-        static internal bool RemoveSplatCheck(MenuCommand item)
-        {
-            Terrain terrain = (Terrain)item.context;
-            return item.userData >= 0 && item.userData < terrain.terrainData.splatPrototypes.Length;
-        }
-    }
-
     class TerrainTreeContextMenus
     {
         [MenuItem("CONTEXT/TerrainEngineTrees/Add Tree")]

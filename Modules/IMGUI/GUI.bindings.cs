@@ -24,9 +24,9 @@ namespace UnityEngine
         internal static extern Material blitMaterial {[FreeFunction("GetGUIBlitMaterial")] get; }
         internal static extern Material roundedRectMaterial {[FreeFunction("GetGUIRoundedRectMaterial")] get; }
 
-        private static extern void DoLabel(Rect position, GUIContent content, IntPtr style);
-        private static extern bool DoButton(Rect position, GUIContent content, IntPtr style);
-        internal static extern bool DoToggle(Rect position, int id, bool value, GUIContent content, IntPtr style);
+        private static extern void GrabMouseControl(int id);
+        private static extern bool HasMouseControl(int id);
+        private static extern void ReleaseMouseControl();
 
         [FreeFunction("GetGUIState().SetNameOfNextControl")]
         public static extern void SetNextControlName(string name);

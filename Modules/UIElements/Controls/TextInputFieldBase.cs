@@ -83,7 +83,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     evt.target = this;
                     text = value;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
+                    SendEvent(evt);
                 }
             }
         }
@@ -277,7 +277,9 @@ namespace UnityEngine.Experimental.UIElements
 
             var textNativeSettings = textParams.GetTextNativeSettings(textScaling);
             float lineHeight = TextNative.ComputeTextHeight(textNativeSettings);
-            float contentWidth = contentRect.width;
+            float wordWrapWidth = editorEngine.multiline
+                ? contentRect.width
+                : 0.0f;
 
             Input.compositionCursorPos = editorEngine.graphicalCursorPos - scrollOffset +
                 new Vector2(localPosition.x, localPosition.y + lineHeight);
@@ -303,7 +305,8 @@ namespace UnityEngine.Experimental.UIElements
 
                 cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                 cursorParams.text = editorEngine.text;
-                cursorParams.wordWrapWidth = contentWidth;
+                cursorParams.wordWrapWidth = wordWrapWidth;
+                cursorParams.cursorIndex = min;
 
                 textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
                 Vector2 minPos = TextNative.GetCursorPosition(textNativeSettings, cursorParams.rect, min);
@@ -327,7 +330,7 @@ namespace UnityEngine.Experimental.UIElements
                     if (inbetweenHeight > 0f)
                     {
                         // Draw all lines in-between
-                        painterParams.rect = new Rect(contentRect.x, minPos.y + lineHeight, contentWidth, inbetweenHeight);
+                        painterParams.rect = new Rect(contentRect.x, minPos.y + lineHeight, wordWrapWidth, inbetweenHeight);
                         painter.DrawRect(painterParams);
                     }
 
@@ -354,7 +357,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                 cursorParams.text = editorEngine.text;
-                cursorParams.wordWrapWidth = contentWidth;
+                cursorParams.wordWrapWidth = wordWrapWidth;
                 cursorParams.cursorIndex = cursorIndex;
 
                 textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);
@@ -373,7 +376,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 cursorParams = CursorPositionStylePainterParameters.GetDefault(this, text);
                 cursorParams.text = editorEngine.text.Substring(0, editorEngine.altCursorPosition);
-                cursorParams.wordWrapWidth = contentWidth;
+                cursorParams.wordWrapWidth = wordWrapWidth;
                 cursorParams.cursorIndex = editorEngine.altCursorPosition;
 
                 textNativeSettings = cursorParams.GetTextNativeSettings(textScaling);

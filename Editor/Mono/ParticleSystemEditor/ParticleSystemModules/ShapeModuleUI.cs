@@ -5,6 +5,7 @@
 using System;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -111,7 +112,7 @@ namespace UnityEditor
         private ArcHandle m_ArcHandle = new ArcHandle();
         private BoxBoundsHandle m_BoxBoundsHandle = new BoxBoundsHandle();
         private SphereBoundsHandle m_SphereBoundsHandle = new SphereBoundsHandle();
-        private static Color s_ShapeGizmoColor = new Color(148f / 255f, 229f / 255f, 1f, 0.9f);
+        private static PrefColor s_GizmoColor = new PrefColor("Particle System/Shape Module Gizmos", 148f / 255f, 229f / 255f, 1f, 0.9f);
         private static Color s_ShapeGizmoThicknessTint = new Color(0.7f, 0.7f, 0.7f, 1.0f);
 
         private Mesh m_SpriteMesh;
@@ -455,7 +456,7 @@ namespace UnityEditor
                             {
                                 int colorName = Shader.PropertyToID("_Color");
                                 int tintColorName = Shader.PropertyToID("_TintColor");
-                                if (!material.HasProperty(colorName) && !material.HasProperty(tintColorName) && !srcMesh.HasChannel(Mesh.InternalShaderChannel.Color))
+                                if (!material.HasProperty(colorName) && !material.HasProperty(tintColorName) && !srcMesh.HasChannel(VertexAttribute.Color))
                                 {
                                     GUIContent warning = EditorGUIUtility.TrTextContent("To use mesh colors, your source mesh must either provide vertex colors, or its shader must contain a color property named \"_Color\" or \"_TintColor\".");
                                     EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);
@@ -563,7 +564,7 @@ namespace UnityEditor
         override public void OnSceneViewGUI()
         {
             Color origCol = Handles.color;
-            Handles.color = s_ShapeGizmoColor;
+            Handles.color = s_GizmoColor;
 
             Matrix4x4 orgMatrix = Handles.matrix;
 
@@ -610,7 +611,7 @@ namespace UnityEditor
                     }
 
                     // Sphere
-                    Handles.color = s_ShapeGizmoColor;
+                    Handles.color = s_GizmoColor;
                     EditorGUI.BeginChangeCheck();
                     float radius = Handles.DoSimpleRadiusHandle(Quaternion.identity, Vector3.zero, shapeModule.radius, false, shapeModule.arc);
                     if (EditorGUI.EndChangeCheck())
@@ -675,7 +676,7 @@ namespace UnityEditor
                     }
 
                     // Hemisphere
-                    Handles.color = s_ShapeGizmoColor;
+                    Handles.color = s_GizmoColor;
                     EditorGUI.BeginChangeCheck();
                     float radius = Handles.DoSimpleRadiusHandle(Quaternion.identity, Vector3.zero, shapeModule.radius, true, shapeModule.arc);
                     if (EditorGUI.EndChangeCheck())
@@ -703,7 +704,7 @@ namespace UnityEditor
                     }
 
                     // Cone
-                    Handles.color = s_ShapeGizmoColor;
+                    Handles.color = s_GizmoColor;
                     EditorGUI.BeginChangeCheck();
                     Vector3 radiusAngleRange = new Vector3(shapeModule.radius, shapeModule.angle, mainModule.startSpeedMultiplier);
                     radiusAngleRange = Handles.ConeFrustrumHandle(Quaternion.identity, Vector3.zero, radiusAngleRange);
@@ -734,7 +735,7 @@ namespace UnityEditor
                     }
 
                     // Cone
-                    Handles.color = s_ShapeGizmoColor;
+                    Handles.color = s_GizmoColor;
                     EditorGUI.BeginChangeCheck();
                     Vector3 radiusAngleLength = new Vector3(shapeModule.radius, shapeModule.angle, shapeModule.length);
                     radiusAngleLength = Handles.ConeFrustrumHandle(Quaternion.identity, Vector3.zero, radiusAngleLength);

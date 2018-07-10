@@ -41,11 +41,11 @@ namespace UnityEditorInternal
             }
         }
 
-        private static string MonoLinker2Path
+        private static string UnityLinkerPath
         {
             get
             {
-                return Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "il2cpp/build/UnityLinker.exe");
+                return Path.Combine(IL2CPPUtils.GetIl2CppFolder(), "build/UnityLinker.exe");
             }
         }
 
@@ -109,6 +109,10 @@ namespace UnityEditorInternal
             }
 
             var additionalArgs = System.Environment.GetEnvironmentVariable("UNITYLINKER_ADDITIONAL_ARGS");
+            if (!string.IsNullOrEmpty(additionalArgs))
+                args.Add(additionalArgs);
+
+            additionalArgs = Debug.GetDiagnosticSwitch("VMUnityLinkerAdditionalArgs") as string;
             if (!string.IsNullOrEmpty(additionalArgs))
                 args.Add(additionalArgs);
 
@@ -180,7 +184,7 @@ namespace UnityEditorInternal
                 managedAssemblyFolderPath
             };
 
-            RunAssemblyStripper(assemblies, managedAssemblyFolderPath, assembliesToStrip, searchDirs, MonoLinker2Path, platformProvider, rcr, managedStrippingLevel);
+            RunAssemblyStripper(assemblies, managedAssemblyFolderPath, assembliesToStrip, searchDirs, UnityLinkerPath, platformProvider, rcr, managedStrippingLevel);
         }
 
         internal static void GenerateInternalCallSummaryFile(string icallSummaryPath, string managedAssemblyFolderPath, string strippedDLLPath)
@@ -339,6 +343,8 @@ namespace UnityEditorInternal
 
             foreach (var file in Directory.GetFiles(tempStripPath))
                 File.Move(file, Path.Combine(managedAssemblyFolderPath, Path.GetFileName(file)));
+            foreach (var dir in Directory.GetDirectories(tempStripPath))
+                Directory.Move(dir, Path.Combine(managedAssemblyFolderPath, Path.GetFileName(dir)));
             Directory.Delete(tempStripPath);
         }
 

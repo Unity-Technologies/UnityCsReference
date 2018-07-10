@@ -320,6 +320,9 @@ namespace UnityEditor
             public void DrawDynamicResolution()
             {
                 EditorGUILayout.PropertyField(allowDynamicResolution);
+                if ((allowDynamicResolution.boolValue || allowDynamicResolution.hasMultipleDifferentValues) && !PlayerSettings.enableFrameTimingStats)
+                    EditorGUILayout.HelpBox("It is recommended to enable Frame Timing Statistics under Rendering Player Settings when using dynamic resolution cameras.",
+                        MessageType.Warning, true);
             }
 
             public void DrawVR()

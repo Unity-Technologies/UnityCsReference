@@ -162,7 +162,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
                     UpdateContentViewTransform();
-                }, Slider.Direction.Horizontal)
+                }, SliderDirection.Horizontal)
             {name = "HorizontalScroller", persistenceKey = "HorizontalScroller", visible = false};
             shadow.Add(horizontalScroller);
 
@@ -171,7 +171,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
                     UpdateContentViewTransform();
-                }, Slider.Direction.Vertical)
+                }, SliderDirection.Vertical)
             {name = "VerticalScroller", persistenceKey = "VerticalScroller", visible = false};
             shadow.Add(verticalScroller);
 

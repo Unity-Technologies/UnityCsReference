@@ -352,6 +352,11 @@ namespace UnityEditor
 
             public readonly GUIContent showAdvanced = EditorGUIUtility.TrTextContent("Advanced", "Show advanced settings.");
 
+            public readonly GUIContent psdRemoveMatte = EditorGUIUtility.TrTextContent("Remove Matte (PSD)", "Enable special processing for PSD that has transparency, as color pixels will be tweaked (blended with white color).");
+            public readonly GUIContent psdRemoveMatteWarning = EditorGUIUtility.TrTextContent("If you have PSD with transparency, colors will be tweaked by blending them with white color. Matte removal refers to our attempts to undo that, and this is deprecated.");
+            public readonly GUIContent psdRemoveMatteURLButton = EditorGUIUtility.TrTextContent("How to handle PSD with alpha");
+            public readonly string psdRemoveMatteURL = "https://docs.unity3d.com/Manual/HOWTO-alphamaps.html";
+
             public Styles()
             {
                 // This is far from ideal, but it's better than having tons of logic in the GUI code itself.
@@ -432,6 +437,7 @@ namespace UnityEditor
         SerializedProperty m_SpriteGenerateFallbackPhysicsShape;
 
         SerializedProperty m_AlphaIsTransparency;
+        SerializedProperty m_PSDRemoveMatte;
 
         SerializedProperty m_TextureShape;
 
@@ -493,6 +499,7 @@ namespace UnityEditor
             m_SpriteGenerateFallbackPhysicsShape = serializedObject.FindProperty("m_SpriteGenerateFallbackPhysicsShape");
 
             m_AlphaIsTransparency = serializedObject.FindProperty("m_AlphaIsTransparency");
+            m_PSDRemoveMatte = serializedObject.FindProperty("m_PSDRemoveMatte");
 
             m_TextureType = serializedObject.FindProperty("m_TextureType");
             m_TextureShape = serializedObject.FindProperty("m_TextureShape");
@@ -897,6 +904,21 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(!showAlphaIsTransparency))
                 {
                     ToggleFromInt(m_AlphaIsTransparency, s_Styles.alphaIsTransparency);
+                }
+            }
+
+            // This is pure backward compatibility codepath. It can be removed when we decide that the time has come
+            TextureImporter importer = target as TextureImporter;
+            if (importer.ShouldShowRemoveMatteOption())
+            {
+                EditorGUILayout.PropertyField(m_PSDRemoveMatte, s_Styles.psdRemoveMatte);
+                if (m_PSDRemoveMatte.boolValue)
+                {
+                    GUILayout.BeginVertical();
+                    EditorGUILayout.HelpBox(s_Styles.psdRemoveMatteWarning.text, MessageType.Warning, true);
+                    if (EditorGUILayout.LinkLabel(s_Styles.psdRemoveMatteURLButton))
+                        Application.OpenURL(s_Styles.psdRemoveMatteURL);
+                    GUILayout.EndVertical();
                 }
             }
         }

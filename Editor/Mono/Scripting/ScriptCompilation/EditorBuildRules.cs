@@ -123,16 +123,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             public IEnumerable<string> AllSourceFiles { get; set; }
             public IEnumerable<string> DirtySourceFiles { get; set; }
+            public IEnumerable<TargetAssembly> DirtyTargetAssemblies { get; set; }
+            public IEnumerable<PrecompiledAssembly> DirtyPrecompiledAssemblies { get; set; }
             public string ProjectDirectory { get; set; }
             public ScriptAssemblySettings Settings { get; set; }
             public CompilationAssemblies Assemblies { get; set; }
             public HashSet<string> RunUpdaterAssemblies { get; set; }
             public HashSet<TargetAssembly> NotCompiledTargetAssemblies { get; set; }
+            public TargetAssembly[] NoScriptsCustomTargetAssemblies { get; set; }
             public HashSet<string> NotCompiledScripts { get; set; }
 
             public GenerateChangedScriptAssembliesArgs()
             {
                 NotCompiledTargetAssemblies = new HashSet<TargetAssembly>();
+                NoScriptsCustomTargetAssemblies = new TargetAssembly[0];
                 NotCompiledScripts = new HashSet<string>();
             }
         }
@@ -343,6 +347,29 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var dirtyTargetAssemblies = new Dictionary<TargetAssembly, HashSet<string>>();
 
+            // Add initial dirty target assemblies
+            foreach (var dirtyTargetAssembly in args.DirtyTargetAssemblies)
+                dirtyTargetAssemblies[dirtyTargetAssembly] = new HashSet<string>();
+
+            // Dirty custom script assemblies that have explicit references to
+            // explicitly referenced dirty precompiled assemblies.
+            if (args.Assemblies.CustomTargetAssemblies != null)
+            {
+                foreach (var dirtyPrecompiledAssembly in args.DirtyPrecompiledAssemblies)
+                {
+                    var customTargetAssembliesWithExplictReferences = args.Assemblies.CustomTargetAssemblies.Where(a => (a.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences);
+
+                    foreach (var customTargetAssembly in customTargetAssembliesWithExplictReferences)
+                    {
+                        if (customTargetAssembly.PrecompiledReferences.Contains(dirtyPrecompiledAssembly))
+                        {
+                            dirtyTargetAssemblies[customTargetAssembly] = new HashSet<string>();
+                            break;
+                        }
+                    }
+                }
+            }
+
             var allTargetAssemblies = args.Assemblies.CustomTargetAssemblies == null ?
                 predefinedTargetAssemblies :
                 predefinedTargetAssemblies.Concat(args.Assemblies.CustomTargetAssemblies).ToArray();
@@ -406,6 +433,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
             }
 
+            // Return empty array in case of no dirty target assemblies
+            if (dirtyTargetAssemblies.Count == 0)
+                return new ScriptAssembly[0];
+
             // Collect any TargetAssemblies that reference the dirty TargetAssemblies, as they will also be dirty.
             int dirtyAssemblyCount;
 
@@ -464,6 +495,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             // Remove any target assemblies which have no source files associated with them.
+            var noScriptsCustomTargetAssemblies = new List<TargetAssembly>();
+
+            foreach (var entry in dirtyTargetAssemblies)
+            {
+                if (entry.Value.Count == 0 && entry.Key.Type == TargetAssemblyType.Custom)
+                {
+                    noScriptsCustomTargetAssemblies.Add(entry.Key);
+                }
+            }
+
+            args.NoScriptsCustomTargetAssemblies = noScriptsCustomTargetAssemblies.ToArray();
+
             dirtyTargetAssemblies = dirtyTargetAssemblies.Where(e => e.Value.Count > 0).ToDictionary(e => e.Key, e => e.Value);
 
             // Remove any target assemblies which have been marked as do not compile.

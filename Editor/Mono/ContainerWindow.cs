@@ -307,7 +307,7 @@ namespace UnityEditor
             return rootView.DebugHierarchy(0);
         }
 
-        internal Rect GetDropDownRect(Rect buttonRect, Vector2 minSize, Vector2 maxSize, PopupLocationHelper.PopupLocation[] locationPriorityOrder)
+        internal Rect GetDropDownRect(Rect buttonRect, Vector2 minSize, Vector2 maxSize, PopupLocation[] locationPriorityOrder)
         {
             return PopupLocationHelper.GetDropDownRect(buttonRect, minSize, maxSize, this, locationPriorityOrder);
         }

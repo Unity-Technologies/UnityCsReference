@@ -56,12 +56,9 @@ namespace UnityEditor
             folders.AddRange(searchFilter.folders);
             if (folders.Remove(PackageManager.Folders.GetPackagesMountPoint()))
             {
-                var packages = PackageManager.Packages.GetAll();
+                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
                 foreach (var package in packages)
                 {
-                    if (package.source == PackageManager.PackageSource.BuiltIn)
-                        continue;
-
                     if (!folders.Contains(package.assetPath))
                         folders.Add(package.assetPath);
                 }
@@ -109,12 +106,9 @@ namespace UnityEditor
             if (searchFilter.searchArea == SearchFilter.SearchArea.AllAssets ||
                 searchFilter.searchArea == SearchFilter.SearchArea.InPackagesOnly)
             {
-                var packages = PackageManager.Packages.GetAll();
+                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
                 foreach (var package in packages)
                 {
-                    if (package.source == PackageManager.PackageSource.BuiltIn)
-                        continue;
-
                     rootPaths.Add(package.assetPath);
                 }
             }

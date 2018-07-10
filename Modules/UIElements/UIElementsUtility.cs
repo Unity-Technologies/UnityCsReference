@@ -14,27 +14,8 @@ namespace UnityEngine.Experimental.UIElements
 
         private static Event s_EventInstance = new Event(); // event instance reused for ProcessEvent()
 
-        private static EventDispatcher s_EventDispatcher;
-
         internal static Action<IMGUIContainer> s_BeginContainerCallback;
         internal static Action<IMGUIContainer> s_EndContainerCallback;
-
-        internal static IEventDispatcher eventDispatcher
-        {
-            get
-            {
-                if (s_EventDispatcher == null)
-                    s_EventDispatcher = new EventDispatcher();
-
-                return s_EventDispatcher;
-            }
-        }
-
-        // For testing purposes
-        internal static void ClearDispatcher()
-        {
-            s_EventDispatcher = null;
-        }
 
         static UIElementsUtility()
         {
@@ -97,7 +78,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             // see GUI.CleanupRoots
             s_EventInstance = null;
-            s_EventDispatcher = null;
+            EventDispatcher.ClearDispatcher();
             s_UIElementsCache = null;
             s_ContainerStack = null;
             s_BeginContainerCallback = null;
@@ -241,7 +222,7 @@ namespace UnityEngine.Experimental.UIElements
                 using (EventBase evt = CreateEvent(s_EventInstance))
                 {
                     bool immediate = s_EventInstance.type == EventType.Used || s_EventInstance.type == EventType.Layout || s_EventInstance.type == EventType.ExecuteCommand || s_EventInstance.type == EventType.ValidateCommand;
-                    s_EventDispatcher.DispatchEvent(evt, panel, immediate ? DispatchMode.Immediate : DispatchMode.Queued);
+                    panel.SendEvent(evt, immediate ? DispatchMode.Immediate : DispatchMode.Queued);
 
                     // FIXME: we dont always have to repaint if evt.isPropagationStopped.
                     if (evt.isPropagationStopped)
@@ -265,7 +246,7 @@ namespace UnityEngine.Experimental.UIElements
             Panel panel;
             if (!s_UIElementsCache.TryGetValue(ownerObject.GetInstanceID(), out panel))
             {
-                panel = new Panel(ownerObject, contextType, dataWatch, eventDispatcher);
+                panel = new Panel(ownerObject, contextType, dataWatch);
                 s_UIElementsCache.Add(ownerObject.GetInstanceID(), panel);
             }
             else

@@ -29,7 +29,7 @@ namespace UnityEngine.Animations
 
         public int sourceCount { get { return GetSourceCountInternal(this); } }
         [FreeFunction("ConstraintBindings::GetSourceCount")]
-        private static extern int GetSourceCountInternal(ParentConstraint self);
+        private static extern int GetSourceCountInternal([NotNull] ParentConstraint self);
 
         public extern Vector3 translationAtRest { get; set; }
         public extern Vector3 rotationAtRest { get; set; }
@@ -99,7 +99,7 @@ namespace UnityEngine.Animations
         }
 
         [FreeFunction("ConstraintBindings::SetSources")]
-        private static extern void SetSourcesInternal(ParentConstraint self, List<ConstraintSource> sources);
+        private static extern void SetSourcesInternal([NotNull] ParentConstraint self, List<ConstraintSource> sources);
 
         public extern int AddSource(ConstraintSource source);
 

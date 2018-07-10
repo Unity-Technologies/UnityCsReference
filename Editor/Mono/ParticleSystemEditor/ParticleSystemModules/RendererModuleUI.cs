@@ -7,6 +7,7 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -59,6 +60,7 @@ namespace UnityEditor
         bool m_HasColor;
         bool m_HasGPUInstancing;
 
+        static PrefColor s_PivotColor = new PrefColor("Particle System/Pivot", 0.0f, 1.0f, 0.0f, 1.0f);
         static bool s_VisualizePivot = false;
 
         // Keep in sync with ParticleSystemRenderMode in ParticleSystemRenderer.h
@@ -506,7 +508,7 @@ namespace UnityEditor
                     int numMeshes = renderer.GetMeshes(meshes);
                     for (int i = 0; i < numMeshes; i++)
                     {
-                        if (meshes[i].HasChannel(Mesh.InternalShaderChannel.TexCoord2))
+                        if (meshes[i].HasChannel(VertexAttribute.TexCoord2))
                         {
                             if (errors != "")
                                 errors += "\n\n";
@@ -604,7 +606,7 @@ namespace UnityEditor
                 return;
 
             Color oldColor = Handles.color;
-            Handles.color = Color.green;
+            Handles.color = s_PivotColor;
             Matrix4x4 oldMatrix = Handles.matrix;
 
             Vector3[] lineSegments = new Vector3[6];

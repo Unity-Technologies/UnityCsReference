@@ -39,7 +39,7 @@ namespace UnityEngine.Animations
 
         public int sourceCount { get { return GetSourceCountInternal(this); } }
         [FreeFunction("ConstraintBindings::GetSourceCount")]
-        private static extern int GetSourceCountInternal(LookAtConstraint self);
+        private static extern int GetSourceCountInternal([NotNull] LookAtConstraint self);
 
         [FreeFunction(Name = "ConstraintBindings::GetSources", HasExplicitThis = true)]
         public extern void GetSources([NotNull] List<ConstraintSource> sources);
@@ -53,7 +53,7 @@ namespace UnityEngine.Animations
         }
 
         [FreeFunction("ConstraintBindings::SetSources")]
-        private static extern void SetSourcesInternal(LookAtConstraint self, List<ConstraintSource> sources);
+        private static extern void SetSourcesInternal([NotNull] LookAtConstraint self, List<ConstraintSource> sources);
 
         public extern int AddSource(ConstraintSource source);
 

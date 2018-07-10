@@ -10,6 +10,7 @@ using System.Linq;
 using System.IO;
 using System.Text.RegularExpressions;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.PackageManager;
 using UnityEditor.TreeViewExamples;
 using UnityEditorInternal;
 using UnityEngine.Scripting;
@@ -345,13 +346,15 @@ namespace UnityEditor
         {
             if (m_AssetTree != null)
             {
-                m_AssetTree.ReloadData();
+                m_AssetTree = null;
+                InitOneColumnView();
                 SetSearchFoldersFromCurrentSelection(); // We could have moved, deleted or renamed a folder so ensure we get folder paths by instanceID
             }
 
             if (m_FolderTree != null)
             {
-                m_FolderTree.ReloadData();
+                m_FolderTree = null;
+                InitTwoColumnView();
                 SetSearchFolderFromFolderTreeSelection(); // We could have moved, deleted or renamed a folder so ensure we get folders paths by instanceID
             }
 
@@ -663,6 +666,61 @@ namespace UnityEditor
             }
         }
 
+        private void InitOneColumnView()
+        {
+            m_AssetTree = new TreeViewController(this, m_AssetTreeState);
+            m_AssetTree.deselectOnUnhandledMouseDown = true;
+            m_AssetTree.selectionChangedCallback += AssetTreeSelectionCallback;
+            m_AssetTree.keyboardInputCallback += AssetTreeKeyboardInputCallback;
+            m_AssetTree.contextClickItemCallback += AssetTreeViewContextClick;
+            m_AssetTree.contextClickOutsideItemsCallback += AssetTreeViewContextClickOutsideItems;
+            m_AssetTree.itemDoubleClickedCallback += AssetTreeItemDoubleClickedCallback;
+            m_AssetTree.onGUIRowCallback += OnGUIAssetCallback;
+            m_AssetTree.dragEndedCallback += AssetTreeDragEnded;
+
+            var assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
+            var roots = new List<AssetsTreeViewDataSource.RootItem>();
+            var packagesMountPoint = PackageManager.Folders.GetPackagesMountPoint();
+
+            roots.Add(new AssetsTreeViewDataSource.RootItem(assetsFolderInstanceID, null, null));
+            roots.Add(new AssetsTreeViewDataSource.RootItem(kPackagesFolderInstanceId, packagesMountPoint, packagesMountPoint, true));
+            foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages())
+            {
+                var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
+                var packageFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
+                if (packageFolderInstanceID == 0)
+                    continue;
+
+                roots.Add(new AssetsTreeViewDataSource.RootItem(packageFolderInstanceID, displayName, package.assetPath));
+            }
+
+            var data = new AssetsTreeViewDataSource(m_AssetTree, roots);
+            data.foldersFirst = GetShouldShowFoldersFirst();
+
+            m_AssetTree.Init(m_TreeViewRect,
+                data,
+                new AssetsTreeViewGUI(m_AssetTree),
+                new AssetsTreeViewDragging(m_AssetTree)
+                );
+            m_AssetTree.ReloadData();
+        }
+
+        private void InitTwoColumnView()
+        {
+            m_FolderTree = new TreeViewController(this, m_FolderTreeState);
+            m_FolderTree.deselectOnUnhandledMouseDown = false;
+            m_FolderTree.selectionChangedCallback += FolderTreeSelectionCallback;
+            m_FolderTree.contextClickItemCallback += FolderTreeViewContextClick;
+            m_FolderTree.onGUIRowCallback += OnGUIAssetCallback;
+            m_FolderTree.dragEndedCallback += FolderTreeDragEnded;
+            m_FolderTree.Init(m_TreeViewRect,
+                new ProjectBrowserColumnOneTreeViewDataSource(m_FolderTree),
+                new ProjectBrowserColumnOneTreeViewGUI(m_FolderTree),
+                new ProjectBrowserColumnOneTreeViewDragging(m_FolderTree)
+                );
+            m_FolderTree.ReloadData();
+        }
+
         void InitViewMode(ViewMode viewMode)
         {
             m_ViewMode = viewMode;
@@ -673,57 +731,14 @@ namespace UnityEditor
 
             useTreeViewSelectionInsteadOfMainSelection = false;
 
-            if (m_ViewMode == ViewMode.OneColumn)
+            switch (m_ViewMode)
             {
-                m_AssetTree = new TreeViewController(this, m_AssetTreeState);
-                m_AssetTree.deselectOnUnhandledMouseDown = true;
-                m_AssetTree.selectionChangedCallback += AssetTreeSelectionCallback;
-                m_AssetTree.keyboardInputCallback += AssetTreeKeyboardInputCallback;
-                m_AssetTree.contextClickItemCallback += AssetTreeViewContextClick;
-                m_AssetTree.contextClickOutsideItemsCallback += AssetTreeViewContextClickOutsideItems;
-                m_AssetTree.itemDoubleClickedCallback += AssetTreeItemDoubleClickedCallback;
-                m_AssetTree.onGUIRowCallback += OnGUIAssetCallback;
-                m_AssetTree.dragEndedCallback += AssetTreeDragEnded;
-
-                var assetsFolderInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
-                var roots = new List<AssetsTreeViewDataSource.RootItem>();
-                var packagesMountPoint = PackageManager.Folders.GetPackagesMountPoint();
-
-                roots.Add(new AssetsTreeViewDataSource.RootItem(assetsFolderInstanceID, null, null));
-                roots.Add(new AssetsTreeViewDataSource.RootItem(kPackagesFolderInstanceId, packagesMountPoint, packagesMountPoint, true));
-                foreach (var package in PackageManager.Packages.GetAll())
-                {
-                    if (package.source == PackageManager.PackageSource.BuiltIn)
-                        continue;
-
-                    var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
-                    roots.Add(new AssetsTreeViewDataSource.RootItem(AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath), displayName, package.assetPath));
-                }
-
-                var data = new AssetsTreeViewDataSource(m_AssetTree, roots);
-                data.foldersFirst = GetShouldShowFoldersFirst();
-
-                m_AssetTree.Init(m_TreeViewRect,
-                    data,
-                    new AssetsTreeViewGUI(m_AssetTree),
-                    new AssetsTreeViewDragging(m_AssetTree)
-                    );
-                m_AssetTree.ReloadData();
-            }
-            else if (m_ViewMode == ViewMode.TwoColumns)
-            {
-                m_FolderTree = new TreeViewController(this, m_FolderTreeState);
-                m_FolderTree.deselectOnUnhandledMouseDown = false;
-                m_FolderTree.selectionChangedCallback += FolderTreeSelectionCallback;
-                m_FolderTree.contextClickItemCallback += FolderTreeViewContextClick;
-                m_FolderTree.onGUIRowCallback += OnGUIAssetCallback;
-                m_FolderTree.dragEndedCallback += FolderTreeDragEnded;
-                m_FolderTree.Init(m_TreeViewRect,
-                    new ProjectBrowserColumnOneTreeViewDataSource(m_FolderTree),
-                    new ProjectBrowserColumnOneTreeViewGUI(m_FolderTree),
-                    new ProjectBrowserColumnOneTreeViewDragging(m_FolderTree)
-                    );
-                m_FolderTree.ReloadData();
+                case ViewMode.OneColumn:
+                    InitOneColumnView();
+                    break;
+                case ViewMode.TwoColumns:
+                    InitTwoColumnView();
+                    break;
             }
 
             float minWidth = (m_ViewMode == ViewMode.OneColumn) ? k_MinWidthOneColumn : k_MinWidthTwoColumns;
@@ -1071,7 +1086,18 @@ namespace UnityEditor
         void RefreshSelectedPath()
         {
             if (Selection.activeObject != null)
+            {
                 m_SelectedPath = AssetDatabase.GetAssetPath(Selection.activeObject);
+                if (!string.IsNullOrEmpty(m_SelectedPath))
+                {
+                    var packageInfo = Packages.GetForAssetPath(m_SelectedPath);
+                    if (packageInfo != null && !packageInfo.isRootDependency)
+                    {
+                        m_SelectedPath = string.Empty;
+                        Selection.activeObject = null;
+                    }
+                }
+            }
             else
                 m_SelectedPath = "";
 
@@ -2216,7 +2242,7 @@ namespace UnityEditor
             Rect r = GUILayoutUtility.GetRect(s_Styles.m_FilterByLabel, EditorStyles.toolbarButton);
             if (EditorGUI.DropdownButton(r, s_Styles.m_FilterByLabel, FocusType.Passive, EditorStyles.toolbarButton))
             {
-                PopupWindow.Show(r, new PopupList(m_AssetLabels), null, ShowMode.PopupMenuWithKeyboardFocus);
+                PopupWindow.Show(r, new PopupList(m_AssetLabels));
             }
         }
 
@@ -2468,15 +2494,7 @@ namespace UnityEditor
 
                 if (path == packagesMountPoint)
                 {
-                    m_BreadCrumbLastFolderHasSubFolders = false;
-                    foreach (var package in PackageManager.Packages.GetAll())
-                    {
-                        if (package.source == PackageManager.PackageSource.BuiltIn)
-                            continue;
-
-                        m_BreadCrumbLastFolderHasSubFolders = true;
-                        break;
-                    }
+                    m_BreadCrumbLastFolderHasSubFolders = PackageManagerUtilityInternal.GetAllVisiblePackages().Length > 0;
                 }
                 else
                 {
@@ -2849,13 +2867,10 @@ namespace UnityEditor
                 // List of sub folders
                 var subFolders = new List<string>();
                 var subFolderDisplayNames = new List<string>();
-                if (folder == PackageManager.Folders.GetPackagesMountPoint())
+                if (folder == Folders.GetPackagesMountPoint())
                 {
-                    foreach (var package in PackageManager.Packages.GetAll())
+                    foreach (var package in PackageManagerUtilityInternal.GetAllVisiblePackages())
                     {
-                        if (package.source == PackageManager.PackageSource.BuiltIn)
-                            continue;
-
                         subFolders.Add(package.assetPath);
                         var displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;
                         subFolderDisplayNames.Add(displayName);

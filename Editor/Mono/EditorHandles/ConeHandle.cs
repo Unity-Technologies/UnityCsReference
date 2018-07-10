@@ -53,7 +53,7 @@ namespace UnityEditor
             return new Vector2(spotAngle, range);
         }
 
-        static float SizeSlider(Vector3 p, Vector3 d, float r)
+        static internal float SizeSlider(Vector3 p, Vector3 d, float r)
         {
             Vector3 position = p + d * r;
             float size = HandleUtility.GetHandleSize(position);

@@ -989,6 +989,42 @@
   <Compile Include="..\..\Editor\Mono\EditorHeaderItemAttribute.cs">
     <Link>Editor\Mono\EditorHeaderItemAttribute.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\CannotBeUnsupportedAttribute.cs">
+    <Link>Editor\Mono\EditorMode\CannotBeUnsupportedAttribute.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\CustomPassthroughAttribute.cs">
+    <Link>Editor\Mono\EditorMode\CustomPassthroughAttribute.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\DefaultEditorMode.cs">
+    <Link>Editor\Mono\EditorMode\DefaultEditorMode.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\EditorMode.cs">
+    <Link>Editor\Mono\EditorMode\EditorMode.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\EditorModeContext.cs">
+    <Link>Editor\Mono\EditorMode\EditorModeContext.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\EditorModeViewer.cs">
+    <Link>Editor\Mono\EditorMode\EditorModeViewer.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\EditorModes.cs">
+    <Link>Editor\Mono\EditorMode\EditorModes.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\EditorOverrideMode.cs">
+    <Link>Editor\Mono\EditorMode\EditorOverrideMode.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\EditorWindowOverride.cs">
+    <Link>Editor\Mono\EditorMode\EditorWindowOverride.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\IEditorWindowOverride.cs">
+    <Link>Editor\Mono\EditorMode\IEditorWindowOverride.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\PassthroughOverride.cs">
+    <Link>Editor\Mono\EditorMode\PassthroughOverride.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\EditorMode\UnsupportedOverride.cs">
+    <Link>Editor\Mono\EditorMode\UnsupportedOverride.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\EditorPrefs.bindings.cs">
     <Link>Editor\Mono\EditorPrefs.bindings.cs</Link>
   </Compile>
@@ -1267,6 +1303,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\GUI\PingData.cs">
     <Link>Editor\Mono\GUI\PingData.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\GUI\PopupLocation.cs">
+    <Link>Editor\Mono\GUI\PopupLocation.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\GUI\PopupLocationHelper.cs">
     <Link>Editor\Mono\GUI\PopupLocationHelper.cs</Link>
@@ -1997,6 +2036,9 @@
   <Compile Include="..\..\Editor\Mono\Inspector\ParentConstraintEditor.cs">
     <Link>Editor\Mono\Inspector\ParentConstraintEditor.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\ParticleSystemForceFieldInspector.cs">
+    <Link>Editor\Mono\Inspector\ParticleSystemForceFieldInspector.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\Physics2DSettingsInspector.cs">
     <Link>Editor\Mono\Inspector\Physics2DSettingsInspector.cs</Link>
   </Compile>
@@ -2393,6 +2435,9 @@
   <Compile Include="..\..\Editor\Mono\ObjectTreeForSelector.cs">
     <Link>Editor\Mono\ObjectTreeForSelector.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\PackageManagerUtilityInternal.cs">
+    <Link>Editor\Mono\PackageManagerUtilityInternal.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\PackageUtility.bindings.cs">
     <Link>Editor\Mono\PackageUtility.bindings.cs</Link>
   </Compile>
@@ -2624,8 +2669,8 @@
   <Compile Include="..\..\Editor\Mono\PreferencesWindow\PreferencesItem.cs">
     <Link>Editor\Mono\PreferencesWindow\PreferencesItem.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\PreferencesWindow\PreferencesWindow.cs">
-    <Link>Editor\Mono\PreferencesWindow\PreferencesWindow.cs</Link>
+  <Compile Include="..\..\Editor\Mono\PreferencesWindow\PreferencesSettingsProviders.cs">
+    <Link>Editor\Mono\PreferencesWindow\PreferencesSettingsProviders.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\PresetLibraries\ColorPresetLibrary.cs">
     <Link>Editor\Mono\PresetLibraries\ColorPresetLibrary.cs</Link>
@@ -3092,6 +3137,9 @@
   <Compile Include="..\..\Editor\Mono\StyleSheets\CSSSpec.cs">
     <Link>Editor\Mono\StyleSheets\CSSSpec.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\StyleSheets\StyleCatalog.cs">
+    <Link>Editor\Mono\StyleSheets\StyleCatalog.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetBuilder.cs">
     <Link>Editor\Mono\StyleSheets\StyleSheetBuilder.cs</Link>
   </Compile>
@@ -3119,32 +3167,8 @@
   <Compile Include="..\..\Editor\Mono\TagManager.bindings.cs">
     <Link>Editor\Mono\TagManager.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\TerrainEditor\Brush.cs">
-    <Link>Editor\Mono\TerrainEditor\Brush.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\TerrainEditor\HeightmapFilters.cs">
-    <Link>Editor\Mono\TerrainEditor\HeightmapFilters.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainEditorUtility.cs">
-    <Link>Editor\Mono\TerrainEditor\TerrainEditorUtility.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainInspector.cs">
-    <Link>Editor\Mono\TerrainEditor\TerrainInspector.cs</Link>
-  </Compile>
   <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainInspectorUtil.bindings.cs">
     <Link>Editor\Mono\TerrainEditor\TerrainInspectorUtil.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainMenus.cs">
-    <Link>Editor\Mono\TerrainEditor\TerrainMenus.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainSplatEditor.cs">
-    <Link>Editor\Mono\TerrainEditor\TerrainSplatEditor.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainWizards.cs">
-    <Link>Editor\Mono\TerrainEditor\TerrainWizards.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\TerrainEditor\TreeAOImporter.cs">
-    <Link>Editor\Mono\TerrainEditor\TreeAOImporter.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\TooltipView\TooltipView.cs">
     <Link>Editor\Mono\TooltipView\TooltipView.cs</Link>
@@ -3404,6 +3428,9 @@
   <Compile Include="..\..\Editor\Mono\Utils\ProgressBarUtils.cs">
     <Link>Editor\Mono\Utils\ProgressBarUtils.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Utils\SearchUtils.cs">
+    <Link>Editor\Mono\Utils\SearchUtils.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Utils\SimpleProfiler.cs">
     <Link>Editor\Mono\Utils\SimpleProfiler.cs</Link>
   </Compile>
@@ -3568,6 +3595,9 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\ModuleMetadataBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\ModuleMetadataBindings.gen.cs</Link>
+  </Compile>
+  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsLuminBindings.gen.cs">
+    <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsLuminBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsN3DSBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsN3DSBindings.gen.cs</Link>
@@ -4100,6 +4130,24 @@
   <Compile Include="..\..\Modules\PresetsEditor\Public\PresetManager.bindings.cs">
     <Link>Modules\PresetsEditor\Public\PresetManager.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\ArrayEntries.cs">
+    <Link>Modules\ProfilerEditor\MemoryProfiler\ArrayEntries.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\BlockSection.cs">
+    <Link>Modules\ProfilerEditor\MemoryProfiler\BlockSection.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\ChapterSection.cs">
+    <Link>Modules\ProfilerEditor\MemoryProfiler\ChapterSection.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\MemorySnapshot.cs">
+    <Link>Modules\ProfilerEditor\MemoryProfiler\MemorySnapshot.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\MemorySnapshotFileReader.cs">
+    <Link>Modules\ProfilerEditor\MemoryProfiler\MemorySnapshotFileReader.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ProfilerEditor\MemoryProfiler\MemorySnapshotFileWriter.bindings.cs">
+    <Link>Modules\ProfilerEditor\MemoryProfiler\MemorySnapshotFileWriter.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\ProfilerEditor\ProfilerWindow\AttachProfilerUI.cs">
     <Link>Modules\ProfilerEditor\ProfilerWindow\AttachProfilerUI.cs</Link>
   </Compile>
@@ -4285,6 +4333,96 @@
   </Compile>
   <Compile Include="..\..\Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs">
     <Link>Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\ConverterUtils.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\ConverterUtils.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\GUISkinCompare.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\GUISkinCompare.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\GUISkinToStyleSheet.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\GUISkinToStyleSheet.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\Graph.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\Graph.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetBuilderHelper.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\StyleSheetBuilderHelper.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetCache.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\StyleSheetCache.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetResolver.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\StyleSheetResolver.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetSplitter.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\StyleSheetSplitter.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetToGUISkin.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\StyleSheetToGUISkin.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetToUss.cs">
+    <Link>Modules\StyleSheetsEditor\Converters\StyleSheetToUss.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Brush\Brush.cs">
+    <Link>Modules\TerrainEditor\Brush\Brush.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Brush\BrushInspector.cs">
+    <Link>Modules\TerrainEditor\Brush\BrushInspector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Brush\BrushList.cs">
+    <Link>Modules\TerrainEditor\Brush\BrushList.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\HeightmapFilters.cs">
+    <Link>Modules\TerrainEditor\HeightmapFilters.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\PaintTools\ConnectTerrainTool.cs">
+    <Link>Modules\TerrainEditor\PaintTools\ConnectTerrainTool.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintHeightTool.cs">
+    <Link>Modules\TerrainEditor\PaintTools\PaintHeightTool.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\PaintTools\PaintTextureTool.cs">
+    <Link>Modules\TerrainEditor\PaintTools\PaintTextureTool.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\PaintTools\SetHeightTool.cs">
+    <Link>Modules\TerrainEditor\PaintTools\SetHeightTool.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\PaintTools\SmoothHeightTool.cs">
+    <Link>Modules\TerrainEditor\PaintTools\SmoothHeightTool.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\PaintTools\StampTool.cs">
+    <Link>Modules\TerrainEditor\PaintTools\StampTool.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\PaintTools\TerrainPaintTool.cs">
+    <Link>Modules\TerrainEditor\PaintTools\TerrainPaintTool.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\TerrainInspector.cs">
+    <Link>Modules\TerrainEditor\TerrainInspector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\TerrainWizards.cs">
+    <Link>Modules\TerrainEditor\TerrainWizards.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\TreeAOImporter.cs">
+    <Link>Modules\TerrainEditor\TreeAOImporter.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainEditorUtility.cs">
+    <Link>Modules\TerrainEditor\Utilities\TerrainEditorUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainLayerInspector.cs">
+    <Link>Modules\TerrainEditor\Utilities\TerrainLayerInspector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainLayerSelectionWindow.cs">
+    <Link>Modules\TerrainEditor\Utilities\TerrainLayerSelectionWindow.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainLayerUtility.cs">
+    <Link>Modules\TerrainEditor\Utilities\TerrainLayerUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainMenus.cs">
+    <Link>Modules\TerrainEditor\Utilities\TerrainMenus.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs">
+    <Link>Modules\TerrainEditor\Utilities\TerrainPaintUtilityEditor.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs">
     <Link>Modules\TilemapEditor\Editor\Managed\EditorPreviewTilemap.cs</Link>

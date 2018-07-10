@@ -60,11 +60,18 @@ namespace UnityEngine.Experimental.UIElements
             {
                 if (!EqualityComparer<T>.Default.Equals(m_Value, value))
                 {
-                    using (ChangeEvent<T> evt = ChangeEvent<T>.GetPooled(m_Value, value))
+                    if (panel != null)
                     {
-                        evt.target = this;
+                        using (ChangeEvent<T> evt = ChangeEvent<T>.GetPooled(m_Value, value))
+                        {
+                            evt.target = this;
+                            SetValueWithoutNotify(value);
+                            SendEvent(evt);
+                        }
+                    }
+                    else
+                    {
                         SetValueWithoutNotify(value);
-                        UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
                 }
             }

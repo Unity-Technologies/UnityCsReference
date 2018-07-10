@@ -20,6 +20,7 @@ namespace UnityEditor
         public Rect         visibleRect;
         public GUIStyle     usedGUIStyle;
         public GUIContent   usedGUIContent;
+        public string       label;
         public StackFrame[] stackframes;
 
         public void Reset()

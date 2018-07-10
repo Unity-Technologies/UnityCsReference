@@ -182,7 +182,7 @@ namespace UnityEditor
             windowHeight = Mathf.Min(windowHeight, 900);
             Vector2 windowSize = new Vector2(kWindowWidth, windowHeight);
 
-            ShowAsDropDown(buttonRect, windowSize, null, ShowMode.PopupMenuWithKeyboardFocus);
+            ShowAsDropDown(buttonRect, windowSize);
         }
 
         private void IconHasChanged()

@@ -55,19 +55,14 @@ namespace UnityEngine.Experimental.UIElements
     // For example 2: A keydown with Textfocus in TextField C
     // result ==> Phase TrickleDown [ root, A], Phase Target [C], Phase BubbleUp [ A, root ]
 
-    internal enum DispatchMode
+    enum DispatchMode
     {
         Default = Queued,
         Queued = 1,
         Immediate = 2,
     }
 
-    public interface IEventDispatcher
-    {
-        void DispatchEvent(EventBase evt, IPanel panel);
-    }
-
-    internal class EventDispatcher : IEventDispatcher
+    public sealed class EventDispatcher
     {
         public struct Gate : IDisposable
         {
@@ -96,7 +91,25 @@ namespace UnityEngine.Experimental.UIElements
 
         uint m_GateCount;
 
-        public EventDispatcher()
+        static EventDispatcher s_EventDispatcher;
+
+        internal static EventDispatcher instance
+        {
+            get
+            {
+                if (s_EventDispatcher == null)
+                    s_EventDispatcher = new EventDispatcher();
+
+                return s_EventDispatcher;
+            }
+        }
+
+        internal static void ClearDispatcher()
+        {
+            s_EventDispatcher = null;
+        }
+
+        EventDispatcher()
         {
             m_Queue = k_EventQueuePool.Get();
         }
@@ -114,6 +127,13 @@ namespace UnityEngine.Experimental.UIElements
             if (previousTopElementUnderMouse == currentTopElementUnderMouse)
             {
                 return;
+            }
+
+            if (previousTopElementUnderMouse != null && previousTopElementUnderMouse.panel == null)
+            {
+                // If previousTopElementUnderMouse has been removed from panel,
+                // do as if there is no element under the mouse.
+                previousTopElementUnderMouse = null;
             }
 
             // We want to find the common ancestor CA of previousTopElementUnderMouse and currentTopElementUnderMouse,
@@ -144,7 +164,7 @@ namespace UnityEngine.Experimental.UIElements
                 using (var leaveEvent = getLeaveEventFunc())
                 {
                     leaveEvent.target = p;
-                    DispatchEvent(leaveEvent, p.panel);
+                    p.SendEvent(leaveEvent);
                 }
 
                 prevDepth--;
@@ -169,7 +189,7 @@ namespace UnityEngine.Experimental.UIElements
                 using (var leaveEvent = getLeaveEventFunc())
                 {
                     leaveEvent.target = p;
-                    DispatchEvent(leaveEvent, p.panel);
+                    p.SendEvent(leaveEvent);
                 }
 
                 enteringElements.Add(c);
@@ -183,7 +203,7 @@ namespace UnityEngine.Experimental.UIElements
                 using (var enterEvent = getEnterEventFunc())
                 {
                     enterEvent.target = enteringElements[i];
-                    DispatchEvent(enterEvent, enteringElements[i].panel);
+                    enteringElements[i].SendEvent(enterEvent);
                 }
             }
             VisualElementListPool.Release(enteringElements);
@@ -207,12 +227,12 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             // Send MouseOut event for element no longer under the mouse.
-            if (previousTopElementUnderMouse != null)
+            if (previousTopElementUnderMouse != null && previousTopElementUnderMouse.panel != null)
             {
                 using (var outEvent = MouseOutEvent.GetPooled(triggerEvent))
                 {
                     outEvent.target = previousTopElementUnderMouse;
-                    DispatchEvent(outEvent, previousTopElementUnderMouse.panel);
+                    previousTopElementUnderMouse.SendEvent(outEvent);
                 }
             }
 
@@ -222,17 +242,12 @@ namespace UnityEngine.Experimental.UIElements
                 using (var overEvent = MouseOverEvent.GetPooled(triggerEvent))
                 {
                     overEvent.target = currentTopElementUnderMouse;
-                    DispatchEvent(overEvent, currentTopElementUnderMouse.panel);
+                    currentTopElementUnderMouse.SendEvent(overEvent);
                 }
             }
         }
 
-        public void DispatchEvent(EventBase evt, IPanel panel)
-        {
-            DispatchEvent(evt, panel, DispatchMode.Queued);
-        }
-
-        internal void DispatchEvent(EventBase evt, IPanel panel, DispatchMode dispatchMode)
+        internal void Dispatch(EventBase evt, IPanel panel, DispatchMode dispatchMode)
         {
             if (evt.GetEventTypeId() == IMGUIEvent.TypeId())
             {

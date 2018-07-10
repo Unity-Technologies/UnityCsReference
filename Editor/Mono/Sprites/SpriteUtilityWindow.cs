@@ -132,17 +132,11 @@ namespace UnityEditor
                     if (wantedZoom != currentZoom)
                         zoomMultiplier /= wantedZoom / currentZoom;
 
-                    m_ScrollPosition *= zoomMultiplier;
+                    Vector3 textureHalfSize = new Vector2(m_Texture.width, m_Texture.height) * 0.5f;
+                    Vector3 mousePositionWorld = Handles.inverseMatrix.MultiplyPoint3x4(Event.current.mousePosition + m_ScrollPosition);
+                    Vector3 delta = (mousePositionWorld - textureHalfSize) * (zoomMultiplier - 1f);
 
-                    // Zooming towards mouse cursor
-                    float xRatio = Event.current.mousePosition.x / m_TextureViewRect.width - 0.5f;
-                    float yRatio = Event.current.mousePosition.y / m_TextureViewRect.height - 0.5f;
-                    float diffX = xRatio * (zoomMultiplier - 1);
-                    float diffY = yRatio * (zoomMultiplier - 1);
-
-                    Rect scrollRect = maxScrollRect;
-                    m_ScrollPosition.x += (diffX * (scrollRect.width / 2.0f));
-                    m_ScrollPosition.y += (diffY * (scrollRect.height / 2.0f));
+                    m_ScrollPosition += (Vector2)Handles.matrix.MultiplyVector(delta);
 
                     Event.current.Use();
                 }

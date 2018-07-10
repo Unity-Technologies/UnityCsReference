@@ -121,6 +121,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 dropTarget.DragExited();
             }
+            else if (e.GetEventTypeId() == DragEnterEvent.TypeId())
+            {
+                dropTarget.DragEnter(evt as DragEnterEvent, selection, dropTarget, dragSource);
+            }
+            else if (e.GetEventTypeId() == DragLeaveEvent.TypeId())
+            {
+                dropTarget.DragLeave(evt as DragLeaveEvent, selection, dropTarget, dragSource);
+            }
 
             if (!dropTarget.CanAcceptDrop(selection))
             {
@@ -134,14 +142,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             else if (e.GetEventTypeId() == DragUpdatedEvent.TypeId())
             {
                 dropTarget.DragUpdated(evt as DragUpdatedEvent, selection, dropTarget, dragSource);
-            }
-            else if (e.GetEventTypeId() == DragEnterEvent.TypeId())
-            {
-                dropTarget.DragEnter(evt as DragEnterEvent, selection, dropTarget, dragSource);
-            }
-            else if (e.GetEventTypeId() == DragLeaveEvent.TypeId())
-            {
-                dropTarget.DragLeave(evt as DragLeaveEvent, selection, dropTarget, dragSource);
             }
         }
 
@@ -409,18 +409,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (selectedElement == null)
                     {
                         m_MovedElements.Clear();
-                        foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
+
+                        foreach (IGrouping<StackNode, GraphElement> grouping in m_OriginalPos.GroupBy(v => v.Value.stack, v => v.Key))
                         {
-                            GraphElement ge = v.Key;
-                            StackNode stackNode = v.Value.stack;
-                            ge.UpdatePresenterPosition();
+                            if (grouping.Key != null && m_GraphView.elementsRemovedFromStackNode != null)
+                                m_GraphView.elementsRemovedFromStackNode(grouping.Key, grouping);
 
-                            if (stackNode != null && m_GraphView.elementRemovedFromStackNode != null)
-                            {
-                                m_GraphView.elementRemovedFromStackNode(stackNode, ge);
-                            }
+                            foreach (GraphElement ge in grouping)
+                                ge.UpdatePresenterPosition();
 
-                            m_MovedElements.Add(ge);
+                            m_MovedElements.AddRange(grouping);
                         }
 
                         var graphView = target as GraphView;

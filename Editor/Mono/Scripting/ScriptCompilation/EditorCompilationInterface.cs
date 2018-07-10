@@ -107,6 +107,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
+        static void LogWarning(string warning, string assetPath)
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<AssemblyDefinitionAsset>(assetPath);
+            Debug.LogWarning(warning, asset);
+        }
+
         [RequiredByNativeCode]
         public static void SetAssemblySuffix(string suffix)
         {
@@ -147,6 +153,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static void DirtyScript(string path)
         {
             Instance.DirtyScript(path);
+        }
+
+        [RequiredByNativeCode]
+        public static void DirtyRemovedScript(string path)
+        {
+            Instance.DirtyRemovedScript(path);
+        }
+
+        [RequiredByNativeCode]
+        public static void DirtyPrecompiledAssembly(string path)
+        {
+            Instance.DirtyPrecompiledAssembly(path);
         }
 
         [RequiredByNativeCode]
@@ -200,7 +218,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
         {
-            return EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(), new EditorCompilation.TargetAssemblyInfo[0]);
+            EditorCompilation.CustomScriptAssemblyAndReference[] assembliesWithMissingReference = null;
+
+            var result = EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(out assembliesWithMissingReference), new EditorCompilation.TargetAssemblyInfo[0]);
+
+            if (assembliesWithMissingReference.Length > 0)
+            {
+                foreach (var assemblyAndReference in assembliesWithMissingReference)
+                {
+                    LogWarning(string.Format("The assembly for Assembly Definition File '{0}' will not be loaded. Because the assembly for its reference '{1}'' does not exist on the file system. " +
+                            "This can be caused by the reference assembly not being compiled due to errors or not having any scripts associated with it.",
+                            assemblyAndReference.Assembly.FilePath,
+                            assemblyAndReference.Reference.FilePath),
+                        assemblyAndReference.Assembly.FilePath);
+                }
+            }
+
+            return result;
         }
 
         [RequiredByNativeCode]
@@ -223,9 +257,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static bool CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform)
+        public static EditorCompilation.CompileStatus CompileScripts(EditorScriptCompilationOptions definesOptions, BuildTargetGroup platformGroup, BuildTarget platform)
         {
-            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform), false);
+            return EmitExceptionAsError(() => Instance.CompileScripts(definesOptions, platformGroup, platform),
+                EditorCompilation.CompileStatus.CompilationFailed);
         }
 
         [RequiredByNativeCode]
@@ -244,6 +279,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static bool AreAllScriptsDirty()
         {
             return Instance.AreAllScriptsDirty();
+        }
+
+        [RequiredByNativeCode]
+        public static bool ArePrecompiledAssembliesDirty()
+        {
+            return Instance.ArePrecompiledAssembliesDirty();
         }
 
         [RequiredByNativeCode]

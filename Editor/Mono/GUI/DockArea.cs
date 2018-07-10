@@ -7,10 +7,12 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
+using Unity.Experimental.EditorMode;
 using UnityEngine.XR;
 
 namespace UnityEditor
@@ -32,7 +34,7 @@ namespace UnityEditor
             public static readonly float tabDropdownOptions = EditorResources.GetStyle("tab-dropdown-options").GetFloat(StyleKeyword.width, 40.0f);
 
             private static StyleBlock tabScrollButton = EditorResources.GetStyle("tab-scroll-button");
-            private static StyleBlock tabScrollButtonHover = EditorResources.GetStyle("tab-scroll-button.hover");
+            private static StyleBlock tabScrollButtonHover = EditorResources.GetStyle("tab-scroll-button", StyleState.focus);
             public static readonly Color tabScrollButtonBackgroundColor = tabScrollButton.GetColor(StyleKeyword.backgroundColor);
             public static readonly float tabScrollButtonTopMargin = tabScrollButton.GetFloat(StyleKeyword.marginTop, 1.0f);
             public static readonly Color tabScrollButtonBlendColor = tabScrollButton.GetColor(StyleKeyword.color, Color.white);
@@ -163,7 +165,7 @@ namespace UnityEditor
 
             RectOffset margins = GetBorderSize();
 
-            IStyle style = view.rootVisualContainer.style;
+            IStyle style = EditorModes.GetRootElement(view).style;
             style.positionTop = margins.top;
             style.positionBottom = margins.bottom;
             style.positionLeft = margins.left;

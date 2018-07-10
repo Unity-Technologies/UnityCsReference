@@ -2,10 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using System.Collections;
 using UnityEngine;
-using System.Collections.Generic;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -44,7 +41,7 @@ namespace UnityEditor
             bool nonLeftClick = (evt.type == EventType.MouseDown && evt.button != 0);
             if (nonLeftClick)
                 evt.type = EventType.Ignore;
-            bool returnValue = DoToggle(position, id, EditorGUI.showMixedValue ? false : value, content, style.m_Ptr);
+            bool returnValue = DoToggle(position, id, EditorGUI.showMixedValue ? false : value, content, style);
             if (nonLeftClick)
                 evt.type = origType;
             else if (evt.type != origType)

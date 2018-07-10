@@ -30,7 +30,7 @@ namespace UnityEngine.Animations
         extern internal static bool InternalCreateAnimationOutput(ref PlayableGraph graph, string name, out PlayableOutputHandle handle);
 
         [NativeThrows]
-        extern internal static void InternalSyncUpdateAndTimeMode(ref PlayableGraph graph, Animator animator);
+        extern internal static void InternalSyncUpdateAndTimeMode(ref PlayableGraph graph, [NotNull] Animator animator);
 
         [NativeThrows]
         extern private static void InternalDestroyOutput(ref PlayableGraph graph, ref PlayableOutputHandle handle);

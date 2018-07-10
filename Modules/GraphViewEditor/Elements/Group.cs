@@ -17,7 +17,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private bool m_EditTitleCancelled = false;
         private const int k_TitleEditorFocusDelay = 300;
 
-        public string title
+        public override string title
         {
             get { return m_TitleItem.text; }
             set

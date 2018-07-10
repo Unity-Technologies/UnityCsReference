@@ -65,6 +65,8 @@ namespace UnityEditor.Build
                         return BuildTarget.WSAPlayer;
                     case BuildTargetGroup.Facebook:
                         return BuildTarget.StandaloneWindows64;
+                    case BuildTargetGroup.Lumin:
+                        return BuildTarget.Lumin;
                     default:
                         return (BuildTarget)(-1);
                 }

@@ -53,6 +53,27 @@
 
   </ItemGroup>
   <ItemGroup>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs">
+    <Link>Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs">
+    <Link>Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\AndroidInput.bindings.cs">
     <Link>Runtime\Export\AndroidInput.bindings.cs</Link>
   </Compile>
@@ -436,6 +457,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\IExposedPropertyTable.cs">
     <Link>Runtime\Export\IExposedPropertyTable.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Input.bindings.cs">
+    <Link>Runtime\Export\Input.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\Internal\DefaultValueAttribute.cs">
     <Link>Runtime\Export\Internal\DefaultValueAttribute.cs</Link>
@@ -1007,27 +1031,6 @@
   <Compile Include="..\..\Runtime\Export\iOS\tvOSDevice.bindings.cs">
     <Link>Runtime\Export\iOS\tvOSDevice.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs">
-    <Link>Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs">
-    <Link>Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs</Link>
-  </Compile>
   <Compile Include="..\..\Runtime\Jobs\Managed\BatchQueries.cs">
     <Link>Runtime\Jobs\Managed\BatchQueries.cs</Link>
   </Compile>
@@ -1049,6 +1052,9 @@
   <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Profiler.bindings.cs">
     <Link>Runtime\Profiler\ScriptBindings\Profiler.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs">
+    <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Recorder.bindings.cs">
     <Link>Runtime\Profiler\ScriptBindings\Recorder.bindings.cs</Link>
   </Compile>
@@ -1066,9 +1072,6 @@
   </Compile>
   <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs">
     <Link>Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs">
     <Link>External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs</Link>
@@ -1406,6 +1409,42 @@
   <Compile Include="..\..\Modules\Streaming\ScriptBindings\StreamingController.bindings.cs">
     <Link>Modules\Streaming\ScriptBindings\StreamingController.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\FriendAttributes.cs">
+    <Link>Modules\StyleSheets\Managed\FriendAttributes.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleComplexSelector.cs">
+    <Link>Modules\StyleSheets\Managed\StyleComplexSelector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleProperty.cs">
+    <Link>Modules\StyleSheets\Managed\StyleProperty.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleRule.cs">
+    <Link>Modules\StyleSheets\Managed\StyleRule.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelector.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSelector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorPart.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSelectorPart.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorRelationship.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSelectorRelationship.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorType.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSelectorType.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSheet.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSheet.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueHandle.cs">
+    <Link>Modules\StyleSheets\Managed\StyleValueHandle.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueKeyword.cs">
+    <Link>Modules\StyleSheets\Managed\StyleValueKeyword.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueType.cs">
+    <Link>Modules\StyleSheets\Managed\StyleValueType.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Substance\SubstanceUtility.bindings.cs">
     <Link>Modules\Substance\SubstanceUtility.bindings.cs</Link>
   </Compile>
@@ -1417,6 +1456,21 @@
   </Compile>
   <Compile Include="..\..\Modules\Terrain\Public\TerrainData.bindings.cs">
     <Link>Modules\Terrain\Public\TerrainData.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\TerrainLayer.bindings.cs">
+    <Link>Modules\Terrain\Public\TerrainLayer.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\TerrainPaintUtility.cs">
+    <Link>Modules\Terrain\Public\TerrainPaintUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TextCore\Managed\AssemblyInfo.cs">
+    <Link>Modules\TextCore\Managed\AssemblyInfo.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TextCore\Managed\Glyph.cs">
+    <Link>Modules\TextCore\Managed\Glyph.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TextCore\ScriptBindings\FontEngine.bindings.cs">
+    <Link>Modules\TextCore\ScriptBindings\FontEngine.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\TextRendering\FontStyle.cs">
     <Link>Modules\TextRendering\FontStyle.cs</Link>
@@ -1447,6 +1501,12 @@
   </Compile>
   <Compile Include="..\..\Modules\UIElements\BaseField.cs">
     <Link>Modules\UIElements\BaseField.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\BaseSlider.cs">
+    <Link>Modules\UIElements\BaseSlider.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Bindings\UIRenderer.bindings.cs">
+    <Link>Modules\UIElements\Bindings\UIRenderer.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Box.cs">
     <Link>Modules\UIElements\Box.cs</Link>
@@ -1604,6 +1664,9 @@
   <Compile Include="..\..\Modules\UIElements\Manipulators.cs">
     <Link>Modules\UIElements\Manipulators.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIElements\MinMaxSlider.cs">
+    <Link>Modules\UIElements\MinMaxSlider.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElements\MouseButton.cs">
     <Link>Modules\UIElements\MouseButton.cs</Link>
   </Compile>
@@ -1639,6 +1702,9 @@
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Slider.cs">
     <Link>Modules\UIElements\Slider.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\SliderInt.cs">
+    <Link>Modules\UIElements\SliderInt.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Spacing.cs">
     <Link>Modules\UIElements\Spacing.cs</Link>
@@ -2021,6 +2087,9 @@
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationRemoveScalePlayable.bindings.cs">
+    <Link>Runtime\Animation\ScriptBindings\AnimationRemoveScalePlayable.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs</Link>
   </Compile>
@@ -2135,44 +2204,11 @@
   <Compile Include="..\..\Runtime\ParticleSystem\ScriptBindings\ParticleSystem.bindings.cs">
     <Link>Runtime\ParticleSystem\ScriptBindings\ParticleSystem.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\ParticleSystem\ScriptBindings\ParticleSystemForceField.bindings.cs">
+    <Link>Runtime\ParticleSystem\ScriptBindings\ParticleSystemForceField.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\ParticleSystem\ScriptBindings\ParticleSystemRenderer.bindings.cs">
     <Link>Runtime\ParticleSystem\ScriptBindings\ParticleSystemRenderer.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\FriendAttributes.cs">
-    <Link>Runtime\StyleSheets\Managed\FriendAttributes.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleComplexSelector.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleComplexSelector.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleProperty.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleProperty.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleRule.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleRule.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelector.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSelector.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorPart.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSelectorPart.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorRelationship.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSelectorRelationship.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorType.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSelectorType.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSheet.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSheet.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueHandle.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleValueHandle.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueKeyword.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleValueKeyword.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueType.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleValueType.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\TerrainPhysics\TerrainPhysics.bindings.cs">
     <Link>Runtime\TerrainPhysics\TerrainPhysics.bindings.cs</Link>

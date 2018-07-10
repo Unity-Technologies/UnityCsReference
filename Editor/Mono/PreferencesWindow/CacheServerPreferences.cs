@@ -15,7 +15,7 @@ namespace UnityEditor
 {
     internal class CacheServerPreferences
     {
-        internal class Styles
+        internal class Properties
         {
             public static readonly GUIContent browse = EditorGUIUtility.TrTextContent("Browse...");
             public static readonly GUIContent maxCacheSize = EditorGUIUtility.TrTextContent("Maximum Cache Size (GB)", "The size of the local asset cache server folder will be kept below this maximum value.");
@@ -26,11 +26,10 @@ namespace UnityEditor
             public static readonly GUIContent browseCacheLocation = EditorGUIUtility.TrTextContent("Browse for local asset cache server location");
         }
 
-        internal class Constants
+        internal static class Styles
         {
-            public GUIStyle cacheFolderLocation = new GUIStyle(GUI.skin.label);
-
-            public Constants()
+            public static GUIStyle cacheFolderLocation = new GUIStyle(GUI.skin.label);
+            static Styles()
             {
                 cacheFolderLocation.wordWrap = true;
             }
@@ -52,8 +51,6 @@ namespace UnityEditor
         private static long s_LocalCacheServerUsedSize = -1;
         private static bool s_EnableCustomPath;
         private static string s_CachePath;
-
-        static Constants s_Constants = null;
 
         public static void ReadPreferences()
         {
@@ -119,18 +116,28 @@ namespace UnityEditor
             return address;
         }
 
-        [PreferenceItem("Cache Server")]
-        private static void OnGUI()
+        [SettingsProvider]
+        internal static SettingsProvider CreateSettingsProvider()
         {
+            return new SettingsProvider("Preferences/Cache Server")
+            {
+                guiHandler = searchContext =>
+                    {
+                        using (new SettingsWindow.GUIScope())
+                            OnGUI(searchContext);
+                    },
+                scopes = SettingsScopes.User
+            };
+        }
+
+        private static void OnGUI(string searchContext)
+        {
+            EditorGUIUtility.labelWidth = 200f;
             // Get event type before the event is used.
             var eventType = Event.current.type;
-            if (s_Constants == null)
-            {
-                s_Constants = new Constants();
-            }
-
             if (!InternalEditorUtility.HasTeamLicense())
                 GUILayout.Label(EditorGUIUtility.TempContent("You need to have a Pro or Team license to use the cache server.", EditorGUIUtility.GetHelpIcon(MessageType.Warning)), EditorStyles.helpBox);
+
 
             using (new EditorGUI.DisabledScope(!InternalEditorUtility.HasTeamLicense()))
             {
@@ -208,21 +215,21 @@ namespace UnityEditor
                     const int kMaxSizeInGigabytes = 200;
 
                     // Write size in GigaBytes.
-                    s_LocalCacheServerSize = EditorGUILayout.IntSlider(Styles.maxCacheSize, s_LocalCacheServerSize, kMinSizeInGigabytes, kMaxSizeInGigabytes);
+                    s_LocalCacheServerSize = EditorGUILayout.IntSlider(Properties.maxCacheSize, s_LocalCacheServerSize, kMinSizeInGigabytes, kMaxSizeInGigabytes);
 
-                    s_EnableCustomPath = EditorGUILayout.Toggle(Styles.customCacheLocation, s_EnableCustomPath);
+                    s_EnableCustomPath = EditorGUILayout.Toggle(Properties.customCacheLocation, s_EnableCustomPath);
                     // browse for cache folder if not per project
                     if (s_EnableCustomPath)
                     {
                         GUIStyle style = EditorStyles.miniButton;
                         GUILayout.BeginHorizontal();
-                        EditorGUILayout.PrefixLabel(Styles.cacheFolderLocation, style);
+                        EditorGUILayout.PrefixLabel(Properties.cacheFolderLocation, style);
                         Rect r = GUILayoutUtility.GetRect(GUIContent.none, style);
-                        GUIContent guiText = string.IsNullOrEmpty(s_CachePath) ? Styles.browse : new GUIContent(s_CachePath);
+                        GUIContent guiText = string.IsNullOrEmpty(s_CachePath) ? Properties.browse : new GUIContent(s_CachePath);
                         if (EditorGUI.DropdownButton(r, guiText, FocusType.Passive, style))
                         {
                             string pathToOpen = s_CachePath;
-                            string path = EditorUtility.OpenFolderPanel(Styles.browseCacheLocation.text, pathToOpen, "");
+                            string path = EditorUtility.OpenFolderPanel(Properties.browseCacheLocation.text, pathToOpen, "");
                             if (!string.IsNullOrEmpty(path))
                             {
                                 if (LocalCacheServer.CheckValidCacheLocation(path))
@@ -253,7 +260,7 @@ namespace UnityEditor
                         GUIStyle style = EditorStyles.miniButton;
                         EditorGUILayout.PrefixLabel(cacheSizeIs, style);
                         Rect r = GUILayoutUtility.GetRect(GUIContent.none, style);
-                        if (EditorGUI.Button(r, Styles.enumerateCache, style))
+                        if (EditorGUI.Button(r, Properties.enumerateCache, style))
                         {
                             s_LocalCacheServerUsedSize = LocalCacheServer.CheckCacheLocationExists() ? FileUtil.GetDirectorySize(LocalCacheServer.GetCacheLocation()) : 0;
                         }
@@ -263,7 +270,7 @@ namespace UnityEditor
                         GUIContent spacerContent = EditorGUIUtility.blankContent;
                         EditorGUILayout.PrefixLabel(spacerContent, style);
                         Rect r2 = GUILayoutUtility.GetRect(GUIContent.none, style);
-                        if (EditorGUI.Button(r2, Styles.cleanCache, style))
+                        if (EditorGUI.Button(r2, Properties.cleanCache, style))
                         {
                             LocalCacheServer.Clear();
                             s_LocalCacheServerUsedSize = 0;
@@ -277,8 +284,8 @@ namespace UnityEditor
                         s_LocalCacheServerUsedSize = -1;
                     }
 
-                    GUILayout.Label(Styles.cacheFolderLocation.text + ":");
-                    GUILayout.Label(LocalCacheServer.GetCacheLocation(), s_Constants.cacheFolderLocation);
+                    GUILayout.Label(Properties.cacheFolderLocation.text + ":");
+                    GUILayout.Label(LocalCacheServer.GetCacheLocation(), Styles.cacheFolderLocation);
                 }
 
                 if (EditorGUI.EndChangeCheck())

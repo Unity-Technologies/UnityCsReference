@@ -15,6 +15,7 @@ namespace UnityEngine
         private static int s_HotTextField = -1;
 
         private static readonly int s_BoxHash               = "Box".GetHashCode();
+        private static readonly int s_ButonHash             = 2001146706;
         private static readonly int s_RepeatButtonHash      = "repeatButton".GetHashCode();
         private static readonly int s_ToggleHash            = "Toggle".GetHashCode();
         private static readonly int s_ButtonGridHash        = "ButtonGrid".GetHashCode();
@@ -139,7 +140,7 @@ namespace UnityEngine
         public static void Label(Rect position, GUIContent content, GUIStyle style)
         {
             GUIUtility.CheckOnGUI();
-            DoLabel(position, content, style.m_Ptr);
+            DoLabel(position, content, style);
         }
 
         // Draw a texture within a rectangle.
@@ -363,7 +364,8 @@ namespace UnityEngine
         public static bool Button(Rect position, GUIContent content, GUIStyle style)
         {
             GUIUtility.CheckOnGUI();
-            return DoButton(position, content, style.m_Ptr);
+            int id = GUIUtility.GetControlID(s_ButonHash, FocusType.Passive);
+            return DoButton(position, id, content, style);
         }
 
         public static bool RepeatButton(Rect position, string text)
@@ -792,13 +794,13 @@ namespace UnityEngine
         public static bool Toggle(Rect position, bool value, GUIContent content, GUIStyle style)
         {
             GUIUtility.CheckOnGUI();
-            return DoToggle(position, GUIUtility.GetControlID(s_ToggleHash, FocusType.Passive, position), value, content, style.m_Ptr);
+            return DoToggle(position, GUIUtility.GetControlID(s_ToggleHash, FocusType.Passive, position), value, content, style);
         }
 
         public static bool Toggle(Rect position, int id, bool value, GUIContent content, GUIStyle style)
         {
             GUIUtility.CheckOnGUI();
-            return DoToggle(position, id, value, content, style.m_Ptr);
+            return DoToggle(position, id, value, content, style);
         }
 
         public enum ToolbarButtonSize
@@ -906,6 +908,67 @@ namespace UnityEngine
 
             int internalSpace = Mathf.Max(midStyle.margin.left, midStyle.margin.right);
             return Mathf.Max(firstStyle.margin.right, midStyle.margin.left) + Mathf.Max(midStyle.margin.right, lastStyle.margin.left) + internalSpace * (xCount - 3);
+        }
+
+        private static bool DoControl(Rect position, int id, bool on, GUIContent content, GUIStyle style)
+        {
+            var evt = Event.current;
+            switch (evt.type)
+            {
+                case EventType.Repaint:
+                    style.Draw(position, content, id, on);
+                    break;
+                case EventType.MouseDown:
+                    if (position.Contains(evt.mousePosition))
+                    {
+                        GrabMouseControl(id);
+                        evt.Use();
+                    }
+                    break;
+                case EventType.KeyDown:
+                    if (evt.character == 32 && GUIUtility.GetControlID(FocusType.Keyboard) == id)
+                    {
+                        changed = true;
+                        evt.Use();
+                        return !on;
+                    }
+                    break;
+                case EventType.MouseUp:
+                    if (HasMouseControl(id))
+                    {
+                        ReleaseMouseControl();
+                        evt.Use();
+                        if (position.Contains(evt.mousePosition))
+                        {
+                            changed = true;
+                            return !on;
+                        }
+                    }
+                    break;
+                case EventType.MouseDrag:
+                    if (HasMouseControl(id))
+                        evt.Use();
+                    break;
+            }
+            return on;
+        }
+
+        private static void DoLabel(Rect position, GUIContent content, GUIStyle style)
+        {
+            var evt = Event.current;
+            if (evt.type != EventType.Repaint)
+                return;
+            style.Draw(position, content, false, false, false, false);
+        }
+
+        internal static bool DoToggle(Rect position, int id, bool value, GUIContent content, GUIStyle style)
+        {
+            return DoControl(position, id, value, content, style);
+        }
+
+        internal static bool DoButton(Rect position, int id, GUIContent content, GUIStyle style)
+        {
+            return DoControl(position, id, false, content, style);
         }
 
         // Make a button grid

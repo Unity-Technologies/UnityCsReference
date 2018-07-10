@@ -30,7 +30,8 @@ namespace UnityEngine.Experimental.UIElements.StyleEnums
     public enum Wrap
     {
         NoWrap = YogaWrap.NoWrap,
-        Wrap = YogaWrap.Wrap
+        Wrap = YogaWrap.Wrap,
+        WrapReverse = YogaWrap.WrapReverse
     }
 
     public enum Align

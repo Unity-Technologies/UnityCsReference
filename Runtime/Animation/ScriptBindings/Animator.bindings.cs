@@ -406,6 +406,7 @@ namespace UnityEngine
         }
 
         // Linear velocity blending for root motion
+        [Obsolete("Animator.linearVelocityBlending is no longer used and has been deprecated.")]
         extern public bool linearVelocityBlending
         {
             get;

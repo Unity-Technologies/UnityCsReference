@@ -52,7 +52,7 @@ namespace UnityEditor
 
         public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
         {
-            return (EditorGUIUtility.wideMode ? 0 : EditorGUI.kSingleLineHeight) // header
+            return (EditorGUIUtility.wideMode ? 0 : (int)EditorGUI.kSingleLineHeight) // header
                 + EditorGUI.kSingleLineHeight // first line
                 + (((MultilineAttribute)attribute).lines - 1) * kLineHeight; // remaining lines
         }

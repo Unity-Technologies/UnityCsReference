@@ -94,8 +94,9 @@ namespace UnityEditor
 
             public static readonly GUIContent edit = EditorGUIUtility.TrTextContent("Edit");
             public static readonly GUIContent editModified = EditorGUIUtility.TrTextContent("Edit*");
-            public static readonly GUIStyle ToolbarStyle = "preToolbar";
-            public static readonly GUIStyle ToolbarTitleStyle = "preToolbar";
+            public static readonly GUIStyle ToolbarTitleStyle = "Toolbar";
+            public static readonly GUIStyle dragHandle = "RL DragHandle";
+            public static readonly float dragPadding = 3f;
             public static float toolbarWidth;
 
             static Styles()
@@ -363,9 +364,8 @@ namespace UnityEditor
             GUILayout.Space(clipboardRect.height);
 
             EditorGUILayout.BeginVertical();
-            EditorGUILayout.BeginHorizontal(GUIContent.none, "Toolbar");
-            DoBrushesDropdown();
-            GUILayout.FlexibleSpace();
+            EditorGUILayout.BeginHorizontal(GUIContent.none, Styles.ToolbarTitleStyle);
+            DoBrushesDropdownToolbar();
             EditorGUILayout.EndHorizontal();
             m_BrushScroll = GUILayout.BeginScrollView(m_BrushScroll, false, false);
             GUILayout.Space(5f);
@@ -564,7 +564,7 @@ namespace UnityEditor
             return false;
         }
 
-        private void DoBrushesDropdown()
+        private void DoBrushesDropdownToolbar()
         {
             GUIContent content = GUIContent.Temp(GridPaintingState.gridBrush.name);
             if (EditorGUILayout.DropdownButton(content, FocusType.Passive, EditorStyles.toolbarPopup, GUILayout.Width(k_DropdownWidth)))
@@ -573,6 +573,17 @@ namespace UnityEditor
                 var flexibleMenu = new GridBrushesDropdown(menuData, GridPaletteBrushes.brushes.IndexOf(GridPaintingState.gridBrush), null, SelectBrush, k_DropdownWidth);
                 PopupWindow.Show(GUILayoutUtility.topLevel.GetLast(), flexibleMenu);
             }
+            if (Event.current.type == EventType.Repaint)
+            {
+                var dragRect = GUILayoutUtility.GetLastRect();
+                var dragIconRect = new Rect();
+                dragIconRect.x = dragRect.x + dragRect.width + Styles.dragPadding;
+                dragIconRect.y = dragRect.y + (dragRect.height - Styles.dragHandle.fixedHeight) / 2 + 1;
+                dragIconRect.width = position.width - (dragIconRect.x) - Styles.dragPadding;
+                dragIconRect.height = Styles.dragHandle.fixedHeight;
+                Styles.dragHandle.Draw(dragIconRect, GUIContent.none, false, false, false, false);
+            }
+            GUILayout.FlexibleSpace();
         }
 
         private void SelectBrush(int i, object o)

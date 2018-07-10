@@ -5,10 +5,12 @@
 using UnityEngine;
 using System.Linq;
 using System;
+using System.Collections.Generic;
 using UnityEditor.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Scripting;
 using UnityEngine.Internal;
+using Unity.Experimental.EditorMode;
 
 namespace UnityEditor
 {
@@ -40,24 +42,60 @@ namespace UnityEditor
         [HideInInspector]
         internal Rect m_Pos = new Rect(0, 0, 320, 240);
 
-        VisualElement m_RootVisualContainer;
+        private readonly Dictionary<Type, VisualElement> m_RootElementPerEditorMode = new Dictionary<Type, VisualElement>();
 
         internal VisualElement rootVisualContainer
         {
             get
             {
-                if (m_RootVisualContainer == null)
-                {
-                    m_RootVisualContainer = new VisualElement()
-                    {
-                        name = VisualElementUtils.GetUniqueName("rootVisualContainer"),
-                        pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
-                        persistenceKey = "rootVisualContainer"
-                    };
-                    UIElementsEditorUtility.AddDefaultEditorStyleSheets(m_RootVisualContainer);
-                }
-                return m_RootVisualContainer;
+                return GetRootElement<DefaultEditorMode>(true);
             }
+        }
+
+        internal VisualElement GetRootElement<TMode>(bool createIfNull) where TMode : EditorMode
+        {
+            var type = typeof(TMode);
+            VisualElement root = null;
+            if (!m_RootElementPerEditorMode.TryGetValue(type, out root))
+            {
+                if (createIfNull)
+                {
+                    m_RootElementPerEditorMode[type] = root = CreateRoot<TMode>();
+                }
+                else
+                {
+                    root = GetRootElement<DefaultEditorMode>(true);
+                }
+            }
+            return root;
+        }
+
+        internal void RemoveOverride<TMode>() where TMode : EditorMode
+        {
+            RemoveOverride(typeof(TMode));
+        }
+
+        internal void RemoveOverride(Type type)
+        {
+            if (type != typeof(DefaultEditorMode))
+            {
+                m_RootElementPerEditorMode.Remove(type);
+            }
+        }
+
+        private VisualElement CreateRoot<TMode>() where TMode : EditorMode
+        {
+            var type = typeof(TMode);
+            var namePostfix = type == typeof(DefaultEditorMode) ? "" : "-" + type.Name;
+            var name = "rootVisualContainer" + namePostfix;
+            var root = new VisualElement()
+            {
+                name = VisualElementUtils.GetUniqueName(name),
+                pickingMode = PickingMode.Ignore, // do not eat events so IMGUI gets them
+                persistenceKey = name
+            };
+            UIElementsEditorUtility.AddDefaultEditorStyleSheets(root);
+            return root;
         }
 
         [HideInInspector]
@@ -491,22 +529,32 @@ namespace UnityEditor
             ShowAsDropDown(buttonRect, windowSize, null);
         }
 
-        internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocationHelper.PopupLocation[] locationPriorityOrder)
+        internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder)
         {
-            ShowAsDropDown(buttonRect, windowSize, locationPriorityOrder, ShowMode.PopupMenu);
+            ShowAsDropDown(buttonRect, windowSize, locationPriorityOrder, ShowMode.PopupMenuWithKeyboardFocus);
+        }
+
+        internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder, ShowMode mode)
+        {
+            ShowAsDropDown(buttonRect, windowSize, locationPriorityOrder, mode, true);
         }
 
         // Show as drop down list with custom fit to screen callback
         // 'buttonRect' is used for displaying the dropdown below that rect if possible otherwise above
         // 'windowSize' is used for setting up initial size
         // 'locationPriorityOrder' is for manual popup direction, if null it uses default order: down, up, left or right
-        internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocationHelper.PopupLocation[] locationPriorityOrder, ShowMode mode)
+        // 'giveFocus' is for whether the window should immediately be given focus (default true)
+        internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder, ShowMode mode, bool giveFocus)
         {
             // Setup position before bringing window live (otherwise the dropshadow on Windows will be placed in 0,0 first frame)
             position = ShowAsDropDownFitToScreen(buttonRect, windowSize, locationPriorityOrder);
 
-            // Show window and focus
-            ShowWithMode(mode);
+            // ShowWithMode() always grabs window focus so we use ShowPopup() for popup windows so PopupWindowWithoutFocus
+            // will work correctly (no focus when opened)
+            if (ContainerWindow.IsPopup(mode))
+                ShowPopup();
+            else
+                ShowWithMode(mode);
 
             // Fit to screen again now that we have a container window
             position = ShowAsDropDownFitToScreen(buttonRect, windowSize, locationPriorityOrder);
@@ -516,8 +564,10 @@ namespace UnityEditor
             maxSize = new Vector2(position.width, position.height);
 
             // Focus window
-            if (focusedWindow != this)
+            if (giveFocus && focusedWindow != this)
                 Focus();
+            else
+                Repaint();
 
             // Add after unfreezing display because AuxWindowManager.cpp assumes that aux windows are added after we got/lost- focus calls.
             m_Parent.AddToAuxWindowList();
@@ -526,7 +576,7 @@ namespace UnityEditor
             m_Parent.window.m_DontSaveToLayout = true;
         }
 
-        internal Rect ShowAsDropDownFitToScreen(Rect buttonRect, Vector2 windowSize, PopupLocationHelper.PopupLocation[] locationPriorityOrder)
+        internal Rect ShowAsDropDownFitToScreen(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder)
         {
             if (m_Parent == null)
                 return new Rect(buttonRect.x, buttonRect.yMax, windowSize.x, windowSize.y);
@@ -986,13 +1036,22 @@ namespace UnityEditor
         public EditorWindow()
         {
             m_EnableViewDataPersistence = true;
-
             titleContent.text = GetType().ToString();
         }
 
         private void __internalAwake()
         {
             hideFlags = HideFlags.DontSave; // Can't be HideAndDontSave, as that would make scriptable wizard GUI be disabled
+        }
+
+        private void OnEnableINTERNAL()
+        {
+            EditorModes.RegisterWindow(this);
+        }
+
+        private void OnDisableINTERNAL()
+        {
+            EditorModes.UnregisterWindow(this);
         }
 
         // Internal stuff:
@@ -1043,6 +1102,17 @@ namespace UnityEditor
             public static VisualElement GetRootVisualContainer(this EditorWindow window)
             {
                 return window.rootVisualContainer;
+            }
+
+            // Returns the default one if the EditorMode doesn't override it.
+            internal static VisualElement GetRootVisualContainer<TMode>(this EditorWindow window) where TMode : EditorMode
+            {
+                return window.GetRootElement<TMode>(false);
+            }
+
+            internal static VisualElement GetRootVisualContainerForCurrentMode(this EditorWindow window)
+            {
+                return EditorModes.GetRootElement(window);
             }
 
             public static void SetAntiAliasing(this EditorWindow window, int aa)

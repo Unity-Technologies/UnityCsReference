@@ -279,7 +279,7 @@ namespace UnityEditor.Experimental.UIElements
             using (ChangeEvent<TType> newEvent = ChangeEvent<TType>.GetPooled(evt.previousValue, evt.newValue))
             {
                 newEvent.target = this;
-                UIElementsUtility.eventDispatcher.DispatchEvent(newEvent, panel);
+                SendEvent(newEvent);
             }
         }
 

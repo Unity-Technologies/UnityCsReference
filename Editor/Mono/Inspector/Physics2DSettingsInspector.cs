@@ -87,6 +87,17 @@ namespace UnityEditor
             LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref m_ShowLayerCollisionMatrix, ref m_LayerCollisionMatrixScrollPos, GetValue, SetValue);
         }
 
+        [SettingsProvider]
+        internal static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Physics 2D", "ProjectSettings/Physics2DSettings.asset")
+            {
+                icon = EditorGUIUtility.IconContent("Profiler.Physics2D").image as Texture2D
+            };
+            SettingsProvider.GetSearchKeywordsFromSerializedObject(provider.CreateEditor().serializedObject, provider.keywords);
+            return provider;
+        }
+
         static bool GetValue(int layerA, int layerB) { return !Physics2D.GetIgnoreLayerCollision(layerA, layerB); }
         static void SetValue(int layerA, int layerB, bool val) { Physics2D.IgnoreLayerCollision(layerA, layerB, !val); }
     }

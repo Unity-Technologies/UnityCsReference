@@ -157,13 +157,13 @@ namespace UnityEditor
         public static extern int etcTextureCompressorBehavior { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern int etcTextureFastCompressor { get; set; }
+        public static extern int etcTextureFastCompressor {[NativeMethod("GetEtcTextureFastCompressorNoOffset")] get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern int etcTextureNormalCompressor { get; set; }
+        public static extern int etcTextureNormalCompressor {[NativeMethod("GetEtcTextureNormalCompressorNoOffset")] get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-        public static extern int etcTextureBestCompressor { get; set; }
+        public static extern int etcTextureBestCompressor {[NativeMethod("GetEtcTextureBestCompressorNoOffset")] get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern bool enableTextureStreamingInPlayMode { get; set; }

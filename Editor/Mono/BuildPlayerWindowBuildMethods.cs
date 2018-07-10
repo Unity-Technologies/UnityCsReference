@@ -11,6 +11,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using System.Collections;
 using System.IO;
 using System;
+using UnityEditor.Build.Reporting;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -20,6 +21,7 @@ namespace UnityEditor
         static Func<BuildPlayerOptions, BuildPlayerOptions> getBuildPlayerOptionsHandler;
         static Action<BuildPlayerOptions> buildPlayerHandler;
         static bool m_Building = false;
+        internal static Action<BuildReport> buildCompletionHandler;
 
         /// <summary>
         /// Exception thrown when an abort or error condition is reached within a build method delegate.
@@ -180,12 +182,15 @@ namespace UnityEditor
                             Debug.LogWarning(resultStr);
                             break;
                         case Build.Reporting.BuildResult.Failed:
+                            DeleteBuildFolderIfEmpty(report.summary.outputPath);
                             Debug.LogError(resultStr);
                             throw new BuildMethodException(report.SummarizeErrors());
                         default:
                             Debug.Log(resultStr);
                             break;
                     }
+
+                    buildCompletionHandler(report);
                 }
             }
 
@@ -423,6 +428,12 @@ namespace UnityEditor
                 }
 
                 return true;
+            }
+
+            static void DeleteBuildFolderIfEmpty(string path)
+            {
+                if (Directory.Exists(path) && FolderIsEmpty(path))
+                    Directory.Delete(path);
             }
 
             static bool FolderIsEmpty(string path)

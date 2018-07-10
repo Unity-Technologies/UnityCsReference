@@ -70,8 +70,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Action<Group, IEnumerable<GraphElement>> elementsAddedToGroup { get; set; }
         public Action<Group, IEnumerable<GraphElement>> elementsRemovedFromGroup { get; set; }
 
-        public Action<StackNode, int, GraphElement> elementInsertedToStackNode { get; set; }
-        public Action<StackNode, GraphElement> elementRemovedFromStackNode { get; set; }
+        public Action<StackNode, int, IEnumerable<GraphElement>> elementsInsertedToStackNode { get; set; }
+        public Action<StackNode, IEnumerable<GraphElement>> elementsRemovedFromStackNode { get; set; }
 
         private GraphViewChange m_GraphViewChange;
         private List<GraphElement> m_ElementsToRemove;
@@ -1109,9 +1109,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (stack != null)
             {
                 stack.RemoveElement(graphElement);
-                if (elementRemovedFromStackNode != null)
+                if (elementsRemovedFromStackNode != null)
                 {
-                    elementRemovedFromStackNode(stack, graphElement);
+                    elementsRemovedFromStackNode(stack, new[] {graphElement});
                 }
             }
 

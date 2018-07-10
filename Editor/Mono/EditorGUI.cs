@@ -16,6 +16,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using Object = UnityEngine.Object;
 using Event = UnityEngine.Event;
 using UnityEditor.Build;
+using UnityEditor.StyleSheets;
 using UnityEngine.Internal;
 using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 
@@ -87,7 +88,7 @@ namespace UnityEditor
         internal const float kSpacingSubLabel = 2;
         internal const float kSliderMinW = 50;
         internal const float kSliderMaxW = 100;
-        internal const float kSingleLineHeight = 16;
+        internal static readonly SVC<float> kSingleLineHeight = new SVC<float>("--single-line-height", 16f);
         internal const float kStructHeaderLineHeight = 16;
         internal const float kObjectFieldThumbnailHeight = 64;
         internal const float kObjectFieldMiniThumbnailHeight = 18f;
@@ -146,6 +147,10 @@ namespace UnityEditor
         private static Rect s_PrefixRect;
         private static GUIStyle s_PrefixStyle;
         private static Color s_PrefixGUIColor;
+
+        private static string s_LabelHighlightContext;
+        private static Color s_LabelHighlightColor;
+        private static Color s_LabelHighlightSelectionColor;
 
         // Makes the following controls give the appearance of editing multiple different values.
         public static bool showMixedValue { get; set; }
@@ -251,6 +256,26 @@ namespace UnityEditor
                 m_Disposed = true;
                 if (!GUIUtility.guiIsExiting)
                     EndDisabled();
+            }
+        }
+
+        internal struct LabelHighlightScope : IDisposable
+        {
+            bool m_Disposed;
+
+            public LabelHighlightScope(string labelHighlightContext, Color selectionColor, Color textColor)
+            {
+                m_Disposed = false;
+                BeginLabelHighlight(labelHighlightContext, selectionColor, textColor);
+            }
+
+            public void Dispose()
+            {
+                if (m_Disposed)
+                    return;
+                m_Disposed = true;
+                if (!GUIUtility.guiIsExiting)
+                    EndLabelHighlight();
             }
         }
 
@@ -1070,7 +1095,7 @@ namespace UnityEditor
                     if (!string.IsNullOrEmpty(s_UnitString) && !passwordField)
                         drawText += " " + s_UnitString;
 
-                    // Only change mousecursor if hotcontrol is not grabbed
+                    // Only change mouse cursor if hotcontrol is not grabbed
                     if (GUIUtility.hotControl == 0)
                     {
                         EditorGUIUtility.AddCursorRect(position, MouseCursor.Text);
@@ -3106,7 +3131,7 @@ namespace UnityEditor
         private static string EnumNameFromEnumField(FieldInfo field)
         {
             var description = field.GetCustomAttributes(typeof(DescriptionAttribute), false);
-            if (description.Count() > 0)
+            if (description.Length > 0)
             {
                 return ((DescriptionAttribute)description.First()).Description;
             }
@@ -3128,7 +3153,7 @@ namespace UnityEditor
                 || enumData.underlyingType == typeof(ulong);
             var enumFields = enumType.GetFields(BindingFlags.Static | BindingFlags.Public)
                 .Where(f => !excludeObsolete || !f.IsDefined(typeof(ObsoleteAttribute), false))
-                .OrderBy(f => f.MetadataToken);
+                .OrderBy(f => f.MetadataToken).ToList();
             enumData.displayNames = enumFields.Select(f => EnumNameFromEnumField(f)).ToArray();
             enumData.values = enumFields.Select(f => (Enum)Enum.Parse(enumType, f.Name)).ToArray();
             enumData.flagValues = enumData.unsigned ?
@@ -3216,7 +3241,7 @@ namespace UnityEditor
         {
             int changedFlags;
             bool changedToValue;
-            return EnumFlagsField(position, label, enumValue, includeObsolete, out changedFlags, out changedToValue, style == null ? EditorStyles.popup : style);
+            return EnumFlagsField(position, label, enumValue, includeObsolete, out changedFlags, out changedToValue, style ?? EditorStyles.popup);
         }
 
         // Internal version that also gives you back which flags were changed and what they were changed to.
@@ -4969,6 +4994,27 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
         }
 
+        internal static bool IsLabelHighlightEnabled()
+        {
+            return s_LabelHighlightContext != null && s_LabelHighlightContext.Length > 1;
+        }
+
+        internal static void BeginLabelHighlight(string searchContext, Color searchHighlightSelectionColor, Color searchHighlightColor)
+        {
+            if (searchContext != null && searchContext.Trim() == "")
+            {
+                searchContext = null;
+            }
+            s_LabelHighlightContext = searchContext;
+            s_LabelHighlightSelectionColor = searchHighlightSelectionColor;
+            s_LabelHighlightColor = searchHighlightColor;
+        }
+
+        internal static void EndLabelHighlight()
+        {
+            s_LabelHighlightContext = null;
+        }
+
         // Draw a prefix label and select the corresponding control if the label is clicked.
         // If no id or an id of 0 is specified, the id of the next control will be used.
         // For regular inline controls, the PrefixLabel method should be used,
@@ -4996,13 +5042,29 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 if (label != null) Highlighter.Handle(totalPosition, label.text);
             }
 
-            //DrawTextDebugHelpers (labelPosition);
-
+            // DrawTextDebugHelpers (labelPosition);
             switch (Event.current.type)
             {
                 case EventType.Repaint:
                     labelPosition.width += 1;
-                    style.DrawPrefixLabel(labelPosition, label, id);
+
+                    int startHighlight, endHighlight;
+                    if (IsLabelHighlightEnabled() && SearchUtils.FuzzySearch(s_LabelHighlightContext, label.text, out startHighlight, out endHighlight))
+                    {
+                        const bool isActive = false;
+                        const bool hasKeyboardFocus = true; // This ensure we draw the selection text over the label.
+                        const bool drawAsComposition = false;
+
+                        // Override text color when in label highlight regardless of the GUIStyleState
+                        var oldFocusedTextColor = style.focused.textColor;
+                        style.focused.textColor = s_LabelHighlightColor;
+                        style.DrawWithTextSelection(labelPosition, label, isActive, hasKeyboardFocus, startHighlight, endHighlight + 1, drawAsComposition, s_LabelHighlightSelectionColor);
+                        style.focused.textColor = oldFocusedTextColor;
+                    }
+                    else
+                    {
+                        style.DrawPrefixLabel(labelPosition, label, id);
+                    }
                     break;
                 case EventType.MouseDown:
                     if (Event.current.button == 0 && labelPosition.Contains(Event.current.mousePosition))
@@ -5269,7 +5331,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         internal static LayerMask LayerMaskField(Rect position, LayerMask layers, GUIContent label)
         {
-            return (LayerMask) unchecked((int)LayerMaskField(position, unchecked((uint)layers.value), null, label, EditorStyles.layerMaskField));
+            return unchecked((int)LayerMaskField(position, unchecked((uint)layers.value), null, label, EditorStyles.layerMaskField));
         }
 
         internal static uint LayerMaskField(Rect position, UInt32 layers, GUIContent label)
@@ -5436,12 +5498,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         private static Material GetPreviewMaterial(ref Material m, string shaderPath)
         {
-            if (m == null)
-            {
-                m = new Material(EditorGUIUtility.LoadRequired(shaderPath) as Shader);
-                m.hideFlags = HideFlags.HideAndDontSave;
-            }
-            return m;
+            if (m != null)
+                return m;
+            return new Material(EditorGUIUtility.LoadRequired(shaderPath) as Shader) {hideFlags = HideFlags.HideAndDontSave};
         }
 
         private static Material s_ColorMaterial, s_AlphaMaterial, s_TransparentMaterial, s_NormalmapMaterial;
@@ -6616,7 +6675,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
         public static Enum EnumPopup(Rect position, GUIContent label, Enum selected, [DefaultValue("null")] Func<Enum, bool> checkEnabled, [DefaultValue("false")] bool includeObsolete = false, [DefaultValue("null")] GUIStyle style = null)
         {
-            return EnumPopupInternal(position, label, selected, checkEnabled, includeObsolete, style == null ? EditorStyles.popup : style);
+            return EnumPopupInternal(position, label, selected, checkEnabled, includeObsolete, style ?? EditorStyles.popup);
         }
 
         [ExcludeFromDocs]

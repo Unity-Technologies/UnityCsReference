@@ -103,7 +103,7 @@ namespace UnityEditorInternal
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
             float windowHeight = 145;
             var windowSize = new Vector2(300, windowHeight);
-            ShowAsDropDown(buttonRect, windowSize, null, ShowMode.PopupMenuWithKeyboardFocus);
+            ShowAsDropDown(buttonRect, windowSize);
 
             Undo.undoRedoPerformed += UndoRedoPerformed;
         }

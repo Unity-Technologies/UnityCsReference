@@ -97,7 +97,7 @@ namespace UnityEditor
             }
 
             //TODO: Refactor this to use the mask field that takes a label.
-            const float kH = EditorGUI.kSingleLineHeight;
+            float kH = EditorGUI.kSingleLineHeight;
             var position = GUILayoutUtility.GetRect(EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW, kH, kH, EditorStyles.layerMaskField);
 
             EditorGUI.BeginChangeCheck();

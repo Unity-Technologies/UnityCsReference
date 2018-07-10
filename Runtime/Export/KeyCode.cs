@@ -142,6 +142,8 @@ namespace UnityEngine
         Hash        = 35,
         // Dollar sign key '$'
         Dollar      = 36,
+        // Percent sign key '%'
+        Percent     = 37,
         // Ampersand key '&'
         Ampersand       = 38,
         // Quote key '
@@ -244,6 +246,15 @@ namespace UnityEngine
         Y           = 121,
         // 'z' key
         Z           = 122,
+
+        // Left curly bracket key '{'
+        LeftCurlyBracket        = 123,
+        // Pipe key '|'
+        Pipe        = 124,
+        // Right curly bracket key '}'
+        RightCurlyBracket       = 125,
+        // Tilde key '~'
+        Tilde       = 126,
 
         // Numlock key
         Numlock     = 300,

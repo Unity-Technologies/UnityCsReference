@@ -225,10 +225,9 @@ namespace UnityEditor
 
         private static string SizeString(float size)
         {
-            int inValue = (int)size;
-            if (inValue < 0)
+            if (size < 0)
                 return "unknown";
-            float val = (float)inValue;
+            float val = size;
             string[] scale = new string[] { "TB", "GB", "MB", "KB", "Bytes" };
             int idx = scale.Length - 1;
             while (val > 1000.0f && idx >= 0)

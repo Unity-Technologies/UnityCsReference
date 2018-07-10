@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
+using Unity.Experimental.EditorMode;
 
 namespace UnityEditor.Experimental.UIElements.Debugger
 {
@@ -147,10 +148,11 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         public bool TrySelectWindow(EditorWindow searchedWindow)
         {
-            if (searchedWindow.rootVisualContainer == null)
+            var root = EditorModes.GetRootElement(searchedWindow);
+            if (root == null)
                 return false;
 
-            IPanel searchedPanel = searchedWindow.rootVisualContainer.panel;
+            IPanel searchedPanel = root.panel;
             for (int i = 0; i < m_Panels.Count; i++)
             {
                 var p = m_Panels[i];

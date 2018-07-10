@@ -119,6 +119,14 @@ namespace UnityEngine
         Sprites = 1                 // Sprite frames.
     }
 
+    // The animation time mode
+    public enum ParticleSystemAnimationTimeMode
+    {
+        Lifetime = 0,               // Based on the lifetimes of the particles.
+        Speed = 1,                  // Based on the speed of the particles.
+        FPS = 2                     // A constant FPS.
+    }
+
     // The animation type
     public enum ParticleSystemAnimationType
     {
@@ -330,6 +338,22 @@ namespace UnityEngine
         Disabled = 0,
         PauseUntilReplaced = 1,     // When particles reach the end of their life, pause until replaced.
         LoopUntilReplaced = 2       // When particles reach the fade out time, loop back to the fade in time. When replaced, play to the end of their life before actually being replaced.
+    }
+
+    // Select whether to use a layer mask or an explicit list when deciding which GameObjects to use with certain Particle System effects.
+    public enum ParticleSystemGameObjectFilter
+    {
+        LayerMask = 0,
+        List = 1
+    }
+
+    // Supported force field types
+    public enum ParticleSystemForceFieldShape
+    {
+        Sphere = 0,
+        Hemisphere = 1,
+        Cylinder = 2,
+        Box = 3
     }
 }
 

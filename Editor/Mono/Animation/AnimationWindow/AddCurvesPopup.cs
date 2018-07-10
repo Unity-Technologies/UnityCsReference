@@ -29,7 +29,7 @@ namespace UnityEditorInternal
         void Init(Rect buttonRect)
         {
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
-            ShowAsDropDown(buttonRect, windowSize, new[] { PopupLocationHelper.PopupLocation.Right });
+            ShowAsDropDown(buttonRect, windowSize, new[] { PopupLocation.Right });
         }
 
         void OnEnable()

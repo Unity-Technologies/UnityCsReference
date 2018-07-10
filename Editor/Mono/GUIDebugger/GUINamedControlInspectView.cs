@@ -48,7 +48,7 @@ namespace UnityEditor
         {
         }
 
-        protected override void DrawInspectedStacktrace()
+        protected override void DrawInspectedStacktrace(float availableWidth)
         {
         }
 

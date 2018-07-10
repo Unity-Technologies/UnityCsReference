@@ -225,6 +225,8 @@ namespace UnityEditor.Modules
         bool SupportsCustomLightmapEncoding();
 
         bool ShouldShowVulkanSettings();
+
+        bool SupportsFrameTimingStatistics();
     }
 
 

@@ -92,7 +92,7 @@ namespace UnityEditor.AdvancedDropdown
 
             m_CurrentlyRenderedTree = hasSearch ? dataSource.searchTree : dataSource.mainTree;
 
-            ShowAsDropDown(buttonRect, CalculateWindowSize(buttonRect), GetLocationPriority(), ShowMode.PopupMenuWithKeyboardFocus);
+            ShowAsDropDown(buttonRect, CalculateWindowSize(buttonRect), GetLocationPriority());
 
             if (setInitialSelectionPosition)
             {
@@ -101,12 +101,12 @@ namespace UnityEditor.AdvancedDropdown
             wantsMouseMove = true;
         }
 
-        protected virtual PopupLocationHelper.PopupLocation[] GetLocationPriority()
+        protected virtual PopupLocation[] GetLocationPriority()
         {
             return new[]
             {
-                PopupLocationHelper.PopupLocation.Below,
-                PopupLocationHelper.PopupLocation.Overlay,
+                PopupLocation.Below,
+                PopupLocation.Overlay,
             };
         }
 

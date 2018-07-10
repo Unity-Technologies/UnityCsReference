@@ -9,6 +9,8 @@ namespace UnityEngine.Experimental.UIElements
 {
     public interface IEventHandler
     {
+        void SendEvent(EventBase e);
+
         void HandleEvent(EventBase evt);
 
         bool HasTrickleDownHandlers();
@@ -100,6 +102,8 @@ namespace UnityEngine.Experimental.UIElements
 
             return false;
         }
+
+        public abstract void SendEvent(EventBase e);
 
         public virtual void HandleEvent(EventBase evt)
         {

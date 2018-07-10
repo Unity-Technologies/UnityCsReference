@@ -52,12 +52,7 @@ namespace UnityEngine.Experimental.UIElements
 
             m_LastVersion = m_Version;
 
-            // Update element under mouse
-            EventDispatcher eventDispatcher = UIElementsUtility.eventDispatcher as EventDispatcher;
-            if (eventDispatcher != null)
-            {
-                eventDispatcher.UpdateElementUnderMouse(panel);
-            }
+            panel.dispatcher.UpdateElementUnderMouse(panel);
         }
     }
 }

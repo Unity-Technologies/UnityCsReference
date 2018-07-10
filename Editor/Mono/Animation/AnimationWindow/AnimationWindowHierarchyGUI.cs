@@ -35,8 +35,8 @@ namespace UnityEditorInternal
         private const float k_ValueFieldWidth = 80;
         private const float k_ValueFieldOffsetFromRightSide = 90;
         private const float k_ColorIndicatorTopMargin = 3;
-        public const float k_DopeSheetRowHeight = EditorGUI.kSingleLineHeight;
-        public const float k_DopeSheetRowHeightTall = k_DopeSheetRowHeight * 2f;
+        public static readonly float k_DopeSheetRowHeight = EditorGUI.kSingleLineHeight;
+        public static readonly float k_DopeSheetRowHeightTall = k_DopeSheetRowHeight * 2f;
         public const float k_AddCurveButtonNodeHeight = 40f;
         public const float k_RowBackgroundColorBrightness = 0.28f;
         private const float k_SelectedPhantomCurveColorMultiplier = 1.4f;

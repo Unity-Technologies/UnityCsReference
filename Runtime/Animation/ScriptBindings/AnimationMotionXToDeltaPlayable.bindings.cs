@@ -11,11 +11,14 @@ using UnityEngine.Playables;
 namespace UnityEngine.Animations
 {
     [NativeHeader("Runtime/Animation/ScriptBindings/AnimationMotionXToDeltaPlayable.bindings.h")]
-    [NativeHeader("Runtime/Animation/Director/AnimationMotionXToDeltaPlayable.h")]
+    [StaticAccessor("AnimationMotionXToDeltaPlayableBindings", StaticAccessorType.DoubleColon)]
     [RequiredByNativeCode]
     internal struct AnimationMotionXToDeltaPlayable : IPlayable, IEquatable<AnimationMotionXToDeltaPlayable>
     {
         PlayableHandle m_Handle;
+
+        static readonly AnimationMotionXToDeltaPlayable m_NullPlayable = new AnimationMotionXToDeltaPlayable(PlayableHandle.Null);
+        public static AnimationMotionXToDeltaPlayable Null { get { return m_NullPlayable; } }
 
         public static AnimationMotionXToDeltaPlayable Create(PlayableGraph graph)
         {
@@ -64,7 +67,36 @@ namespace UnityEngine.Animations
             return GetHandle() == other.GetHandle();
         }
 
-        [FreeFunction("AnimationMotionXToDeltaPlayableBindings::CreateHandleInternal", ThrowsException = true)]
+        public float GetWeight()
+        {
+            return GetWeightInternal(ref m_Handle);
+        }
+
+        public void SetWeight(float value)
+        {
+            SetWeightInternal(ref m_Handle, value);
+        }
+
+        public bool IsAbsoluteMotion()
+        {
+            return IsAbsoluteMotionInternal(ref m_Handle);
+        }
+
+        public void SetAbsoluteMotion(bool value)
+        {
+            SetAbsoluteMotionInternal(ref m_Handle, value);
+        }
+
+        // Bindings methods.
+        [NativeThrows]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
+        [NativeThrows]
+        extern static private float GetWeightInternal(ref PlayableHandle handle);
+        [NativeThrows]
+        extern static private void SetWeightInternal(ref PlayableHandle handle, float value);
+        [NativeThrows]
+        extern static private bool IsAbsoluteMotionInternal(ref PlayableHandle handle);
+        [NativeThrows]
+        extern static private void SetAbsoluteMotionInternal(ref PlayableHandle handle, bool value);
     }
 }

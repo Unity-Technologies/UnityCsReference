@@ -68,9 +68,6 @@ namespace UnityEditor
         [FreeFunction("Internal_EnableCameraSkybox")]
         internal static extern void EnableCameraSkybox(Camera cam, bool skybox);
 
-        [FreeFunction("Internal_SetCameraOnlyDrawMesh")]
-        internal static extern void SetCameraOnlyDrawMesh(Camera cam);
-
         // Setup viewport and stuff for a current camera.
         [FreeFunction]
         static extern void Internal_SetupCamera(Camera cam);

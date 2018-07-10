@@ -11,9 +11,10 @@ namespace UnityEngine.Experimental.UIElements
         public void DisplayMenu(EventBase triggerEvent, IEventHandler target)
         {
             ContextualMenu menu = new ContextualMenu();
+
             using (ContextualMenuPopulateEvent cme = ContextualMenuPopulateEvent.GetPooled(triggerEvent, menu, target, this))
             {
-                UIElementsUtility.eventDispatcher.DispatchEvent(cme, null);
+                target.SendEvent(cme);
             }
         }
 

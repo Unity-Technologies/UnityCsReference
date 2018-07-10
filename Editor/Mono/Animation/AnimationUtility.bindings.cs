@@ -115,7 +115,7 @@ namespace UnityEditor
                 var allClips = new List<AnimationClip>(clips);
                 for (int i = 0; i < clipSources.Length; ++i)
                 {
-                    var extraClips = new List<AnimationClip>(clips);
+                    var extraClips = new List<AnimationClip>();
                     clipSources[i].GetAnimationClips(extraClips);
 
                     allClips.AddRange(extraClips);
@@ -354,11 +354,27 @@ namespace UnityEditor
 
         extern internal static AnimationClipStats GetAnimationClipStats(AnimationClip clip);
 
-        extern public static bool GetGenerateMotionCurves(AnimationClip clip);
-        extern public static void SetGenerateMotionCurves(AnimationClip clip, bool value);
+        [Obsolete("This is not used anymore.  Root motion curves are automatically generated if applyRootMotion is enabled on Animator component.")]
+        public static bool GetGenerateMotionCurves(AnimationClip clip)
+        {
+            return true;
+        }
+
+        [Obsolete("This is not used anymore.  Root motion curves are automatically generated if applyRootMotion is enabled on Animator component.")]
+        public static void SetGenerateMotionCurves(AnimationClip clip, bool value)
+        {
+        }
+
+        [Obsolete("Use AnimationClip.hasGenericRootTransform instead.")]
         extern internal static bool HasGenericRootTransform(AnimationClip clip);
+
+        [Obsolete("Use AnimationClip.hasMotionFloatCurves instead.")]
         extern internal static bool HasMotionFloatCurves(AnimationClip clip);
+
+        [Obsolete("Use AnimationClip.hasMotionCurves instead.")]
         extern internal static bool HasMotionCurves(AnimationClip clip);
+
+        [Obsolete("Use AnimationClip.hasRootCurves instead.")]
         extern internal static bool HasRootCurves(AnimationClip clip);
 
         extern internal static bool AmbiguousBinding(string path, int classID, Transform root);

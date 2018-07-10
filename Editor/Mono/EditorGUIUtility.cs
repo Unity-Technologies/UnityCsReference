@@ -15,6 +15,7 @@ using UnityEngine.Events;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
 using UnityEngineInternal;
+using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 
 using UnityObject = UnityEngine.Object;
@@ -37,23 +38,6 @@ namespace UnityEditor
             {
                 SetIconSize(m_OriginalIconSize);
             }
-        }
-
-        static EditorGUIUtility()
-        {
-            GUISkin.m_SkinChanged += SkinChanged;
-        }
-
-        internal static void RepaintCurrentWindow()
-        {
-            CheckOnGUI();
-            GUIView.current.Repaint();
-        }
-
-        internal static bool HasCurrentWindowKeyFocus()
-        {
-            CheckOnGUI();
-            return GUIView.current.hasFocus;
         }
 
         internal static Material s_GUITextureBlit2SRGBMaterial;
@@ -85,16 +69,48 @@ namespace UnityEditor
             }
         }
 
-        // Are GUIStyle fonts bold right now?
         internal static int s_FontIsBold = -1;
+        internal static int s_LastControlID = 0;
+        private static float s_LabelWidth = 0f;
 
         private static Texture2D s_InfoIcon;
         private static Texture2D s_WarningIcon;
         private static Texture2D s_ErrorIcon;
 
+        private static GUIStyle s_WhiteTextureStyle;
+        private static GUIStyle s_BasicTextureStyle;
+
+        static Hashtable s_TextGUIContents = new Hashtable();
+        static Hashtable s_GUIContents = new Hashtable();
+        static Hashtable s_IconGUIContents = new Hashtable();
+
+        private static readonly GUIContent s_ObjectContent = new GUIContent();
+        private static readonly GUIContent s_Text = new GUIContent();
+        private static readonly GUIContent s_Image = new GUIContent();
+        private static readonly GUIContent s_TextImage = new GUIContent();
+
+        internal static readonly SVC<Color> kViewBackgroundColor = new SVC<Color>("view", StyleKeyword.backgroundColor, GetDefaultBackgroundColor);
+
         /// The current UI scaling factor for high-DPI displays. For instance, 2.0 on a retina display
 
         public new static float pixelsPerPoint => GUIUtility.pixelsPerPoint;
+
+        static EditorGUIUtility()
+        {
+            GUISkin.m_SkinChanged += SkinChanged;
+        }
+
+        internal static void RepaintCurrentWindow()
+        {
+            CheckOnGUI();
+            GUIView.current.Repaint();
+        }
+
+        internal static bool HasCurrentWindowKeyFocus()
+        {
+            CheckOnGUI();
+            return GUIView.current.hasFocus;
+        }
 
         public static Rect PointsToPixels(Rect rect)
         {
@@ -194,14 +210,6 @@ namespace UnityEditor
             {
                 return colorSkin.color;
             }
-        }
-
-        internal static void ShowObjectPicker<T>(UnityObject obj, bool allowSceneObjects, string searchFilter, ObjectSelectorReceiver objectSelectorReceiver) where T : UnityObject
-        {
-            Type objType = typeof(T);
-            ObjectSelector.get.Show(obj, objType, null, allowSceneObjects);
-            ObjectSelector.get.objectSelectorReceiver = objectSelectorReceiver;
-            ObjectSelector.get.searchFilter = searchFilter;
         }
 
         private delegate bool HeaderItemDelegate(Rect rectangle, UnityObject[] targets);
@@ -555,7 +563,11 @@ namespace UnityEditor
             return gc;
         }
 
-        internal static Color kDarkViewBackground = new Color(0.22f, 0.22f, 0.22f, 0);
+        private static Color GetDefaultBackgroundColor()
+        {
+            float kViewBackgroundIntensity = isProSkin ? 0.22f : 0.76f;
+            return new Color(kViewBackgroundIntensity, kViewBackgroundIntensity, kViewBackgroundIntensity, 1f);
+        }
 
         // [0] original name, [1] localized name, [2] localized tooltip
         internal static string[] GetNameAndTooltipString(string nameAndTooltip)
@@ -566,7 +578,7 @@ namespace UnityEditor
 
             switch (s1.Length)
             {
-                case 0:         // Got an empty line... A comment or sth???
+                case 0:
                     retval[0] = "";
                     retval[1] = "";
                     break;
@@ -704,7 +716,7 @@ namespace UnityEditor
             return gc;
         }
 
-        static GUIContent IconContent(Texture icon, string text)
+        private static GUIContent IconContent(Texture icon, string text)
         {
             GUIContent gc = text != null ? (GUIContent)s_IconGUIContents[text] : null;
             if (gc != null)
@@ -733,8 +745,6 @@ namespace UnityEditor
             skinIndex = 1 - skinIndex;
         }
 
-        static readonly GUIContent s_ObjectContent = new GUIContent();
-
         // Return a GUIContent object with the name and icon of an Object.
         public static GUIContent ObjectContent(UnityObject obj, Type type)
         {
@@ -755,10 +765,6 @@ namespace UnityEditor
             }
             return s_ObjectContent;
         }
-
-        static readonly GUIContent s_Text = new GUIContent();
-        static readonly GUIContent s_Image = new GUIContent();
-        static readonly GUIContent s_TextImage = new GUIContent();
 
         internal static GUIContent TempContent(string t)
         {
@@ -831,11 +837,9 @@ namespace UnityEditor
         // An invisible GUIContent that is not the same as GUIContent.none
         internal static GUIContent blankContent { get; } = new GUIContent(" ");
 
-        static GUIStyle s_WhiteTextureStyle;
         internal static GUIStyle whiteTextureStyle => s_WhiteTextureStyle ??
         (s_WhiteTextureStyle = new GUIStyle {normal = {background = whiteTexture}});
 
-        static GUIStyle s_BasicTextureStyle;
         internal static GUIStyle GetBasicTextureStyle(Texture2D tex)
         {
             if (s_BasicTextureStyle == null)
@@ -845,10 +849,6 @@ namespace UnityEditor
 
             return s_BasicTextureStyle;
         }
-
-        static Hashtable s_TextGUIContents = new Hashtable();
-        static Hashtable s_GUIContents = new Hashtable();
-        static Hashtable s_IconGUIContents = new Hashtable();
 
         internal static void NotifyLanguageChanged(SystemLanguage newLanguage)
         {
@@ -904,7 +904,6 @@ namespace UnityEditor
             return AssetDatabase.LoadAssetAtPath(filename, type);
         }
 
-        /// *listonly*
         public static void PingObject(UnityObject obj)
         {
             if (obj != null)
@@ -982,7 +981,6 @@ namespace UnityEditor
         [Obsolete("RenderGameViewCameras is no longer supported.Consider rendering cameras manually.", true)]
         public static void RenderGameViewCameras(Rect cameraRect, Rect statsRect, bool gizmos, bool gui) {}
 
-        internal static int s_LastControlID = 0;
         // Called from C++ GetControlID method when run from the Editor.
         // Editor GUI needs some additional things to happen when calling GetControlID.
         // While this will also be called for runtime code running in Play mode in the Editor,
@@ -1008,20 +1006,10 @@ namespace UnityEditor
         // outside the rect of the control, rather than inside the rect.
         // This way the text of the foldout lines up with the labels of other controls.
         // hierarchyMode is primarily enabled for editors in the Inspector.
-        private static bool s_HierarchyMode = false;
-        public static bool hierarchyMode
-        {
-            get { return s_HierarchyMode; }
-            set { s_HierarchyMode = value; }
-        }
+        public static bool hierarchyMode { get; set; } = false;
 
-        // wideMode is used when the Inspector is wide and uses a more tidy and vertically compact layout forcertain controls.
-        internal static bool s_WideMode = false;
-        public static bool wideMode
-        {
-            get { return s_WideMode; }
-            set { s_WideMode = value; }
-        }
+        // wideMode is used when the Inspector is wide and uses a more tidy and vertically compact layout for certain controls.
+        public static bool wideMode { get; set; } = false;
 
         // Context width is used for calculating the label width for various editor controls.
         // In most cases the top level clip rect is a perfect context width.
@@ -1059,7 +1047,6 @@ namespace UnityEditor
 
         public static float currentViewWidth => GUIView.current.position.width;
 
-        private static float s_LabelWidth = 0f;
         public static float labelWidth
         {
             get
@@ -1067,26 +1054,14 @@ namespace UnityEditor
                 if (s_LabelWidth > 0)
                     return s_LabelWidth;
 
-                if (s_HierarchyMode)
+                if (hierarchyMode)
                     return Mathf.Max(contextWidth * 0.45f - 40, 120);
                 return 150;
             }
             set { s_LabelWidth = value; }
         }
 
-        private static float s_FieldWidth = 0f;
-        public static float fieldWidth
-        {
-            get
-            {
-                if (s_FieldWidth > 0)
-                    return s_FieldWidth;
-
-                return 50;
-            }
-            set { s_FieldWidth = value; }
-        }
-
+        public static float fieldWidth { get; set; } = 50f;
 
         // Make all ref::EditorGUI look like regular controls.
         private const string k_LookLikeControlsObsoleteMessage = "LookLikeControls and LookLikeInspector modes are deprecated.Use EditorGUIUtility.labelWidth and EditorGUIUtility.fieldWidth to control label and field widths.";

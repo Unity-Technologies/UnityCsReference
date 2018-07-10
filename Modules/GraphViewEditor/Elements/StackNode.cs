@@ -49,8 +49,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             ClearClassList();
             AddToClassList("stack-node");
             AddStyleSheetPath("StyleSheets/GraphView/StackNode.uss");
-
-            InitAnimations();
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)

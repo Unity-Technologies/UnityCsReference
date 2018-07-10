@@ -12,15 +12,18 @@ namespace UnityEditor
     [CustomEditor(typeof(TimeManager))]
     internal class TimeManagerEditor : Editor
     {
+        class Content
+        {
+            public static readonly GUIContent fixedTimestepLabel =  EditorGUIUtility.TrTextContent("Fixed Timestep", "A framerate-independent interval that dictates when physics calculations and FixedUpdate() events are performed.");
+            public static readonly GUIContent maxAllowedTimestepLabel =  EditorGUIUtility.TrTextContent("Maximum Allowed Timestep", "A framerate-independent interval that caps the worst case scenario when framerate is low. Physics calculations and FixedUpdate() events will not be performed for longer time than specified.");
+            public static readonly GUIContent timeScaleLabel = EditorGUIUtility.TrTextContent("Time Scale", "The speed at which time progresses. Change this value to simulate bullet-time effects. A value of 1 means real-time. A value of .5 means half speed; a value of 2 is double speed.");
+            public static readonly GUIContent maxParticleTimestepLabel = EditorGUIUtility.TrTextContent("Maximum Particle Timestep", "The maximum time that should be allowed to process particles for a frame.");
+        }
+
         SerializedProperty m_FixedTimestepProperty;
         SerializedProperty m_MaxAllowedTimestepProperty;
         SerializedProperty m_TimeScaleProperty;
         SerializedProperty m_MaxParticleTimestepProperty;
-
-        GUIContent m_FixedTimestepLabel;
-        GUIContent m_MaxAllowedTimestepLabel;
-        GUIContent m_TimeScaleLabel;
-        GUIContent m_MaxParticleTimestepLabel;
 
         public void OnEnable()
         {
@@ -28,23 +31,29 @@ namespace UnityEditor
             m_MaxAllowedTimestepProperty = serializedObject.FindProperty("Maximum Allowed Timestep");
             m_TimeScaleProperty = serializedObject.FindProperty("m_TimeScale");
             m_MaxParticleTimestepProperty = serializedObject.FindProperty("Maximum Particle Timestep");
-
-            m_FixedTimestepLabel =  EditorGUIUtility.TrTextContent("Fixed Timestep", "A framerate-independent interval that dictates when physics calculations and FixedUpdate() events are performed.");
-            m_MaxAllowedTimestepLabel =  EditorGUIUtility.TrTextContent("Maximum Allowed Timestep", "A framerate-independent interval that caps the worst case scenario when framerate is low. Physics calculations and FixedUpdate() events will not be performed for longer time than specified.");
-            m_TimeScaleLabel = EditorGUIUtility.TrTextContent("Time Scale", "The speed at which time progresses. Change this value to simulate bullet-time effects. A value of 1 means real-time. A value of .5 means half speed; a value of 2 is double speed.");
-            m_MaxParticleTimestepLabel = EditorGUIUtility.TrTextContent("Maximum Particle Timestep", "The maximum time that should be allowed to process particles for a frame.");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(m_FixedTimestepProperty, m_FixedTimestepLabel);
-            EditorGUILayout.PropertyField(m_MaxAllowedTimestepProperty, m_MaxAllowedTimestepLabel);
-            EditorGUILayout.PropertyField(m_TimeScaleProperty, m_TimeScaleLabel);
-            EditorGUILayout.PropertyField(m_MaxParticleTimestepProperty, m_MaxParticleTimestepLabel);
+            EditorGUILayout.PropertyField(m_FixedTimestepProperty, Content.fixedTimestepLabel);
+            EditorGUILayout.PropertyField(m_MaxAllowedTimestepProperty, Content.maxAllowedTimestepLabel);
+            EditorGUILayout.PropertyField(m_TimeScaleProperty, Content.timeScaleLabel);
+            EditorGUILayout.PropertyField(m_MaxParticleTimestepProperty, Content.maxParticleTimestepLabel);
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Time", "ProjectSettings/TimeManager.asset")
+            {
+                icon = EditorGUIUtility.FindTexture("UnityEngine/Timeline/TimelineAsset Icon")
+            };
+            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            return provider;
         }
     }
 }

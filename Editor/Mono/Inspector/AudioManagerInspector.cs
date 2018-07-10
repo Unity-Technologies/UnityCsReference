@@ -129,5 +129,14 @@ namespace UnityEditor
 
             serializedObject.ApplyModifiedProperties();
         }
+
+        [SettingsProvider]
+        static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Audio", "ProjectSettings/AudioManager.asset");
+            provider.icon = EditorGUIUtility.IconContent("Audio Mixer").image as Texture2D;
+            provider.PopulateSearchKeywordsFromGUIContentProperties<Styles>();
+            return provider;
+        }
     }
 }

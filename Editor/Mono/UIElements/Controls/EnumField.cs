@@ -54,11 +54,18 @@ namespace UnityEditor.Experimental.UIElements
                     m_Value = value;
                     m_TextElement.text = ObjectNames.NicifyVariableName(m_Value.ToString());
 
-                    using (ChangeEvent<Enum> evt = ChangeEvent<Enum>.GetPooled(m_Value, value))
+                    if (panel != null)
                     {
-                        evt.target = this;
+                        using (ChangeEvent<Enum> evt = ChangeEvent<Enum>.GetPooled(m_Value, value))
+                        {
+                            evt.target = this;
+                            SetValueWithoutNotify(value);
+                            SendEvent(evt);
+                        }
+                    }
+                    else
+                    {
                         SetValueWithoutNotify(value);
-                        UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
 
                     IncrementVersion(VersionChangeType.Repaint);

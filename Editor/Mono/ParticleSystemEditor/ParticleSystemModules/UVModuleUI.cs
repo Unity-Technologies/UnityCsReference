@@ -9,13 +9,12 @@ namespace UnityEditor
 {
     class UVModuleUI : ModuleUI
     {
-        // Keep in sync with enum in UVModule.h
-        enum AnimationMode { Grid = 0, Sprites = 1 };
-        enum AnimationType { WholeSheet = 0, SingleRow = 1 };
-
         SerializedProperty m_Mode;
+        SerializedProperty m_TimeMode;
+        SerializedProperty m_FPS;
         SerializedMinMaxCurve m_FrameOverTime;
         SerializedMinMaxCurve m_StartFrame;
+        SerializedProperty m_SpeedRange;
         SerializedProperty m_TilesX;
         SerializedProperty m_TilesY;
         SerializedProperty m_AnimationType;
@@ -28,8 +27,11 @@ namespace UnityEditor
         class Texts
         {
             public GUIContent mode = EditorGUIUtility.TrTextContent("Mode", "Animation frames can either be specified on a regular grid texture, or as a list of Sprites.");
+            public GUIContent timeMode = EditorGUIUtility.TrTextContent("Time Mode", "Play frames either based on the lifetime of the particle, the speed of the particle, or at a constant FPS, regardless of particle lifetime.");
+            public GUIContent fps = EditorGUIUtility.TrTextContent("FPS", "Specify the Frames Per Second of the animation.");
             public GUIContent frameOverTime = EditorGUIUtility.TrTextContent("Frame over Time", "Controls the uv animation frame of each particle over its lifetime. On the horisontal axis you will find the lifetime. On the vertical axis you will find the sheet index.");
             public GUIContent startFrame = EditorGUIUtility.TrTextContent("Start Frame", "Phase the animation, so it starts on a frame other than 0.");
+            public GUIContent speedRange = EditorGUIUtility.TrTextContent("Speed Range", "Remaps speed in the defined range to a 0-1 value through the animation.");
             public GUIContent tiles = EditorGUIUtility.TrTextContent("Tiles", "Defines the tiling of the texture.");
             public GUIContent tilesX = EditorGUIUtility.TextContent("X");
             public GUIContent tilesY = EditorGUIUtility.TextContent("Y");
@@ -45,6 +47,13 @@ namespace UnityEditor
             {
                 EditorGUIUtility.TrTextContent("Grid"),
                 EditorGUIUtility.TrTextContent("Sprites")
+            };
+
+            public GUIContent[] timeModes = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("Lifetime"),
+                EditorGUIUtility.TrTextContent("Speed"),
+                EditorGUIUtility.TrTextContent("FPS")
             };
 
             public GUIContent[] types = new GUIContent[]
@@ -71,9 +80,12 @@ namespace UnityEditor
                 s_Texts = new Texts();
 
             m_Mode = GetProperty("mode");
+            m_TimeMode = GetProperty("timeMode");
+            m_FPS = GetProperty("fps");
             m_FrameOverTime = new SerializedMinMaxCurve(this, s_Texts.frameOverTime, "frameOverTime");
             m_StartFrame = new SerializedMinMaxCurve(this, s_Texts.startFrame, "startFrame");
             m_StartFrame.m_AllowCurves = false;
+            m_SpeedRange = GetProperty("speedRange");
             m_TilesX = GetProperty("tilesX");
             m_TilesY = GetProperty("tilesY");
             m_AnimationType = GetProperty("animationType");
@@ -89,12 +101,12 @@ namespace UnityEditor
             int mode = GUIPopup(s_Texts.mode, m_Mode, s_Texts.modes);
             if (!m_Mode.hasMultipleDifferentValues)
             {
-                if (mode == (int)AnimationMode.Grid)
+                if (mode == (int)ParticleSystemAnimationMode.Grid)
                 {
                     GUIIntDraggableX2(s_Texts.tiles, s_Texts.tilesX, m_TilesX, s_Texts.tilesY, m_TilesY);
 
                     int type = GUIPopup(s_Texts.animation, m_AnimationType, s_Texts.types);
-                    if (type == (int)AnimationType.SingleRow)
+                    if (type == (int)ParticleSystemAnimationType.SingleRow)
                     {
                         GUIToggle(s_Texts.randomRow, m_RandomRow);
                         if (!m_RandomRow.boolValue)
@@ -117,12 +129,22 @@ namespace UnityEditor
                     m_FrameOverTime.m_RemapValue = (float)(m_Sprites.arraySize);
                     m_StartFrame.m_RemapValue = (float)(m_Sprites.arraySize);
                 }
-
-                GUIMinMaxCurve(s_Texts.frameOverTime, m_FrameOverTime);
-                GUIMinMaxCurve(s_Texts.startFrame, m_StartFrame);
             }
 
-            GUIFloat(s_Texts.cycles, m_Cycles);
+            int timeMode = GUIPopup(s_Texts.timeMode, m_TimeMode, s_Texts.timeModes);
+            if (!m_TimeMode.hasMultipleDifferentValues)
+            {
+                if (timeMode == (int)ParticleSystemAnimationTimeMode.FPS)
+                    GUIFloat(s_Texts.fps, m_FPS);
+                else if (timeMode == (int)ParticleSystemAnimationTimeMode.Speed)
+                    GUIMinMaxRange(s_Texts.speedRange, m_SpeedRange);
+                else
+                    GUIMinMaxCurve(s_Texts.frameOverTime, m_FrameOverTime);
+            }
+            GUIMinMaxCurve(s_Texts.startFrame, m_StartFrame);
+
+            if (!m_TimeMode.hasMultipleDifferentValues && timeMode != (int)ParticleSystemAnimationTimeMode.FPS)
+                GUIFloat(s_Texts.cycles, m_Cycles);
             GUIEnumMaskUVChannelFlags(s_Texts.uvChannelMask, m_UVChannelMask);
         }
 

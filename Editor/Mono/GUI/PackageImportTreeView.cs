@@ -458,7 +458,7 @@ namespace UnityEditor
                             Texture2D preview = PackageImport.GetPreview(item.previewPath);
                             Rect buttonRect = rowRect;
                             buttonRect.width = EditorGUIUtility.currentViewWidth;
-                            PopupWindowWithoutFocus.Show(buttonRect, new PreviewPopup(preview), new[] { PopupLocationHelper.PopupLocation.Right, PopupLocationHelper.PopupLocation.Left, PopupLocationHelper.PopupLocation.Below });
+                            PopupWindowWithoutFocus.Show(buttonRect, new PreviewPopup(preview), new[] { PopupLocation.Right, PopupLocation.Left, PopupLocation.Below });
                         }
                     }
                 }

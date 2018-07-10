@@ -294,6 +294,26 @@ namespace UnityEditor
             [NativeProperty("metroInputSource", TargetType.Field)]
             public static extern WSAInputSource inputSource { get; set; }
 
+            [NativeProperty("metroSupportStreamingInstall", TargetType.Field)]
+            public static extern bool supportStreamingInstall
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
+            [NativeProperty("metroLastRequiredScene", TargetType.Field)]
+            public static extern int lastRequiredScene
+            {
+                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+                get;
+
+                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+                set;
+            }
+
             [NativeProperty("metroSplashScreenUseBackgroundColor", TargetType.Field)]
             private static extern bool splashScreenUseBackgroundColor
             {

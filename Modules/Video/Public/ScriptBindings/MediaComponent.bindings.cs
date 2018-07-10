@@ -25,7 +25,7 @@ namespace UnityEngineInternal.Video
         BadPermissions       = 6,
         DeviceNotAvailable   = 7,
         ResourceNotAvailable = 8,
-        OpenCLExecution      = 9
+        NetworkErr           = 9
     }
 
     [UsedByNativeCode]

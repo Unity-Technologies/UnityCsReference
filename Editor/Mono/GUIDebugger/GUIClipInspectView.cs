@@ -56,11 +56,11 @@ namespace UnityEditor
             GUIViewDebuggerWindow.Styles.listItem.Draw(rect, tempContent, id, listViewState.row == el.row);
         }
 
-        protected override void DrawInspectedStacktrace()
+        protected override void DrawInspectedStacktrace(float availableWidth)
         {
             var clipInstruction = m_ClipList[listViewState.row];
             m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
-            DrawStackFrameList(clipInstruction.pushStacktrace);
+            DrawStackFrameList(clipInstruction.pushStacktrace, availableWidth);
             EditorGUILayout.EndScrollView();
         }
 

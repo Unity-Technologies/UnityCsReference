@@ -29,7 +29,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Action<Blackboard, int, VisualElement> moveItemRequested { get; set; }
         public Action<Blackboard, VisualElement, string> editTextRequested { get; set; }
 
-        public string title
+        public override string title
         {
             get { return m_TitleLabel.text; }
             set { m_TitleLabel.text = value; }

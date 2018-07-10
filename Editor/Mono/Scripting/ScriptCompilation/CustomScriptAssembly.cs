@@ -177,6 +177,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS),
                 new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS),
                 new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch),
+                new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
             };
 
 #pragma warning disable 0618

@@ -129,10 +129,7 @@ namespace UnityEngine
                 //since constructors can be called within and outside a serialization operation
                 //So we delay the initialization here where we know we will be on the main thread, outside
                 //any loading operation.
-                if (m_Normal == null)
-                    m_Normal = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(0));
-
-                return m_Normal;
+                return m_Normal ?? (m_Normal = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(0)));
             }
             set { AssignStyleState(0, value.m_Ptr); }
         }
@@ -140,144 +137,77 @@ namespace UnityEngine
         // Rendering settings for when the mouse is hovering over the control
         public GUIStyleState hover
         {
-            get
-            {
-                if (m_Hover == null)
-                    m_Hover = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(1));
-
-                return m_Hover;
-            }
+            get { return m_Hover ?? (m_Hover = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(1))); }
             set { AssignStyleState(1, value.m_Ptr); }
         }
 
         // Rendering settings for when the control is pressed down.
         public GUIStyleState active
         {
-            get
-            {
-                if (m_Active == null)
-                    m_Active = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(2));
-
-                return m_Active;
-            }
+            get { return m_Active ?? (m_Active = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(2))); }
             set { AssignStyleState(2, value.m_Ptr); }
         }
 
         // Rendering settings for when the control is turned on.
         public GUIStyleState onNormal
         {
-            get
-            {
-                if (m_OnNormal == null)
-                    m_OnNormal = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(4));
-
-                return m_OnNormal;
-            }
+            get { return m_OnNormal ?? (m_OnNormal = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(4))); }
             set { AssignStyleState(4, value.m_Ptr); }
         }
 
         // Rendering settings for when the control is turned on and the mouse is hovering it.
         public GUIStyleState onHover
         {
-            get
-            {
-                if (m_OnHover == null)
-                    m_OnHover = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(5));
-
-                return m_OnHover;
-            }
+            get { return m_OnHover ?? (m_OnHover = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(5))); }
             set { AssignStyleState(5, value.m_Ptr); }
         }
 
         // Rendering settings for when the element is turned on and pressed down.
         public GUIStyleState onActive
         {
-            get
-            {
-                if (m_OnActive == null)
-                    m_OnActive = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(6));
-
-                return m_OnActive;
-            }
+            get { return m_OnActive ?? (m_OnActive = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(6))); }
             set { AssignStyleState(6, value.m_Ptr); }
         }
 
         // Rendering settings for when the element has keyboard focus.
         public GUIStyleState focused
         {
-            get
-            {
-                if (m_Focused == null)
-                    m_Focused = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(3));
-
-                return m_Focused;
-            }
+            get { return m_Focused ?? (m_Focused = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(3))); }
             set { AssignStyleState(3, value.m_Ptr); }
         }
 
         // Rendering settings for when the element has keyboard and is turned on.
         public GUIStyleState onFocused
         {
-            get
-            {
-                if (m_OnFocused == null)
-                    m_OnFocused = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(7));
-
-                return m_OnFocused;
-            }
+            get { return m_OnFocused ?? (m_OnFocused = GUIStyleState.GetGUIStyleState(this, GetStyleStatePtr(7))); }
             set { AssignStyleState(7, value.m_Ptr); }
         }
-
-
-        // RECT OFFSETS
-        // ================================================================================================================================================
-
 
         // The borders of all background images.
         public RectOffset border
         {
-            get
-            {
-                if (m_Border == null)
-                    m_Border = new RectOffset(this, GetRectOffsetPtr(0));
-                return m_Border;
-            }
+            get { return m_Border ?? (m_Border = new RectOffset(this, GetRectOffsetPtr(0))); }
             set { AssignRectOffset(0, value.m_Ptr); }
         }
 
         // The margins between elements rendered in this style and any other GUI elements
         public RectOffset margin
         {
-            get
-            {
-                if (m_Margin == null)
-                    m_Margin = new RectOffset(this, GetRectOffsetPtr(1));
-                return m_Margin;
-            }
+            get { return m_Margin ?? (m_Margin = new RectOffset(this, GetRectOffsetPtr(1))); }
             set { AssignRectOffset(1, value.m_Ptr); }
         }
 
         // Space from the edge of [[GUIStyle]] to the start of the contents.
         public RectOffset padding
         {
-            get
-            {
-                if (m_Padding == null)
-                    m_Padding = new RectOffset(this, GetRectOffsetPtr(2));
-                return m_Padding;
-            }
+            get { return m_Padding ?? (m_Padding = new RectOffset(this, GetRectOffsetPtr(2))); }
             set { AssignRectOffset(2, value.m_Ptr); }
         }
 
         // Extra space to be added to the background image.
         public RectOffset overflow
         {
-            get
-            {
-                if (m_Overflow == null)
-                    m_Overflow = new RectOffset(this, GetRectOffsetPtr(3));
-                return m_Overflow;
-            }
+            get { return m_Overflow ?? (m_Overflow = new RectOffset(this, GetRectOffsetPtr(3))); }
             set { AssignRectOffset(3, value.m_Ptr); }
         }
 
@@ -287,65 +217,49 @@ namespace UnityEngine
         // Draw plain GUIStyle without text nor image.
         public void Draw(Rect position, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
         {
-            if (Event.current.type != EventType.Repaint)
-            {
-                Debug.LogError("Style.Draw may not be called if it is not a repaint event");
-                return;
-            }
-            Internal_Draw(position, GUIContent.none, isHover, isActive, on, hasKeyboardFocus);
+            Draw(position, GUIContent.none, -1, isHover, isActive, on, hasKeyboardFocus);
         }
 
         // Draw the GUIStyle with a text string inside.
         public void Draw(Rect position, string text, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
         {
-            if (Event.current.type != EventType.Repaint)
-            {
-                Debug.LogError("Style.Draw may not be called if it is not a repaint event");
-                return;
-            }
-            Internal_Draw(position, GUIContent.Temp(text), isHover, isActive, on, hasKeyboardFocus);
+            Draw(position, GUIContent.Temp(text), -1, isHover, isActive, on, hasKeyboardFocus);
         }
 
         // Draw the GUIStyle with an image inside. If the image is too large to fit within the content area of the style it is scaled down.
         public void Draw(Rect position, Texture image, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
         {
-            if (Event.current.type != EventType.Repaint)
-            {
-                Debug.LogError("Style.Draw may not be called if it is not a repaint event");
-                return;
-            }
-            Internal_Draw(position, GUIContent.Temp(image), isHover, isActive, on, hasKeyboardFocus);
+            Draw(position, GUIContent.Temp(image), -1, isHover, isActive, on, hasKeyboardFocus);
         }
 
         // Draw the GUIStyle with text and an image inside. If the image is too large to fit within the content area of the style it is scaled down.
         public void Draw(Rect position, GUIContent content, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
         {
-            if (Event.current.type != EventType.Repaint)
-            {
-                Debug.LogError("Style.Draw may not be called if it is not a repaint event");
-                return;
-            }
-
-            Internal_Draw(position, content, isHover, isActive, on, hasKeyboardFocus);
+            Draw(position, content, -1, isHover, isActive, on, hasKeyboardFocus);
         }
 
         public void Draw(Rect position, GUIContent content, int controlID)
         {
-            Draw(position, content, controlID, false);
+            Draw(position, content, controlID, false, false, false, false);
         }
 
         public void Draw(Rect position, GUIContent content, int controlID, bool on)
         {
-            if (Event.current.type != EventType.Repaint)
-            {
-                Debug.LogError("Style.Draw may not be called if it is not a repaint event.");
-                return;
-            }
+            Draw(position, content, controlID, false, false, on, false);
+        }
 
-            if (content != null)
-                Internal_Draw2(position, content, controlID, on);
+        private void Draw(Rect position, GUIContent content, int controlId, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
+        {
+            if (Event.current.type != EventType.Repaint)
+                throw new Exception("Style.Draw may not be called if it is not a repaint event");
+
+            if (content == null)
+                throw new Exception("Style.Draw may not be called with GUIContent that is null.");
+
+            if (controlId == -1)
+                Internal_Draw(position, content, isHover, isActive, on, hasKeyboardFocus);
             else
-                Debug.LogError("Style.Draw may not be called with GUIContent that is null.");
+                Internal_Draw2(position, content, controlId, on);
         }
 
         // PrefixLabel has to be drawn with an alternative draw method.
@@ -385,7 +299,7 @@ namespace UnityEngine
         }
 
         internal void DrawWithTextSelection(Rect position, GUIContent content, bool isActive, bool hasKeyboardFocus,
-            int firstSelectedCharacter, int lastSelectedCharacter, bool drawSelectionAsComposition)
+            int firstSelectedCharacter, int lastSelectedCharacter, bool drawSelectionAsComposition, Color selectionColor)
         {
             if (Event.current.type != EventType.Repaint)
             {
@@ -401,7 +315,13 @@ namespace UnityEngine
                 cursorColor = GUI.skin.settings.cursorColor;
 
             Internal_DrawWithTextSelection(position, content, position.Contains(Event.current.mousePosition), isActive, false,
-                hasKeyboardFocus, drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, GUI.skin.settings.selectionColor);
+                hasKeyboardFocus, drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, selectionColor);
+        }
+
+        internal void DrawWithTextSelection(Rect position, GUIContent content, bool isActive, bool hasKeyboardFocus,
+            int firstSelectedCharacter, int lastSelectedCharacter, bool drawSelectionAsComposition)
+        {
+            DrawWithTextSelection(position, content, isActive, hasKeyboardFocus, firstSelectedCharacter, lastSelectedCharacter, drawSelectionAsComposition, GUI.skin.settings.selectionColor);
         }
 
         internal void DrawWithTextSelection(Rect position, GUIContent content, int controlID, int firstSelectedCharacter,
@@ -430,7 +350,7 @@ namespace UnityEngine
         }
 
         // Shortcut for an empty GUIStyle.
-        public static GUIStyle none { get { if (s_None == null) s_None = new GUIStyle(); return s_None; } }
+        public static GUIStyle none => s_None ?? (s_None = new GUIStyle());
         static GUIStyle s_None;
 
         // Get the pixel position of a given string index.

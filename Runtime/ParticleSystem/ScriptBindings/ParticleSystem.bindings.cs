@@ -13,7 +13,6 @@ using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCode
 namespace UnityEngine
 {
     [NativeHeader("ParticleSystemScriptingClasses.h")]
-    [NativeHeader("Editor/Src/ParticleSystem/ParticleSystemEditor.h")]
     [NativeHeader("Runtime/ParticleSystem/ParticleSystem.h")]
     [NativeHeader("Runtime/ParticleSystem/ScriptBindings/ParticleSystemScriptBindings.h")]
     [RequireComponent(typeof(Transform))]

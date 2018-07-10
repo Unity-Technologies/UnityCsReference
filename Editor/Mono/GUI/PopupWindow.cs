@@ -28,8 +28,9 @@ namespace UnityEditor
     public class PopupWindow : EditorWindow
     {
         PopupWindowContent m_WindowContent;
-        Vector2 m_LastWantedSize = Vector2.zero;
+        Vector2 m_LastWantedSize;
         Rect m_ActivatorRect;
+        PopupLocation[] m_LocationPriorityOrder;
         static double s_LastClosedTime;
         static Rect s_LastActivatorRect;
 
@@ -42,26 +43,26 @@ namespace UnityEditor
             Show(activatorRect, windowContent, null);
         }
 
-        internal static void Show(Rect activatorRect, PopupWindowContent windowContent, PopupLocationHelper.PopupLocation[] locationPriorityOrder)
+        internal static void Show(Rect activatorRect, PopupWindowContent windowContent, PopupLocation[] locationPriorityOrder)
         {
             Show(activatorRect, windowContent, locationPriorityOrder, ShowMode.PopupMenu);
         }
 
         // Shown on top of any previous windows
-        internal static void Show(Rect activatorRect, PopupWindowContent windowContent, PopupLocationHelper.PopupLocation[] locationPriorityOrder, ShowMode showMode)
+        internal static void Show(Rect activatorRect, PopupWindowContent windowContent, PopupLocation[] locationPriorityOrder, ShowMode showMode)
         {
             if (ShouldShowWindow(activatorRect))
             {
                 PopupWindow win = CreateInstance<PopupWindow>();
                 if (win != null)
                 {
-                    win.Init(activatorRect, windowContent, locationPriorityOrder, showMode);
+                    win.Init(activatorRect, windowContent, locationPriorityOrder, showMode, true);
                 }
                 EditorGUIUtility.ExitGUI(); // Needed to prevent GUILayout errors on OSX
             }
         }
 
-        static bool ShouldShowWindow(Rect activatorRect)
+        internal static bool ShouldShowWindow(Rect activatorRect)
         {
             const double kJustClickedTime = 0.2;
             bool justClosed = (EditorApplication.timeSinceStartup - s_LastClosedTime) < kJustClickedTime;
@@ -73,12 +74,7 @@ namespace UnityEditor
             return false;
         }
 
-        void Init(Rect activatorRect, PopupWindowContent windowContent, PopupLocationHelper.PopupLocation[] locationPriorityOrder)
-        {
-            Init(activatorRect, windowContent, locationPriorityOrder, ShowMode.PopupMenu);
-        }
-
-        void Init(Rect activatorRect, PopupWindowContent windowContent, PopupLocationHelper.PopupLocation[] locationPriorityOrder, ShowMode showMode)
+        internal void Init(Rect activatorRect, PopupWindowContent windowContent, PopupLocation[] locationPriorityOrder, ShowMode showMode, bool giveFocus)
         {
             hideFlags = HideFlags.DontSave;
             wantsMouseMove = true;
@@ -86,7 +82,9 @@ namespace UnityEditor
             m_WindowContent.editorWindow = this;
             m_WindowContent.OnOpen();
             m_ActivatorRect = GUIUtility.GUIToScreenRect(activatorRect);
-            ShowAsDropDown(m_ActivatorRect, m_WindowContent.GetWindowSize(), locationPriorityOrder, showMode);
+            m_LastWantedSize = Vector2.zero;
+            m_LocationPriorityOrder = locationPriorityOrder;
+            ShowAsDropDown(m_ActivatorRect, m_WindowContent.GetWindowSize(), locationPriorityOrder, showMode, giveFocus);
         }
 
         internal void OnGUI()
@@ -95,6 +93,7 @@ namespace UnityEditor
             Rect windowRect = new Rect(0, 0, position.width, position.height);
             m_WindowContent.OnGUI(windowRect);
             GUI.Label(windowRect, GUIContent.none, "grey_border");
+            FitWindowToContent();
         }
 
         private void FitWindowToContent()
@@ -103,7 +102,7 @@ namespace UnityEditor
             if (m_LastWantedSize != wantedSize)
             {
                 m_LastWantedSize = wantedSize;
-                Rect screenRect = m_Parent.window.GetDropDownRect(m_ActivatorRect, wantedSize, wantedSize);
+                Rect screenRect = m_Parent.window.GetDropDownRect(m_ActivatorRect, wantedSize, wantedSize, m_LocationPriorityOrder);
                 minSize = maxSize = new Vector2(screenRect.width, screenRect.height);
                 position = screenRect;
             }
@@ -114,12 +113,12 @@ namespace UnityEditor
             Close();
         }
 
-        void OnEnable()
+        protected virtual void OnEnable()
         {
             AssemblyReloadEvents.beforeAssemblyReload += CloseWindow;
         }
 
-        void OnDisable()
+        protected virtual void OnDisable()
         {
             AssemblyReloadEvents.beforeAssemblyReload -= CloseWindow;
 

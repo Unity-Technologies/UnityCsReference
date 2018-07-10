@@ -173,13 +173,13 @@ namespace UnityEditor
         const float kSeparatorHeight = 3;
 
         private const float kMinWindowWidth = 400;
-        const float kMiscUIHeight =
+        static readonly float kMiscUIHeight =
             5 * EditorGUI.kSingleLineHeight +
             kSeparatorHeight * 2 +
             kSpaceHeight * 5 +
             kMargin * 2;
 
-        private const float kMinWindowHeight = 9 * EditorGUI.kSingleLineHeight + kMiscUIHeight;
+        private static readonly float kMinWindowHeight = 9 * EditorGUI.kSingleLineHeight + kMiscUIHeight;
 
         PopupData m_Data;
         List<string> m_SelectedKeywords;

@@ -30,7 +30,7 @@ namespace UnityEditor
         }
 
         // Use this for initialization
-        [MenuItem("Window/General/Asset Store %9", false, 20)]
+        [MenuItem("Window/General/Asset Store %9", false, 301)]
         public static AssetStoreWindow Init()
         {
             AssetStoreWindow window = EditorWindow.GetWindow<AssetStoreWindow>(typeof(SceneView));

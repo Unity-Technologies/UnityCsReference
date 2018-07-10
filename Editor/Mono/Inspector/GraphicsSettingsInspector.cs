@@ -172,5 +172,23 @@ namespace UnityEditor
 
             serializedObject.ApplyModifiedProperties();
         }
+
+        [SettingsProvider]
+        static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Graphics", "ProjectSettings/GraphicsSettings.asset");
+            provider.PopulateSearchKeywordsFromGUIContentProperties<Styles>();
+            provider.PopulateSearchKeywordsFromGUIContentProperties<TierSettingsEditor.Styles>();
+            provider.PopulateSearchKeywordsFromGUIContentProperties<BuiltinShadersEditor.Styles>();
+            provider.PopulateSearchKeywordsFromGUIContentProperties<ShaderStrippingEditor.Styles>();
+            provider.PopulateSearchKeywordsFromGUIContentProperties<ShaderPreloadEditor.Styles>();
+
+            var graphicSettings = provider.CreateEditor() as GraphicsSettingsInspector;
+            SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicSettings.serializedObject, provider.keywords);
+            SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicSettings.alwaysIncludedShadersEditor.serializedObject, provider.keywords);
+
+            provider.icon = EditorGUIUtility.FindTexture("UnityEngine/UI/GraphicRaycaster Icon");
+            return provider;
+        }
     }
 }

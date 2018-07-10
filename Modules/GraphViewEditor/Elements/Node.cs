@@ -112,7 +112,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         private readonly Label m_TitleLabel;
-        public string title
+        public override string title
         {
             get { return m_TitleLabel.text; }
             set { m_TitleLabel.text = value; }

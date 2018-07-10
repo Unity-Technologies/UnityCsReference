@@ -33,11 +33,18 @@ namespace UnityEditor.Experimental.UIElements
             {
                 if (value != null || !m_ValueNull)  // let's not reinitialize an initialized gradient
                 {
-                    using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(m_Value, value))
+                    if (panel != null)
                     {
-                        evt.target = this;
+                        using (ChangeEvent<Gradient> evt = ChangeEvent<Gradient>.GetPooled(m_Value, value))
+                        {
+                            evt.target = this;
+                            SetValueWithoutNotify(value);
+                            SendEvent(evt);
+                        }
+                    }
+                    else
+                    {
                         SetValueWithoutNotify(value);
-                        UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
                 }
             }

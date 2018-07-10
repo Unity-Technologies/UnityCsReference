@@ -35,11 +35,11 @@ namespace UnityEditor
             readonly SerializedProperty m_Shader;
             readonly GUIContent         m_Label;
 
-            internal BuiltinShaderSettings(string label, string name, SerializedObject serializedObject)
+            internal BuiltinShaderSettings(GUIContent label, string name, SerializedObject serializedObject)
             {
                 m_Mode      = serializedObject.FindProperty(name + ".m_Mode");
                 m_Shader    = serializedObject.FindProperty(name + ".m_Shader");
-                m_Label     = EditorGUIUtility.TextContent(label);
+                m_Label = label;
             }
 
             internal void DoGUI()
@@ -61,25 +61,28 @@ namespace UnityEditor
             BuiltinShaderSettings m_LightHalo;
             BuiltinShaderSettings m_LensFlare;
 
-            string deferredString       { get { return LocalizationDatabase.GetLocalizedString("Deferred|Shader used for Deferred Shading."); } }
-            string deferredReflString   { get { return LocalizationDatabase.GetLocalizedString("Deferred Reflections|Shader used for Deferred reflection probes."); } }
-            string legacyDeferredString { get { return LocalizationDatabase.GetLocalizedString("Legacy Deferred|Shader used for Legacy (light prepass) Deferred Lighting."); } }
-            string screenShadowsString  { get { return LocalizationDatabase.GetLocalizedString("Screen Space Shadows|Shader used for screen-space cascaded shadows."); } }
-            string depthNormalsString   { get { return LocalizationDatabase.GetLocalizedString("Depth Normals|Shader used for depth and normals texture when enabled on a Camera."); } }
-            string motionVectorsString  { get { return LocalizationDatabase.GetLocalizedString("Motion Vectors|Shader for generation of Motion Vectors when the rendering camera has renderMotionVectors set to true."); } }
-            string lightHaloString      { get { return LocalizationDatabase.GetLocalizedString("Light Halo|Default Shader used for light halos."); } }
-            string lensFlareString      { get { return LocalizationDatabase.GetLocalizedString("Lens Flare|Default Shader used for lens flares."); } }
+            internal class Styles
+            {
+                public static GUIContent deferredString = EditorGUIUtility.TrTextContent("Deferred", "Shader used for Deferred Shading.");
+                public static GUIContent deferredReflString = EditorGUIUtility.TrTextContent("Deferred Reflections", "Shader used for Deferred reflection probes.");
+                public static GUIContent legacyDeferredString = EditorGUIUtility.TrTextContent("Legacy Deferred", "Shader used for Legacy (light prepass) Deferred Lighting.");
+                public static GUIContent screenShadowsString = EditorGUIUtility.TrTextContent("Screen Space Shadows", "Shader used for screen-space cascaded shadows.");
+                public static GUIContent depthNormalsString = EditorGUIUtility.TrTextContent("Depth Normals", "Shader used for depth and normals texture when enabled on a Camera.");
+                public static GUIContent motionVectorsString = EditorGUIUtility.TrTextContent("Motion Vectors", "Shader for generation of Motion Vectors when the rendering camera has renderMotionVectors set to true.");
+                public static GUIContent lightHaloString = EditorGUIUtility.TrTextContent("Light Halo", "Default Shader used for light halos.");
+                public static GUIContent lensFlareString = EditorGUIUtility.TrTextContent("Lens Flare", "Default Shader used for lens flares.");
+            }
 
             public void OnEnable()
             {
-                m_Deferred              = new BuiltinShaderSettings(deferredString, "m_Deferred", serializedObject);
-                m_DeferredReflections   = new BuiltinShaderSettings(deferredReflString, "m_DeferredReflections", serializedObject);
-                m_LegacyDeferred        = new BuiltinShaderSettings(legacyDeferredString, "m_LegacyDeferred", serializedObject);
-                m_ScreenSpaceShadows    = new BuiltinShaderSettings(screenShadowsString, "m_ScreenSpaceShadows", serializedObject);
-                m_DepthNormals          = new BuiltinShaderSettings(depthNormalsString, "m_DepthNormals", serializedObject);
-                m_MotionVectors         = new BuiltinShaderSettings(motionVectorsString, "m_MotionVectors", serializedObject);
-                m_LightHalo             = new BuiltinShaderSettings(lightHaloString, "m_LightHalo", serializedObject);
-                m_LensFlare             = new BuiltinShaderSettings(lensFlareString, "m_LensFlare", serializedObject);
+                m_Deferred              = new BuiltinShaderSettings(Styles.deferredString, "m_Deferred", serializedObject);
+                m_DeferredReflections   = new BuiltinShaderSettings(Styles.deferredReflString, "m_DeferredReflections", serializedObject);
+                m_LegacyDeferred        = new BuiltinShaderSettings(Styles.legacyDeferredString, "m_LegacyDeferred", serializedObject);
+                m_ScreenSpaceShadows    = new BuiltinShaderSettings(Styles.screenShadowsString, "m_ScreenSpaceShadows", serializedObject);
+                m_DepthNormals          = new BuiltinShaderSettings(Styles.depthNormalsString, "m_DepthNormals", serializedObject);
+                m_MotionVectors         = new BuiltinShaderSettings(Styles.motionVectorsString, "m_MotionVectors", serializedObject);
+                m_LightHalo             = new BuiltinShaderSettings(Styles.lightHaloString, "m_LightHalo", serializedObject);
+                m_LensFlare             = new BuiltinShaderSettings(Styles.lensFlareString, "m_LensFlare", serializedObject);
             }
 
             public override void OnInspectorGUI()

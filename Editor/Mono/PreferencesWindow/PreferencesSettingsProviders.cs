@@ -8,56 +8,39 @@ using UnityEditorInternal;
 using System.Collections.Generic;
 using System;
 using System.IO;
-using System.Reflection;
 using System.Linq;
 using System.Text;
 using UnityEditor.Connect;
 using UnityEditor.ShortcutManagement;
+
 using UnityEditor.Collaboration;
 
 namespace UnityEditor
 {
-    internal class PreferencesWindow : EditorWindow
+    internal class PreferencesProvider : SettingsProvider
     {
-        internal class Constants
+        internal static class Constants
         {
-            public GUIStyle sectionScrollView = "PreferencesSectionBox";
-            public GUIStyle settingsBoxTitle = "OL Title";
-            public GUIStyle settingsBox = "OL Box";
-            public GUIStyle errorLabel = "WordWrappedLabel";
-            public GUIStyle sectionElement = "PreferencesSection";
-            public GUIStyle evenRow = "CN EntryBackEven";
-            public GUIStyle oddRow = "CN EntryBackOdd";
-            public GUIStyle selected = "OL SelectedRow";
-            public GUIStyle keysElement = "PreferencesKeysElement";
-            public GUIStyle warningIcon = "CN EntryWarn";
-            public GUIStyle sectionHeader = new GUIStyle(EditorStyles.largeLabel);
-            public GUIStyle cacheFolderLocation = new GUIStyle(GUI.skin.label);
-
-            public Constants()
-            {
-                sectionScrollView = new GUIStyle(sectionScrollView);
-                sectionScrollView.overflow.bottom += 1;
-
-                sectionHeader.fontStyle = FontStyle.Bold;
-                sectionHeader.fontSize = 18;
-                sectionHeader.margin.top = 10;
-                sectionHeader.margin.left += 1;
-                if (!EditorGUIUtility.isProSkin)
-                    sectionHeader.normal.textColor = new Color(0.4f, 0.4f, 0.4f, 1.0f);
-                else
-                    sectionHeader.normal.textColor = new Color(0.7f, 0.7f, 0.7f, 1.0f);
-
-                cacheFolderLocation.wordWrap = true;
-            }
+            public static GUIStyle sectionScrollView = "PreferencesSectionBox";
+            public static GUIStyle settingsBoxTitle = "OL Title";
+            public static GUIStyle settingsBox = "OL Box";
+            public static GUIStyle errorLabel = "WordWrappedLabel";
+            public static GUIStyle sectionElement = "PreferencesSection";
+            public static GUIStyle evenRow = "CN EntryBackEven";
+            public static GUIStyle oddRow = "CN EntryBackOdd";
+            public static GUIStyle selected = "OL SelectedRow";
+            public static GUIStyle keysElement = "PreferencesKeysElement";
+            public static GUIStyle warningIcon = "CN EntryWarn";
+            public static GUIStyle cacheFolderLocation = "CacheFolderLocation";
         }
 
         internal class Styles
         {
-            // Common
             public static readonly GUIContent browse = EditorGUIUtility.TrTextContent("Browse...");
+        }
 
-            // General
+        internal class GeneralProperties
+        {
             public static readonly GUIContent autoRefresh = EditorGUIUtility.TrTextContent("Auto Refresh");
             public static readonly GUIContent autoRefreshHelpBox = EditorGUIUtility.TrTextContent("Auto Refresh must be set when using Collaboration feature.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public static readonly GUIContent loadPreviousProjectOnStartup = EditorGUIUtility.TrTextContent("Load Previous Project on Startup");
@@ -70,19 +53,25 @@ namespace UnityEditor
             public static readonly GUIContent editorSkin = EditorGUIUtility.TrTextContent("Editor Skin");
             public static readonly GUIContent[] editorSkinOptions = { EditorGUIUtility.TrTextContent("Personal"), EditorGUIUtility.TrTextContent("Professional") };
             public static readonly GUIContent enableAlphaNumericSorting = EditorGUIUtility.TrTextContent("Enable Alpha Numeric Sorting");
+        }
 
-            // External Tools
+        internal class ExternalProperties
+        {
             public static readonly GUIContent addUnityProjeToSln = EditorGUIUtility.TrTextContent("Add .unityproj's to .sln");
             public static readonly GUIContent editorAttaching = EditorGUIUtility.TrTextContent("Editor Attaching");
             public static readonly GUIContent changingThisSettingRequiresRestart = EditorGUIUtility.TrTextContent("Changing this setting requires a restart to take effect.");
             public static readonly GUIContent revisionControlDiffMerge = EditorGUIUtility.TrTextContent("Revision Control Diff/Merge");
             public static readonly GUIContent externalScriptEditor = EditorGUIUtility.TrTextContent("External Script Editor");
             public static readonly GUIContent imageApplication = EditorGUIUtility.TrTextContent("Image application");
+        }
 
-            // Colors
+        internal class ColorsProperties
+        {
             public static readonly GUIContent userDefaults = EditorGUIUtility.TrTextContent("Use Defaults");
+        }
 
-            // GI Cache
+        internal class GICacheProperties
+        {
             public static readonly GUIContent maxCacheSize = EditorGUIUtility.TrTextContent("Maximum Cache Size (GB)", "The size of the GI Cache folder will be kept below this maximum value when possible. A background job will periodically clean up the oldest unused files.");
             public static readonly GUIContent customCacheLocation = EditorGUIUtility.TrTextContent("Custom cache location", "Specify the GI Cache folder location.");
             public static readonly GUIContent cacheFolderLocation = EditorGUIUtility.TrTextContent("Cache Folder Location", "The GI Cache folder is shared between all projects.");
@@ -92,62 +81,18 @@ namespace UnityEditor
             public static readonly GUIContent browseGICacheLocation = EditorGUIUtility.TrTextContent("Browse for GI Cache location");
             public static readonly GUIContent cacheSizeIs = EditorGUIUtility.TrTextContent("Cache size is");
             public static readonly GUIContent pleaseWait = EditorGUIUtility.TrTextContent("Please wait...");
+        }
 
-            // 2D
+        internal class TwoDProperties
+        {
             public static readonly GUIContent spriteMaxCacheSize = EditorGUIUtility.TrTextContent("Max Sprite Atlas Cache Size (GB)", "The size of the Sprite Atlas Cache folder will be kept below this maximum value when possible. Change requires Editor restart");
+        }
 
-            // Language
+        internal class LanguageProperties
+        {
             public static readonly GUIContent editorLanguageExperimental = EditorGUIUtility.TrTextContent("Editor Language(Experimental)");
             public static readonly GUIContent editorLanguage = EditorGUIUtility.TrTextContent("Editor language");
         }
-
-        private delegate void OnGUIDelegate();
-        private class Section
-        {
-            public GUIContent content;
-            public OnGUIDelegate guiFunc;
-
-            public Section(string name, OnGUIDelegate guiFunc)
-            {
-                this.content = EditorGUIUtility.TrTextContent(name);
-                this.guiFunc = guiFunc;
-            }
-
-            public Section(string name, Texture2D icon, OnGUIDelegate guiFunc)
-            {
-                this.content = EditorGUIUtility.TrTextContent(name, icon);
-                this.guiFunc = guiFunc;
-            }
-
-            public Section(GUIContent content, OnGUIDelegate guiFunc)
-            {
-                this.content = content;
-                this.guiFunc = guiFunc;
-            }
-        }
-
-        private List<Section> m_Sections;
-        private int m_SelectedSectionIndex;
-        private int selectedSectionIndex
-        {
-            get { return m_SelectedSectionIndex; }
-            set
-            {
-                if (m_SelectedSectionIndex != value)
-                {
-                    // Reset the valid key indicator when changing section
-                    m_ValidKeyChange = true;
-                }
-                m_SelectedSectionIndex = value;
-                if (m_SelectedSectionIndex >= m_Sections.Count)
-                    m_SelectedSectionIndex = 0;
-                else if (m_SelectedSectionIndex < 0)
-                    m_SelectedSectionIndex = m_Sections.Count - 1;
-            }
-        }
-        private Section selectedSection { get { return m_Sections[m_SelectedSectionIndex]; } }
-
-        static Constants constants = null;
 
         private List<IPreferenceWindowExtension> prefWinExtensions;
         private bool m_AutoRefresh;
@@ -186,9 +131,9 @@ namespace UnityEditor
         private const int k_LangListMenuOffset = 2;
 
         private string m_SelectedLanguage;
-        private GUIContent[] m_EditorLanguageNames;
+        private static GUIContent[] m_EditorLanguageNames;
         private bool m_EnableEditorLocalization;
-        private SystemLanguage[] m_stableLanguages = { SystemLanguage.English };
+        private static SystemLanguage[] m_stableLanguages = { SystemLanguage.English };
 
         private bool m_AllowAlphaNumericHierarchy = false;
 
@@ -199,11 +144,9 @@ namespace UnityEditor
 
         private string m_noDiffToolsMessage = string.Empty;
 
-        private bool m_RefreshCustomPreferences;
         private string[] m_ScriptAppDisplayNames;
         private string[] m_ImageAppDisplayNames;
         Vector2 m_KeyScrollPos;
-        Vector2 m_SectionScrollPos;
         int m_SelectedShortcut = -1;
         private const string kRecentScriptAppsKey = "RecentlyUsedScriptApp";
         private const string kRecentImageAppsKey = "RecentlyUsedImageApp";
@@ -218,7 +161,6 @@ namespace UnityEditor
         private const int kRecentAppsCount = 10;
 
         SortedDictionary<string, List<KeyValuePair<string, PrefColor>>> s_CachedColors = null;
-        private static Vector2 s_ScrollPosition = Vector2.zero;
 
         private int m_SpriteAtlasCacheSize;
         private static int kMinSpriteCacheSizeInGigabytes = 1;
@@ -226,7 +168,7 @@ namespace UnityEditor
 
         private bool m_ValidKeyChange = true;
         private string m_InvalidKeyMessage = string.Empty;
-        private static readonly char[] kShortcutIdentifierSplitters = {'/'};
+        private static readonly char[] kShortcutIdentifierSplitters = { '/' };
 
         class RefString
         {
@@ -239,31 +181,71 @@ namespace UnityEditor
             }
         }
 
-        static void ShowPreferencesWindow()
+        public PreferencesProvider(string path)
+            : base(path)
         {
-            EditorWindow w = EditorWindow.GetWindow<PreferencesWindow>(true, L10n.Tr("Unity Preferences"));
-            w.minSize = new Vector2(540, 400);
-            w.maxSize = new Vector2(w.minSize.x, w.maxSize.y); // Limit to only changing the height.
-            w.position = new Rect(new Vector2(100, 100), w.minSize);
-            w.m_Parent.window.m_DontSaveToLayout = true;
+            scopes = SettingsScopes.User;
+            prefWinExtensions = ModuleManager.GetPreferenceWindowExtensions();
+            ReadPreferences();
         }
 
-        void OnEnable()
+        [SettingsProvider]
+        internal static SettingsProvider CreateGeneralProvider()
         {
-            prefWinExtensions = ModuleManager.GetPreferenceWindowExtensions();
+            var settings = new PreferencesProvider("Preferences/_General") { label = "General" };
+            settings.PopulateSearchKeywordsFromGUIContentProperties<GeneralProperties>();
+            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowGeneral); };
+            return settings;
+        }
 
-            ReadPreferences();
+        [SettingsProvider]
+        internal static SettingsProvider CreateExternalToolsProvider()
+        {
+            var settings = new PreferencesProvider("Preferences/External Tools");
+            settings.PopulateSearchKeywordsFromGUIContentProperties<ExternalProperties>();
+            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowExternalApplications); };
+            return settings;
+        }
 
-            m_Sections = new List<Section>();
+        [SettingsProvider]
+        internal static SettingsProvider CreateColorsProvider()
+        {
+            var settings = new PreferencesProvider("Preferences/Colors");
+            settings.PopulateSearchKeywordsFromGUIContentProperties<ColorsProperties>();
+            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowColors); };
+            return settings;
+        }
 
-            //@TODO Move these to custom sections
-            m_Sections.Add(new Section("General", ShowGeneral));
-            m_Sections.Add(new Section("External Tools", ShowExternalApplications));
-            m_Sections.Add(new Section("Colors", ShowColors));
-            m_Sections.Add(new Section("Keys", ShowShortcuts));
-            m_Sections.Add(new Section("GI Cache", ShowGICache));
-            m_Sections.Add(new Section("2D", Show2D));
-            SystemLanguage[] editorLanguages = LocalizationDatabase.GetAvailableEditorLanguages();
+        [SettingsProvider]
+        internal static SettingsProvider CreateGICacheProvider()
+        {
+            var settings = new PreferencesProvider("Preferences/GI Cache");
+            settings.PopulateSearchKeywordsFromGUIContentProperties<GICacheProperties>();
+            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowGICache); };
+            return settings;
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider Create2DProvider()
+        {
+            var settings = new PreferencesProvider("Preferences/2D");
+            settings.PopulateSearchKeywordsFromGUIContentProperties<TwoDProperties>();
+            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.Show2D); };
+            return settings;
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateKeysProvider()
+        {
+            var settings = new PreferencesProvider("Preferences/Keys");
+            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowShortcuts); };
+            return settings;
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateLanguagesProvider()
+        {
+            var editorLanguages = LocalizationDatabase.GetAvailableEditorLanguages();
             if (m_EditorLanguageNames == null || m_EditorLanguageNames.Length != editorLanguages.Length)
             {
                 m_EditorLanguageNames = new GUIContent[editorLanguages.Length];
@@ -271,7 +253,7 @@ namespace UnityEditor
                 for (int i = 0; i < editorLanguages.Length; ++i)
                 {
                     // not in stable languages list - display it as experimental language
-                    if (ArrayUtility.FindIndex(m_stableLanguages, delegate(SystemLanguage v) { return v == editorLanguages[i]; }) < 0)
+                    if (ArrayUtility.FindIndex(m_stableLanguages, v => v == editorLanguages[i]) < 0)
                     {
                         m_EditorLanguageNames[i] = EditorGUIUtility.TextContent(string.Format("{0} (Experimental)", editorLanguages[i].ToString()));
                     }
@@ -284,120 +266,41 @@ namespace UnityEditor
                 GUIContent defaultLanguage = EditorGUIUtility.TextContent(string.Format("Default ( {0} )", LocalizationDatabase.GetDefaultEditorLanguage().ToString()));
                 ArrayUtility.Insert(ref m_EditorLanguageNames, 0, defaultLanguage);
             }
+
             if (editorLanguages.Length > 1)
             {
-                m_Sections.Add(new Section("Language", ShowLanguage));
+                var settings = new PreferencesProvider("Preferences/Languages");
+                settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowLanguage); };
+                return settings;
             }
 
+            return null;
+        }
+
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateUnityServicesProvider()
+        {
             if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
             {
-                m_Sections.Add(new Section("Unity Services", ShowUnityConnectPrefs));
+                var settings = new PreferencesProvider("Preferences/Unity Services");
+                settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowUnityConnectPrefs); };
+                return settings;
             }
-            // Workaround for EditorAssemblies not loaded yet during mono assembly reload.
-            m_RefreshCustomPreferences = true;
+            return null;
         }
 
-        private void AddCustomSections()
+        // Group Preference sections with the same name
+        private void OnGUI(string searchContext, Action<string> drawAction)
         {
-            AttributeHelper.MethodInfoSorter methods = AttributeHelper.GetMethodsWithAttribute<PreferenceItem>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
-            foreach (var method in methods.methodsWithAttributes)
-            {
-                OnGUIDelegate callback = Delegate.CreateDelegate(typeof(OnGUIDelegate), method.info) as OnGUIDelegate;
-                if (callback != null)
-                {
-                    var attributeName = (method.attribute as PreferenceItem).name;
-                    // Group Preference sections with the same name
-                    int idx = m_Sections.FindIndex(section => section.content.text.Equals(attributeName));
-                    if (idx >= 0)
-                    {
-                        m_Sections[idx].guiFunc += callback;
-                    }
-                    else
-                    {
-                        m_Sections.Add(new Section(attributeName, callback));
-                    }
-                }
-            }
+            using (new SettingsWindow.GUIScope())
+                drawAction(searchContext);
         }
 
-        private void OnGUI()
-        {
-            // Workaround for EditorAssemblies not loaded yet during mono assembly reload.
-            if (m_RefreshCustomPreferences)
-            {
-                AddCustomSections();
-                m_RefreshCustomPreferences = false;
-            }
-
-            EditorGUIUtility.labelWidth = 200f;
-
-            if (constants == null)
-            {
-                constants = new Constants();
-            }
-
-            HandleKeys();
-
-            GUILayout.BeginHorizontal();
-            {
-                m_SectionScrollPos = GUILayout.BeginScrollView(m_SectionScrollPos, constants.sectionScrollView, GUILayout.Width(140f));
-                {
-                    GUILayout.Space(40f);
-                    for (int i = 0; i < m_Sections.Count; i++)
-                    {
-                        var section = m_Sections[i];
-
-                        Rect elementRect = GUILayoutUtility.GetRect(section.content, constants.sectionElement, GUILayout.ExpandWidth(true));
-
-                        if (section == selectedSection && Event.current.type == EventType.Repaint)
-                            constants.selected.Draw(elementRect, false, false, false, false);
-
-                        EditorGUI.BeginChangeCheck();
-                        if (GUI.Toggle(elementRect, selectedSectionIndex == i, section.content, constants.sectionElement))
-                            selectedSectionIndex = i;
-                        if (EditorGUI.EndChangeCheck())
-                            GUIUtility.keyboardControl = 0;
-                    }
-                }
-                GUILayout.EndScrollView();
-
-                GUILayout.Space(10.0f);
-
-                GUILayout.BeginVertical();
-                {
-                    GUILayout.Label(selectedSection.content, constants.sectionHeader);
-                    GUILayout.Space(10f);
-                    s_ScrollPosition = EditorGUILayout.BeginScrollView(s_ScrollPosition);
-                    selectedSection.guiFunc();
-                    EditorGUILayout.EndScrollView();
-                }
-                GUILayout.EndVertical();
-            }
-            GUILayout.EndHorizontal();
-        }
-
-        private void HandleKeys()
-        {
-            if (Event.current.type != EventType.KeyDown || GUIUtility.keyboardControl != 0)
-                return;
-
-            switch (Event.current.keyCode)
-            {
-                case KeyCode.UpArrow:
-                    selectedSectionIndex--;
-                    Event.current.Use();
-                    break;
-                case KeyCode.DownArrow:
-                    selectedSectionIndex++;
-                    Event.current.Use();
-                    break;
-            }
-        }
-
-        private void ShowExternalApplications()
+        private void ShowExternalApplications(string searchContext)
         {
             // Applications
-            FilePopup(Styles.externalScriptEditor, m_ScriptEditorPath, ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, "internal", OnScriptEditorChanged);
+            FilePopup(ExternalProperties.externalScriptEditor, m_ScriptEditorPath, ref m_ScriptAppDisplayNames, ref m_ScriptApps, m_ScriptEditorPath, "internal", OnScriptEditorChanged);
 
             var scriptEditor = GetSelectedScriptEditor();
 
@@ -412,38 +315,38 @@ namespace UnityEditor
             DoUnityProjCheckbox();
 
             bool oldValue = m_AllowAttachedDebuggingOfEditor;
-            m_AllowAttachedDebuggingOfEditor = EditorGUILayout.Toggle(Styles.editorAttaching, m_AllowAttachedDebuggingOfEditor);
+            m_AllowAttachedDebuggingOfEditor = EditorGUILayout.Toggle(ExternalProperties.editorAttaching, m_AllowAttachedDebuggingOfEditor);
 
             if (oldValue != m_AllowAttachedDebuggingOfEditor)
                 m_AllowAttachedDebuggingOfEditorStateChangedThisSession = true;
 
             if (m_AllowAttachedDebuggingOfEditorStateChangedThisSession)
-                GUILayout.Label(Styles.changingThisSettingRequiresRestart, EditorStyles.helpBox);
+                GUILayout.Label(ExternalProperties.changingThisSettingRequiresRestart, EditorStyles.helpBox);
 
             if (GetSelectedScriptEditor() == ScriptEditorUtility.ScriptEditor.VisualStudioExpress)
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                GUILayout.Label("", constants.warningIcon);
-                GUILayout.Label(k_ExpressNotSupportedMessage, constants.errorLabel);
+                GUILayout.Label("", Constants.warningIcon);
+                GUILayout.Label(k_ExpressNotSupportedMessage, Constants.errorLabel);
                 GUILayout.EndHorizontal();
             }
 
             GUILayout.Space(10f);
 
-            FilePopup(Styles.imageApplication, m_ImageAppPath, ref m_ImageAppDisplayNames, ref m_ImageApps, m_ImageAppPath, "internal", null);
+            FilePopup(ExternalProperties.imageApplication, m_ImageAppPath, ref m_ImageAppDisplayNames, ref m_ImageApps, m_ImageAppPath, "internal", null);
 
             GUILayout.Space(10f);
 
             using (new EditorGUI.DisabledScope(!InternalEditorUtility.HasTeamLicense()))
             {
-                m_DiffToolIndex = EditorGUILayout.Popup(Styles.revisionControlDiffMerge, m_DiffToolIndex, m_DiffTools);
+                m_DiffToolIndex = EditorGUILayout.Popup(ExternalProperties.revisionControlDiffMerge, m_DiffToolIndex, m_DiffTools);
             }
 
             if (m_noDiffToolsMessage != string.Empty)
             {
                 GUILayout.BeginHorizontal(EditorStyles.helpBox);
-                GUILayout.Label("", constants.warningIcon);
-                GUILayout.Label(m_noDiffToolsMessage, constants.errorLabel);
+                GUILayout.Label("", Constants.warningIcon);
+                GUILayout.Label(m_noDiffToolsMessage, Constants.errorLabel);
                 GUILayout.EndHorizontal();
             }
 
@@ -476,7 +379,7 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!isConfigurable))
             {
-                value = EditorGUILayout.Toggle(Styles.addUnityProjeToSln, value);
+                value = EditorGUILayout.Toggle(ExternalProperties.addUnityProjeToSln, value);
             }
 
             if (isConfigurable)
@@ -500,13 +403,13 @@ namespace UnityEditor
             ScriptEditorUtility.SetExternalScriptEditorArgs(m_ScriptEditorArgs);
         }
 
-        private void ShowUnityConnectPrefs()
+        private void ShowUnityConnectPrefs(string searchContext)
         {
             UnityConnectPrefs.ShowPanelPrefUI();
             ApplyChangesToPrefs();
         }
 
-        private void ShowGeneral()
+        private void ShowGeneral(string searchContext)
         {
             // Options
             bool collabEnabled = Collab.instance.IsCollabEnabledForCurrentProject();
@@ -514,41 +417,39 @@ namespace UnityEditor
             {
                 if (collabEnabled)
                 {
-                    EditorGUILayout.Toggle(Styles.autoRefresh, true);       // Don't keep toggle value in m_AutoRefresh since we don't want to save the overwritten value
-                    EditorGUILayout.HelpBox(Styles.autoRefreshHelpBox);
+                    EditorGUILayout.Toggle(GeneralProperties.autoRefresh, true);               // Don't keep toggle value in m_AutoRefresh since we don't want to save the overwritten value
+                    EditorGUILayout.HelpBox(GeneralProperties.autoRefreshHelpBox);
                 }
                 else
-                    m_AutoRefresh = EditorGUILayout.Toggle(Styles.autoRefresh, m_AutoRefresh);
+                    m_AutoRefresh = EditorGUILayout.Toggle(GeneralProperties.autoRefresh, m_AutoRefresh);
             }
 
-            m_ReopenLastUsedProjectOnStartup = EditorGUILayout.Toggle(Styles.loadPreviousProjectOnStartup, m_ReopenLastUsedProjectOnStartup);
+            m_ReopenLastUsedProjectOnStartup = EditorGUILayout.Toggle(GeneralProperties.loadPreviousProjectOnStartup, m_ReopenLastUsedProjectOnStartup);
 
             bool oldCompressOnImport = m_CompressAssetsOnImport;
-            m_CompressAssetsOnImport = EditorGUILayout.Toggle(Styles.compressAssetsOnImport, oldCompressOnImport);
+            m_CompressAssetsOnImport = EditorGUILayout.Toggle(GeneralProperties.compressAssetsOnImport, oldCompressOnImport);
 
             if (GUI.changed && m_CompressAssetsOnImport != oldCompressOnImport)
                 Unsupported.SetApplicationSettingCompressAssetsOnImport(m_CompressAssetsOnImport);
 
             if (Application.platform == RuntimePlatform.OSXEditor)
-                m_UseOSColorPicker = EditorGUILayout.Toggle(Styles.osxColorPicker, m_UseOSColorPicker);
+                m_UseOSColorPicker = EditorGUILayout.Toggle(GeneralProperties.osxColorPicker, m_UseOSColorPicker);
 
             bool pro = UnityEngine.Application.HasProLicense();
             using (new EditorGUI.DisabledScope(!pro))
             {
-                m_EnableEditorAnalytics = !EditorGUILayout.Toggle(Styles.disableEditorAnalytics, !m_EnableEditorAnalytics);
-                if (!pro && !m_EnableEditorAnalytics)
-                    m_EnableEditorAnalytics = true;
+                m_EnableEditorAnalytics = !EditorGUILayout.Toggle(GeneralProperties.disableEditorAnalytics, !m_EnableEditorAnalytics) || !pro && !m_EnableEditorAnalytics;
             }
 
             bool assetStoreSearchChanged = false;
             EditorGUI.BeginChangeCheck();
-            m_ShowAssetStoreSearchHits = EditorGUILayout.Toggle(Styles.showAssetStoreSearchHits, m_ShowAssetStoreSearchHits);
+            m_ShowAssetStoreSearchHits = EditorGUILayout.Toggle(GeneralProperties.showAssetStoreSearchHits, m_ShowAssetStoreSearchHits);
             if (EditorGUI.EndChangeCheck())
                 assetStoreSearchChanged = true;
 
-            m_VerifySavingAssets = EditorGUILayout.Toggle(Styles.verifySavingAssets, m_VerifySavingAssets);
+            m_VerifySavingAssets = EditorGUILayout.Toggle(GeneralProperties.verifySavingAssets, m_VerifySavingAssets);
 
-            m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorGUILayout.EnumPopup(Styles.scriptChangesDuringPlay, m_ScriptCompilationDuringPlay);
+            m_ScriptCompilationDuringPlay = (ScriptChangesDuringPlayOptions)EditorGUILayout.EnumPopup(GeneralProperties.scriptChangesDuringPlay, m_ScriptCompilationDuringPlay);
 
             // Only show this toggle if this is a source build or we're already in developer mode.
             // We don't want to show this to users yet.
@@ -562,13 +463,13 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!pro))
             {
-                int newSkin = EditorGUILayout.Popup(Styles.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1, Styles.editorSkinOptions);
+                int newSkin = EditorGUILayout.Popup(GeneralProperties.editorSkin, !EditorGUIUtility.isProSkin ? 0 : 1, GeneralProperties.editorSkinOptions);
                 if ((!EditorGUIUtility.isProSkin ? 0 : 1) != newSkin)
                     InternalEditorUtility.SwitchSkinAndRepaintAllViews();
             }
 
             bool oldAlphaNumeric = m_AllowAlphaNumericHierarchy;
-            m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle(Styles.enableAlphaNumericSorting, m_AllowAlphaNumericHierarchy);
+            m_AllowAlphaNumericHierarchy = EditorGUILayout.Toggle(GeneralProperties.enableAlphaNumericSorting, m_AllowAlphaNumericHierarchy);
 
             if (InternalEditorUtility.IsGpuDeviceSelectionSupported())
             {
@@ -582,7 +483,7 @@ namespace UnityEditor
                 }
 
                 // Try to find selected gpu device
-                var currentGpuDeviceIndex = Array.FindIndex(m_CachedGpuDevices, (string gpuDevice) => m_GpuDevice == gpuDevice);
+                var currentGpuDeviceIndex = Array.FindIndex(m_CachedGpuDevices, gpuDevice => m_GpuDevice == gpuDevice);
                 if (currentGpuDeviceIndex == -1)
                     currentGpuDeviceIndex = 0;
 
@@ -610,16 +511,16 @@ namespace UnityEditor
             {
                 WritePreferences();
                 ReadPreferences();
-                Repaint();
+                settingsWindow.Repaint();
             }
         }
 
-        private void RevertShortcuts()
+        private static void RevertShortcuts()
         {
             ShortcutIntegration.instance.profileManager.ResetToDefault();
         }
 
-        private void RevertPrefKeys()
+        private static void RevertPrefKeys()
         {
             foreach (KeyValuePair<string, PrefKey> kvp in Settings.Prefs<PrefKey>())
             {
@@ -649,8 +550,7 @@ namespace UnityEditor
                 }
                 if (!retval.ContainsKey(first))
                 {
-                    List<KeyValuePair<string, T>> inner = new List<KeyValuePair<string, T>>();
-                    inner.Add(new KeyValuePair<string, T>(second, kvp.Value));
+                    List<KeyValuePair<string, T>> inner = new List<KeyValuePair<string, T>> {new KeyValuePair<string, T>(second, kvp.Value)};
                     retval.Add(first, new List<KeyValuePair<string, T>>(inner));
                 }
                 else
@@ -698,7 +598,7 @@ namespace UnityEditor
 
                 using (var changeCheckScope = new EditorGUI.ChangeCheckScope())
                 {
-                    if (GUILayout.Toggle(selected, keyEntry.Key, constants.keysElement))
+                    if (GUILayout.Toggle(selected, keyEntry.Key, Constants.keysElement))
                     {
                         m_ValidKeyChange = !selected;
                         m_SelectedShortcut = current;
@@ -709,7 +609,7 @@ namespace UnityEditor
                 }
             }
 
-            return currentShortcutEntry == null ? (object)currentPrefKey : currentShortcutEntry;
+            return currentShortcutEntry ?? (object)currentPrefKey;
         }
 
         static string BuildDescription(Event keyEvent)
@@ -766,7 +666,7 @@ namespace UnityEditor
             // Check shortcuts
             shortcutController.directory.FindShortcutEntries(
                 new List<KeyCombination> {new KeyCombination(e)},
-                new[] {context},
+                new[] { context },
                 collisions);
 
             if (collisions.Any())
@@ -841,8 +741,8 @@ namespace UnityEditor
             {
                 using (new GUILayout.HorizontalScope())
                 {
-                    GUILayout.Label("", constants.warningIcon);
-                    GUILayout.Label(m_InvalidKeyMessage, constants.errorLabel);
+                    GUILayout.Label("", Constants.warningIcon);
+                    GUILayout.Label(m_InvalidKeyMessage, Constants.errorLabel);
                 }
             }
         }
@@ -890,26 +790,26 @@ namespace UnityEditor
             {
                 using (new GUILayout.HorizontalScope())
                 {
-                    GUILayout.Label("", constants.warningIcon);
-                    GUILayout.Label(m_InvalidKeyMessage, constants.errorLabel);
+                    GUILayout.Label("", Constants.warningIcon);
+                    GUILayout.Label(m_InvalidKeyMessage, Constants.errorLabel);
                 }
             }
         }
 
         static int s_KeysControlHash = "KeysControlHash".GetHashCode();
-        private void ShowShortcuts()
+        private void ShowShortcuts(string searchContext)
         {
             // TODO: Some code duplication between Shortcut/PrefKey for now
             // Leaving it this way so that it can be easily removed when we kill PrefKey for 2018.3
             int id = GUIUtility.GetControlID(s_KeysControlHash, FocusType.Keyboard);
-            object selectedItem = null;
 
             using (new GUILayout.HorizontalScope())
             {
-                using (new GUILayout.VerticalScope(GUILayout.Width(185f)))
+                object selectedItem = null;
+                using (new GUILayout.VerticalScope(GUILayout.Width(250f)))
                 {
-                    GUILayout.Label("Actions", constants.settingsBoxTitle, GUILayout.ExpandWidth(true));
-                    using (var scrollViewScope = new GUILayout.ScrollViewScope(m_KeyScrollPos, constants.settingsBox))
+                    GUILayout.Label("Actions", Constants.settingsBoxTitle, GUILayout.ExpandWidth(true));
+                    using (var scrollViewScope = new GUILayout.ScrollViewScope(m_KeyScrollPos, Constants.settingsBox))
                     {
                         m_KeyScrollPos = scrollViewScope.scrollPosition;
                         selectedItem = ShowShortcutsAndKeys(id);
@@ -931,7 +831,7 @@ namespace UnityEditor
             }
             GUILayout.Space(5f);
 
-            if (GUILayout.Button(Styles.userDefaults, GUILayout.Width(120)))
+            if (GUILayout.Button(ColorsProperties.userDefaults, GUILayout.Width(120)))
             {
                 m_ValidKeyChange = true;
                 RevertShortcuts();
@@ -948,11 +848,11 @@ namespace UnityEditor
             }
         }
 
-        private void ShowColors()
+        private void ShowColors(string searchContext)
         {
             if (s_CachedColors == null)
             {
-                s_CachedColors = OrderPrefs<PrefColor>(Settings.Prefs<PrefColor>());
+                s_CachedColors = OrderPrefs(Settings.Prefs<PrefColor>());
             }
 
             var changedColor = false;
@@ -976,7 +876,7 @@ namespace UnityEditor
             }
             GUILayout.Space(5f);
 
-            if (GUILayout.Button(Styles.userDefaults, GUILayout.Width(120)))
+            if (GUILayout.Button(ColorsProperties.userDefaults, GUILayout.Width(120)))
             {
                 RevertColors();
                 changedColor = true;
@@ -986,17 +886,17 @@ namespace UnityEditor
                 EditorApplication.RequestRepaintAllViews();
         }
 
-        private void Show2D()
+        private void Show2D(string searchContext)
         {
             // 2D Settings.
             EditorGUI.BeginChangeCheck();
 
-            m_SpriteAtlasCacheSize = EditorGUILayout.IntSlider(Styles.spriteMaxCacheSize, m_SpriteAtlasCacheSize, kMinSpriteCacheSizeInGigabytes, kMaxSpriteCacheSizeInGigabytes);
+            m_SpriteAtlasCacheSize = EditorGUILayout.IntSlider(TwoDProperties.spriteMaxCacheSize, m_SpriteAtlasCacheSize, kMinSpriteCacheSizeInGigabytes, kMaxSpriteCacheSizeInGigabytes);
             if (EditorGUI.EndChangeCheck())
                 WritePreferences();
         }
 
-        private void ShowGICache()
+        private void ShowGICache(string searchContext)
         {
             {
                 // Show Gigabytes to the user.
@@ -1004,14 +904,14 @@ namespace UnityEditor
                 const int kMaxSizeInGigabytes = 200;
 
                 // Write size in GigaBytes.
-                m_GICacheSettings.m_MaximumSize = EditorGUILayout.IntSlider(Styles.maxCacheSize, m_GICacheSettings.m_MaximumSize, kMinSizeInGigabytes, kMaxSizeInGigabytes);
+                m_GICacheSettings.m_MaximumSize = EditorGUILayout.IntSlider(GICacheProperties.maxCacheSize, m_GICacheSettings.m_MaximumSize, kMinSizeInGigabytes, kMaxSizeInGigabytes);
                 WritePreferences();
             }
             GUILayout.BeginHorizontal();
             {
                 if (Lightmapping.isRunning)
                 {
-                    GUIContent warning = EditorGUIUtility.TextContent(Styles.cantChangeCacheSettings.text);
+                    GUIContent warning = EditorGUIUtility.TextContent(GICacheProperties.cantChangeCacheSettings.text);
                     EditorGUILayout.HelpBox(warning.text, MessageType.Warning, true);
                 }
             }
@@ -1019,20 +919,20 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(Lightmapping.isRunning))
             {
-                m_GICacheSettings.m_EnableCustomPath = EditorGUILayout.Toggle(Styles.customCacheLocation, m_GICacheSettings.m_EnableCustomPath);
+                m_GICacheSettings.m_EnableCustomPath = EditorGUILayout.Toggle(GICacheProperties.customCacheLocation, m_GICacheSettings.m_EnableCustomPath);
 
                 // browse for cache folder if not per project
                 if (m_GICacheSettings.m_EnableCustomPath)
                 {
                     GUIStyle style = EditorStyles.miniButton;
                     GUILayout.BeginHorizontal();
-                    EditorGUILayout.PrefixLabel(Styles.cacheFolderLocation, style);
+                    EditorGUILayout.PrefixLabel(GICacheProperties.cacheFolderLocation, style);
                     Rect r = GUILayoutUtility.GetRect(GUIContent.none, style);
                     GUIContent guiText = string.IsNullOrEmpty(m_GICacheSettings.m_CachePath) ? Styles.browse : new GUIContent(m_GICacheSettings.m_CachePath);
                     if (EditorGUI.DropdownButton(r, guiText, FocusType.Passive, style))
                     {
                         string pathToOpen = m_GICacheSettings.m_CachePath;
-                        string path = EditorUtility.OpenFolderPanel(Styles.browseGICacheLocation.text, pathToOpen, "");
+                        string path = EditorUtility.OpenFolderPanel(GICacheProperties.browseGICacheLocation.text, pathToOpen, "");
                         if (!string.IsNullOrEmpty(path))
                         {
                             m_GICacheSettings.m_CachePath = path;
@@ -1045,30 +945,30 @@ namespace UnityEditor
                     m_GICacheSettings.m_CachePath = "";
 
                 // We use toggle for now, 0 means kCompressionLevelNone, 1 - kCompressionLevelFastest.
-                m_GICacheSettings.m_CompressionLevel = EditorGUILayout.Toggle(Styles.cacheCompression, m_GICacheSettings.m_CompressionLevel == 1) ? 1 : 0;
+                m_GICacheSettings.m_CompressionLevel = EditorGUILayout.Toggle(GICacheProperties.cacheCompression, m_GICacheSettings.m_CompressionLevel == 1) ? 1 : 0;
 
-                if (GUILayout.Button(Styles.cleanCache, GUILayout.Width(120)))
+                if (GUILayout.Button(GICacheProperties.cleanCache, GUILayout.Width(120)))
                 {
-                    EditorUtility.DisplayProgressBar(Styles.cleanCache.text, Styles.pleaseWait.text, 0.0F);
+                    EditorUtility.DisplayProgressBar(GICacheProperties.cleanCache.text, GICacheProperties.pleaseWait.text, 0.0F);
                     Lightmapping.Clear();
-                    EditorUtility.DisplayProgressBar(Styles.cleanCache.text, Styles.pleaseWait.text, 0.5F);
+                    EditorUtility.DisplayProgressBar(GICacheProperties.cleanCache.text, GICacheProperties.pleaseWait.text, 0.5F);
                     UnityEditor.Lightmapping.ClearDiskCache();
                     EditorUtility.ClearProgressBar();
                 }
 
                 if (UnityEditor.Lightmapping.diskCacheSize >= 0)
-                    GUILayout.Label(Styles.cacheSizeIs.text + " " + EditorUtility.FormatBytes(UnityEditor.Lightmapping.diskCacheSize));
+                    GUILayout.Label(GICacheProperties.cacheSizeIs.text + " " + EditorUtility.FormatBytes(UnityEditor.Lightmapping.diskCacheSize));
                 else
-                    GUILayout.Label(Styles.cacheSizeIs.text + " is being calculated...");
+                    GUILayout.Label(GICacheProperties.cacheSizeIs.text + " is being calculated...");
 
-                GUILayout.Label(Styles.cacheFolderLocation.text + ":");
-                GUILayout.Label(UnityEditor.Lightmapping.diskCachePath, constants.cacheFolderLocation);
+                GUILayout.Label(GICacheProperties.cacheFolderLocation.text + ":");
+                GUILayout.Label(UnityEditor.Lightmapping.diskCachePath, Constants.cacheFolderLocation);
             }
         }
 
-        private void ShowLanguage()
+        private void ShowLanguage(string searchContext)
         {
-            var enable_localization = EditorGUILayout.Toggle(Styles.editorLanguageExperimental, m_EnableEditorLocalization);
+            var enable_localization = EditorGUILayout.Toggle(LanguageProperties.editorLanguageExperimental, m_EnableEditorLocalization);
             if (enable_localization != m_EnableEditorLocalization)
             {
                 m_EnableEditorLocalization = enable_localization;
@@ -1089,7 +989,7 @@ namespace UnityEditor
                     }
                 }
 
-                int sel = EditorGUILayout.Popup(Styles.editorLanguage, idx, m_EditorLanguageNames);
+                int sel = EditorGUILayout.Popup(LanguageProperties.editorLanguage, idx, m_EditorLanguageNames);
                 m_SelectedLanguage = (sel == 0) ? LocalizationDatabase.GetDefaultEditorLanguage().ToString() :
                     editorLanguages[sel - k_LangListMenuOffset].ToString();
             }
@@ -1119,11 +1019,11 @@ namespace UnityEditor
             for (int i = 0; i < paths.Length; ++i)
             {
                 if (appIndex >= kRecentAppsCount)
-                    break; // stop when we wrote up to the limit
+                    break;     // stop when we wrote up to the limit
                 if (paths[i].Length == 0)
-                    continue; // do not write built-in app into recently used list
+                    continue;     // do not write built-in app into recently used list
                 if (paths[i] == path)
-                    continue; // this is a selected app, do not write it twice
+                    continue;     // this is a selected app, do not write it twice
                 EditorPrefs.SetString(prefsKey + appIndex, paths[i]);
                 ++appIndex;
             }
@@ -1166,7 +1066,7 @@ namespace UnityEditor
             EditorPrefs.SetBool("AllowAttachedDebuggingOfEditor", m_AllowAttachedDebuggingOfEditor);
 
             EditorPrefs.SetBool("Editor.kEnableEditorLocalization", m_EnableEditorLocalization);
-            EditorPrefs.SetString("Editor.kEditorLocale", m_SelectedLanguage.ToString());
+            EditorPrefs.SetString("Editor.kEditorLocale", m_SelectedLanguage);
 
             EditorPrefs.SetBool("AllowAlphaNumericHierarchy", m_AllowAlphaNumericHierarchy);
             EditorPrefs.SetString("GpuDeviceName", m_GpuDevice);
@@ -1362,7 +1262,7 @@ namespace UnityEditor
             apps[0] = stringForInternalEditor;
 
             // current user setting
-            if (userAppPath != null && userAppPath.Length != 0 && Array.IndexOf(apps, userAppPath) == -1)
+            if (!String.IsNullOrEmpty(userAppPath) && Array.IndexOf(apps, userAppPath) == -1)
                 ArrayUtility.Add(ref apps, userAppPath);
 
             // add any recently used apps
@@ -1389,7 +1289,7 @@ namespace UnityEditor
             {
                 var appPath = appPathList[i];
 
-                if (appPath == "internal" || appPath == "") // use built-in
+                if (appPath == "internal" || appPath == "")     // use built-in
                     list.Add(defaultBuiltIn);
                 else
                 {

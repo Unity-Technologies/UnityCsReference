@@ -17,7 +17,7 @@ namespace UnityEditor.Experimental.UIElements
 {
     internal class VisualSplitter : VisualElement
     {
-        const int kDefaultSplitSize = 6;
+        const int kDefaultSplitSize = 10;
         public int splitSize = kDefaultSplitSize;
 
         public new class UxmlFactory : UxmlFactory<VisualSplitter, UxmlTraits> {}

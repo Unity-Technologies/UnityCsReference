@@ -26,6 +26,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        public virtual string title
+        {
+            get { return name; }
+            set {}
+        }
+
         public void ResetLayer()
         {
             int prevLayer = m_Layer.value;

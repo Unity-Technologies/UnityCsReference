@@ -76,10 +76,10 @@ namespace UnityEditor
             GUIViewDebuggerWindow.Styles.listItem.Draw(el.position, tempContent, id, listViewState.row == el.row);
         }
 
-        protected override void DrawInspectedStacktrace()
+        protected override void DrawInspectedStacktrace(float availableWidth)
         {
             m_StacktraceScrollPos = EditorGUILayout.BeginScrollView(m_StacktraceScrollPos, GUIViewDebuggerWindow.Styles.stacktraceBackground, GUILayout.ExpandHeight(false));
-            DrawStackFrameList(m_Instruction.stackframes);
+            DrawStackFrameList(m_Instruction.stackframes, availableWidth);
             EditorGUILayout.EndScrollView();
         }
 
@@ -116,18 +116,16 @@ namespace UnityEditor
             //This means we will resolve the stack trace for all instructions.
             //TODO: make sure only visible items do this. Also, cache so we don't have to do everyframe.
             var methodName = GetInstructionListName(m_Instructions[index].stackframes);
-
-            //TODO: use the signature we get from the managed stack
-            return string.Format("{0}. {1}", index, methodName);
+            var label = m_Instructions[index].label;
+            if (String.IsNullOrEmpty(label))
+                return string.Format("{0}. {1}", index, methodName);
+            else
+                return string.Format("{0}. {2} ({1})", index, label, methodName);
         }
 
         string GetInstructionListName(StackFrame[] stacktrace)
         {
             int frameIndex = GetInterestingFrameIndex(stacktrace);
-
-            if (frameIndex > 0)
-                --frameIndex;
-
             StackFrame interestingFrame = stacktrace[frameIndex];
             return interestingFrame.methodName;
         }
@@ -186,16 +184,17 @@ namespace UnityEditor
                 StackFrame sf = stacktrace[i];
                 if (string.IsNullOrEmpty(sf.sourceFile))
                     continue;
-                if (sf.signature.StartsWith("UnityEngine.GUI"))
-                    continue;
-                if (sf.signature.StartsWith("UnityEditor.EditorGUI"))
+                if (sf.signature.StartsWith("UnityEngine.GUI") ||
+                    sf.signature.StartsWith("UnityEngine.GUIStyle") ||
+                    sf.signature.StartsWith("UnityEditor.StyleSheets") ||
+                    sf.signature.StartsWith("UnityEditor.EditorGUILayout"))
                     continue;
 
                 if (index == -1)
                     index = i;
 
                 if (sf.sourceFile.StartsWith(currentProjectPath))
-                    return i;
+                    return i - 1;
             }
 
             if (index != -1)

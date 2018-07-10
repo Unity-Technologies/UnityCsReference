@@ -34,7 +34,7 @@ namespace UnityEngine.Experimental.UIElements
             while (visualTree.yogaNode.IsDirty)
             {
                 visualTree.yogaNode.CalculateLayout();
-                using (new EventDispatcher.Gate((EventDispatcher)visualTree.panel.dispatcher))
+                using (new EventDispatcher.Gate(visualTree.panel.dispatcher))
                 {
                     UpdateSubTree(visualTree);
                 }
@@ -78,7 +78,7 @@ namespace UnityEngine.Experimental.UIElements
                 using (var evt = GeometryChangedEvent.GetPooled(lastRect, yogaRect))
                 {
                     evt.target = root;
-                    UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
+                    root.SendEvent(evt);
                 }
             }
 

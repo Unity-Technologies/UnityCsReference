@@ -342,7 +342,7 @@ namespace UnityEditor
 
         private AttachProfilerUI m_AttachProfilerUI = new AttachProfilerUI();
 
-        [MenuItem("Window/Debug/Frame Debugger", false, 4)]
+        [MenuItem("Window/Analysis/Frame Debugger", false, 10)]
         public static FrameDebuggerWindow ShowFrameDebuggerWindow()
         {
             var wnd = GetWindow(typeof(FrameDebuggerWindow)) as FrameDebuggerWindow;
@@ -1030,7 +1030,7 @@ namespace UnityEditor
                     PopupWindowWithoutFocus.Show(
                         buttonRect,
                         new ArrayValuePopup(startIndex, numValues, 100.0f, getValueString),
-                        new[] { PopupLocationHelper.PopupLocation.Left, PopupLocationHelper.PopupLocation.Below, PopupLocationHelper.PopupLocation.Right });
+                        new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
 
@@ -1067,7 +1067,7 @@ namespace UnityEditor
                     PopupWindowWithoutFocus.Show(
                         buttonRect,
                         new ArrayValuePopup(startIndex, numValues, 200.0f, getValueString),
-                        new[] { PopupLocationHelper.PopupLocation.Left, PopupLocationHelper.PopupLocation.Below, PopupLocationHelper.PopupLocation.Right });
+                        new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
 
@@ -1104,7 +1104,7 @@ namespace UnityEditor
                     PopupWindowWithoutFocus.Show(
                         buttonRect,
                         new ArrayValuePopup(startIndex, numValues, 200.0f, getValueString),
-                        new[] { PopupLocationHelper.PopupLocation.Left, PopupLocationHelper.PopupLocation.Below, PopupLocationHelper.PopupLocation.Right });
+                        new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
                 }
             }
 

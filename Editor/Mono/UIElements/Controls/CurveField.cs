@@ -88,11 +88,18 @@ namespace UnityEditor.Experimental.UIElements
                 //I need to have total ownership of the curve, I won't be able to know if it is changed outside. so I'm duplicating it.
                 if (value != null || !m_ValueNull) // let's not reinitialize an initialized curve
                 {
-                    using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(m_Value, value))
+                    if (panel != null)
                     {
-                        evt.target = this;
+                        using (ChangeEvent<AnimationCurve> evt = ChangeEvent<AnimationCurve>.GetPooled(m_Value, value))
+                        {
+                            evt.target = this;
+                            SetValueWithoutNotify(value);
+                            SendEvent(evt);
+                        }
+                    }
+                    else
+                    {
                         SetValueWithoutNotify(value);
-                        UIElementsUtility.eventDispatcher.DispatchEvent(evt, panel);
                     }
                 }
             }

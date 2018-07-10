@@ -567,6 +567,9 @@ namespace UnityEditor
         // Export as Android Google Project instead of building it
         public static extern bool exportAsGoogleAndroidProject { get; set; }
 
+        // Build Google Play App Bundle
+        public static extern bool buildAppBundle { get; set; }
+
         // Symlink runtime libraries with an iOS Xcode project.
         public static extern bool symlinkLibraries { get; set; }
 
