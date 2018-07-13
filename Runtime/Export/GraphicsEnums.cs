@@ -752,8 +752,9 @@ namespace UnityEngine.Rendering
 
     public enum BuiltinRenderTextureType
     {
-        PropertyName = -3, // Property id
-        BufferPtr = -2, // Raw buffer pointer
+        PropertyName = -4, // Property id
+        BufferPtr = -3, // Raw buffer pointer
+        RenderTexture = -2, // Render texture. We cannot just use BufferPtr because we need lazy resolve of the buffer pointer here (the RT might not be created yet)
         BindableTexture = -1, // a bindable texture, of any dimension, that is not a render texture
         None = 0, // "nothing", just need zero default value for RenderTargetIdentifier
         CurrentActive = 1,  // currently active RT
@@ -918,19 +919,16 @@ namespace UnityEngine.Rendering
             if (tex == null)
             {
                 m_Type = BuiltinRenderTextureType.None;
-                m_InstanceID = 0;
-                m_BufferPointer = IntPtr.Zero;
             }
             else if (tex is RenderTexture)
             {
-                m_Type = BuiltinRenderTextureType.BufferPtr;
-                m_BufferPointer = ((RenderTexture)tex).colorBuffer.m_BufferPtr;
+                m_Type = BuiltinRenderTextureType.RenderTexture;
             }
             else
             {
                 m_Type = BuiltinRenderTextureType.BindableTexture;
-                m_BufferPointer = IntPtr.Zero;
             }
+            m_BufferPointer = IntPtr.Zero;
             m_NameID = -1; // FastPropertyName kInvalidIndex
             m_InstanceID = tex ? tex.GetInstanceID() : 0;
             m_MipLevel = 0;
@@ -943,19 +941,16 @@ namespace UnityEngine.Rendering
             if (tex == null)
             {
                 m_Type = BuiltinRenderTextureType.None;
-                m_InstanceID = 0;
-                m_BufferPointer = IntPtr.Zero;
             }
             else if (tex is RenderTexture)
             {
-                m_Type = BuiltinRenderTextureType.BufferPtr;
-                m_BufferPointer = ((RenderTexture)tex).colorBuffer.m_BufferPtr;
+                m_Type = BuiltinRenderTextureType.RenderTexture;
             }
             else
             {
                 m_Type = BuiltinRenderTextureType.BindableTexture;
-                m_BufferPointer = IntPtr.Zero;
             }
+            m_BufferPointer = IntPtr.Zero;
             m_NameID = -1; // FastPropertyName kInvalidIndex
             m_InstanceID = tex ? tex.GetInstanceID() : 0;
             m_MipLevel = mipLevel;
