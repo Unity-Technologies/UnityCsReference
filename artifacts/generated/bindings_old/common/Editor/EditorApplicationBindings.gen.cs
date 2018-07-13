@@ -8,6 +8,7 @@ using RequiredByNativeCodeAttribute=UnityEngine.Scripting.RequiredByNativeCodeAt
 using UsedByNativeCodeAttribute=UnityEngine.Scripting.UsedByNativeCodeAttribute;
 
 using System;
+using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -77,13 +78,6 @@ public sealed partial class EditorApplication
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         set;
-    }
-
-    public extern static bool isCompiling
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
     }
 
     public extern static bool isUpdating

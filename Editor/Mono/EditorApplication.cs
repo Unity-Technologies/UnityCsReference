@@ -3,15 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Scripting;
 using UnityEditorInternal;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor
 {
@@ -311,6 +308,14 @@ namespace UnityEditor
             WindowLayout.MaximizeKeyHandler();
 
             Event.current = null;
+        }
+
+        public static bool isCompiling
+        {
+            get
+            {
+                return EditorCompilationInterface.IsCompiling();
+            }
         }
     }
 }

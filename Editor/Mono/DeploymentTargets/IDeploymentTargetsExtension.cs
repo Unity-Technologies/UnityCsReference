@@ -102,6 +102,12 @@ namespace UnityEditor.DeploymentTargets
         TargetCheckResult CheckTarget(DeploymentTargetRequirements targetRequirements);
 
         string GetDisplayName();
+
+        bool SupportsLaunchBuild(BuildProperties buildProperties);
+    }
+
+    internal interface IDeploymentTargetsMainThreadContext
+    {
     }
 
     internal class DeploymentOperationAbortedException : Exception {}
@@ -122,20 +128,27 @@ namespace UnityEditor.DeploymentTargets
 
     internal interface IDeploymentTargetsExtension
     {
+        // Returns context object populated with data that other methods can access from any thread.
+        //  setup - Pass true to setup platform if it hasn't been already setup (e.g. display dialog box to select SDK path). Throws exception if user cancels setup process.
+        //          Pass false to return null if platform hasn't been already setup. This is useful when this method is called from UI draw event.
+        //          Displaying dialog boxes at that point breaks UI. Let the user know what's going on by displaying informational label or something like that.
+        //  Can NOT be called from a background thread
+        IDeploymentTargetsMainThreadContext GetMainThreadContext(bool setup = true);
+
         // Returns a list of all known targets and their status
         //  Can be called from a background thread
-        List<DeploymentTargetIdAndStatus> GetKnownTargets(ProgressHandler progressHandler = null);
+        List<DeploymentTargetIdAndStatus> GetKnownTargets(IDeploymentTargetsMainThreadContext context, ProgressHandler progressHandler = null);
 
         // Returns info for a target
         // Throws DeploymentOperationFailedException (or one of its subclasses) is something goes wrong.
         // Throws DeploymentOperationAbortedException if process is cancelled by the user.
         //  Can be called from a background thread
-        IDeploymentTargetInfo GetTargetInfo(DeploymentTargetId targetId, ProgressHandler progressHandler = null);
+        IDeploymentTargetInfo GetTargetInfo(IDeploymentTargetsMainThreadContext context, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
 
         // Launches a build on a target
         // Throws DeploymentOperationFailedException (or one of its subclasses) is something goes wrong.
         // Throws DeploymentOperationAbortedException if process is cancelled by the user.
         //  Can be called from a background thread
-        void LaunchBuildOnTarget(BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
+        void LaunchBuildOnTarget(IDeploymentTargetsMainThreadContext context, BuildProperties buildProperties, DeploymentTargetId targetId, ProgressHandler progressHandler = null);
     }
 }

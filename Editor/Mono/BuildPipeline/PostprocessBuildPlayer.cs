@@ -189,7 +189,7 @@ namespace UnityEditor
             try
             {
                 // Early out so as not to show/update progressbars unnecessarily
-                if (buildReport == null || !DeploymentTargetManager.IsExtensionSupported(targetGroup, buildReport.summary.platform))
+                if (buildReport == null)
                     throw new System.NotSupportedException();
 
                 ProgressHandler progressHandler = new ProgressHandler("Deploying Player",
@@ -210,7 +210,9 @@ namespace UnityEditor
                         {
                             try
                             {
-                                DeploymentTargetManager.LaunchBuildOnTarget(targetGroup, buildReport, target, taskManager.SpawnProgressHandlerFromCurrentTask());
+                                var manager = DeploymentTargetManager.CreateInstance(targetGroup, buildReport.summary.platform);
+                                var buildProperties = BuildProperties.GetFromBuildReport(buildReport);
+                                manager.LaunchBuildOnTarget(buildProperties, target, taskManager.SpawnProgressHandlerFromCurrentTask());
                                 successfulLaunches++;
                             }
                             catch (DeploymentOperationFailedException e)
