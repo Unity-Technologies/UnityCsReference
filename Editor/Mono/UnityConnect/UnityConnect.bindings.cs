@@ -444,6 +444,12 @@ namespace UnityEditor.Connect
             return GetConfigUrl(config);
         }
 
+        private static extern bool IsServicesWindowDisabled();
+        public bool isDisableServicesWindow
+        {
+            get { return IsServicesWindowDisabled(); }
+        }
+
         public string GetEnvironment()
         {
             return GetConfigEnvironment();

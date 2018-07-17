@@ -119,6 +119,8 @@ namespace UnityEngine
         tvOS = 31,
         // Nintendo Switch
         Switch = 32,
+        // Lumin
+        Lumin = 33,
     }
 
     // The language the user's operating system is running in. Returned by Application.systemLanguage.

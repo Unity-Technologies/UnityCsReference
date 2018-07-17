@@ -18,7 +18,7 @@ namespace UnityEngine.Analytics
 
     [RequiredByNativeCode]
     [NativeHeader("UnityAnalyticsScriptingClasses.h")]
-    [NativeHeader("Modules/UnityAnalytics/CoreStats/UnityConnectClient.h")]
+    [NativeHeader("Modules/UnityAnalytics/CoreStats/AnalyticsCoreStats.h")]
     public static class AnalyticsSessionInfo
     {
         public delegate void SessionStateChanged(AnalyticsSessionState sessionState, long sessionId, long sessionElapsedTime, bool sessionChanged);

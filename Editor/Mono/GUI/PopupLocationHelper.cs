@@ -10,15 +10,6 @@ namespace UnityEditor
 {
     internal static class PopupLocationHelper
     {
-        public enum PopupLocation
-        {
-            Below,
-            Above,
-            Left,
-            Right,
-            Overlay
-        }
-
         public static Rect GetDropDownRect(Rect buttonRect, Vector2 minSize, Vector2 maxSize, ContainerWindow popupContainerWindow)
         {
             return GetDropDownRect(buttonRect, minSize, maxSize, popupContainerWindow, null);

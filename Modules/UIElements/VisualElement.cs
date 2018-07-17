@@ -632,9 +632,7 @@ namespace UnityEngine.Experimental.UIElements
                 using (var e = DetachFromPanelEvent.GetPooled(panel, p))
                 {
                     e.target = this;
-                    // This cast will go away in my next PR
-                    EventDispatcher dispatcher = UIElementsUtility.eventDispatcher as EventDispatcher;
-                    dispatcher.DispatchEvent(e, panel, DispatchMode.Immediate);
+                    elementPanel.SendEvent(e, DispatchMode.Immediate);
                 }
             }
 
@@ -646,9 +644,7 @@ namespace UnityEngine.Experimental.UIElements
                 using (var e = AttachToPanelEvent.GetPooled(prevPanel, p))
                 {
                     e.target = this;
-                    // This cast will go away in my next PR
-                    EventDispatcher dispatcher = UIElementsUtility.eventDispatcher as EventDispatcher;
-                    dispatcher.DispatchEvent(e, panel, DispatchMode.Immediate);
+                    elementPanel.SendEvent(e, DispatchMode.Immediate);
                 }
             }
 
@@ -658,6 +654,11 @@ namespace UnityEngine.Experimental.UIElements
             // persistent data key may have changed or needs initialization
             if (!string.IsNullOrEmpty(persistenceKey))
                 IncrementVersion(VersionChangeType.PersistentData);
+        }
+
+        public sealed override void SendEvent(EventBase e)
+        {
+            elementPanel?.SendEvent(e);
         }
 
         internal void IncrementVersion(VersionChangeType changeType)

@@ -11,7 +11,7 @@ namespace UnityEditor
     {
         void UpdateInstructions();
         void DrawInstructionList();
-        void DrawSelectedInstructionDetails();
+        void DrawSelectedInstructionDetails(float availableWidth);
         void ShowOverlay();
         void SelectRow(int index);
         void ClearRowSelection();
@@ -30,12 +30,9 @@ namespace UnityEditor
         protected ListViewState listViewState { get { return m_ListViewState; } }
         [NonSerialized]
         readonly ListViewState m_ListViewState = new ListViewState();
-
         protected GUIViewDebuggerWindow debuggerWindow { get { return m_DebuggerWindow; } }
         GUIViewDebuggerWindow m_DebuggerWindow;
-
         Vector2 m_InstructionDetailsScrollPos = new Vector2();
-
         readonly SplitterState m_InstructionDetailStacktraceSplitter = new SplitterState(new float[] { 80, 20 }, new int[] { 100, 100 }, null);
 
         public BaseInspectView(GUIViewDebuggerWindow guiViewDebuggerWindow)
@@ -73,7 +70,7 @@ namespace UnityEditor
             EditorGUILayout.EndVertical();
         }
 
-        public virtual void DrawSelectedInstructionDetails()
+        public virtual void DrawSelectedInstructionDetails(float availableWidth)
         {
             if (m_ListViewState.selectionChanged)
                 OnSelectedInstructionChanged(m_ListViewState.row);
@@ -93,7 +90,7 @@ namespace UnityEditor
             DoDrawSelectedInstructionDetails(m_ListViewState.row);
             EditorGUILayout.EndScrollView();
 
-            DrawInspectedStacktrace();
+            DrawInspectedStacktrace(availableWidth);
             SplitterGUILayout.EndVerticalSplit();
         }
 
@@ -112,25 +109,36 @@ namespace UnityEditor
         }
 
         protected abstract int GetInstructionCount();
-
         protected abstract void DoDrawInstruction(ListViewElement el, int controlId);
-
-        protected abstract void DrawInspectedStacktrace();
+        protected abstract void DrawInspectedStacktrace(float availableWidth);
 
         protected virtual bool isInstructionSelected { get { return m_ListViewState.row >= 0 && m_ListViewState.row < GetInstructionCount(); } }
-
-        protected void DrawStackFrameList(StackFrame[] stackframes)
+        protected void DrawStackFrameList(StackFrame[] stackframes, float availableWidth)
         {
             if (stackframes != null)
             {
+                var callstack = "";
                 foreach (var stackframe in stackframes)
                 {
                     if (string.IsNullOrEmpty(stackframe.sourceFile))
                         continue;
 
-                    GUILayout.Label(string.Format("{0} [{1}:{2}]", stackframe.signature, stackframe.sourceFile, stackframe.lineNumber), GUIViewDebuggerWindow.Styles.stackframeStyle);
-                    //GUILayout.Label(string.Format("{0} - {1}", stackframe.methodName, stackframe.moduleName), stackframeStyle);
+                    var cpos = stackframe.signature.IndexOf('(');
+                    var signature = stackframe.signature.Substring(0, cpos != -1 ? cpos : stackframe.signature.Length);
+                    if (Event.current.isMouse)
+                    {
+                        callstack += string.Format("{0} [{1}:{2}]\n", signature, stackframe.sourceFile, stackframe.lineNumber);
+                    }
+                    else
+                    {
+                        callstack += string.Format("{0} [<color={3}>{1}</color>:{2}]\n", signature,
+                                stackframe.sourceFile, stackframe.lineNumber, EditorGUIUtility.isProSkin ? "#4c7effff" : "#0000ffff");
+                    }
                 }
+
+                float height = GUIViewDebuggerWindow.Styles.messageStyle.CalcHeight(GUIContent.Temp(callstack), availableWidth);
+                EditorGUILayout.SelectableLabel(callstack, GUIViewDebuggerWindow.Styles.messageStyle,
+                    GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true), GUILayout.MinHeight(height));
             }
         }
 

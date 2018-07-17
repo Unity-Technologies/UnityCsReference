@@ -395,7 +395,7 @@ namespace UnityEngine
         [NativeName("m_SyncInterval")]          public UInt32 syncInterval;
     }
 
-    [StaticAccessor("GetFrameTimingManager()", StaticAccessorType.Dot)]
+    [StaticAccessor("GetUncheckedRealGfxDevice().GetFrameTimingManager()", StaticAccessorType.Dot)]
     static public class FrameTimingManager
     {
         static extern public void CaptureFrameTimings();
@@ -536,24 +536,5 @@ namespace UnityEngine
 
         // The number of cells (tetrahedra + outer cells) the space is divided to.
         public extern int cellCount {[NativeName("GetTetrahedraSize")] get; }
-    }
-}
-
-namespace UnityEngine.Experimental.Rendering
-{
-    public enum VertexAttribute
-    {
-        Position = 0, // Vertex (vector3)
-        Normal,       // Normal (vector3)
-        Tangent,      // Tangent (vector4)
-        Color,        // Vertex color
-        TexCoord0,    // Texcoord 0
-        TexCoord1,    // Texcoord 1
-        TexCoord2,    // Texcoord 2
-        TexCoord3,    // Texcoord 3
-        TexCoord4,    // Texcoord 4
-        TexCoord5,    // Texcoord 5
-        TexCoord6,    // Texcoord 6
-        TexCoord7,    // Texcoord 7
     }
 }

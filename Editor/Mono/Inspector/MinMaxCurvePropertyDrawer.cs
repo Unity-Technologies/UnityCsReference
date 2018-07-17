@@ -21,6 +21,8 @@ namespace UnityEditorInternal
             public SerializedProperty curveMax;
         }
 
+        internal bool isNativeProperty { get; set; }
+
         // Its possible that the PropertyDrawer may be used to draw more than one MinMaxCurve property(arrays, lists)
         Dictionary<string, PropertyData> m_PropertyDataPerPropertyPath = new Dictionary<string, PropertyData>();
         PropertyData m_Property;
@@ -54,13 +56,16 @@ namespace UnityEditorInternal
 
             m_Property = new PropertyData()
             {
-                mode = property.FindPropertyRelative("m_Mode"),
-                constantMax = property.FindPropertyRelative("m_ConstantMax"),
-                constantMin = property.FindPropertyRelative("m_ConstantMin"),
-                curveMin = property.FindPropertyRelative("m_CurveMin"),
-                curveMax = property.FindPropertyRelative("m_CurveMax"),
-                curveMultiplier = property.FindPropertyRelative("m_CurveMultiplier"),
+                mode = property.FindPropertyRelative(isNativeProperty ? "minMaxState" : "m_Mode"),
+                constantMax = property.FindPropertyRelative(isNativeProperty ? "scalar" : "m_ConstantMax"),
+                constantMin = property.FindPropertyRelative(isNativeProperty ? "minScalar" : "m_ConstantMin"),
+                curveMin = property.FindPropertyRelative(isNativeProperty ? "minCurve" : "m_CurveMin"),
+                curveMax = property.FindPropertyRelative(isNativeProperty ? "maxCurve" : "m_CurveMax"),
+
+                // In native we use the same value for multiplier and max scalar.
+                curveMultiplier = property.FindPropertyRelative(isNativeProperty ? "scalar" : "m_CurveMultiplier")
             };
+
             m_PropertyDataPerPropertyPath.Add(property.propertyPath, m_Property);
             InitCurves();
         }

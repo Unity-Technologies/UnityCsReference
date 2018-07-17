@@ -353,25 +353,35 @@ namespace UnityEditorInternal
             }
         }
 
-        static private void ProcessVector3Modification(IAnimationRecordingState state, EditorCurveBinding baseBinding, UndoPropertyModification modification, Transform target, string axis)
+        static private void ProcessVector3Modification(IAnimationRecordingState state, EditorCurveBinding baseBinding, UndoPropertyModification modification, Transform target, string axis, float scale = 1.0f)
         {
             var binding = baseBinding;
-            var property = modification.previousValue;
-
             binding.propertyName = binding.propertyName.Remove(binding.propertyName.Length - 1, 1) + axis;
 
-            if (property == null)
+            object currentValue = CurveBindingUtility.GetCurrentValue(state.activeRootGameObject, binding);
+
+            var previousModification = modification.previousValue;
+            if (previousModification == null)
             {
                 // create dummy
-                property = new PropertyModification();
-                property.target = target;
-                property.propertyPath = binding.propertyName;
-                object currentValue = CurveBindingUtility.GetCurrentValue(state.activeRootGameObject, binding);
-                property.value = ((float)currentValue).ToString();
+                previousModification = new PropertyModification();
+                previousModification.target = target;
+                previousModification.propertyPath = binding.propertyName;
+                previousModification.value = ((float)currentValue).ToString();
             }
 
-            state.AddPropertyModification(binding, property, modification.keepPrefabOverride);
-            AddKey(state, binding, typeof(float), property);
+            object previousValue = currentValue;
+            ValueFromPropertyModification(previousModification, binding, out previousValue);
+
+            state.AddPropertyModification(binding, previousModification, modification.keepPrefabOverride);
+
+            if (scale != 1.0f)
+            {
+                previousValue = (object)((float)previousValue / scale);
+                currentValue = (object)((float)currentValue / scale);
+            }
+
+            AddKey(state, binding, typeof(float), previousValue, currentValue);
         }
 
         static public void ProcessVector3Modifications(IAnimationRecordingState state, ref Dictionary<object, Vector3Modification> vector3Modifications)
@@ -412,8 +422,14 @@ namespace UnityEditorInternal
                 Type type = AnimationUtility.PropertyModificationToEditorCurveBinding(prop, root, out binding);
                 if (type != null)
                 {
+                    object currentValue = CurveBindingUtility.GetCurrentValue(root, binding);
+
+                    object previousValue = null;
+                    if (!ValueFromPropertyModification(prop, binding, out previousValue))
+                        previousValue = currentValue;
+
                     state.AddPropertyModification(binding, prop, modifications[i].keepPrefabOverride);
-                    AddKey(state, binding, type, prop);
+                    AddKey(state, binding, type, previousValue, currentValue);
                 }
             }
         }
@@ -481,7 +497,7 @@ namespace UnityEditorInternal
             }
         }
 
-        static void AddKey(IAnimationRecordingState state, EditorCurveBinding binding, Type type, PropertyModification modification)
+        static void AddKey(IAnimationRecordingState state, EditorCurveBinding binding, Type type, object previousValue, object currentValue)
         {
             GameObject root = state.activeRootGameObject;
             AnimationClip clip = state.activeAnimationClip;
@@ -491,23 +507,18 @@ namespace UnityEditorInternal
 
             AnimationWindowCurve curve = new AnimationWindowCurve(clip, binding, type);
 
-            // Add key at current frame
-            object currentValue = CurveBindingUtility.GetCurrentValue(root, binding);
-
+            // Add previous value at first frame on empty curves.
             if (state.addZeroFrame)
             {
                 // Is it a new curve?
                 if (curve.length == 0)
                 {
-                    object oldValue = null;
-                    if (!ValueFromPropertyModification(modification, binding, out oldValue))
-                        oldValue = currentValue;
-
                     if (state.currentFrame != 0)
-                        AnimationWindowUtility.AddKeyframeToCurve(curve, oldValue, type, AnimationKeyTime.Frame(0, clip.frameRate));
+                        AnimationWindowUtility.AddKeyframeToCurve(curve, previousValue, type, AnimationKeyTime.Frame(0, clip.frameRate));
                 }
             }
 
+            // Add key at current frame.
             AnimationWindowUtility.AddKeyframeToCurve(curve, currentValue, type, AnimationKeyTime.Frame(state.currentFrame, clip.frameRate));
 
             state.SaveCurve(curve);
@@ -578,17 +589,17 @@ namespace UnityEditorInternal
 
                 if (m.lastP.previousValue != null)
                 {
-                    ProcessAnimatorModification(state, animator, m.px, "MotionT.x", position.x, scale.x);
-                    ProcessAnimatorModification(state, animator, m.py, "MotionT.y", position.y, scale.y);
-                    ProcessAnimatorModification(state, animator, m.pz, "MotionT.z", position.z, scale.z);
+                    ProcessRootMotionModification(state, animator, m.px, "MotionT.x", position.x, scale.x);
+                    ProcessRootMotionModification(state, animator, m.py, "MotionT.y", position.y, scale.y);
+                    ProcessRootMotionModification(state, animator, m.pz, "MotionT.z", position.z, scale.z);
                 }
 
                 if (m.lastR.previousValue != null)
                 {
-                    ProcessAnimatorModification(state, animator, m.rx, "MotionQ.x", rotation.x, 1);
-                    ProcessAnimatorModification(state, animator, m.ry, "MotionQ.y", rotation.y, 1);
-                    ProcessAnimatorModification(state, animator, m.rz, "MotionQ.z", rotation.z, 1);
-                    ProcessAnimatorModification(state, animator, m.rw, "MotionQ.w", rotation.w, 1);
+                    ProcessRootMotionModification(state, animator, m.rx, "MotionQ.x", rotation.x, 1);
+                    ProcessRootMotionModification(state, animator, m.ry, "MotionQ.y", rotation.y, 1);
+                    ProcessRootMotionModification(state, animator, m.rz, "MotionQ.z", rotation.z, 1);
+                    ProcessRootMotionModification(state, animator, m.rw, "MotionQ.w", rotation.w, 1);
                 }
             }
         }
@@ -607,6 +618,7 @@ namespace UnityEditorInternal
             bool isHuman = animator != null ? animator.isHuman : false;
             bool hasRootMotion = animator != null ? animator.hasRootMotion : false;
             bool applyRootMotion = animator != null ? animator.applyRootMotion : false;
+            bool hasRootCurves = clip.hasRootCurves;
 
             // process animator positions
             List<object> discardListPos = new List<object>();
@@ -625,7 +637,7 @@ namespace UnityEditorInternal
                     continue;
 
                 bool isRootTransform = root.transform == target;
-                bool isRootMotion = (isHuman || hasRootMotion || applyRootMotion) && isRootTransform;
+                bool isRootMotion = isRootTransform && applyRootMotion && hasRootCurves && (isHuman || hasRootMotion);
                 bool isHumanBone = isHuman && !isRootTransform && animator.IsBoneTransform(target);
 
                 if (isHumanBone)
@@ -647,6 +659,16 @@ namespace UnityEditorInternal
                     rootMotionModification.px = m.x;
                     rootMotionModification.py = m.y;
                     rootMotionModification.pz = m.z;
+
+                    discardListPos.Add(item.Key);
+                }
+                else if (applyRootMotion)
+                {
+                    Vector3 scale = target.localScale * (isHuman ? animator.humanScale : 1);
+
+                    ProcessVector3Modification(state, binding, m.x, target, "x", scale.x);
+                    ProcessVector3Modification(state, binding, m.y, target, "y", scale.y);
+                    ProcessVector3Modification(state, binding, m.z, target, "z", scale.z);
 
                     discardListPos.Add(item.Key);
                 }
@@ -674,7 +696,7 @@ namespace UnityEditorInternal
                     continue;
 
                 bool isRootTransform = root.transform == target;
-                bool isRootMotion = (isHuman || hasRootMotion || applyRootMotion) && isRootTransform;
+                bool isRootMotion = isRootTransform && applyRootMotion && hasRootCurves && (isHuman || hasRootMotion);
                 bool isHumanBone = isHuman && !isRootTransform && animator.IsBoneTransform(target);
 
                 if (isHumanBone)
@@ -740,7 +762,7 @@ namespace UnityEditorInternal
             ProcessRootMotionModifications(state, ref rootMotionModifications);
         }
 
-        static void ProcessAnimatorModification(IAnimationRecordingState state, Animator animator, UndoPropertyModification modification, string name, float value, float scale)
+        static void ProcessRootMotionModification(IAnimationRecordingState state, Animator animator, UndoPropertyModification modification, string name, float value, float scale)
         {
             AnimationClip clip = state.activeAnimationClip;
 

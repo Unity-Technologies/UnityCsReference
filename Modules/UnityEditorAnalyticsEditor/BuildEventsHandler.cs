@@ -134,4 +134,26 @@ namespace UnityEditor
             }
         }
     }
+
+    internal class BuildCompletionEventsHandler
+    {
+        [Serializable]
+        struct BuildLibrariesInfo
+        {
+            public bool ar_plugin_loaded;
+            public string[] build_libraries;
+        }
+
+        public static void ReportPostBuildCompletionInfo(List<string> libraries)
+        {
+            if (libraries != null)
+            {
+                EditorAnalytics.SendEventBuildFrameworkList(new BuildLibrariesInfo()
+                {
+                    ar_plugin_loaded = libraries.Contains("System/Library/Frameworks/ARKit.framework"),
+                    build_libraries = libraries.ToArray()
+                });
+            }
+        }
+    }
 } // namespace

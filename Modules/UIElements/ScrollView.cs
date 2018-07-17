@@ -15,8 +15,8 @@ namespace UnityEngine.Experimental.UIElements
             UxmlBoolAttributeDescription m_ShowHorizontal = new UxmlBoolAttributeDescription { name = "show-horizontal-scroller" };
             UxmlBoolAttributeDescription m_ShowVertical = new UxmlBoolAttributeDescription { name = "show-vertical-scroller" };
 
-            UxmlFloatAttributeDescription m_HorizontalPageSize = new UxmlFloatAttributeDescription { name = "horizontal-page-size" };
-            UxmlFloatAttributeDescription m_VerticalPageSize = new UxmlFloatAttributeDescription { name = "vertical-page-size" };
+            UxmlFloatAttributeDescription m_HorizontalPageSize = new UxmlFloatAttributeDescription { name = "horizontal-page-size", defaultValue = Scroller.kDefaultPageSize};
+            UxmlFloatAttributeDescription m_VerticalPageSize = new UxmlFloatAttributeDescription { name = "vertical-page-size", defaultValue = Scroller.kDefaultPageSize};
             UxmlBoolAttributeDescription m_StretchContentWidth = new UxmlBoolAttributeDescription { name = "stretch-content-width" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
@@ -26,9 +26,9 @@ namespace UnityEngine.Experimental.UIElements
                 ScrollView scrollView = (ScrollView)ve;
                 scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag);
                 scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag);
-                scrollView.horizontalScroller.slider.pageSize = m_HorizontalPageSize.GetValueFromBag(bag);
-                scrollView.verticalScroller.slider.pageSize = m_VerticalPageSize.GetValueFromBag(bag);
                 scrollView.stretchContentWidth = m_StretchContentWidth.GetValueFromBag(bag);
+                scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag);
+                scrollView.verticalPageSize = m_VerticalPageSize.GetValueFromBag(bag);
             }
         }
 
@@ -83,6 +83,18 @@ namespace UnityEngine.Experimental.UIElements
                     UpdateContentViewTransform();
                 }
             }
+        }
+
+        public float horizontalPageSize
+        {
+            get { return horizontalScroller.slider.pageSize; }
+            set { horizontalScroller.slider.pageSize = value; }
+        }
+
+        public float verticalPageSize
+        {
+            get { return verticalScroller.slider.pageSize; }
+            set { verticalScroller.slider.pageSize = value; }
         }
 
         private float scrollableWidth { get { return contentContainer.layout.width - contentViewport.layout.width; } }
@@ -162,7 +174,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
                     UpdateContentViewTransform();
-                }, Slider.Direction.Horizontal)
+                }, SliderDirection.Horizontal)
             {name = "HorizontalScroller", persistenceKey = "HorizontalScroller", visible = false};
             shadow.Add(horizontalScroller);
 
@@ -171,7 +183,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
                     UpdateContentViewTransform();
-                }, Slider.Direction.Vertical)
+                }, SliderDirection.Vertical)
             {name = "VerticalScroller", persistenceKey = "VerticalScroller", visible = false};
             shadow.Add(verticalScroller);
 

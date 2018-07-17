@@ -253,6 +253,15 @@ namespace UnityEditor
         Gradle = 2,
     }
 
+    // *undocumented*
+    [NativeType(Header = "Editor/Src/EditorOnlyPlayerSettings.h")]
+    internal struct SwitchShaderCompilerConfig
+    {
+        internal int glslcDebugLevel;
+        internal string debugInfoOutputPath;
+        internal bool triggerGraphicsDebuggersConfigUpdate;
+    }
+
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     [StaticAccessor("GetEditorUserBuildSettings()", StaticAccessorType.Dot)]
     public partial class EditorUserBuildSettings : Object
@@ -567,6 +576,9 @@ namespace UnityEditor
         // Export as Android Google Project instead of building it
         public static extern bool exportAsGoogleAndroidProject { get; set; }
 
+        // Build Google Play App Bundle
+        public static extern bool buildAppBundle { get; set; }
+
         // Symlink runtime libraries with an iOS Xcode project.
         public static extern bool symlinkLibraries { get; set; }
 
@@ -610,7 +622,7 @@ namespace UnityEditor
         }
 
 
-        // Enable linkage of NVN Grahpics Debugger for Nintendo Switch.
+        // Enable linkage of NVN Graphics Debugger for Nintendo Switch.
         public static extern bool switchNVNGraphicsDebugger
         {
             [NativeMethod("GetNVNGraphicsDebuggerForSwitch")]
@@ -634,6 +646,14 @@ namespace UnityEditor
             [NativeMethod("GetRedirectWritesToHostMountForSwitch")]
             get;
             [NativeMethod("SetRedirectWritesToHostMountForSwitch")]
+            set;
+        }
+
+        internal static extern SwitchShaderCompilerConfig switchShaderCompilerConfig
+        {
+            [NativeMethod("GetSwitchShaderCompilerConfig")]
+            get;
+            [NativeMethod("SetSwitchShaderCompilerConfig")]
             set;
         }
 

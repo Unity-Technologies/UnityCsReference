@@ -9,6 +9,7 @@ namespace UnityEditor
 {
     [NativeHeader("Modules/AssetPipelineEditor/Public/MonoImporter.h")]
     [NativeHeader("Modules/AssetPipelineEditor/Public/MonoImporter.bindings.h")]
+    [ExcludeFromPreset]
     public class MonoImporter : AssetImporter
     {
         public extern void SetDefaultReferences(string[] name, Object[] target);

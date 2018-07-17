@@ -15,6 +15,7 @@ namespace UnityEditor.Presets
     [ExcludeFromPreset]
     public sealed class Preset : Object
     {
+        static readonly string[] s_EmptyArray = new string[0];
         public Preset(Object source)
         {
             Internal_Create(this, source);
@@ -24,7 +25,14 @@ namespace UnityEditor.Presets
 
         public extern PropertyModification[] PropertyModifications { get; }
 
-        public extern bool ApplyTo([NotNull] Object target);
+        public bool ApplyTo(Object target)
+        {
+            return ApplyTo(target, s_EmptyArray);
+        }
+
+        public extern bool ApplyTo([NotNull] Object target, string[] selectedPropertyPaths);
+
+        public extern bool DataEquals([NotNull] Object target);
 
         public extern bool UpdateProperties([NotNull] Object source);
 

@@ -54,7 +54,7 @@ namespace UnityEditor
                 PopupWindowWithoutFocus.Show(
                     new RectOffset(6, 3, 0, 3).Add(position),
                     new ObjectPreviewPopup(targetObject),
-                    new[] { PopupLocationHelper.PopupLocation.Left, PopupLocationHelper.PopupLocation.Below, PopupLocationHelper.PopupLocation.Right });
+                    new[] { PopupLocation.Left, PopupLocation.Below, PopupLocation.Right });
             }
         }
 

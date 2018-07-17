@@ -103,15 +103,12 @@ namespace UnityEngine.Experimental.UIElements
     {
         // https://w3c.github.io/uievents/#interface-focusevent
 
-        public FocusController(IFocusRing focusRing, IPanel panel)
+        public FocusController(IFocusRing focusRing)
         {
             this.focusRing = focusRing;
             focusedElement = null;
             imguiKeyboardControl = 0;
-            this.panel = panel;
         }
-
-        IPanel panel { get; }
 
         IFocusRing focusRing { get; }
 
@@ -130,7 +127,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             using (FocusOutEvent e = FocusOutEvent.GetPooled(focusable, willGiveFocusTo, direction, this))
             {
-                UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+                focusable.SendEvent(e);
             }
         }
 
@@ -138,7 +135,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             using (BlurEvent e = BlurEvent.GetPooled(focusable, willGiveFocusTo, direction, this))
             {
-                UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+                focusable.SendEvent(e);
             }
         }
 
@@ -146,7 +143,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             using (FocusInEvent e = FocusInEvent.GetPooled(focusable, willTakeFocusFrom, direction, this))
             {
-                UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+                focusable.SendEvent(e);
             }
         }
 
@@ -154,7 +151,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             using (FocusEvent e = FocusEvent.GetPooled(focusable, willTakeFocusFrom, direction, this))
             {
-                UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+                focusable.SendEvent(e);
             }
         }
 
@@ -170,39 +167,31 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            if (panel == null || panel.dispatcher == null)
+            var oldFocusedElement = focusedElement;
+
+            if (newFocusedElement == null || !newFocusedElement.canGrabFocus)
             {
-                return;
+                if (oldFocusedElement != null)
+                {
+                    AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                    ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
+                }
             }
-
-            using (new EventDispatcher.Gate((EventDispatcher)panel.dispatcher))
+            else if (newFocusedElement != oldFocusedElement)
             {
-                var oldFocusedElement = focusedElement;
-
-                if (newFocusedElement == null || !newFocusedElement.canGrabFocus)
+                if (oldFocusedElement != null)
                 {
-                    if (oldFocusedElement != null)
-                    {
-                        AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                        ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                    }
+                    AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
                 }
-                else if (newFocusedElement != oldFocusedElement)
+
+                AboutToGrabFocus(newFocusedElement, oldFocusedElement, direction);
+
+                if (oldFocusedElement != null)
                 {
-                    if (oldFocusedElement != null)
-                    {
-                        AboutToReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                    }
-
-                    AboutToGrabFocus(newFocusedElement, oldFocusedElement, direction);
-
-                    if (oldFocusedElement != null)
-                    {
-                        ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
-                    }
-
-                    GrabFocus(newFocusedElement, oldFocusedElement, direction);
+                    ReleaseFocus(oldFocusedElement, newFocusedElement, direction);
                 }
+
+                GrabFocus(newFocusedElement, oldFocusedElement, direction);
             }
         }
 

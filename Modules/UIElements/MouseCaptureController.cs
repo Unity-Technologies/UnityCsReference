@@ -51,29 +51,20 @@ namespace UnityEngine.Experimental.UIElements
 
             // TODO: assign a reserved control id to hotControl so that repaint events in OnGUI() have their hotcontrol check behave normally
 
-            IEventDispatcher dispatcher = UIElementsUtility.eventDispatcher;
-            VisualElement ve = handler as VisualElement;
-            if (ve != null)
+            IEventHandler currentMouseCapture = mouseCapture;
+            mouseCapture = handler;
+
+            if (currentMouseCapture != null)
             {
-                dispatcher = ve.panel.dispatcher;
+                using (MouseCaptureOutEvent releaseEvent = MouseCaptureOutEvent.GetPooled(currentMouseCapture, mouseCapture))
+                {
+                    currentMouseCapture.SendEvent(releaseEvent);
+                }
             }
 
-            using (new EventDispatcher.Gate((EventDispatcher)dispatcher))
+            using (MouseCaptureEvent captureEvent = MouseCaptureEvent.GetPooled(mouseCapture, currentMouseCapture))
             {
-                using (MouseCaptureEvent captureEvent = MouseCaptureEvent.GetPooled(handler, mouseCapture))
-                {
-                    if (mouseCapture != null)
-                    {
-                        using (MouseCaptureOutEvent releaseEvent = MouseCaptureOutEvent.GetPooled(mouseCapture, handler))
-                        {
-                            UIElementsUtility.eventDispatcher.DispatchEvent(releaseEvent, null);
-                        }
-                    }
-
-                    mouseCapture = handler;
-
-                    UIElementsUtility.eventDispatcher.DispatchEvent(captureEvent, null);
-                }
+                mouseCapture.SendEvent(captureEvent);
             }
         }
 
@@ -102,12 +93,14 @@ namespace UnityEngine.Experimental.UIElements
         {
             if (mouseCapture != null)
             {
-                using (MouseCaptureOutEvent e = MouseCaptureOutEvent.GetPooled(mouseCapture, null))
+                IEventHandler currentMouseCapture = mouseCapture;
+                mouseCapture = null;
+
+                using (MouseCaptureOutEvent e = MouseCaptureOutEvent.GetPooled(currentMouseCapture, null))
                 {
-                    UIElementsUtility.eventDispatcher.DispatchEvent(e, null);
+                    currentMouseCapture.SendEvent(e);
                 }
             }
-            mouseCapture = null;
         }
     }
 }

@@ -130,6 +130,7 @@ namespace UnityEngine
 
     [NativeHeader("TerrainScriptingClasses.h")]
     [NativeHeader("Modules/Terrain/Public/TerrainDataScriptingInterface.h")]
+    [UsedByNativeCode]
     public sealed partial class TerrainData : Object
     {
         private const string k_ScriptingInterfaceName = "TerrainDataScriptingInterface";
@@ -178,6 +179,9 @@ namespace UnityEngine
 
         extern internal void RemoveUser(GameObject user);
 
+        extern public void UpdateDirtyRegion(int x, int y, int width, int height);
+
+
         extern public int heightmapWidth
         {
             [NativeName(k_HeightmapPrefix + "GetWidth")]
@@ -187,6 +191,12 @@ namespace UnityEngine
         extern public int heightmapHeight
         {
             [NativeName(k_HeightmapPrefix + "GetHeight")]
+            get;
+        }
+
+        extern public RenderTexture heightmapTexture
+        {
+            [NativeName(k_HeightmapPrefix + "GetHeightmapTexture")]
             get;
         }
 
@@ -402,7 +412,7 @@ namespace UnityEngine
             get;
         }
 
-        extern internal int detailResolutionPerPatch
+        extern public int detailResolutionPerPatch
         {
             [NativeName(k_DetailDatabasePrefix + "GetResolutionPerPatch")]
             get;
@@ -596,12 +606,12 @@ namespace UnityEngine
         extern internal void RecalculateBasemapIfDirty();
 
         [NativeName(k_SplatDatabasePrefix + "SetBasemapDirty")]
-        extern internal void SetBasemapDirty(bool dirty);
+        extern public void SetBasemapDirty(bool dirty);
 
         [NativeName(k_SplatDatabasePrefix + "GetAlphaTexture")]
-        extern private Texture2D GetAlphamapTexture(int index);
+        extern public Texture2D GetAlphamapTexture(int index);
 
-        private extern int alphamapTextureCount
+        public extern int alphamapTextureCount
         {
             [NativeName(k_SplatDatabasePrefix + "GetAlphaTextureCount")]
             get;
@@ -618,12 +628,22 @@ namespace UnityEngine
             }
         }
 
+        [System.Obsolete("Please use the terrainLayers API instead.", false)]
         extern public SplatPrototype[] splatPrototypes
         {
             [FreeFunction(k_ScriptingInterfacePrefix + "GetSplatPrototypes", HasExplicitThis = true)]
             get;
 
             [FreeFunction(k_ScriptingInterfacePrefix + "SetSplatPrototypes", HasExplicitThis = true)]
+            set;
+        }
+
+        extern public TerrainLayer[] terrainLayers
+        {
+            [FreeFunction(k_ScriptingInterfacePrefix + "GetTerrainLayers", HasExplicitThis = true)]
+            get;
+
+            [FreeFunction(k_ScriptingInterfacePrefix + "SetTerrainLayers", HasExplicitThis = true)]
             set;
         }
 

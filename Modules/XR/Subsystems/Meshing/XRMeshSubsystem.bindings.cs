@@ -3,9 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.XR
@@ -22,6 +22,7 @@ namespace UnityEngine.Experimental.XR
 
     [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
     [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     public struct MeshGenerationResult
     {
         public TrackableId MeshId { get; }
@@ -55,6 +56,7 @@ namespace UnityEngine.Experimental.XR
 
     [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshBindings.h")]
     [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     public struct MeshInfo
     {
         public TrackableId MeshId { get; }

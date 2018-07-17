@@ -64,7 +64,7 @@ namespace UnityEditor
         // *undocumented*
         WSAPlayer = 21,
 
-        // Build a Linux standalone (i386 only).
+        // Build a Linux standalone (x86_64 only).
         StandaloneLinux64 = 24,
 
         // Build a Linux standalone (i386/x86_64 universal).
@@ -113,6 +113,8 @@ namespace UnityEditor
         tvOS = 37,
 
         Switch = 38,
+
+        Lumin = 39,
 
         // obsolete identifiers. We're using different values so that ToString() works.
         [System.Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]

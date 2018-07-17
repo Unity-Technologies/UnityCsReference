@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.PackageManager.Requests;
 
 namespace UnityEditor.PackageManager
@@ -31,6 +32,9 @@ namespace UnityEditor.PackageManager
 
         public static SearchRequest Search(string packageIdOrName)
         {
+            if (string.IsNullOrEmpty(packageIdOrName?.Trim()))
+                throw new ArgumentNullException(nameof(packageIdOrName));
+
             long operationId;
             var status = NativeClient.Search(out operationId, packageIdOrName);
             return new SearchRequest(operationId, status, packageIdOrName);

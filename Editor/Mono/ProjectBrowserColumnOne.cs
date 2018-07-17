@@ -281,12 +281,9 @@ namespace UnityEditor
 
             packagesRootItem.icon = emptyFolderIcon;
 
-            var packages = PackageManager.Packages.GetAll();
+            var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
             foreach (var package in packages)
             {
-                if (package.source == PackageManager.PackageSource.BuiltIn)
-                    continue;
-
                 var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
 
                 displayName = !string.IsNullOrEmpty(package.displayName) ? package.displayName : package.name;

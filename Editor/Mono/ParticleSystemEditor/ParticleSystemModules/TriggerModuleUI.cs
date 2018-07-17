@@ -178,7 +178,7 @@ namespace UnityEditor
                 return;
 
             Color oldColor = Handles.color;
-            Handles.color = Color.green;
+            Handles.color = CollisionModuleUI.s_CollisionBoundsColor;
             Matrix4x4 oldMatrix = Handles.matrix;
 
             Vector3[] points0 = new Vector3[20];

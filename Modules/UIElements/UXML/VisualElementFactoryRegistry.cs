@@ -91,6 +91,8 @@ namespace UnityEngine.Experimental.UIElements
                 new ScrollView.UxmlFactory(),
                 new Scroller.UxmlFactory(),
                 new Slider.UxmlFactory(),
+                new SliderInt.UxmlFactory(),
+                new MinMaxSlider.UxmlFactory(),
                 new TextField.UxmlFactory(),
                 new Toggle.UxmlFactory(),
                 new VisualContainer.UxmlFactory(),

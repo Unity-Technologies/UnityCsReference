@@ -164,6 +164,20 @@ namespace UnityEditor
             }
         }
 
+        private static string BuildHashString(SortedList<string, uint> list)
+        {
+            var hashStr = "";
+            foreach (var pair in list)
+            {
+                hashStr += pair.Key;
+                hashStr += '.';
+                hashStr += pair.Value;
+                hashStr += '|';
+            }
+
+            return hashStr;
+        }
+
         internal class PostprocessStack
         {
             internal ArrayList m_ImportProcessors = null;
@@ -237,9 +251,9 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static uint[] GetMeshProcessorVersions()
+        static string GetMeshProcessorsHashString()
         {
-            List<uint> versions = new List<uint>();
+            var versionsByType = new SortedList<string, uint>();
 
             foreach (var assetPostprocessorClass in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
             {
@@ -253,7 +267,7 @@ namespace UnityEditor
                     uint version = inst.GetVersion();
                     if (version != 0 && (hasPreProcessMethod || hasProcessMeshAssignMethod || hasPostProcessMethod))
                     {
-                        versions.Add(version);
+                        versionsByType.Add(type.FullName, version);
                     }
                 }
                 catch (MissingMethodException)
@@ -266,7 +280,7 @@ namespace UnityEditor
                 }
             }
 
-            return versions.ToArray();
+            return BuildHashString(versionsByType);
         }
 
         [RequiredByNativeCode]
@@ -391,9 +405,9 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static uint[] GetTextureProcessorVersions()
+        static string GetTextureProcessorsHashString()
         {
-            List<uint> versions = new List<uint>();
+            var versionsByType = new SortedList<string, uint>();
 
             foreach (var assetPostprocessorClass in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
             {
@@ -407,7 +421,7 @@ namespace UnityEditor
                     uint version = inst.GetVersion();
                     if (version != 0 && (hasPreProcessMethod || hasPostProcessMethod))
                     {
-                        versions.Add(version);
+                        versionsByType.Add(type.FullName, version);
                     }
                 }
                 catch (MissingMethodException)
@@ -420,7 +434,7 @@ namespace UnityEditor
                 }
             }
 
-            return versions.ToArray();
+            return BuildHashString(versionsByType);
         }
 
         [RequiredByNativeCode]
@@ -463,9 +477,9 @@ namespace UnityEditor
         }
 
         [RequiredByNativeCode]
-        static uint[] GetAudioProcessorVersions()
+        static string GetAudioProcessorsHashString()
         {
-            List<uint> versions = new List<uint>();
+            var versionsByType = new SortedList<string, uint>();
 
             foreach (var assetPostprocessorClass in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
             {
@@ -478,7 +492,7 @@ namespace UnityEditor
                     uint version = inst.GetVersion();
                     if (version != 0 && (hasPreProcessMethod || hasPostProcessMethod))
                     {
-                        versions.Add(version);
+                        versionsByType.Add(type.FullName, version);
                     }
                 }
                 catch (MissingMethodException)
@@ -491,7 +505,7 @@ namespace UnityEditor
                 }
             }
 
-            return versions.ToArray();
+            return BuildHashString(versionsByType);
         }
 
         [RequiredByNativeCode]

@@ -45,10 +45,13 @@ namespace UnityEngine
         // True if camera device supports arbitrary focus point
         public bool isAutoFocusPointSupported { get { return (m_Flags & ((int)WebCamFlags.AutoFocusPointSupported)) != 0; } }
 
+        public Resolution[] availableResolutions { get { return m_Resolutions; } }
+
         internal string m_Name;
         internal string m_DepthCameraName;
         internal int m_Flags;
         internal WebCamKind m_Kind;
+        internal Resolution[] m_Resolutions;
     }
 
     [NativeHeader("Runtime/Video/BaseWebCamTexture.h")]

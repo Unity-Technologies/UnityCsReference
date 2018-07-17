@@ -386,24 +386,16 @@ namespace UnityEngine
         extern public Mesh sharedMesh { get; set; }
         extern public bool convex { get; set; }
 
+        [Obsolete("MeshCollider.inflateMesh is no longer supported. The new cooking algorithm doesn't need inflation to be used.")]
         public bool inflateMesh
         {
-            get
-            {
-                return (cookingOptions & MeshColliderCookingOptions.InflateConvexMesh) != 0;
-            }
-            set
-            {
-                MeshColliderCookingOptions newOptions = cookingOptions & ~MeshColliderCookingOptions.InflateConvexMesh;
-                if (value)
-                    newOptions |= MeshColliderCookingOptions.InflateConvexMesh;
-                cookingOptions = newOptions;
-            }
+            get { return false; } set {}
         }
 
         extern public MeshColliderCookingOptions cookingOptions { get; set; }
 
-        extern public float skinWidth { get; set; }
+        [Obsolete("MeshCollider.skinWidth is no longer used.")]
+        public float skinWidth { get { return 0f; } set {} }
 
         [Obsolete("Configuring smooth sphere collisions is no longer needed.")]
         public bool smoothSphereCollisions { get { return true; } set {} }
@@ -912,9 +904,27 @@ namespace UnityEngine
             return CapsuleCast(point1, point2, radius, direction, out hitInfo, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
+        [NativeName("SphereCast")]
+        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
+        extern private static bool Query_SphereCast(Vector3 origin, float radius, Vector3 direction, float maxDistance, ref RaycastHit hitInfo, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+        private static bool Internal_SphereCast(Vector3 origin, float radius, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
+        {
+            float dirLength = direction.magnitude;
+            hitInfo = new RaycastHit();
+            if (dirLength > float.Epsilon)
+            {
+                Vector3 normalizedDirection = direction / dirLength;
+
+                return Query_SphereCast(origin, radius, normalizedDirection, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
+            }
+            else
+                return false;
+        }
+
         static public bool SphereCast(Vector3 origin, float radius, Vector3 direction, out RaycastHit hitInfo, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return Internal_CapsuleCast(origin, origin, radius, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_SphereCast(origin, radius, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -938,7 +948,7 @@ namespace UnityEngine
         static public bool SphereCast(Ray ray, float radius, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             RaycastHit hitInfo;
-            return Internal_CapsuleCast(ray.origin, ray.origin, radius, ray.direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_SphereCast(ray.origin, radius, ray.direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -1160,9 +1170,23 @@ namespace UnityEngine
             return CapsuleCastAll(point1, point2, radius, direction, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
-        static public RaycastHit[] SphereCastAll(Vector3 origin, float radius, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        [NativeName("SphereCastAll")]
+        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
+        extern private static RaycastHit[] Query_SphereCastAll(Vector3 origin, float radius, Vector3 direction, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+
+        public static RaycastHit[] SphereCastAll(Vector3 origin, float radius, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return CapsuleCastAll(origin, origin, radius, direction, maxDistance, layerMask, queryTriggerInteraction);
+            float dirLength = direction.magnitude;
+            if (dirLength > float.Epsilon)
+            {
+                Vector3 normalizedDirection = direction / dirLength;
+
+                return Query_SphereCastAll(origin, radius, normalizedDirection, maxDistance, layerMask, queryTriggerInteraction);
+            }
+            else
+            {
+                return new RaycastHit[0];
+            }
         }
 
         [ExcludeFromDocs]
@@ -1185,7 +1209,7 @@ namespace UnityEngine
 
         static public RaycastHit[] SphereCastAll(Ray ray, float radius, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return CapsuleCastAll(ray.origin, ray.origin, radius, ray.direction, maxDistance, layerMask, queryTriggerInteraction);
+            return SphereCastAll(ray.origin, radius, ray.direction, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -1411,9 +1435,22 @@ namespace UnityEngine
             return CapsuleCastNonAlloc(point1, point2, radius, direction, results, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
-        static public int SphereCastNonAlloc(Vector3 origin, float radius, Vector3 direction, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        [NativeName("SphereCastNonAlloc")]
+        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
+        extern private static int Internal_SphereCastNonAlloc(Vector3 origin, float radius, Vector3 direction, [Out] RaycastHit[] raycastHits, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+
+        public static int SphereCastNonAlloc(Vector3 origin, float radius, Vector3 direction, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return CapsuleCastNonAlloc(origin, origin, radius, direction, results, maxDistance, layerMask, queryTriggerInteraction);
+            float dirLength = direction.magnitude;
+
+            if (dirLength > float.Epsilon)
+            {
+                return Internal_SphereCastNonAlloc(origin, radius, direction, results, maxDistance, layerMask, queryTriggerInteraction);
+            }
+            else
+            {
+                return 0;
+            }
         }
 
         [ExcludeFromDocs]
@@ -1436,7 +1473,7 @@ namespace UnityEngine
 
         static public int SphereCastNonAlloc(Ray ray, float radius, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return CapsuleCastNonAlloc(ray.origin, ray.origin, radius, ray.direction, results, maxDistance, layerMask, queryTriggerInteraction);
+            return SphereCastNonAlloc(ray.origin, radius, ray.direction, results, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]

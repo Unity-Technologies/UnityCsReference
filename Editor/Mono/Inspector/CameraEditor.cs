@@ -4,14 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
-using UnityEditorInternal;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -26,15 +24,20 @@ namespace UnityEditor
             public static GUIContent clearFlags = EditorGUIUtility.TrTextContent("Clear Flags", "What to display in empty areas of this Camera's view.\n\nChoose Skybox to display a skybox in empty areas, defaulting to a background color if no skybox is found.\n\nChoose Solid Color to display a background color in empty areas.\n\nChoose Depth Only to display nothing in empty areas.\n\nChoose Don't Clear to display whatever was displayed in the previous frame in empty areas.");
             public static GUIContent background = EditorGUIUtility.TrTextContent("Background", "The Camera clears the screen to this color before rendering.");
             public static GUIContent projection = EditorGUIUtility.TrTextContent("Projection", "How the Camera renders perspective.\n\nChoose Perspective to render objects with perspective.\n\nChoose Orthographic to render objects uniformly, with no sense of perspective.");
-            public static GUIContent size = EditorGUIUtility.TrTextContent("Size");
-            public static GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The width of the Camera’s view angle, measured in degrees along the local Y axis.");
+            public static GUIContent size = EditorGUIUtility.TrTextContent("Size", "The vertical size of the camera view.");
+            public static GUIContent fieldOfView = EditorGUIUtility.TrTextContent("Field of View", "The height of the camera’s view angle, measured in degrees vertically, or along the local Y axis.");
             public static GUIContent viewportRect = EditorGUIUtility.TrTextContent("Viewport Rect", "Four values that indicate where on the screen this camera view will be drawn. Measured in Viewport Coordinates (values 0–1).");
-            public static GUIContent cameraPreview = EditorGUIUtility.TrTextContent("Camera Preview");
-            public static GUIContent sensorSize = EditorGUIUtility.TrTextContent("Sensor Size");
-            public static GUIContent lensShift = EditorGUIUtility.TrTextContent("Lens Shift");
-            public static GUIContent physicalCamera = EditorGUIUtility.TrTextContent("Physical Camera");
-            public static GUIContent cameraType = EditorGUIUtility.TrTextContent("Camera Type");
-            public static GUIContent focalLength = EditorGUIUtility.TrTextContent("Focal Length");
+            public static GUIContent sensorSize = EditorGUIUtility.TrTextContent("Sensor Size", "The size of the camera sensor in millimeters.");
+            public static GUIContent lensShift = EditorGUIUtility.TrTextContent("Lens Shift", "Offset from the camera sensor. Use these properties to simulate a shift lens. Measured as a multiple of the sensor size.");
+            public static GUIContent physicalCamera = EditorGUIUtility.TrTextContent("Physical Camera", "Enables Physical camera mode. When checked, the field of view is calculated from properties for simulating physical attributes (focal length, sensor size, and lens shift)");
+            public static GUIContent cameraType = EditorGUIUtility.TrTextContent("Sensor Type", "Common sensor sizes. Choose an item to set Sensor Size, or edit Sensor Size for your custom settings.");
+            public static GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path", "Choose a rendering method for this camera.\n\nUse Graphics Settings to use the rendering path specified in Player settings.\n\nUse Forward to render all objects with one pass per material.\n\nUse Deferred to draw all objects once without lighting and then draw the lighting of all objects at the end of the render queue.\n\nUse Legacy Vertex Lit to to render all lights in a single pass, calculated in vertices.\n\nLegacy Deferred has been deprecated.");
+            public static GUIContent focalLength = EditorGUIUtility.TrTextContent("Focal Length", "The simulated distance between the lens and the sensor of the physical camera. Larger values give a narrower field of view.");
+            public static GUIContent allowOcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Occlusion Culling means that objects that are hidden behind other objects are not rendered, for example if they are behind walls.");
+            public static GUIContent allowHDR = EditorGUIUtility.TrTextContent("Allow HDR", "High Dynamic Range gives you a wider range of light intensities, so your lighting looks more realistic. With it, you can still see details and experience less saturation even with bright light.");
+            public static GUIContent allowMSAA = EditorGUIUtility.TrTextContent("Allow MSAA", "Use Multi Sample Anti-Aliasing to reduce aliasing.");
+            public static GUIContent gateFit = EditorGUIUtility.TrTextContent("Gate Fit", "Determines how the rendered area (resolution gate) fits into the sensor area (film gate).");
+            public static GUIContent allowDynamicResolution = EditorGUIUtility.TrTextContent("Allow Dynamic Resolution", "Scales render textures to support dynamic resolution if the target platform/graphics API supports it.");
             public static GUIStyle invisibleButton = "InvisibleButton";
         }
         public sealed class Settings
@@ -100,6 +103,7 @@ namespace UnityEditor
             public SerializedProperty sensorSize { get; private set; }
             public SerializedProperty lensShift { get; private set; }
             public SerializedProperty focalLength { get; private set; }
+            public SerializedProperty gateFit { get; private set; }
             public SerializedProperty fieldOfView { get; private set; }
             public SerializedProperty orthographic { get; private set; }
             public SerializedProperty orthographicSize { get; private set; }
@@ -138,6 +142,7 @@ namespace UnityEditor
                 sensorSize = m_SerializedObject.FindProperty("m_SensorSize");
                 lensShift = m_SerializedObject.FindProperty("m_LensShift");
                 focalLength = m_SerializedObject.FindProperty("m_FocalLength");
+                gateFit = m_SerializedObject.FindProperty("m_GateFitMode");
                 projectionMatrixMode = m_SerializedObject.FindProperty("m_projectionMatrixMode");
                 nearClippingPlane = m_SerializedObject.FindProperty("near clip plane");
                 farClippingPlane = m_SerializedObject.FindProperty("far clip plane");
@@ -228,6 +233,17 @@ namespace UnityEditor
                         {
                             using (new EditorGUI.IndentLevelScope())
                             {
+                                using (var horizontal = new EditorGUILayout.HorizontalScope())
+                                    using (new EditorGUI.PropertyScope(horizontal.rect, Styles.focalLength, focalLength))
+                                        using (var checkScope = new EditorGUI.ChangeCheckScope())
+                                        {
+                                            EditorGUI.showMixedValue = focalLength.hasMultipleDifferentValues;
+                                            float focalLengthVal = fovChanged ? Camera.FOVToFocalLength(fovNewValue, sensorSize.vector2Value.y) : focalLength.floatValue;
+                                            focalLengthVal = EditorGUILayout.FloatField(Styles.focalLength, focalLengthVal);
+                                            if (checkScope.changed || fovChanged)
+                                                focalLength.floatValue = focalLengthVal;
+                                        }
+
                                 EditorGUI.showMixedValue = sensorSize.hasMultipleDifferentValues;
                                 EditorGUI.BeginChangeCheck();
                                 int filmGateIndex = Array.IndexOf(k_ApertureFormats, new Vector2((float)Math.Round(sensorSize.vector2Value.x, 3), (float)Math.Round(sensorSize.vector2Value.y, 3)));
@@ -241,18 +257,18 @@ namespace UnityEditor
                                     sensorSize.vector2Value = k_ApertureFormats[filmGateIndex];
                                 }
 
-                                EditorGUI.BeginChangeCheck();
-                                EditorGUI.showMixedValue = focalLength.hasMultipleDifferentValues;
-
-                                float focalLengthVal = fovChanged ? sensorSize.vector2Value.y * .5f / Mathf.Tan(Mathf.Deg2Rad * fovNewValue * .5f) : focalLength.floatValue;
-                                focalLengthVal = EditorGUILayout.FloatField(Styles.focalLength, focalLengthVal);
-                                EditorGUI.showMixedValue = false;
-                                if (EditorGUI.EndChangeCheck() || fovChanged)
-                                    focalLength.floatValue = focalLengthVal;
-
                                 EditorGUILayout.PropertyField(sensorSize, Styles.sensorSize);
 
                                 EditorGUILayout.PropertyField(lensShift, Styles.lensShift);
+
+                                using (var horizontal = new EditorGUILayout.HorizontalScope())
+                                    using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.gateFit, gateFit))
+                                        using (var checkScope = new EditorGUI.ChangeCheckScope())
+                                        {
+                                            int gateValue = (int)(Camera.GateFitMode)EditorGUILayout.EnumPopup(propertyScope.content, (Camera.GateFitMode)gateFit.intValue);
+                                            if (checkScope.changed)
+                                                gateFit.intValue = gateValue;
+                                        }
                             }
                         }
                         else if (fovChanged)
@@ -281,7 +297,7 @@ namespace UnityEditor
 
             public void DrawRenderingPath()
             {
-                EditorGUILayout.IntPopup(renderingPath, kCameraRenderPaths, kCameraRenderPathValues, EditorGUIUtility.TempContent("Rendering Path"));
+                EditorGUILayout.IntPopup(renderingPath, kCameraRenderPaths, kCameraRenderPathValues, Styles.renderingPath);
             }
 
             public void DrawTargetTexture(bool deferred)
@@ -304,22 +320,25 @@ namespace UnityEditor
 
             public void DrawOcclusionCulling()
             {
-                EditorGUILayout.PropertyField(occlusionCulling);
+                EditorGUILayout.PropertyField(occlusionCulling, Styles.allowOcclusionCulling);
             }
 
             public void DrawHDR()
             {
-                EditorGUILayout.PropertyField(HDR, EditorGUIUtility.TempContent("Allow HDR"));
+                EditorGUILayout.PropertyField(HDR, Styles.allowHDR);
             }
 
             public void DrawMSAA()
             {
-                EditorGUILayout.PropertyField(allowMSAA);
+                EditorGUILayout.PropertyField(allowMSAA, Styles.allowMSAA);
             }
 
             public void DrawDynamicResolution()
             {
-                EditorGUILayout.PropertyField(allowDynamicResolution);
+                EditorGUILayout.PropertyField(allowDynamicResolution, Styles.allowDynamicResolution);
+                if ((allowDynamicResolution.boolValue || allowDynamicResolution.hasMultipleDifferentValues) && !PlayerSettings.enableFrameTimingStats)
+                    EditorGUILayout.HelpBox("It is recommended to enable Frame Timing Statistics under Rendering Player Settings when using dynamic resolution cameras.",
+                        MessageType.Warning, true);
             }
 
             public void DrawVR()
@@ -633,6 +652,12 @@ namespace UnityEditor
 
             // Apply normalizedviewport rect of camera
             Rect normalizedViewPortRect = c.rect;
+            // clamp normalized rect in [0,1]
+            normalizedViewPortRect.xMin = Math.Max(normalizedViewPortRect.xMin, 0f);
+            normalizedViewPortRect.yMin = Math.Max(normalizedViewPortRect.yMin, 0f);
+            normalizedViewPortRect.xMax = Math.Min(normalizedViewPortRect.xMax, 1f);
+            normalizedViewPortRect.yMax = Math.Min(normalizedViewPortRect.yMax, 1f);
+
             previewSize.x *= Mathf.Max(normalizedViewPortRect.width, 0f);
             previewSize.y *= Mathf.Max(normalizedViewPortRect.height, 0f);
 
@@ -740,7 +765,7 @@ namespace UnityEditor
 
             SceneViewOverlay.Window(EditorGUIUtility.TrTextContent("Camera Preview"), OnOverlayGUI, (int)SceneViewOverlay.Ordering.Camera, target, SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
 
-            CameraEditorUtils.HandleFrustum(c);
+            CameraEditorUtils.HandleFrustum(c, referenceTargetIndex);
         }
     }
 }

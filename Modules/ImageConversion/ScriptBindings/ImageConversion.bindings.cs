@@ -11,6 +11,9 @@ namespace UnityEngine
     [NativeHeader("Modules/ImageConversion/ScriptBindings/ImageConversion.bindings.h")]
     public static class ImageConversion
     {
+        [NativeMethod(Name = "ImageConversionBindings::EncodeToTGA", IsFreeFunction = true, ThrowsException = true)]
+        extern public static byte[] EncodeToTGA(this Texture2D tex);
+
         [NativeMethod(Name = "ImageConversionBindings::EncodeToPNG", IsFreeFunction = true, ThrowsException = true)]
         extern public static byte[] EncodeToPNG(this Texture2D tex);
 

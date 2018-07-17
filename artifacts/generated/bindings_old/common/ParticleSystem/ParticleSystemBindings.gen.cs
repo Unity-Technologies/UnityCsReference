@@ -1925,8 +1925,13 @@ public sealed partial class ParticleSystem : Component
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
                     public float multiplier { get { return GetMultiplier(m_ParticleSystem); } set { SetMultiplier(m_ParticleSystem, value); } }
+                    public ParticleSystemGameObjectFilter influenceFilter { get { return GetInfluenceFilter(m_ParticleSystem); } set { SetInfluenceFilter(m_ParticleSystem, value); } }
         
-        
+        public bool IsAffectedBy(ParticleSystemForceField field)                                                    { return IsAffectedBy_Internal(m_ParticleSystem, field); }
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool IsAffectedBy_Internal (ParticleSystem system, ParticleSystemForceField field) ;
+
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void SetEnabled (ParticleSystem system, bool value) ;
@@ -1942,6 +1947,14 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  float GetMultiplier (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetInfluenceFilter (ParticleSystem system, ParticleSystemGameObjectFilter value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  ParticleSystemGameObjectFilter GetInfluenceFilter (ParticleSystem system) ;
 
     }
 
@@ -2607,6 +2620,8 @@ public sealed partial class ParticleSystem : Component
         
                     public bool enabled { set { SetEnabled(m_ParticleSystem, value); } get { return GetEnabled(m_ParticleSystem); } }
                     public ParticleSystemAnimationMode mode { set { SetMode(m_ParticleSystem, value); } get { return GetMode(m_ParticleSystem); } }
+                    public ParticleSystemAnimationTimeMode timeMode { set { SetTimeMode(m_ParticleSystem, value); } get { return GetTimeMode(m_ParticleSystem); } }
+                    public float fps { get { return GetFPS(m_ParticleSystem); } set { SetFPS(m_ParticleSystem, value); } }
                     public int numTilesX { set { SetNumTilesX(m_ParticleSystem, value); } get { return GetNumTilesX(m_ParticleSystem); } }
                     public int numTilesY { set { SetNumTilesY(m_ParticleSystem, value); } get { return GetNumTilesY(m_ParticleSystem); } }
                     public ParticleSystemAnimationType animation { set { SetAnimationType(m_ParticleSystem, value); } get { return GetAnimationType(m_ParticleSystem); } }
@@ -2619,6 +2634,7 @@ public sealed partial class ParticleSystem : Component
                     public int rowIndex { set { SetRowIndex(m_ParticleSystem, value); } get { return GetRowIndex(m_ParticleSystem); } }
                     public Rendering.UVChannelFlags uvChannelMask { set { SetUVChannelMask(m_ParticleSystem, (int)value); } get { return (Rendering.UVChannelFlags)GetUVChannelMask(m_ParticleSystem); } }
                     public int spriteCount { get { return GetSpriteCount(m_ParticleSystem); } }
+                    public Vector2 speedRange { set { SetSpeedRange(m_ParticleSystem, value); } get { return GetSpeedRange(m_ParticleSystem); } }
         
         public void AddSprite(Sprite sprite) { AddSprite(m_ParticleSystem, sprite); }
         public void RemoveSprite(int index) { RemoveSprite(m_ParticleSystem, index); }
@@ -2641,6 +2657,22 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  ParticleSystemAnimationMode GetMode (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetTimeMode (ParticleSystem system, ParticleSystemAnimationTimeMode value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  ParticleSystemAnimationTimeMode GetTimeMode (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetFPS (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetFPS (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2734,6 +2766,22 @@ public sealed partial class ParticleSystem : Component
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  int GetSpriteCount (ParticleSystem system) ;
 
+        private static void SetSpeedRange (ParticleSystem system, Vector2 value) {
+            INTERNAL_CALL_SetSpeedRange ( system, ref value );
+        }
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_SetSpeedRange (ParticleSystem system, ref Vector2 value);
+        private static Vector2 GetSpeedRange (ParticleSystem system) {
+            Vector2 result;
+            INTERNAL_CALL_GetSpeedRange ( system, out result );
+            return result;
+        }
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        private extern static void INTERNAL_CALL_GetSpeedRange (ParticleSystem system, out Vector2 value);
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void AddSprite (ParticleSystem system, Object sprite) ;

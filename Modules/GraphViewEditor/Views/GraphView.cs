@@ -70,8 +70,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public Action<Group, IEnumerable<GraphElement>> elementsAddedToGroup { get; set; }
         public Action<Group, IEnumerable<GraphElement>> elementsRemovedFromGroup { get; set; }
 
-        public Action<StackNode, int, GraphElement> elementInsertedToStackNode { get; set; }
-        public Action<StackNode, GraphElement> elementRemovedFromStackNode { get; set; }
+        public Action<StackNode, int, IEnumerable<GraphElement>> elementsInsertedToStackNode { get; set; }
+        public Action<StackNode, IEnumerable<GraphElement>> elementsRemovedFromStackNode { get; set; }
 
         private GraphViewChange m_GraphViewChange;
         private List<GraphElement> m_ElementsToRemove;
@@ -115,6 +115,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        VisualElement graphViewContainer { get; }
         public VisualElement contentViewContainer { get; private set; }
 
         // TODO: Remove!
@@ -158,10 +159,25 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         readonly Dictionary<int, Layer> m_ContainerLayers = new Dictionary<int, Layer>();
 
+        public override VisualElement contentContainer // Contains full content, potentially partially visible
+        {
+            get { return graphViewContainer; }
+        }
+
         protected GraphView()
         {
+            AddToClassList("graphView");
+
             selection = new List<ISelectable>();
             style.overflow = Overflow.Hidden;
+
+            style.flexDirection = FlexDirection.Column;
+
+            graphViewContainer = new VisualElement();
+            graphViewContainer.style.flex = new Flex(1);
+            graphViewContainer.style.flexGrow = 1;
+            graphViewContainer.pickingMode = PickingMode.Ignore;
+            shadow.Add(graphViewContainer);
 
             contentViewContainer = new ContentViewContainer
             {
@@ -170,7 +186,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             };
 
             // make it absolute and 0 sized so it acts as a transform to move children to and fro
-            Add(contentViewContainer);
+            graphViewContainer.Add(contentViewContainer);
 
             AddStyleSheetPath("StyleSheets/GraphView/GraphView.uss");
             graphElements = contentViewContainer.Query<GraphElement>().Where(e => !(e is Port)).Build();
@@ -595,40 +611,40 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (evt.target is UIElements.GraphView.GraphView && nodeCreationRequest != null)
             {
-                evt.menu.AppendAction("Create Node", OnContextMenuNodeCreate, ContextualMenu.MenuAction.AlwaysEnabled);
+                evt.menu.AppendAction("Create Node", OnContextMenuNodeCreate, DropdownMenu.MenuAction.AlwaysEnabled);
                 evt.menu.AppendSeparator();
             }
             if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendAction("Cut", (a) => { CutSelectionCallback(); },
-                    (a) => { return canCutSelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canCutSelection ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
             }
             if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendAction("Copy", (a) => { CopySelectionCallback(); },
-                    (a) => { return canCopySelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canCopySelection ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
             }
             if (evt.target is UIElements.GraphView.GraphView)
             {
                 evt.menu.AppendAction("Paste", (a) => { PasteCallback(); },
-                    (a) => { return canPaste ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canPaste ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
             }
             if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group || evt.target is Edge)
             {
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Delete", (a) => { DeleteSelectionCallback(AskUser.DontAskUser); },
-                    (a) => { return canDeleteSelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canDeleteSelection ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
             }
             if (evt.target is UIElements.GraphView.GraphView || evt.target is Node || evt.target is Group)
             {
                 evt.menu.AppendSeparator();
                 evt.menu.AppendAction("Duplicate", (a) => { DuplicateSelectionCallback(); },
-                    (a) => { return canDuplicateSelection ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled; });
+                    (a) => { return canDuplicateSelection ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled; });
                 evt.menu.AppendSeparator();
             }
         }
 
-        void OnContextMenuNodeCreate(ContextualMenu.MenuAction a)
+        void OnContextMenuNodeCreate(DropdownMenu.MenuAction a)
         {
             RequestNodeCreation(null, -1, a.eventInfo.mousePosition);
         }
@@ -1109,9 +1125,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (stack != null)
             {
                 stack.RemoveElement(graphElement);
-                if (elementRemovedFromStackNode != null)
+                if (elementsRemovedFromStackNode != null)
                 {
-                    elementRemovedFromStackNode(stack, graphElement);
+                    elementsRemovedFromStackNode(stack, new[] {graphElement});
                 }
             }
 
@@ -1237,10 +1253,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             int idx = childrenList.IndexOf(graphElement);
 
-            if (idx < 0)
-                return EventPropagation.Continue;
-
-            if (idx < childrenList.Count - 1)
+            if (idx >= 0 && idx < childrenList.Count - 1)
                 graphElement = childrenList[idx + 1];
             else
                 graphElement = childrenList[0];
@@ -1255,9 +1268,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         EventPropagation Frame(FrameType frameType)
         {
-            var rectToFit = contentViewContainer.layout;
-            var frameTranslation = Vector3.zero;
-            var frameScaling = Vector3.one;
+            Rect rectToFit = contentViewContainer.layout;
+            Vector3 frameTranslation = Vector3.zero;
+            Vector3 frameScaling = Vector3.one;
 
             if (frameType == FrameType.Selection &&
                 (selection.Count == 0 || !selection.Any(e => e.IsSelectable() && !(e is Edge))))
@@ -1269,7 +1282,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 if (graphElement != null)
                     rectToFit = graphElement.ChangeCoordinatesTo(contentViewContainer, graphElement.rect);
 
-                rectToFit = selection.OfType<GraphElement>()
+                rectToFit = selection.Cast<GraphElement>()
                     .Aggregate(rectToFit, (current, e) => RectUtils.Encompass(current, e.ChangeCoordinatesTo(contentViewContainer, e.rect)));
                 CalculateFrameTransform(rectToFit, layout, k_FrameBorder, out frameTranslation, out frameScaling);
             }
@@ -1304,8 +1317,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public virtual Rect CalculateRectToFitAll(VisualElement container)
         {
-            var rectToFit = container.layout;
-            var reachedFirstChild = false;
+            Rect rectToFit = container.layout;
+            bool reachedFirstChild = false;
 
             graphElements.ForEach(ge =>
                 {

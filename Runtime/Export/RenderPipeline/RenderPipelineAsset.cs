@@ -33,6 +33,11 @@ namespace UnityEngine.Experimental.Rendering
         }
 
 
+        public virtual string[] GetRenderingLayerMaskNames()
+        {
+            return null;
+        }
+
         public virtual Material GetDefaultMaterial()
         {
             return null;

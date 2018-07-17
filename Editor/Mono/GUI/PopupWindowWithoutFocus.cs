@@ -10,37 +10,29 @@ using System.Reflection;
 
 namespace UnityEditor
 {
-    class PopupWindowWithoutFocus : EditorWindow
+    class PopupWindowWithoutFocus : PopupWindow
     {
         static PopupWindowWithoutFocus s_PopupWindowWithoutFocus;
-        static double s_LastClosedTime;
-        static Rect s_LastActivatorRect;
 
-        PopupWindowContent m_WindowContent;
-        PopupLocationHelper.PopupLocation[] m_LocationPriorityOrder;
-        Vector2 m_LastWantedSize = Vector2.zero;
-        Rect m_ActivatorRect;
-        float m_BorderWidth = 1f;
-
-        public static void Show(Rect activatorRect, PopupWindowContent windowContent)
+        public new static void Show(Rect activatorRect, PopupWindowContent windowContent)
         {
             Show(activatorRect, windowContent, null);
         }
 
-        public static bool IsVisible()
-        {
-            return s_PopupWindowWithoutFocus != null;
-        }
-
-        internal static void Show(Rect activatorRect, PopupWindowContent windowContent, PopupLocationHelper.PopupLocation[] locationPriorityOrder)
+        internal new static void Show(Rect activatorRect, PopupWindowContent windowContent, PopupLocation[] locationPriorityOrder)
         {
             if (ShouldShowWindow(activatorRect))
             {
                 if (s_PopupWindowWithoutFocus == null)
                     s_PopupWindowWithoutFocus = CreateInstance<PopupWindowWithoutFocus>();
 
-                s_PopupWindowWithoutFocus.Init(activatorRect, windowContent, locationPriorityOrder);
+                s_PopupWindowWithoutFocus.Init(activatorRect, windowContent, locationPriorityOrder, ShowMode.PopupMenu, false);
             }
+        }
+
+        public static bool IsVisible()
+        {
+            return s_PopupWindowWithoutFocus != null;
         }
 
         public static void Hide()
@@ -49,31 +41,16 @@ namespace UnityEditor
                 s_PopupWindowWithoutFocus.Close();
         }
 
-        void Init(Rect activatorRect, PopupWindowContent windowContent, PopupLocationHelper.PopupLocation[] locationPriorityOrder)
+        protected override void OnEnable()
         {
-            m_WindowContent = windowContent;
-            m_WindowContent.editorWindow = this;
-            m_ActivatorRect = GUIUtility.GUIToScreenRect(activatorRect);
-            m_LastWantedSize = windowContent.GetWindowSize();
-            m_LocationPriorityOrder = locationPriorityOrder;
-
-            Vector2 windowSize = windowContent.GetWindowSize() + new Vector2(m_BorderWidth * 2, m_BorderWidth * 2);
-            position = PopupLocationHelper.GetDropDownRect(m_ActivatorRect, windowSize, windowSize, null, m_LocationPriorityOrder);
-            ShowPopup();
-            Repaint();
-        }
-
-        void OnEnable()
-        {
+            base.OnEnable();
             hideFlags = HideFlags.DontSave;
             s_PopupWindowWithoutFocus = this;
         }
 
-        void OnDisable()
+        protected override void OnDisable()
         {
-            s_LastClosedTime = EditorApplication.timeSinceStartup;
-            if (m_WindowContent != null)
-                m_WindowContent.OnClose();
+            base.OnDisable();
             s_PopupWindowWithoutFocus = null;
         }
 
@@ -89,46 +66,7 @@ namespace UnityEditor
                 return true;
             }
 
-            if (type == EventType.MouseDown && !s_PopupWindowWithoutFocus.position.Contains(mousePosition))
-            {
-                s_PopupWindowWithoutFocus.Close();
-                return true;
-            }
-
             return false;
-        }
-
-        static bool ShouldShowWindow(Rect activatorRect)
-        {
-            const double kJustClickedTime = 0.2;
-            bool justClosed = (EditorApplication.timeSinceStartup - s_LastClosedTime) < kJustClickedTime;
-            if (!justClosed || activatorRect != s_LastActivatorRect)
-            {
-                s_LastActivatorRect = activatorRect;
-                return true;
-            }
-            return false;
-        }
-
-        internal void OnGUI()
-        {
-            FitWindowToContent();
-            Rect windowRect = new Rect(m_BorderWidth, m_BorderWidth, position.width - 2 * m_BorderWidth, position.height - 2 * m_BorderWidth);
-            m_WindowContent.OnGUI(windowRect);
-            GUI.Label(new Rect(0, 0, position.width, position.height), GUIContent.none, "grey_border");
-        }
-
-        private void FitWindowToContent()
-        {
-            Vector2 wantedSize = m_WindowContent.GetWindowSize();
-            if (m_LastWantedSize != wantedSize)
-            {
-                m_LastWantedSize = wantedSize;
-                Vector2 windowSize = wantedSize + new Vector2(2 * m_BorderWidth, 2 * m_BorderWidth);
-                Rect screenRect = PopupLocationHelper.GetDropDownRect(m_ActivatorRect, windowSize, windowSize, null, m_LocationPriorityOrder);
-                m_Pos = screenRect;
-                minSize = maxSize = new Vector2(screenRect.width, screenRect.height);
-            }
         }
     }
 }

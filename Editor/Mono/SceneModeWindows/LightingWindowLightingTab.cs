@@ -14,6 +14,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -49,10 +50,8 @@ namespace UnityEditor
         bool            m_ShowOtherSettings = true;
         bool            m_ShowDebugSettings = false;
         bool            m_ShowProbeDebugSettings = false;
-        bool            m_ShouldUpdateStatistics = true;
         const string    kShowOtherSettings = "kShowOtherSettings";
         const string    kShowDebugSettings = "kShowDebugSettings";
-        const string    kUpdateStatistics = "kUpdateStatistics";
         Object          m_RenderSettings = null;
         Vector2         m_ScrollPosition = Vector2.zero;
 
@@ -121,7 +120,6 @@ namespace UnityEditor
 
             m_ShowOtherSettings = SessionState.GetBool(kShowOtherSettings, true);
             m_ShowDebugSettings = SessionState.GetBool(kShowDebugSettings, false);
-            m_ShouldUpdateStatistics = SessionState.GetBool(kUpdateStatistics, false);
         }
 
         public void OnDisable()
@@ -130,7 +128,6 @@ namespace UnityEditor
 
             SessionState.SetBool(kShowOtherSettings, m_ShowOtherSettings);
             SessionState.SetBool(kShowDebugSettings, m_ShowDebugSettings);
-            SessionState.SetBool(kUpdateStatistics, m_ShouldUpdateStatistics);
 
             ClearCachedProperties();
         }
@@ -188,14 +185,20 @@ namespace UnityEditor
 
         void OtherSettingsGUI()
         {
+            if (SupportedRenderingFeatures.active.rendererOverridesFog && SupportedRenderingFeatures.active.rendererOverridesOtherLightingSettings)
+                return;
+
             m_ShowOtherSettings = EditorGUILayout.FoldoutTitlebar(m_ShowOtherSettings, Styles.OtherSettings, true);
 
             if (m_ShowOtherSettings)
             {
                 EditorGUI.indentLevel++;
 
-                fogEditor.OnInspectorGUI();
-                otherRenderingEditor.OnInspectorGUI();
+                if (!SupportedRenderingFeatures.active.rendererOverridesFog)
+                    fogEditor.OnInspectorGUI();
+
+                if (!SupportedRenderingFeatures.active.rendererOverridesOtherLightingSettings)
+                    otherRenderingEditor.OnInspectorGUI();
 
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space();
@@ -208,7 +211,9 @@ namespace UnityEditor
 
             m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
 
-            lightingEditor.OnInspectorGUI();
+            if (!SupportedRenderingFeatures.active.rendererOverridesEnvironmentLighting)
+                lightingEditor.OnInspectorGUI();
+
             m_BakeSettings.OnGUI();
             OtherSettingsGUI();
             DebugSettingsGUI();
@@ -407,7 +412,7 @@ namespace UnityEditor
 
             GUILayout.EndHorizontal();
 
-            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+            if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
             {
                 GUILayout.BeginVertical();
                 GUILayout.Label("Occupied Texels: " + InternalEditorUtility.CountToString(Lightmapping.occupiedTexelCount), Styles.LabelStyle);
@@ -459,6 +464,10 @@ namespace UnityEditor
                     EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsNotInView, Styles.LabelStyle);
                     EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsNotInView, Styles.LabelStyle);
                     EditorGUI.indentLevel -= 1;
+
+                    LightProbesConvergence lpc = Lightmapping.GetLightProbesConvergence();
+                    if (lpc.IsValid() && lpc.probeSetCount > 0)
+                        GUILayout.Label("Light Probes convergence: (" + lpc.convergedProbeSetCount + "/" + lpc.probeSetCount + ")", Styles.LabelStyle);
                 }
                 float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
                 float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();

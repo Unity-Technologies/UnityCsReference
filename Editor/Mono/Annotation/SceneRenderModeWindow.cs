@@ -190,7 +190,7 @@ namespace UnityEditor
         const float kFrameWidth = 1f;
         const float kHeaderHorizontalPadding = 5f;
         const float kHeaderVerticalPadding = 1f;
-        const float kShowLightmapResolutionHeight = EditorGUI.kSingleLineHeight + kSeparatorHeight * 2;
+        static readonly float kShowLightmapResolutionHeight = EditorGUI.kSingleLineHeight + kSeparatorHeight * 2;
         const float kTogglePadding = 7f;
 
         readonly SceneView m_SceneView;

@@ -14,6 +14,11 @@ namespace UnityEditor.Presets
     [CustomEditor(typeof(PresetManager))]
     internal sealed class PresetManagerEditor : Editor
     {
+        class Content
+        {
+            public static GUIContent presetManager = EditorGUIUtility.TrTextContent("Preset management");
+        }
+
         static class Style
         {
             public static GUIContent managerIcon = EditorGUIUtility.IconContent("GameManager Icon");
@@ -211,11 +216,15 @@ namespace UnityEditor.Presets
             serializedObject.ApplyModifiedProperties();
         }
 
-        [MenuItem("Edit/Project Settings/Preset Manager", false, 300)]
-        static void ShowManagerInspector()
+        [SettingsProvider]
+        static SettingsProvider CreatePresetManagerProvider()
         {
-            Selection.activeObject = Resources.FindObjectsOfTypeAll<PresetManager>()
-                .First(p => AssetDatabase.GetAssetPath(p) == "ProjectSettings/PresetManager.asset");
+            var provider = new AssetSettingsProvider("Project/Preset Manager", "ProjectSettings/PresetManager.asset")
+            {
+                icon = EditorGUIUtility.FindTexture("UnityEditor/Presets/Preset Icon")
+            };
+            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            return provider;
         }
     }
 }

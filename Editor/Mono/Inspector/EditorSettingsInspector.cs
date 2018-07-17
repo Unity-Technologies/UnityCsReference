@@ -15,6 +15,50 @@ namespace UnityEditor
     [CustomEditor(typeof(EditorSettings))]
     internal class EditorSettingsInspector : ProjectSettingsBaseEditor
     {
+        class Content
+        {
+            public static GUIContent unityRemote = EditorGUIUtility.TrTextContent("Unity Remote");
+            public static GUIContent device = EditorGUIUtility.TrTextContent("Device");
+            public static GUIContent compression = EditorGUIUtility.TrTextContent("Compression");
+            public static GUIContent resolution = EditorGUIUtility.TrTextContent("Resolution");
+            public static GUIContent joystickSource = EditorGUIUtility.TrTextContent("Joystick Source");
+
+
+            public static GUIContent versionControl = EditorGUIUtility.TrTextContent("Version Control");
+            public static GUIContent mode = EditorGUIUtility.TrTextContent("Mode");
+            public static GUIContent logLevel = EditorGUIUtility.TrTextContent("Log Level");
+            public static GUIContent status = EditorGUIUtility.TrTextContent("Status");
+            public static GUIContent automaticAdd = EditorGUIUtility.TrTextContent("Automatic add");
+            public static GUIContent smartMerge = EditorGUIUtility.TrTextContent("Smart merge");
+
+            public static GUIContent workOffline = EditorGUIUtility.TrTextContent("Work Offline");
+            public static GUIContent allowAsyncUpdate = EditorGUIUtility.TrTextContent("Allow Async Update");
+            public static GUIContent showFailedCheckouts = EditorGUIUtility.TrTextContent("Show Failed Checkouts");
+
+
+            public static GUIContent assetSerialization = EditorGUIUtility.TrTextContent("Asset Serialization");
+            public static GUIContent defaultBehaviorMode = EditorGUIUtility.TrTextContent("Default Behavior Mode");
+            public static GUIContent spritePacker = EditorGUIUtility.TrTextContent("Sprite Packer");
+
+            public static GUIContent cSharpProjectGeneration = EditorGUIUtility.TrTextContent("C# Project Generation");
+            public static GUIContent additionalExtensionsToInclude = EditorGUIUtility.TrTextContent("Additional extensions to include");
+            public static GUIContent rootNamespace = EditorGUIUtility.TrTextContent("Root namespace");
+
+            public static GUIContent etcTextureCompressor = EditorGUIUtility.TrTextContent("ETC Texture Compressor");
+            public static GUIContent behavior = EditorGUIUtility.TrTextContent("Behavior");
+            public static GUIContent fast = EditorGUIUtility.TrTextContent("Fast");
+            public static GUIContent normal = EditorGUIUtility.TrTextContent("Normal");
+            public static GUIContent best = EditorGUIUtility.TrTextContent("Best");
+
+            public static GUIContent internalSettings = EditorGUIUtility.TrTextContent("Internal Settings");
+            public static GUIContent internalSettingsVisible = EditorGUIUtility.TrTextContent("Internals visible in user scripts");
+
+            public static GUIContent lineEndingForNewScripts = EditorGUIUtility.TrTextContent("Line Endings For New Scripts");
+
+            public static GUIContent streamingSettings = EditorGUIUtility.TrTextContent("Streaming Settings");
+            public static GUIContent enableTextureStreaming = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
+        }
+
         struct PopupElement
         {
             public readonly string id;
@@ -198,11 +242,6 @@ namespace UnityEditor
             remoteDevicePopupList = popupList.ToArray();
         }
 
-        internal static class Styles
-        {
-            public static readonly GUIContent enableTextureStreamingInPlayMode = EditorGUIUtility.TrTextContent("Enable Texture Streaming In Play Mode", "Texture Streaming must be enabled in Quality Settings for mipmap streaming to function in Play Mode");
-        }
-
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
@@ -219,10 +258,10 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(!collabEnabled))
             {
                 GUI.enabled = !collabEnabled;
-                GUILayout.Label("Version Control", EditorStyles.boldLabel);
+                GUILayout.Label(Content.versionControl, EditorStyles.boldLabel);
 
                 ExternalVersionControl selvc = EditorSettings.externalVersionControl;
-                CreatePopupMenuVersionControl("Mode", vcPopupList, selvc, SetVersionControlSystem);
+                CreatePopupMenuVersionControl(Content.mode.text, vcPopupList, selvc, SetVersionControlSystem);
                 GUI.enabled = editorEnabled && !collabEnabled;
             }
             if (collabEnabled)
@@ -282,7 +321,7 @@ namespace UnityEditor
                     logLevel = logLevelPopupList[idx];
                     EditorUserSettings.SetConfigValue("vcSharedLogLevel", logLevel);
                 }
-                int newIdx = EditorGUILayout.Popup("Log Level", idx, logLevelPopupList);
+                int newIdx = EditorGUILayout.Popup(Content.logLevel, idx, logLevelPopupList);
                 if (newIdx != idx)
                 {
                     EditorUserSettings.SetConfigValue("vcSharedLogLevel", logLevelPopupList[newIdx].ToLower());
@@ -296,7 +335,7 @@ namespace UnityEditor
                 else if (Provider.onlineState == OnlineState.Offline)
                     osState = "Disconnected";
 
-                EditorGUILayout.LabelField("Status", osState);
+                EditorGUILayout.LabelField(Content.status, osState);
 
                 if (Provider.onlineState != OnlineState.Online && !string.IsNullOrEmpty(Provider.offlineReason))
                 {
@@ -312,11 +351,11 @@ namespace UnityEditor
                     Provider.UpdateSettings();
                 GUILayout.EndHorizontal();
 
-                EditorUserSettings.AutomaticAdd = EditorGUILayout.Toggle("Automatic add", EditorUserSettings.AutomaticAdd);
+                EditorUserSettings.AutomaticAdd = EditorGUILayout.Toggle(Content.automaticAdd, EditorUserSettings.AutomaticAdd);
 
                 if (Provider.requiresNetwork)
                 {
-                    bool workOfflineNew = EditorGUILayout.Toggle("Work Offline", EditorUserSettings.WorkOffline); // Enabled has a slightly different behaviour
+                    bool workOfflineNew = EditorGUILayout.Toggle(Content.workOffline, EditorUserSettings.WorkOffline); // Enabled has a slightly different behaviour
                     if (workOfflineNew != EditorUserSettings.WorkOffline)
                     {
                         // On toggling on show a warning
@@ -328,16 +367,16 @@ namespace UnityEditor
                         EditorApplication.RequestRepaintAllViews();
                     }
 
-                    EditorUserSettings.allowAsyncStatusUpdate = EditorGUILayout.Toggle("Allow Async Update", EditorUserSettings.allowAsyncStatusUpdate);
+                    EditorUserSettings.allowAsyncStatusUpdate = EditorGUILayout.Toggle(Content.allowAsyncUpdate, EditorUserSettings.allowAsyncStatusUpdate);
                 }
 
                 if (Provider.hasCheckoutSupport)
-                    EditorUserSettings.showFailedCheckout = EditorGUILayout.Toggle("Show failed checkouts", EditorUserSettings.showFailedCheckout);
+                    EditorUserSettings.showFailedCheckout = EditorGUILayout.Toggle(Content.showFailedCheckouts, EditorUserSettings.showFailedCheckout);
 
                 GUI.enabled = editorEnabled;
 
                 // Semantic merge popup
-                EditorUserSettings.semanticMergeMode = (SemanticMergeMode)EditorGUILayout.Popup("Smart merge", (int)EditorUserSettings.semanticMergeMode, semanticMergePopupList);
+                EditorUserSettings.semanticMergeMode = (SemanticMergeMode)EditorGUILayout.Popup(Content.smartMerge, (int)EditorUserSettings.semanticMergeMode, semanticMergePopupList);
 
                 DrawOverlayDescriptions();
             }
@@ -348,7 +387,7 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(!collabEnabled))
             {
                 GUI.enabled = !collabEnabled;
-                GUILayout.Label("Asset Serialization", EditorStyles.boldLabel);
+                GUILayout.Label(Content.assetSerialization, EditorStyles.boldLabel);
                 GUI.enabled = editorEnabled && !collabEnabled;
 
 
@@ -362,20 +401,20 @@ namespace UnityEditor
             GUILayout.Space(10);
 
             GUI.enabled = true;
-            GUILayout.Label("Default Behavior Mode", EditorStyles.boldLabel);
+            GUILayout.Label(Content.defaultBehaviorMode, EditorStyles.boldLabel);
             GUI.enabled = editorEnabled;
 
             index = Mathf.Clamp((int)EditorSettings.defaultBehaviorMode, 0, behaviorPopupList.Length - 1);
-            CreatePopupMenu("Mode", behaviorPopupList, index, SetDefaultBehaviorMode);
+            CreatePopupMenu(Content.mode.text, behaviorPopupList, index, SetDefaultBehaviorMode);
 
             GUILayout.Space(10);
 
             GUI.enabled = true;
-            GUILayout.Label("Sprite Packer", EditorStyles.boldLabel);
+            GUILayout.Label(Content.spritePacker, EditorStyles.boldLabel);
             GUI.enabled = editorEnabled;
 
             index = Mathf.Clamp((int)EditorSettings.spritePackerMode, 0, spritePackerPopupList.Length - 1);
-            CreatePopupMenu("Mode", spritePackerPopupList, index, SetSpritePackerMode);
+            CreatePopupMenu(Content.mode.text, spritePackerPopupList, index, SetSpritePackerMode);
 
             if (EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOn
                 || EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnly)
@@ -396,15 +435,15 @@ namespace UnityEditor
         private void DoProjectGenerationSettings()
         {
             GUILayout.Space(10);
-            GUILayout.Label("C# Project Generation", EditorStyles.boldLabel);
+            GUILayout.Label(Content.cSharpProjectGeneration, EditorStyles.boldLabel);
 
             var old = EditorSettings.Internal_ProjectGenerationUserExtensions;
-            string newvalue = EditorGUILayout.TextField("Additional extensions to include", old);
+            string newvalue = EditorGUILayout.TextField(Content.additionalExtensionsToInclude, old);
             if (newvalue != old)
                 EditorSettings.Internal_ProjectGenerationUserExtensions = newvalue;
 
             old = EditorSettings.projectGenerationRootNamespace;
-            newvalue = EditorGUILayout.TextField("Root namespace", old);
+            newvalue = EditorGUILayout.TextField(Content.rootNamespace, old);
             if (newvalue != old)
                 EditorSettings.projectGenerationRootNamespace = newvalue;
         }
@@ -415,12 +454,12 @@ namespace UnityEditor
                 return;
 
             GUILayout.Space(10);
-            GUILayout.Label("Internal Settings", EditorStyles.boldLabel);
+            GUILayout.Label(Content.internalSettings, EditorStyles.boldLabel);
 
             var postfix = "-testable";
             EditorGUI.BeginChangeCheck();
             var isEnabled = EditorSettings.Internal_UserGeneratedProjectSuffix == postfix;
-            isEnabled = EditorGUILayout.Toggle("Internals visible in user scripts", isEnabled);
+            isEnabled = EditorGUILayout.Toggle(Content.internalSettingsVisible, isEnabled);
             if (EditorGUI.EndChangeCheck())
             {
                 EditorSettings.Internal_UserGeneratedProjectSuffix = isEnabled ? postfix : "";
@@ -435,22 +474,22 @@ namespace UnityEditor
         {
             GUILayout.Space(10);
 
-            GUILayout.Label("ETC Texture Compressor", EditorStyles.boldLabel);
+            GUILayout.Label(Content.etcTextureCompressor, EditorStyles.boldLabel);
 
             int index = Mathf.Clamp((int)EditorSettings.etcTextureCompressorBehavior, 0, etcTextureCompressorPopupList.Length - 1);
-            CreatePopupMenu("Behavior", etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
+            CreatePopupMenu(Content.behavior.text, etcTextureCompressorPopupList, index, SetEtcTextureCompressorBehavior);
 
             EditorGUI.indentLevel++;
             EditorGUI.BeginDisabledGroup(index < 2);
 
             index = Mathf.Clamp((int)EditorSettings.etcTextureFastCompressor, 0, etcTextureFastCompressorPopupList.Length - 1);
-            CreatePopupMenu("Fast", etcTextureFastCompressorPopupList, index, SetEtcTextureFastCompressor);
+            CreatePopupMenu(Content.fast.text, etcTextureFastCompressorPopupList, index, SetEtcTextureFastCompressor);
 
             index = Mathf.Clamp((int)EditorSettings.etcTextureNormalCompressor, 0, etcTextureNormalCompressorPopupList.Length - 1);
-            CreatePopupMenu("Normal", etcTextureNormalCompressorPopupList, index, SetEtcTextureNormalCompressor);
+            CreatePopupMenu(Content.normal.text, etcTextureNormalCompressorPopupList, index, SetEtcTextureNormalCompressor);
 
             index = Mathf.Clamp((int)EditorSettings.etcTextureBestCompressor, 0, etcTextureBestCompressorPopupList.Length - 1);
-            CreatePopupMenu("Best", etcTextureBestCompressorPopupList, index, SetEtcTextureBestCompressor);
+            CreatePopupMenu(Content.best.text, etcTextureBestCompressorPopupList, index, SetEtcTextureBestCompressor);
 
             EditorGUI.EndDisabledGroup();
             EditorGUI.indentLevel--;
@@ -459,18 +498,18 @@ namespace UnityEditor
         private void DoLineEndingsSettings()
         {
             GUILayout.Space(10);
-            GUILayout.Label("Line Endings For New Scripts", EditorStyles.boldLabel);
+            GUILayout.Label(Content.lineEndingForNewScripts, EditorStyles.boldLabel);
 
             int index = (int)EditorSettings.lineEndingsForNewScripts;
-            CreatePopupMenu("Mode", lineEndingsPopupList, index, SetLineEndingsForNewScripts);
+            CreatePopupMenu(Content.mode.text, lineEndingsPopupList, index, SetLineEndingsForNewScripts);
         }
 
         private void DoStreamingSettings()
         {
             GUILayout.Space(10);
-            GUILayout.Label("Streaming Settings", EditorStyles.boldLabel);
+            GUILayout.Label(Content.streamingSettings, EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Styles.enableTextureStreamingInPlayMode);
+            EditorGUILayout.PropertyField(m_EnableTextureStreamingInPlayMode, Content.enableTextureStreaming);
         }
 
         static int GetIndexById(DevDevice[] elements, string id, int defaultIndex)
@@ -494,7 +533,7 @@ namespace UnityEditor
         private void ShowUnityRemoteGUI(bool editorEnabled)
         {
             GUI.enabled = true;
-            GUILayout.Label("Unity Remote", EditorStyles.boldLabel);
+            GUILayout.Label(Content.unityRemote, EditorStyles.boldLabel);
             GUI.enabled = editorEnabled;
 
             // Find selected device index
@@ -504,28 +543,28 @@ namespace UnityEditor
 
             var content = new GUIContent(remoteDevicePopupList[index].content);
             var popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, EditorGUIUtility.TrTextContent("Device"));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, Content.device);
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
                 DoPopup(popupRect, remoteDevicePopupList, index, SetUnityRemoteDevice);
 
             int compression = GetIndexById(remoteCompressionList, EditorSettings.unityRemoteCompression, 0);
             content = new GUIContent(remoteCompressionList[compression].content);
             popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, EditorGUIUtility.TrTextContent("Compression"));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, Content.compression);
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
                 DoPopup(popupRect, remoteCompressionList, compression, SetUnityRemoteCompression);
 
             int resolution = GetIndexById(remoteResolutionList, EditorSettings.unityRemoteResolution, 0);
             content = new GUIContent(remoteResolutionList[resolution].content);
             popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, EditorGUIUtility.TrTextContent("Resolution"));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, Content.resolution);
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
                 DoPopup(popupRect, remoteResolutionList, resolution, SetUnityRemoteResolution);
 
             int joystickSource = GetIndexById(remoteJoystickSourceList, EditorSettings.unityRemoteJoystickSource, 0);
             content = new GUIContent(remoteJoystickSourceList[joystickSource].content);
             popupRect = GUILayoutUtility.GetRect(content, EditorStyles.popup);
-            popupRect = EditorGUI.PrefixLabel(popupRect, 0, EditorGUIUtility.TrTextContent("Joystick Source"));
+            popupRect = EditorGUI.PrefixLabel(popupRect, 0, Content.joystickSource);
             if (EditorGUI.DropdownButton(popupRect, content, FocusType.Passive, EditorStyles.popup))
                 DoPopup(popupRect, remoteJoystickSourceList, joystickSource, SetUnityRemoteJoystickSource);
         }
@@ -732,6 +771,14 @@ namespace UnityEditor
             int popupIndex = (int)data;
 
             EditorSettings.lineEndingsForNewScripts = (LineEndingsMode)popupIndex;
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Editor", "ProjectSettings/EditorSettings.asset");
+            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            return provider;
         }
     }
 }

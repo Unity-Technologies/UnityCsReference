@@ -503,6 +503,8 @@ namespace UnityEditor
 
         public static extern bool protectGraphicsMemory { get; set; }
 
+        public static extern bool enableFrameTimingStats { get; set; }
+
         [NativeProperty(TargetType = TargetType.Field)]
         public static extern bool useHDRDisplay { get; set; }
 
@@ -1093,5 +1095,8 @@ namespace UnityEditor
 
         [FreeFunction("GetPlayerSettings().SetLightmapStreamingPriority")]
         internal static extern void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
+
+        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+        internal static extern void RelaunchProjectIfScriptRuntimeVersionHasChanged();
     }
 }

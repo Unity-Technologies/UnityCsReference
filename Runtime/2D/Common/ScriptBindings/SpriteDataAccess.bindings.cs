@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine.Scripting;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine.Rendering;
 
 using Unity.Jobs;
 

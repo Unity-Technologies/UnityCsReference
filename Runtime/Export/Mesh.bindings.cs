@@ -6,6 +6,7 @@ using System;
 using UnityEngine.Scripting;
 using UnityEngine.Bindings;
 using System.Runtime.InteropServices;
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -54,19 +55,19 @@ namespace UnityEngine
         // component (channels) setters/getters helpers
 
         [FreeFunction(Name = "MeshScripting::PrintErrorCantAccessChannel", HasExplicitThis = true)]
-        extern private void PrintErrorCantAccessChannel(InternalShaderChannel ch);
+        extern private void PrintErrorCantAccessChannel(VertexAttribute ch);
 
         [FreeFunction(Name = "MeshScripting::HasChannel", HasExplicitThis = true)]
-        extern internal bool HasChannel(InternalShaderChannel ch);
+        extern internal bool HasChannel(VertexAttribute ch);
 
         [FreeFunction(Name = "SetMeshComponentFromArrayFromScript", HasExplicitThis = true)]
-        extern private void SetArrayForChannelImpl(InternalShaderChannel channel, InternalVertexChannelType format, int dim, System.Array values, int arraySize);
+        extern private void SetArrayForChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values, int arraySize);
 
         [FreeFunction(Name = "AllocExtractMeshComponentFromScript", HasExplicitThis = true)]
-        extern private System.Array GetAllocArrayFromChannelImpl(InternalShaderChannel channel, InternalVertexChannelType format, int dim);
+        extern private System.Array GetAllocArrayFromChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim);
 
         [FreeFunction(Name = "ExtractMeshComponentFromScript", HasExplicitThis = true)]
-        extern private void GetArrayFromChannelImpl(InternalShaderChannel channel, InternalVertexChannelType format, int dim, System.Array values);
+        extern private void GetArrayFromChannelImpl(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values);
 
         // access to native underlying graphics API resources (mostly for native code plugins)
 

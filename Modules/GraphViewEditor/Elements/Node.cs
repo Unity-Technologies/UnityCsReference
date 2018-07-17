@@ -112,10 +112,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         private readonly Label m_TitleLabel;
-        public string title
+        public override string title
         {
-            get { return m_TitleLabel.text; }
-            set { m_TitleLabel.text = value; }
+            get { return m_TitleLabel != null ? m_TitleLabel.text : string.Empty; }
+            set { if (m_TitleLabel != null) m_TitleLabel.text = value; }
         }
 
         protected readonly VisualElement m_CollapseButton;
@@ -410,7 +410,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             toDelete.UnionWith(toDeleteList);
         }
 
-        void DisconnectAll(ContextualMenu.MenuAction a)
+        void DisconnectAll(DropdownMenu.MenuAction a)
         {
             HashSet<GraphElement> toDelete = new HashSet<GraphElement>();
 
@@ -428,7 +428,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        ContextualMenu.MenuAction.StatusFlags DisconnectAllStatus(ContextualMenu.MenuAction a)
+        DropdownMenu.MenuAction.StatusFlags DisconnectAllStatus(DropdownMenu.MenuAction a)
         {
             VisualElement[] containers =
             {
@@ -442,12 +442,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     if (elem.connected)
                     {
-                        return ContextualMenu.MenuAction.StatusFlags.Normal;
+                        return DropdownMenu.MenuAction.StatusFlags.Normal;
                     }
                 }
             }
 
-            return ContextualMenu.MenuAction.StatusFlags.Disabled;
+            return DropdownMenu.MenuAction.StatusFlags.Disabled;
         }
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)

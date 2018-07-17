@@ -16,6 +16,7 @@ using System.Linq;
 using System.Text;
 using UnityEditor.Modules;
 using UnityEditor.Scripting.ScriptCompilation;
+using UnityEngine.Events;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using VR = UnityEditorInternal.VR;
 
@@ -35,10 +36,17 @@ namespace UnityEditor
     [CustomEditor(typeof(PlayerSettings))]
     internal partial class PlayerSettingsEditor : Editor
     {
-        static class Styles
+        class Styles
         {
             public static readonly GUIStyle categoryBox = new GUIStyle(EditorStyles.helpBox);
+            static Styles()
+            {
+                categoryBox.padding.left = 14;
+            }
+        }
 
+        class SettingsContent
+        {
             public static readonly GUIContent colorSpaceAndroidWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires OpenGL ES 3.0 or Vulkan, uncheck 'Automatic Graphics API' to remove OpenGL ES 2 API, Blit Type must be Always Blit or Auto and 'Minimum API Level' must be at least Android 4.3");
             public static readonly GUIContent colorSpaceWebGLWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires WebGL 2.0, uncheck 'Automatic Graphics API' to remove WebGL 1.0 API. WARNING: If DXT sRGB is not supported by the browser, texture will be decompressed");
             public static readonly GUIContent colorSpaceIOSWarning = EditorGUIUtility.TrTextContent("Linear colorspace requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API. Additionally, 'minimum iOS version' set to 8.0 at least");
@@ -83,8 +91,8 @@ namespace UnityEditor
             public static readonly GUIContent iPhoneScriptCallOptimization = EditorGUIUtility.TrTextContent("Script Call Optimization*");
             public static readonly GUIContent enableInternalProfiler = EditorGUIUtility.TrTextContent("Enable Internal Profiler* (Deprecated)", "Internal profiler counters should be accessed by scripts using UnityEngine.Profiling::Profiler API.");
             public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TrTextContent("Optimize Mesh Data*", "Remove unused mesh components");
-            public static readonly GUIContent videoMemoryForVertexBuffers = EditorGUIUtility.TrTextContent("Mesh Video Mem*", "How many megabytes of video memory to use for mesh data before we use main memory");
             public static readonly GUIContent protectGraphicsMemory = EditorGUIUtility.TrTextContent("Protect Graphics Memory", "Protect GPU memory from being read (on supported devices). Will prevent user from taking screenshots");
+            public static readonly GUIContent enableFrameTimingStats = EditorGUIUtility.TrTextContent("Enable Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.");
             public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
             public static readonly GUIContent UIPrerenderedIcon = EditorGUIUtility.TrTextContent("Prerendered Icon");
             public static readonly GUIContent defaultScreenWidth = EditorGUIUtility.TrTextContent("Default Screen Width");
@@ -124,9 +132,7 @@ namespace UnityEditor
             public static readonly GUIContent metalFramebufferOnly = EditorGUIUtility.TrTextContent("Metal Write-Only Backbuffer", "Set framebufferOnly flag on backbuffer. This prevents readback from backbuffer but enables some driver optimizations.");
             public static readonly GUIContent framebufferDepthMemorylessMode = EditorGUIUtility.TrTextContent("Memoryless Depth", "Memoryless mode of framebuffer depth");
             public static readonly GUIContent[] memorylessModeNames = { EditorGUIUtility.TrTextContent("Unused"), EditorGUIUtility.TrTextContent("Forced"), EditorGUIUtility.TrTextContent("Automatic")};
-            public static readonly GUIContent vulkanEditorSupport = EditorGUIUtility.TextContent("Vulkan Editor Support (Experimental)*");
-            public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("Enable SetSRGBWrite()*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
-            public static readonly GUIContent vulkanUseSWCommandBuffers = EditorGUIUtility.TrTextContent("Use SW Commandbuffers*", "If set, builds the command buffers in the task executor thread instead of building secondary command buffers for rendering API calls.");
+            public static readonly GUIContent vulkanEnableSetSRGBWrite = EditorGUIUtility.TrTextContent("SRGB Write Mode*", "If set, enables Graphics.SetSRGBWrite() for toggling sRGB write mode during the frame but may decrease performance especially on tiled GPUs.");
             public static readonly GUIContent mTRendering = EditorGUIUtility.TrTextContent("Multithreaded Rendering*");
             public static readonly GUIContent staticBatching = EditorGUIUtility.TrTextContent("Static Batching");
             public static readonly GUIContent dynamicBatching = EditorGUIUtility.TrTextContent("Dynamic Batching");
@@ -151,7 +157,7 @@ namespace UnityEditor
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics (Pro Only)");
-            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols*");
+            public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
             public static readonly GUIContent scriptingRuntimeVersionActive = EditorGUIUtility.TrTextContent("Active Scripting Runtime Version*", "The scripting runtime version currently in use by the Editor.");
             public static readonly GUIContent scriptingRuntimeVersionActiveWarning = EditorGUIUtility.TrTextContent("The scripting runtime version currently in use by the Editor does not match the version specified by the project. An Editor restart is required for requested changes to take effect.");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
@@ -175,7 +181,6 @@ namespace UnityEditor
             public static readonly GUIContent allowUnsafeCode = EditorGUIUtility.TrTextContent("Allow 'unsafe' Code", "Allow compilation of unsafe code for predefined assemblies (Assembly-CSharp.dll, etc.)");
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager"), EditorGUIUtility.TrTextContent("Input System (Preview)"), EditorGUIUtility.TrTextContent("Both") };
-            public static readonly GUIContent vrSettingsMoved = EditorGUIUtility.TrTextContent("Virtual Reality moved to XR Settings");
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
             public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mip maps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
@@ -187,11 +192,6 @@ namespace UnityEditor
             public static string undoChangedBatchingString { get { return LocalizationDatabase.GetLocalizedString("Changed Batching Settings"); } }
             public static string undoChangedIconString { get { return LocalizationDatabase.GetLocalizedString("Changed Icon"); } }
             public static string undoChangedGraphicsAPIString { get { return LocalizationDatabase.GetLocalizedString("Changed Graphics API Settings"); } }
-
-            static Styles()
-            {
-                categoryBox.padding.left = 14;
-            }
         }
 
         // Icon layout constants
@@ -300,8 +300,6 @@ namespace UnityEditor
         SerializedProperty m_MetalFramebufferOnly;
         SerializedProperty m_MetalForceHardShadows;
         SerializedProperty m_FramebufferDepthMemorylessMode;
-
-        SerializedProperty m_VulkanEditorSupport;
 
         SerializedProperty m_DisplayResolutionDialog;
         SerializedProperty m_DefaultIsNativeResolution;
@@ -414,7 +412,6 @@ namespace UnityEditor
             m_MetalForceHardShadows         = FindPropertyAssert("iOSMetalForceHardShadows");
             m_FramebufferDepthMemorylessMode = FindPropertyAssert("framebufferDepthMemorylessMode");
 
-            m_VulkanEditorSupport           = FindPropertyAssert("vulkanEditorSupport");
             m_ApplicationBundleVersion      = serializedObject.FindProperty("bundleVersion");
             if (m_ApplicationBundleVersion == null)
                 m_ApplicationBundleVersion  = FindPropertyAssert("iPhoneBundleVersion");
@@ -484,8 +481,6 @@ namespace UnityEditor
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
 
-            m_VideoMemoryForVertexBuffers   = FindPropertyAssert("videoMemoryForVertexBuffers");
-
             m_LegacyClampBlendShapeWeights  = FindPropertyAssert("legacyClampBlendShapeWeights");
 
             m_SettingsExtensions = new ISettingEditorExtension[validPlatforms.Length];
@@ -512,6 +507,15 @@ namespace UnityEditor
             s_GraphicsDeviceLists.Clear();
         }
 
+        public void SetSectionOpenListener(UnityAction action)
+        {
+            for (int i = 0; i < m_SectionAnimators.Length; i++)
+            {
+                m_SectionAnimators[i].valueChanged.RemoveAllListeners();
+                m_SectionAnimators[i].valueChanged.AddListener(action);
+            }
+        }
+
         public override bool UseDefaultMargins()
         {
             return false;
@@ -531,7 +535,7 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
-            EditorGUILayout.BeginVertical(EditorStyles.inspectorDefaultMargins);
+            EditorGUILayout.BeginVertical();
             {
                 CommonSettings();
             }
@@ -599,23 +603,23 @@ namespace UnityEditor
             {
                 icons = new Texture2D[widths.Length];
             }
-            icons[0] = (Texture2D)EditorGUILayout.ObjectField(Styles.defaultIcon, icons[0], typeof(Texture2D), false);
+            icons[0] = (Texture2D)EditorGUILayout.ObjectField(SettingsContent.defaultIcon, icons[0], typeof(Texture2D), false);
             // Save changes
             if (GUI.changed)
             {
-                Undo.RecordObject(this.target, Styles.undoChangedIconString);
+                Undo.RecordObject(this.target, SettingsContent.undoChangedIconString);
                 PlayerSettings.SetIconsForPlatform(platformName, icons);
             }
 
             GUILayout.Space(3);
 
             Rect cursorPropertyRect = EditorGUILayout.GetControlRect(true, EditorGUI.kObjectFieldThumbnailHeight);
-            EditorGUI.BeginProperty(cursorPropertyRect, Styles.defaultCursor, m_DefaultCursor);
-            m_DefaultCursor.objectReferenceValue = EditorGUI.ObjectField(cursorPropertyRect, Styles.defaultCursor, m_DefaultCursor.objectReferenceValue, typeof(Texture2D), false);
+            EditorGUI.BeginProperty(cursorPropertyRect, SettingsContent.defaultCursor, m_DefaultCursor);
+            m_DefaultCursor.objectReferenceValue = EditorGUI.ObjectField(cursorPropertyRect, SettingsContent.defaultCursor, m_DefaultCursor.objectReferenceValue, typeof(Texture2D), false);
             EditorGUI.EndProperty();
 
             Rect rect = EditorGUILayout.GetControlRect();
-            rect = EditorGUI.PrefixLabel(rect, 0, Styles.cursorHotspot);
+            rect = EditorGUI.PrefixLabel(rect, 0, SettingsContent.cursorHotspot);
             EditorGUI.PropertyField(rect, m_CursorHotspot, GUIContent.none);
         }
 
@@ -645,17 +649,17 @@ namespace UnityEditor
 
         private void ShowNoSettings()
         {
-            GUILayout.Label(Styles.notApplicableInfo, EditorStyles.miniLabel);
+            GUILayout.Label(SettingsContent.notApplicableInfo, EditorStyles.miniLabel);
         }
 
         public void ShowSharedNote()
         {
-            GUILayout.Label(Styles.sharedBetweenPlatformsInfo, EditorStyles.miniLabel);
+            GUILayout.Label(SettingsContent.sharedBetweenPlatformsInfo, EditorStyles.miniLabel);
         }
 
         private void IconSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex)
         {
-            if (BeginSettingsBox(sectionIndex, Styles.iconTitle))
+            if (BeginSettingsBox(sectionIndex, SettingsContent.iconTitle))
             {
                 bool platformUsesStandardIcons = true;
                 if (settingsExtension != null)
@@ -784,14 +788,14 @@ namespace UnityEditor
                         // Save changes
                         if (GUI.changed)
                         {
-                            Undo.RecordObject(this.target, Styles.undoChangedIconString);
+                            Undo.RecordObject(this.target, SettingsContent.undoChangedIconString);
                             PlayerSettings.SetIconsForPlatform(platformName, icons);
                         }
                         GUI.enabled = enabled;
 
                         if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                         {
-                            EditorGUILayout.PropertyField(m_UIPrerenderedIcon, Styles.UIPrerenderedIcon);
+                            EditorGUILayout.PropertyField(m_UIPrerenderedIcon, SettingsContent.UIPrerenderedIcon);
                             EditorGUILayout.Space();
                         }
                     }
@@ -818,7 +822,7 @@ namespace UnityEditor
 
         public void ResolutionSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 0)
         {
-            if (BeginSettingsBox(sectionIndex, Styles.resolutionPresentationTitle))
+            if (BeginSettingsBox(sectionIndex, SettingsContent.resolutionPresentationTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
 
@@ -835,11 +839,11 @@ namespace UnityEditor
 
                     if (targetGroup == BuildTargetGroup.Standalone)
                     {
-                        GUILayout.Label(Styles.resolutionTitle, EditorStyles.boldLabel);
+                        GUILayout.Label(SettingsContent.resolutionTitle, EditorStyles.boldLabel);
 
                         var fullscreenModes = new[] { FullScreenMode.FullScreenWindow, FullScreenMode.ExclusiveFullScreen, FullScreenMode.MaximizedWindow, FullScreenMode.Windowed };
-                        var fullscreenModeNames = new[] { Styles.fullscreenWindow, Styles.exclusiveFullscreen, Styles.maximizedWindow, Styles.windowed };
-                        var fullscreenModeNew = BuildEnumPopup(m_FullscreenMode, Styles.fullscreenMode, fullscreenModes, fullscreenModeNames);
+                        var fullscreenModeNames = new[] { SettingsContent.fullscreenWindow, SettingsContent.exclusiveFullscreen, SettingsContent.maximizedWindow, SettingsContent.windowed };
+                        var fullscreenModeNew = BuildEnumPopup(m_FullscreenMode, SettingsContent.fullscreenMode, fullscreenModes, fullscreenModeNames);
 
                         bool defaultIsFullScreen = fullscreenModeNew != FullScreenMode.Windowed;
                         m_ShowDefaultIsNativeResolution.target = defaultIsFullScreen;
@@ -851,12 +855,12 @@ namespace UnityEditor
                         if (EditorGUILayout.BeginFadeGroup(m_ShowResolution.faded))
                         {
                             EditorGUI.BeginChangeCheck();
-                            EditorGUILayout.PropertyField(m_DefaultScreenWidth, Styles.defaultScreenWidth);
+                            EditorGUILayout.PropertyField(m_DefaultScreenWidth, SettingsContent.defaultScreenWidth);
                             if (EditorGUI.EndChangeCheck() && m_DefaultScreenWidth.intValue < 1)
                                 m_DefaultScreenWidth.intValue = 1;
 
                             EditorGUI.BeginChangeCheck();
-                            EditorGUILayout.PropertyField(m_DefaultScreenHeight, Styles.defaultScreenHeight);
+                            EditorGUILayout.PropertyField(m_DefaultScreenHeight, SettingsContent.defaultScreenHeight);
                             if (EditorGUI.EndChangeCheck() && m_DefaultScreenHeight.intValue < 1)
                                 m_DefaultScreenHeight.intValue = 1;
                         }
@@ -864,29 +868,29 @@ namespace UnityEditor
                     }
                     if (targetGroup == BuildTargetGroup.Standalone)
                     {
-                        EditorGUILayout.PropertyField(m_MacRetinaSupport, Styles.macRetinaSupport);
-                        EditorGUILayout.PropertyField(m_RunInBackground, Styles.runInBackground);
+                        EditorGUILayout.PropertyField(m_MacRetinaSupport, SettingsContent.macRetinaSupport);
+                        EditorGUILayout.PropertyField(m_RunInBackground, SettingsContent.runInBackground);
                     }
 
                     if (settingsExtension != null && settingsExtension.SupportsOrientation())
                     {
-                        GUILayout.Label(Styles.orientationTitle, EditorStyles.boldLabel);
+                        GUILayout.Label(SettingsContent.orientationTitle, EditorStyles.boldLabel);
 
-                        EditorGUILayout.PropertyField(m_DefaultScreenOrientation, Styles.defaultScreenOrientation);
+                        EditorGUILayout.PropertyField(m_DefaultScreenOrientation, SettingsContent.defaultScreenOrientation);
 
                         if (PlayerSettings.virtualRealitySupported)
                         {
-                            EditorGUILayout.HelpBox(Styles.vrOrientationInfo.text, MessageType.Warning);
+                            EditorGUILayout.HelpBox(SettingsContent.vrOrientationInfo.text, MessageType.Warning);
                         }
 
                         if (m_DefaultScreenOrientation.enumValueIndex == (int)UIOrientation.AutoRotation)
                         {
                             if (targetGroup == BuildTargetGroup.iOS)
-                                EditorGUILayout.PropertyField(m_UseOSAutoRotation, Styles.useOSAutoRotation);
+                                EditorGUILayout.PropertyField(m_UseOSAutoRotation, SettingsContent.useOSAutoRotation);
 
                             EditorGUI.indentLevel++;
 
-                            GUILayout.Label(Styles.allowedOrientationTitle, EditorStyles.boldLabel);
+                            GUILayout.Label(SettingsContent.allowedOrientationTitle, EditorStyles.boldLabel);
 
                             bool somethingAllowed =     m_AllowedAutoRotateToPortrait.boolValue
                                 ||  m_AllowedAutoRotateToPortraitUpsideDown.boolValue
@@ -899,10 +903,10 @@ namespace UnityEditor
                                 Debug.LogError("All orientations are disabled. Allowing portrait");
                             }
 
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            Styles.allowedAutoRotateToPortrait);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  Styles.allowedAutoRotateToPortraitUpsideDown);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          Styles.allowedAutoRotateToLandscapeRight);
-                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           Styles.allowedAutoRotateToLandscapeLeft);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortrait,            SettingsContent.allowedAutoRotateToPortrait);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToPortraitUpsideDown,  SettingsContent.allowedAutoRotateToPortraitUpsideDown);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeRight,          SettingsContent.allowedAutoRotateToLandscapeRight);
+                            EditorGUILayout.PropertyField(m_AllowedAutoRotateToLandscapeLeft,           SettingsContent.allowedAutoRotateToLandscapeLeft);
 
                             EditorGUI.indentLevel--;
                         }
@@ -910,13 +914,13 @@ namespace UnityEditor
 
                     if (targetGroup == BuildTargetGroup.iOS)
                     {
-                        GUILayout.Label(Styles.multitaskingSupportTitle, EditorStyles.boldLabel);
-                        EditorGUILayout.PropertyField(m_UIRequiresFullScreen, Styles.UIRequiresFullScreen);
+                        GUILayout.Label(SettingsContent.multitaskingSupportTitle, EditorStyles.boldLabel);
+                        EditorGUILayout.PropertyField(m_UIRequiresFullScreen, SettingsContent.UIRequiresFullScreen);
                         EditorGUILayout.Space();
 
-                        GUILayout.Label(Styles.statusBarTitle, EditorStyles.boldLabel);
-                        EditorGUILayout.PropertyField(m_UIStatusBarHidden, Styles.UIStatusBarHidden);
-                        EditorGUILayout.PropertyField(m_UIStatusBarStyle, Styles.UIStatusBarStyle);
+                        GUILayout.Label(SettingsContent.statusBarTitle, EditorStyles.boldLabel);
+                        EditorGUILayout.PropertyField(m_UIStatusBarHidden, SettingsContent.UIStatusBarHidden);
+                        EditorGUILayout.PropertyField(m_UIStatusBarStyle, SettingsContent.UIStatusBarStyle);
                         EditorGUILayout.Space();
                     }
 
@@ -925,15 +929,15 @@ namespace UnityEditor
                     // Standalone Player
                     if (targetGroup == BuildTargetGroup.Standalone)
                     {
-                        GUILayout.Label(Styles.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
+                        GUILayout.Label(SettingsContent.standalonePlayerOptionsTitle, EditorStyles.boldLabel);
                         EditorGUILayout.PropertyField(m_CaptureSingleScreen);
                         EditorGUILayout.PropertyField(m_DisplayResolutionDialog);
                         EditorGUILayout.PropertyField(m_UsePlayerLog);
                         EditorGUILayout.PropertyField(m_ResizableWindow);
 
-                        EditorGUILayout.PropertyField(m_VisibleInBackground, Styles.visibleInBackground);
+                        EditorGUILayout.PropertyField(m_VisibleInBackground, SettingsContent.visibleInBackground);
 
-                        EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, Styles.allowFullscreenSwitch);
+                        EditorGUILayout.PropertyField(m_AllowFullscreenSwitch, SettingsContent.allowFullscreenSwitch);
 
                         EditorGUILayout.PropertyField(m_ForceSingleInstance);
                         EditorGUILayout.PropertyField(m_SupportedAspectRatios, true);
@@ -948,19 +952,19 @@ namespace UnityEditor
                         if (targetGroup != BuildTargetGroup.iOS &&
                             targetGroup != BuildTargetGroup.tvOS)
                         {
-                            EditorGUILayout.PropertyField(m_Use32BitDisplayBuffer, Styles.use32BitDisplayBuffer);
+                            EditorGUILayout.PropertyField(m_Use32BitDisplayBuffer, SettingsContent.use32BitDisplayBuffer);
                         }
 
-                        EditorGUILayout.PropertyField(m_DisableDepthAndStencilBuffers, Styles.disableDepthAndStencilBuffers);
+                        EditorGUILayout.PropertyField(m_DisableDepthAndStencilBuffers, SettingsContent.disableDepthAndStencilBuffers);
                     }
                     // activity indicator on loading
                     if (targetGroup == BuildTargetGroup.iOS)
                     {
-                        EditorGUILayout.PropertyField(m_iosShowActivityIndicatorOnLoading, Styles.iosShowActivityIndicatorOnLoading);
+                        EditorGUILayout.PropertyField(m_iosShowActivityIndicatorOnLoading, SettingsContent.iosShowActivityIndicatorOnLoading);
                     }
                     if (targetGroup == BuildTargetGroup.Android)
                     {
-                        EditorGUILayout.PropertyField(m_androidShowActivityIndicatorOnLoading, Styles.androidShowActivityIndicatorOnLoading);
+                        EditorGUILayout.PropertyField(m_androidShowActivityIndicatorOnLoading, SettingsContent.androidShowActivityIndicatorOnLoading);
                     }
                     if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.Android)
                     {
@@ -1128,8 +1132,8 @@ namespace UnityEditor
             if (!hasMinES3)
                 return;
 
-            EditorGUILayout.PropertyField(m_RequireES31, Styles.require31);
-            EditorGUILayout.PropertyField(m_RequireES31AEP, Styles.requireAEP);
+            EditorGUILayout.PropertyField(m_RequireES31, SettingsContent.require31);
+            EditorGUILayout.PropertyField(m_RequireES31AEP, SettingsContent.requireAEP);
         }
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
@@ -1146,7 +1150,7 @@ namespace UnityEditor
             automatic = EditorGUILayout.Toggle(string.Format(L10n.Tr("Auto Graphics API {0}"), (platformTitle ?? string.Empty)), automatic);
             if (EditorGUI.EndChangeCheck())
             {
-                Undo.RecordObject(target, Styles.undoChangedGraphicsAPIString);
+                Undo.RecordObject(target, SettingsContent.undoChangedGraphicsAPIString);
                 PlayerSettings.SetUseDefaultGraphicsAPIs(targetPlatform, automatic);
             }
 
@@ -1156,7 +1160,7 @@ namespace UnityEditor
                 // note that editor will use first item, when we're in standalone settings
                 if (WillEditorUseFirstGraphicsAPI(targetPlatform))
                 {
-                    EditorGUILayout.HelpBox(Styles.recordingInfo.text, MessageType.Info, true);
+                    EditorGUILayout.HelpBox(SettingsContent.recordingInfo.text, MessageType.Info, true);
                 }
 
                 var displayTitle = "Graphics APIs";
@@ -1320,7 +1324,7 @@ namespace UnityEditor
 
             // On standalone inspector mention that the setting applies only to Mac
             // (Temporarily until other standalones support this setting)
-            GUIContent header = targetGroup == BuildTargetGroup.Standalone ? Styles.colorGamutForMac : Styles.colorGamut;
+            GUIContent header = targetGroup == BuildTargetGroup.Standalone ? SettingsContent.colorGamutForMac : SettingsContent.colorGamut;
             s_ColorGamutList.drawHeaderCallback = (rect) =>
                 GUI.Label(rect, header, EditorStyles.label);
 
@@ -1340,23 +1344,23 @@ namespace UnityEditor
             if (targetGroup != BuildTargetGroup.iOS && targetGroup != BuildTargetGroup.tvOS)
                 return;
 
-            if (BeginSettingsBox(sectionIndex, Styles.debuggingCrashReportingTitle))
+            if (BeginSettingsBox(sectionIndex, SettingsContent.debuggingCrashReportingTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
                 {
                     // Debugging
-                    GUILayout.Label(Styles.debuggingTitle, EditorStyles.boldLabel);
-                    EditorGUILayout.PropertyField(m_EnableInternalProfiler, Styles.enableInternalProfiler);
+                    GUILayout.Label(SettingsContent.debuggingTitle, EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(m_EnableInternalProfiler, SettingsContent.enableInternalProfiler);
                     EditorGUILayout.Space();
                 }
 
                 {
                     // Crash reporting
-                    GUILayout.Label(Styles.crashReportingTitle, EditorStyles.boldLabel);
-                    EditorGUILayout.PropertyField(m_ActionOnDotNetUnhandledException, Styles.actionOnDotNetUnhandledException);
-                    EditorGUILayout.PropertyField(m_LogObjCUncaughtExceptions, Styles.logObjCUncaughtExceptions);
+                    GUILayout.Label(SettingsContent.crashReportingTitle, EditorStyles.boldLabel);
+                    EditorGUILayout.PropertyField(m_ActionOnDotNetUnhandledException, SettingsContent.actionOnDotNetUnhandledException);
+                    EditorGUILayout.PropertyField(m_LogObjCUncaughtExceptions, SettingsContent.logObjCUncaughtExceptions);
 
-                    GUIContent crashReportApiContent = Styles.enableCrashReportAPI;
+                    GUIContent crashReportApiContent = SettingsContent.enableCrashReportAPI;
 
                     bool apiFieldDisabled = false;
 
@@ -1422,7 +1426,7 @@ namespace UnityEditor
 
         public void OtherSectionGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 4)
         {
-            if (BeginSettingsBox(sectionIndex, Styles.otherSettingsTitle))
+            if (BeginSettingsBox(sectionIndex, SettingsContent.otherSettingsTitle))
             {
                 // PLEASE DO NOT COPY SETTINGS TO APPEAR MULTIPLE PLACES IN THE CODE! See top of file for more info.
                 OtherSectionRenderingGUI(platform, targetGroup, settingsExtension);
@@ -1443,7 +1447,7 @@ namespace UnityEditor
         private void OtherSectionRenderingGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             // Rendering related settings
-            GUILayout.Label(Styles.renderingTitle, EditorStyles.boldLabel);
+            GUILayout.Label(SettingsContent.renderingTitle, EditorStyles.boldLabel);
 
             // Color space
             if (targetGroup == BuildTargetGroup.Standalone
@@ -1454,12 +1458,13 @@ namespace UnityEditor
                 || targetGroup == BuildTargetGroup.XboxOne
                 || targetGroup == BuildTargetGroup.WSA
                 || targetGroup == BuildTargetGroup.WebGL
+                || targetGroup == BuildTargetGroup.Lumin
                 || targetGroup == BuildTargetGroup.Switch)
             {
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching color spaces in play mode is not supported
                 {
                     EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(m_ActiveColorSpace, Styles.activeColorSpace);
+                    EditorGUILayout.PropertyField(m_ActiveColorSpace, SettingsContent.activeColorSpace);
                     if (EditorGUI.EndChangeCheck())
                     {
                         serializedObject.ApplyModifiedProperties();
@@ -1479,7 +1484,7 @@ namespace UnityEditor
                         bool hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
 
                         if (!hasMinMetal || !hasMinOSVersion)
-                            EditorGUILayout.HelpBox(Styles.colorSpaceIOSWarning.text, MessageType.Warning);
+                            EditorGUILayout.HelpBox(SettingsContent.colorSpaceIOSWarning.text, MessageType.Warning);
                     }
 
                     if (targetGroup == BuildTargetGroup.tvOS)
@@ -1488,7 +1493,7 @@ namespace UnityEditor
                         var hasMinMetal = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
 
                         if (!hasMinMetal)
-                            EditorGUILayout.HelpBox(Styles.colorSpaceTVOSWarning.text, MessageType.Warning);
+                            EditorGUILayout.HelpBox(SettingsContent.colorSpaceTVOSWarning.text, MessageType.Warning);
                     }
 
                     if (targetGroup == BuildTargetGroup.Android)
@@ -1498,7 +1503,7 @@ namespace UnityEditor
 
                         var hasBlitDisabled = PlayerSettings.Android.blitType == AndroidBlitType.Never;
                         if (hasBlitDisabled || !hasMinAPI || (int)PlayerSettings.Android.minSdkVersion < 18)
-                            EditorGUILayout.HelpBox(Styles.colorSpaceAndroidWarning.text, MessageType.Warning);
+                            EditorGUILayout.HelpBox(SettingsContent.colorSpaceAndroidWarning.text, MessageType.Warning);
                     }
 
                     if (targetGroup == BuildTargetGroup.WebGL)
@@ -1507,7 +1512,7 @@ namespace UnityEditor
                         var hasMinAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
 
                         if (!hasMinAPI)
-                            EditorGUILayout.HelpBox(Styles.colorSpaceWebGLWarning.text, MessageType.Error);
+                            EditorGUILayout.HelpBox(SettingsContent.colorSpaceWebGLWarning.text, MessageType.Error);
                     }
                 }
             }
@@ -1522,7 +1527,7 @@ namespace UnityEditor
             if (Application.platform == RuntimePlatform.OSXEditor && (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS))
             {
                 bool curMetalSupport = m_MetalEditorSupport.boolValue || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal;
-                bool newMetalSupport = EditorGUILayout.Toggle(Styles.metalEditorSupport, curMetalSupport);
+                bool newMetalSupport = EditorGUILayout.Toggle(SettingsContent.metalEditorSupport, curMetalSupport);
 
                 if (newMetalSupport != curMetalSupport)
                 {
@@ -1557,15 +1562,15 @@ namespace UnityEditor
                 if (m_MetalEditorSupport.boolValue)
                 {
                     using (new EditorGUI.IndentLevelScope())
-                        m_MetalAPIValidation.boolValue = EditorGUILayout.Toggle(Styles.metalAPIValidation, m_MetalAPIValidation.boolValue);
+                        m_MetalAPIValidation.boolValue = EditorGUILayout.Toggle(SettingsContent.metalAPIValidation, m_MetalAPIValidation.boolValue);
                 }
 
-                EditorGUILayout.PropertyField(m_MetalFramebufferOnly, Styles.metalFramebufferOnly);
+                EditorGUILayout.PropertyField(m_MetalFramebufferOnly, SettingsContent.metalFramebufferOnly);
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
-                    EditorGUILayout.PropertyField(m_MetalForceHardShadows, Styles.metalForceHardShadows);
+                    EditorGUILayout.PropertyField(m_MetalForceHardShadows, SettingsContent.metalForceHardShadows);
 
                 int[] memorylessModeValues = {0, 1, 2};
-                BuildEnumPopup(m_FramebufferDepthMemorylessMode, Styles.framebufferDepthMemorylessMode, memorylessModeValues, Styles.memorylessModeNames);
+                BuildEnumPopup(m_FramebufferDepthMemorylessMode, SettingsContent.framebufferDepthMemorylessMode, memorylessModeValues, SettingsContent.memorylessModeNames);
             }
 
             // Multithreaded rendering
@@ -1606,19 +1611,19 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(!staticBatchingSupported))
                 {
                     if (GUI.enabled)
-                        staticBatching = EditorGUILayout.Toggle(Styles.staticBatching, staticBatching != 0) ? 1 : 0;
+                        staticBatching = EditorGUILayout.Toggle(SettingsContent.staticBatching, staticBatching != 0) ? 1 : 0;
                     else
-                        EditorGUILayout.Toggle(Styles.staticBatching, false);
+                        EditorGUILayout.Toggle(SettingsContent.staticBatching, false);
                 }
 
                 using (new EditorGUI.DisabledScope(!dynamicBatchingSupported))
                 {
-                    dynamicBatching = EditorGUILayout.Toggle(Styles.dynamicBatching, dynamicBatching != 0) ? 1 : 0;
+                    dynamicBatching = EditorGUILayout.Toggle(SettingsContent.dynamicBatching, dynamicBatching != 0) ? 1 : 0;
                 }
 
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(target, Styles.undoChangedBatchingString);
+                    Undo.RecordObject(target, SettingsContent.undoChangedBatchingString);
                     PlayerSettings.SetBatchingForPlatform(platform.defaultTarget, staticBatching, dynamicBatching);
                 }
             }
@@ -1647,7 +1652,7 @@ namespace UnityEditor
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_SkinOnGPU,
-                    targetGroup != BuildTargetGroup.PS4 && targetGroup != BuildTargetGroup.Switch ? Styles.skinOnGPU : Styles.skinOnGPUPS4);
+                    targetGroup != BuildTargetGroup.PS4 && targetGroup != BuildTargetGroup.Switch ? SettingsContent.skinOnGPU : SettingsContent.skinOnGPUPS4);
                 if (EditorGUI.EndChangeCheck())
                 {
                     ShaderUtil.RecreateSkinnedMeshResources();
@@ -1666,19 +1671,19 @@ namespace UnityEditor
                     PlayerSettings.graphicsJobs = true;
                 using (new EditorGUI.DisabledScope(gfxAPIs[0] == GraphicsDeviceType.XboxOneD3D12))
                 {
-                    EditorGUILayout.PropertyField(m_GraphicsJobs, Styles.graphicsJobs);
+                    EditorGUILayout.PropertyField(m_GraphicsJobs, SettingsContent.graphicsJobs);
                 }
             }
             else
             {
-                EditorGUILayout.PropertyField(m_GraphicsJobs, Styles.graphicsJobs);
+                EditorGUILayout.PropertyField(m_GraphicsJobs, SettingsContent.graphicsJobs);
                 if (gfxJobModesSupported)
                 {
                     using (new EditorGUI.DisabledScope(!m_GraphicsJobs.boolValue))
                     {
                         GraphicsJobMode currGfxJobMode = PlayerSettings.graphicsJobMode;
 
-                        GraphicsJobMode newGfxJobMode = BuildEnumPopup(Styles.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
+                        GraphicsJobMode newGfxJobMode = BuildEnumPopup(SettingsContent.graphicsJobsMode, currGfxJobMode, m_GfxJobModeValues, m_GfxJobModeNames);
                         if (newGfxJobMode != currGfxJobMode)
                         {
                             PlayerSettings.graphicsJobMode = newGfxJobMode;
@@ -1695,7 +1700,7 @@ namespace UnityEditor
                     EditorGUI.BeginChangeCheck();
                     LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(targetGroup);
                     LightmapEncodingQuality[] lightmapEncodingValues = {LightmapEncodingQuality.Normal, LightmapEncodingQuality.High};
-                    encodingQuality = BuildEnumPopup(Styles.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, Styles.lightmapEncodingNames);
+                    encodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
                     if (EditorGUI.EndChangeCheck())
                     {
                         PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, encodingQuality);
@@ -1716,11 +1721,11 @@ namespace UnityEditor
                 int streamingPriority = PlayerSettings.GetLightmapStreamingPriorityForPlatformGroup(targetGroup);
 
                 EditorGUI.BeginChangeCheck();
-                streamingEnabled = EditorGUILayout.Toggle(Styles.lightmapStreamingEnabled, streamingEnabled);
+                streamingEnabled = EditorGUILayout.Toggle(SettingsContent.lightmapStreamingEnabled, streamingEnabled);
                 if (streamingEnabled)
                 {
                     EditorGUI.indentLevel++;
-                    streamingPriority = EditorGUILayout.DelayedIntField(Styles.lightmapStreamingPriority, streamingPriority);
+                    streamingPriority = EditorGUILayout.DelayedIntField(SettingsContent.lightmapStreamingPriority, streamingPriority);
                     EditorGUI.indentLevel--;
                 }
                 if (EditorGUI.EndChangeCheck())
@@ -1736,17 +1741,14 @@ namespace UnityEditor
                 }
             }
 
-            if (m_VRSettings.TargetGroupSupportsVirtualReality(targetGroup))
-            {
-                if (EditorGUILayout.LinkLabel(Styles.vrSettingsMoved))
-                {
-                    m_SelectedSection.value = m_VRSettings.GUISectionIndex;
-                }
-            }
-
             if (TargetSupportsProtectedGraphicsMem(targetGroup))
             {
-                PlayerSettings.protectGraphicsMemory = EditorGUILayout.Toggle(Styles.protectGraphicsMemory, PlayerSettings.protectGraphicsMemory);
+                PlayerSettings.protectGraphicsMemory = EditorGUILayout.Toggle(SettingsContent.protectGraphicsMemory, PlayerSettings.protectGraphicsMemory);
+            }
+
+            if (settingsExtension != null && settingsExtension.SupportsFrameTimingStatistics())
+            {
+                PlayerSettings.enableFrameTimingStats = EditorGUILayout.Toggle(SettingsContent.enableFrameTimingStats, PlayerSettings.enableFrameTimingStats);
             }
 
             if (hdrSupported)
@@ -1763,7 +1765,7 @@ namespace UnityEditor
 
             if (settingsExtension != null && settingsExtension.HasIdentificationGUI())
             {
-                GUILayout.Label(Styles.identificationTitle, EditorStyles.boldLabel);
+                GUILayout.Label(SettingsContent.identificationTitle, EditorStyles.boldLabel);
                 settingsExtension.IdentificationSectionGUI();
 
                 EditorGUILayout.Space();
@@ -1771,13 +1773,13 @@ namespace UnityEditor
             else if (targetGroup == BuildTargetGroup.Standalone)
             {
                 // TODO this should be move to an extension if we have one for MacOS or Standalone target at some point.
-                GUILayout.Label(Styles.macAppStoreTitle, EditorStyles.boldLabel);
+                GUILayout.Label(SettingsContent.macAppStoreTitle, EditorStyles.boldLabel);
 
-                PlayerSettingsEditor.ShowApplicationIdentifierUI(serializedObject, BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'", Styles.undoChangedBundleIdentifierString);
-                PlayerSettingsEditor.ShowBuildNumberUI(serializedObject, BuildTargetGroup.Standalone, "Build", "'CFBundleVersion'", Styles.undoChangedBuildNumberString);
+                PlayerSettingsEditor.ShowApplicationIdentifierUI(serializedObject, BuildTargetGroup.Standalone, "Bundle Identifier", "'CFBundleIdentifier'", SettingsContent.undoChangedBundleIdentifierString);
+                PlayerSettingsEditor.ShowBuildNumberUI(serializedObject, BuildTargetGroup.Standalone, "Build", "'CFBundleVersion'", SettingsContent.undoChangedBuildNumberString);
 
-                EditorGUILayout.PropertyField(m_MacAppStoreCategory, Styles.macAppStoreCategory);
-                EditorGUILayout.PropertyField(m_UseMacAppStoreValidation, Styles.useMacAppStoreValidation);
+                EditorGUILayout.PropertyField(m_MacAppStoreCategory, SettingsContent.macAppStoreCategory);
+                EditorGUILayout.PropertyField(m_UseMacAppStoreValidation, SettingsContent.useMacAppStoreValidation);
 
                 EditorGUILayout.Space();
             }
@@ -1789,66 +1791,9 @@ namespace UnityEditor
             if (settingsExtension != null && !settingsExtension.ShouldShowVulkanSettings())
                 return;
 
-            GUILayout.Label(Styles.vulkanSettingsTitle, EditorStyles.boldLabel);
+            GUILayout.Label(SettingsContent.vulkanSettingsTitle, EditorStyles.boldLabel);
 
-            // Vulkan
-            if (Application.platform == RuntimePlatform.WindowsEditor || Application.platform == RuntimePlatform.LinuxEditor)
-            {
-                bool curVulkanSupport = m_VulkanEditorSupport.boolValue || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan;
-                bool newVulkanSupport = EditorGUILayout.Toggle(Styles.vulkanEditorSupport, curVulkanSupport);
-
-                if (newVulkanSupport != curVulkanSupport)
-                {
-                    BuildTarget tgt;
-                    if (Application.platform == RuntimePlatform.WindowsEditor)
-                        tgt = BuildTarget.StandaloneWindows;
-                    else
-                        tgt = BuildTarget.StandaloneLinux;
-
-                    m_VulkanEditorSupport.boolValue = newVulkanSupport;
-                    serializedObject.ApplyModifiedProperties();
-
-                    GraphicsDeviceType[] api = PlayerSettings.GetGraphicsAPIs(tgt);
-
-                    bool updateCurrentAPI = api[0] != SystemInfo.graphicsDeviceType;
-                    if (!newVulkanSupport && SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan)
-                        updateCurrentAPI = true; // running on vulkan and disabled it
-                    if (newVulkanSupport && api[0] == GraphicsDeviceType.Vulkan)
-                        updateCurrentAPI = true; // just enabled vulkan so want to switch to it
-
-                    ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(tgt, updateCurrentAPI);
-                    if (action.changeList)
-                    {
-                        // HACK: we pretended to change first api in list to trigger possible gfx device recreation
-                        // HACK: but we dont really change api list (as we will simply set bool checked from native code)
-                        action = new ChangeGraphicsApiAction(false, action.reloadGfx);
-                    }
-                    else
-                    {
-                        // User clicked cancel, reset toggle value
-                        m_VulkanEditorSupport.boolValue = curVulkanSupport;
-                        serializedObject.ApplyModifiedProperties();
-                    }
-                    ApplyChangeGraphicsApiAction(tgt, api, action);
-
-                    // Need to do this when we trigger a dialog (CheckApplyGraphicsAPIList)
-                    EditorGUIUtility.ExitGUI();
-                }
-            }
-
-            PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(Styles.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
-
-            bool newUseSWCmdBuf = EditorGUILayout.Toggle(Styles.vulkanUseSWCommandBuffers, PlayerSettings.vulkanUseSWCommandBuffers);
-            if (newUseSWCmdBuf != PlayerSettings.vulkanUseSWCommandBuffers)
-            {
-                // Changing this value requires reloading the gfxdevice
-                PlayerSettings.vulkanUseSWCommandBuffers = newUseSWCmdBuf;
-                if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Vulkan)
-                {
-                    ShaderUtil.RecreateGfxDevice();
-                    GUIUtility.ExitGUI();
-                }
-            }
+            PlayerSettings.vulkanEnableSetSRGBWrite = EditorGUILayout.Toggle(SettingsContent.vulkanEnableSetSRGBWrite, PlayerSettings.vulkanEnableSetSRGBWrite);
 
             EditorGUILayout.Space();
         }
@@ -1942,29 +1887,29 @@ namespace UnityEditor
         private void OtherSectionConfigurationGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             // Configuration
-            GUILayout.Label(Styles.configurationTitle, EditorStyles.boldLabel);
+            GUILayout.Label(SettingsContent.configurationTitle, EditorStyles.boldLabel);
 
             // Scripting Runtime Version
             var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
-            var scriptingRuntimeVersionNames = new[] {Styles.scriptingRuntimeVersionLegacy, Styles.scriptingRuntimeVersionLatest};
+            var scriptingRuntimeVersionNames = new[] {SettingsContent.scriptingRuntimeVersionLegacy, SettingsContent.scriptingRuntimeVersionLatest};
             var newScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
 
             if (EditorApplication.isPlaying)
             {
-                var current = PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? Styles.scriptingRuntimeVersionLegacy : Styles.scriptingRuntimeVersionLatest;
-                BuildDisabledEnumPopup(current, Styles.scriptingRuntimeVersion);
+                var current = PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? SettingsContent.scriptingRuntimeVersionLegacy : SettingsContent.scriptingRuntimeVersionLatest;
+                BuildDisabledEnumPopup(current, SettingsContent.scriptingRuntimeVersion);
             }
             else
             {
-                newScriptingRuntimeVersions = BuildEnumPopup(Styles.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
+                newScriptingRuntimeVersions = BuildEnumPopup(SettingsContent.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
             }
 
             if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
             {
-                var activeScriptingRuntime = EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? Styles.scriptingRuntimeVersionLegacy : Styles.scriptingRuntimeVersionLatest;
-                BuildDisabledEnumPopup(activeScriptingRuntime, Styles.scriptingRuntimeVersionActive);
+                var activeScriptingRuntime = EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? SettingsContent.scriptingRuntimeVersionLegacy : SettingsContent.scriptingRuntimeVersionLatest;
+                BuildDisabledEnumPopup(activeScriptingRuntime, SettingsContent.scriptingRuntimeVersionActive);
 
-                EditorGUILayout.HelpBox(Styles.scriptingRuntimeVersionActiveWarning.text, MessageType.Warning);
+                EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionActiveWarning.text, MessageType.Warning);
             }
 
             if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
@@ -1973,16 +1918,10 @@ namespace UnityEditor
                 {
                     PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
                 }
-                else if (EditorUtility.DisplayDialog(
-                             LocalizationDatabase.GetLocalizedString("Restart required"),
-                             LocalizationDatabase.GetLocalizedString("Changing scripting runtime version requires a restart of the Editor to take effect. Do you wish to proceed?"),
-                             LocalizationDatabase.GetLocalizedString("Restart"),
-                             LocalizationDatabase.GetLocalizedString("Cancel")))
+                else
                 {
                     PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
-                    EditorCompilationInterface.Instance.CleanScriptAssemblies();
-                    if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                        EditorApplication.OpenProject(Environment.CurrentDirectory);
+                    PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged();
                 }
             }
 
@@ -1993,7 +1932,7 @@ namespace UnityEditor
 
             if (scripting == null)
             {
-                BuildDisabledEnumPopup(Styles.scriptingDefault, Styles.scriptingBackend);
+                BuildDisabledEnumPopup(SettingsContent.scriptingDefault, SettingsContent.scriptingBackend);
             }
             else
             {
@@ -2015,21 +1954,21 @@ namespace UnityEditor
                 if (targetGroup == BuildTargetGroup.tvOS)
                 {
                     newBackend = ScriptingImplementation.IL2CPP;
-                    PlayerSettingsEditor.BuildDisabledEnumPopup(Styles.scriptingIL2CPP, Styles.scriptingBackend);
+                    PlayerSettingsEditor.BuildDisabledEnumPopup(SettingsContent.scriptingIL2CPP, SettingsContent.scriptingBackend);
                 }
                 else if (backends.Length == 1)
                 {
                     newBackend = backends[0];
-                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0]), Styles.scriptingBackend);
+                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0]), SettingsContent.scriptingBackend);
                 }
                 else
                 {
-                    newBackend = BuildEnumPopup(Styles.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
+                    newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
                 }
 
                 if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
                 {
-                    EditorGUILayout.HelpBox(Styles.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
+                    EditorGUILayout.HelpBox(SettingsContent.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
                 }
 
                 if (newBackend != currBackend)
@@ -2040,7 +1979,7 @@ namespace UnityEditor
             var currentCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(targetGroup);
             var availableCompatibilityLevels = GetAvailableApiCompatibilityLevels(targetGroup);
 
-            var newCompatibilityLevel = BuildEnumPopup(Styles.apiCompatibilityLevel, currentCompatibilityLevel, availableCompatibilityLevels, GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels));
+            var newCompatibilityLevel = BuildEnumPopup(SettingsContent.apiCompatibilityLevel, currentCompatibilityLevel, availableCompatibilityLevels, GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels));
 
             if (currentCompatibilityLevel != newCompatibilityLevel)
                 PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
@@ -2053,7 +1992,7 @@ namespace UnityEditor
                     var configurations = GetIl2CppCompilerConfigurations();
                     var configurationNames = GetIl2CppCompilerConfigurationNames();
 
-                    var newConfiguration = BuildEnumPopup(Styles.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
+                    var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
 
                     if (currentConfiguration != newConfiguration)
                         PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
@@ -2070,25 +2009,25 @@ namespace UnityEditor
             if (showMobileSection)
             {
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
-                    EditorGUILayout.PropertyField(m_useOnDemandResources, Styles.useOnDemandResources);
+                    EditorGUILayout.PropertyField(m_useOnDemandResources, SettingsContent.useOnDemandResources);
 
                 bool supportsAccelerometerFrequency =
                     targetGroup == BuildTargetGroup.iOS ||
                     targetGroup == BuildTargetGroup.tvOS ||
                     targetGroup == BuildTargetGroup.WSA;
                 if (supportsAccelerometerFrequency)
-                    EditorGUILayout.PropertyField(m_AccelerometerFrequency, Styles.accelerometerFrequency);
+                    EditorGUILayout.PropertyField(m_AccelerometerFrequency, SettingsContent.accelerometerFrequency);
 
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
                 {
-                    EditorGUILayout.PropertyField(m_CameraUsageDescription, Styles.cameraUsageDescription);
-                    EditorGUILayout.PropertyField(m_LocationUsageDescription, Styles.locationUsageDescription);
-                    EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, Styles.microphoneUsageDescription);
+                    EditorGUILayout.PropertyField(m_CameraUsageDescription, SettingsContent.cameraUsageDescription);
+                    EditorGUILayout.PropertyField(m_LocationUsageDescription, SettingsContent.locationUsageDescription);
+                    EditorGUILayout.PropertyField(m_MicrophoneUsageDescription, SettingsContent.microphoneUsageDescription);
                 }
 
                 if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS || targetGroup == BuildTargetGroup.Android)
                 {
-                    EditorGUILayout.PropertyField(m_MuteOtherAudioSources, Styles.muteOtherAudioSources);
+                    EditorGUILayout.PropertyField(m_MuteOtherAudioSources, SettingsContent.muteOtherAudioSources);
                 }
 
                 // TVOS TODO: check what should stay or go
@@ -2096,19 +2035,19 @@ namespace UnityEditor
                 {
                     if (targetGroup == BuildTargetGroup.iOS)
                     {
-                        EditorGUILayout.PropertyField(m_PrepareIOSForRecording, Styles.prepareIOSForRecording);
-                        EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, Styles.forceIOSSpeakersWhenRecording);
+                        EditorGUILayout.PropertyField(m_PrepareIOSForRecording, SettingsContent.prepareIOSForRecording);
+                        EditorGUILayout.PropertyField(m_ForceIOSSpeakersWhenRecording, SettingsContent.forceIOSSpeakersWhenRecording);
                     }
-                    EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, Styles.UIRequiresPersistentWiFi);
-                    EditorGUILayout.PropertyField(m_IOSAllowHTTPDownload, Styles.iOSAllowHTTPDownload);
-                    EditorGUILayout.PropertyField(m_IOSURLSchemes, Styles.iOSURLSchemes, true);
+                    EditorGUILayout.PropertyField(m_UIRequiresPersistentWiFi, SettingsContent.UIRequiresPersistentWiFi);
+                    EditorGUILayout.PropertyField(m_IOSAllowHTTPDownload, SettingsContent.iOSAllowHTTPDownload);
+                    EditorGUILayout.PropertyField(m_IOSURLSchemes, SettingsContent.iOSURLSchemes, true);
                 }
             }
 
             using (new EditorGUI.DisabledScope(!Application.HasProLicense()))
             {
                 bool oldDisableAnalytics = !m_SubmitAnalytics.boolValue;
-                bool newDisableAnalytics = EditorGUILayout.Toggle(Styles.disableStatistics, oldDisableAnalytics);
+                bool newDisableAnalytics = EditorGUILayout.Toggle(SettingsContent.disableStatistics, oldDisableAnalytics);
                 if (oldDisableAnalytics != newDisableAnalytics)
                 {
                     m_SubmitAnalytics.boolValue = !newDisableAnalytics;
@@ -2124,7 +2063,7 @@ namespace UnityEditor
 
             // User script defines
             {
-                EditorGUILayout.LabelField(Styles.scriptingDefineSymbols);
+                EditorGUILayout.LabelField(SettingsContent.scriptingDefineSymbols);
                 EditorGUI.BeginChangeCheck();
                 string scriptDefines = EditorGUILayout.DelayedTextField(PlayerSettings.GetScriptingDefineSymbolsForGroup(targetGroup), EditorStyles.textField);
                 scriptingDefinesControlID = EditorGUIUtility.s_LastControlID;
@@ -2134,7 +2073,7 @@ namespace UnityEditor
 
             {
                 EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_AllowUnsafeCode, Styles.allowUnsafeCode);
+                EditorGUILayout.PropertyField(m_AllowUnsafeCode, SettingsContent.allowUnsafeCode);
                 if (EditorGUI.EndChangeCheck())
                 {
                     PlayerSettings.allowUnsafeCode = m_AllowUnsafeCode.boolValue;
@@ -2145,7 +2084,7 @@ namespace UnityEditor
             int inputOption = (!m_EnableInputSystem.boolValue) ? 0 : m_DisableInputManager.boolValue ? 1 : 2;
             int oldInputOption = inputOption;
             EditorGUI.BeginChangeCheck();
-            inputOption = EditorGUILayout.Popup(Styles.activeInputHandling, inputOption, Styles.activeInputHandlingOptions);
+            inputOption = EditorGUILayout.Popup(SettingsContent.activeInputHandling, inputOption, SettingsContent.activeInputHandlingOptions);
             if (EditorGUI.EndChangeCheck())
             {
                 if (inputOption != oldInputOption)
@@ -2164,11 +2103,11 @@ namespace UnityEditor
         private void OtherSectionOptimizationGUI(BuildTargetGroup targetGroup)
         {
             // Optimization
-            GUILayout.Label(Styles.optimizationTitle, EditorStyles.boldLabel);
+            GUILayout.Label(SettingsContent.optimizationTitle, EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(m_BakeCollisionMeshes, Styles.bakeCollisionMeshes);
-            EditorGUILayout.PropertyField(m_KeepLoadedShadersAlive, Styles.keepLoadedShadersAlive);
-            EditorGUILayout.PropertyField(m_PreloadedAssets, Styles.preloadedAssets, true);
+            EditorGUILayout.PropertyField(m_BakeCollisionMeshes, SettingsContent.bakeCollisionMeshes);
+            EditorGUILayout.PropertyField(m_KeepLoadedShadersAlive, SettingsContent.keepLoadedShadersAlive);
+            EditorGUILayout.PropertyField(m_PreloadedAssets, SettingsContent.preloadedAssets, true);
 
             bool platformUsesAOT =
                 targetGroup == BuildTargetGroup.iOS ||
@@ -2178,7 +2117,7 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.PSP2;
 
             if (platformUsesAOT)
-                EditorGUILayout.PropertyField(m_AotOptions, Styles.aotOptions);
+                EditorGUILayout.PropertyField(m_AotOptions, SettingsContent.aotOptions);
 
             bool platformSupportsStripping =
                 targetGroup == BuildTargetGroup.iOS ||
@@ -2200,11 +2139,11 @@ namespace UnityEditor
 
                 if (targetGroup == BuildTargetGroup.WebGL || backend == ScriptingImplementation.IL2CPP)
                 {
-                    EditorGUILayout.PropertyField(m_StripEngineCode, Styles.stripEngineCode);
+                    EditorGUILayout.PropertyField(m_StripEngineCode, SettingsContent.stripEngineCode);
                 }
                 if (backend != ScriptingImplementation.WinRTDotNET)
                 {
-                    newManagedStrippingLevel = BuildEnumPopup(Styles.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
+                    newManagedStrippingLevel = BuildEnumPopup(SettingsContent.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
                     if (newManagedStrippingLevel != currentManagedStrippingLevel)
                         PlayerSettings.SetManagedStrippingLevel(targetGroup, newManagedStrippingLevel);
                 }
@@ -2212,40 +2151,21 @@ namespace UnityEditor
 
             if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
             {
-                EditorGUILayout.PropertyField(m_IPhoneScriptCallOptimization, Styles.iPhoneScriptCallOptimization);
+                EditorGUILayout.PropertyField(m_IPhoneScriptCallOptimization, SettingsContent.iPhoneScriptCallOptimization);
             }
             if (targetGroup == BuildTargetGroup.Android)
             {
-                EditorGUILayout.PropertyField(m_AndroidProfiler, Styles.enableInternalProfiler);
+                EditorGUILayout.PropertyField(m_AndroidProfiler, SettingsContent.enableInternalProfiler);
             }
 
             EditorGUILayout.Space();
 
             // Vertex compression flags dropdown
             VertexChannelCompressionFlags vertexFlags = (VertexChannelCompressionFlags)m_VertexChannelCompressionMask.intValue;
-            vertexFlags = (VertexChannelCompressionFlags)EditorGUILayout.EnumFlagsField(Styles.vertexChannelCompressionMask, vertexFlags);
+            vertexFlags = (VertexChannelCompressionFlags)EditorGUILayout.EnumFlagsField(SettingsContent.vertexChannelCompressionMask, vertexFlags);
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
-            EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, Styles.stripUnusedMeshComponents);
-
-            if (targetGroup == BuildTargetGroup.PSP2)
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_VideoMemoryForVertexBuffers, Styles.videoMemoryForVertexBuffers);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    const int minVidMemForMesh = 0;
-                    const int maxVidMemForMesh = 192;
-                    if (m_VideoMemoryForVertexBuffers.intValue < minVidMemForMesh)
-                    {
-                        m_VideoMemoryForVertexBuffers.intValue = minVidMemForMesh;
-                    }
-                    else if (m_VideoMemoryForVertexBuffers.intValue > maxVidMemForMesh)
-                    {
-                        m_VideoMemoryForVertexBuffers.intValue = maxVidMemForMesh;
-                    }
-                }
-            }
+            EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, SettingsContent.stripUnusedMeshComponents);
 
             EditorGUILayout.Space();
         }
@@ -2335,7 +2255,7 @@ namespace UnityEditor
 
         private void OtherSectionLoggingGUI()
         {
-            GUILayout.Label(Styles.loggingTitle, EditorStyles.boldLabel);
+            GUILayout.Label(SettingsContent.loggingTitle, EditorStyles.boldLabel);
 
             GUILayout.BeginVertical();
             GUILayout.BeginHorizontal();
@@ -2370,9 +2290,9 @@ namespace UnityEditor
 
         private void OtherSectionLegacyGUI()
         {
-            GUILayout.Label(Styles.legacyTitle, EditorStyles.boldLabel);
+            GUILayout.Label(SettingsContent.legacyTitle, EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(m_LegacyClampBlendShapeWeights, Styles.legacyClampBlendShapeWeights);
+            EditorGUILayout.PropertyField(m_LegacyClampBlendShapeWeights, SettingsContent.legacyClampBlendShapeWeights);
 
             EditorGUILayout.Space();
         }
@@ -2407,9 +2327,9 @@ namespace UnityEditor
             {
                 m_NiceScriptingBackendNames = new Dictionary<ScriptingImplementation, GUIContent>
                 {
-                    { ScriptingImplementation.Mono2x, Styles.scriptingMono2x },
-                    { ScriptingImplementation.WinRTDotNET, Styles.scriptingWinRTDotNET },
-                    { ScriptingImplementation.IL2CPP, Styles.scriptingIL2CPP }
+                    { ScriptingImplementation.Mono2x, SettingsContent.scriptingMono2x },
+                    { ScriptingImplementation.WinRTDotNET, SettingsContent.scriptingWinRTDotNET },
+                    { ScriptingImplementation.IL2CPP, SettingsContent.scriptingIL2CPP }
                 };
             }
         }
@@ -2426,10 +2346,10 @@ namespace UnityEditor
             {
                 m_NiceApiCompatibilityLevelNames = new Dictionary<ApiCompatibilityLevel, GUIContent>
                 {
-                    { ApiCompatibilityLevel.NET_2_0, Styles.apiCompatibilityLevel_NET_2_0 },
-                    { ApiCompatibilityLevel.NET_2_0_Subset, Styles.apiCompatibilityLevel_NET_2_0_Subset },
-                    { ApiCompatibilityLevel.NET_4_6, Styles.apiCompatibilityLevel_NET_4_6 },
-                    { ApiCompatibilityLevel.NET_Standard_2_0, Styles.apiCompatibilityLevel_NET_Standard_2_0 }
+                    { ApiCompatibilityLevel.NET_2_0, SettingsContent.apiCompatibilityLevel_NET_2_0 },
+                    { ApiCompatibilityLevel.NET_2_0_Subset, SettingsContent.apiCompatibilityLevel_NET_2_0_Subset },
+                    { ApiCompatibilityLevel.NET_4_6, SettingsContent.apiCompatibilityLevel_NET_4_6 },
+                    { ApiCompatibilityLevel.NET_Standard_2_0, SettingsContent.apiCompatibilityLevel_NET_Standard_2_0 }
                 };
             }
 
@@ -2442,9 +2362,9 @@ namespace UnityEditor
             {
                 m_NiceManagedStrippingLevelNames = new Dictionary<ManagedStrippingLevel, GUIContent>
                 {
-                    { ManagedStrippingLevel.Disabled, Styles.strippingDisabled },
-                    { ManagedStrippingLevel.Normal, Styles.strippingNormal },
-                    { ManagedStrippingLevel.Aggressive, Styles.strippingAggressive }
+                    { ManagedStrippingLevel.Disabled, SettingsContent.strippingDisabled },
+                    { ManagedStrippingLevel.Normal, SettingsContent.strippingNormal },
+                    { ManagedStrippingLevel.Aggressive, SettingsContent.strippingAggressive }
                 };
             }
             return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);
@@ -2607,7 +2527,7 @@ namespace UnityEditor
                 !(settingsExtension != null && settingsExtension.HasPublishSection()))
                 return;
 
-            if (BeginSettingsBox(sectionIndex, Styles.publishingSettingsTitle))
+            if (BeginSettingsBox(sectionIndex, SettingsContent.publishingSettingsTitle))
             {
                 float h = EditorGUI.kSingleLineHeight;
                 float kLabelFloatMinW = EditorGUI.kLabelW + EditorGUIUtility.fieldWidth + EditorGUI.kSpacing;
@@ -2638,6 +2558,21 @@ namespace UnityEditor
         protected override bool ShouldHideOpenButton()
         {
             return true;
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Player", "ProjectSettings/ProjectSettings.asset")
+            {
+                icon = EditorGUIUtility.LoadIconRequired("BuildSettings.Editor")
+            };
+            provider.PopulateSearchKeywordsFromGUIContentProperties<SettingsContent>();
+            provider.onEditorCreated = editor =>
+                {
+                    (editor as PlayerSettingsEditor).SetSectionOpenListener(provider.settingsWindow.Repaint);
+                };
+            return provider;
         }
     }
 }

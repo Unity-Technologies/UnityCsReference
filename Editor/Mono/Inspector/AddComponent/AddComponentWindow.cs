@@ -75,12 +75,12 @@ namespace UnityEditor.AdvancedDropdown
             return true;
         }
 
-        protected override PopupLocationHelper.PopupLocation[] GetLocationPriority()
+        protected override PopupLocation[] GetLocationPriority()
         {
             return new[]
             {
-                PopupLocationHelper.PopupLocation.Below,
-                PopupLocationHelper.PopupLocation.Above,
+                PopupLocation.Below,
+                PopupLocation.Above,
             };
         }
 

@@ -304,20 +304,20 @@ namespace UnityEditor
             }
         }
 
-        private static string[] m_LayerNames;
-        private static string[] layerNames
+        private static string[] m_DefaultRenderingLayerNames;
+        private static string[] defaultRenderingLayerNames
         {
             get
             {
-                if (m_LayerNames == null)
+                if (m_DefaultRenderingLayerNames == null)
                 {
-                    m_LayerNames = new string[32];
-                    for (int i = 0; i < m_LayerNames.Length; ++i)
+                    m_DefaultRenderingLayerNames = new string[32];
+                    for (int i = 0; i < m_DefaultRenderingLayerNames.Length; ++i)
                     {
-                        m_LayerNames[i] = string.Format("Layer{0}", i + 1);
+                        m_DefaultRenderingLayerNames[i] = string.Format("Layer{0}", i + 1);
                     }
                 }
-                return m_LayerNames;
+                return m_DefaultRenderingLayerNames;
             }
         }
 
@@ -325,7 +325,10 @@ namespace UnityEditor
         private SerializedProperty m_SortingLayerID;
         private SerializedProperty m_DynamicOccludee;
         private SerializedProperty m_RenderingLayerMask;
+        private SerializedProperty m_RendererPriority;
+
         static GUIContent m_RenderingLayerMaskStyle = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
+        static GUIContent m_RendererPriorityStyle = EditorGUIUtility.TrTextContent("Transparency Priority", "Priority used for sorting objects on top of material render queue.");
 
         protected Probes m_Probes;
 
@@ -335,6 +338,7 @@ namespace UnityEditor
             m_SortingLayerID = serializedObject.FindProperty("m_SortingLayerID");
             m_DynamicOccludee = serializedObject.FindProperty("m_DynamicOccludee");
             m_RenderingLayerMask = serializedObject.FindProperty("m_RenderingLayerMask");
+            m_RendererPriority = serializedObject.FindProperty("m_RendererPriority");
         }
 
         protected void RenderSortingLayerFields()
@@ -366,7 +370,8 @@ namespace UnityEditor
 
         internal static void RenderRenderingLayer(SerializedProperty layerMask, Renderer target, Object[] targets, bool useMiniStyle = false)
         {
-            bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
+            RenderPipelineAsset srpAsset = GraphicsSettings.renderPipelineAsset;
+            bool usingSRP = srpAsset != null;
             if (!usingSRP || target == null)
                 return;
 
@@ -374,6 +379,9 @@ namespace UnityEditor
 
             var renderer = target;
             var mask = (int)renderer.renderingLayerMask;
+            var layerNames = srpAsset.GetRenderingLayerMaskNames();
+            if (layerNames == null)
+                layerNames = defaultRenderingLayerNames;
 
             EditorGUI.BeginChangeCheck();
 
@@ -403,6 +411,26 @@ namespace UnityEditor
                 }
             }
             EditorGUI.showMixedValue = false;
+        }
+
+        protected void RenderRendererPriority()
+        {
+            RenderRendererPriority(m_RendererPriority);
+        }
+
+        internal static void RenderRendererPriority(SerializedProperty rendererPrority, bool useMiniStyle = false)
+        {
+            if (!SupportedRenderingFeatures.active.rendererSupportsRendererPriority)
+                return;
+
+            if (!useMiniStyle)
+            {
+                EditorGUILayout.PropertyField(rendererPrority, m_RendererPriorityStyle);
+            }
+            else
+            {
+                ModuleUI.GUIInt(m_RendererPriorityStyle, rendererPrority);
+            }
         }
 
         protected void RenderCommonProbeFields(bool useMiniStyle)

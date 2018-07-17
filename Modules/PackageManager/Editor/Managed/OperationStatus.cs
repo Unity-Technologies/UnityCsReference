@@ -13,26 +13,15 @@ namespace UnityEditor.PackageManager
     [NativeAsStruct]
     class OperationStatus
     {
-        [NativeName("status")]
-        private NativeStatusCode m_Status;
-        [NativeName("id")]
-        private string m_Id;
-        [NativeName("type")]
-        private string m_Type;
         [NativeName("packageList")]
         private PackageInfo[] m_PackageList;
-        [NativeName("progress")]
-        private float m_Progress;
         [NativeName("error")]
         private Error m_Error;
 
         private OperationStatus() {}
 
-        public string id { get { return m_Id;  } }
-        public NativeStatusCode status { get { return m_Status;  } }
-        public string type { get { return m_Type;  } }
         public PackageInfo[] packageList { get { return m_PackageList; } }
-        public float progress { get { return m_Progress; } }
+
         public Error error
         {
             get

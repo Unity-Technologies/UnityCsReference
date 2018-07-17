@@ -274,12 +274,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             FileUtil.MoveFileOrDirectory(file, Path.Combine(gameAssemblyDirectory, fileName));
         }
 
-        if (PlaceIL2CPPSymbolMapNextToExecutable())
-        {
-            // Move symbol map to be next to game executable
-            FileUtil.MoveFileOrDirectory(Paths.Combine(il2cppOutputNativeDirectory, "Data", "SymbolMap"), Path.Combine(args.stagingArea, "SymbolMap"));
-        }
-
         // Move il2cpp data directory one directory up
         FileUtil.MoveFileOrDirectory(Path.Combine(il2cppOutputNativeDirectory, "Data"), Path.Combine(args.stagingAreaData, "il2cpp_data"));
 
@@ -526,11 +520,6 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     protected virtual string GetDirectoryForGameAssembly(BuildPostProcessArgs args)
     {
         return args.stagingArea;
-    }
-
-    protected virtual bool PlaceIL2CPPSymbolMapNextToExecutable()
-    {
-        return true;
     }
 
     internal class ScriptingImplementations : DefaultScriptingImplementations

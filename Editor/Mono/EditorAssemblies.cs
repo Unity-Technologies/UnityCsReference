@@ -56,6 +56,25 @@ namespace UnityEditor
                 loadedTypes.Where(klass => klass.IsSubclassOf(parent));
         }
 
+        static internal IEnumerable<Type> SubclassesOfGenericType(Type genericType)
+        {
+            return loadedTypes.Where(klass => IsSubclassOfGenericType(klass, genericType));
+        }
+
+        private static bool IsSubclassOfGenericType(Type klass, Type genericType)
+        {
+            if (klass.IsGenericType && klass.GetGenericTypeDefinition() == genericType)
+                return false;
+
+            for (klass = klass.BaseType; klass != null; klass = klass.BaseType)
+            {
+                if (klass.IsGenericType && klass.GetGenericTypeDefinition() == genericType)
+                    return true;
+            }
+
+            return false;
+        }
+
         static internal List<RuntimeInitializeClassInfo> m_RuntimeInitializeClassInfoList;
         static internal int m_TotalNumRuntimeInitializeMethods;
 

@@ -2,9 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Linq;
-using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
@@ -159,6 +157,12 @@ namespace UnityEditor
                         tilemap.SetTile(p, newTile);
                 }
 
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUI.showMixedValue = m_SelectionSprites.Any(sprite => sprite != m_SelectionSprites.First());
+                    EditorGUILayout.ObjectField(Styles.spriteLabel, m_SelectionSprites[0], typeof(Sprite), false, GUILayout.Height(EditorGUI.kSingleLineHeight));
+                }
+
                 bool colorFlagsAllEqual = m_SelectionFlagsArray.All(flags => (flags & TileFlags.LockColor) == (m_SelectionFlagsArray.First() & TileFlags.LockColor));
                 using (new EditorGUI.DisabledScope(!colorFlagsAllEqual || (m_SelectionFlagsArray[0] & TileFlags.LockColor) != 0))
                 {
@@ -171,6 +175,12 @@ namespace UnityEditor
                         foreach (var p in selection.allPositionsWithin)
                             tilemap.SetColor(p, newColor);
                     }
+                }
+
+                using (new EditorGUI.DisabledScope(true))
+                {
+                    EditorGUI.showMixedValue = m_SelectionColliderTypes.Any(colliderType => colliderType != m_SelectionColliderTypes.First());
+                    EditorGUILayout.EnumPopup(Styles.colliderTypeLabel, m_SelectionColliderTypes[0]);
                 }
 
                 bool transformFlagsAllEqual = m_SelectionFlagsArray.All(flags => (flags & TileFlags.LockTransform) == (m_SelectionFlagsArray.First() & TileFlags.LockTransform));
@@ -189,10 +199,6 @@ namespace UnityEditor
 
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    EditorGUI.showMixedValue = m_SelectionSprites.Any(sprite => sprite != m_SelectionSprites.First());
-                    EditorGUILayout.ObjectField(Styles.spriteLabel, m_SelectionSprites[0], typeof(Sprite), false, GUILayout.Height(EditorGUI.kSingleLineHeight));
-                    EditorGUI.showMixedValue = m_SelectionColliderTypes.Any(colliderType => colliderType != m_SelectionColliderTypes.First());
-                    EditorGUILayout.EnumPopup(Styles.colliderTypeLabel, m_SelectionColliderTypes[0]);
                     EditorGUI.showMixedValue = !colorFlagsAllEqual;
                     EditorGUILayout.Toggle(Styles.lockColorLabel, (m_SelectionFlagsArray[0] & TileFlags.LockColor) != 0);
                     EditorGUI.showMixedValue = !transformFlagsAllEqual;
@@ -217,6 +223,11 @@ namespace UnityEditor
         {
             if (brushTarget != null)
             {
+                var tilemap = brushTarget.GetComponent<Tilemap>();
+                if (tilemap != null)
+                {
+                    Undo.RecordObject(tilemap, tool.ToString());
+                }
                 Undo.RegisterFullObjectHierarchyUndo(brushTarget, tool.ToString());
             }
         }
@@ -306,14 +317,27 @@ namespace UnityEditor
             m_LastTool = GridBrushBase.Tool.FloodFill;
         }
 
-        [PreferenceItem("2D")]
+        [SettingsProvider]
+        internal static SettingsProvider CreateSettingsProvider()
+        {
+            return new SettingsProvider("Preferences/Grid Brush") {
+                guiHandler = searchContext =>
+                    {
+                        PreferencesGUI();
+                    }, scopes = SettingsScopes.User
+            };
+        }
+
         private static void PreferencesGUI()
         {
-            EditorGUI.BeginChangeCheck();
-            var val = EditorGUILayout.Toggle(Styles.floodFillPreviewLabel, EditorPrefs.GetBool(Styles.floodFillPreviewEditorPref, true));
-            if (EditorGUI.EndChangeCheck())
+            using (new SettingsWindow.GUIScope())
             {
-                EditorPrefs.SetBool(Styles.floodFillPreviewEditorPref, val);
+                EditorGUI.BeginChangeCheck();
+                var val = EditorGUILayout.Toggle(Styles.floodFillPreviewLabel, EditorPrefs.GetBool(Styles.floodFillPreviewEditorPref, true));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetBool(Styles.floodFillPreviewEditorPref, val);
+                }
             }
         }
 

@@ -98,7 +98,7 @@ namespace UnityEngine
         [NativeProperty("DynamicLightmapST")]
         extern public Vector4 realtimeLightmapScaleOffset { get; set; }
 
-        [NativeProperty("GarbageCollectRenderers")]
+        [NativeProperty("GarbageCollectCameraData")]
         extern public bool freeUnusedRenderingResources { get; set; }
 
         extern public bool castShadows { get; set; }
@@ -116,6 +116,8 @@ namespace UnityEngine
         extern public float legacyShininess { get; set; }
 
         extern public bool drawHeightmap { get; set; }
+
+        extern public bool drawInstanced { get; set; }
 
         extern public bool drawTreesAndFoliage { get; set; }
 
@@ -157,6 +159,8 @@ namespace UnityEngine
 
         extern public bool bakeLightProbesForTrees { get; set; }
 
+        extern public bool deringLightProbesForTrees { get; set; }
+
         extern public bool preserveTreePrototypeLayers { get; set; }
 
         extern public static Terrain activeTerrain { get; }
@@ -166,6 +170,11 @@ namespace UnityEngine
 
         [UsedByNativeCode]
         extern public static GameObject CreateTerrainGameObject(TerrainData assignTerrain);
+
+        extern public Terrain leftNeighbor { get; }
+        extern public Terrain rightNeighbor { get; }
+        extern public Terrain topNeighbor { get; }
+        extern public Terrain bottomNeighbor { get; }
     }
 
     public static partial class TerrainExtensions

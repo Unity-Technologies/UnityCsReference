@@ -37,7 +37,7 @@ namespace UnityEditor.AdvancedDropdown
                     var path = paths[j];
                     if (j == paths.Length - 1)
                     {
-                        var element = new ComponentDropdownItem(LocalizationDatabase.GetLocalizedString(path), menuPath, menu.Value);
+                        var element = new ComponentDropdownItem(path, L10n.Tr(path), menuPath, menu.Value);
                         element.SetParent(parent);
                         parent.AddChild(element);
                         m_SearchableElements.Add(element);
@@ -46,7 +46,7 @@ namespace UnityEditor.AdvancedDropdown
                     var group = parent.children.SingleOrDefault(c => c.name == path);
                     if (group == null)
                     {
-                        group = new ComponentDropdownItem(path, -1);
+                        group = new ComponentDropdownItem(path, L10n.Tr(path), -1);
                         group.SetParent(parent);
                         parent.AddChild(group);
                     }
@@ -55,7 +55,7 @@ namespace UnityEditor.AdvancedDropdown
             }
             root = root.children.Single();
             root.SetParent(null);
-            var newScript = new ComponentDropdownItem("New script", -1);
+            var newScript = new ComponentDropdownItem("New script", L10n.Tr("New script"), -1);
             newScript.AddChild(new NewScriptDropdownItem());
             newScript.SetParent(root);
             newScript.selectedItem = 0;
@@ -95,7 +95,7 @@ namespace UnityEditor.AdvancedDropdown
             var searchTree = base.Search(searchString);
             if (searchTree != null)
             {
-                var addNewScriptGroup = new ComponentDropdownItem("New script", -1);
+                var addNewScriptGroup = new ComponentDropdownItem("New script", L10n.Tr("New script"), -1);
                 var addNewScript = new NewScriptDropdownItem();
                 addNewScript.className = searchString;
                 addNewScriptGroup.AddChild(addNewScript);

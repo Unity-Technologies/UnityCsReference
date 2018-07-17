@@ -2,56 +2,93 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Collections.Generic;
+using System;
+using UnityEditor.Experimental;
+using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Internal;
+using UnityEditor.StyleSheets;
 
 namespace UnityEditor
 {
     [ExcludeFromDocs]
     public class AssetSettingsProvider : SettingsProvider
     {
-        UnityEngine.Object m_Settings;
-        Editor m_SettingsEditor;
-        public List<string> SearchKeywords = new List<string>();
+        static class Styles
+        {
+            public static GUIStyle settingsStyle = "SettingsIconButton";
+            public static StyleBlock settingsBtn => EditorResources.GetStyle("settings-icon-btn");
+        }
 
-        public string settingsAssetPath { get; set; }
+        protected Editor m_SettingsEditor;
+        public Func<UnityEngine.Object> settingsFetcher { get; set; }
+        public Action<Editor> onEditorCreated { get; set; }
 
         public AssetSettingsProvider(string preferencePath, string assetPath)
-            : base(preferencePath)
+            : this(preferencePath, () => AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(assetPath)) {}
+
+        public AssetSettingsProvider(string preferencePath, UnityEngine.Object settings)
+            : this(preferencePath, () => settings) {}
+
+        public AssetSettingsProvider(string preferencePath, Func<UnityEngine.Object> settingsGetter)
+            : base(preferencePath, SettingsScopes.Project)
         {
-            settingsAssetPath = assetPath;
+            settingsFetcher = settingsGetter;
+        }
+
+        public Editor CreateEditor()
+        {
+            var settings = settingsFetcher?.Invoke();
+            if (settings != null)
+            {
+                var editor = Editor.CreateEditor(settings);
+                onEditorCreated?.Invoke(editor);
+                return editor;
+            }
+
+            return null;
         }
 
         public override void OnActivate(string searchContext, VisualElement rootElement)
         {
-            m_Settings = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(settingsAssetPath);
-            if (m_Settings != null)
-                m_SettingsEditor = Editor.CreateEditor(m_Settings);
+            m_SettingsEditor = CreateEditor();
         }
 
         public override void OnDeactivate()
         {
-            m_Settings = null;
+            if (m_SettingsEditor != null)
+            {
+                var info = m_SettingsEditor.GetType().GetMethod("OnDisable");
+                info?.Invoke(m_SettingsEditor, null);
+            }
+
+            m_SettingsEditor = null;
         }
 
         public override void OnGUI(string searchContext)
         {
             if (m_SettingsEditor != null)
-                m_SettingsEditor.OnInspectorGUI();
+                using (new SettingsWindow.GUIScope())
+                    m_SettingsEditor.OnInspectorGUI();
 
             base.OnGUI(searchContext);
         }
 
-        public override bool HasSearchInterest(string searchContext)
+        public override void OnTitleBarGUI()
         {
-            foreach (var searchKeyword in SearchKeywords)
+            if (m_SettingsEditor != null)
             {
-                if (MatchSearch(searchKeyword, searchContext))
-                    return true;
+                var tagrObjects = new[] { m_SettingsEditor.serializedObject.targetObject };
+                var rect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleKeyword.width), Styles.settingsBtn.GetFloat(StyleKeyword.height));
+                rect.y = Styles.settingsBtn.GetFloat(StyleKeyword.marginTop);
+                EditorGUIUtility.DrawEditorHeaderItems(rect, tagrObjects);
+                var settingsRect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleKeyword.width), Styles.settingsBtn.GetFloat(StyleKeyword.height));
+                settingsRect.y = rect.y;
+                if (GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, Styles.settingsStyle))
+                {
+                    EditorUtility.DisplayObjectContextMenu(settingsRect, tagrObjects, 0);
+                }
             }
-
-            return false;
         }
     }
 }

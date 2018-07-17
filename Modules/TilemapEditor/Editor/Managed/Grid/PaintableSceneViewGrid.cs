@@ -98,9 +98,8 @@ namespace UnityEditor
                 {
                     OnMouseLeave(sceneView);
                 }
-                else if (sceneView.docked &&
-                         (Application.platform == RuntimePlatform.OSXEditor
-                          || Application.platform == RuntimePlatform.LinuxEditor))
+                // Case 1043365: When docked, the docking area is considered part of the window and MouseEnter/LeaveWindow events are not considered when entering the docking area
+                else if (sceneView.docked)
                 {
                     var guiPoint = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
                     if (sceneView.position.Contains(guiPoint))

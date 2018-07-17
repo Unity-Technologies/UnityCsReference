@@ -54,6 +54,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]
     [NativeHeader("Runtime/Graphics/SpriteUtility.h")]
     [NativeType("Runtime/Graphics/SpriteFrame.h")]
+    [ExcludeFromPreset]
     public sealed partial class Sprite : Object
     {
         [RequiredByNativeCode] // Used by Unity splash screen.

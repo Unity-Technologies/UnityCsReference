@@ -33,8 +33,23 @@ namespace Unity.Collections.LowLevel.Unsafe
             }
         }
 
+        unsafe public static void* PinGCObjectAndGetAddress(System.Object target, out ulong gcHandle)
+        {
+
+            return PinSystemObjectAndGetAddress(target, out gcHandle);
+        }
+
+        unsafe public static void* PinGCArrayAndGetDataAddress(System.Array target, out ulong gcHandle)
+        {
+
+            return PinSystemArrayAndGetAddress(target, out gcHandle);
+        }
+
         [ThreadSafe]
-        unsafe public static extern void* PinGCObjectAndGetAddress(System.Object target, out ulong gcHandle);
+        unsafe private static extern void* PinSystemArrayAndGetAddress(System.Object target, out ulong gcHandle);
+
+        [ThreadSafe]
+        unsafe private static extern void* PinSystemObjectAndGetAddress(System.Object target, out ulong gcHandle);
 
         [ThreadSafe]
         unsafe public static extern void ReleaseGCObject(ulong gcHandle);

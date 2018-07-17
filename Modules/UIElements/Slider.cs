@@ -7,16 +7,16 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class Slider : VisualElement
+    public class Slider : BaseSlider<float>
     {
         public new class UxmlFactory : UxmlFactory<Slider, UxmlTraits> {}
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        public new class UxmlTraits : BaseSlider<float>.UxmlTraits
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
             UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "highValue", defaultValue = kDefaultHighValue };
             UxmlFloatAttributeDescription m_PageSize = new UxmlFloatAttributeDescription { name = "pageSize", defaultValue = kDefaultPageSize };
-            UxmlEnumAttributeDescription<Direction> m_Direction = new UxmlEnumAttributeDescription<Direction> { name = "direction", defaultValue = Direction.Vertical };
+            UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Vertical };
             UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -37,310 +37,65 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public enum Direction
+        Action<float> m_ValueChanged;
+        public Action<float> valueChanged
         {
-            Horizontal,
-            Vertical
-        }
-
-        public VisualElement dragElement { get; private set; }
-
-        private float m_LowValue;
-        public float lowValue
-        {
-            get { return m_LowValue; }
+            get { return m_ValueChanged; }
             set
             {
-                if (!Mathf.Approximately(m_LowValue, value))
+                if ((value != null) && (m_ValueChanged == null))
                 {
-                    m_LowValue = value;
-                    ClampValue();
-                    UpdateDragElementPosition();
+                    // Forward the clickEvent by the InternalOnValueChanged notification
+                    OnValueChanged(InternalOnValueChanged);
                 }
-            }
-        }
-
-        private float m_HighValue;
-        public float highValue
-        {
-            get { return m_HighValue; }
-            set
-            {
-                if (!Mathf.Approximately(m_HighValue, value))
+                else if ((value == null) && (m_ValueChanged != null))
                 {
-                    m_HighValue = value;
-                    ClampValue();
-                    UpdateDragElementPosition();
+                    // Don't need to keep being notified...
+                    UnregisterCallback<ChangeEvent<float>>(InternalOnValueChanged);
                 }
-            }
-        }
 
-        public float range { get { return Math.Abs(highValue - lowValue); } }
-
-        public float pageSize { get; set; }
-
-        public event System.Action<float> valueChanged;
-        // TODO refactor Slider to be UIElements-ish. Styles should be applied externally
-        internal ClampedDragger clampedDragger { get; private set; }
-        Rect m_DragElementStartPos;
-
-        [Serializable]
-        class SliderValue
-        {
-            public float m_Value = 0.0f;
-        }
-        SliderValue m_SliderValue;
-
-        public float value
-        {
-            get { return m_SliderValue == null ? 0.0f : m_SliderValue.m_Value; }
-            set
-            {
-                if (m_SliderValue == null)
-                    m_SliderValue = new SliderValue() { m_Value = lowValue };
-
-                // Clamp the value around the real lowest and highest range values.
-                float lowest = lowValue, highest = highValue;
-                if (lowest > highest)
-                {
-                    float t = lowest;
-                    lowest = highest;
-                    highest = t;
-                }
-                var newValue = Mathf.Clamp(value, lowest, highest);
-
-                if (Mathf.Approximately(m_SliderValue.m_Value, newValue))
-                    return;
-
-                m_SliderValue.m_Value = newValue;
-
-                UpdateDragElementPosition();
-
-                if (valueChanged != null)
-                    valueChanged(m_SliderValue.m_Value);
-
-                this.IncrementVersion(VersionChangeType.Repaint);
-
-                SavePersistentData();
-            }
-        }
-
-        private Direction m_Direction;
-        public Direction direction
-        {
-            get { return m_Direction; }
-            set
-            {
-                m_Direction = value;
-                if (m_Direction == Direction.Horizontal)
-                {
-                    RemoveFromClassList("vertical");
-                    AddToClassList("horizontal");
-                }
-                else
-                {
-                    RemoveFromClassList("horizontal");
-                    AddToClassList("vertical");
-                }
+                this.m_ValueChanged = value;
             }
         }
 
         internal const float kDefaultHighValue = 10.0f;
-        internal const float kDefaultPageSize = 10.0f;
 
         public Slider()
-            : this(0, kDefaultHighValue, null) {}
+            : this(0, kDefaultHighValue)
+        {
+        }
 
         public Slider(float start, float end, System.Action<float> valueChanged,
-                      Direction direction = Direction.Horizontal, float pageSize = kDefaultPageSize)
+                      SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize) :
+            this(start, end, direction, pageSize)
         {
-            this.direction = direction;
-            this.pageSize = pageSize;
-            lowValue = start;
-            highValue = end;
-
-            Add(new VisualElement() { name = "TrackElement" });
-
-            dragElement = new VisualElement() { name = "DragElement" };
-            dragElement.RegisterCallback<GeometryChangedEvent>(UpdateDragElementPosition);
-
-            Add(dragElement);
-
-            clampedDragger = new ClampedDragger(this, SetSliderValueFromClick, SetSliderValueFromDrag);
-            this.AddManipulator(clampedDragger);
-
             // We set this event last, so that the construction does not call it.
             this.valueChanged = valueChanged;
         }
 
-        private void ClampValue()
+        void InternalOnValueChanged(ChangeEvent<float> evt)
         {
-            //the property setter takes care of this
-            value = value;
+            m_ValueChanged?.Invoke(value);
         }
 
-        public override void OnPersistentDataReady()
+        public Slider(float start, float end, SliderDirection direction = SliderDirection.Horizontal, float pageSize = kDefaultPageSize) :
+            base(start, end, direction, pageSize)
         {
-            base.OnPersistentDataReady();
-
-            var key = GetFullHierarchicalPersistenceKey();
-
-            m_SliderValue = GetOrCreatePersistentData<SliderValue>(m_SliderValue, key);
         }
 
-        // Handles slider drags
-        void SetSliderValueFromDrag()
+        internal override float SliderLerpUnclamped(float a, float b, float interpolant)
         {
-            if (clampedDragger.dragDirection != ClampedDragger.DragDirection.Free)
-                return;
-
-            var delta = clampedDragger.delta;
-
-            if (direction == Direction.Horizontal)
-                ComputeValueAndDirectionFromDrag(layout.width, dragElement.style.width, m_DragElementStartPos.x + delta.x);
-            else
-                ComputeValueAndDirectionFromDrag(layout.height, dragElement.style.height, m_DragElementStartPos.y + delta.y);
+            return Mathf.LerpUnclamped(a, b, interpolant);
         }
 
-        void ComputeValueAndDirectionFromDrag(float sliderLength, float dragElementLength, float dragElementPos)
+        internal override float SliderNormalizeValue(float currentValue, float lowerValue, float higherValue)
         {
-            var totalRange = sliderLength - dragElementLength;
-            if (Mathf.Abs(totalRange) < Mathf.Epsilon)
-                return;
-
-            float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos, totalRange)) / totalRange;
-            value = Mathf.LerpUnclamped(lowValue, highValue, normalizedDragElementPosition);
+            return (currentValue - lowerValue) / (higherValue - lowerValue);
         }
 
-        // Handles slider clicks and page scrolls
-        void SetSliderValueFromClick()
+        internal override float SliderRange()
         {
-            if (clampedDragger.dragDirection == ClampedDragger.DragDirection.Free)
-                return;
-
-            if (clampedDragger.dragDirection == ClampedDragger.DragDirection.None)
-            {
-                if (pageSize == 0f)
-                {
-                    // Jump drag element to current mouse position when user clicks on slider and pageSize == 0
-                    var x = (direction == Direction.Horizontal) ?
-                        clampedDragger.startMousePosition.x - (dragElement.style.width / 2f) : dragElement.style.positionLeft.value;
-                    var y = (direction == Direction.Horizontal) ?
-                        dragElement.style.positionTop.value : clampedDragger.startMousePosition.y - (dragElement.style.height / 2f);
-
-                    dragElement.style.positionLeft = x;
-                    dragElement.style.positionTop = y;
-                    m_DragElementStartPos = new Rect(x, y, dragElement.style.width, dragElement.style.height);
-
-                    // Manipulation becomes a free form drag
-                    clampedDragger.dragDirection = ClampedDragger.DragDirection.Free;
-                    if (direction == Direction.Horizontal)
-                        ComputeValueAndDirectionFromDrag(layout.width, dragElement.style.width, m_DragElementStartPos.x);
-                    else
-                        ComputeValueAndDirectionFromDrag(layout.height, dragElement.style.height, m_DragElementStartPos.y);
-                    return;
-                }
-
-                m_DragElementStartPos = new Rect(dragElement.style.positionLeft, dragElement.style.positionTop, dragElement.style.width, dragElement.style.height);
-            }
-
-            if (direction == Direction.Horizontal)
-                ComputeValueAndDirectionFromClick(layout.width, dragElement.style.width, dragElement.style.positionLeft, clampedDragger.lastMousePosition.x);
-            else
-                ComputeValueAndDirectionFromClick(layout.height, dragElement.style.height, dragElement.style.positionTop, clampedDragger.lastMousePosition.y);
-        }
-
-        void ComputeValueAndDirectionFromClick(float sliderLength, float dragElementLength, float dragElementPos, float dragElementLastPos)
-        {
-            var totalRange = sliderLength - dragElementLength;
-            if (Mathf.Abs(totalRange) < Mathf.Epsilon)
-                return;
-
-            if ((dragElementLastPos < dragElementPos) &&
-                (clampedDragger.dragDirection != ClampedDragger.DragDirection.LowToHigh))
-            {
-                clampedDragger.dragDirection = ClampedDragger.DragDirection.HighToLow;
-                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos - pageSize, totalRange)) / totalRange;
-                value = Mathf.LerpUnclamped(lowValue, highValue, normalizedDragElementPosition);
-            }
-            else if ((dragElementLastPos > (dragElementPos + dragElementLength)) &&
-                     (clampedDragger.dragDirection != ClampedDragger.DragDirection.HighToLow))
-            {
-                clampedDragger.dragDirection = ClampedDragger.DragDirection.LowToHigh;
-                float normalizedDragElementPosition = Mathf.Max(0f, Mathf.Min(dragElementPos + pageSize, totalRange)) / totalRange;
-                value = Mathf.LerpUnclamped(lowValue, highValue, normalizedDragElementPosition);
-            }
-        }
-
-        public void AdjustDragElement(float factor)
-        {
-            // Any factor greater or equal to 1f eliminates the need for a drag element
-            bool needsElement = factor < 1f;
-            dragElement.visible = needsElement;
-
-            if (needsElement)
-            {
-                IStyle elemStyles = dragElement.style;
-                dragElement.visible = true;
-
-                // Any factor smaller than 1f will necessitate a drag element
-                if (direction == Direction.Horizontal)
-                {
-                    // Make sure the minimum width of drag element is honoured
-                    float elemMinWidth = elemStyles.minWidth.GetSpecifiedValueOrDefault(0.0f);
-                    elemStyles.width = Mathf.Max(layout.width * factor, elemMinWidth);
-                }
-                else
-                {
-                    // Make sure the minimum height of drag element is honoured
-                    float elemMinHeight = elemStyles.minHeight.GetSpecifiedValueOrDefault(0.0f);
-                    elemStyles.height = Mathf.Max(layout.height * factor, elemMinHeight);
-                }
-            }
-        }
-
-        void UpdateDragElementPosition(GeometryChangedEvent evt)
-        {
-            // Only affected by dimension changes
-            if (evt.oldRect.size == evt.newRect.size)
-            {
-                return;
-            }
-
-            UpdateDragElementPosition();
-        }
-
-        void UpdateDragElementPosition()
-        {
-            // UpdateDragElementPosition() might be called at times where we have no panel
-            // we must skip the position calculation and wait for a layout pass
-            if (panel == null)
-                return;
-
-            float normalizedPosition = (value - lowValue) / (highValue - lowValue);
-            float dragElementWidth = dragElement.style.width;
-            float dragElementHeight = dragElement.style.height;
-
-            if (direction == Direction.Horizontal)
-            {
-                float totalWidth = layout.width - dragElementWidth;
-                dragElement.style.positionLeft = normalizedPosition * totalWidth;
-            }
-            else
-            {
-                float totalHeight = layout.height - dragElementHeight;
-                dragElement.style.positionTop = normalizedPosition * totalHeight;
-            }
-        }
-
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt.GetEventTypeId() == GeometryChangedEvent.TypeId())
-            {
-                UpdateDragElementPosition((GeometryChangedEvent)evt);
-            }
+            return Math.Abs(highValue - lowValue);
         }
     }
 }

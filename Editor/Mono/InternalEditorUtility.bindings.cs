@@ -700,13 +700,6 @@ namespace UnityEditorInternal
             return new Bounds(Vector3.zero, Vector3.zero);
         }
 
-        extern public static bool ignoreInspectorChanges
-        {
-            [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-            [NativeMethod("GetIgnoreInspectorChanges")]
-            get;
-        }
-
         [FreeFunction("SetPlayerFocus")]
         extern public static void OnGameViewFocus(bool focus);
 

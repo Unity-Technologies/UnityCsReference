@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEditor.VersionControl;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -84,25 +85,27 @@ namespace UnityEditor
 
         private static int s_DropFieldHash = "DropField".GetHashCode();
 
-        public static Styles m_Styles;
-
-        public class Styles
+        public class Content
         {
-            public GUIContent helpText = EditorGUIUtility.TrTextContent("Add scripts to the custom order and drag them to reorder.\n\nScripts in the custom order can execute before or after the default time and are executed from top to bottom. All other scripts execute at the default time in the order they are loaded.\n\n(Changing the order of a script may modify the meta data for more than one script.)");
-            public GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add script to custom order");
-            public GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove script from custom order");
-            public GUIContent defaultTimeContent = EditorGUIUtility.TrTextContent("Default Time", "All scripts not in the custom order are executed at the default time.");
-            public GUIStyle toolbar = "TE Toolbar";
-            public GUIStyle toolbarDropDown = "TE ToolbarDropDown";
-            public GUIStyle boxBackground = "TE BoxBackground";
-            public GUIStyle removeButton = "InvisibleButton";
-            public GUIStyle elementBackground = "TE ElementBackground";
-            public GUIStyle defaultTime = "TE DefaultTime";
-            public GUIStyle draggingHandle = "WindowBottomResize";
+            public static GUIContent helpText = EditorGUIUtility.TrTextContent("Add scripts to the custom order and drag them to reorder.\n\nScripts in the custom order can execute before or after the default time and are executed from top to bottom. All other scripts execute at the default time in the order they are loaded.\n\n(Changing the order of a script may modify the meta data for more than one script.)");
+            public static GUIContent iconToolbarPlus = EditorGUIUtility.TrIconContent("Toolbar Plus", "Add script to custom order");
+            public static GUIContent iconToolbarMinus = EditorGUIUtility.TrIconContent("Toolbar Minus", "Remove script from custom order");
+            public static GUIContent defaultTimeContent = EditorGUIUtility.TrTextContent("Default Time", "All scripts not in the custom order are executed at the default time.");
+        }
+
+        public static class Styles
+        {
+            public static GUIStyle toolbarDropDown = "TE ToolbarDropDown";
+            public static GUIStyle toolbar = "TE Toolbar";
+            public static GUIStyle boxBackground = "TE NodeBackground";
+            public static GUIStyle removeButton = "InvisibleButton";
+            public static GUIStyle elementBackground = "TE ElementBackground";
+            public static GUIStyle defaultTime = "TE DefaultTime";
+            public static GUIStyle draggingHandle = "WindowBottomResize";
             // Drop field style that has extra overflow and is only visible when "on".
             // Used to draw a blue glow when dragging scripts into the ordering to
             // indicate that drag-and-drop is supported.
-            public GUIStyle dropField = "TE DropField";
+            public static GUIStyle dropField = "TE DropField";
         }
 
         [MenuItem("CONTEXT/MonoManager/Reset")]
@@ -508,9 +511,6 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (m_Styles == null)
-                m_Styles = new Styles();
-
             if (m_Edited)
             {
                 UpdateOrder(m_Edited);
@@ -519,7 +519,7 @@ namespace UnityEditor
 
             EditorGUILayout.BeginVertical(EditorStyles.inspectorFullWidthMargins);
             {
-                GUILayout.Label(m_Styles.helpText, EditorStyles.helpBox);
+                GUILayout.Label(Content.helpText, EditorStyles.helpBox);
 
                 EditorGUILayout.Space();
 
@@ -527,12 +527,12 @@ namespace UnityEditor
                 Rect listRect = EditorGUILayout.BeginVertical();
                 {
                     int dropFieldId = EditorGUIUtility.GetControlID(s_DropFieldHash, FocusType.Passive, listRect);
-                    MonoScript dropped = EditorGUI.DoDropField(listRect, dropFieldId, typeof(MonoScript), MonoScriptValidatorCallback, false, m_Styles.dropField) as MonoScript;
+                    MonoScript dropped = EditorGUI.DoDropField(listRect, dropFieldId, typeof(MonoScript), MonoScriptValidatorCallback, false, Styles.dropField) as MonoScript;
                     if (dropped)
                         AddScriptToCustomOrder(dropped);
 
                     // Vertical that is used as a border around the scrollview
-                    EditorGUILayout.BeginVertical(m_Styles.boxBackground);
+                    EditorGUILayout.BeginVertical(Styles.boxBackground);
                     {
                         // The scrollview itself
                         m_Scroll = EditorGUILayout.BeginVerticalScrollView(m_Scroll);
@@ -554,13 +554,13 @@ namespace UnityEditor
                     } EditorGUILayout.EndVertical();
 
                     // The toolbar below the box
-                    GUILayout.BeginHorizontal(m_Styles.toolbar);
+                    GUILayout.BeginHorizontal(Styles.toolbar);
                     {
                         GUILayout.FlexibleSpace();
                         Rect r2;
-                        GUIContent content = m_Styles.iconToolbarPlus;
-                        r2 = GUILayoutUtility.GetRect(content, m_Styles.toolbarDropDown);
-                        if (EditorGUI.DropdownButton(r2, content, FocusType.Passive, m_Styles.toolbarDropDown))
+                        GUIContent content = Content.iconToolbarPlus;
+                        r2 = GUILayoutUtility.GetRect(content, Styles.toolbarDropDown);
+                        if (EditorGUI.DropdownButton(r2, content, FocusType.Passive, Styles.toolbarDropDown))
                             ShowScriptPopup(r2);
                     } GUILayout.EndHorizontal();
                 } GUILayout.EndVertical();
@@ -600,7 +600,7 @@ namespace UnityEditor
 
         private Vector2 GetMinusButtonSize()
         {
-            return m_Styles.removeButton.CalcSize(m_Styles.iconToolbarMinus);
+            return Styles.removeButton.CalcSize(Content.iconToolbarMinus);
         }
 
         private Rect GetDraggingHandleRect(Rect r)
@@ -614,8 +614,8 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                m_Styles.elementBackground.Draw(r, false, false, false, false);
-                m_Styles.draggingHandle.Draw(GetDraggingHandleRect(r), false, false, false, false);
+                Styles.elementBackground.Draw(r, false, false, false, false);
+                Styles.draggingHandle.Draw(GetDraggingHandleRect(r), false, false, false, false);
             }
 
             GUI.Label(GetButtonLabelRect(r), script.GetClass().FullName);
@@ -632,7 +632,7 @@ namespace UnityEditor
                 m_Edited = script;
             }
 
-            if (GUI.Button(GetAddRemoveButtonRect(r), m_Styles.iconToolbarMinus, m_Styles.removeButton))
+            if (GUI.Button(GetAddRemoveButtonRect(r), Content.iconToolbarMinus, Styles.removeButton))
             {
                 SetExecutionOrder(script, 0);
                 m_Edited = script;
@@ -702,7 +702,7 @@ namespace UnityEditor
                     defRect = new Rect(elementRect.x, position.y + defPos * elementHeight, elementRect.width, elementHeight * 2);
                 }
 
-                GUI.Label(defRect, m_Styles.defaultTimeContent, m_Styles.defaultTime);
+                GUI.Label(defRect, Content.defaultTimeContent, Styles.defaultTime);
 
                 bool isAddingToDefault = defRect.height > elementHeight * 2.5f;
 
@@ -807,6 +807,17 @@ namespace UnityEditor
 
                 return changed;
             }
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Script Execution Order", Resources.FindObjectsOfTypeAll(typeof(MonoManager)).First())
+            {
+                icon = EditorGUIUtility.FindTexture("cs Script")
+            };
+            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            return provider;
         }
     }
 }

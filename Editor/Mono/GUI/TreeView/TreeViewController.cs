@@ -72,7 +72,6 @@ namespace UnityEditor.IMGUI.Controls
         public System.Action<string> searchChanged { get; set; }
         public System.Action<Vector2> scrollChanged { get; set; }
         public System.Action<int, Rect> onGUIRowCallback { get; set; }  // <id, Rect of row>
-        public System.Action<TreeViewItem, TreeViewItem> hoveredItemChangedCallback { get; set; }
 
         internal System.Action<int, Rect> onFoldoutButton { get; set; }  // <id, Rect of row>
 
@@ -91,6 +90,7 @@ namespace UnityEditor.IMGUI.Controls
         bool m_StopIteratingItems;
 
         public bool deselectOnUnhandledMouseDown { get; set; }
+        public bool enableItemHovering { get; set; }
 
         List<int> m_DragSelection = new List<int>();                    // Temp id state while dragging (not serialized)
         bool m_UseScrollView = true;                                    // Internal scrollview can be omitted when e.g mulitple tree views in one scrollview is wanted
@@ -110,19 +110,7 @@ namespace UnityEditor.IMGUI.Controls
         int m_KeyboardControlID;
 
         const float kSpaceForScrollBar = 16f;
-        private TreeViewItem m_HoveredItem;
-        public TreeViewItem hoveredItem
-        {
-            get { return m_HoveredItem; }
-            set
-            {
-                if (value != m_HoveredItem)
-                {
-                    hoveredItemChangedCallback?.Invoke(m_HoveredItem, value);
-                    m_HoveredItem = value;
-                }
-            }
-        }
+        public TreeViewItem hoveredItem { get; set; }
 
         public TreeViewController(EditorWindow editorWindow, TreeViewState treeViewState)
         {
@@ -651,7 +639,7 @@ namespace UnityEditor.IMGUI.Controls
             // This can happen e.g when dragging items or items are expanding/collapsing.
             m_StopIteratingItems = false;
 
-            TreeViewItem currentHovedItem = null;
+            TreeViewItem currentHoveredItem = null;
 
             int rowOffset = 0;
             for (int i = 0; i < numVisibleRows; ++i)
@@ -694,19 +682,19 @@ namespace UnityEditor.IMGUI.Controls
                 // Item GUI
                 DoItemGUI(data.GetItem(row), row, rowWidth, hasFocus);
 
-                if (Event.current.type == EventType.MouseMove)
+                if (enableItemHovering)
                 {
                     Rect rowRect = gui.GetRowRect(row, rowWidth);
                     if (rowRect.Contains(Event.current.mousePosition))
-                        currentHovedItem = data.GetItem(row);
+                        currentHoveredItem = data.GetItem(row);
+                    m_GUIView.MarkHotRegion(GUIClip.UnclipToWindow(rowRect));
                 }
 
                 if (m_StopIteratingItems)
                     break;
             }
 
-            if (Event.current.type == EventType.MouseMove && currentHovedItem != hoveredItem)
-                hoveredItem = currentHovedItem;
+            hoveredItem = currentHoveredItem;
         }
 
         List<int> GetVisibleSelectedIds()

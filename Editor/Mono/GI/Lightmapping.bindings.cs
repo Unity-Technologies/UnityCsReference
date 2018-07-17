@@ -39,6 +39,16 @@ namespace UnityEditor
 
         [NativeName("m_Progress")]                         public float   progress;
     }
+    [UsedByNativeCode]
+    [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
+    internal struct LightProbesConvergence
+    {
+        public bool IsConverged() { return probeSetCount == convergedProbeSetCount; }
+        public bool IsValid() { return -1 != probeSetCount; }
+
+        [NativeName("m_ProbeSetCount")]             public int  probeSetCount;
+        [NativeName("m_ConvergedProbeSetCount")]    public int  convergedProbeSetCount;
+    }
 
     [UsedByNativeCode]
     [NativeHeader("Editor/Src/GI/Progressive/PVRData.h")]
@@ -206,6 +216,9 @@ namespace UnityEditor
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightmapConvergence GetLightmapConvergence(int lightmapIndex);
+
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern LightProbesConvergence GetLightProbesConvergence();
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern LightmapMemory GetLightmapMemory(int lightmapIndex);

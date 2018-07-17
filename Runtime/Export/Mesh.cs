@@ -7,31 +7,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Internal;
 using UnityEngine.Scripting;
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
     [RequiredByNativeCode] // Used by IMGUI (even on empty projects, it draws development console & watermarks)
     public sealed partial class Mesh : Object
     {
-        // WARNING: this is used ONLY internally for setters/getters to avoid writing specialized code in bindings
-        // when we start exposing channels/types for real (low-level mesh api) you can safely change it for appropriate enum
-
-        // WARNING: MUST be kept in sync with InternalScriptingShaderChannel in Runtime/Graphics/GraphicsScriptBindings.h
-        internal enum InternalShaderChannel
-        {
-            Vertex,
-            Normal,
-            Tangent,
-            Color,
-            TexCoord0,
-            TexCoord1,
-            TexCoord2,
-            TexCoord3,
-            TexCoord4,
-            TexCoord5,
-            TexCoord6,
-            TexCoord7,
-        }
         // WARNING: MUST be kept in sync with InternalScriptingShaderChannel in Runtime/Graphics/GraphicsScriptBindings.h
         internal enum InternalVertexChannelType
         {
@@ -39,27 +21,27 @@ namespace UnityEngine
             Color = 2,
         }
 
-        internal InternalShaderChannel GetUVChannel(int uvIndex)
+        internal VertexAttribute GetUVChannel(int uvIndex)
         {
             if (uvIndex < 0 || uvIndex > 7)
                 throw new ArgumentException("GetUVChannel called for bad uvIndex", "uvIndex");
 
-            return (InternalShaderChannel)((int)InternalShaderChannel.TexCoord0 + uvIndex);
+            return (VertexAttribute)((int)VertexAttribute.TexCoord0 + uvIndex);
         }
 
-        internal static int DefaultDimensionForChannel(InternalShaderChannel channel)
+        internal static int DefaultDimensionForChannel(VertexAttribute channel)
         {
-            if (channel == InternalShaderChannel.Vertex || channel == InternalShaderChannel.Normal)
+            if (channel == VertexAttribute.Position || channel == VertexAttribute.Normal)
                 return 3;
-            else if (channel >= InternalShaderChannel.TexCoord0 && channel <= InternalShaderChannel.TexCoord7)
+            else if (channel >= VertexAttribute.TexCoord0 && channel <= VertexAttribute.TexCoord7)
                 return 2;
-            else if (channel == InternalShaderChannel.Tangent || channel == InternalShaderChannel.Color)
+            else if (channel == VertexAttribute.Tangent || channel == VertexAttribute.Color)
                 return 4;
 
             throw new ArgumentException("DefaultDimensionForChannel called for bad channel", "channel");
         }
 
-        private T[] GetAllocArrayFromChannel<T>(InternalShaderChannel channel, InternalVertexChannelType format, int dim)
+        private T[] GetAllocArrayFromChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim)
         {
             if (canAccess)
             {
@@ -73,12 +55,12 @@ namespace UnityEngine
             return new T[0];
         }
 
-        private T[] GetAllocArrayFromChannel<T>(InternalShaderChannel channel)
+        private T[] GetAllocArrayFromChannel<T>(VertexAttribute channel)
         {
             return GetAllocArrayFromChannel<T>(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel));
         }
 
-        private void SetSizedArrayForChannel(InternalShaderChannel channel, InternalVertexChannelType format, int dim, System.Array values, int valuesCount)
+        private void SetSizedArrayForChannel(VertexAttribute channel, InternalVertexChannelType format, int dim, System.Array values, int valuesCount)
         {
             if (canAccess)
                 SetArrayForChannelImpl(channel, format, dim, values, valuesCount);
@@ -86,32 +68,32 @@ namespace UnityEngine
                 PrintErrorCantAccessChannel(channel);
         }
 
-        private void SetArrayForChannel<T>(InternalShaderChannel channel, InternalVertexChannelType format, int dim, T[] values)
+        private void SetArrayForChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim, T[] values)
         {
             SetSizedArrayForChannel(channel, format, dim, values, NoAllocHelpers.SafeLength(values));
         }
 
-        private void SetArrayForChannel<T>(InternalShaderChannel channel, T[] values)
+        private void SetArrayForChannel<T>(VertexAttribute channel, T[] values)
         {
             SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), values, NoAllocHelpers.SafeLength(values));
         }
 
-        private void SetListForChannel<T>(InternalShaderChannel channel, InternalVertexChannelType format, int dim, List<T> values)
+        private void SetListForChannel<T>(VertexAttribute channel, InternalVertexChannelType format, int dim, List<T> values)
         {
             SetSizedArrayForChannel(channel, format, dim, NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values));
         }
 
-        private void SetListForChannel<T>(InternalShaderChannel channel, List<T> values)
+        private void SetListForChannel<T>(VertexAttribute channel, List<T> values)
         {
             SetSizedArrayForChannel(channel, InternalVertexChannelType.Float, DefaultDimensionForChannel(channel), NoAllocHelpers.ExtractArrayFromList(values), NoAllocHelpers.SafeLength(values));
         }
 
-        private void GetListForChannel<T>(List<T> buffer, int capacity, InternalShaderChannel channel, int dim)
+        private void GetListForChannel<T>(List<T> buffer, int capacity, VertexAttribute channel, int dim)
         {
             GetListForChannel(buffer, capacity, channel, dim, InternalVertexChannelType.Float);
         }
 
-        private void GetListForChannel<T>(List<T> buffer, int capacity, InternalShaderChannel channel, int dim, InternalVertexChannelType channelType)
+        private void GetListForChannel<T>(List<T> buffer, int capacity, VertexAttribute channel, int dim, InternalVertexChannelType channelType)
         {
             buffer.Clear();
 
@@ -131,68 +113,68 @@ namespace UnityEngine
 
         public Vector3[] vertices
         {
-            get { return GetAllocArrayFromChannel<Vector3>(InternalShaderChannel.Vertex); }
-            set { SetArrayForChannel(InternalShaderChannel.Vertex, value); }
+            get { return GetAllocArrayFromChannel<Vector3>(VertexAttribute.Position); }
+            set { SetArrayForChannel(VertexAttribute.Position, value); }
         }
         public Vector3[] normals
         {
-            get { return GetAllocArrayFromChannel<Vector3>(InternalShaderChannel.Normal); }
-            set { SetArrayForChannel(InternalShaderChannel.Normal, value); }
+            get { return GetAllocArrayFromChannel<Vector3>(VertexAttribute.Normal); }
+            set { SetArrayForChannel(VertexAttribute.Normal, value); }
         }
         public Vector4[] tangents
         {
-            get { return GetAllocArrayFromChannel<Vector4>(InternalShaderChannel.Tangent); }
-            set { SetArrayForChannel(InternalShaderChannel.Tangent, value); }
+            get { return GetAllocArrayFromChannel<Vector4>(VertexAttribute.Tangent); }
+            set { SetArrayForChannel(VertexAttribute.Tangent, value); }
         }
         public Vector2[] uv
         {
-            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord0); }
-            set { SetArrayForChannel(InternalShaderChannel.TexCoord0, value); }
+            get { return GetAllocArrayFromChannel<Vector2>(VertexAttribute.TexCoord0); }
+            set { SetArrayForChannel(VertexAttribute.TexCoord0, value); }
         }
         public Vector2[] uv2
         {
-            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord1); }
-            set { SetArrayForChannel(InternalShaderChannel.TexCoord1, value); }
+            get { return GetAllocArrayFromChannel<Vector2>(VertexAttribute.TexCoord1); }
+            set { SetArrayForChannel(VertexAttribute.TexCoord1, value); }
         }
         public Vector2[] uv3
         {
-            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord2); }
-            set { SetArrayForChannel(InternalShaderChannel.TexCoord2, value); }
+            get { return GetAllocArrayFromChannel<Vector2>(VertexAttribute.TexCoord2); }
+            set { SetArrayForChannel(VertexAttribute.TexCoord2, value); }
         }
         public Vector2[] uv4
         {
-            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord3); }
-            set { SetArrayForChannel(InternalShaderChannel.TexCoord3, value); }
+            get { return GetAllocArrayFromChannel<Vector2>(VertexAttribute.TexCoord3); }
+            set { SetArrayForChannel(VertexAttribute.TexCoord3, value); }
         }
         public Vector2[] uv5
         {
-            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord4); }
-            set { SetArrayForChannel(InternalShaderChannel.TexCoord4, value); }
+            get { return GetAllocArrayFromChannel<Vector2>(VertexAttribute.TexCoord4); }
+            set { SetArrayForChannel(VertexAttribute.TexCoord4, value); }
         }
         public Vector2[] uv6
         {
-            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord5); }
-            set { SetArrayForChannel(InternalShaderChannel.TexCoord5, value); }
+            get { return GetAllocArrayFromChannel<Vector2>(VertexAttribute.TexCoord5); }
+            set { SetArrayForChannel(VertexAttribute.TexCoord5, value); }
         }
         public Vector2[] uv7
         {
-            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord6); }
-            set { SetArrayForChannel(InternalShaderChannel.TexCoord6, value); }
+            get { return GetAllocArrayFromChannel<Vector2>(VertexAttribute.TexCoord6); }
+            set { SetArrayForChannel(VertexAttribute.TexCoord6, value); }
         }
         public Vector2[] uv8
         {
-            get { return GetAllocArrayFromChannel<Vector2>(InternalShaderChannel.TexCoord7); }
-            set { SetArrayForChannel(InternalShaderChannel.TexCoord7, value); }
+            get { return GetAllocArrayFromChannel<Vector2>(VertexAttribute.TexCoord7); }
+            set { SetArrayForChannel(VertexAttribute.TexCoord7, value); }
         }
         public Color[] colors
         {
-            get { return GetAllocArrayFromChannel<Color>(InternalShaderChannel.Color); }
-            set { SetArrayForChannel(InternalShaderChannel.Color, value); }
+            get { return GetAllocArrayFromChannel<Color>(VertexAttribute.Color); }
+            set { SetArrayForChannel(VertexAttribute.Color, value); }
         }
         public Color32[] colors32
         {
-            get { return GetAllocArrayFromChannel<Color32>(InternalShaderChannel.Color, InternalVertexChannelType.Color, 1); }
-            set { SetArrayForChannel(InternalShaderChannel.Color, InternalVertexChannelType.Color, 1, value); }
+            get { return GetAllocArrayFromChannel<Color32>(VertexAttribute.Color, InternalVertexChannelType.Color, 1); }
+            set { SetArrayForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 1, value); }
         }
 
         public void GetVertices(List<Vector3> vertices)
@@ -200,12 +182,12 @@ namespace UnityEngine
             if (vertices == null)
                 throw new ArgumentNullException("The result vertices list cannot be null.", "vertices");
 
-            GetListForChannel(vertices, vertexCount, InternalShaderChannel.Vertex, DefaultDimensionForChannel(InternalShaderChannel.Vertex));
+            GetListForChannel(vertices, vertexCount, VertexAttribute.Position, DefaultDimensionForChannel(VertexAttribute.Position));
         }
 
         public void SetVertices(List<Vector3> inVertices)
         {
-            SetListForChannel(InternalShaderChannel.Vertex, inVertices);
+            SetListForChannel(VertexAttribute.Position, inVertices);
         }
 
         public void GetNormals(List<Vector3> normals)
@@ -213,12 +195,12 @@ namespace UnityEngine
             if (normals == null)
                 throw new ArgumentNullException("The result normals list cannot be null.", "normals");
 
-            GetListForChannel(normals, vertexCount, InternalShaderChannel.Normal, DefaultDimensionForChannel(InternalShaderChannel.Normal));
+            GetListForChannel(normals, vertexCount, VertexAttribute.Normal, DefaultDimensionForChannel(VertexAttribute.Normal));
         }
 
         public void SetNormals(List<Vector3> inNormals)
         {
-            SetListForChannel(InternalShaderChannel.Normal, inNormals);
+            SetListForChannel(VertexAttribute.Normal, inNormals);
         }
 
         public void GetTangents(List<Vector4> tangents)
@@ -226,12 +208,12 @@ namespace UnityEngine
             if (tangents == null)
                 throw new ArgumentNullException("The result tangents list cannot be null.", "tangents");
 
-            GetListForChannel(tangents, vertexCount, InternalShaderChannel.Tangent, DefaultDimensionForChannel(InternalShaderChannel.Tangent));
+            GetListForChannel(tangents, vertexCount, VertexAttribute.Tangent, DefaultDimensionForChannel(VertexAttribute.Tangent));
         }
 
         public void SetTangents(List<Vector4> inTangents)
         {
-            SetListForChannel(InternalShaderChannel.Tangent, inTangents);
+            SetListForChannel(VertexAttribute.Tangent, inTangents);
         }
 
         public void GetColors(List<Color> colors)
@@ -239,12 +221,12 @@ namespace UnityEngine
             if (colors == null)
                 throw new ArgumentNullException("The result colors list cannot be null.", "colors");
 
-            GetListForChannel(colors, vertexCount, InternalShaderChannel.Color, DefaultDimensionForChannel(InternalShaderChannel.Color));
+            GetListForChannel(colors, vertexCount, VertexAttribute.Color, DefaultDimensionForChannel(VertexAttribute.Color));
         }
 
         public void SetColors(List<Color> inColors)
         {
-            SetListForChannel(InternalShaderChannel.Color, inColors);
+            SetListForChannel(VertexAttribute.Color, inColors);
         }
 
         public void GetColors(List<Color32> colors)
@@ -252,12 +234,12 @@ namespace UnityEngine
             if (colors == null)
                 throw new ArgumentNullException("The result colors list cannot be null.", "colors");
 
-            GetListForChannel(colors, vertexCount, InternalShaderChannel.Color, 1, InternalVertexChannelType.Color);
+            GetListForChannel(colors, vertexCount, VertexAttribute.Color, 1, InternalVertexChannelType.Color);
         }
 
         public void SetColors(List<Color32> inColors)
         {
-            SetListForChannel(InternalShaderChannel.Color, InternalVertexChannelType.Color, 1, inColors);
+            SetListForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 1, inColors);
         }
 
         private void SetUvsImpl<T>(int uvIndex, int dim, List<T> uvs)

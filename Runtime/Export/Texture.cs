@@ -401,13 +401,13 @@ namespace UnityEngine
 
         public void SetPixel(int x, int y, Color color)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             SetPixelImpl(0, x, y, color);
         }
 
         public void SetPixels(int x, int y, int blockWidth, int blockHeight, Color[] colors, [uei.DefaultValue("0")] int miplevel)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             SetPixelsImpl(x, y, blockWidth, blockHeight, colors, miplevel, 0);
         }
 
@@ -430,19 +430,19 @@ namespace UnityEngine
 
         public Color GetPixel(int x, int y)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             return GetPixelImpl(0, x, y);
         }
 
         public Color GetPixelBilinear(float x, float y)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             return GetPixelBilinearImpl(0, x, y);
         }
 
         public void LoadRawTextureData(IntPtr data, int size)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             if (data == IntPtr.Zero || size == 0) { Debug.LogError("No texture data provided to LoadRawTextureData", this); return; }
             if (!LoadRawTextureDataImpl(data, size))
                 throw new UnityException("LoadRawTextureData: not enough data provided (will result in overread).");
@@ -450,7 +450,7 @@ namespace UnityEngine
 
         public void LoadRawTextureData(byte[] data)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             if (data == null || data.Length == 0) { Debug.LogError("No texture data provided to LoadRawTextureData", this); return; }
             if (!LoadRawTextureDataImplArray(data))
                 throw new UnityException("LoadRawTextureData: not enough data provided (will result in overread).");
@@ -458,7 +458,7 @@ namespace UnityEngine
 
         unsafe public void LoadRawTextureData<T>(NativeArray<T> data) where T : struct
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             if (!data.IsCreated || data.Length == 0) throw new UnityException("No texture data provided to LoadRawTextureData");
             if (!LoadRawTextureDataImpl((IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length * UnsafeUtility.SizeOf<T>()))
                 throw new UnityException("LoadRawTextureData: not enough data provided (will result in overread).");
@@ -466,7 +466,7 @@ namespace UnityEngine
 
         public unsafe NativeArray<T> GetRawTextureData<T>() where T : struct
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
 
             int stride = UnsafeUtility.SizeOf<T>();
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)GetWritableImageData(0), (int)(GetRawImageDataSize() / stride), Allocator.None);
@@ -475,7 +475,7 @@ namespace UnityEngine
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
@@ -484,19 +484,19 @@ namespace UnityEngine
 
         public bool Resize(int width, int height)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             return ResizeImpl(width, height);
         }
 
         public bool Resize(int width, int height, TextureFormat format, bool hasMipMap)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             return ResizeWithFormatImpl(width, height, format, hasMipMap);
         }
 
         public void ReadPixels(Rect source, int destX, int destY, [uei.DefaultValue("true")] bool recalculateMipMaps)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             ReadPixelsImpl(source, destX, destY, recalculateMipMaps);
         }
 
@@ -600,13 +600,13 @@ namespace UnityEngine
 
         public void SetPixel(CubemapFace face, int x, int y, Color color)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             SetPixelImpl((int)face, x, y, color);
         }
 
         public Color GetPixel(CubemapFace face, int x, int y)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             return GetPixelImpl((int)face, x, y);
         }
 
@@ -641,7 +641,7 @@ namespace UnityEngine
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
@@ -676,7 +676,7 @@ namespace UnityEngine
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
@@ -710,7 +710,7 @@ namespace UnityEngine
 
         public void Apply([uei.DefaultValue("true")] bool updateMipmaps, [uei.DefaultValue("false")] bool makeNoLongerReadable)
         {
-            if (!IsReadable()) throw CreateNonReadableException(this);
+            if (!isReadable) throw CreateNonReadableException(this);
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 

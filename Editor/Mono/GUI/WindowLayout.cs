@@ -971,13 +971,13 @@ namespace UnityEditor
 
     internal class CreateBuiltinWindows
     {
-        [MenuItem("Window/General/Scene %1", false, 5)]
+        [MenuItem("Window/General/Scene %1", false, 1)]
         static void ShowSceneView()
         {
             EditorWindow.GetWindow<SceneView>();
         }
 
-        [MenuItem("Window/General/Game %2", false, 1)]
+        [MenuItem("Window/General/Game %2", false, 2)]
         static void ShowGameView()
         {
             EditorWindow.GetWindow<GameView>();
@@ -989,13 +989,13 @@ namespace UnityEditor
             EditorWindow.GetWindow<InspectorWindow>();
         }
 
-        [MenuItem("Window/General/Hierarchy %4", false, 2)]
+        [MenuItem("Window/General/Hierarchy %4", false, 4)]
         static void ShowNewHierarchy()
         {
             EditorWindow.GetWindow<SceneHierarchyWindow>();
         }
 
-        [MenuItem("Window/General/Project %5", false, 4)]
+        [MenuItem("Window/General/Project %5", false, 5)]
         static void ShowProject()
         {
             EditorWindow.GetWindow<ProjectBrowser>();
@@ -1005,13 +1005,6 @@ namespace UnityEditor
         static void ShowAnimationWindow()
         {
             EditorWindow.GetWindow<AnimationWindow>();
-        }
-
-        // Profiler is registered from native code (EditorWindowController.cpp), for license check
-        //[MenuItem ("Window/Profiler %7", false, 2007)]
-        static void ShowProfilerWindow()
-        {
-            EditorWindow.GetWindow<ProfilerWindow>();
         }
 
         [MenuItem("Window/Audio/Audio Mixer %8", false, 1)]

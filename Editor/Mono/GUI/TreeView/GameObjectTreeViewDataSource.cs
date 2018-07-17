@@ -56,6 +56,8 @@ namespace UnityEditor
         public int searchMode { get { return m_SearchMode; } set { m_SearchMode = value; } }
         public bool isFetchAIssue { get { return m_DelayedFetches >= k_MaxDelayedFetch; } }
 
+        public Scene[] scenes { get; set; }
+
         public GameObjectTreeViewDataSource(TreeViewController treeView, int rootInstanceID, bool showRoot, bool rootItemIsCollapsable)
             : base(treeView)
         {
@@ -172,8 +174,9 @@ namespace UnityEditor
         HierarchyProperty CreateHierarchyProperty()
         {
             HierarchyProperty property = new HierarchyProperty(k_HierarchyType);
-            property.Reset();
             property.alphaSorted = IsUsingAlphaSort();
+            if (scenes != null && scenes.Length > 0)
+                property.SetCustomScenes(scenes);
             return property;
         }
 
@@ -517,7 +520,7 @@ namespace UnityEditor
             if (!IsValidHierarchyInstanceID(id))
                 return parents;
 
-            IHierarchyProperty propertyIterator = new HierarchyProperty(k_HierarchyType);
+            IHierarchyProperty propertyIterator = CreateHierarchyProperty();
             if (propertyIterator.Find(id, null))
             {
                 while (propertyIterator.Parent())
@@ -536,7 +539,7 @@ namespace UnityEditor
             if (!IsValidHierarchyInstanceID(id))
                 return parentsBelow;
 
-            IHierarchyProperty search = new HierarchyProperty(k_HierarchyType);
+            IHierarchyProperty search = CreateHierarchyProperty();
             if (search.Find(id, null))
             {
                 parentsBelow.Add(id);

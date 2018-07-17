@@ -7,7 +7,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    internal class EditorContextualMenuManager : ContextualMenuManager
+    class EditorContextualMenuManager : ContextualMenuManager
     {
         public override void DisplayMenuIfEventMatches(EventBase evt, IEventHandler eventHandler)
         {
@@ -31,54 +31,9 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        protected internal override void DoDisplayMenu(ContextualMenu menu, EventBase triggerEvent)
+        protected internal override void DoDisplayMenu(DropdownMenu menu, EventBase triggerEvent)
         {
-            var genericMenu = new GenericMenu();
-            foreach (var item in menu.MenuItems())
-            {
-                var action = item as ContextualMenu.MenuAction;
-                if (action != null)
-                {
-                    if ((action.status & ContextualMenu.MenuAction.StatusFlags.Hidden) == ContextualMenu.MenuAction.StatusFlags.Hidden)
-                    {
-                        continue;
-                    }
-
-                    bool isChecked = (action.status & ContextualMenu.MenuAction.StatusFlags.Checked) == ContextualMenu.MenuAction.StatusFlags.Checked;
-
-                    if ((action.status & ContextualMenu.MenuAction.StatusFlags.Disabled) == ContextualMenu.MenuAction.StatusFlags.Disabled)
-                    {
-                        genericMenu.AddDisabledItem(new GUIContent(action.name));
-                    }
-                    else
-                    {
-                        genericMenu.AddItem(new GUIContent(action.name), isChecked, () =>
-                            {
-                                action.Execute();
-                            });
-                    }
-                }
-                else
-                {
-                    var separator = item as ContextualMenu.Separator;
-                    if (separator != null)
-                    {
-                        genericMenu.AddSeparator(separator.subMenuPath);
-                    }
-                }
-            }
-
-            Vector2 position = Vector2.zero;
-            if (triggerEvent is IMouseEvent)
-            {
-                position = ((IMouseEvent)triggerEvent).mousePosition;
-            }
-            else if (triggerEvent.target is VisualElement)
-            {
-                position = ((VisualElement)triggerEvent.target).layout.center;
-            }
-
-            genericMenu.DropDown(new Rect(position, Vector2.zero));
+            menu.DoDisplayEditorMenu(triggerEvent);
         }
     }
 }

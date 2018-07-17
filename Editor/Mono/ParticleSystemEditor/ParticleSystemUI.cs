@@ -21,6 +21,8 @@ namespace UnityEditor
         private string m_SupportsCullingText;
         private string m_SupportsCullingTextLabel; // Cached version including bullet points
 
+        private static PrefColor s_BoundsColor = new PrefColor("Particle System/Bounds", 1.0f, 235.0f / 255.0f, 4.0f / 255.0f, 1.0f);
+
         protected class Texts
         {
             public GUIContent addModules = EditorGUIUtility.TrTextContent("", "Show/Hide Modules");
@@ -363,7 +365,7 @@ namespace UnityEditor
                 ParticleSystemRenderer particleSystemRenderer = ps.GetComponent<ParticleSystemRenderer>();
 
                 var oldCol = Handles.color;
-                Handles.color = Color.yellow;
+                Handles.color = s_BoundsColor;
                 var worldBounds = particleSystemRenderer.bounds;
                 Handles.DrawWireCube(worldBounds.center, worldBounds.size);
                 Handles.color = oldCol;

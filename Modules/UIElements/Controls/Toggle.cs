@@ -69,6 +69,7 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
         }
+
         public override void SetValueWithoutNotify(bool newValue)
         {
             if (newValue)
@@ -104,7 +105,7 @@ namespace UnityEngine.Experimental.UIElements
             m_ClickEvent?.Invoke();
         }
 
-        private void OnClick()
+        void OnClick()
         {
             value = !value;
         }

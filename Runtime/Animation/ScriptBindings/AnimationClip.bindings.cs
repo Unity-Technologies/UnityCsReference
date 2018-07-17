@@ -85,6 +85,30 @@ namespace UnityEngine
             get;
         }
 
+        extern public bool hasGenericRootTransform
+        {
+            [NativeMethod("HasGenericRootTransform")]
+            get;
+        }
+
+        extern public bool hasMotionFloatCurves
+        {
+            [NativeMethod("HasMotionFloatCurves")]
+            get;
+        }
+
+        extern public bool hasMotionCurves
+        {
+            [NativeMethod("HasMotionCurves")]
+            get;
+        }
+
+        extern public bool hasRootCurves
+        {
+            [NativeMethod("HasRootCurves")]
+            get;
+        }
+
         // Adds an animation event to the clip.
         //[FreeFunction("AnimationClipBindings::Internal_AddEvent", HasExplicitThis = true)]
         //extern public void AddEvent([NotNull] AnimationEvent evt);

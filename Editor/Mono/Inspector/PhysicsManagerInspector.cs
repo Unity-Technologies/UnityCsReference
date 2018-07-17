@@ -160,5 +160,16 @@ namespace UnityEditor
                 EditorGUI.indentLevel--;
             }
         }
+
+        [SettingsProvider]
+        static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Physics", "ProjectSettings/DynamicsManager.asset")
+            {
+                icon = EditorGUIUtility.IconContent("Profiler.Physics").image as Texture2D
+            };
+            SettingsProvider.GetSearchKeywordsFromSerializedObject(provider.CreateEditor().serializedObject, provider.keywords);
+            return provider;
+        }
     }
 }

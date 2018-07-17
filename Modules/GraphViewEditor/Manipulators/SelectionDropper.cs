@@ -108,7 +108,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             selectionContainer = target.GetFirstAncestorOfType<ISelection>();
 
             if (selectionContainer == null)
+            {
+                // Keep for potential later use in OnMouseUp (where e.target might be different then)
+                selectionContainer = target.GetFirstOfType<ISelection>();
+                selectedElement = e.target as GraphElement;
                 return;
+            }
 
             selectedElement = target.GetFirstOfType<GraphElement>();
 
@@ -173,6 +178,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             if (!m_Active || selectionContainer == null)
             {
+                if (selectedElement != null && selectionContainer != null && !m_Dragging)
+                {
+                    if (selectedElement.IsSelected((VisualElement)selectionContainer) && !e.actionKey)
+                    {
+                        // Reset to single selection
+                        selectionContainer.ClearSelection();
+                        selectedElement.Select((VisualElement)selectionContainer, e.actionKey);
+                    }
+                }
+
                 Reset();
                 return;
             }
@@ -185,7 +200,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     selectionContainer.ClearSelection();
                     selectionContainer.AddToSelection(selectedElement);
                 }
-                else if (!m_AddedByMouseDown && !m_Dragging)
+                else if (m_AddedByMouseDown && !m_Dragging && selectionContainer.selection.Contains(selectedElement))
                 {
                     selectionContainer.RemoveFromSelection(selectedElement);
                 }

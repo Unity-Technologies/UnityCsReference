@@ -29,6 +29,7 @@ namespace UnityEditor
             public static readonly GUIContent resetMatrixLabel = EditorGUIUtility.TrTextContent("Reset Matrix");
             public static readonly GUIContent previewLabel = EditorGUIUtility.TrTextContent("Preview", "Preview of tile with attributes set");
 
+            public static readonly GUIContent spriteEditorLabel = EditorGUIUtility.TrTextContent("Sprite Editor");
             public static readonly GUIContent positionLabel = EditorGUIUtility.TrTextContent("Position");
             public static readonly GUIContent rotationLabel = EditorGUIUtility.TrTextContent("Rotation");
             public static readonly GUIContent scaleLabel = EditorGUIUtility.TrTextContent("Scale");
@@ -48,6 +49,19 @@ namespace UnityEditor
             serializedObject.Update();
 
             EditorGUILayout.PropertyField(m_Sprite);
+
+            using (new EditorGUI.DisabledGroupScope(m_Sprite.objectReferenceValue == null))
+            {
+                GUILayout.BeginHorizontal();
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button(Styles.spriteEditorLabel))
+                {
+                    Selection.activeObject = m_Sprite.objectReferenceValue;
+                    SpriteEditorWindow.GetWindow();
+                }
+                GUILayout.EndHorizontal();
+            }
+
             EditorGUILayout.PropertyField(m_Color);
             EditorGUILayout.PropertyField(m_ColliderType);
 

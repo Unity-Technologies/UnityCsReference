@@ -29,6 +29,11 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("scriptableBuildPipeline", parameters);
         }
 
+        internal static bool SendEventBuildFrameworkList(object parameters)
+        {
+            return EditorAnalytics.SendEvent("buildFrameworkList", parameters);
+        }
+
         internal static bool SendEventServiceInfo(object parameters)
         {
             return EditorAnalytics.SendEvent("serviceInfo", parameters);

@@ -92,11 +92,11 @@ namespace UnityEditor.Experimental.UIElements
                     OnDragUpdated(evt);
                 else if (evt.GetEventTypeId() == DragPerformEvent.TypeId())
                     OnDragPerform(evt);
-                else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
-                    OnMouseLeave();
+                else if (evt.GetEventTypeId() == DragLeaveEvent.TypeId())
+                    OnDragLeave();
             }
 
-            private void OnMouseLeave()
+            private void OnDragLeave()
             {
                 // Make sure we've cleared the accept drop look, whether we we in a drop operation or not.
                 RemoveFromClassList("acceptDrop");

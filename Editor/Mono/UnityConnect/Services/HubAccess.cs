@@ -55,7 +55,7 @@ namespace UnityEditor.Web
             UnityConnectServiceCollection.instance.AddService(serviceData);
         }
 
-        [MenuItem("Window/General/Services %0", false, 21)]
+        [MenuItem("Window/General/Services %0", false, 302)]
         private static void ShowMyWindow()
         {
             UnityConnectServiceCollection.instance.ShowService(kServiceName, true, "window_menu_item");

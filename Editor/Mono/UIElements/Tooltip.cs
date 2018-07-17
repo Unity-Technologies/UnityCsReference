@@ -29,7 +29,7 @@ namespace UnityEditor.Experimental.UIElements
                         tooltipEvent.target = target;
                         tooltipEvent.tooltip = null;
                         tooltipEvent.rect = Rect.zero;
-                        view.visualTree.panel.dispatcher.DispatchEvent(tooltipEvent, panel);
+                        target.SendEvent(tooltipEvent);
 
                         if (!string.IsNullOrEmpty(tooltipEvent.tooltip) && !tooltipEvent.isDefaultPrevented)
                         {

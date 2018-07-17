@@ -333,7 +333,9 @@ namespace UnityEditorInternal
                 if (!state.selection.canPreview)
                     return false;
 
-                return AnimationMode.InAnimationMode(GetAnimationModeDriver()) || !AnimationMode.InAnimationMode();
+                var driver = GetAnimationModeDriverNoAlloc();
+
+                return (driver != null && AnimationMode.InAnimationMode(driver)) || !AnimationMode.InAnimationMode();
             }
         }
 
@@ -341,7 +343,11 @@ namespace UnityEditorInternal
         {
             get
             {
-                return AnimationMode.InAnimationMode(GetAnimationModeDriver());
+                var driver = GetAnimationModeDriverNoAlloc();
+                if (driver == null)
+                    return false;
+
+                return AnimationMode.InAnimationMode(driver);
             }
         }
 
@@ -491,6 +497,11 @@ namespace UnityEditorInternal
                     };
             }
 
+            return m_Driver;
+        }
+
+        private AnimationModeDriver GetAnimationModeDriverNoAlloc()
+        {
             return m_Driver;
         }
 

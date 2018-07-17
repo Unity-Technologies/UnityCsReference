@@ -32,6 +32,13 @@ namespace UnityEditor
             SortingLayers = 3
         }
 
+        internal class Styles
+        {
+            public static GUIContent tags = EditorGUIUtility.TrTextContent("Tags");
+            public static GUIContent sortingLayers = EditorGUIUtility.TrTextContent("Sorting Layers");
+            public static GUIContent layers = EditorGUIUtility.TrTextContent("Layers");
+        }
+
         public TagManager tagManager
         {
             get { return target as TagManager; }
@@ -168,7 +175,7 @@ namespace UnityEditor
         {
             buttonRect.x -= 400;
             buttonRect.y -= 13;
-            PopupWindow.Show(buttonRect, new EnterNamePopup(m_Tags, s => { InternalEditorUtility.AddTag(s); }), null, ShowMode.PopupMenuWithKeyboardFocus);
+            PopupWindow.Show(buttonRect, new EnterNamePopup(m_Tags, s => { InternalEditorUtility.AddTag(s); }));
         }
 
         private void RemoveFromTagsList(ReorderableList list)
@@ -305,7 +312,7 @@ namespace UnityEditor
             GUI.enabled = m_IsEditable;
 
             // Tags
-            m_Tags.isExpanded = EditorGUILayout.Foldout(m_Tags.isExpanded, "Tags", true);
+            m_Tags.isExpanded = EditorGUILayout.Foldout(m_Tags.isExpanded, Styles.tags, true);
             if (m_Tags.isExpanded)
             {
                 EditorGUI.indentLevel++;
@@ -316,7 +323,7 @@ namespace UnityEditor
             }
 
             // Sorting layers
-            m_SortingLayers.isExpanded = EditorGUILayout.Foldout(m_SortingLayers.isExpanded, "Sorting Layers", true);
+            m_SortingLayers.isExpanded = EditorGUILayout.Foldout(m_SortingLayers.isExpanded, Styles.sortingLayers, true);
             if (m_SortingLayers.isExpanded)
             {
                 EditorGUI.indentLevel++;
@@ -325,7 +332,7 @@ namespace UnityEditor
             }
 
             // Layers
-            m_Layers.isExpanded = EditorGUILayout.Foldout(m_Layers.isExpanded, "Layers", true);
+            m_Layers.isExpanded = EditorGUILayout.Foldout(m_Layers.isExpanded, Styles.layers, true);
             if (m_Layers.isExpanded)
             {
                 EditorGUI.indentLevel++;
@@ -336,6 +343,17 @@ namespace UnityEditor
             GUI.enabled = oldEnabled;
 
             serializedObject.ApplyModifiedProperties();
+        }
+
+        [SettingsProvider]
+        static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Tags and Layers", "ProjectSettings/TagManager.asset")
+            {
+                icon = EditorGUIUtility.LoadIconRequired("CustomSorting")
+            };
+            provider.PopulateSearchKeywordsFromGUIContentProperties<Styles>();
+            return provider;
         }
     }
 }

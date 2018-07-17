@@ -195,6 +195,16 @@ namespace UnityEditor
             m_SerializedSelectedProbes.m_Selection = m_Selection;
         }
 
+        public void SetDeringProbes(bool enable)
+        {
+            m_Group.dering = enable;
+        }
+
+        public bool GetDeringProbes()
+        {
+            return m_Group.dering;
+        }
+
         private void DrawTetrahedra()
         {
             if (Event.current.type != EventType.Repaint)
@@ -530,6 +540,7 @@ namespace UnityEditor
             public static readonly GUIContent deleteSelected = EditorGUIUtility.TrTextContent("Delete Selected");
             public static readonly GUIContent selectAll = EditorGUIUtility.TrTextContent("Select All");
             public static readonly GUIContent duplicateSelected = EditorGUIUtility.TrTextContent("Duplicate Selected");
+            public static readonly GUIContent performDeringing = EditorGUIUtility.TrTextContent("Remove Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
             public static readonly GUIContent editModeButton;
 
             static Styles()
@@ -634,6 +645,8 @@ namespace UnityEditor
             EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);
 
             m_Editor.drawTetrahedra = EditorGUILayout.Toggle(Styles.showWireframe, m_Editor.drawTetrahedra);
+            bool performDeringing = EditorGUILayout.Toggle(Styles.performDeringing, m_Editor.GetDeringProbes());
+            m_Editor.SetDeringProbes(performDeringing);
 
             EditorGUI.BeginDisabledGroup(m_Editor.SelectedCount == 0);
             Vector3 pos = m_Editor.SelectedCount > 0 ? m_Editor.GetSelectedPositions()[0] : Vector3.zero;

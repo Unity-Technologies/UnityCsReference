@@ -42,7 +42,7 @@ namespace UnityEditor
 
         //---------------------------------------------------------------------
 
-        [MenuItem("Window/Debug/Physics Debugger", false, 5)]
+        [MenuItem("Window/Analysis/Physics Debugger", false, 11)]
         public static PhysicsDebugWindow ShowWindow()
         {
             var window = GetWindow(typeof(PhysicsDebugWindow)) as PhysicsDebugWindow;

@@ -44,6 +44,7 @@ namespace UnityEditor
         static float m_ScaleGrid = 1.0f;
         static bool s_VisualizeBounds = false;
         static Transform s_SelectedTransform; // static so to ensure only one selected Transform across multiple particle systems
+        internal static PrefColor s_CollisionBoundsColor = new PrefColor("Particle System/Collision Bounds", 0.0f, 1.0f, 0.0f, 1.0f);
 
         class Texts
         {
@@ -545,7 +546,7 @@ namespace UnityEditor
                 return;
 
             Color oldColor = Handles.color;
-            Handles.color = Color.green;
+            Handles.color = s_CollisionBoundsColor;
             Matrix4x4 oldMatrix = Handles.matrix;
 
             Vector3[] points0 = new Vector3[20];

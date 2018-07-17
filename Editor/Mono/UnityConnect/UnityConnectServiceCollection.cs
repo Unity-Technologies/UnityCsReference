@@ -261,7 +261,7 @@ namespace UnityEditor.Connect
 
         public ServiceInfo[] GetAllServiceInfos()
         {
-            if (UnityEngine.Connect.UnityConnectSettings.disableServicesWindow)
+            if (UnityConnect.instance.isDisableServicesWindow)
             {
                 return new ServiceInfo[0];
             }

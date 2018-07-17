@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEngine\Debug\</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPATIALTRACKING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_PSVITA_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPATIALTRACKING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -31,7 +31,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEngine\Release\</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPATIALTRACKING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_PSVITA_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPATIALTRACKING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -53,6 +53,27 @@
 
   </ItemGroup>
   <ItemGroup>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
+    <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs">
+    <Link>Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs">
+    <Link>Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\AndroidInput.bindings.cs">
     <Link>Runtime\Export\AndroidInput.bindings.cs</Link>
   </Compile>
@@ -184,6 +205,21 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\Camera.deprecated.cs">
     <Link>Runtime\Export\Camera.deprecated.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs">
+    <Link>Runtime\Export\Camera\BuiltinRuntimeReflectionSystem.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Camera\IScriptableRuntimeReflectionSystem.cs">
+    <Link>Runtime\Export\Camera\IScriptableRuntimeReflectionSystem.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Camera\ScriptableRuntimeReflectionSystem.cs">
+    <Link>Runtime\Export\Camera\ScriptableRuntimeReflectionSystem.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Camera\ScriptableRuntimeReflectionSystemSettings.bindings.cs">
+    <Link>Runtime\Export\Camera\ScriptableRuntimeReflectionSystemSettings.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Camera\ScriptableRuntimeReflectionSystemWrapper.cs">
+    <Link>Runtime\Export\Camera\ScriptableRuntimeReflectionSystemWrapper.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\CastHelper.cs">
     <Link>Runtime\Export\CastHelper.cs</Link>
@@ -436,6 +472,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\IExposedPropertyTable.cs">
     <Link>Runtime\Export\IExposedPropertyTable.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Input.bindings.cs">
+    <Link>Runtime\Export\Input.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\Internal\DefaultValueAttribute.cs">
     <Link>Runtime\Export\Internal\DefaultValueAttribute.cs</Link>
@@ -1007,27 +1046,6 @@
   <Compile Include="..\..\Runtime\Export\iOS\tvOSDevice.bindings.cs">
     <Link>Runtime\Export\iOS\tvOSDevice.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\PixelSnapping.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataAccess.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\SpriteDataUtility.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\SpriteRenderer.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs">
-    <Link>Runtime\2D\Common\ScriptBindings\Sprites.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs">
-    <Link>Runtime\2D\Sorting\ScriptBindings\SortingGroup.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs">
-    <Link>Runtime\2D\SpriteAtlas\ScriptBindings\SpriteAtlas.bindings.cs</Link>
-  </Compile>
   <Compile Include="..\..\Runtime\Jobs\Managed\BatchQueries.cs">
     <Link>Runtime\Jobs\Managed\BatchQueries.cs</Link>
   </Compile>
@@ -1049,6 +1067,9 @@
   <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Profiler.bindings.cs">
     <Link>Runtime\Profiler\ScriptBindings\Profiler.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs">
+    <Link>Runtime\Profiler\ScriptBindings\ProfilerMarker.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Recorder.bindings.cs">
     <Link>Runtime\Profiler\ScriptBindings\Recorder.bindings.cs</Link>
   </Compile>
@@ -1066,9 +1087,6 @@
   </Compile>
   <Compile Include="..\..\Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs">
     <Link>Runtime\Transform\ScriptBindings\TransformAccessArray.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Core\InputBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs">
     <Link>External\Yoga\csharp\Facebook.Yoga\BaselineFunction.cs</Link>
@@ -1406,6 +1424,42 @@
   <Compile Include="..\..\Modules\Streaming\ScriptBindings\StreamingController.bindings.cs">
     <Link>Modules\Streaming\ScriptBindings\StreamingController.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\FriendAttributes.cs">
+    <Link>Modules\StyleSheets\Managed\FriendAttributes.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleComplexSelector.cs">
+    <Link>Modules\StyleSheets\Managed\StyleComplexSelector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleProperty.cs">
+    <Link>Modules\StyleSheets\Managed\StyleProperty.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleRule.cs">
+    <Link>Modules\StyleSheets\Managed\StyleRule.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelector.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSelector.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorPart.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSelectorPart.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorRelationship.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSelectorRelationship.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSelectorType.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSelectorType.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleSheet.cs">
+    <Link>Modules\StyleSheets\Managed\StyleSheet.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueHandle.cs">
+    <Link>Modules\StyleSheets\Managed\StyleValueHandle.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueKeyword.cs">
+    <Link>Modules\StyleSheets\Managed\StyleValueKeyword.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheets\Managed\StyleValueType.cs">
+    <Link>Modules\StyleSheets\Managed\StyleValueType.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Substance\SubstanceUtility.bindings.cs">
     <Link>Modules\Substance\SubstanceUtility.bindings.cs</Link>
   </Compile>
@@ -1417,6 +1471,21 @@
   </Compile>
   <Compile Include="..\..\Modules\Terrain\Public\TerrainData.bindings.cs">
     <Link>Modules\Terrain\Public\TerrainData.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\TerrainLayer.bindings.cs">
+    <Link>Modules\Terrain\Public\TerrainLayer.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\TerrainPaintUtility.cs">
+    <Link>Modules\Terrain\Public\TerrainPaintUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TextCore\Managed\AssemblyInfo.cs">
+    <Link>Modules\TextCore\Managed\AssemblyInfo.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TextCore\Managed\Glyph.cs">
+    <Link>Modules\TextCore\Managed\Glyph.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TextCore\ScriptBindings\FontEngine.bindings.cs">
+    <Link>Modules\TextCore\ScriptBindings\FontEngine.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\TextRendering\FontStyle.cs">
     <Link>Modules\TextRendering\FontStyle.cs</Link>
@@ -1448,6 +1517,12 @@
   <Compile Include="..\..\Modules\UIElements\BaseField.cs">
     <Link>Modules\UIElements\BaseField.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIElements\BaseSlider.cs">
+    <Link>Modules\UIElements\BaseSlider.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Bindings\UIRenderer.bindings.cs">
+    <Link>Modules\UIElements\Bindings\UIRenderer.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElements\Box.cs">
     <Link>Modules\UIElements\Box.cs</Link>
   </Compile>
@@ -1460,8 +1535,8 @@
   <Compile Include="..\..\Modules\UIElements\Clickable.cs">
     <Link>Modules\UIElements\Clickable.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\UIElements\ContextualMenu.cs">
-    <Link>Modules\UIElements\ContextualMenu.cs</Link>
+  <Compile Include="..\..\Modules\UIElements\ContextualMenu.Deprecated.cs">
+    <Link>Modules\UIElements\ContextualMenu.Deprecated.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\ContextualMenuManager.cs">
     <Link>Modules\UIElements\ContextualMenuManager.cs</Link>
@@ -1504,6 +1579,9 @@
   </Compile>
   <Compile Include="..\..\Modules\UIElements\DisposeHelper.cs">
     <Link>Modules\UIElements\DisposeHelper.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\DropdownMenu.cs">
+    <Link>Modules\UIElements\DropdownMenu.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\EventDispatcher.cs">
     <Link>Modules\UIElements\EventDispatcher.cs</Link>
@@ -1604,6 +1682,9 @@
   <Compile Include="..\..\Modules\UIElements\Manipulators.cs">
     <Link>Modules\UIElements\Manipulators.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIElements\MinMaxSlider.cs">
+    <Link>Modules\UIElements\MinMaxSlider.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElements\MouseButton.cs">
     <Link>Modules\UIElements\MouseButton.cs</Link>
   </Compile>
@@ -1639,6 +1720,9 @@
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Slider.cs">
     <Link>Modules\UIElements\Slider.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\SliderInt.cs">
+    <Link>Modules\UIElements\SliderInt.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Spacing.cs">
     <Link>Modules\UIElements\Spacing.cs</Link>
@@ -1759,6 +1843,9 @@
   </Compile>
   <Compile Include="..\..\Modules\UIElements\VisualTreeUpdater.cs">
     <Link>Modules\UIElements\VisualTreeUpdater.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UnityAnalytics\ContinuousEvent\Manager.bindings.cs">
+    <Link>Modules\UnityAnalytics\ContinuousEvent\Manager.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UnityAnalytics\Public\AnalyticsSessionInfo.bindings.cs">
     <Link>Modules\UnityAnalytics\Public\AnalyticsSessionInfo.bindings.cs</Link>
@@ -1907,6 +1994,12 @@
   <Compile Include="..\..\Modules\XR\Subsystems\Depth\XRDepthSubsystemDescriptor.bindings.cs">
     <Link>Modules\XR\Subsystems\Depth\XRDepthSubsystemDescriptor.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\XR\Subsystems\Display\XRDisplaySubsystem.bindings.cs">
+    <Link>Modules\XR\Subsystems\Display\XRDisplaySubsystem.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\XR\Subsystems\Display\XRDisplaySubsystemDescriptor.bindings.cs">
+    <Link>Modules\XR\Subsystems\Display\XRDisplaySubsystemDescriptor.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\XR\Subsystems\Example\XRExampleSubsystem.bindings.cs">
     <Link>Modules\XR\Subsystems\Example\XRExampleSubsystem.bindings.cs</Link>
   </Compile>
@@ -2020,6 +2113,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimationPlayableOutput.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationRemoveScalePlayable.bindings.cs">
+    <Link>Runtime\Animation\ScriptBindings\AnimationRemoveScalePlayable.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs">
     <Link>Runtime\Animation\ScriptBindings\AnimationScriptPlayable.bindings.cs</Link>
@@ -2135,44 +2231,11 @@
   <Compile Include="..\..\Runtime\ParticleSystem\ScriptBindings\ParticleSystem.bindings.cs">
     <Link>Runtime\ParticleSystem\ScriptBindings\ParticleSystem.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\ParticleSystem\ScriptBindings\ParticleSystemForceField.bindings.cs">
+    <Link>Runtime\ParticleSystem\ScriptBindings\ParticleSystemForceField.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\ParticleSystem\ScriptBindings\ParticleSystemRenderer.bindings.cs">
     <Link>Runtime\ParticleSystem\ScriptBindings\ParticleSystemRenderer.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\FriendAttributes.cs">
-    <Link>Runtime\StyleSheets\Managed\FriendAttributes.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleComplexSelector.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleComplexSelector.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleProperty.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleProperty.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleRule.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleRule.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelector.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSelector.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorPart.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSelectorPart.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorRelationship.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSelectorRelationship.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSelectorType.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSelectorType.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleSheet.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleSheet.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueHandle.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleValueHandle.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueKeyword.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleValueKeyword.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\StyleSheets\Managed\StyleValueType.cs">
-    <Link>Runtime\StyleSheets\Managed\StyleValueType.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\TerrainPhysics\TerrainPhysics.bindings.cs">
     <Link>Runtime\TerrainPhysics\TerrainPhysics.bindings.cs</Link>

@@ -24,14 +24,21 @@ namespace UnityEngine.Connect
         }
 
         [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
-        public extern static string testEventUrl
+        public extern static string eventUrl
         {
             get;
             set;
         }
 
         [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
-        public extern static string testConfigUrl
+        public extern static string eventOldUrl
+        {
+            get;
+            set;
+        }
+
+        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
+        public extern static string configUrl
         {
             get;
             set;
@@ -42,12 +49,6 @@ namespace UnityEngine.Connect
         {
             get;
             set;
-        }
-
-        [StaticAccessor("GetUnityConnectSettings()", StaticAccessorType.Dot)]
-        public extern static bool disableServicesWindow
-        {
-            get;
         }
     }
 }

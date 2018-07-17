@@ -34,6 +34,7 @@ namespace UnityEditor
             public static readonly GUIStyle listItemBackground = "CN EntryBackOdd";
             public static readonly GUIStyle listBackgroundStyle = "CN Box";
             public static readonly GUIStyle boxStyle = "CN Box";
+            public static readonly GUIStyle messageStyle = "CN Message";
             public static readonly GUIStyle stackframeStyle = "CN StacktraceStyle";
             public static readonly GUIStyle stacktraceBackground = "CN StacktraceBackground";
             public static readonly GUIStyle centeredText = "CN CenteredText";
@@ -208,7 +209,7 @@ namespace UnityEditor
         readonly SplitterState m_InstructionListDetailSplitter = new SplitterState(new float[] { 30, 70 }, new int[] { 32, 32 }, null);
 
         //Internal Tool for now. Uncomment it to enable it.
-        [MenuItem("Window/Debug/IMGUI Debugger", false, 6, true)]
+        [MenuItem("Window/Analysis/IMGUI Debugger", false, 102, true)]
         static void Init()
         {
             // Get existing open window or if none, make a new one:
@@ -412,7 +413,7 @@ namespace UnityEditor
 
             EditorGUILayout.BeginVertical();
             {
-                instructionModeView.DrawSelectedInstructionDetails();
+                instructionModeView.DrawSelectedInstructionDetails(position.width - m_InstructionListDetailSplitter.realSizes[0]);
             }
             EditorGUILayout.EndVertical();
 

@@ -71,6 +71,10 @@ namespace UnityEditor.SceneManagement
         [NativeMethod("ClosePreviewScene")]
         public extern static bool ClosePreviewScene(Scene scene);
 
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("IsPreviewSceneObject")]
+        public extern static bool IsPreviewSceneObject(UnityEngine.Object obj);
+
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("ReloadScene")]

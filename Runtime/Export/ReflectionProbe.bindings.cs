@@ -50,6 +50,7 @@ namespace UnityEngine
         public extern ReflectionProbeTimeSlicingMode timeSlicingMode { get; set; }
         public extern Texture bakedTexture { get; set; }
         public extern Texture customBakedTexture { get; set; }
+        public extern RenderTexture realtimeTexture { get; set; }
         public extern Texture texture { get; }
         public extern Vector4 textureHDRDecodeValues {[NativeName("CalculateHDRDecodeValues")] get; }
 

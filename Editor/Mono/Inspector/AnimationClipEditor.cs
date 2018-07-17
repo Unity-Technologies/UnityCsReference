@@ -988,10 +988,10 @@ namespace UnityEditor
                     stopTime);
 
             bool IsHumanClip = (target as Motion).isHumanMotion;
-            bool hasMotionCurves = AnimationUtility.HasMotionCurves(m_Clip);
-            bool hasRootCurves = AnimationUtility.HasRootCurves(m_Clip);
-            bool hasGenericRootTransform = AnimationUtility.HasGenericRootTransform(m_Clip);
-            bool hasMotionFloatCurves = AnimationUtility.HasMotionFloatCurves(m_Clip);
+            bool hasMotionCurves = m_Clip.hasMotionCurves;
+            bool hasRootCurves = m_Clip.hasRootCurves;
+            bool hasGenericRootTransform = m_Clip.hasGenericRootTransform;
+            bool hasMotionFloatCurves = m_Clip.hasMotionFloatCurves;
             bool hasAnyRootCurves = hasRootCurves || hasMotionCurves;
 
             bool changedStart = false;
@@ -1232,20 +1232,6 @@ namespace UnityEditor
             else if (hasGenericRootTransform)
             {
                 EditorGUILayout.HelpBox("Root contains position and rotation curves", MessageType.Info);
-
-                if (m_ClipInfo == null)
-                {
-                    GUILayout.BeginHorizontal();
-                    GUILayout.FlexibleSpace();
-
-                    bool generateCurves = AnimationUtility.GetGenerateMotionCurves(m_Clip);
-                    generateCurves = GUILayout.Toggle(generateCurves, "Generate Root Motion Curves at Runtime");
-                    AnimationUtility.SetGenerateMotionCurves(m_Clip, generateCurves);
-
-                    GUILayout.EndHorizontal();
-
-                    EditorGUILayout.Space();
-                }
             }
 
             // Stats

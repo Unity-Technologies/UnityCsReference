@@ -15,11 +15,8 @@ namespace UnityEditor
     [CustomEditor(typeof(QualitySettings))]
     internal class QualitySettingsEditor : ProjectSettingsBaseEditor
     {
-        private static class Styles
+        private class Content
         {
-            public static readonly GUIStyle kToggle = "OL Toggle";
-            public static readonly GUIStyle kDefaultToggle = "OL ToggleWhite";
-
             public static readonly GUIContent kPlatformTooltip = EditorGUIUtility.TrTextContent("", "Allow quality setting on platform");
             public static readonly GUIContent kAddQualityLevel = EditorGUIUtility.TrTextContent("Add Quality Level");
             public static readonly GUIContent kStreamingMipmapsActive = EditorGUIUtility.TrTextContent("Texture Streaming", "Enable to use texture mipmap streaming.");
@@ -32,6 +29,12 @@ namespace UnityEditor
             public static readonly GUIContent kIconTrash = EditorGUIUtility.TrIconContent("TreeEditor.Trash", "Delete Level");
             public static readonly GUIContent kSoftParticlesHint = EditorGUIUtility.TrTextContent("Soft Particles require using Deferred Lighting or making camera render the depth texture.");
             public static readonly GUIContent kBillboardsFaceCameraPos = EditorGUIUtility.TrTextContent("Billboards Face Camera Position", "Make billboards face towards camera position. Otherwise they face towards camera plane. This makes billboards look nicer when camera rotates but is more expensive to render.");
+        }
+
+        private class Styles
+        {
+            public static readonly GUIStyle kToggle = "OL Toggle";
+            public static readonly GUIStyle kDefaultToggle = "OL ToggleWhite";
 
             public static readonly GUIStyle kListEvenBg = "ObjectPickerResultsOdd";
             public static readonly GUIStyle kListOddBg = "ObjectPickerResultsEven";
@@ -172,7 +175,7 @@ namespace UnityEditor
                     if (platformDefaultQualitySettings.ContainsKey(platform.name) &&  platformDefaultQualitySettings[platform.name] == i)
                         isDefaultQuality = true;
 
-                    var toggleRect = GUILayoutUtility.GetRect(Styles.kPlatformTooltip, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth));
+                    var toggleRect = GUILayoutUtility.GetRect(Content.kPlatformTooltip, Styles.kToggle, GUILayout.MinWidth(Styles.kMinToggleWidth), GUILayout.MaxWidth(Styles.kMaxToggleWidth));
                     if (Event.current.type == EventType.Repaint)
                     {
                         bgStyle.Draw(toggleRect, GUIContent.none, false, false, selected, false);
@@ -183,7 +186,7 @@ namespace UnityEditor
                         GUI.backgroundColor = Color.green;
 
                     var supported = !qualitySettings[i].m_ExcludedPlatforms.Contains(platform.name);
-                    var newSupported = GUI.Toggle(toggleRect, supported, Styles.kPlatformTooltip, isDefaultQuality ? Styles.kDefaultToggle : Styles.kToggle);
+                    var newSupported = GUI.Toggle(toggleRect, supported, Content.kPlatformTooltip, isDefaultQuality ? Styles.kDefaultToggle : Styles.kToggle);
                     if (supported != newSupported)
                     {
                         if (newSupported)
@@ -201,7 +204,7 @@ namespace UnityEditor
                 {
                     bgStyle.Draw(deleteButton, GUIContent.none, false, false, selected, false);
                 }
-                if (GUI.Button(deleteButton, Styles.kIconTrash, GUIStyle.none))
+                if (GUI.Button(deleteButton, Content.kIconTrash, GUIStyle.none))
                     m_DeleteLevel = i;
                 GUILayout.EndHorizontal();
             }
@@ -244,9 +247,9 @@ namespace UnityEditor
 
             //Add an extra row for 'Add' button
             GUILayout.BeginHorizontal();
-            var addButtonRect = GUILayoutUtility.GetRect(Styles.kAddQualityLevel, Styles.kToggle, GUILayout.ExpandWidth(true));
+            var addButtonRect = GUILayoutUtility.GetRect(Content.kAddQualityLevel, Styles.kToggle, GUILayout.ExpandWidth(true));
 
-            if (GUI.Button(addButtonRect, Styles.kAddQualityLevel))
+            if (GUI.Button(addButtonRect, Content.kAddQualityLevel))
                 m_ShouldAddNewLevel = true;
 
             GUILayout.EndHorizontal();
@@ -405,7 +408,7 @@ namespace UnityEditor
             if ((mainCamera.depthTextureMode & DepthTextureMode.Depth) != 0)
                 return; // already produces depth texture, all is good
 
-            EditorGUILayout.HelpBox(Styles.kSoftParticlesHint.text, MessageType.Warning, false);
+            EditorGUILayout.HelpBox(Content.kSoftParticlesHint.text, MessageType.Warning, false);
         }
 
         /**
@@ -530,24 +533,24 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(realtimeReflectionProbes);
-            EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Styles.kBillboardsFaceCameraPos);
+            EditorGUILayout.PropertyField(billboardsFaceCameraPosition, Content.kBillboardsFaceCameraPos);
             EditorGUILayout.PropertyField(resolutionScalingFixedDPIFactorProperty);
 
             var streamingMipmapsActiveProperty = currentSettings.FindPropertyRelative("streamingMipmapsActive");
-            EditorGUILayout.PropertyField(streamingMipmapsActiveProperty, Styles.kStreamingMipmapsActive);
+            EditorGUILayout.PropertyField(streamingMipmapsActiveProperty, Content.kStreamingMipmapsActive);
             if (streamingMipmapsActiveProperty.boolValue)
             {
                 EditorGUI.indentLevel++;
                 var streamingMipmapsAddAllCameras = currentSettings.FindPropertyRelative("streamingMipmapsAddAllCameras");
-                EditorGUILayout.PropertyField(streamingMipmapsAddAllCameras, Styles.kStreamingMipmapsAddAllCameras);
+                EditorGUILayout.PropertyField(streamingMipmapsAddAllCameras, Content.kStreamingMipmapsAddAllCameras);
                 var streamingMipmapsBudgetProperty = currentSettings.FindPropertyRelative("streamingMipmapsMemoryBudget");
-                EditorGUILayout.PropertyField(streamingMipmapsBudgetProperty, Styles.kStreamingMipmapsMemoryBudget);
+                EditorGUILayout.PropertyField(streamingMipmapsBudgetProperty, Content.kStreamingMipmapsMemoryBudget);
                 var streamingMipmapsRenderersPerFrameProperty = currentSettings.FindPropertyRelative("streamingMipmapsRenderersPerFrame");
-                EditorGUILayout.PropertyField(streamingMipmapsRenderersPerFrameProperty, Styles.kStreamingMipmapsRenderersPerFrame);
+                EditorGUILayout.PropertyField(streamingMipmapsRenderersPerFrameProperty, Content.kStreamingMipmapsRenderersPerFrame);
                 var streamingMipmapsMaxLevelReductionProperty = currentSettings.FindPropertyRelative("streamingMipmapsMaxLevelReduction");
-                EditorGUILayout.PropertyField(streamingMipmapsMaxLevelReductionProperty, Styles.kStreamingMipmapsMaxLevelReduction);
+                EditorGUILayout.PropertyField(streamingMipmapsMaxLevelReductionProperty, Content.kStreamingMipmapsMaxLevelReduction);
                 var streamingMipmapsMaxFileIORequestsProperty = currentSettings.FindPropertyRelative("streamingMipmapsMaxFileIORequests");
-                EditorGUILayout.PropertyField(streamingMipmapsMaxFileIORequestsProperty, Styles.kStreamingMipmapsMaxFileIORequests);
+                EditorGUILayout.PropertyField(streamingMipmapsMaxFileIORequestsProperty, Content.kStreamingMipmapsMaxFileIORequests);
                 EditorGUI.indentLevel--;
             }
 
@@ -597,6 +600,18 @@ namespace UnityEditor
             }
 
             m_QualitySettings.ApplyModifiedProperties();
+        }
+
+        [SettingsProvider]
+        internal static SettingsProvider CreateProjectSettingsProvider()
+        {
+            var provider = new AssetSettingsProvider("Project/Quality", "ProjectSettings/QualitySettings.asset")
+            {
+                icon = EditorGUIUtility.LoadIconRequired("Profiler.Rendering")
+            };
+            provider.PopulateSearchKeywordsFromGUIContentProperties<Styles>();
+            SettingsProvider.GetSearchKeywordsFromSerializedObject(provider.CreateEditor().serializedObject, provider.keywords);
+            return provider;
         }
     }
 }

@@ -89,5 +89,7 @@ namespace UnityEditor
         Facebook = 26,
 
         Switch = 27,
+
+        Lumin = 28,
     }
 }

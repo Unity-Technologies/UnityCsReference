@@ -16,6 +16,7 @@ namespace UnityEditor
     // Representation of Script assets.
     [NativeClass(null)]
     [NativeType("Editor/Mono/MonoScript.bindings.h")]
+    [ExcludeFromPreset]
     public class MonoScript : TextAsset
     {
         // Returns the System.Type object of the class implemented by this script

@@ -144,6 +144,8 @@ namespace UnityEngine
 
         public extern static bool QueueConfig(string name, object param, int ver = 1, string prefix = "");
 
+        public extern static bool SendDeviceInfoInConfigRequest();
+
         // Forces an update of the remote config from the server.
         public extern void ForceUpdate();
 

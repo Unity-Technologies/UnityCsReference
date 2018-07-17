@@ -47,8 +47,6 @@ namespace UnityEditor.Build
                         return BuildTarget.iOS;
                     case BuildTargetGroup.tvOS:
                         return BuildTarget.tvOS;
-                    case BuildTargetGroup.PSP2:
-                        return BuildTarget.PSP2;
                     case BuildTargetGroup.PS4:
                         return BuildTarget.PS4;
                     case BuildTargetGroup.XboxOne:
@@ -65,6 +63,8 @@ namespace UnityEditor.Build
                         return BuildTarget.WSAPlayer;
                     case BuildTargetGroup.Facebook:
                         return BuildTarget.StandaloneWindows64;
+                    case BuildTargetGroup.Lumin:
+                        return BuildTarget.Lumin;
                     default:
                         return (BuildTarget)(-1);
                 }
@@ -97,7 +97,6 @@ namespace UnityEditor.Build
             buildPlatformsList.Add(new BuildPlatform("tvOS", "BuildSettings.tvOS", BuildTargetGroup.tvOS, true));
             buildPlatformsList.Add(new BuildPlatform("Android", "BuildSettings.Android", BuildTargetGroup.Android, true));
             buildPlatformsList.Add(new BuildPlatform("Xbox One", "BuildSettings.XboxOne", BuildTargetGroup.XboxOne, true));
-            buildPlatformsList.Add(new BuildPlatform("PS Vita", "BuildSettings.PSP2", BuildTargetGroup.PSP2, true));
             buildPlatformsList.Add(new BuildPlatform("PS4", "BuildSettings.PS4", BuildTargetGroup.PS4, true));
             buildPlatformsList.Add(new BuildPlatform("Universal Windows Platform", "BuildSettings.Metro", BuildTargetGroup.WSA, true));
             buildPlatformsList.Add(new BuildPlatform("WebGL", "BuildSettings.WebGL", BuildTargetGroup.WebGL, true));

@@ -54,45 +54,37 @@ namespace UnityEditor
             return result;
         }
 
+        private static void AddNativeModuleInStrippingInfo(string moduleName, string requiredMessage, StrippingInfo strippingInfo, HashSet<string> nativeModules, string icon)
+        {
+            nativeModules.Add(moduleName);
+            strippingInfo.AddModule(moduleName);
+            strippingInfo.RegisterDependency(StrippingInfo.ModuleName(moduleName), requiredMessage);
+            strippingInfo.SetIcon(requiredMessage, icon);
+        }
+
         public static void InjectCustomDependencies(BuildTarget target, StrippingInfo strippingInfo, HashSet<UnityType> nativeClasses,
             HashSet<string> nativeModules)
         {
             // This function can be used to inject user-readable dependency information for specific classes which would not be obvious otherwise.
             // Can also be used to set up dependencies to modules which cannot be derived by the build pipeline without custom rules
-            const string connectSettingsName = "UnityConnectSettings";
-            var connectSettings = UnityType.FindTypeByName(connectSettingsName);
-            const string analyticsManagerName = "UnityAnalyticsManager";
-            var analyticsManager = UnityType.FindTypeByName(analyticsManagerName);
-            if (nativeClasses.Contains(connectSettings) || nativeClasses.Contains(analyticsManager))
+            if (UnityEngine.Connect.UnityConnectSettings.enabled || UnityEngine.Analytics.PerformanceReporting.enabled || UnityEngine.Analytics.Analytics.enabled)
             {
-                if (PlayerSettings.submitAnalytics)
+                string requiredMessage = "Required by HW Statistics (See Player Settings)";
+                const string icon = "class/PlayerSettings";
+                if (UnityEngine.Analytics.Analytics.enabled || UnityEngine.Analytics.PerformanceReporting.enabled)
                 {
-                    const string requiredMessage = "Required by HW Statistics (See Player Settings)";
-                    strippingInfo.RegisterDependency(connectSettingsName, requiredMessage);
-                    strippingInfo.RegisterDependency(analyticsManagerName, requiredMessage);
-                    strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
-                }
-            }
+                    requiredMessage = "Required by Analytics Performance Reporting (See Analytics Services Window)";
+                    AddNativeModuleInStrippingInfo("PerformanceReporting", requiredMessage, strippingInfo, nativeModules, icon);
 
-            if (nativeClasses.Contains(analyticsManager))
-            {
-                if (UnityEditor.Analytics.AnalyticsSettings.enabled)
-                {
-                    const string requiredMessage = "Required by Unity Analytics (See Services Window)";
-                    strippingInfo.RegisterDependency(analyticsManagerName, requiredMessage);
-                    strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
+                    requiredMessage = "Required by UnityAnalytics (See Services Window)";
+                    AddNativeModuleInStrippingInfo("UnityAnalytics", requiredMessage, strippingInfo, nativeModules, icon);
                 }
+                AddNativeModuleInStrippingInfo("UnityConnect", requiredMessage, strippingInfo, nativeModules, icon);
+                strippingInfo.RegisterDependency("UnityConnectSettings", "Required by UnityAnalytics");
             }
 
             if (CrashReporting.CrashReportingSettings.enabled)
-            {
-                const string moduleName = "CrashReporting";
-                const string requiredMessage = "Required by Performance Reporting Service (See Services Window)";
-                nativeModules.Add(moduleName);
-                strippingInfo.AddModule(moduleName);
-                strippingInfo.RegisterDependency(StrippingInfo.ModuleName(moduleName), requiredMessage);
-                strippingInfo.SetIcon(requiredMessage, "class/PlayerSettings");
-            }
+                AddNativeModuleInStrippingInfo("CrashReporting", "Required by Crash Reporting Service (See Services Window)", strippingInfo, nativeModules, "class/PlayerSettings");
 
             if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(target))
             {
@@ -108,10 +100,7 @@ namespace UnityEditor
                 if (!ModuleMetadata.IsStrippableModule(module))
                 {
                     string requiredMessage = module + " is always required";
-                    nativeModules.Add(module);
-                    strippingInfo.AddModule(module);
-                    strippingInfo.RegisterDependency(StrippingInfo.ModuleName(module), requiredMessage);
-                    strippingInfo.SetIcon(requiredMessage, "class/DefaultAsset");
+                    AddNativeModuleInStrippingInfo(module, requiredMessage, strippingInfo, nativeModules, "class/DefaultAsset");
                 }
             }
         }

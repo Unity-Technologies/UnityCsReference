@@ -76,7 +76,7 @@ namespace UnityEditor.Experimental.UIElements
                 m_Panel.visualTree.Add(m_Tree);
             }
 
-            EditorGUI.DrawRect(r, EditorGUIUtility.isProSkin ? EditorGUIUtility.kDarkViewBackground : HostView.kViewColor);
+            EditorGUI.DrawRect(r, EditorGUIUtility.kViewBackgroundColor);
 
             m_Panel.visualTree.layout = GUIClip.UnclipToWindow(r);
             m_Panel.visualTree.IncrementVersion(VersionChangeType.Repaint);

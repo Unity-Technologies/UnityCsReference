@@ -67,6 +67,7 @@ namespace UnityEngine
         extern public LightProbeUsage            lightProbeUsage { get; set; }
         extern public ReflectionProbeUsage       reflectionProbeUsage { get; set; }
         extern public UInt32                     renderingLayerMask { get; set; }
+        extern public int                        rendererPriority { get; set; }
 
         extern public   string sortingLayerName  { get; set; }
         extern public   int    sortingLayerID    { get; set; }

@@ -97,8 +97,7 @@ namespace UnityEngine.Experimental.UIElements
     public interface IPanel : IDisposable
     {
         VisualElement visualTree { get; }
-
-        IEventDispatcher dispatcher { get; }
+        EventDispatcher dispatcher { get; }
         ContextType contextType { get; }
         FocusController focusController { get; }
         VisualElement Pick(Vector2 point);
@@ -143,7 +142,12 @@ namespace UnityEngine.Experimental.UIElements
         public abstract void DirtyStyleSheets();
 
         internal float currentPixelsPerPoint { get; set; } = 1.0f;
-        internal bool isDirty { get { return version != repaintVersion; } }
+
+        internal bool isDirty
+        {
+            get { return version != repaintVersion; }
+        }
+
         internal abstract uint version { get; }
         internal abstract uint repaintVersion { get; }
 
@@ -156,7 +160,14 @@ namespace UnityEngine.Experimental.UIElements
 
         //IPanel
         public abstract VisualElement visualTree { get; }
-        public abstract IEventDispatcher dispatcher { get; protected set; }
+        public abstract EventDispatcher dispatcher { get; protected set; }
+
+        internal void SendEvent(EventBase e, DispatchMode dispatchMode = DispatchMode.Queued)
+        {
+            Debug.Assert(dispatcher != null);
+            dispatcher?.Dispatch(e, this, dispatchMode);
+        }
+
         internal abstract IScheduler scheduler { get; }
         internal abstract IDataWatchService dataWatch { get; }
 
@@ -203,7 +214,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_RootContainer; }
         }
 
-        public override IEventDispatcher dispatcher { get; protected set; }
+        public override EventDispatcher dispatcher { get; protected set; }
 
         private IDataWatchService m_DataWatch;
         internal override IDataWatchService dataWatch { get { return m_DataWatch; } }
@@ -307,14 +318,14 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_RepaintVersion; }
         }
 
-        public Panel(ScriptableObject ownerObject, ContextType contextType, IDataWatchService dataWatch = null, IEventDispatcher dispatcher = null)
+        public Panel(ScriptableObject ownerObject, ContextType contextType, IDataWatchService dataWatch = null, EventDispatcher dispatcher = null)
         {
             m_VisualTreeUpdater = new VisualTreeUpdater(this);
 
             this.ownerObject = ownerObject;
             this.contextType = contextType;
             m_DataWatch = dataWatch;
-            this.dispatcher = dispatcher;
+            this.dispatcher = dispatcher ?? EventDispatcher.instance;
             repaintData = new RepaintData();
             cursorManager = new CursorManager();
             contextualMenuManager = null;
@@ -322,7 +333,7 @@ namespace UnityEngine.Experimental.UIElements
             m_RootContainer.name = VisualElementUtils.GetUniqueName("PanelContainer");
             m_RootContainer.persistenceKey = "PanelContainer"; // Required!
             visualTree.SetPanel(this);
-            focusController = new FocusController(new VisualElementFocusRing(visualTree), this);
+            focusController = new FocusController(new VisualElementFocusRing(visualTree));
             m_ProfileUpdateName = "PanelUpdate";
             m_ProfileLayoutName = "PanelLayout";
             m_ProfileBindingsName = "PanelBindings";

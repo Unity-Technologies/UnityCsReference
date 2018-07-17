@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
+using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine
 {
@@ -744,6 +745,26 @@ namespace UnityEngine.Rendering
     {
         UInt16 = 0,
         UInt32 = 1,
+    }
+
+    //Keep in sync with ShaderChannel in GfxDeviceTypes.h
+    [MovedFrom("UnityEngine.Experimental.Rendering")]
+    public enum VertexAttribute
+    {
+        Position = 0, // Vertex (vector3)
+        Normal,       // Normal (vector3)
+        Tangent,      // Tangent (vector4)
+        Color,        // Vertex color
+        TexCoord0,    // Texcoord 0
+        TexCoord1,    // Texcoord 1
+        TexCoord2,    // Texcoord 2
+        TexCoord3,    // Texcoord 3
+        TexCoord4,    // Texcoord 4
+        TexCoord5,    // Texcoord 5
+        TexCoord6,    // Texcoord 6
+        TexCoord7,    // Texcoord 7
+        BlendWeight,
+        BlendIndices,
     }
 
     // Match Camera::OpaqueSortMode on C++ side

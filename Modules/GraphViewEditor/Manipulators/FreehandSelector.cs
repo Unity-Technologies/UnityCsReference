@@ -33,6 +33,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.RegisterCallback<MouseDownEvent>(OnMouseDown);
             target.RegisterCallback<MouseUpEvent>(OnMouseUp);
             target.RegisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.RegisterCallback<KeyDownEvent>(OnKeyDown);
+            target.RegisterCallback<KeyUpEvent>(OnKeyUp);
         }
 
         protected override void UnregisterCallbacksFromTarget()
@@ -40,6 +42,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             target.UnregisterCallback<MouseDownEvent>(OnMouseDown);
             target.UnregisterCallback<MouseUpEvent>(OnMouseUp);
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMove);
+            target.UnregisterCallback<KeyDownEvent>(OnKeyDown);
+            target.UnregisterCallback<KeyUpEvent>(OnKeyUp);
 
             m_GraphView = null;
         }
@@ -133,12 +137,35 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             e.StopPropagation();
         }
 
+        private void OnKeyDown(KeyDownEvent e)
+        {
+            if (m_Active)
+                m_FreehandElement.deleteModifier = e.altKey;
+        }
+
+        private void OnKeyUp(KeyUpEvent e)
+        {
+            if (m_Active)
+                m_FreehandElement.deleteModifier = e.altKey;
+        }
+
         private class FreehandElement : VisualElement
         {
             private List<Vector2> m_Points = new List<Vector2>();
             public List<Vector2> points { get { return m_Points; } }
 
-            public bool deleteModifier { private get; set; }
+            private bool m_DeleteModifier;
+            public bool deleteModifier
+            {
+                private get { return m_DeleteModifier; }
+                set
+                {
+                    if (m_DeleteModifier == value)
+                        return;
+                    m_DeleteModifier = value;
+                    MarkDirtyRepaint();
+                }
+            }
 
             private const string k_SegmentSizeProperty = "segment-size";
             private const string k_SegmentColorProperty = "segment-color";

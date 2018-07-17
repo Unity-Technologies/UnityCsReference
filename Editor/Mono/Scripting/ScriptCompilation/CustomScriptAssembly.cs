@@ -177,6 +177,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS),
                 new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS),
                 new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch),
+                new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
             };
 
 #pragma warning disable 0618
@@ -216,21 +217,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 return false;
             }
 
-            if (DefineConstraints != null && DefineConstraints.Any())
+            if (!DefineConstraintsHelper.IsDefineConstraintsCompatible(defines, DefineConstraints))
             {
-                if (defines == null)
-                {
-                    return false;
-                }
-
-                const string not = "!";
-                var notExpectedDefines = DefineConstraints.Where(x => x.StartsWith(not)).Select(x => x.Substring(1));
-                var expectedDefines = DefineConstraints.Where(x => !x.StartsWith(not));
-
-                if (!expectedDefines.All(defines.Contains) || notExpectedDefines.Any(defines.Contains))
-                {
-                    return false;
-                }
+                return false;
             }
 
             var isPackage = PackageAssembly.HasValue;

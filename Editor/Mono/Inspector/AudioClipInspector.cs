@@ -30,6 +30,8 @@ namespace UnityEditor
 
         static Texture2D s_DefaultIcon;
 
+        private Material m_HandleLinesMaterial;
+
         override public void OnInspectorGUI()
         {
             // Override with inspector that doesn't show anything
@@ -69,6 +71,8 @@ namespace UnityEditor
                 m_PreviewUtility.Cleanup();
                 m_PreviewUtility = null;
             }
+
+            m_HandleLinesMaterial = null;
         }
 
         public void OnEnable()
@@ -78,6 +82,8 @@ namespace UnityEditor
             m_PlayingInspector = this;
 
             m_bAutoPlay = EditorPrefs.GetBool("AutoPlayAudio", false);
+
+            m_HandleLinesMaterial = EditorGUIUtility.LoadRequired("SceneView/HandleLines.mat") as Material;
         }
 
         public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)
@@ -94,10 +100,11 @@ namespace UnityEditor
                 m_PreviewUtility = new PreviewRenderUtility();
 
             m_PreviewUtility.BeginStaticPreview(new Rect(0, 0, width, height));
+            m_HandleLinesMaterial.SetPass(0);
 
             // We're drawing into an offscreen here which will have a resolution defined by EditorGUIUtility.pixelsPerPoint. This is different from the DoRenderPreview call below where we draw directly to the screen, so we need to take
             // the higher resolution into account when drawing into the offscreen, otherwise only the upper-left quarter of the preview texture will be drawn.
-            DoRenderPreview(clip, audioImporter, new Rect(0.05f * width * EditorGUIUtility.pixelsPerPoint, 0.05f * width * EditorGUIUtility.pixelsPerPoint, 1.9f * width * EditorGUIUtility.pixelsPerPoint, 1.9f * height * EditorGUIUtility.pixelsPerPoint), 1.0f);
+            DoRenderPreview(false, clip, audioImporter, new Rect(0.05f * width * EditorGUIUtility.pixelsPerPoint, 0.05f * width * EditorGUIUtility.pixelsPerPoint, 1.9f * width * EditorGUIUtility.pixelsPerPoint, 1.9f * height * EditorGUIUtility.pixelsPerPoint), 1.0f);
 
             return m_PreviewUtility.EndStaticPreview();
         }
@@ -159,7 +166,7 @@ namespace UnityEditor
         }
 
         // Passing in clip and importer separately as we're not completely done with the asset setup at the time we're asked to generate the preview.
-        private void DoRenderPreview(AudioClip clip, AudioImporter audioImporter, Rect wantedRect, float scaleFactor)
+        private void DoRenderPreview(bool setMaterial, AudioClip clip, AudioImporter audioImporter, Rect wantedRect, float scaleFactor)
         {
             scaleFactor *= 0.95f; // Reduce amplitude slightly to make highly compressed signals fit.
             float[] minMaxData = (audioImporter == null) ? null : AudioUtil.GetMinMaxData(audioImporter);
@@ -171,9 +178,7 @@ namespace UnityEditor
                 Rect channelRect = new Rect(wantedRect.x, wantedRect.y + h * channel, wantedRect.width, h);
                 Color curveColor = new Color(1.0f, 140.0f / 255.0f, 0.0f, 1.0f);
 
-                AudioCurveRendering.DrawMinMaxFilledCurve(
-                    channelRect,
-                    delegate(float x, out Color col, out float minValue, out float maxValue)
+                AudioCurveRendering.AudioMinMaxCurveAndColorEvaluator dlg = delegate(float x, out Color col, out float minValue, out float maxValue)
                     {
                         col = curveColor;
                         if (numSamples <= 0)
@@ -191,8 +196,12 @@ namespace UnityEditor
                             maxValue = Mathf.Max(minMaxData[offset1 + 0], minMaxData[offset2 + 0]) * scaleFactor;
                             if (minValue > maxValue) { float tmp = minValue; minValue = maxValue; maxValue = tmp; }
                         }
-                    }
-                    );
+                    };
+
+                if (setMaterial)
+                    AudioCurveRendering.DrawMinMaxFilledCurve(channelRect, dlg);
+                else
+                    AudioCurveRendering.DrawMinMaxFilledCurveInternal(channelRect, dlg);
             }
         }
 
@@ -276,7 +285,7 @@ namespace UnityEditor
 
                 if (Event.current.type == EventType.Repaint)
                 {
-                    DoRenderPreview(clip, AudioUtil.GetImporterFromClip(clip), m_wantedRect, 1.0f);
+                    DoRenderPreview(true, clip, AudioUtil.GetImporterFromClip(clip), m_wantedRect, 1.0f);
                 }
 
                 for (int i = 0; i < c; ++i)

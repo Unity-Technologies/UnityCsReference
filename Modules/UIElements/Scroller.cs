@@ -51,7 +51,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
             UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "highValue" };
-            UxmlEnumAttributeDescription<Slider.Direction> m_Direction = new UxmlEnumAttributeDescription<Slider.Direction> { name = "direction", defaultValue = Slider.Direction.Vertical};
+            UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Vertical};
             UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value" };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
@@ -78,10 +78,26 @@ namespace UnityEngine.Experimental.UIElements
         public ScrollerButton lowButton { get; private set; }
         public ScrollerButton highButton { get; private set; }
 
+        [SerializeField]
+        float m_Value;
+
         public float value
         {
-            get { return slider.value; }
-            set { slider.value = value; }
+            get { return m_Value; }
+            set
+            {
+                m_Value = value;
+                UpdateSliderValue(value);
+                SavePersistentData();
+            }
+        }
+
+        void UpdateSliderValue(float newValue)
+        {
+            if (!Mathf.Approximately(slider.value, value))
+            {
+                slider.value = value;
+            }
         }
 
         public float lowValue
@@ -96,12 +112,12 @@ namespace UnityEngine.Experimental.UIElements
             set { slider.highValue = value; }
         }
 
-        public Slider.Direction direction
+        public SliderDirection direction
         {
-            get { return style.flexDirection == FlexDirection.Row ? Slider.Direction.Horizontal : Slider.Direction.Vertical; }
+            get { return style.flexDirection == FlexDirection.Row ? SliderDirection.Horizontal : SliderDirection.Vertical; }
             set
             {
-                if (value == Slider.Direction.Horizontal)
+                if (value == SliderDirection.Horizontal)
                 {
                     style.flexDirection = FlexDirection.Row;
                     AddToClassList("horizontal");
@@ -114,21 +130,35 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal const float kDefaultPageSize = 20.0f;
+
         public Scroller()
             : this(0, 0, null) {}
 
-        public Scroller(float lowValue, float highValue, System.Action<float> valueChanged, Slider.Direction direction = Slider.Direction.Vertical)
+        public Scroller(float lowValue, float highValue, System.Action<float> valueChanged, SliderDirection direction = SliderDirection.Vertical)
         {
             this.direction = direction;
             this.valueChanged = valueChanged;
 
             // Add children in correct order
-            slider = new Slider(lowValue, highValue, OnSliderValueChange, direction) {name = "Slider", persistenceKey = "Slider", pageSize = 20.0f};
+            slider = new Slider(lowValue, highValue, direction, kDefaultPageSize) {name = "Slider", persistenceKey = "Slider"};
+            slider.OnValueChanged(OnSliderValueChange);
+
             Add(slider);
             lowButton = new ScrollerButton(ScrollPageUp, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "LowButton"};
             Add(lowButton);
             highButton = new ScrollerButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "HighButton"};
             Add(highButton);
+        }
+
+        public override void OnPersistentDataReady()
+        {
+            base.OnPersistentDataReady();
+            var key = GetFullHierarchicalPersistenceKey();
+            OverwriteFromPersistedData(this, key);
+
+            // To make sure the slider is correctly set-up ...
+            UpdateSliderValue(m_Value);
         }
 
         public void Adjust(float factor)
@@ -138,9 +168,9 @@ namespace UnityEngine.Experimental.UIElements
             slider.AdjustDragElement(factor);
         }
 
-        void OnSliderValueChange(float newValue)
+        void OnSliderValueChange(ChangeEvent<float> evt)
         {
-            value = newValue;
+            value = evt.newValue;
 
             if (valueChanged != null)
                 valueChanged(slider.value);

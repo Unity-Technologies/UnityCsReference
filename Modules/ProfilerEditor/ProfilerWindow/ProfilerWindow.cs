@@ -572,7 +572,7 @@ namespace UnityEditor
                 : ColorBlindCondition.Default;
         }
 
-        [MenuItem("Window/Debug/Profiler %7", false, 1)]
+        [MenuItem("Window/Analysis/Profiler %7", false, 0)]
         static void ShowProfilerWindow()
         {
             EditorWindow.GetWindow<ProfilerWindow>(false);

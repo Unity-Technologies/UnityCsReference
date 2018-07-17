@@ -64,9 +64,11 @@ namespace UnityEditor
         public string settingsPath { get; set; }
         public string[] pathTokens { get; }
         public Texture2D icon { get; set; }
+        public HashSet<string> keywords { get; set; }
         public SettingsScopes scopes { get; set; }
 
         public Action<string> guiHandler { get; set; }
+        public Action titleBarGuiHandler { get; set; }
         public Action<string, VisualElement> activateHandler { get; set; }
         public Action deactivateHandler { get; set; }
         public Func<string, bool> hasSearchInterestHandler { get; set; }
@@ -77,6 +79,7 @@ namespace UnityEditor
             name = Path.GetFileName(settingsPath);
             pathTokens = settingsPath.Split('/');
             this.scopes = scopes;
+            keywords = new HashSet<string>();
         }
 
         public virtual void OnActivate(string searchContext, VisualElement rootElement)
@@ -96,6 +99,13 @@ namespace UnityEditor
                 return hasSearchInterestHandler.Invoke(searchContext);
             }
 
+            foreach (var searchKeyword in keywords)
+            {
+                if (SearchUtils.FuzzySearch(searchContext, searchKeyword))
+                {
+                    return true;
+                }
+            }
             return false;
         }
 
@@ -104,13 +114,18 @@ namespace UnityEditor
             guiHandler?.Invoke(searchContext);
         }
 
-        #region Helper
-        public static bool MatchSearch(string keyword, string searchContext)
+        public virtual void OnTitleBarGUI()
         {
-            return keyword != null && searchContext != null && keyword.IndexOf(searchContext, StringComparison.OrdinalIgnoreCase) >= 0;
+            titleBarGuiHandler?.Invoke();
         }
 
-        public static void GetSearchKeywordsFromGUIContentProperties<T>(List<string> searchKeywords)
+        public void PopulateSearchKeywordsFromGUIContentProperties<T>()
+        {
+            GetSearchKeywordsFromGUIContentProperties<T>(keywords);
+        }
+
+        #region Helper
+        public static void GetSearchKeywordsFromGUIContentProperties<T>(ICollection<string> searchKeywords)
         {
             var keywords = typeof(T).GetFields(BindingFlags.Static | BindingFlags.Public)
                 .Where(field => typeof(GUIContent).IsAssignableFrom(field.FieldType))
@@ -121,7 +136,19 @@ namespace UnityEditor
                 .Where(content => content != null)
                 .Select(content => content.ToLowerInvariant());
 
-            searchKeywords.AddRange(keywords);
+            foreach (var keyword in keywords)
+            {
+                searchKeywords.Add(keyword);
+            }
+        }
+
+        public static void GetSearchKeywordsFromSerializedObject(SerializedObject serializedObject, ICollection<string> searchKeywords)
+        {
+            var property = serializedObject.GetIterator();
+            while (property.NextVisible(true))
+            {
+                searchKeywords.Add(property.displayName);
+            }
         }
 
         #endregion

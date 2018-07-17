@@ -7,8 +7,8 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [StaticAccessor("UsabilityAnalytics", StaticAccessorType.DoubleColon)]
-    [NativeHeader("Editor/Src/Utility/UsabilityAnalytics.h")]
+    [StaticAccessor("UnityEditorAnalytics", StaticAccessorType.DoubleColon)]
+    [NativeHeader("Modules/UnityEditorAnalyticsEditor/UnityEditorAnalytics.h")]
     internal static partial class UsabilityAnalytics
     {
         internal static void SendEvent(string subType, DateTime startTime, TimeSpan duration, bool isBlocking, object parameters)
@@ -16,10 +16,10 @@ namespace UnityEditor
             if (startTime.Kind == DateTimeKind.Local)
                 throw new ArgumentException("Local DateTimes are not supported, use UTC instead.");
 
-            SendUsabilityEvent(subType, startTime.Ticks, duration.Ticks, isBlocking, parameters);
+            SendUsabilityEventStatic(subType, startTime.Ticks, duration.Ticks, isBlocking, parameters);
         }
 
-        extern private static void SendUsabilityEvent(
+        extern private static void SendUsabilityEventStatic(
             string subType,
             Int64 startTimeTicks,
             long durationTicks,

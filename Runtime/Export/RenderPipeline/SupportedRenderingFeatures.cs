@@ -55,6 +55,11 @@ namespace UnityEngine.Experimental.Rendering
         public bool rendererSupportsMotionVectors { get; set; } = true;
         public bool rendererSupportsReceiveShadows { get; set; } = true;
         public bool rendererSupportsReflectionProbes { get; set; } = true;
+        public bool rendererSupportsRendererPriority { get; set; } = false;
+
+        public bool rendererOverridesEnvironmentLighting { get; set; } = false;
+        public bool rendererOverridesFog { get; set; } = false;
+        public bool rendererOverridesOtherLightingSettings { get; set; } = false;
 
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {

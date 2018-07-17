@@ -220,12 +220,9 @@ namespace UnityEditor
             baseFolders.AddRange(ProjectWindowUtil.GetBaseFolders(m_SearchFilter.folders));
             if (baseFolders.Remove(PackageManager.Folders.GetPackagesMountPoint()))
             {
-                var packages = PackageManager.Packages.GetAll();
+                var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
                 foreach (var package in packages)
                 {
-                    if (package.source == PackageManager.PackageSource.BuiltIn)
-                        continue;
-
                     if (!baseFolders.Contains(package.assetPath))
                         baseFolders.Add(package.assetPath);
                 }
@@ -261,12 +258,9 @@ namespace UnityEditor
             {
                 if (folderPath == PackageManager.Folders.GetPackagesMountPoint())
                 {
-                    var packages = PackageManager.Packages.GetAll();
+                    var packages = PackageManagerUtilityInternal.GetAllVisiblePackages();
                     foreach (var package in packages)
                     {
-                        if (package.source == PackageManager.PackageSource.BuiltIn)
-                            continue;
-
                         var packageFolderInstanceId = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(package.assetPath);
                         property = new HierarchyProperty(package.assetPath);
                         if (property.Find(packageFolderInstanceId, null))

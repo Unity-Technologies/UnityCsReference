@@ -19,7 +19,7 @@ namespace UnityEditor.AdvancedDropdown
             public static GUIStyle previewHeader = new GUIStyle(EditorStyles.label);
             public static GUIStyle previewText = new GUIStyle(EditorStyles.wordWrappedLabel);
 
-            static  Styles()
+            static Styles()
             {
                 previewText.padding.left += 3;
                 previewText.padding.right += 3;
@@ -91,8 +91,7 @@ namespace UnityEditor.AdvancedDropdown
             OnDirtyList();
 
             m_CurrentlyRenderedTree = hasSearch ? dataSource.searchTree : dataSource.mainTree;
-
-            ShowAsDropDown(buttonRect, CalculateWindowSize(buttonRect), GetLocationPriority(), ShowMode.PopupMenuWithKeyboardFocus);
+            ShowAsDropDown(buttonRect, CalculateWindowSize(buttonRect), GetLocationPriority());
 
             if (setInitialSelectionPosition)
             {
@@ -101,12 +100,12 @@ namespace UnityEditor.AdvancedDropdown
             wantsMouseMove = true;
         }
 
-        protected virtual PopupLocationHelper.PopupLocation[] GetLocationPriority()
+        protected virtual PopupLocation[] GetLocationPriority()
         {
             return new[]
             {
-                PopupLocationHelper.PopupLocation.Below,
-                PopupLocationHelper.PopupLocation.Overlay,
+                PopupLocation.Below,
+                PopupLocation.Overlay,
             };
         }
 
@@ -117,6 +116,15 @@ namespace UnityEditor.AdvancedDropdown
             size.x += kBorderThickness * 2;
             size.y += kBorderThickness * 2;
             size.x += kRightMargin;
+
+            size.y += gui.searchHeight;
+
+            if (showHeader)
+            {
+                size.y += gui.headerHeight;
+            }
+
+            size.y = Mathf.Clamp(size.y, minSize.y, maxSize.y);
 
             var fitRect = ContainerWindow.FitRectToScreen(new Rect(buttonRect.x, buttonRect.y, size.x, size.y), true, true);
             // If the scrollbar is visible, we want to add extra space to compansate it
@@ -179,7 +187,7 @@ namespace UnityEditor.AdvancedDropdown
             {
                 // Go to child
                 // m_NewAnimTarget 1 -> 0
-                DrawDropdown(anim - 1 , m_AnimationTree);
+                DrawDropdown(anim - 1, m_AnimationTree);
                 DrawDropdown(anim, m_CurrentlyRenderedTree);
             }
         }
@@ -367,7 +375,7 @@ namespace UnityEditor.AdvancedDropdown
             // Scroll to selected on windows creation
             if (m_ScrollToSelected && m_InitialSelectionPosition != 0)
             {
-                var diffOfPopupAboveTheButton = m_ButtonRectScreenPos.y - position.y;
+                float diffOfPopupAboveTheButton = m_ButtonRectScreenPos.y - position.y;
                 diffOfPopupAboveTheButton -= gui.searchHeight + gui.headerHeight;
                 item.m_Scroll.y = m_InitialSelectionPosition - diffOfPopupAboveTheButton;
                 m_ScrollToSelected = false;

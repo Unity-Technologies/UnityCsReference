@@ -3,8 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
 
 namespace UnityEditor.Experimental.AssetImporters
 {
@@ -94,7 +92,7 @@ namespace UnityEditor.Experimental.AssetImporters
             // When destroying the inspector check if we have any unapplied modifications
             // and apply them.
             AssetImporter importer = target as AssetImporter;
-            if (Unsupported.IsDestroyScriptableObject(this) && m_MightHaveModified && importer != null && !InternalEditorUtility.ignoreInspectorChanges && HasModified() && !AssetWasUpdated())
+            if (Unsupported.IsDestroyScriptableObject(this) && m_MightHaveModified && importer != null && HasModified() && !AssetWasUpdated())
             {
                 string dialogText = string.Format(L10n.Tr("Unapplied import settings for \'{0}\'"), importer.assetPath);
 

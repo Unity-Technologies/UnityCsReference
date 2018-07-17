@@ -54,7 +54,6 @@ namespace UnityEngine
 
     // Gradient used for animating colors
     [StructLayout(LayoutKind.Sequential)]
-    [ThreadAndSerializationSafe()]
     [RequiredByNativeCode]
     [NativeHeader("Runtime/Export/Gradient.bindings.h")]
     public class Gradient : IEquatable<Gradient>
@@ -67,7 +66,7 @@ namespace UnityEngine
         [FreeFunction(Name = "Gradient_Bindings::Cleanup", IsThreadSafe = true, HasExplicitThis = true)]
         extern private void Cleanup();
 
-        [FreeFunction("Gradient_Bindings::Internal_Equals", HasExplicitThis = true)]
+        [FreeFunction("Gradient_Bindings::Internal_Equals", IsThreadSafe = true, HasExplicitThis = true)]
         extern private bool Internal_Equals(IntPtr other);
 
         [RequiredByNativeCode]
@@ -82,19 +81,19 @@ namespace UnityEngine
         }
 
         // Calculate color at a given time
-        [FreeFunction(Name = "Gradient_Bindings::Evaluate", HasExplicitThis = true)]
+        [FreeFunction(Name = "Gradient_Bindings::Evaluate", IsThreadSafe = true, HasExplicitThis = true)]
         extern public Color Evaluate(float time);
 
         extern public GradientColorKey[] colorKeys
         {
-            [FreeFunction("Gradient_Bindings::GetColorKeys", HasExplicitThis = true)] get;
-            [FreeFunction("Gradient_Bindings::SetColorKeys", HasExplicitThis = true)] set;
+            [FreeFunction("Gradient_Bindings::GetColorKeys", IsThreadSafe = true, HasExplicitThis = true)] get;
+            [FreeFunction("Gradient_Bindings::SetColorKeys", IsThreadSafe = true, HasExplicitThis = true)] set;
         }
 
         extern public GradientAlphaKey[] alphaKeys
         {
-            [FreeFunction("Gradient_Bindings::GetAlphaKeys", HasExplicitThis = true)] get;
-            [FreeFunction("Gradient_Bindings::SetAlphaKeys", HasExplicitThis = true)] set;
+            [FreeFunction("Gradient_Bindings::GetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] get;
+            [FreeFunction("Gradient_Bindings::SetAlphaKeys", IsThreadSafe = true, HasExplicitThis = true)] set;
         }
 
 
@@ -103,7 +102,7 @@ namespace UnityEngine
         extern internal Color constantColor { get; set; }
 
         // Setup Gradient with an array of color keys and alpha keys
-        [FreeFunction(Name = "Gradient_Bindings::SetKeys", HasExplicitThis = true)]
+        [FreeFunction(Name = "Gradient_Bindings::SetKeys", IsThreadSafe = true, HasExplicitThis = true)]
         extern public void SetKeys(GradientColorKey[] colorKeys, GradientAlphaKey[] alphaKeys);
 
         public override bool Equals(object o)
