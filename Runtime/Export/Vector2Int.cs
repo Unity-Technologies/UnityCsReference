@@ -126,6 +126,11 @@ namespace UnityEngine
         {
             return new Vector2Int(a.x - b.x, a.y - b.y);
         }
+        
+        public static Vector2Int operator-(Vector2Int a)
+        {
+            return new Vector2Int(-a.x, -a.y);
+        }
 
         public static Vector2Int operator*(Vector2Int a, Vector2Int b)
         {
