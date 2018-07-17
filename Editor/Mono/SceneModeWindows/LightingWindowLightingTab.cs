@@ -464,6 +464,10 @@ namespace UnityEditor
                     EditorGUILayout.LabelField("Converged: " + numConvergedLightmapsNotInView, Styles.LabelStyle);
                     EditorGUILayout.LabelField("Not Converged: " + numNotConvergedLightmapsNotInView, Styles.LabelStyle);
                     EditorGUI.indentLevel -= 1;
+
+                    LightProbesConvergence lpc = Lightmapping.GetLightProbesConvergence();
+                    if (lpc.IsValid() && lpc.probeSetCount > 0)
+                        GUILayout.Label("Light Probes convergence: (" + lpc.convergedProbeSetCount + "/" + lpc.probeSetCount + ")", Styles.LabelStyle);
                 }
                 float bakeTime = Lightmapping.GetLightmapBakeTimeTotal();
                 float mraysPerSec = Lightmapping.GetLightmapBakePerformanceTotal();

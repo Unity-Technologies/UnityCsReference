@@ -22,11 +22,11 @@ namespace UnityEditor
         private static class Styles
         {
             public static StyleBlock tree => EditorResources.GetStyle("settings-tree");
-            public static GUIStyle treeItemHideFoldout = "SettingsTreeItemHideFoldout";
-            public static GUIStyle treeItemWithFoldout = "SettingsTreeItemWithFoldout";
+            public static GUIStyle listItem = "SettingsListItem";
+            public static GUIStyle treeItem = "SettingsTreeItem";
         }
 
-        private bool m_HideFoldout;
+        private bool m_ListViewMode;
 
         public SettingsProvider[] providers { get; }
         public SettingsProvider currentProvider { get; private set; }
@@ -98,9 +98,9 @@ namespace UnityEditor
         protected override void RowGUI(RowGUIArgs args)
         {
             var labelRect = args.rowRect;
-            if (!m_HideFoldout)
+            var contentIndent = GetContentIndent(args.item);
+            if (!m_ListViewMode)
             {
-                var contentIndent = GetContentIndent(args.item);
                 labelRect.xMin += contentIndent;
             }
 
@@ -113,7 +113,7 @@ namespace UnityEditor
                 GUI.DrawTexture(iconRect, args.item.icon);
             }
 
-            EditorGUI.LabelField(labelRect, args.item.displayName, m_HideFoldout ? Styles.treeItemHideFoldout : Styles.treeItemWithFoldout);
+            EditorGUI.LabelField(labelRect, args.item.displayName, m_ListViewMode ? Styles.listItem : Styles.treeItem);
         }
 
         protected override bool DoesItemMatchSearch(TreeViewItem item, string search)
@@ -149,7 +149,8 @@ namespace UnityEditor
         private void BuildSettingsNodeTree(SettingsNode rootNode)
         {
             // If all provider have same root, hide the root name:
-            m_HideFoldout = true;
+            var allChildrenUnderSameRoot = true;
+            m_ListViewMode = true;
             string rootName = null;
             foreach (var provider in providers)
             {
@@ -159,23 +160,29 @@ namespace UnityEditor
                 }
                 else if (rootName != provider.pathTokens[0])
                 {
-                    m_HideFoldout = false;
-                    break;
+                    allChildrenUnderSameRoot = false;
+                    m_ListViewMode = false;
+                }
+                else if (provider.pathTokens.Length > 2)
+                {
+                    m_ListViewMode = false;
                 }
             }
 
             foreach (var provider in providers)
             {
                 SettingsNode current = rootNode;
-                var nodePath = m_HideFoldout ? rootName : "";
-                for (var tokenIndex = m_HideFoldout ?  1 : 0; tokenIndex < provider.pathTokens.Length; ++tokenIndex)
+                var nodePath = allChildrenUnderSameRoot ? rootName : "";
+                for (var tokenIndex = allChildrenUnderSameRoot ?  1 : 0; tokenIndex < provider.pathTokens.Length; ++tokenIndex)
                 {
                     var token = provider.pathTokens[tokenIndex];
                     if (nodePath.Length > 0)
                         nodePath += "/";
                     nodePath += token;
                     if (!current.children.ContainsKey(token))
+                    {
                         current.children[token] = new SettingsNode() { path = nodePath, children = new Dictionary<string, SettingsNode>() };
+                    }
 
                     current = current.children[token];
                 }

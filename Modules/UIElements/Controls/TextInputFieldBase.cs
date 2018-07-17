@@ -158,17 +158,17 @@ namespace UnityEngine.Experimental.UIElements
             editorEngine.style = new GUIStyle(editorEngine.style);
         }
 
-        ContextualMenu.MenuAction.StatusFlags CutCopyActionStatus(ContextualMenu.MenuAction a)
+        DropdownMenu.MenuAction.StatusFlags CutCopyActionStatus(DropdownMenu.MenuAction a)
         {
-            return (editorEngine.hasSelection && !isPasswordField) ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled;
+            return (editorEngine.hasSelection && !isPasswordField) ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled;
         }
 
-        ContextualMenu.MenuAction.StatusFlags PasteActionStatus(ContextualMenu.MenuAction a)
+        DropdownMenu.MenuAction.StatusFlags PasteActionStatus(DropdownMenu.MenuAction a)
         {
-            return (editorEngine.CanPaste() ? ContextualMenu.MenuAction.StatusFlags.Normal : ContextualMenu.MenuAction.StatusFlags.Disabled);
+            return (editorEngine.CanPaste() ? DropdownMenu.MenuAction.StatusFlags.Normal : DropdownMenu.MenuAction.StatusFlags.Disabled);
         }
 
-        void Cut(ContextualMenu.MenuAction a)
+        void Cut(DropdownMenu.MenuAction a)
         {
             editorEngine.Cut();
 
@@ -176,12 +176,12 @@ namespace UnityEngine.Experimental.UIElements
             UpdateText(editorEngine.text);
         }
 
-        void Copy(ContextualMenu.MenuAction a)
+        void Copy(DropdownMenu.MenuAction a)
         {
             editorEngine.Copy();
         }
 
-        void Paste(ContextualMenu.MenuAction a)
+        void Paste(DropdownMenu.MenuAction a)
         {
             editorEngine.Paste();
 

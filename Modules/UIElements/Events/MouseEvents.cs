@@ -252,12 +252,12 @@ namespace UnityEngine.Experimental.UIElements
 
     public class ContextualMenuPopulateEvent : MouseEventBase<ContextualMenuPopulateEvent>
     {
-        public ContextualMenu menu { get; private set; }
+        public DropdownMenu menu { get; private set; }
         public EventBase triggerEvent { get; private set; }
 
         ContextualMenuManager m_ContextualMenuManager;
 
-        public static ContextualMenuPopulateEvent GetPooled(EventBase triggerEvent, ContextualMenu menu, IEventHandler target, ContextualMenuManager menuManager)
+        public static ContextualMenuPopulateEvent GetPooled(EventBase triggerEvent, DropdownMenu menu, IEventHandler target, ContextualMenuManager menuManager)
         {
             ContextualMenuPopulateEvent e = GetPooled();
             if (triggerEvent != null)

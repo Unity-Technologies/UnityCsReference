@@ -144,7 +144,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            evt.menu.AppendAction("Rename", (a) => OpenTextEditor(), ContextualMenu.MenuAction.AlwaysEnabled);
+            evt.menu.AppendAction("Rename", (a) => OpenTextEditor(), DropdownMenu.MenuAction.AlwaysEnabled);
         }
     }
 }

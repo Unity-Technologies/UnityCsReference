@@ -34,6 +34,8 @@ namespace UnityEngine
         extern public RenderingPath renderingPath { get; set; }
         extern public RenderingPath actualRenderingPath {[NativeName("CalculateRenderingPath")] get;  }
 
+        extern public void Reset();
+
         extern public bool allowHDR { get; set; }
         extern public bool allowMSAA { get; set; }
         extern public bool allowDynamicResolution { get; set; }
@@ -86,10 +88,17 @@ namespace UnityEngine
         extern public void ResetReplacementShader();
 
         internal enum ProjectionMatrixMode{ Explicit, Implicit, PhysicalPropertiesBased };
+
+        extern internal ProjectionMatrixMode projectionMatrixMode { get; }
+
+        public enum GateFitMode{ Vertical = 1 , Horizontal = 2, Fill = 3, Overscan = 4, None = 0 };
         extern public bool usePhysicalProperties { get; set; }
         extern public Vector2 sensorSize  { get; set; }
         extern public Vector2 lensShift  { get; set; }
         extern public float focalLength  { get; set; }
+        extern public GateFitMode gateFit  { get; set; }
+
+        extern internal Vector3 GetLocalSpaceAim();
         [NativeProperty("NormalizedViewportRect")] extern public Rect rect      { get; set; }
         [NativeProperty("ScreenViewportRect")]     extern public Rect pixelRect { get; set; }
 
@@ -132,8 +141,10 @@ namespace UnityEngine
         public Vector3 ViewportToWorldPoint(Vector3 position) { return ViewportToWorldPoint(position, MonoOrStereoscopicEye.Mono); }
         public Vector3 ScreenToWorldPoint(Vector3 position) { return ScreenToWorldPoint(position, MonoOrStereoscopicEye.Mono); }
         extern public Vector3 ScreenToViewportPoint(Vector3 position);
-        extern internal Vector3 ViewportToWorldPointWithoutGateFit(Vector3 position);
+
         extern public Vector3 ViewportToScreenPoint(Vector3 position);
+
+        extern internal Vector2 GetFrustumPlaneSizeAt(float distance);
 
         extern private Ray ViewportPointToRay(Vector2 pos, MonoOrStereoscopicEye eye);
         public Ray ViewportPointToRay(Vector3 pos, MonoOrStereoscopicEye eye) { return ViewportPointToRay((Vector2)pos, eye); }
@@ -155,6 +166,29 @@ namespace UnityEngine
             if (outCorners.Length < 4)  throw new ArgumentException("outCorners minimum size is 4", "outCorners");
             CalculateFrustumCornersInternal(viewport, z, eye, outCorners);
         }
+
+        public struct GateFitParameters
+        {
+            public GateFitMode mode {get; set; }
+            public float aspect {get; set; }
+
+            public GateFitParameters(GateFitMode mode, float aspect)
+            {
+                this.mode = mode;
+                this.aspect = aspect;
+            }
+        }
+
+        [NativeName("CalculateProjectionMatrixFromPhysicalProperties")]
+        extern private static void CalculateProjectionMatrixFromPhysicalPropertiesInternal(out Matrix4x4 output, float focalLength, Vector2 sensorSize, Vector2 lensShift, float nearClip, float farClip, float gateAspect, GateFitMode gateFitMode);
+
+        public static void CalculateProjectionMatrixFromPhysicalProperties(out Matrix4x4 output, float focalLength, Vector2 sensorSize, Vector2 lensShift, float nearClip, float farClip, GateFitParameters gateFitParameters = default(GateFitParameters))
+        {
+            CalculateProjectionMatrixFromPhysicalPropertiesInternal(out output, focalLength, sensorSize, lensShift, nearClip, farClip, gateFitParameters.aspect, gateFitParameters.mode);
+        }
+
+        extern public static float FocalLengthToFOV(float focalLength, float sensorSize);
+        extern public static float FOVToFocalLength(float fov, float sensorSize);
 
         extern public static Camera main {[FreeFunction("FindMainCamera")] get; }
         extern public static Camera current {[FreeFunction("GetCurrentCameraPtr")] get; }

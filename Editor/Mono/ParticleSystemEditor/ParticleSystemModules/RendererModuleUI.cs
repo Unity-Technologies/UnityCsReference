@@ -25,6 +25,7 @@ namespace UnityEditor
         SerializedProperty m_SortingOrder;
         SerializedProperty m_SortingLayerID;
         SerializedProperty m_RenderingLayerMask;
+        SerializedProperty m_RendererPriority;
 
         // From ParticleSystemRenderer
         SerializedProperty m_RenderMode;
@@ -213,6 +214,7 @@ namespace UnityEditor
             m_TrailMaterial = GetProperty0("m_Materials.Array.data[1]");
             m_SortingOrder = GetProperty0("m_SortingOrder");
             m_RenderingLayerMask = GetProperty0("m_RenderingLayerMask");
+            m_RendererPriority = GetProperty0("m_RendererPriority");
             m_SortingLayerID = GetProperty0("m_SortingLayerID");
 
             m_RenderMode = GetProperty0("m_RenderMode");
@@ -394,6 +396,7 @@ namespace UnityEditor
             m_Probes.OnGUI(renderersArray, renderers.FirstOrDefault(), true);
 
             RendererEditorBase.RenderRenderingLayer(m_RenderingLayerMask, serializedObject.targetObject as Renderer, renderersArray, true);
+            RendererEditorBase.RenderRendererPriority(m_RendererPriority, true);
         }
 
         private void DoListOfMeshesGUI()

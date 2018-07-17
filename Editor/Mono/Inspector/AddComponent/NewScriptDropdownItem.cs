@@ -26,7 +26,7 @@ namespace UnityEditor.AdvancedDropdown
             get { return m_ClassName; }
         }
 
-        public NewScriptDropdownItem() : base("New Script", -1) {}
+        public NewScriptDropdownItem() : base("New Script", L10n.Tr("New Script"), -1) {}
 
         public override bool OnAction()
         {

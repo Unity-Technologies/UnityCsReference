@@ -12,5 +12,7 @@ namespace UnityEngine
     {
         [NativeName("Positions")]
         public extern Vector3[] probePositions { get; set; }
+        [NativeName("Dering")]
+        public extern bool dering { get; set; }
     }
 }

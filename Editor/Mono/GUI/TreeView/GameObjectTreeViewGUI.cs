@@ -35,7 +35,7 @@ namespace UnityEditor
             public static Color hoveredBackgroundColor =
                 EditorGUIUtility.isProSkin
                 ? new Color(48.0f / 255.0f, 48.0f / 255.0f, 48.0f / 255.0f)
-                : new Color(160.0f / 255.0f, 160.0f / 255.0f, 160.0f / 255.0f);
+                : new Color(170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f);
 
             public static readonly int kSceneHeaderIconsInterval = 2;
         }

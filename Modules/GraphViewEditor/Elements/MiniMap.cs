@@ -88,14 +88,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        void ToggleAnchorState(ContextualMenu.MenuAction a)
+        void ToggleAnchorState(DropdownMenu.MenuAction a)
         {
             anchored = !anchored;
         }
 
         public virtual void BuildContextualMenu(ContextualMenuPopulateEvent evt)
         {
-            evt.menu.AppendAction(anchored ? "Make floating" : "Anchor", ToggleAnchorState, ContextualMenu.MenuAction.AlwaysEnabled);
+            evt.menu.AppendAction(anchored ? "Make floating" : "Anchor", ToggleAnchorState, DropdownMenu.MenuAction.AlwaysEnabled);
         }
 
         void Resize()

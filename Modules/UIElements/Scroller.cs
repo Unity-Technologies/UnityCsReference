@@ -130,6 +130,8 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal const float kDefaultPageSize = 20.0f;
+
         public Scroller()
             : this(0, 0, null) {}
 
@@ -139,7 +141,7 @@ namespace UnityEngine.Experimental.UIElements
             this.valueChanged = valueChanged;
 
             // Add children in correct order
-            slider = new Slider(lowValue, highValue, direction, 20.0f) {name = "Slider", persistenceKey = "Slider"};
+            slider = new Slider(lowValue, highValue, direction, kDefaultPageSize) {name = "Slider", persistenceKey = "Slider"};
             slider.OnValueChanged(OnSliderValueChange);
 
             Add(slider);

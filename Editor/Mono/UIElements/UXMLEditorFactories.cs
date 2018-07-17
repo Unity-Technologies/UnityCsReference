@@ -51,7 +51,18 @@ namespace UnityEditor.Experimental.UIElements
                 new Vector2IntField.UxmlFactory(),
                 new Vector3IntField.UxmlFactory(),
                 new BoundsIntField.UxmlFactory(),
-                new VisualSplitter.UxmlFactory()
+                new VisualSplitter.UxmlFactory(),
+
+                // Toolbar
+                new Toolbar.UxmlFactory(),
+                new ToolbarButton.UxmlFactory(),
+                new ToolbarToggle.UxmlFactory(),
+                new ToolbarSpacer.UxmlFactory(),
+                new ToolbarFlexSpacer.UxmlFactory(),
+                new ToolbarMenu.UxmlFactory(),
+                new ToolbarPopup.UxmlFactory(),
+                new ToolbarSearchField.UxmlFactory(),
+                new ToolbarPopupSearchField.UxmlFactory(),
             };
 
             foreach (IUxmlFactory factory in factories)

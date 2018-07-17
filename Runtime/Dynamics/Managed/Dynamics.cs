@@ -100,7 +100,7 @@ namespace UnityEngine
     public enum MeshColliderCookingOptions
     {
         None,
-        InflateConvexMesh = 1 << 0,
+        [Obsolete("No longer used because the problem this was trying to solve is gone since Unity 2018.3", true)] InflateConvexMesh = 1 << 0,
         CookForFasterSimulation = 1 << 1,
         EnableMeshCleaning = 1 << 2,
         WeldColocatedVertices = 1 << 3
@@ -401,7 +401,8 @@ namespace UnityEngine
     {
         Discrete = 0,
         Continuous = 1,
-        ContinuousDynamic = 2
+        ContinuousDynamic = 2,
+        ContinuousSpeculative = 3
     }
 
     public enum ConfigurableJointMotion

@@ -128,19 +128,6 @@ public sealed partial class WebCamTexture : Texture
         set;
     }
 
-    [System.Obsolete ("since Unity 5.0 iOS WebCamTexture always goes through CVTextureCache and is read to memory on-demand")]
-    public extern  bool isReadable
-    {
-        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        get;
-    }
-
-    [System.Obsolete ("since Unity 5.0 iOS WebCamTexture always goes through CVTextureCache and is read to memory on-demand")]
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern public void MarkNonReadable () ;
-
     public extern static WebCamDevice[] devices
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration

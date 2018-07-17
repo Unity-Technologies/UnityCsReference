@@ -91,7 +91,6 @@ namespace UnityEditor
             public static readonly GUIContent iPhoneScriptCallOptimization = EditorGUIUtility.TrTextContent("Script Call Optimization*");
             public static readonly GUIContent enableInternalProfiler = EditorGUIUtility.TrTextContent("Enable Internal Profiler* (Deprecated)", "Internal profiler counters should be accessed by scripts using UnityEngine.Profiling::Profiler API.");
             public static readonly GUIContent stripUnusedMeshComponents = EditorGUIUtility.TrTextContent("Optimize Mesh Data*", "Remove unused mesh components");
-            public static readonly GUIContent videoMemoryForVertexBuffers = EditorGUIUtility.TrTextContent("Mesh Video Mem*", "How many megabytes of video memory to use for mesh data before we use main memory");
             public static readonly GUIContent protectGraphicsMemory = EditorGUIUtility.TrTextContent("Protect Graphics Memory", "Protect GPU memory from being read (on supported devices). Will prevent user from taking screenshots");
             public static readonly GUIContent enableFrameTimingStats = EditorGUIUtility.TrTextContent("Enable Frame Timing Stats", "Enable gathering of CPU/GPU frame timing statistics.");
             public static readonly GUIContent useOSAutoRotation = EditorGUIUtility.TrTextContent("Use Animated Autorotation", "If set OS native animated autorotation method will be used. Otherwise orientation will be changed immediately.");
@@ -481,8 +480,6 @@ namespace UnityEditor
 
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
-
-            m_VideoMemoryForVertexBuffers   = FindPropertyAssert("videoMemoryForVertexBuffers");
 
             m_LegacyClampBlendShapeWeights  = FindPropertyAssert("legacyClampBlendShapeWeights");
 
@@ -1921,16 +1918,10 @@ namespace UnityEditor
                 {
                     PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
                 }
-                else if (EditorUtility.DisplayDialog(
-                             LocalizationDatabase.GetLocalizedString("Restart required"),
-                             LocalizationDatabase.GetLocalizedString("Changing scripting runtime version requires a restart of the Editor to take effect. Do you wish to proceed?"),
-                             LocalizationDatabase.GetLocalizedString("Restart"),
-                             LocalizationDatabase.GetLocalizedString("Cancel")))
+                else
                 {
                     PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
-                    EditorCompilationInterface.Instance.CleanScriptAssemblies();
-                    if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
-                        EditorApplication.OpenProject(Environment.CurrentDirectory);
+                    PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged();
                 }
             }
 
@@ -2175,25 +2166,6 @@ namespace UnityEditor
             m_VertexChannelCompressionMask.intValue = (int)vertexFlags;
 
             EditorGUILayout.PropertyField(m_StripUnusedMeshComponents, SettingsContent.stripUnusedMeshComponents);
-
-            if (targetGroup == BuildTargetGroup.PSP2)
-            {
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.PropertyField(m_VideoMemoryForVertexBuffers, SettingsContent.videoMemoryForVertexBuffers);
-                if (EditorGUI.EndChangeCheck())
-                {
-                    const int minVidMemForMesh = 0;
-                    const int maxVidMemForMesh = 192;
-                    if (m_VideoMemoryForVertexBuffers.intValue < minVidMemForMesh)
-                    {
-                        m_VideoMemoryForVertexBuffers.intValue = minVidMemForMesh;
-                    }
-                    else if (m_VideoMemoryForVertexBuffers.intValue > maxVidMemForMesh)
-                    {
-                        m_VideoMemoryForVertexBuffers.intValue = maxVidMemForMesh;
-                    }
-                }
-            }
 
             EditorGUILayout.Space();
         }

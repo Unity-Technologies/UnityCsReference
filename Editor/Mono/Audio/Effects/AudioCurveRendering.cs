@@ -135,7 +135,11 @@ namespace UnityEditor
         public static void DrawMinMaxFilledCurve(Rect r, AudioMinMaxCurveAndColorEvaluator eval)
         {
             HandleUtility.ApplyWireMaterial();
+            DrawMinMaxFilledCurveInternal(r, eval);
+        }
 
+        internal static void DrawMinMaxFilledCurveInternal(Rect r, AudioMinMaxCurveAndColorEvaluator eval)
+        {
             GL.Begin(GL.LINES);
 
             // Adjust by a half pixel to each side so that the transition covers a full pixel.

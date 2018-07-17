@@ -25,6 +25,9 @@ namespace UnityEngine.Experimental.Rendering
             m_OffsetUnits = offsetUnits;
             m_OffsetFactor = offsetFactor;
             m_DepthClip = Convert.ToByte(depthClip);
+            m_Padding1 = 0;
+            m_Padding2 = 0;
+            m_Padding3 = 0;
         }
 
         public CullMode cullingMode
@@ -55,5 +58,8 @@ namespace UnityEngine.Experimental.Rendering
         int m_OffsetUnits;
         float m_OffsetFactor;
         byte m_DepthClip;
+        byte m_Padding1;
+        byte m_Padding2;
+        byte m_Padding3;
     }
 }

@@ -87,6 +87,10 @@ namespace UnityEditor.PackageManager
         [NativeName("keywords")]
         private string[] m_Keywords = new string[0];
 
+        [SerializeField]
+        [NativeName("author")]
+        private AuthorInfo m_Author = new AuthorInfo();
+
         private PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
@@ -106,5 +110,6 @@ namespace UnityEditor.PackageManager
         public DependencyInfo[] dependencies { get { return m_Dependencies; } }
         public DependencyInfo[] resolvedDependencies { get { return m_ResolvedDependencies; } }
         public string[] keywords { get { return m_Keywords;  } }
+        public AuthorInfo author { get { return m_Author;  } }
     }
 }

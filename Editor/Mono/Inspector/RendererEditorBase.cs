@@ -325,7 +325,10 @@ namespace UnityEditor
         private SerializedProperty m_SortingLayerID;
         private SerializedProperty m_DynamicOccludee;
         private SerializedProperty m_RenderingLayerMask;
+        private SerializedProperty m_RendererPriority;
+
         static GUIContent m_RenderingLayerMaskStyle = EditorGUIUtility.TrTextContent("Rendering Layer Mask", "Mask that can be used with SRP DrawRenderers command to filter renderers outside of the normal layering system.");
+        static GUIContent m_RendererPriorityStyle = EditorGUIUtility.TrTextContent("Transparency Priority", "Priority used for sorting objects on top of material render queue.");
 
         protected Probes m_Probes;
 
@@ -335,6 +338,7 @@ namespace UnityEditor
             m_SortingLayerID = serializedObject.FindProperty("m_SortingLayerID");
             m_DynamicOccludee = serializedObject.FindProperty("m_DynamicOccludee");
             m_RenderingLayerMask = serializedObject.FindProperty("m_RenderingLayerMask");
+            m_RendererPriority = serializedObject.FindProperty("m_RendererPriority");
         }
 
         protected void RenderSortingLayerFields()
@@ -407,6 +411,26 @@ namespace UnityEditor
                 }
             }
             EditorGUI.showMixedValue = false;
+        }
+
+        protected void RenderRendererPriority()
+        {
+            RenderRendererPriority(m_RendererPriority);
+        }
+
+        internal static void RenderRendererPriority(SerializedProperty rendererPrority, bool useMiniStyle = false)
+        {
+            if (!SupportedRenderingFeatures.active.rendererSupportsRendererPriority)
+                return;
+
+            if (!useMiniStyle)
+            {
+                EditorGUILayout.PropertyField(rendererPrority, m_RendererPriorityStyle);
+            }
+            else
+            {
+                ModuleUI.GUIInt(m_RendererPriorityStyle, rendererPrority);
+            }
         }
 
         protected void RenderCommonProbeFields(bool useMiniStyle)

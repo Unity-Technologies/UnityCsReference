@@ -16,6 +16,8 @@ using UnityEditor.Modules;
 using UnityEditor.Build;
 using Mono.Cecil;
 using UnityEditor.Callbacks;
+using UnityEditor.Compilation;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor
 {
@@ -26,12 +28,15 @@ namespace UnityEditor
         private delegate Compatibility ValueSwitcher(Compatibility value);
         private bool m_HasModified;
         private string m_ReferencesUnityEngineModule;
+        private ReorderableList m_DefineConstraints;
 
         // Notes regarding Standalone target
         // Unlike other platforms, Standalone targets (OSX, Windows, Linux) are bundled as one target ("Standalone") in platform settings
         // That's why value m_CompatibleWithPlatform for <OSX, Windows, Linux> is controlled from two places:
         // * ShowGeneralOptions (when clicking on 'Standalone' toggle, it enables or disables all those targets)
         // * DesktopPluginImporterExtension (where it's possible to individually enable or disable specific Standalone target)
+
+        public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
 
         internal enum Compatibility : int
         {
@@ -44,6 +49,7 @@ namespace UnityEditor
         private Compatibility m_AutoReferenced;
         private Compatibility m_CompatibleWithEditor;
         private Compatibility[] m_CompatibleWithPlatform = new Compatibility[GetPlatformGroupArraySize()];
+        private List<DefineConstraint> m_DefineConstraintState = new List<DefineConstraint>();
 
         private readonly static BuildTarget[] m_StandaloneTargets = new BuildTarget[]
         {
@@ -54,6 +60,12 @@ namespace UnityEditor
             BuildTarget.StandaloneLinux64,
             BuildTarget.StandaloneLinuxUniversal
         };
+
+        internal class DefineConstraint
+        {
+            public string name;
+            public Compatibility displayValue;
+        }
 
         private Vector2 m_InformationScrollPosition = Vector2.zero;
         private Dictionary<string, string> m_PluginInformation;
@@ -246,8 +258,7 @@ namespace UnityEditor
             return filtered.ToArray();
         }
 
-        private delegate bool GetComptability(PluginImporter imp);
-        private void ResetCompatability(ref Compatibility value, GetComptability getComptability)
+        private void ResetCompatability(ref Compatibility value, Func<PluginImporter, bool> getComptability)
         {
             value = getComptability(importer) ? Compatibility.Compatible : Compatibility.NotCompatible;
             foreach (var imp in importers)
@@ -265,8 +276,37 @@ namespace UnityEditor
             base.ResetValues();
 
             m_HasModified = false;
+            m_DefineConstraintState.Clear();
 
-            ResetCompatability(ref m_CompatibleWithAnyPlatform, (imp => imp.GetCompatibleWithAnyPlatform()));
+            var minSizeOfDefines = importers.Min(x => x.DefineConstraints.Length);
+            string[] baseImporterDefineConstraints = importer.DefineConstraints;
+
+            foreach (var pluginImporter in importers)
+            {
+                var importerDefineConstraints = pluginImporter.DefineConstraints.Take(minSizeOfDefines).ToList();
+
+                for (var i = 0; i < importerDefineConstraints.Count; i++)
+                {
+                    var importerDefineConstraint = importerDefineConstraints[i];
+                    try
+                    {
+                        var symbolName = importerDefineConstraint.StartsWith(DefineConstraintsHelper.Not) ? importerDefineConstraint.Substring(1) : importerDefineConstraint;
+                        if (!SymbolNameRestrictions.IsValid(symbolName))
+                        {
+                            throw new PrecompiledAssemblyException($"Invalid define constraint {symbolName}", symbolName);
+                        }
+
+                        Compatibility mixedValue = importerDefineConstraints[i] != baseImporterDefineConstraints[i] ? Compatibility.Mixed : Compatibility.Compatible;
+                        m_DefineConstraintState.Add(new DefineConstraint { name = importerDefineConstraint, displayValue = mixedValue });
+                    }
+                    catch (PrecompiledAssemblyException exception)
+                    {
+                        Debug.LogException(exception, pluginImporter);
+                        m_HasModified = true;
+                    }
+                }
+            }
+
             ResetCompatability(ref m_CompatibleWithEditor, (imp => imp.GetCompatibleWithEditor()));
             ResetCompatability(ref m_AutoReferenced, (imp => !imp.IsExplicitlyReferenced));
             // If Any Platform is selected, initialize m_Compatible* variables using compatability function
@@ -331,8 +371,11 @@ namespace UnityEditor
         protected override void Apply()
         {
             base.Apply();
+            var constraints = m_DefineConstraintState.Where(x => x.displayValue > Compatibility.Mixed).Select(x => x.name).ToArray();
             foreach (var imp in importers)
             {
+                imp.DefineConstraints = constraints;
+
                 if (m_CompatibleWithAnyPlatform > Compatibility.Mixed)
                     imp.SetCompatibleWithAnyPlatform(m_CompatibleWithAnyPlatform == Compatibility.Compatible);
                 if (m_CompatibleWithEditor > Compatibility.Mixed)
@@ -421,6 +464,41 @@ namespace UnityEditor
             }
 
             m_ReferencesUnityEngineModule = importer.HasDiscouragedReferences();
+
+            m_DefineConstraints = new ReorderableList(m_DefineConstraintState, typeof(DefineConstraint), false, false, true, true);
+            m_DefineConstraints.drawElementCallback = DrawDefineConstraintListElement;
+            m_DefineConstraints.onRemoveCallback = RemoveDefineConstraintListElement;
+
+            m_DefineConstraints.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+            m_DefineConstraints.headerHeight = 3;
+        }
+
+        private void RemoveDefineConstraintListElement(ReorderableList list)
+        {
+            m_HasModified = true;
+            ReorderableList.defaultBehaviours.DoRemoveButton(list);
+        }
+
+        private void DrawDefineConstraintListElement(Rect rect, int index, bool isactive, bool isfocused)
+        {
+            var list = m_DefineConstraints.list;
+            var defineConstraint = list[index] as DefineConstraint;
+            rect.height -= EditorGUIUtility.standardVerticalSpacing;
+
+            string noValue = L10n.Tr("(Missing)");
+
+            var label = defineConstraint.name != null ? defineConstraint.name : noValue;
+
+            bool mixed = defineConstraint.displayValue == Compatibility.Mixed;
+            EditorGUI.showMixedValue = mixed;
+            var textFieldValue = EditorGUI.TextField(rect, mixed ? L10n.Tr("(Multiple Values)") : label);
+            EditorGUI.showMixedValue = false;
+
+            if (!string.IsNullOrEmpty(textFieldValue) && textFieldValue != noValue && defineConstraint.name != textFieldValue)
+            {
+                m_HasModified = true;
+                defineConstraint.name = textFieldValue;
+            }
         }
 
         new void OnDisable()
@@ -582,6 +660,9 @@ namespace UnityEditor
 
                 if (IsEditingPlatformSettingsSupported())
                     ShowPlatformSettings();
+
+                GUILayout.Label(defineConstraints, EditorStyles.boldLabel);
+                m_DefineConstraints.DoLayoutList();
             }
             ApplyRevertGUI();
 

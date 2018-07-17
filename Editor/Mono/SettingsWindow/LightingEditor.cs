@@ -124,11 +124,6 @@ namespace UnityEditor
 
         private void DrawGUI()
         {
-            if (m_RenderSettings == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings())
-            {
-                InitSettings();
-            }
-
             Material skyboxMaterial = m_SkyboxMaterial.objectReferenceValue as Material;
 
             m_bShowEnvironment = EditorGUILayout.FoldoutTitlebar(m_bShowEnvironment, Styles.env_top, true);
@@ -262,6 +257,11 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            if (m_RenderSettings == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings() || m_LightmapSettings == null || m_LightmapSettings.targetObject != LightmapEditorSettings.GetLightmapSettings())
+            {
+                InitSettings();
+            }
+
             m_RenderSettings.Update();
             m_LightmapSettings.Update();
 

@@ -190,7 +190,7 @@ namespace UnityEditor
                             break;
                     }
 
-                    buildCompletionHandler(report);
+                    buildCompletionHandler?.Invoke(report);
                 }
             }
 

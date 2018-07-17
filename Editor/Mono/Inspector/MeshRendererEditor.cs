@@ -99,6 +99,8 @@ namespace UnityEditor
 
             RenderRenderingLayer();
 
+            RenderRendererPriority();
+
             CullDynamicFieldGUI();
 
             serializedObject.ApplyModifiedProperties();

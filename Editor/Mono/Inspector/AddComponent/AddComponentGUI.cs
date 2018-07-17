@@ -31,7 +31,7 @@ namespace UnityEditor.AdvancedDropdown
                 return;
             }
 
-            GUILayout.Label("Name", EditorStyles.label);
+            GUILayout.Label(L10n.Tr("Name"), EditorStyles.label);
 
             EditorGUI.FocusTextInControl("NewScriptName");
             GUI.SetNextControlName("NewScriptName");
@@ -48,7 +48,7 @@ namespace UnityEditor.AdvancedDropdown
 
             using (new EditorGUI.DisabledScope(!canCreate))
             {
-                if (GUILayout.Button("Create and Add"))
+                if (GUILayout.Button(L10n.Tr("Create and Add")))
                 {
                     newScriptItem.Create(AddComponentWindow.s_AddComponentWindow.m_GameObjects);
                 }

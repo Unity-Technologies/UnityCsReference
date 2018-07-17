@@ -387,6 +387,7 @@ namespace UnityEditor
             public GUIContent flatten = EditorGUIUtility.TrTextContent("Flatten", "The Flatten button levels the whole terrain to the chosen height.");
 
             public GUIContent bakeLightProbesForTrees = EditorGUIUtility.TrTextContent("Bake Light Probes For Trees", "If the option is enabled, Unity will create internal light probes at the position of each tree (these probes are internal and will not affect other renderers in the scene) and apply them to tree renderers for lighting. Otherwise trees are still affected by LightProbeGroups. The option is only effective for trees that have LightProbe enabled on their prototype prefab.");
+            public GUIContent deringLightProbesForTrees = EditorGUIUtility.TrTextContent("Remove Light Probe Ringing", "When enabled, removes visible overshooting often observed as ringing on objects affected by intense lighting at the expense of reduced contrast.");
             public GUIContent refresh = EditorGUIUtility.TrTextContent("Refresh", "When you save a tree asset from the modelling app, you will need to click the Refresh button (shown in the inspector when the tree painting tool is selected) in order to see the updated trees on your terrain.");
 
             // Settings
@@ -1041,6 +1042,8 @@ namespace UnityEditor
             GUILayout.Label("Tree & Detail Objects", EditorStyles.boldLabel);
             m_Terrain.drawTreesAndFoliage = EditorGUILayout.Toggle(styles.drawTrees, m_Terrain.drawTreesAndFoliage);
             m_Terrain.bakeLightProbesForTrees = EditorGUILayout.Toggle(styles.bakeLightProbesForTrees, m_Terrain.bakeLightProbesForTrees);
+            using (new EditorGUI.DisabledScope(!m_Terrain.bakeLightProbesForTrees))
+                m_Terrain.deringLightProbesForTrees = EditorGUILayout.Toggle(styles.deringLightProbesForTrees, m_Terrain.deringLightProbesForTrees);
             m_Terrain.preserveTreePrototypeLayers = EditorGUILayout.Toggle(styles.preserveTreePrototypeLayers, m_Terrain.preserveTreePrototypeLayers);
             m_Terrain.detailObjectDistance = EditorGUILayout.Slider(styles.detailObjectDistance, m_Terrain.detailObjectDistance, 0, 250); // former string formatting: ""
             m_Terrain.collectDetailPatches = EditorGUILayout.Toggle(styles.collectDetailPatches, m_Terrain.collectDetailPatches);

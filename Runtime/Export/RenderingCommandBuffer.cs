@@ -312,7 +312,7 @@ namespace UnityEngine.Rendering
 
         public void DrawMeshInstancedIndirect(Mesh mesh, int submeshIndex, Material material, int shaderPass, ComputeBuffer bufferWithArgs)
         {
-            DrawMeshInstancedIndirect(mesh, submeshIndex, material, shaderPass, bufferWithArgs);
+            DrawMeshInstancedIndirect(mesh, submeshIndex, material, shaderPass, bufferWithArgs, 0, null);
         }
 
         public void SetRandomWriteTarget(int index, RenderTargetIdentifier rt)

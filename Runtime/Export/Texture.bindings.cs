@@ -36,6 +36,8 @@ namespace UnityEngine
         virtual public int height { get { return GetDataHeight(); } set { throw new NotImplementedException(); } }
         virtual public TextureDimension dimension { get { return GetDimension(); } set { throw new NotImplementedException(); } }
 
+        extern virtual public bool isReadable { get; }
+
         // Note: getter for "wrapMode" returns the U mode on purpose
         extern public TextureWrapMode wrapMode  {[NativeName("GetWrapModeU")] get; set; }
 
@@ -46,7 +48,6 @@ namespace UnityEngine
         extern public int anisoLevel { get; set; }
         extern public float mipMapBias { get; set; }
         extern public Vector2 texelSize {[NativeName("GetNpotTexelSize")] get; }
-
         extern public IntPtr GetNativeTexturePtr();
         [Obsolete("Use GetNativeTexturePtr instead.", false)]
         public int GetNativeTextureID() { return (int)GetNativeTexturePtr(); }
@@ -158,7 +159,7 @@ namespace UnityEngine
                 throw new UnityException("Failed to create texture because of invalid parameters.");
         }
 
-        [NativeName("GetIsReadable")]    extern private bool  IsReadable();
+        extern override public bool isReadable { get; }
         [NativeName("Apply")]            extern private void  ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
         [NativeName("Resize")]           extern private bool  ResizeImpl(int width, int height);
         [NativeName("SetPixel")]         extern private void  SetPixelImpl(int image, int x, int y, Color color);
@@ -285,7 +286,7 @@ namespace UnityEngine
         [FreeFunction(Name = "CubemapScripting::Apply", HasExplicitThis = true)]
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
 
-        [NativeName("GetIsReadable")] extern private bool  IsReadable();
+        extern override public bool isReadable { get; }
         [NativeName("SetPixel")]      extern private void  SetPixelImpl(int image, int x, int y, Color color);
         [NativeName("GetPixel")]      extern private Color GetPixelImpl(int image, int x, int y);
 
@@ -316,7 +317,7 @@ namespace UnityEngine
         extern public int depth {[NativeName("GetTextureLayerCount")] get; }
         extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
 
-        [NativeName("GetIsReadable")] extern private bool  IsReadable();
+        extern override public bool isReadable { get; }
 
         [FreeFunction("Texture3DScripting::Create")]
         extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags);
@@ -368,7 +369,7 @@ namespace UnityEngine
         extern public int depth {[NativeName("GetTextureLayerCount")] get; }
         extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
 
-        [NativeName("GetIsReadable")] extern private bool  IsReadable();
+        extern override public bool isReadable { get; }
 
         [FreeFunction("Texture2DArrayScripting::Create")]
         extern private static bool Internal_CreateImpl([Writable] Texture2DArray mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags);
@@ -420,7 +421,7 @@ namespace UnityEngine
         extern public int cubemapCount { get; }
         extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
 
-        [NativeName("GetIsReadable")] extern private bool  IsReadable();
+        extern override public bool isReadable { get; }
 
         [FreeFunction("CubemapArrayScripting::Create")]
         extern private static bool Internal_CreateImpl([Writable] CubemapArray mono, int ext, int count, GraphicsFormat format, TextureCreationFlags flags);

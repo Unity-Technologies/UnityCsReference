@@ -14,13 +14,11 @@ namespace UnityEditor
         private SerializedProperty m_Mesh;
         private SerializedProperty m_Convex;
         private SerializedProperty m_CookingOptions;
-        private SerializedProperty m_SkinWidth;
 
         static class Texts
         {
             public static GUIContent isTriggerText = EditorGUIUtility.TrTextContent("Is Trigger", "Is this collider a trigger? Triggers are only supported on convex colliders.");
             public static GUIContent convextText = EditorGUIUtility.TrTextContent("Convex", "Is this collider convex?");
-            public static GUIContent skinWidthText = EditorGUIUtility.TrTextContent("Skin Width", "How far out to inflate the mesh when building collision mesh.");
             public static GUIContent cookingOptionsText = EditorGUIUtility.TrTextContent("Cooking Options", "Options affecting the result of the mesh processing by the physics engine.");
         }
 
@@ -31,7 +29,6 @@ namespace UnityEditor
             m_Mesh = serializedObject.FindProperty("m_Mesh");
             m_Convex = serializedObject.FindProperty("m_Convex");
             m_CookingOptions = serializedObject.FindProperty("m_CookingOptions");
-            m_SkinWidth = serializedObject.FindProperty("m_SkinWidth");
         }
 
         private MeshColliderCookingOptions GetCookingOptions()
@@ -54,7 +51,6 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck() && m_Convex.boolValue == false)
             {
                 m_IsTrigger.boolValue = false;
-                SetCookingOptions(GetCookingOptions() & (~MeshColliderCookingOptions.InflateConvexMesh));
             }
 
             EditorGUI.indentLevel++;
@@ -63,13 +59,6 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_IsTrigger, Texts.isTriggerText);
             }
             EditorGUI.indentLevel--;
-
-            if (m_Convex.boolValue && (GetCookingOptions() & MeshColliderCookingOptions.InflateConvexMesh) != 0)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(m_SkinWidth, Texts.skinWidthText);
-                EditorGUI.indentLevel--;
-            }
 
             SetCookingOptions((MeshColliderCookingOptions)EditorGUILayout.EnumFlagsField(Texts.cookingOptionsText, GetCookingOptions()));
 

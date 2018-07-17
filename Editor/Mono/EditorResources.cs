@@ -148,9 +148,9 @@ namespace UnityEditor.Experimental
         }
 
         // Creates a new style catalog from a set of USS assets.
-        internal static StyleCatalog LoadCatalog(string[] ussPaths)
+        internal static StyleCatalog LoadCatalog(string[] ussPaths, bool useResolver = true)
         {
-            var catalog = new StyleCatalog();
+            var catalog = new StyleCatalog(useResolver);
             foreach (var path in ussPaths)
                 catalog.AddPath(path);
             catalog.Refresh();

@@ -161,7 +161,7 @@ namespace UnityEditor
 
             m_SupportsEmbeddedMaterials = serializedObject.FindProperty("m_SupportsEmbeddedMaterials");
 
-            m_SRGBMaterialColor = serializedObject.FindProperty("m_SRGBMaterialColor");
+            m_SRGBMaterialColor = serializedObject.FindProperty("m_UseSRGBMaterialColor");
 
             UpdateShowAllMaterialNameOptions();
         }

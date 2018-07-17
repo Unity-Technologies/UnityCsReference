@@ -15,7 +15,7 @@ namespace UnityEngine
         private static int s_HotTextField = -1;
 
         private static readonly int s_BoxHash               = "Box".GetHashCode();
-        private static readonly int s_ButonHash             = 2001146706;
+        private static readonly int s_ButonHash             = "Button".GetHashCode();
         private static readonly int s_RepeatButtonHash      = "repeatButton".GetHashCode();
         private static readonly int s_ToggleHash            = "Toggle".GetHashCode();
         private static readonly int s_ButtonGridHash        = "ButtonGrid".GetHashCode();
@@ -364,7 +364,7 @@ namespace UnityEngine
         public static bool Button(Rect position, GUIContent content, GUIStyle style)
         {
             GUIUtility.CheckOnGUI();
-            int id = GUIUtility.GetControlID(s_ButonHash, FocusType.Passive);
+            int id = GUIUtility.GetControlID(s_ButonHash, FocusType.Passive, position);
             return DoButton(position, id, content, style);
         }
 
@@ -926,10 +926,10 @@ namespace UnityEngine
                     }
                     break;
                 case EventType.KeyDown:
-                    if (evt.character == 32 && GUIUtility.GetControlID(FocusType.Keyboard) == id)
+                    if (evt.character == (char)KeyCode.Space && GUIUtility.keyboardControl == id)
                     {
-                        changed = true;
                         evt.Use();
+                        changed = true;
                         return !on;
                     }
                     break;
@@ -959,6 +959,10 @@ namespace UnityEngine
             if (evt.type != EventType.Repaint)
                 return;
             style.Draw(position, content, false, false, false, false);
+
+            // Is inside label AND inside guiclip visible rect (prevents tooltips on labels that are clipped)
+            if (!String.IsNullOrEmpty(content.tooltip) && position.Contains(evt.mousePosition) && GUIClip.visibleRect.Contains(evt.mousePosition))
+                GUIStyle.SetMouseTooltip(content.tooltip, position);
         }
 
         internal static bool DoToggle(Rect position, int id, bool value, GUIContent content, GUIStyle style)

@@ -34,15 +34,16 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (clampToParentEdges)
             {
-                if (rect.x < target.parent.layout.xMin)
-                    rect.x = target.parent.layout.xMin;
-                else if (rect.xMax > target.parent.layout.xMax)
-                    rect.x = target.parent.layout.xMax - rect.width;
+                Rect shadowRect = target.shadow.parent.rect;
+                if (rect.x < shadowRect.xMin)
+                    rect.x = shadowRect.xMin;
+                else if (rect.xMax > shadowRect.xMax)
+                    rect.x = shadowRect.xMax - rect.width;
 
-                if (rect.y < target.parent.layout.yMin)
-                    rect.y = target.parent.layout.yMin;
-                else if (rect.yMax > target.parent.layout.yMax)
-                    rect.y = target.parent.layout.yMax - rect.height;
+                if (rect.y < shadowRect.yMin)
+                    rect.y = shadowRect.yMin;
+                else if (rect.yMax > shadowRect.yMax)
+                    rect.y = shadowRect.yMax - rect.height;
 
                 // Reset size, we never intended to change them in the first place
                 rect.width = width;

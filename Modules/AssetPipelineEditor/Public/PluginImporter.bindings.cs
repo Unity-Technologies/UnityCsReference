@@ -27,6 +27,9 @@ namespace UnityEditor
         [NativeProperty("IsExplicitlyReferenced")]
         internal extern bool IsExplicitlyReferenced { get; set; }
 
+        [NativeProperty("DefineConstraints")]
+        public extern string[] DefineConstraints { get; set; }
+
         public static PluginImporter[] GetImporters(string platformName)
         {
             // The final list of importers that will be returned

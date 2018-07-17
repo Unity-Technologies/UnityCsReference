@@ -71,7 +71,6 @@ namespace UnityEditor
                 { EditorGUIUtility.TrTextContent("Your license does not cover Apple TV Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Android Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Xbox One Publishing. Please see the Xbox One section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover PS Vita Publishing. Please see the PS Vita section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover PS4 Publishing. Please see the PS4 section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
@@ -88,7 +87,6 @@ namespace UnityEditor
                 { EditorGUIUtility.TrTextContent("Apple TV Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Android Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Xbox One Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("PS Vita Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("PS4 Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Universal Windows Platform Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
@@ -501,7 +499,7 @@ namespace UnityEditor
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {
-            if (moduleName == "PS4" || moduleName == "PSP2" || moduleName == "XboxOne")
+            if (moduleName == "PS4" || moduleName == "XboxOne")
                 return "https://unity3d.com/platform-installation";
 
             string fullVersion = InternalEditorUtility.GetFullUnityVersion();

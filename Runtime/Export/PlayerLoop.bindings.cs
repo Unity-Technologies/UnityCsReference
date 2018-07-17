@@ -36,7 +36,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct GpuTimestamp {}
         [RequiredByNativeCode]
-        public struct UnityConnectClientUpdate {}
+        public struct AnalyticsCoreStatsUpdate {}
         [RequiredByNativeCode]
         public struct UnityWebRequestUpdate {}
         [RequiredByNativeCode]

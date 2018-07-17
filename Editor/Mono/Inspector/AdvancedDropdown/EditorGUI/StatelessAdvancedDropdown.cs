@@ -96,7 +96,7 @@ namespace UnityEditor
             var content = new GUIContent(contentLabel);
 
             int id =  EditorGUIUtility.GetControlID("AdvancedDropdown".GetHashCode(), FocusType.Keyboard, rect);
-            if (EditorGUI.DropdownButton(id, rect, content, "MiniPullDown"))
+            if (EditorGUI.DropdownButton(id, rect, content, style))
             {
                 s_CurrentControl = id;
                 ResetAndCreateWindow();

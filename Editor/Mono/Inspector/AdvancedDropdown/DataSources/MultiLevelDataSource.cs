@@ -34,7 +34,7 @@ namespace UnityEditor.AdvancedDropdown
                     var path = paths[j];
                     if (j == paths.Length - 1)
                     {
-                        var element = new AdvancedDropdownItem(path, menuPath, i);
+                        var element = new AdvancedDropdownItem(path, path, menuPath, i);
                         element.SetParent(parent);
                         parent.AddChild(element);
                         m_SearchableElements.Add(element);

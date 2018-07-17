@@ -15,11 +15,11 @@ namespace UnityEditor.AdvancedDropdown
         {
         }
 
-        public ComponentDropdownItem(string path, int menuPath) : base(path, menuPath)
+        public ComponentDropdownItem(string name, string localizedName, int index) : base(name, localizedName, index)
         {
         }
 
-        public ComponentDropdownItem(string name, string menuPath, string command) : base(name, -1)
+        public ComponentDropdownItem(string name, string localizedName, string menuPath, string command) : base(name, localizedName, menuPath, -1)
         {
             m_MenuPath = menuPath;
             m_IsLegacy = menuPath.Contains("Legacy");
@@ -34,7 +34,7 @@ namespace UnityEditor.AdvancedDropdown
             else
             {
                 var classId = int.Parse(command);
-                m_Content = new GUIContent(name, AssetPreview.GetMiniTypeThumbnailFromClassID(classId));
+                m_Content = new GUIContent(localizedName, AssetPreview.GetMiniTypeThumbnailFromClassID(classId));
             }
             m_ContentWhenSearching = new GUIContent(m_Content);
             if (m_IsLegacy)

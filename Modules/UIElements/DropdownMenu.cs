@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class ContextualMenu
+    public class DropdownMenu
     {
         public class EventInfo
         {
@@ -93,7 +93,7 @@ namespace UnityEngine.Experimental.UIElements
             public void UpdateActionStatus(EventInfo eventInfo)
             {
                 this.eventInfo = eventInfo;
-                status = (actionStatusCallback != null ? actionStatusCallback(this) : StatusFlags.Hidden);
+                status = actionStatusCallback?.Invoke(this) ?? StatusFlags.Hidden;
             }
 
             public void Execute()
@@ -150,7 +150,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public void PrepareForDisplay(EventBase e)
         {
-            m_EventInfo = new EventInfo(e);
+            m_EventInfo = e != null ? new EventInfo(e) : null;
 
             if (menuItems.Count == 0)
                 return;

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using UnityEditor.Experimental;
 using UnityEngine;
 using UnityEngine.StyleSheets;
@@ -705,12 +706,17 @@ namespace UnityEditor.StyleSheets
 
         private StyleBlock[] m_Blocks;
         private readonly Dictionary<int, string> m_NameCollisionTable = new Dictionary<int, string>();
+        private bool m_UseResolver;
 
         public string[] sheets { get; private set; } = {};
         internal StyleBuffers buffers { get; private set; }
 
-        public StyleCatalog()
+        public bool resolveExtend = true;
+        public bool resolveVariable = true;
+
+        public StyleCatalog(bool useResolver = true)
         {
+            m_UseResolver = useResolver;
             buffers = new StyleBuffers();
         }
 
@@ -768,6 +774,11 @@ namespace UnityEditor.StyleSheets
             return GetStyle(selectorName.GetHashCode(), states);
         }
 
+        public StyleBlock GetComposedStyle(int selectorKey, params StyleState[] states)
+        {
+            return GetStyle(selectorKey, states.Concat(new[] {StyleState.normal}).ToArray());
+        }
+
         public bool AddPath(string ussPath)
         {
             if (sheets.Contains(ussPath))
@@ -799,14 +810,26 @@ namespace UnityEditor.StyleSheets
 
             m_NameCollisionTable.Clear();
 
-            for (int i = 0; i < sheets.Length; ++i)
+            if (m_UseResolver)
             {
-                var path = sheets[i];
-                var styleSheet = EditorResources.Load<UnityEngine.Object>(path, false) as StyleSheet;
-                if (!styleSheet)
-                    continue;
+                var resolver = new StyleSheetResolver();
+                resolver.AddStyleSheets(sheets);
+                resolver.ResolveSheets();
+                if (resolveExtend)
+                    resolver.ResolveExtend();
+                Compile(resolver, numbers, colors, strings, rects, groups, blocks);
+            }
+            else
+            {
+                for (int i = 0; i < sheets.Length; ++i)
+                {
+                    var path = sheets[i];
+                    var styleSheet = EditorResources.Load<UnityEngine.Object>(path, false) as StyleSheet;
+                    if (!styleSheet)
+                        continue;
 
-                CompileSheet(styleSheet, numbers, colors, strings, rects, groups, blocks);
+                    CompileSheet(styleSheet, numbers, colors, strings, rects, groups, blocks);
+                }
             }
 
             buffers = new StyleBuffers
@@ -821,6 +844,7 @@ namespace UnityEditor.StyleSheets
             m_Blocks = blocks.ToArray();
         }
 
+        #region StyleSheetCompilation
         private void CompileSheet(StyleSheet styleSheet,
             List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups,
             List<StyleBlock> blocks)
@@ -1096,5 +1120,325 @@ namespace UnityEditor.StyleSheets
 
             return bufferIndex;
         }
+
+        #endregion
+
+        #region StyleResolverCompilation
+        private void Compile(StyleSheetResolver resolver,
+            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups,
+            List<StyleBlock> blocks)
+        {
+            foreach (var rule in resolver.Rules.Values)
+            {
+                // We do not yet support block with multiple selectors.
+                if (rule.Selector.selectors.Length != 1 || rule.Selector.selectors[0].parts.Length == 0)
+                    continue;
+
+                var selector = rule.Selector.selectors[0];
+                string blockName = GetSelectorKeyName(selector);
+                StyleState stateFlags = GetSelectorStateFlags(selector);
+
+                List<StyleValue> values = new List<StyleValue>(rule.Properties.Count);
+                foreach (var property in rule.Properties.Values)
+                {
+                    var newValue = CompileValue(resolver, property, stateFlags, numbers, colors, strings, rects, groups);
+                    values.Add(newValue);
+                }
+
+                if (CompileElement(blockName, blocks, values.ToArray()))
+                    blocks.Sort((l, r) => l.name.CompareTo(r.name));
+            }
+        }
+
+        private StyleValue CompileValue(StyleSheetResolver resolver, StyleSheetResolver.Property property, StyleState stateFlags,
+            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups)
+        {
+            var values = resolveVariable ? resolver.ResolveValues(property) : property.Values;
+            if (values.Count == 1)
+            {
+                return CompileBaseValue(property.Name, stateFlags, values[0], numbers, colors, strings);
+            }
+
+            if (values.Count == 2 &&
+                values[0].ValueType == StyleValueType.Float &&
+                values[1].ValueType == StyleValueType.Float)
+                return CompileRect(property.Name, values, stateFlags, rects, 0, 1, 0, 1);
+
+            if (values.Count == 3 &&
+                values[0].ValueType == StyleValueType.Float &&
+                values[1].ValueType == StyleValueType.Float &&
+                values[2].ValueType == StyleValueType.Float)
+                return CompileRect(property.Name, values, stateFlags, rects, 0, 1, 2, 1);
+
+            if (values.Count == 4 &&
+                values[0].ValueType == StyleValueType.Float &&
+                values[1].ValueType == StyleValueType.Float &&
+                values[2].ValueType == StyleValueType.Float &&
+                values[3].ValueType == StyleValueType.Float)
+                return CompileRect(property.Name, values, stateFlags, rects, 0, 1, 2, 3);
+
+            // Compile list of primitive values
+            if (values.Count >= 2 && values.Count <= 5)
+                return CompileValueGroup(property.Name, values, stateFlags, groups, numbers, colors, strings);
+
+            // Value form not supported, lets report it and keep a undefined value to the property.
+            Debug.LogWarning($"Failed to compile style block property {property.Name} " +
+                $"with {values.Count} values");
+            return StyleValue.Undefined(GetNameKey(property.Name), stateFlags);
+        }
+
+        private StyleValue CompileRect(string propertyName, List<StyleSheetResolver.Value> values, StyleState stateFlags,
+            IList<StyleRect> rects, int topIndex, int rightIndex, int bottomIndex, int leftIndex)
+        {
+            return new StyleValue
+            {
+                key = GetNameKey(propertyName),
+                state = stateFlags,
+                type = StyleValue.Type.Rect,
+                index = SetIndex(rects, new StyleRect
+                {
+                    top = values[topIndex].AsFloat(),
+                    right = values[rightIndex].AsFloat(),
+                    bottom = values[bottomIndex].AsFloat(),
+                    left = values[leftIndex].AsFloat()
+                })
+            };
+        }
+
+        private StyleValue CompileValueGroup(string propertyName, List<StyleSheetResolver.Value> values, StyleState stateFlags, List<StyleValueGroup> groups, List<float> numbers, List<Color> colors, List<string> strings)
+        {
+            int propertyKey = GetNameKey(propertyName);
+            StyleValueGroup vg = new StyleValueGroup(propertyKey, values.Count);
+            for (int i = 0; i < values.Count; ++i)
+                vg[i] = CompileBaseValue(propertyName, stateFlags, values[i], numbers, colors, strings);
+
+            return new StyleValue
+            {
+                key = propertyKey,
+                state = stateFlags,
+                type = StyleValue.Type.Group,
+                index = SetIndex(groups, vg)
+            };
+        }
+
+        private StyleValue CompileBaseValue(string propertyName, StyleState stateFlags, StyleSheetResolver.Value value, List<float> numbers, List<Color> colors, List<string> strings)
+        {
+            return new StyleValue
+            {
+                key = GetNameKey(propertyName),
+                state = stateFlags,
+                type = ReduceStyleValueType(value),
+                index = MergeValue(value, numbers, colors, strings)
+            };
+        }
+
+        private static StyleValue.Type ReduceStyleValueType(StyleSheetResolver.Value value)
+        {
+            switch (value.ValueType)
+            {
+                case StyleValueType.Color:
+                case StyleValueType.Float:
+                case StyleValueType.Keyword:
+                    return (StyleValue.Type)value.ValueType;
+                case StyleValueType.AssetReference:
+                case StyleValueType.ResourcePath:
+                case StyleValueType.Enum:
+                    var str = value.AsString();
+                    // Try a few conversions
+                    Color parsedColor;
+                    if (ColorUtility.TryParseHtmlString(str, out parsedColor))
+                        return StyleValue.Type.Color;
+
+                    return StyleValue.Type.Text;
+                case StyleValueType.String:
+                {
+                    return StyleValue.Type.Text;
+                }
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        private static int MergeValue(StyleSheetResolver.Value value,
+            List<float> numbers, List<Color> colors, List<string> strings)
+        {
+            switch (value.ValueType)
+            {
+                case StyleValueType.Keyword:
+                    return (int)StyleValue.ConvertKeyword(value.AsKeyword());
+                case StyleValueType.Float:
+                    return SetIndex(numbers, value.AsFloat());
+                case StyleValueType.Color:
+                    return SetIndex(colors, value.AsColor());
+                case StyleValueType.ResourcePath:
+                    return SetIndex(strings, value.ToString());
+                case StyleValueType.Enum:
+                    var str = value.AsString();
+                    // Try a few conversions
+                    Color parsedColor;
+                    if (ColorUtility.TryParseHtmlString(str, out parsedColor))
+                        return SetIndex(colors, parsedColor);
+                    return SetIndex(strings, str);
+                case StyleValueType.String:
+                {
+                    return SetIndex(strings, value.AsString());
+                }
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        #endregion
+
+        #region ComparisonUtilities
+        public bool CompareCatalog(StyleCatalog catalog, out string msg)
+        {
+            var sb = new StringBuilder();
+            CompareBlocks(catalog, "Missing Styles", sb);
+            catalog.CompareBlocks(this, "Sup Styles", sb);
+
+            if (sb.Length > 0)
+            {
+                msg = sb.ToString();
+                return false;
+            }
+
+            // All the blocks are the same, compare their values;
+            foreach (var catBlock in catalog.m_Blocks)
+            {
+                var blockName = m_NameCollisionTable[catBlock.name];
+                var block = m_Blocks[FindStyleIndex(catBlock.name)];
+
+                if (catBlock.name != block.name)
+                {
+                    sb.AppendLine("Block ordering not the same: " + blockName);
+                    break;
+                }
+
+                if (!block.states.Equals(catBlock.states))
+                {
+                    sb.AppendLine("Differences in States in block: " + blockName);
+                }
+                else if (block.values.Length != catBlock.values.Length)
+                {
+                    sb.AppendLine("Not same number of values in block: " + blockName);
+                }
+                else
+                {
+                    for (var i = 0; i < block.values.Length; ++i)
+                    {
+                        var value1 = block.values[i];
+                        var value2Index = GetComparableValue(value1, catBlock);
+                        if (value2Index == -1)
+                        {
+                            sb.AppendLine($"Property {m_NameCollisionTable[value1.key]} not found in block {blockName}");
+                            continue;
+                        }
+
+                        var value2 = catBlock.values[value2Index];
+                        if (value1.type != value2.type)
+                        {
+                            sb.AppendLine($"Property: {m_NameCollisionTable[value1.key]} has different type in block {blockName}");
+                        }
+                        else if (!CompareValue(block, value1, catBlock, value2))
+                        {
+                            sb.AppendLine($"Property: {m_NameCollisionTable[value1.key]} has different value in block {blockName}");
+                        }
+                    }
+                }
+            }
+
+            msg = sb.ToString();
+            return msg.Length == 0;
+        }
+
+        bool CompareBlocks(StyleCatalog catalog, string title, StringBuilder sb)
+        {
+            var sameStyles = true;
+            foreach (var block in m_Blocks)
+            {
+                if (catalog.FindStyleIndex(block.name) == -1)
+                {
+                    if (sameStyles)
+                    {
+                        sb.AppendLine(title);
+                        sameStyles = false;
+                    }
+                    sb.AppendLine("    " + m_NameCollisionTable[block.name]);
+                }
+            }
+
+            return sameStyles;
+        }
+
+        static int GetComparableValue(StyleValue v1, StyleBlock block)
+        {
+            for (var valueIndex = 0; valueIndex < block.values.Length; ++valueIndex)
+            {
+                var v2 = block.values[valueIndex];
+                if (v1.key == v2.key && v1.state == v2.state)
+                {
+                    return valueIndex;
+                }
+            }
+
+            return -1;
+        }
+
+        static bool CompareValue(StyleBlock b1, StyleValue value1, StyleBlock b2, StyleValue value2)
+        {
+            switch (value1.type)
+            {
+                case StyleValue.Type.Color:
+                {
+                    var v1 = b1.GetColor(value1.key);
+                    var v2 = b2.GetColor(value2.key);
+                    return v1 == v2;
+                }
+                case StyleValue.Type.Keyword:
+                {
+                    var v1 = b1.GetKeyword(value1.key);
+                    var v2 = b2.GetKeyword(value2.key);
+                    return v1 == v2;
+                }
+                case StyleValue.Type.Number:
+                {
+                    var v1 = b1.GetFloat(value1.key);
+                    var v2 = b2.GetFloat(value2.key);
+                    return Mathf.Abs(v1 - v2) < 0.001f;
+                }
+                case StyleValue.Type.Text:
+                {
+                    var v1 = b1.GetText(value1.key);
+                    var v2 = b2.GetText(value2.key);
+                    return v1 == v2;
+                }
+                case StyleValue.Type.Group:
+                {
+                    var group1 = b1.catalog.buffers.groups[value1.index];
+                    var group2 = b2.catalog.buffers.groups[value2.index];
+
+                    return CompareValue(b1, group1.v1, b2, group2.v1) &&
+                        CompareValue(b1, group1.v2, b2, group2.v2) &&
+                        CompareValue(b1, group1.v3, b2, group2.v3) &&
+                        CompareValue(b1, group1.v4, b2, group2.v4) &&
+                        CompareValue(b1, group1.v5, b2, group2.v5);
+                }
+                case StyleValue.Type.Rect:
+                {
+                    var v1 = b1.catalog.buffers.rects[value1.index];
+                    var v2 = b2.catalog.buffers.rects[value2.index];
+                    return Mathf.Abs(v1.left - v2.left) < 0.001f ||
+                        Mathf.Abs(v1.right - v2.right) < 0.001f ||
+                        Mathf.Abs(v1.top - v2.top) < 0.001f ||
+                        Mathf.Abs(v1.bottom - v2.bottom) < 0.001f;
+                }
+            }
+
+            return true;
+        }
+
+        #endregion
     }
 }

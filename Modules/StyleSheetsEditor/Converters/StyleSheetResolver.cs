@@ -204,7 +204,10 @@ namespace UnityEditor.StyleSheets
         public void AddStyleSheet(string sheetPath)
         {
             var sheet = ConverterUtils.LoadResourceRequired<StyleSheet>(sheetPath);
-            Sheets.Add(sheet);
+            if (sheet != null)
+            {
+                Sheets.Add(sheet);
+            }
         }
 
         public void AddStyleSheets(params string[] sheetPaths)
@@ -305,6 +308,12 @@ namespace UnityEditor.StyleSheets
             // Apply Derivations:
             foreach (var derivation in derivations)
             {
+                if (derivation.ParentRule == null)
+                {
+                    Debug.LogWarning("Cannot resolve parent rule: " + derivation.ParentSelectorName);
+                    continue;
+                }
+
                 var extendedRules = derivation.ParentRule.ResolveExtendedRules(this);
                 foreach (var childrenRule in derivation.ChildrenRules)
                 {
@@ -339,6 +348,32 @@ namespace UnityEditor.StyleSheets
             return ConvertToStyleSheet(Rules.Values, Variables, Options);
         }
 
+        public List<Value> ResolveValues(Property property)
+        {
+            return ResolveValues(property, Variables, Options);
+        }
+
+        public static List<Value> ResolveValues(Property property, Dictionary<string, Property> variables, ResolvingOptions options)
+        {
+            if (property.Values.Count == 1 &&
+                property.Values[0].ValueType == StyleValueType.Enum &&
+                property.Values[0].AsString().StartsWith("--"))
+            {
+                Property varProperty;
+                if (variables.TryGetValue(property.Values[0].AsString(), out varProperty))
+                {
+                    return varProperty.Values;
+                }
+                else if (options.ThrowIfCannotResolve)
+                {
+                    throw new Exception("Cannot resolve variable: " + property.Values[0].AsString());
+                    // Debug.Log("Cannot resolve variable: " + property.Values[0].AsString());
+                }
+            }
+
+            return property.Values;
+        }
+
         public static StyleSheet ConvertToStyleSheet(IEnumerable<Rule> rules, Dictionary<string, Property> variables = null, ResolvingOptions options = null)
         {
             options = options ?? new ResolvingOptions();
@@ -357,27 +392,9 @@ namespace UnityEditor.StyleSheets
                 foreach (var property in propertyValues)
                 {
                     helper.builder.BeginProperty(property.Name);
-                    var values = property.Values;
-                    Property varProperty;
-
                     // Try to resolve variable
-                    if (property.Values.Count == 1 &&
-                        property.Values[0].ValueType == StyleValueType.Enum &&
-                        property.Values[0].AsString().StartsWith("--"))
-                    {
-                        if (variables.TryGetValue(property.Values[0].AsString(), out varProperty))
-                        {
-                            values = varProperty.Values;
-                        }
-                        else if (options.ThrowIfCannotResolve)
-                        {
-                            throw new Exception("Cannot resolve variable: " + property.Values[0].AsString());
-                            // Debug.Log("Cannot resolve variable: " + property.Values[0].AsString());
-                        }
-                    }
-
+                    var values = ResolveValues(property, variables, options);
                     AddValues(helper, values);
-
                     helper.builder.EndProperty();
                 }
                 helper.EndRule();
@@ -455,37 +472,27 @@ namespace UnityEditor.StyleSheets
             {
                 var selectorName = StyleSheetToUss.ToUssSelector(complexSelector);
                 Rule aggregateRule;
-                if (Rules.TryGetValue(selectorName, out aggregateRule))
-                {
-                    // Override existing properties and append new ones:
-                    foreach (var property in complexSelector.rule.properties)
-                    {
-                        Property dstProp;
-                        if (aggregateRule.Properties.TryGetValue(property.name, out dstProp))
-                        {
-                            dstProp.Values = ToValues(property, sheet);
-                        }
-                        else
-                        {
-                            dstProp = AddProperty(aggregateRule, property, sheet);
-                        }
-                        if (dstProp.Name.StartsWith("--"))
-                        {
-                            Variables.Set(dstProp.Name, dstProp);
-                        }
-                    }
-                }
-                else
+                if (!Rules.TryGetValue(selectorName, out aggregateRule))
                 {
                     aggregateRule = new Rule(selectorName, complexSelector);
                     Rules.Add(selectorName, aggregateRule);
-                    foreach (var property in complexSelector.rule.properties)
+                }
+
+                // Override existing properties and append new ones:
+                foreach (var property in complexSelector.rule.properties)
+                {
+                    Property dstProp;
+                    if (aggregateRule.Properties.TryGetValue(property.name, out dstProp))
                     {
-                        var dstProp = AddProperty(aggregateRule, property, sheet);
-                        if (dstProp.Name.StartsWith("--"))
-                        {
-                            Variables.Set(dstProp.Name, dstProp);
-                        }
+                        dstProp.Values = ToValues(property, sheet);
+                    }
+                    else
+                    {
+                        dstProp = AddProperty(aggregateRule, property, sheet);
+                    }
+                    if (dstProp.Name.StartsWith("--"))
+                    {
+                        Variables.Set(dstProp.Name, dstProp);
                     }
                 }
 
@@ -516,7 +523,15 @@ namespace UnityEditor.StyleSheets
         private static Property AddProperty(Rule aggregate, StyleProperty property, StyleSheet srcSheet)
         {
             var dstProperty = new Property(property.name) { Values = ToValues(property, srcSheet) };
-            aggregate.Properties.Add(property.name, dstProperty);
+            if (!aggregate.Properties.ContainsKey(property.name))
+            {
+                aggregate.Properties.Add(property.name, dstProperty);
+            }
+            else
+            {
+                Debug.LogWarning("Duplicate property");
+            }
+
             return dstProperty;
         }
 

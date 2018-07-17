@@ -22,7 +22,11 @@ namespace UnityEditor.AdvancedDropdown
         private string m_Name;
         public string name => m_Name;
 
-        public string searchableName => m_Id;
+        private string m_LocalizedName;
+        public string localizedName => m_LocalizedName;
+
+        public string searchableName => m_Name;
+        public string searchableNameLocalized => m_LocalizedName;
 
         private string m_Id;
         public string id => m_Id;
@@ -68,11 +72,16 @@ namespace UnityEditor.AdvancedDropdown
         {
         }
 
-        public AdvancedDropdownItem(string name, string id, int index)
+        public AdvancedDropdownItem(string name, string localizedName, int index) : this(name, localizedName, name, index)
         {
-            m_Content = new GUIContent(name);
-            m_ContentWhenSearching = new GUIContent(id);
+        }
+
+        public AdvancedDropdownItem(string name, string localizedName, string id, int index)
+        {
+            m_Content = new GUIContent(localizedName);
+            m_ContentWhenSearching = new GUIContent(localizedName);
             m_Name = name;
+            m_LocalizedName = localizedName;
             m_Id = id;
             m_Index = index;
         }

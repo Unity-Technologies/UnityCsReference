@@ -667,12 +667,11 @@ namespace UnityEditor
 
             if (data.defineConstraints != null)
             {
-                const string not = "!";
                 foreach (var defineConstaint in data.defineConstraints)
                 {
                     try
                     {
-                        var symbolName = defineConstaint.StartsWith(not) ? defineConstaint.Substring(1) : defineConstaint;
+                        var symbolName = defineConstaint.StartsWith(DefineConstraintsHelper.Not) ? defineConstaint.Substring(1) : defineConstaint;
                         if (!SymbolNameRestrictions.IsValid(symbolName))
                         {
                             throw new AssemblyDefinitionException($"Invalid define constraint {symbolName}", path);

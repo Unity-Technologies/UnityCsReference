@@ -17,6 +17,7 @@ namespace UnityEngine.Experimental.Rendering
         QuantizedFrontToBack = (1 << 3), // front to back by quantized distance
         OptimizeStateChanges = (1 << 4), // combination of: static batching, lightmaps, material sort key, geometry ID
         CanvasOrder = (1 << 5), // same distance sort priority (used in Canvas)
+        RendererPriority = (1 << 6), // by renderer priority (if render queues are not equal)
 
         CommonOpaque = SortingLayer | RenderQueue | QuantizedFrontToBack | OptimizeStateChanges | CanvasOrder,
         CommonTransparent = SortingLayer | RenderQueue | BackToFront | OptimizeStateChanges,

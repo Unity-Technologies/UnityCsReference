@@ -159,6 +159,8 @@ namespace UnityEngine
 
         extern public bool bakeLightProbesForTrees { get; set; }
 
+        extern public bool deringLightProbesForTrees { get; set; }
+
         extern public bool preserveTreePrototypeLayers { get; set; }
 
         extern public static Terrain activeTerrain { get; }

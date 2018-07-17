@@ -10,7 +10,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public void DisplayMenu(EventBase triggerEvent, IEventHandler target)
         {
-            ContextualMenu menu = new ContextualMenu();
+            DropdownMenu menu = new DropdownMenu();
 
             using (ContextualMenuPopulateEvent cme = ContextualMenuPopulateEvent.GetPooled(triggerEvent, menu, target, this))
             {
@@ -18,6 +18,6 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        protected internal abstract void DoDisplayMenu(ContextualMenu menu, EventBase triggerEvent);
+        protected internal abstract void DoDisplayMenu(DropdownMenu menu, EventBase triggerEvent);
     }
 }

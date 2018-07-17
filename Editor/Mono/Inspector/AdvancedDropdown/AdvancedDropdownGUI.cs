@@ -104,7 +104,7 @@ namespace UnityEditor.AdvancedDropdown
 
         public void DrawHeader(AdvancedDropdownItem group, Action backButtonPressed)
         {
-            var content = GUIContent.Temp(group.name, group.name);
+            var content = group.content;
             m_HeaderRect = GUILayoutUtility.GetRect(content, Styles.header, GUILayout.ExpandWidth(true));
 
             if (Event.current.type == EventType.Repaint)
