@@ -136,6 +136,11 @@ namespace UnityEngine
         {
             return new Vector3Int(a.x - b.x, a.y - b.y, a.z - b.z);
         }
+        
+        public static Vector3Int operator-(Vector3Int a)
+        {
+            return new Vector3Int(-a.x, -a.y, -a.z);
+        }
 
         public static Vector3Int operator*(Vector3Int a, Vector3Int b)
         {
