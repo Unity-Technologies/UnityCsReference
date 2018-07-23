@@ -584,7 +584,7 @@ namespace UnityEditor
 
             EditorGUI.indentLevel += 1;
 
-            float show = m_AnimShowAreaOptions.faded;
+            float show = m_AnimShowShadowOptions.faded;
 
             // Baked Shadow radius
             if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowRadiusOptions.faded))
