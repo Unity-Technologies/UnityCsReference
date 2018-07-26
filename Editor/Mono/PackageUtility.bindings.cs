@@ -60,6 +60,8 @@ namespace UnityEditor
         public static extern ExportPackageItem[] BuildExportPackageItemsList(string[] guids, bool dependencies);
         [NativeThrows]
         public static extern void ExportPackage(string[] guids, string fileName);
+        [NativeThrows]
+        public static extern void ExportPackageAndPackageManagerManifest(string[] guids, string fileName);
         public static extern ImportPackageItem[] ExtractAndPrepareAssetList(string packagePath, out string packageIconPath, out bool canPerformReInstall);
 
         [FreeFunction("DelayedImportPackageAssets")]

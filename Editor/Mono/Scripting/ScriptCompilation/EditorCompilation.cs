@@ -879,7 +879,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     // Copy from tempBuildDirectory to assembly output directory
                     if (!CopyAssembly(AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath))
                     {
-                        messages.Add(new CompilerMessage { message = string.Format("Copying assembly from directory {0} to {1} failed", tempBuildDirectory, assembly.OutputDirectory), type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
+                        messages.Add(new CompilerMessage { message = string.Format("Copying assembly from '{0}' to '{1}' failed", AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath), type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
                         StopCompilationTask();
                         InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
                         return;

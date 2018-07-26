@@ -28,6 +28,14 @@ namespace UnityEngine.U2D
             return false;
         }
 
+        public static event Action<SpriteAtlas> atlasRegistered = null;
+
+        [RequiredByNativeCode]
+        private static void PostRegisteredAtlas(SpriteAtlas spriteAtlas)
+        {
+            atlasRegistered?.Invoke(spriteAtlas);
+        }
+
         extern internal static void Register(SpriteAtlas spriteAtlas);
     }
 
@@ -41,6 +49,8 @@ namespace UnityEngine.U2D
         extern public bool isVariant {[NativeMethod("IsVariant")] get; }
         extern public string tag { get; }
         extern public int spriteCount { get; }
+
+        extern public bool CanBindTo(Sprite sprite);
 
         extern public Sprite GetSprite(string name);
         public int GetSprites(Sprite[] sprites) { return GetSpritesScripting(sprites); }

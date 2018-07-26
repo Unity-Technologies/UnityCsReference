@@ -68,6 +68,7 @@ namespace UnityEditor
                 public readonly GUIContent LightmappingMode = EditorGUIUtility.TrTextContent("Mode", "Specifies the light mode used to determine if and how a light will be baked. Possible modes are Baked, Mixed, and Realtime.");
                 public readonly GUIContent LightBounceIntensity = EditorGUIUtility.TrTextContent("Indirect Multiplier", "Controls the intensity of indirect light being contributed to the scene. A value of 0 will cause Realtime lights to be removed from realtime global illumination and Baked and Mixed lights to no longer emit indirect lighting. Has no effect when both Realtime and Baked Global Illumination are disabled.");
                 public readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadow Type", "Specifies whether Hard Shadows, Soft Shadows, or No Shadows will be cast by the light.");
+                public readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether Soft Shadows or No Shadows will be cast by the light.");
                 //realtime
                 public readonly GUIContent ShadowRealtimeSettings = EditorGUIUtility.TrTextContent("Realtime Shadows", "Settings for realtime direct shadows.");
                 public readonly GUIContent ShadowStrength = EditorGUIUtility.TrTextContent("Strength", "Controls how dark the shadows cast by the light will be.");
@@ -376,7 +377,20 @@ namespace UnityEditor
             public void DrawShadowsType()
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(shadowsType, s_Styles.ShadowType);
+                if (light.type == LightType.Area)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    bool shadows = EditorGUILayout.Toggle(s_Styles.CastShadows, shadowsType.intValue != (int)LightShadows.None);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(light, "Adjust Shadow Type");
+                        shadowsType.intValue = shadows ? (int)LightShadows.Soft : (int)LightShadows.None;
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.PropertyField(shadowsType, s_Styles.ShadowType);
+                }
             }
 
             public void DrawBakedShadowRadius()

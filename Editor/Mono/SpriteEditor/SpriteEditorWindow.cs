@@ -68,6 +68,7 @@ namespace UnityEditor
 
         private IMGUIContainer m_ToolbarIMGUIElement;
         private IMGUIContainer m_MainViewIMGUIElement;
+        private VisualElement m_ModuleViewElement;
         private VisualElement m_MainViewElement;
 
         [SerializeField]
@@ -244,7 +245,13 @@ namespace UnityEditor
             {
                 name = "spriteEditorWindowMainView",
             };
+            m_ModuleViewElement = new VisualElement()
+            {
+                name = "moduleViewElement",
+                pickingMode = PickingMode.Ignore
+            };
             m_MainViewElement.Add(m_MainViewIMGUIElement);
+            m_MainViewElement.Add(m_ModuleViewElement);
             var root = this.GetRootVisualContainer();
             root.AddStyleSheetPath("StyleSheets/SpriteEditor/SpriteEditor.uss");
             root.Add(m_ToolbarIMGUIElement);
@@ -637,7 +644,7 @@ namespace UnityEditor
             if (s_Instance == null)
                 return;
 
-            m_MainViewIMGUIElement.Clear();
+            m_ModuleViewElement.Clear();
             if (m_RegisteredModules.Count > newModuleIndex)
             {
                 m_CurrentModuleIndex = newModuleIndex;
@@ -652,8 +659,8 @@ namespace UnityEditor
             }
             if (m_MainViewElement != null)
                 m_MainViewElement.Dirty(ChangeType.Repaint);
-            if (m_MainViewIMGUIElement != null)
-                m_MainViewIMGUIElement.Dirty(ChangeType.Repaint);
+            if (m_ModuleViewElement != null)
+                m_ModuleViewElement.Dirty(ChangeType.Repaint);
         }
 
         void UpdateAvailableModules()
@@ -804,7 +811,7 @@ namespace UnityEditor
                         m_MainViewElement.Dirty(ChangeType.Repaint);
                         using (var e = SpriteSelectionChangeEvent.GetPooled())
                         {
-                            e.target = m_MainViewIMGUIElement;
+                            e.target = m_ModuleViewElement;
                             UIElementsUtility.eventDispatcher.DispatchEvent(e, m_MainViewElement.panel);
                         }
                     }
@@ -893,7 +900,7 @@ namespace UnityEditor
 
         public VisualElement GetMainVisualContainer()
         {
-            return m_MainViewIMGUIElement;
+            return m_ModuleViewElement;
         }
 
         static internal void OnTextureReimport(string path)
