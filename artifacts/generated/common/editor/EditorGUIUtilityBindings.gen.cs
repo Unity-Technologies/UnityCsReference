@@ -793,13 +793,13 @@ public static GUIContent IconContent(string name, [uei.DefaultValue("null")]  st
         }
     
     
-    internal static void RenderGameViewCamerasInternal (RenderTexture target, int targetDisplay, Rect screenRect, Vector2 mousePosition, bool gizmos) {
-        INTERNAL_CALL_RenderGameViewCamerasInternal ( target, targetDisplay, ref screenRect, ref mousePosition, gizmos );
+    internal static void RenderGameViewCamerasInternal (RenderTexture target, int targetDisplay, Rect screenRect, Vector2 mousePosition, bool gizmos, bool sendInput) {
+        INTERNAL_CALL_RenderGameViewCamerasInternal ( target, targetDisplay, ref screenRect, ref mousePosition, gizmos, sendInput );
     }
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_RenderGameViewCamerasInternal (RenderTexture target, int targetDisplay, ref Rect screenRect, ref Vector2 mousePosition, bool gizmos);
+    private extern static void INTERNAL_CALL_RenderGameViewCamerasInternal (RenderTexture target, int targetDisplay, ref Rect screenRect, ref Vector2 mousePosition, bool gizmos, bool sendInput);
     [System.Obsolete ("RenderGameViewCameras is no longer supported. Consider rendering cameras manually.", true)]
     public static void RenderGameViewCameras (RenderTexture target, int targetDisplay, Rect screenRect, Vector2 mousePosition, bool gizmos) {
         INTERNAL_CALL_RenderGameViewCameras ( target, targetDisplay, ref screenRect, ref mousePosition, gizmos );

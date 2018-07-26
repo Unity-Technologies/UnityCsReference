@@ -10,6 +10,7 @@ using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.XR;
 
 namespace UnityEditor
 {
@@ -389,11 +390,33 @@ namespace UnityEditor
 
             if (m_Panes.Count > 0)
             {
+                RenderToHMDIfNecessary(r);
                 InvokeOnGUI(r);
             }
 
             EditorGUI.ShowRepaints();
             Highlighter.ControlHighlightGUI(this);
+        }
+
+        void RenderToHMDIfNecessary(Rect onGUIPosition)
+        {
+            if (!XRSettings.isDeviceActive ||
+                (actualView is GameView) ||
+                !EditorApplication.isPlaying ||
+                EditorApplication.isPaused ||
+                Event.current.type != EventType.Repaint)
+            {
+                return;
+            }
+
+            foreach (var pane in m_Panes)
+            {
+                if (pane is GameView)
+                {
+                    var gameView = pane as GameView;
+                    gameView.RenderToHMDOnly();
+                }
+            }
         }
 
         protected override void SetActualViewPosition(Rect newPos)

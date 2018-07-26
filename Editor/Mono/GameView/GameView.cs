@@ -692,6 +692,26 @@ namespace UnityEditor
             m_ZoomArea.shownArea = shownArea;
         }
 
+        public void RenderToHMDOnly()
+        {
+            ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y);
+
+            if (m_TargetTexture.IsCreated())
+            {
+                var gizmos = false;
+                var targetDisplay = 0;
+                var sendInput = false;
+
+                EditorGUIUtility.RenderGameViewCamerasInternal(
+                    m_TargetTexture,
+                    targetDisplay,
+                    GUIClip.Unclip(viewInWindow),
+                    Vector2.zero,
+                    gizmos,
+                    sendInput);
+            }
+        }
+
         private void OnGUI()
         {
             if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
@@ -764,8 +784,8 @@ namespace UnityEditor
                 }
                 if (m_TargetTexture.IsCreated())
                 {
-                    EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos);
-
+                    var sendInput = true;
+                    EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos, sendInput);
                     oldState.ApplyAndForget();
                     GUIUtility.s_EditorScreenPointOffset = oldOffset;
 
