@@ -147,7 +147,7 @@ namespace UnityEditor
                 0.15f + 0.75f * c.r,
                 0.20f + 0.60f * c.g,
                 0.10f + 0.90f * c.b
-                );
+            );
         }
 
         public static Color GetPropertyColor(string name)
@@ -316,13 +316,13 @@ namespace UnityEditor
 
             float small = Mathf.Abs(nextTime - prevTime) * 0.01f;
             Quaternion epsilonBeforeQ = new Quaternion(thisQ.x - tangent.x * small,
-                    thisQ.y - tangent.y * small,
-                    thisQ.z - tangent.z * small,
-                    thisQ.w - tangent.w * small);
+                thisQ.y - tangent.y * small,
+                thisQ.z - tangent.z * small,
+                thisQ.w - tangent.w * small);
             Quaternion epsilonAfterQ = new Quaternion(thisQ.x + tangent.x * small,
-                    thisQ.y + tangent.y * small,
-                    thisQ.z + tangent.z * small,
-                    thisQ.w + tangent.w * small);
+                thisQ.y + tangent.y * small,
+                thisQ.z + tangent.z * small,
+                thisQ.w + tangent.w * small);
             Vector3 epsilonBeforeEuler = GetEulerFromQuaternion(epsilonBeforeQ, thisEuler);
             Vector3 epsilonAfterEuler = GetEulerFromQuaternion(epsilonAfterQ, thisEuler);
             Vector3 tangentEuler = (epsilonAfterEuler - epsilonBeforeEuler) / (small * 2);
@@ -344,10 +344,10 @@ namespace UnityEditor
             for (int i = 0; i < eulers.Length; i++)
             {
                 eulers[i] = new Vector3(
-                        Mathf.Repeat(eulers[i].x - refEuler.x + 180, 360) + refEuler.x - 180,
-                        Mathf.Repeat(eulers[i].y - refEuler.y + 180, 360) + refEuler.y - 180,
-                        Mathf.Repeat(eulers[i].z - refEuler.z + 180, 360) + refEuler.z - 180
-                        );
+                    Mathf.Repeat(eulers[i].x - refEuler.x + 180, 360) + refEuler.x - 180,
+                    Mathf.Repeat(eulers[i].y - refEuler.y + 180, 360) + refEuler.y - 180,
+                    Mathf.Repeat(eulers[i].z - refEuler.z + 180, 360) + refEuler.z - 180
+                );
 
                 float xRot = Mathf.Repeat(eulers[i].x, 360);
                 if (Mathf.Abs(xRot - 90) < 1.0f)

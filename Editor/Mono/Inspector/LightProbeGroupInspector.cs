@@ -639,7 +639,7 @@ namespace UnityEditor
                 "Edit Light Probes",
                 Styles.editModeButton,
                 this
-                );
+            );
 
             GUILayout.Space(3);
             EditorGUI.BeginDisabledGroup(EditMode.editMode != EditMode.SceneViewEditMode.LightProbeGroup);

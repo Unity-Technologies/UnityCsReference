@@ -65,9 +65,9 @@ namespace UnityEditor
             EditorGUILayout.EndFadeGroup();
 
             if (targets.Where(x =>
-                    (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Outlines &&
-                    (x as CompositeCollider2D).attachedRigidbody != null &&
-                    (x as CompositeCollider2D).attachedRigidbody.bodyType == RigidbodyType2D.Dynamic).Count() > 0)
+                (x as CompositeCollider2D).geometryType == CompositeCollider2D.GeometryType.Outlines &&
+                (x as CompositeCollider2D).attachedRigidbody != null &&
+                (x as CompositeCollider2D).attachedRigidbody.bodyType == RigidbodyType2D.Dynamic).Count() > 0)
                 EditorGUILayout.HelpBox("Outline geometry is composed of edges and will not preserve the original collider's center-of-mass or rotational inertia.  The CompositeCollider2D is attached to a Dynamic Rigidbody2D so you may need to explicitly set these if they are required.", MessageType.Info);
 
             serializedObject.ApplyModifiedProperties();

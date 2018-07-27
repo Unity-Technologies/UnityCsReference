@@ -18,11 +18,11 @@ namespace Unity.Experimental.EditorMode
         private interface IContextHelper
         {
             void RegisterOverride<TOverride, TWindow>()
-            where TOverride : EditorWindowOverride<TWindow>, new()
-            where TWindow : EditorWindow;
+                where TOverride : EditorWindowOverride<TWindow>, new()
+                where TWindow : EditorWindow;
 
             void RegisterOverride<TOverride>(Type editorWindowType)
-            where TOverride : EditorWindowOverride<EditorWindow>, new();
+                where TOverride : EditorWindowOverride<EditorWindow>, new();
 
             void RegisterAsPassthrough(Type editorWindowType);
 

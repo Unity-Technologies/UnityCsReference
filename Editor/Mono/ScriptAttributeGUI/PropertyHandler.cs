@@ -18,15 +18,15 @@ namespace UnityEditor
         public string tooltip = null;
 
         public bool hasPropertyDrawer { get { return propertyDrawer != null; } }
-        private PropertyDrawer propertyDrawer { get { return isCurrentlyNested ? null : m_PropertyDrawer; } }
+        internal PropertyDrawer propertyDrawer { get { return isCurrentlyNested ? null : m_PropertyDrawer; } }
 
         private bool isCurrentlyNested
         {
             get
             {
                 return (m_PropertyDrawer != null
-                        && ScriptAttributeUtility.s_DrawerStack.Count > 0
-                        && m_PropertyDrawer == ScriptAttributeUtility.s_DrawerStack.Peek());
+                    && ScriptAttributeUtility.s_DrawerStack.Count > 0
+                    && m_PropertyDrawer == ScriptAttributeUtility.s_DrawerStack.Peek());
             }
         }
 

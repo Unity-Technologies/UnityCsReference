@@ -663,8 +663,8 @@ namespace UnityEditor.U2D
         {
             var outline = m_Outline[spriteRect.spriteID];
             var outlines = GenerateSpriteRectOutline(spriteRect.rect,
-                    Math.Abs(outline.tessellationDetail - (-1f)) < Mathf.Epsilon ? 0 : outline.tessellationDetail,
-                    0, m_TextureDataProvider);
+                Math.Abs(outline.tessellationDetail - (-1f)) < Mathf.Epsilon ? 0 : outline.tessellationDetail,
+                0, m_TextureDataProvider);
             if (outlines.Count == 0)
             {
                 Vector2 halfSize = spriteRect.rect.size * 0.5f;

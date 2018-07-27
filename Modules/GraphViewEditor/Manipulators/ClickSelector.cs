@@ -40,8 +40,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse});
             activators.Add(new ManipulatorActivationFilter {button = MouseButton.RightMouse});
-            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Control});
-            activators.Add(new ManipulatorActivationFilter {button = MouseButton.LeftMouse, modifiers = EventModifiers.Command});
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            {
+                activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
+            }
+            else
+            {
+                activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
+            }
         }
 
         protected override void RegisterCallbacksOnTarget()

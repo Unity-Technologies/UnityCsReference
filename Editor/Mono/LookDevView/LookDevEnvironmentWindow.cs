@@ -620,7 +620,7 @@ namespace UnityEditor
                         if ((m_SelectedCubemap != null || m_DragBeingPerformed) && GetInsertionRect(i).Contains(Event.current.mousePosition)
                             // Following test allow to not propose a slot that is neutral, i.e current position or next one
                             && (((selectedCubeMapIndex - i) != 0 && (selectedCubeMapIndex - i) != -1) || selectedCubeMapIndex == -1)
-                            )
+                        )
                         {
                             GUILayout.Label(GUIContent.none, styles.sSeparatorStyle);
                             GUILayoutUtility.GetRect(m_HDRIWidth, EditorGUI.kSingleLineHeight);
@@ -789,7 +789,7 @@ namespace UnityEditor
                                 // Draw the shadow cubemap thumbnail if either:
                                 if ((infos.cubemapShadowInfo != infos) ||       // Shadows are enabled on this environment and shadow cubemap is not self
                                     (m_HoveringCubeMapIndex == i && m_SelectedCubemapInfo != infos)     // user is dragging over the environment that is not itself
-                                    )
+                                )
                                 {
                                     // By default, we want to display the shadow cubemap associated with the current environment
                                     CubemapInfo cubemapShadowInfo = infos.cubemapShadowInfo;

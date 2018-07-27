@@ -26,7 +26,8 @@ namespace UnityEditor
             {
                 frame = new GUIStyle();
                 Texture2D tex = new Texture2D(4, 4);
-                tex.SetPixels(new Color[] {
+                tex.SetPixels(new Color[]
+                {
                     Color.white, Color.white, Color.white, Color.white,
                     Color.white, Color.clear, Color.clear, Color.white,
                     Color.white, Color.clear, Color.clear, Color.white,
@@ -206,10 +207,10 @@ namespace UnityEditor
                         continue;
 
                     Rect position = new Rect(
-                            i * (size + spacing) + groupings[i],
-                            j * (size + spacing) + groupings[j],
-                            size,
-                            size);
+                        i * (size + spacing) + groupings[i],
+                        j * (size + spacing) + groupings[j],
+                        size,
+                        size);
 
                     if (j == 0 && !(i == 0 && hMode != LayoutMode.Undefined))
                         DrawLayoutModeHeaderOutsideRect(position, 0, cellHMode);
@@ -522,9 +523,9 @@ namespace UnityEditor
             if (doPivot && hMode != LayoutMode.Undefined && vMode != LayoutMode.Undefined)
             {
                 Vector2 pivot = new Vector2(
-                        Mathf.Lerp(inner.xMin + 0.5f, inner.xMax - 0.5f, kPivotsForModes[(int)hMode]),
-                        Mathf.Lerp(inner.yMin + 0.5f, inner.yMax - 0.5f, kPivotsForModes[(int)vMode])
-                        );
+                    Mathf.Lerp(inner.xMin + 0.5f, inner.xMax - 0.5f, kPivotsForModes[(int)hMode]),
+                    Mathf.Lerp(inner.yMin + 0.5f, inner.yMax - 0.5f, kPivotsForModes[(int)vMode])
+                );
 
                 GUI.color = s_Styles.pivotColor * oldColor;
                 GUI.DrawTexture(new Rect(pivot.x - 2.5f, pivot.y - 1.5f, 5, 3), EditorGUIUtility.whiteTexture);

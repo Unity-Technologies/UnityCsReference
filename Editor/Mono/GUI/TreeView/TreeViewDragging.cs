@@ -349,8 +349,8 @@ namespace UnityEditor.IMGUI.Controls
         {
             var visibleItems = m_TreeView.data.GetRows();
             List<int> expandedIDs = (from item in visibleItems
-                                     where m_TreeView.data.IsExpanded(item)
-                                     select item.id).ToList();
+                where m_TreeView.data.IsExpanded(item)
+                select item.id).ToList();
             return expandedIDs;
         }
 

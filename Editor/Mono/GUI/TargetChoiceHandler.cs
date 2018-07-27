@@ -16,6 +16,24 @@ namespace UnityEditor
 {
     internal class TargetChoiceHandler
     {
+        internal struct PropertyAndSourcePathInfo
+        {
+            public SerializedProperty[] properties;
+            public string assetPath;
+        }
+
+        internal struct ObjectInstanceAndSourcePathInfo
+        {
+            public Object instanceObject;
+            public string assetPath;
+        }
+
+        internal struct ObjectInstanceAndSourceInfo
+        {
+            public Object instanceObject;
+            public Object correspondingObjectInSource;
+        }
+
         internal delegate void TargetChoiceMenuFunction(SerializedProperty property, Object target);
 
         internal static void DuplicateArrayElement(object userData)
@@ -34,11 +52,86 @@ namespace UnityEditor
             EditorUtility.ForceReloadInspectors();
         }
 
-        internal static void SetPrefabOverride(object userData)
+        internal static void ApplyPrefabPropertyOverride(object userData)
         {
-            SerializedProperty property = (SerializedProperty)userData;
-            property.prefabOverride = false;
-            property.serializedObject.ApplyModifiedProperties();
+            PropertyAndSourcePathInfo info = (PropertyAndSourcePathInfo)userData;
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(info.assetPath, PrefabUtility.SaveVerb.Apply))
+                return;
+            for (int i = 0; i < info.properties.Length; i++)
+                PrefabUtility.ApplyPropertyOverride(info.properties[i], info.assetPath, InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void RevertPrefabPropertyOverride(object userData)
+        {
+            SerializedProperty[] properties = (SerializedProperty[])userData;
+            for (int i = 0; i < properties.Length; i++)
+                PrefabUtility.RevertPropertyOverride(properties[i], InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void ApplyPrefabObjectOverride(object userData)
+        {
+            ObjectInstanceAndSourcePathInfo info = (ObjectInstanceAndSourcePathInfo)userData;
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(info.assetPath, PrefabUtility.SaveVerb.Apply))
+                return;
+            PrefabUtility.ApplyObjectOverride(info.instanceObject, info.assetPath, InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void RevertPrefabObjectOverride(object userData)
+        {
+            Object obj = (Object)userData;
+            PrefabUtility.RevertObjectOverride(obj, InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void ApplyPrefabAddedComponent(object userData)
+        {
+            ObjectInstanceAndSourcePathInfo info = (ObjectInstanceAndSourcePathInfo)userData;
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(info.assetPath, PrefabUtility.SaveVerb.Apply))
+                return;
+            PrefabUtility.ApplyAddedComponent((Component)info.instanceObject, info.assetPath, InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void RevertPrefabAddedComponent(object userData)
+        {
+            Component obj = (Component)userData;
+            PrefabUtility.RevertAddedComponent(obj, InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void ApplyPrefabRemovedComponent(object userData)
+        {
+            ObjectInstanceAndSourceInfo info = (ObjectInstanceAndSourceInfo)userData;
+            string path = AssetDatabase.GetAssetPath(info.correspondingObjectInSource);
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(path, PrefabUtility.SaveVerb.Apply))
+                return;
+            PrefabUtility.ApplyRemovedComponent((GameObject)info.instanceObject, (Component)info.correspondingObjectInSource, InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void RevertPrefabRemovedComponent(object userData)
+        {
+            ObjectInstanceAndSourceInfo info = (ObjectInstanceAndSourceInfo)userData;
+            PrefabUtility.RevertRemovedComponent((GameObject)info.instanceObject, (Component)info.correspondingObjectInSource, InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void ApplyPrefabAddedGameObject(object userData)
+        {
+            ObjectInstanceAndSourcePathInfo info = (ObjectInstanceAndSourcePathInfo)userData;
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(info.assetPath, PrefabUtility.SaveVerb.Apply))
+                return;
+            PrefabUtility.ApplyAddedGameObject((GameObject)info.instanceObject, info.assetPath, InteractionMode.UserAction);
+            EditorUtility.ForceReloadInspectors();
+        }
+
+        internal static void RevertPrefabAddedGameObject(object userData)
+        {
+            GameObject obj = (GameObject)userData;
+            PrefabUtility.RevertAddedGameObject(obj, InteractionMode.UserAction);
             EditorUtility.ForceReloadInspectors();
         }
 
@@ -62,12 +155,12 @@ namespace UnityEditor
             List<string> options = new List<string>();
             foreach (Object target in targets)
             {
-                string option = string.Format("Set to Value of {0}", target.name);
+                string option = string.Format("Set to Value of '{0}'", target.name);
                 if (options.Contains(option))
                 {
                     for (int i = 1;; i++)
                     {
-                        option = string.Format("Set to Value of {0}({1})", target.name, i);
+                        option = string.Format("Set to Value of '{0}'({1})", target.name, i);
                         if (!options.Contains(option))
                             break;
                     }

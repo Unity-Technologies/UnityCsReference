@@ -55,13 +55,13 @@ namespace UnityEditor.Compilation
                         string[] compiledAssemblyReferences,
                         AssemblyFlags flags)
             : this(name,
-                   outputPath,
-                   sourceFiles,
-                   defines,
-                   assemblyReferences,
-                   compiledAssemblyReferences,
-                   flags,
-                   new ScriptCompilerOptions())
+            outputPath,
+            sourceFiles,
+            defines,
+            assemblyReferences,
+            compiledAssemblyReferences,
+            flags,
+            new ScriptCompilerOptions())
         {
         }
 
@@ -114,30 +114,30 @@ namespace UnityEditor.Compilation
         internal static void SubscribeToEvents(EditorCompilation editorCompilation)
         {
             editorCompilation.assemblyCompilationStarted += (assemblyPath) =>
+            {
+                try
                 {
-                    try
-                    {
-                        if (assemblyCompilationStarted != null)
-                            assemblyCompilationStarted(assemblyPath);
-                    }
-                    catch (Exception e)
-                    {
-                        UnityEngine.Debug.LogException(e);
-                    }
-                };
+                    if (assemblyCompilationStarted != null)
+                        assemblyCompilationStarted(assemblyPath);
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogException(e);
+                }
+            };
 
             editorCompilation.assemblyCompilationFinished += (assemblyPath, messages) =>
+            {
+                try
                 {
-                    try
-                    {
-                        if (assemblyCompilationFinished != null)
-                            assemblyCompilationFinished(assemblyPath, messages);
-                    }
-                    catch (Exception e)
-                    {
-                        UnityEngine.Debug.LogException(e);
-                    }
-                };
+                    if (assemblyCompilationFinished != null)
+                        assemblyCompilationFinished(assemblyPath, messages);
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogException(e);
+                }
+            };
         }
 
         public static Assembly[] GetAssemblies()
@@ -257,13 +257,13 @@ namespace UnityEditor.Compilation
                 var compilerOptions = scriptAssembly.CompilerOptions;
 
                 assemblies[i] = new Assembly(name,
-                        outputPath,
-                        sourceFiles,
-                        defines,
-                        null,
-                        compiledAssemblyReferences,
-                        flags,
-                        compilerOptions);
+                    outputPath,
+                    sourceFiles,
+                    defines,
+                    null,
+                    compiledAssemblyReferences,
+                    flags,
+                    compilerOptions);
             }
 
             var scriptAssemblyToAssembly = new Dictionary<ScriptAssembly, Assembly>();

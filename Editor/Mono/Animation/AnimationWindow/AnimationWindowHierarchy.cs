@@ -78,7 +78,7 @@ namespace UnityEditorInternal
                 m_State.hierarchyData,
                 new AnimationWindowHierarchyGUI(m_TreeView, m_State),
                 null
-                );
+            );
 
             m_TreeView.deselectOnUnhandledMouseDown = true;
             m_TreeView.selectionChangedCallback += m_State.OnHierarchySelectionChanged;

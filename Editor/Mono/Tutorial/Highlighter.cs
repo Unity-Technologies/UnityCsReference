@@ -245,9 +245,9 @@ namespace UnityEditor
 
             // Scale calculations
             Vector2 pulseScaleAddition = new Vector2(
-                    (localRect.width + kExpansionMovementSize) / localRect.width - 1.0f,
-                    (localRect.height + kExpansionMovementSize) / localRect.height - 1.0f
-                    ) * pulseValue;
+                (localRect.width + kExpansionMovementSize) / localRect.width - 1.0f,
+                (localRect.height + kExpansionMovementSize) / localRect.height - 1.0f
+                ) * pulseValue;
             Vector2 scale = (Vector2.one + pulseScaleAddition) * popupScale;
 
             // Cache old values

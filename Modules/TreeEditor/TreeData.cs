@@ -1185,8 +1185,8 @@ namespace TreeEditor
 
             int[] divisors = { 1, 2, 4, 8, 16 };
             int shadowTextureSize = Mathf.Max(8,
-                    Mathf.ClosestPowerOfTwo(
-                        (int)(Mathf.Min(texWidth, texHeight)) / divisors[root.shadowTextureQuality]));
+                Mathf.ClosestPowerOfTwo(
+                    (int)(Mathf.Min(texWidth, texHeight)) / divisors[root.shadowTextureQuality]));
 
             TextureImporterPlatformSettings platformSettings = textureImporter.GetDefaultPlatformTextureSettings();
             if (shadowTextureSize != platformSettings.maxTextureSize)

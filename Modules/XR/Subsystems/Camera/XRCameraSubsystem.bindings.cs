@@ -20,7 +20,7 @@ namespace UnityEngine.Experimental.XR
     [NativeType(Header = "Modules/XR/Subsystems/Camera/XRCameraSubsystem.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRCameraSubsystem : Subsystem<XRCameraSubsystemDescriptor>
+    public class XRCameraSubsystem : IntegratedSubsystem<XRCameraSubsystemDescriptor>
     {
         public extern int LastUpdatedFrame { get; }
 

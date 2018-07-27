@@ -103,8 +103,10 @@ namespace UnityEditor
         internal static extern void DisplayObjectContextPopupMenu(Rect position, Object[] context, int contextUserData);
 
         [FreeFunction("DisplayCustomContextPopupMenu")]
-        private static extern void DisplayCustomContextPopupMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback,
-            object userData, bool showHotkey, bool allowDisplayNames);
+        private static extern void DisplayCustomContextPopupMenu(Rect screenPosition, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey, bool allowDisplayNames);
+
+        [FreeFunction("DisplayObjectContextPopupMenuWithExtraItems")]
+        internal static extern void DisplayObjectContextPopupMenuWithExtraItems(Rect position, Object[] context, int contextUserData, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData, bool showHotkey);
 
         [FreeFunction("FormatBytes")]
         public static extern string FormatBytes(long bytes);

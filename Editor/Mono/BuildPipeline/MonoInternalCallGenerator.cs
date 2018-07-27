@@ -96,8 +96,8 @@ namespace UnityEditor
             var dlls = Directory.GetFiles(stagingAreaDataManaged, "UnityEngine.*Module.dll").Concat(new[] {Path.Combine(stagingAreaDataManaged, "UnityEngine.dll")});
             var exe = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Tools/InternalCallRegistrationWriter/InternalCallRegistrationWriter.exe");
             var args = string.Format("-assembly=\"{0}\" -summary=\"{1}\"",
-                    dlls.Aggregate((dllArg, next) => dllArg + ";" + next), icallSummaryPath
-                    );
+                dlls.Aggregate((dllArg, next) => dllArg + ";" + next), icallSummaryPath
+            );
             Runner.RunManagedProgram(exe, args);
 
             HashSet<UnityType> nativeClasses;

@@ -60,7 +60,7 @@ namespace UnityEngine
             return new Vector2(
                 a.x + (b.x - a.x) * t,
                 a.y + (b.y - a.y) * t
-                );
+            );
         }
 
         // Linearly interpolates between two vectors without clamping the interpolant
@@ -69,7 +69,7 @@ namespace UnityEngine
             return new Vector2(
                 a.x + (b.x - a.x) * t,
                 a.y + (b.y - a.y) * t
-                );
+            );
         }
 
         // Moves a point /current/ towards /target/.

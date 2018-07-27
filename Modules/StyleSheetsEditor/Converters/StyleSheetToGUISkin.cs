@@ -146,15 +146,15 @@ namespace UnityEditor.StyleSheets
                 var rule = globalSelector.rule;
                 // GUISkin.font
                 GetProperty(rule, ConverterUtils.k_Font, false, property =>
-                    {
-                        skin.font = ReadResource<Font>(cache.sheet, property);
-                    });
+                {
+                    skin.font = ReadResource<Font>(cache.sheet, property);
+                });
             }
 
             skin.ForEachGUIStyleProperty((name, style) =>
-                {
-                    PopulateStyle(cache, name.Capitalize(), style, throwIfIncomplete);
-                });
+            {
+                PopulateStyle(cache, name.Capitalize(), style, throwIfIncomplete);
+            });
 
             PopulateCustomStyles(cache, skin, throwIfIncomplete);
 
@@ -165,25 +165,25 @@ namespace UnityEditor.StyleSheets
             {
                 var rule = settingsSelector.rule;
                 GetProperty(rule, ConverterUtils.k_SelectionColor, throwIfIncomplete, property =>
-                    {
-                        skin.settings.selectionColor = sheet.ReadColor(property.values[0]);
-                    });
+                {
+                    skin.settings.selectionColor = sheet.ReadColor(property.values[0]);
+                });
                 GetProperty(rule, ConverterUtils.k_CursorColor, throwIfIncomplete, property =>
-                    {
-                        skin.settings.cursorColor = sheet.ReadColor(property.values[0]);
-                    });
+                {
+                    skin.settings.cursorColor = sheet.ReadColor(property.values[0]);
+                });
                 GetProperty(rule, ConverterUtils.k_CursorFlashSpeed, throwIfIncomplete, property =>
-                    {
-                        skin.settings.cursorFlashSpeed = sheet.ReadFloat(property.values[0]);
-                    });
+                {
+                    skin.settings.cursorFlashSpeed = sheet.ReadFloat(property.values[0]);
+                });
                 GetProperty(rule, ConverterUtils.k_DoubleClickSelectsWord, throwIfIncomplete, property =>
-                    {
-                        skin.settings.doubleClickSelectsWord = ReadBool(sheet, property);
-                    });
+                {
+                    skin.settings.doubleClickSelectsWord = ReadBool(sheet, property);
+                });
                 GetProperty(rule, ConverterUtils.k_TripleClickSelectsLine, throwIfIncomplete, property =>
-                    {
-                        skin.settings.tripleClickSelectsLine = ReadBool(sheet, property);
-                    });
+                {
+                    skin.settings.tripleClickSelectsLine = ReadBool(sheet, property);
+                });
             }
             else
             {
@@ -207,21 +207,21 @@ namespace UnityEditor.StyleSheets
         {
             var sheet = cache.sheet;
             GetProperty(rule, ConverterUtils.ToUssPropertyName(name, "left", suffix), throwIfNotFound, property =>
-                {
-                    offset.left = (int)sheet.ReadFloat(property.values[0]);
-                });
+            {
+                offset.left = (int)sheet.ReadFloat(property.values[0]);
+            });
             GetProperty(rule, ConverterUtils.ToUssPropertyName(name, "right", suffix), throwIfNotFound, property =>
-                {
-                    offset.right = (int)sheet.ReadFloat(property.values[0]);
-                });
+            {
+                offset.right = (int)sheet.ReadFloat(property.values[0]);
+            });
             GetProperty(rule, ConverterUtils.ToUssPropertyName(name, "top", suffix), throwIfNotFound, property =>
-                {
-                    offset.top = (int)sheet.ReadFloat(property.values[0]);
-                });
+            {
+                offset.top = (int)sheet.ReadFloat(property.values[0]);
+            });
             GetProperty(rule, ConverterUtils.ToUssPropertyName(name, "bottom", suffix), throwIfNotFound, property =>
-                {
-                    offset.bottom = (int)sheet.ReadFloat(property.values[0]);
-                });
+            {
+                offset.bottom = (int)sheet.ReadFloat(property.values[0]);
+            });
         }
 
         private static T ReadResource<T>(StyleSheet sheet, StyleProperty property) where T : UnityEngine.Object
@@ -245,13 +245,13 @@ namespace UnityEditor.StyleSheets
             string fontStyleStr = null;
             string weight = null;
             GetProperty(rule, ConverterUtils.k_FontStyle, throwIfNotFound, property =>
-                {
-                    fontStyleStr = sheet.ReadEnum(property.values[0]);
-                });
+            {
+                fontStyleStr = sheet.ReadEnum(property.values[0]);
+            });
             GetProperty(rule, ConverterUtils.k_FontWeight, throwIfNotFound, property =>
-                {
-                    weight = sheet.ReadEnum(property.values[0]);
-                });
+            {
+                weight = sheet.ReadEnum(property.values[0]);
+            });
 
             FontStyle fontStyle;
             if (ConverterUtils.TryGetFontStyle(fontStyleStr, weight, out fontStyle))
@@ -279,23 +279,23 @@ namespace UnityEditor.StyleSheets
         private static void ReadState(StyleSheetCache cache, StyleRule rule, GUIStyleState state, bool throwIfNotFound)
         {
             GetProperty(rule, ConverterUtils.k_TextColor, throwIfNotFound, property =>
-                {
-                    state.textColor = cache.sheet.ReadColor(property.values[0]);
-                });
+            {
+                state.textColor = cache.sheet.ReadColor(property.values[0]);
+            });
 
             GetProperty(rule, ConverterUtils.k_BackgroundImage, false, property =>
-                {
-                    state.background = ReadResource<Texture2D>(cache.sheet, property);
-                });
+            {
+                state.background = ReadResource<Texture2D>(cache.sheet, property);
+            });
 
             GetProperty(rule, ConverterUtils.k_ScaledBackground, false, property =>
+            {
+                var scaledBackground = ReadResource<Texture2D>(cache.sheet, property);
+                if (scaledBackground != null)
                 {
-                    var scaledBackground = ReadResource<Texture2D>(cache.sheet, property);
-                    if (scaledBackground != null)
-                    {
-                        state.scaledBackgrounds = new[] { scaledBackground };
-                    }
-                });
+                    state.scaledBackgrounds = new[] { scaledBackground };
+                }
+            });
         }
 
         private static void ReadState(StyleSheetCache cache, string baseRuleSelector, GUIStyleState state, string stateId, bool throwIfNotFound)
@@ -358,66 +358,66 @@ namespace UnityEditor.StyleSheets
 
             // GUIStyle.alignment
             GetProperty(rule, ConverterUtils.k_TextAlignment, throwIfIncomplete, property =>
-                {
-                    style.alignment = ConverterUtils.ToTextAnchor(sheet.ReadEnum(property.values[0]));
-                });
+            {
+                style.alignment = ConverterUtils.ToTextAnchor(sheet.ReadEnum(property.values[0]));
+            });
 
             // GUIStyle.border
             ReadRectOffset(cache, rule, ConverterUtils.k_Border, "", throwIfIncomplete, style.border);
 
             // GUIStyle.clipping
             GetProperty(rule, ConverterUtils.k_Clipping, throwIfIncomplete, property =>
-                {
-                    style.clipping = ConverterUtils.ToTextClipping(sheet.ReadEnum(property.values[0]));
-                });
+            {
+                style.clipping = ConverterUtils.ToTextClipping(sheet.ReadEnum(property.values[0]));
+            });
 
             // GUIStyle.contentOffset
             GetProperty(rule, ConverterUtils.k_ContentOffset, throwIfIncomplete, property =>
-                {
-                    style.contentOffset = StyleSheetBuilderHelper.ReadVector2(sheet, property);
-                });
+            {
+                style.contentOffset = StyleSheetBuilderHelper.ReadVector2(sheet, property);
+            });
 
             // GUIStyle.fixedHeight
             GetProperty(rule, ConverterUtils.k_Height, throwIfIncomplete, property =>
-                {
-                    style.fixedHeight = sheet.ReadFloat(property.values[0]);
-                });
+            {
+                style.fixedHeight = sheet.ReadFloat(property.values[0]);
+            });
 
             // GUIStyle.fixedWidth
             GetProperty(rule, ConverterUtils.k_Width, throwIfIncomplete, property =>
-                {
-                    style.fixedWidth = sheet.ReadFloat(property.values[0]);
-                });
+            {
+                style.fixedWidth = sheet.ReadFloat(property.values[0]);
+            });
 
             // GUIStyle.font
             GetProperty(rule, ConverterUtils.k_Font, false, property =>
-                {
-                    style.font = ReadResource<Font>(sheet, property);
-                });
+            {
+                style.font = ReadResource<Font>(sheet, property);
+            });
 
             // GUIStyle.fixedWidth
             GetProperty(rule, ConverterUtils.k_FontSize, throwIfIncomplete, property =>
-                {
-                    style.fontSize = (int)sheet.ReadFloat(property.values[0]);
-                });
+            {
+                style.fontSize = (int)sheet.ReadFloat(property.values[0]);
+            });
 
             // GUIStyle.fontStyle
             ReadFontStyle(sheet, rule, throwIfIncomplete, style);
 
             // GUIStyle.imagePosition
             GetProperty(rule, ConverterUtils.k_ImagePosition, throwIfIncomplete, property =>
-                {
-                    style.imagePosition = ConverterUtils.ToImagePosition(sheet.ReadEnum(property.values[0]));
-                });
+            {
+                style.imagePosition = ConverterUtils.ToImagePosition(sheet.ReadEnum(property.values[0]));
+            });
 
             // GUIStyle.margin
             ReadRectOffset(cache, rule, ConverterUtils.k_Margin, null, throwIfIncomplete, style.margin);
 
             // GUIStyle.name
             GetProperty(rule, ConverterUtils.k_Name, throwIfIncomplete, property =>
-                {
-                    style.name = sheet.ReadString(property.values[0]);
-                });
+            {
+                style.name = sheet.ReadString(property.values[0]);
+            });
 
             // GUIStyle.overflow
             ReadRectOffset(cache, rule, ConverterUtils.k_Overflow, null, throwIfIncomplete, style.overflow);
@@ -427,27 +427,27 @@ namespace UnityEditor.StyleSheets
 
             // GUIStyle.richText
             GetProperty(rule, ConverterUtils.k_RichText, throwIfIncomplete, property =>
-                {
-                    style.richText = ReadBool(sheet, property);
-                });
+            {
+                style.richText = ReadBool(sheet, property);
+            });
 
             // GUIStyle.stretchHeight
             GetProperty(rule, ConverterUtils.k_StretchHeight, throwIfIncomplete, property =>
-                {
-                    style.stretchHeight = ReadBool(sheet, property);
-                });
+            {
+                style.stretchHeight = ReadBool(sheet, property);
+            });
 
             // GUIStyle.stretchWidth
             GetProperty(rule, ConverterUtils.k_StretchWidth, throwIfIncomplete, property =>
-                {
-                    style.stretchWidth = ReadBool(sheet, property);
-                });
+            {
+                style.stretchWidth = ReadBool(sheet, property);
+            });
 
             // GUIStyle.wordWrap
             GetProperty(rule, ConverterUtils.k_WordWrap, throwIfIncomplete, property =>
-                {
-                    style.wordWrap = ReadBool(sheet, property);
-                });
+            {
+                style.wordWrap = ReadBool(sheet, property);
+            });
 
             ReadState(cache, rule, style.normal, throwIfIncomplete);
 

@@ -61,7 +61,7 @@ namespace UnityEngine.Experimental.UIElements
             set
             {
                 if (StyleValueUtils.ApplyAndCompare(ref m_ScaleMode,
-                        new StyleValue<int>((int)value.value, value.specificity)))
+                    new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     IncrementVersion(VersionChangeType.Layout);
                 }
@@ -109,7 +109,6 @@ namespace UnityEngine.Experimental.UIElements
             Texture current = image.GetSpecifiedValueOrDefault(null);
             if (current == null)
             {
-                Debug.LogWarning("null texture passed to GUI.DrawTexture");
                 return;
             }
 

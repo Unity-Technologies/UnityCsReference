@@ -146,16 +146,27 @@ namespace UnityEditor
 
         private void OnIconOverlayGUI(TreeViewItem item, Rect overlayRect)
         {
-            if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset(item.id))
+            OnIconOverlayGUI(item.id, overlayRect, false);
+        }
+
+        internal static void OnIconOverlayGUI(int instanceID, Rect overlayRect, bool addPadding)
+        {
+            if (addPadding)
             {
-                string guid = GetGUIDForInstanceID(item.id);
+                overlayRect.x -= k_IconOverlayPadding;
+                overlayRect.width += k_IconOverlayPadding * 2;
+            }
+
+            if (postAssetIconDrawCallback != null && AssetDatabase.IsMainAsset(instanceID))
+            {
+                string guid = GetGUIDForInstanceID(instanceID);
                 postAssetIconDrawCallback(overlayRect, guid);
             }
 
             // Draw vcs icons
-            if (s_VCEnabled && AssetDatabase.IsMainAsset(item.id))
+            if (s_VCEnabled && AssetDatabase.IsMainAsset(instanceID))
             {
-                string guid = GetGUIDForInstanceID(item.id);
+                string guid = GetGUIDForInstanceID(instanceID);
                 ProjectHooks.OnProjectWindowItem(guid, overlayRect);
             }
         }

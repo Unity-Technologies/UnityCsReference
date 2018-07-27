@@ -42,8 +42,8 @@ namespace UnityEngine.Experimental.Audio
             trackIndex = trackIdx;
             m_ConsumeSampleFramesNativeFunction = (ConsumeSampleFramesNativeFunction)
                 Marshal.GetDelegateForFunctionPointer(
-                    InternalGetConsumeSampleFramesNativeFunctionPtr(),
-                    typeof(ConsumeSampleFramesNativeFunction));
+                InternalGetConsumeSampleFramesNativeFunctionPtr(),
+                typeof(ConsumeSampleFramesNativeFunction));
             ushort chCount = 0;
             uint sRate = 0;
             InternalGetFormatInfo(providerId, out chCount, out sRate);

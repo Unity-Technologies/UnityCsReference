@@ -35,7 +35,7 @@ namespace UnityEditor
                 var textureTypeAndBuildTarget = (TextureTypeAndBuildTarget)obj;
 
                 return ((this.textureType == textureTypeAndBuildTarget.textureType) &&
-                        (this.target == textureTypeAndBuildTarget.target));
+                    (this.target == textureTypeAndBuildTarget.target));
             }
         }
 

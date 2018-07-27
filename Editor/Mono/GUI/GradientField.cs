@@ -10,22 +10,28 @@ namespace UnityEditor
     public sealed partial class EditorGUILayout
     {
         // Gradient versions
-        internal static Gradient GradientField(Gradient value, params GUILayoutOption[] options)
+        public static Gradient GradientField(Gradient value, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GUILayoutUtility.GetRect(EditorGUIUtility.fieldWidth, kLabelFloatMaxW, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.colorField, options);
             return EditorGUI.GradientField(r, value);
         }
 
-        internal static Gradient GradientField(string label, Gradient value, params GUILayoutOption[] options)
+        public static Gradient GradientField(string label, Gradient value, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.colorField, options);
-            return EditorGUI.GradientField(label, r, value);
+            return EditorGUI.GradientField(r, label, value);
         }
 
-        internal static Gradient GradientField(GUIContent label, Gradient value, params GUILayoutOption[] options)
+        public static Gradient GradientField(GUIContent label, Gradient value, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.colorField, options);
-            return EditorGUI.GradientField(label, r, value);
+            return EditorGUI.GradientField(r, label, value);
+        }
+
+        public static Gradient GradientField(GUIContent label, Gradient value, bool hdr, params GUILayoutOption[] options)
+        {
+            Rect r = s_LastRect = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.colorField, options);
+            return EditorGUI.GradientField(r, label, value, hdr);
         }
 
         // SerializedProperty versions
@@ -38,13 +44,13 @@ namespace UnityEditor
         internal static Gradient GradientField(string label, SerializedProperty value, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.colorField, options);
-            return EditorGUI.GradientField(label, r, value);
+            return EditorGUI.GradientField(r, label, value);
         }
 
         internal static Gradient GradientField(GUIContent label, SerializedProperty value, params GUILayoutOption[] options)
         {
             Rect r = s_LastRect = GUILayoutUtility.GetRect(kLabelFloatMinW, kLabelFloatMaxW, EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight, EditorStyles.colorField, options);
-            return EditorGUI.GradientField(label, r, value);
+            return EditorGUI.GradientField(r, label, value);
         }
     }
 
@@ -55,46 +61,46 @@ namespace UnityEditor
         static int s_GradientID;
 
         // Gradient versions
-        internal static Gradient GradientField(Rect position, Gradient gradient)
-        {
-            return GradientField(position, gradient, false);
-        }
-
-        internal static Gradient GradientField(Rect position, Gradient gradient, bool hdr)
+        public static Gradient GradientField(Rect position, Gradient gradient)
         {
             int id = EditorGUIUtility.GetControlID(s_GradientHash, FocusType.Keyboard, position);
-            return DoGradientField(position, id, gradient, null, hdr);
+            return DoGradientField(position, id, gradient, null, false);
         }
 
-        internal static Gradient GradientField(string label, Rect position, Gradient gradient)
+        public static Gradient GradientField(Rect position, string label, Gradient gradient)
         {
-            return GradientField(EditorGUIUtility.TempContent(label), position, gradient);
+            return GradientField(position, EditorGUIUtility.TempContent(label), gradient);
         }
 
-        internal static Gradient GradientField(GUIContent label, Rect position, Gradient gradient)
+        public static Gradient GradientField(Rect position, GUIContent label, Gradient gradient)
+        {
+            return GradientField(position, label, gradient, false);
+        }
+
+        public static Gradient GradientField(Rect position, GUIContent label, Gradient gradient, bool hdr)
         {
             int id = EditorGUIUtility.GetControlID(s_GradientHash, FocusType.Keyboard, position);
-            return DoGradientField(PrefixLabel(position, id, label), id, gradient, null, false);
+            return DoGradientField(PrefixLabel(position, id, label), id, gradient, null, hdr);
         }
 
         // SerializedProperty versions
-        internal static Gradient GradientField(Rect position, SerializedProperty gradient)
+        internal static Gradient GradientField(Rect position, SerializedProperty property)
         {
-            return GradientField(position, gradient, false);
+            return GradientField(position, property, false);
         }
 
-        internal static Gradient GradientField(Rect position, SerializedProperty gradient, bool hdr)
+        internal static Gradient GradientField(Rect position, SerializedProperty property, bool hdr)
         {
             int id = EditorGUIUtility.GetControlID(s_GradientHash, FocusType.Keyboard, position);
-            return DoGradientField(position, id, null, gradient, hdr);
+            return DoGradientField(position, id, null, property, hdr);
         }
 
-        internal static Gradient GradientField(string label, Rect position, SerializedProperty property)
+        internal static Gradient GradientField(Rect position, string label, SerializedProperty property)
         {
-            return GradientField(EditorGUIUtility.TempContent(label), position, property);
+            return GradientField(position, EditorGUIUtility.TempContent(label), property);
         }
 
-        internal static Gradient GradientField(GUIContent label, Rect position, SerializedProperty property)
+        internal static Gradient GradientField(Rect position, GUIContent label, SerializedProperty property)
         {
             int id = EditorGUIUtility.GetControlID(s_GradientHash, FocusType.Keyboard, position);
             return DoGradientField(PrefixLabel(position, id, label), id, null, property, false);

@@ -503,7 +503,7 @@ namespace UnityEditor
             int instanceID = 0;
 
             if (GetCreateAssetUtility().BeginNewAssetCreation(
-                    instanceID, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", null, resourceFileData))
+                instanceID, ScriptableObject.CreateInstance<DoCreateAudioMixer>(), "NewAudioMixer.mixer", null, resourceFileData))
             {
                 SyncFakeItem();
 

@@ -50,7 +50,7 @@ namespace Unity.Collections
     [NativeContainer]
     [NativeContainerSupportsMinMaxWriteRestriction]
     [DebuggerDisplay("Length = {Length}")]
-    [DebuggerTypeProxy(typeof(NativeSliceDebugView < >))]
+    [DebuggerTypeProxy(typeof(NativeSliceDebugView<>))]
     public unsafe struct NativeSlice<T> : IEnumerable<T>, IEquatable<NativeSlice<T>> where T : struct
     {
         [NativeDisableUnsafePtrRestriction]

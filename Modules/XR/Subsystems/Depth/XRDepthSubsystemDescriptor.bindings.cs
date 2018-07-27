@@ -15,7 +15,7 @@ namespace UnityEngine.Experimental.XR
     [NativeType(Header = "Modules/XR/Subsystems/Depth/XRDepthSubsystemDescriptor.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRDepthSubsystemDescriptor : SubsystemDescriptor<XRDepthSubsystem>
+    public class XRDepthSubsystemDescriptor : IntegratedSubsystemDescriptor<XRDepthSubsystem>
     {
         public extern bool SupportsFeaturePoints { get; }
     }

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Bindings;
+using UnityEngine.SceneManagement;
 
 namespace UnityEngine.AI
 {
@@ -12,31 +13,31 @@ namespace UnityEngine.AI
     [StaticAccessor("NavMeshBuilderBindings", StaticAccessorType.DoubleColon)]
     public static class NavMeshBuilder
     {
-        public static void CollectSources(Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, List<NavMeshBuildMarkup> markups, List<NavMeshBuildSource> results)
+        public static void CollectSources(Bounds includedWorldBounds, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
         {
             if (markups == null) throw new ArgumentNullException("markups");
             if (results == null) throw new ArgumentNullException("results");
-
+            if (!stageProxy.IsValid()) throw new ArgumentException("Stage cannot be deduced from invalid scene.", "stageProxy");
             // Ensure strictly positive extents
             includedWorldBounds.extents = Vector3.Max(includedWorldBounds.extents, 0.001f * Vector3.one);
-            NavMeshBuildSource[] resultsArray = CollectSourcesInternal(includedLayerMask, includedWorldBounds, null, true, geometry, defaultArea, markups.ToArray());
+            NavMeshBuildSource[] resultsArray = CollectSourcesInternal(includedLayerMask, includedWorldBounds, null, true, geometry, defaultArea, markups.ToArray(), stageProxy);
             results.Clear();
             results.AddRange(resultsArray);
         }
 
-        public static void CollectSources(Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, List<NavMeshBuildMarkup> markups, List<NavMeshBuildSource> results)
+        public static void CollectSources(Transform root, int includedLayerMask, NavMeshCollectGeometry geometry, int defaultArea, List<NavMeshBuildMarkup> markups, Scene stageProxy, List<NavMeshBuildSource> results)
         {
             if (markups == null) throw new ArgumentNullException("markups");
             if (results == null) throw new ArgumentNullException("results");
             // root == null is a valid argument
-
+            if (!stageProxy.IsValid()) throw new ArgumentException("Stage cannot be deduced from invalid scene.", "stageProxy");
             var empty = new Bounds();
-            NavMeshBuildSource[] resultsArray = CollectSourcesInternal(includedLayerMask, empty, root, false, geometry, defaultArea, markups.ToArray());
+            NavMeshBuildSource[] resultsArray = CollectSourcesInternal(includedLayerMask, empty, root, false, geometry, defaultArea, markups.ToArray(), stageProxy);
             results.Clear();
             results.AddRange(resultsArray);
         }
 
-        private static extern NavMeshBuildSource[] CollectSourcesInternal(int includedLayerMask, Bounds includedWorldBounds, Transform root, bool useBounds, NavMeshCollectGeometry geometry, int defaultArea, NavMeshBuildMarkup[] markups);
+        private static extern NavMeshBuildSource[] CollectSourcesInternal(int includedLayerMask, Bounds includedWorldBounds, Transform root, bool useBounds, NavMeshCollectGeometry geometry, int defaultArea, NavMeshBuildMarkup[] markups, Scene stageProxy);
 
         // Immediate NavMeshData building
         public static NavMeshData BuildNavMeshData(NavMeshBuildSettings buildSettings, List<NavMeshBuildSource> sources, Bounds localBounds, Vector3 position, Quaternion rotation)

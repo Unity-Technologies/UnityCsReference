@@ -41,6 +41,7 @@ namespace UnityEditor
         internal extern void StealMouseCapture();
         internal extern void ClearKeyboardControl();
         internal extern void SetKeyboardControl(int id);
+        internal extern int GetKeyboardControl();
         internal extern void GrabPixels(RenderTexture rd, Rect rect);
         internal extern void MarkHotRegion(Rect hotRegionRect);
 

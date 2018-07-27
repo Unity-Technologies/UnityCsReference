@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
@@ -9,6 +10,8 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
+using UnityEngine.Assertions;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -82,9 +85,19 @@ namespace UnityEditor
 
     internal class GameObjectsTreeViewDragging : TreeViewDragging
     {
+        public delegate DragAndDropVisualMode CustomDraggingDelegate(GameObjectTreeViewItem parentItem, GameObjectTreeViewItem targetItem, DropPosition dropPos, bool perform);
+        CustomDraggingDelegate m_CustomDragHandling;
+
         const string kSceneHeaderDragString = "SceneHeaderList";
 
+        public Transform parentForDraggedObjectsOutsideItems { get; set; }
+
         public GameObjectsTreeViewDragging(TreeViewController treeView) : base(treeView) {}
+
+        public void SetCustomDragHandler(CustomDraggingDelegate handler)
+        {
+            m_CustomDragHandling = handler;
+        }
 
         public override void StartDrag(TreeViewItem draggedItem, List<int> draggedItemIDs)
         {
@@ -140,33 +153,60 @@ namespace UnityEditor
             }
             DragAndDrop.StartDrag(title);
 
-            if (m_TreeView.data is GameObjectTreeViewDataSource)
-            {
-                ((GameObjectTreeViewDataSource)m_TreeView.data).SetupChildParentReferencesIfNeeded();
-            }
+            dataSource.SetupChildParentReferencesIfNeeded();
         }
+
+        GameObjectTreeViewDataSource dataSource { get { return (GameObjectTreeViewDataSource)m_TreeView.data; } }
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
         {
+            // Scene dragging logic
             DragAndDropVisualMode dragSceneResult = DoDragScenes(parentItem as GameObjectTreeViewItem, targetItem as GameObjectTreeViewItem, perform, dropPos);
             if (dragSceneResult != DragAndDropVisualMode.None)
                 return dragSceneResult;
 
-            var option = InternalEditorUtility.HierarchyDropMode.kHierarchyDragNormal;
+            // Allow client to handle drag
+            if (m_CustomDragHandling != null)
+            {
+                DragAndDropVisualMode dragResult = m_CustomDragHandling(parentItem as GameObjectTreeViewItem, targetItem as GameObjectTreeViewItem, dropPos, perform);
+                if (dragResult != DragAndDropVisualMode.None)
+                    return dragResult;
+            }
 
-            var searchActive = !string.IsNullOrEmpty(((GameObjectTreeViewDataSource)m_TreeView.data).searchString);
+            if (targetItem != null && !IsDropTargetUserModifiable(targetItem as GameObjectTreeViewItem, dropPos))
+                return DragAndDropVisualMode.Rejected;
+
+            var option = InternalEditorUtility.HierarchyDropMode.kHierarchyDragNormal;
+            var searchActive = !string.IsNullOrEmpty(dataSource.searchString);
             if (searchActive)
                 option |= InternalEditorUtility.HierarchyDropMode.kHierarchySearchActive;
-
             if (parentItem == null || targetItem == null)
             {
-                option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon;
-                // We are dragging outside any treeview items: set it as last root sibling
-                return InternalEditorUtility.HierarchyWindowDrag(null, perform, option); // Using 'kHierarchyDropUpon' ensures last root sibling.
+                // Here we are dragging outside any treeview items:
+
+                if (parentForDraggedObjectsOutsideItems != null)
+                {
+                    // Use specific parent for DragAndDropForwarding
+                    return InternalEditorUtility.HierarchyWindowDrag(null, option, parentForDraggedObjectsOutsideItems, perform);
+                }
+                else
+                {
+                    // Simulate drag upon the last loaded scene in the hierarchy (adds as last root sibling of the last scene)
+                    Scene lastScene = dataSource.GetLastScene();
+                    option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon;
+
+                    var prop = dataSource.CreateHierarchyProperty();
+                    if (prop.Find(lastScene.handle, null))
+                    {
+                        return InternalEditorUtility.HierarchyWindowDrag(prop, option, null, perform);
+                    }
+
+                    Assert.IsFalse(true, "Could not find scene with handle: " + lastScene.handle);
+                }
             }
 
             // Here we are hovering over items
-            var hierarchyProperty = new HierarchyProperty(HierarchyType.GameObjects);
+            var hierarchyProperty = dataSource.CreateHierarchyProperty();
             if (!hierarchyProperty.Find(targetItem.id, null))
             {
                 hierarchyProperty = null;
@@ -186,7 +226,34 @@ namespace UnityEditor
             {
                 option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropAfterParent;
             }
-            return InternalEditorUtility.HierarchyWindowDrag(hierarchyProperty, perform, option);
+
+            return InternalEditorUtility.HierarchyWindowDrag(hierarchyProperty, option, null, perform);
+        }
+
+        static bool IsDropTargetUserModifiable(GameObjectTreeViewItem targetItem, DropPosition dropPos)
+        {
+            switch (dropPos)
+            {
+                case DropPosition.Upon:
+                    if (targetItem.objectPPTR != null)
+                        return IsUserModifiable(targetItem.objectPPTR);
+                    break;
+                case DropPosition.Below:
+                case DropPosition.Above:
+                    var targetParent = targetItem.parent as GameObjectTreeViewItem;
+                    if (targetParent != null && targetParent.objectPPTR != null)
+                        return IsUserModifiable(targetParent.objectPPTR);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(dropPos), dropPos, null);
+            }
+
+            return true;
+        }
+
+        static bool IsUserModifiable(Object obj)
+        {
+            return (obj.hideFlags & HideFlags.NotEditable) == 0;
         }
 
         public override void DragCleanup(bool revertExpanded)
@@ -202,7 +269,7 @@ namespace UnityEditor
             foreach (int id in draggedItemIDs)
             {
                 Scene scene = EditorSceneManager.GetSceneByHandle(id);
-                if (!SceneHierarchyWindow.IsSceneHeaderInHierarchyWindow(scene))
+                if (!SceneHierarchy.IsSceneHeaderInHierarchyWindow(scene))
                     return null;
                 scenes.Add(scene);
             }
@@ -247,7 +314,7 @@ namespace UnityEditor
                     {
                         string scenePath = AssetDatabase.GetAssetPath(sceneAsset);
                         Scene scene = SceneManager.GetSceneByPath(scenePath);
-                        if (SceneHierarchyWindow.IsSceneHeaderInHierarchyWindow(scene))
+                        if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(scene))
                             m_TreeView.Frame(scene.handle, true, true);
                         else
                         {
@@ -257,7 +324,7 @@ namespace UnityEditor
                             else
                                 scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
 
-                            if (SceneHierarchyWindow.IsSceneHeaderInHierarchyWindow(scene))
+                            if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(scene))
                                 insertedScenes.Add(scene);
                         }
                     }
@@ -279,7 +346,7 @@ namespace UnityEditor
                     if (targetItem != null)
                     {
                         Scene dstScene = targetItem.scene;
-                        if (SceneHierarchyWindow.IsSceneHeaderInHierarchyWindow(dstScene))
+                        if (SceneHierarchy.IsSceneHeaderInHierarchyWindow(dstScene))
                         {
                             if (!targetItem.isSceneHeader || dropPos == DropPosition.Upon)
                                 dropPos = DropPosition.Below;

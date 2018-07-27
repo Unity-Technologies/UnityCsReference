@@ -384,7 +384,7 @@ namespace UnityEditor
 
         public static void DeactivateFlyModeContext()
         {
-            ShortcutIntegration.instance.contextManager.ClearPriorityContext();
+            ShortcutIntegration.instance.contextManager.DeregisterPriorityContext(s_CameraFlyModeContext);
         }
     }
 
@@ -576,11 +576,12 @@ namespace UnityEditor
                 Event evt = Event.current;
                 if (evt.type == EventType.MouseDown && evt.button == 1)
                 {
-                    float screenSize = Mathf.Min(view.position.width, view.position.height);
+                    Rect cameraGUIRect = view.cameraRect;
+                    float screenSize = Mathf.Min(cameraGUIRect.width, cameraGUIRect.height);
                     if (screenSize < kRotationSize)
                         return;
 
-                    Rect rotationRect = new Rect(view.position.width - kRotationSize + kRotationMenuInset, kRotationMenuInset, kRotationSize - kRotationMenuInset * 2, kRotationSize - kRotationMenuInset * 2);
+                    Rect rotationRect = new Rect(cameraGUIRect.width - kRotationSize + kRotationMenuInset, kRotationMenuInset, kRotationSize - kRotationMenuInset * 2, kRotationSize - kRotationMenuInset * 2);
 
                     if (rotationRect.Contains(evt.mousePosition))
                     {
@@ -657,7 +658,8 @@ namespace UnityEditor
         {
             const float clickWidth  = 24;
             const float clickHeight = 24;
-            float lockCenterX = view.position.width - 16;
+            Rect cameraGUIRect = view.cameraRect;
+            float lockCenterX = cameraGUIRect.width - 16;
             float lockCenterY = 17;
             Rect lockRect = new Rect(lockCenterX - (clickWidth / 2), lockCenterY - (clickHeight / 2), clickWidth, clickHeight);
             Color c = Handles.centerColor;
@@ -678,7 +680,8 @@ namespace UnityEditor
 
         void DrawLabels(SceneView view)
         {
-            Rect labelRect = new Rect(view.position.width - kRotationSize + 17, kRotationSize - 8, kRotationSize - 17 * 2, 16);
+            Rect cameraGUIRect = view.cameraRect;
+            Rect labelRect = new Rect(cameraGUIRect.width - kRotationSize + 17, kRotationSize - 8, kRotationSize - 17 * 2, 16);
 
             // Button (overlayed over the labels) to toggle between iso and perspective
             if (!view.in2DMode && !view.isRotationLocked)
@@ -756,7 +759,8 @@ namespace UnityEditor
         // in different places for handling input early and rendering late.
         internal void OnGUI(SceneView view)
         {
-            float screenSize = Mathf.Min(view.position.width, view.position.height);
+            Rect cameraGUIRect = view.cameraRect;
+            float screenSize = Mathf.Min(cameraGUIRect.width, cameraGUIRect.height);
             if (screenSize < kRotationSize)
                 return;
 
@@ -779,9 +783,9 @@ namespace UnityEditor
             cam.farClipPlane = 10;
             cam.fieldOfView = view.m_Ortho.Fade(70, 0);
 
-            SceneView.AddCursorRect(new Rect(view.position.width - kRotationSize + kRotationMenuInset, kRotationMenuInset, kRotationSize - 2 * kRotationMenuInset, kRotationSize + 24 - kRotationMenuInset), MouseCursor.Arrow);
+            SceneView.AddCursorRect(new Rect(cameraGUIRect.width - kRotationSize + kRotationMenuInset, kRotationMenuInset, kRotationSize - 2 * kRotationMenuInset, kRotationSize + 24 - kRotationMenuInset), MouseCursor.Arrow);
 
-            Handles.SetCamera(new Rect(view.position.width - kRotationSize, 0, kRotationSize, kRotationSize), cam);
+            Handles.SetCamera(new Rect(cameraGUIRect.width - kRotationSize, 0, kRotationSize, kRotationSize), cam);
 
             Handles.BeginGUI();
 

@@ -298,8 +298,8 @@ namespace UnityEditor
                 GUILayout.Label(
                     string.Format("Currently tracked: {0} shaders {1} total variants",
                         ShaderUtil.GetCurrentShaderVariantCollectionShaderCount(), ShaderUtil.GetCurrentShaderVariantCollectionVariantCount()
-                        )
-                    );
+                    )
+                );
 
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();

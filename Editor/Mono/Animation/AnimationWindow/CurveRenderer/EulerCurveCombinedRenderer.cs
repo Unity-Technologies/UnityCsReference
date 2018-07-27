@@ -47,7 +47,7 @@ namespace UnityEditor
             AnimationCurve eulerX,
             AnimationCurve eulerY,
             AnimationCurve eulerZ
-            )
+        )
         {
             this.quaternionX = (quaternionX == null ? new AnimationCurve() : quaternionX);
             this.quaternionY = (quaternionY == null ? new AnimationCurve() : quaternionY);
@@ -171,7 +171,7 @@ namespace UnityEditor
             for (int i = 0; i < refCurve.length - 1; i++)
             {
                 // Ignore segments that are outside of the range from minTime to maxTime
-                if (refCurve[i + 1].time<minTime || refCurve[i].time> maxTime)
+                if (refCurve[i + 1].time < minTime || refCurve[i].time > maxTime)
                     continue;
 
                 // Get first value from euler curve and move forwards

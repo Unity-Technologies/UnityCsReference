@@ -15,7 +15,7 @@ namespace UnityEngine.Experimental.XR
     [NativeType(Header = "Modules/XR/Subsystems/Camera/XRCameraSubsystemDescriptor.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRCameraSubsystemDescriptor : SubsystemDescriptor<XRCameraSubsystem>
+    public class XRCameraSubsystemDescriptor : IntegratedSubsystemDescriptor<XRCameraSubsystem>
     {
         public extern bool ProvidesAverageBrightness { get; }
 

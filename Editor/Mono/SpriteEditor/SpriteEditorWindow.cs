@@ -349,7 +349,7 @@ namespace UnityEditor
             if (textureIsDirty && m_SpriteDataProvider != null)
             {
                 if (EditorUtility.DisplayDialog(dialogTitle, dialogContent,
-                        SpriteEditorWindowStyles.applyButtonLabel.text, SpriteEditorWindowStyles.revertButtonLabel.text))
+                    SpriteEditorWindowStyles.applyButtonLabel.text, SpriteEditorWindowStyles.revertButtonLabel.text))
                     DoApply();
                 else
                     DoRevert();
@@ -471,8 +471,8 @@ namespace UnityEditor
                     {
                         // Have pending module edit changes. Ask user if they want to apply or revert
                         if (EditorUtility.DisplayDialog(SpriteEditorWindowStyles.applyRevertModuleDialogTitle.text,
-                                SpriteEditorWindowStyles.applyRevertModuleDialogContent.text,
-                                SpriteEditorWindowStyles.applyButtonLabel.text, SpriteEditorWindowStyles.revertButtonLabel.text))
+                            SpriteEditorWindowStyles.applyRevertModuleDialogContent.text,
+                            SpriteEditorWindowStyles.applyButtonLabel.text, SpriteEditorWindowStyles.revertButtonLabel.text))
                             DoApply();
                         else
                             DoRevert();
@@ -804,8 +804,8 @@ namespace UnityEditor
                         var constructorType = new Type[0];
                         // Get the public instance constructor that takes ISpriteEditorModule parameter.
                         var constructorInfoObj = moduleClassType.GetConstructor(
-                                BindingFlags.Instance | BindingFlags.Public, null,
-                                CallingConventions.HasThis, constructorType, null);
+                            BindingFlags.Instance | BindingFlags.Public, null,
+                            CallingConventions.HasThis, constructorType, null);
                         if (constructorInfoObj != null)
                         {
                             try

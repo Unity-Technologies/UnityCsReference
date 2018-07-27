@@ -504,6 +504,15 @@ namespace UnityEditor
             return retval;
         }
 
+        [ExcludeFromDocs]
+        public static GUIContent[] TrTempContent(string[] texts, string[] tooltips)
+        {
+            GUIContent[] retval = new GUIContent[texts.Length];
+            for (int i = 0; i < texts.Length; i++)
+                retval[i] = new GUIContent(L10n.Tr(texts[i]), L10n.Tr(tooltips[i]));
+            return retval;
+        }
+
         internal static GUIContent TrIconContent<T>(string tooltip = null) where T : UnityObject
         {
             return TrIconContent(FindTexture(typeof(T)), tooltip);
@@ -798,6 +807,14 @@ namespace UnityEditor
             return retval;
         }
 
+        internal static GUIContent[] TempContent(string[] texts, string[] tooltips)
+        {
+            GUIContent[] retval = new GUIContent[texts.Length];
+            for (int i = 0; i < texts.Length; i++)
+                retval[i] = new GUIContent(texts[i], tooltips[i]);
+            return retval;
+        }
+
         internal static bool HasHolddownKeyModifiers(Event evt)
         {
             return evt.shift | evt.control | evt.alt | evt.command;
@@ -970,6 +987,7 @@ namespace UnityEditor
             UnlockContextWidth();
             hierarchyMode = false;
             wideMode = false;
+            comparisonViewMode = ComparisonViewMode.None;
 
             //Clear the cache, so it uses the global one
             ScriptAttributeUtility.propertyHandlerCache = null;
@@ -1002,6 +1020,11 @@ namespace UnityEditor
             set { EditorGUI.RecycledTextEditor.s_ActuallyEditing = value; }
         }
 
+        public static bool textFieldHasSelection
+        {
+            get { return EditorGUI.s_RecycledEditor.hasSelection; }
+        }
+
         // hierarchyMode changes how foldouts are drawn so the foldout triangle is drawn to the left,
         // outside the rect of the control, rather than inside the rect.
         // This way the text of the foldout lines up with the labels of other controls.
@@ -1010,6 +1033,20 @@ namespace UnityEditor
 
         // wideMode is used when the Inspector is wide and uses a more tidy and vertically compact layout for certain controls.
         public static bool wideMode { get; set; } = false;
+
+        internal enum ComparisonViewMode
+        {
+            None, Original, Modified
+        }
+
+        // ComparisonViewMode is used when editors are drawn in the context of showing differences between different objects.
+        // Controls that must not be used in this context can be hidden or disabled.
+        private static ComparisonViewMode s_ComparisonViewMode = ComparisonViewMode.None;
+        internal static ComparisonViewMode comparisonViewMode
+        {
+            get { return s_ComparisonViewMode; }
+            set { s_ComparisonViewMode = value; }
+        }
 
         // Context width is used for calculating the label width for various editor controls.
         // In most cases the top level clip rect is a perfect context width.
@@ -1061,7 +1098,18 @@ namespace UnityEditor
             set { s_LabelWidth = value; }
         }
 
-        public static float fieldWidth { get; set; } = 50f;
+        private static float s_FieldWidth = 0f;
+        public static float fieldWidth
+        {
+            get
+            {
+                if (s_FieldWidth > 0)
+                    return s_FieldWidth;
+
+                return 50;
+            }
+            set { s_FieldWidth = value; }
+        }
 
         // Make all ref::EditorGUI look like regular controls.
         private const string k_LookLikeControlsObsoleteMessage = "LookLikeControls and LookLikeInspector modes are deprecated.Use EditorGUIUtility.labelWidth and EditorGUIUtility.fieldWidth to control label and field widths.";
@@ -1160,7 +1208,7 @@ namespace UnityEditor
                     float gradientWidth = position.width / 3f;
                     Rect leftRect = new Rect(position.x, position.y, gradientWidth, position.height);
                     Rect rightRect = new Rect(position.xMax - gradientWidth, position.y, gradientWidth,
-                            position.height);
+                        position.height);
 
                     Color orgColor = GUI.color;
                     GUI.color = ((Color)baseColor).gamma;

@@ -170,6 +170,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 UpdateConnectorColor();
             }
         }
+        public virtual void OnStartEdgeDragging()
+        {
+            highlight = false;
+            SetEnabled(false);
+        }
+
+        public virtual void OnStopEdgeDragging()
+        {
+            highlight = true;
+            SetEnabled(true);
+        }
 
         private HashSet<Edge> m_Connections;
         private Direction m_Direction;
@@ -381,14 +392,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (direction == Direction.Input)
             {
                 boxRect = new Rect(-lRect.xMin, -lRect.yMin,
-                        lRect.width + lRect.xMin, rect.height);
+                    lRect.width + lRect.xMin, rect.height);
 
                 boxRect.width += m_ConnectorText.layout.xMin - lRect.xMax;
             }
             else
             {
                 boxRect = new Rect(0, -lRect.yMin,
-                        rect.width - lRect.xMin, rect.height);
+                    rect.width - lRect.xMin, rect.height);
                 float leftSpace = lRect.xMin - m_ConnectorText.layout.xMax;
 
                 boxRect.xMin -= leftSpace;

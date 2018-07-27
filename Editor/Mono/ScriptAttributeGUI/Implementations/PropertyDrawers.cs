@@ -108,12 +108,36 @@ namespace UnityEditor
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             var colorUsage = (ColorUsageAttribute)attribute;
+            if (property.propertyType == SerializedPropertyType.Color)
+            {
+                label = EditorGUI.BeginProperty(position, label, property);
+                EditorGUI.BeginChangeCheck();
+                Color newColor = EditorGUI.ColorField(position, label, property.colorValue, true, colorUsage.showAlpha, colorUsage.hdr);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    property.colorValue = newColor;
+                }
+                EditorGUI.EndProperty();
+            }
+            else
+            {
+                EditorGUI.ColorField(position, label, property.colorValue, true, colorUsage.showAlpha, colorUsage.hdr);
+            }
+        }
+    }
+
+    [CustomPropertyDrawer(typeof(GradientUsageAttribute))]
+    internal sealed class GradientUsageDrawer : PropertyDrawer
+    {
+        public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+        {
+            var colorUsage = (GradientUsageAttribute)attribute;
 
             EditorGUI.BeginChangeCheck();
-            Color newColor = EditorGUI.ColorField(position, label, property.colorValue, true, colorUsage.showAlpha, colorUsage.hdr);
+            Gradient newGradient = EditorGUI.GradientField(position, label, property.gradientValue, colorUsage.hdr);
             if (EditorGUI.EndChangeCheck())
             {
-                property.colorValue = newColor;
+                property.gradientValue = newGradient;
             }
         }
     }

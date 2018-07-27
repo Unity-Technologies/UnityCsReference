@@ -62,12 +62,12 @@ namespace UnityEditor
 
             string path = AssetDatabase.GenerateUniqueAssetPath(folderPath + "/" + name + ".prefab");
 
-            Object prefab = PrefabUtility.CreateEmptyPrefab(path);
+            Object prefab = PrefabUtility.SaveAsPrefabAssetAndConnect(temporaryGO, path, InteractionMode.AutomatedAction);
             GridPalette palette = GridPalette.CreateInstance<GridPalette>();
             palette.name = "Palette Settings";
             palette.cellSizing = cellSizing;
             AssetDatabase.AddObjectToAsset(palette, prefab);
-            PrefabUtility.ReplacePrefab(temporaryGO, prefab, ReplacePrefabOptions.Default);
+            PrefabUtility.ApplyPrefabInstance(temporaryGO);
             AssetDatabase.Refresh();
 
             GameObject.DestroyImmediate(temporaryGO);

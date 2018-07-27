@@ -15,9 +15,9 @@ namespace UnityEngine
         static void RegisterUECatcher()
         {
             AppDomain.CurrentDomain.UnhandledException += (object sender, UnhandledExceptionEventArgs e) =>
-                {
-                    Debug.LogException(e.ExceptionObject as Exception);
-                };
+            {
+                Debug.LogException(e.ExceptionObject as Exception);
+            };
         }
 
     }

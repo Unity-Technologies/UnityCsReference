@@ -210,13 +210,13 @@ namespace UnityEditor
                 Handles.color = Color.green;
 
                 newPoint = Handles.Slider2D(
-                        newPoint,
-                        new Vector3(0, 0, 1),
-                        new Vector3(1, 0, 0),
-                        new Vector3(0, 1, 0),
-                        guiSize,
-                        Handles.DotHandleCap,
-                        Vector3.zero);
+                    newPoint,
+                    new Vector3(0, 0, 1),
+                    new Vector3(1, 0, 0),
+                    new Vector3(0, 1, 0),
+                    guiSize,
+                    Handles.DotHandleCap,
+                    Vector3.zero);
                 Handles.color = Color.white;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -261,13 +261,13 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
                 Handles.color = m_DeleteMode ? Color.red : Color.green;
                 Vector3 newWorldPos = Handles.Slider2D(
-                        worldPos,
-                        new Vector3(0, 0, 1),
-                        new Vector3(1, 0, 0),
-                        new Vector3(0, 1, 0),
-                        guiSize,
-                        Handles.DotHandleCap,
-                        Vector3.zero);
+                    worldPos,
+                    new Vector3(0, 0, 1),
+                    new Vector3(1, 0, 0),
+                    new Vector3(0, 1, 0),
+                    guiSize,
+                    Handles.DotHandleCap,
+                    Vector3.zero);
                 Handles.color = Color.white;
                 if (EditorGUI.EndChangeCheck() && !m_DeleteMode)
                 {

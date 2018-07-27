@@ -56,15 +56,15 @@ namespace UnityEngine
         public void ClampToBounds(BoundsInt bounds)
         {
             position = new Vector3Int(
-                    Math.Max(Math.Min(bounds.xMax, position.x), bounds.xMin),
-                    Math.Max(Math.Min(bounds.yMax, position.y), bounds.yMin),
-                    Math.Max(Math.Min(bounds.zMax, position.z), bounds.zMin)
-                    );
+                Math.Max(Math.Min(bounds.xMax, position.x), bounds.xMin),
+                Math.Max(Math.Min(bounds.yMax, position.y), bounds.yMin),
+                Math.Max(Math.Min(bounds.zMax, position.z), bounds.zMin)
+            );
             size = new Vector3Int(
-                    Math.Min(bounds.xMax - position.x, size.x),
-                    Math.Min(bounds.yMax - position.y, size.y),
-                    Math.Min(bounds.zMax - position.z, size.z)
-                    );
+                Math.Min(bounds.xMax - position.x, size.x),
+                Math.Min(bounds.yMax - position.y, size.y),
+                Math.Min(bounds.zMax - position.z, size.z)
+            );
         }
 
         public bool Contains(Vector3Int position)

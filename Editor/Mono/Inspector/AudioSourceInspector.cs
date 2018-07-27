@@ -640,7 +640,7 @@ namespace UnityEditor
             // Rolloff mode
             if (m_RolloffMode.hasMultipleDifferentValues ||
                 (m_RolloffMode.enumValueIndex == (int)AudioRolloffMode.Custom && m_AudioCurves[kRolloffCurveID].curveProp.hasMultipleDifferentValues)
-                )
+            )
             {
                 EditorGUILayout.TargetChoiceField(m_AudioCurves[kRolloffCurveID].curveProp, ms_Styles.rolloffLabel , SetRolloffToTarget);
             }

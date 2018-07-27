@@ -53,8 +53,6 @@ namespace UnityEditor.Build
                         return BuildTarget.XboxOne;
                     case BuildTargetGroup.Android:
                         return BuildTarget.Android;
-                    case BuildTargetGroup.N3DS:
-                        return BuildTarget.N3DS;
                     case BuildTargetGroup.Switch:
                         return BuildTarget.Switch;
                     case BuildTargetGroup.WebGL:
@@ -100,7 +98,6 @@ namespace UnityEditor.Build
             buildPlatformsList.Add(new BuildPlatform("PS4", "BuildSettings.PS4", BuildTargetGroup.PS4, true));
             buildPlatformsList.Add(new BuildPlatform("Universal Windows Platform", "BuildSettings.Metro", BuildTargetGroup.WSA, true));
             buildPlatformsList.Add(new BuildPlatform("WebGL", "BuildSettings.WebGL", BuildTargetGroup.WebGL, true));
-            buildPlatformsList.Add(new BuildPlatform("Nintendo 3DS", "BuildSettings.N3DS", BuildTargetGroup.N3DS, false));
             buildPlatformsList.Add(new BuildPlatform("Facebook", "BuildSettings.Facebook", BuildTargetGroup.Facebook, true));
             buildPlatformsList.Add(new BuildPlatform("Nintendo Switch", "BuildSettings.Switch", BuildTargetGroup.Switch, false));
 

@@ -109,7 +109,7 @@ namespace UnityEditor.Networking.PlayerConnection
             }
 
             m_PlayerEditorConnectionEvents.AddAndCreate(messageId)
-            .AddPersistentListener(callback, UnityEventCallState.EditorAndRuntime);
+                .AddPersistentListener(callback, UnityEventCallState.EditorAndRuntime);
         }
 
         public void Unregister(Guid messageId, UnityAction<MessageEventArgs> callback)

@@ -1698,10 +1698,10 @@ namespace UnityEditor
             if (evt.type == EventType.Repaint && numSoloed > 0 || numMuted > 0 || numBypassEffects > 0)
             {
                 string warningStr = "Warning: " + (
-                        (numSoloed > 0) ? (numSoloed + (numSoloed > 1 ? " groups" : " group") + " currently soloed") :
-                        (numMuted > 0) ? (numMuted + (numMuted > 1 ? " groups" : " group") + " currently muted") :
-                        (numBypassEffects + (numBypassEffects > 1 ? " effects" : " effect") + " currently bypassed")
-                        );
+                    (numSoloed > 0) ? (numSoloed + (numSoloed > 1 ? " groups" : " group") + " currently soloed") :
+                    (numMuted > 0) ? (numMuted + (numMuted > 1 ? " groups" : " group") + " currently muted") :
+                    (numBypassEffects + (numBypassEffects > 1 ? " effects" : " effect") + " currently bypassed")
+                );
 
                 //bool verticalScrollbar = contentRect.height > rect.height;
                 bool horizontalScrollbar = contentRect.width > rect.width;

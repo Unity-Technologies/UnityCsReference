@@ -18,10 +18,10 @@ namespace UnityEditor.AdvancedDropdown
             public static GUIStyle headerArrow = "DefaultCenteredLargeText";
             public static GUIStyle checkMark = "DD ItemCheckmark";
             public static GUIStyle lineSeparator = "DefaultLineSeparator";
+            public static GUIStyle rightArrow = "ArrowNavigationRight";
+            public static GUIStyle leftArrow = "ArrowNavigationLeft";
 
             public static GUIContent checkMarkContent = new GUIContent("✔");
-            public static GUIContent arrowRightContent = new GUIContent("▸");
-            public static GUIContent arrowLeftContent = new GUIContent("◂");
         }
 
         //This should ideally match line height
@@ -83,9 +83,13 @@ namespace UnityEditor.AdvancedDropdown
             content.image = imageTemp;
             if (item.drawArrow)
             {
-                var size = lineStyle.lineHeight;
-                Rect arrowRect = new Rect(rect.x + rect.width - size, rect.y, size, size);
-                lineStyle.Draw(arrowRect, Styles.arrowRightContent, false, false, false, false);
+                var yOffset = (lineStyle.fixedHeight - Styles.rightArrow.fixedHeight) / 2;
+                Rect arrowRect = new Rect(
+                    rect.xMax - Styles.rightArrow.fixedWidth - Styles.rightArrow.margin.right,
+                    rect.y + yOffset,
+                    Styles.rightArrow.fixedWidth,
+                    Styles.rightArrow.fixedHeight);
+                Styles.rightArrow.Draw(arrowRect, false, false, false, false);
             }
             EditorGUI.EndDisabled();
         }
@@ -113,10 +117,14 @@ namespace UnityEditor.AdvancedDropdown
             // Back button
             if (group.parent != null)
             {
-                var arrowWidth = 13;
-                var arrowRect = new Rect(m_HeaderRect.x, m_HeaderRect.y, arrowWidth, m_HeaderRect.height);
+                var yOffset = (m_HeaderRect.height - Styles.leftArrow.fixedWidth) / 2;
+                var arrowRect = new Rect(
+                    m_HeaderRect.x + Styles.leftArrow.margin.left,
+                    m_HeaderRect.y + yOffset,
+                    Styles.leftArrow.fixedWidth,
+                    Styles.leftArrow.fixedHeight);
                 if (Event.current.type == EventType.Repaint)
-                    Styles.headerArrow.Draw(arrowRect, Styles.arrowLeftContent, false, false, false, false);
+                    Styles.leftArrow.Draw(arrowRect, false, false, false, false);
                 if (Event.current.type == EventType.MouseDown && m_HeaderRect.Contains(Event.current.mousePosition))
                 {
                     backButtonPressed();
@@ -174,7 +182,7 @@ namespace UnityEditor.AdvancedDropdown
             float maxWidth = 0;
             float maxHeight = 0;
             bool includeArrow = false;
-            float arrowWidth = 0f;
+            float arrowWidth = Styles.rightArrow.fixedWidth;
 
             foreach (var child in dataSource.mainTree.children)
             {
@@ -194,10 +202,6 @@ namespace UnityEditor.AdvancedDropdown
                 else
                 {
                     maxHeight += lineStyle.CalcHeight(content, maxWidth);
-                }
-                if (arrowWidth == 0)
-                {
-                    lineStyle.CalcMinMaxWidth(Styles.arrowRightContent, out arrowWidth, out arrowWidth);
                 }
             }
             if (includeArrow)

@@ -112,7 +112,8 @@ namespace UnityEditor
             ESelectedHovered
         }
 
-        private static readonly Color[] k_OutlineColor = new[] {
+        private static readonly Color[] k_OutlineColor = new[]
+        {
             Color.gray,
             Color.white,
             new Color(34f / 255f, 171f / 255f, 1f), // #22abff
@@ -871,7 +872,7 @@ namespace UnityEditor
             return Mathf.Min(
                 HandleUtility.DistanceToRectangle(p + lt, Quaternion.identity, tangentSize),
                 HandleUtility.DistanceToRectangle(p + rt, Quaternion.identity, tangentSize)
-                );
+            );
         }
 
         private int FindClosestPointIndex(Vector3 position)

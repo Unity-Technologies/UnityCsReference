@@ -47,8 +47,7 @@ namespace UnityEditor
             m_LODGroup = (LODGroup)target;
 
             // Calculate if the newly selected LOD group is a prefab... they require special handling
-            var type = PrefabUtility.GetPrefabType(m_LODGroup.gameObject);
-            m_IsPrefab = type == PrefabType.Prefab || type == PrefabType.ModelPrefab;
+            m_IsPrefab = PrefabUtility.IsPartOfPrefabAsset(m_LODGroup.gameObject);
 
             Repaint();
         }
@@ -94,7 +93,7 @@ namespace UnityEditor
             var worldReferencePoint = LODUtility.CalculateWorldReferencePoint(m_LODGroup);
 
             if (Vector3.Dot(camera.transform.forward,
-                    (camera.transform.position - worldReferencePoint).normalized) > 0)
+                (camera.transform.position - worldReferencePoint).normalized) > 0)
                 return;
 
             var info = LODUtility.CalculateVisualizationData(camera, m_LODGroup, -1);
@@ -109,13 +108,13 @@ namespace UnityEditor
             Vector3 sideways = camera.transform.right * size / 2.0f;
             Vector3 up = camera.transform.up * size / 2.0f;
             var rect = CalculateScreenRect(
-                    new[]
-            {
-                worldReferencePoint - sideways + up,
-                worldReferencePoint - sideways - up,
-                worldReferencePoint + sideways + up,
-                worldReferencePoint + sideways - up
-            });
+                new[]
+                {
+                    worldReferencePoint - sideways + up,
+                    worldReferencePoint - sideways - up,
+                    worldReferencePoint + sideways + up,
+                    worldReferencePoint + sideways - up
+                });
 
             // Place the screen space lable directaly under the
             var midPoint = rect.x + rect.width / 2.0f;
@@ -228,8 +227,8 @@ namespace UnityEditor
 
             // Precalculate the lod info (button locations / ranges ect)
             var lods = LODGroupGUI.CreateLODInfos(m_NumberOfLODs, sliderBarPosition,
-                    i => String.Format("LOD {0}", i),
-                    i => serializedObject.FindProperty(string.Format(kPixelHeightDataPath, i)).floatValue);
+                i => String.Format("LOD {0}", i),
+                i => serializedObject.FindProperty(string.Format(kPixelHeightDataPath, i)).floatValue);
 
             DrawLODLevelSlider(sliderBarPosition, lods);
             GUILayout.Space(LODGroupGUI.kSliderBarBottomMargin);
@@ -244,7 +243,7 @@ namespace UnityEditor
                 if (EditorGUILayout.BeginFadeGroup(m_ShowFadeTransitionWidth.faded))
                     EditorGUILayout.Slider(serializedObject.FindProperty(string.Format(kFadeTransitionWidthDataPath, activeLOD)), 0, 1);
                 EditorGUILayout.EndFadeGroup();
-                DrawRenderersInfo(EditorGUIUtility.currentViewWidth);
+                DrawRenderersInfo(EditorGUIUtility.contextWidth);
             }
 
             GUILayout.Space(8);
@@ -269,7 +268,7 @@ namespace UnityEditor
 
             GUILayout.Space(5);
 
-            var importer = PrefabUtility.GetPrefabType(target) == PrefabType.ModelPrefabInstance ? GetImporter() : null;
+            var importer = PrefabUtility.IsPartOfModelPrefab(target) ? GetImporter() : null;
             if (importer != null)
             {
                 var importerRef = new SerializedObject(importer);
@@ -329,10 +328,10 @@ namespace UnityEditor
                 for (int k = 0; k < horizontalCount && (i * horizontalCount + k) < renderersProperty.arraySize; k++)
                 {
                     var drawPos = new Rect(
-                            LODGroupGUI.kButtonPadding + rendererArea.x + k * buttonWidth,
-                            LODGroupGUI.kButtonPadding + rendererArea.y + i * LODGroupGUI.kRenderersButtonHeight,
-                            buttonWidth - LODGroupGUI.kButtonPadding * 2,
-                            LODGroupGUI.kRenderersButtonHeight - LODGroupGUI.kButtonPadding * 2);
+                        LODGroupGUI.kButtonPadding + rendererArea.x + k * buttonWidth,
+                        LODGroupGUI.kButtonPadding + rendererArea.y + i * LODGroupGUI.kRenderersButtonHeight,
+                        buttonWidth - LODGroupGUI.kButtonPadding * 2,
+                        LODGroupGUI.kRenderersButtonHeight - LODGroupGUI.kButtonPadding * 2);
                     buttons.Add(drawPos);
                     DrawRendererButton(drawPos, i * horizontalCount + k);
                 }
@@ -345,10 +344,10 @@ namespace UnityEditor
             int horizontalPos = (numberOfButtons - 1) % horizontalCount;
             int verticalPos = numberOfRows - 1;
             HandleAddRenderer(new Rect(
-                    LODGroupGUI.kButtonPadding + rendererArea.x + horizontalPos * buttonWidth,
-                    LODGroupGUI.kButtonPadding + rendererArea.y + verticalPos * LODGroupGUI.kRenderersButtonHeight,
-                    buttonWidth - LODGroupGUI.kButtonPadding * 2,
-                    LODGroupGUI.kRenderersButtonHeight - LODGroupGUI.kButtonPadding * 2), buttons, drawArea);
+                LODGroupGUI.kButtonPadding + rendererArea.x + horizontalPos * buttonWidth,
+                LODGroupGUI.kButtonPadding + rendererArea.y + verticalPos * LODGroupGUI.kRenderersButtonHeight,
+                buttonWidth - LODGroupGUI.kButtonPadding * 2,
+                LODGroupGUI.kRenderersButtonHeight - LODGroupGUI.kButtonPadding * 2), buttons, drawArea);
         }
 
         private void HandleAddRenderer(Rect position, IEnumerable<Rect> alreadyDrawn, Rect drawArea)
@@ -514,10 +513,10 @@ namespace UnityEditor
             {
                 const string kReparent = "Some objects are not children of the LODGroup GameObject. Do you want to reparent them and add them to the LODGroup?";
                 if (EditorUtility.DisplayDialog(
-                        "Reparent GameObjects",
-                        kReparent,
-                        "Yes, Reparent",
-                        "No, Use Only Existing Children"))
+                    "Reparent GameObjects",
+                    kReparent,
+                    "Yes, Reparent",
+                    "No, Use Only Existing Children"))
                 {
                     foreach (var go in nonChildObjects)
                     {
@@ -590,8 +589,8 @@ namespace UnityEditor
 
                 renderersProperty.arraySize += 1;
                 renderersProperty.
-                GetArrayElementAtIndex(renderersProperty.arraySize - 1).
-                FindPropertyRelative("renderer").objectReferenceValue = renderer;
+                    GetArrayElementAtIndex(renderersProperty.arraySize - 1).
+                    FindPropertyRelative("renderer").objectReferenceValue = renderer;
 
                 // Stop readd
                 oldRenderers.Add(renderer);

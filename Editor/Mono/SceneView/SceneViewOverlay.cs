@@ -55,8 +55,6 @@ namespace UnityEditor
 
         static List<OverlayWindow> m_Windows;
 
-        Rect m_WindowRect = new Rect(0, 0, 0, 0);
-
         SceneView m_SceneView;
 
         float k_WindowPadding = 9f;
@@ -92,11 +90,9 @@ namespace UnityEditor
 
             if (m_Windows.Count > 0)
             {
-                m_WindowRect.x = 0;
-                m_WindowRect.y = 0;
-                m_WindowRect.width = m_SceneView.position.width;
-                m_WindowRect.height = m_SceneView.position.height;
-                m_WindowRect = GUILayout.Window("SceneViewOverlay".GetHashCode(), m_WindowRect, WindowTrampoline, "", Styles.sceneViewOverlayTransparentBackground);
+                Rect sceneViewGUIRect = m_SceneView.cameraRect;
+                Rect windowOverlayRect = new Rect(sceneViewGUIRect.x, 0f, sceneViewGUIRect.width, m_SceneView.position.height);
+                GUILayout.Window("SceneViewOverlay".GetHashCode(), windowOverlayRect, WindowTrampoline, "", Styles.sceneViewOverlayTransparentBackground);
             }
 
             m_SceneView.EndWindows();

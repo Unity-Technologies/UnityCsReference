@@ -16,7 +16,7 @@ namespace UnityEngine.Experimental.UIElements
         Bindings,
         Styles,
         Layout,
-        Transform,
+        TransformClip,
         Repaint,
         Count
     }
@@ -123,7 +123,7 @@ namespace UnityEngine.Experimental.UIElements
             SetUpdater<VisualTreeBindingsUpdater>(VisualTreeUpdatePhase.Bindings);
             SetUpdater<VisualTreeStyleUpdater>(VisualTreeUpdatePhase.Styles);
             SetUpdater<VisualTreeLayoutUpdater>(VisualTreeUpdatePhase.Layout);
-            SetUpdater<VisualTreeTransformUpdater>(VisualTreeUpdatePhase.Transform);
+            SetUpdater<VisualTreeTransformClipUpdater>(VisualTreeUpdatePhase.TransformClip);
             SetUpdater<VisualTreeRepaintUpdater>(VisualTreeUpdatePhase.Repaint);
         }
     }

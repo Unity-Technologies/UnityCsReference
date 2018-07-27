@@ -127,22 +127,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                if (effectiveStyle.flexBasis.value.isKeyword)
-                {
-                    if (effectiveStyle.flexBasis.value.keyword == StyleValueKeyword.Auto)
-                    {
-                        // Negative values are illegal. Return -1 to indicate auto.
-                        return new StyleValue<float>(-1f, effectiveStyle.flexBasis.specificity);
-                    }
-                    else
-                    {
-                        return new StyleValue<float>(0f, effectiveStyle.flexBasis.specificity);
-                    }
-                }
-                else
-                {
-                    return new StyleValue<float>(effectiveStyle.flexBasis.value.floatValue, effectiveStyle.flexBasis.specificity);
-                }
+                return effectiveStyle.FlexBasisToFloat();
             }
             set
             {

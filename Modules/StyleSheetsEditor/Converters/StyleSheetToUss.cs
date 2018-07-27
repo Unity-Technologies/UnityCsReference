@@ -160,16 +160,16 @@ namespace UnityEditor.StyleSheets
             if (alpha != "1")
             {
                 str = string.Format("rgba({0}, {1}, {2}, {3:F2})", ColorComponent(color.r),
-                        ColorComponent(color.g),
-                        ColorComponent(color.b),
-                        alpha);
+                    ColorComponent(color.g),
+                    ColorComponent(color.b),
+                    alpha);
             }
             else if (!useColorCode)
             {
                 str = string.Format("rgb({0}, {1}, {2})",
-                        ColorComponent(color.r),
-                        ColorComponent(color.g),
-                        ColorComponent(color.b));
+                    ColorComponent(color.r),
+                    ColorComponent(color.g),
+                    ColorComponent(color.b));
             }
             else
             {
@@ -213,13 +213,13 @@ namespace UnityEditor.StyleSheets
             foreach (var property in rule.properties)
             {
                 options.comments.TryGet(property, comment =>
+                {
+                    if (rule.properties[0] != property)
                     {
-                        if (rule.properties[0] != property)
-                        {
-                            sb.Append("\n");
-                        }
-                        AddComment(sb, comment, options.propertyIndent);
-                    });
+                        sb.Append("\n");
+                    }
+                    AddComment(sb, comment, options.propertyIndent);
+                });
                 sb.Append(options.propertyIndent);
                 sb.Append(property.name);
                 sb.Append(":");

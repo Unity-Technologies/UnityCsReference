@@ -68,12 +68,12 @@ namespace UnityEditor.ShortcutManagement
             ApplyProfile(m_ActiveProfile);
             MigrateUserSpecifiedPrefKeys(
                 EditorAssemblies.GetAllMethodsWithAttribute<FormerlyPrefKeyAsAttribute>(), m_Entries
-                );
+            );
         }
 
         internal static void MigrateUserSpecifiedPrefKeys(
             IEnumerable<MethodInfo> methodsWithFormerlyPrefKeyAs, List<ShortcutEntry> entries
-            )
+        )
         {
             foreach (var method in methodsWithFormerlyPrefKeyAs)
             {
@@ -93,8 +93,8 @@ namespace UnityEditor.ShortcutManagement
                 string name;
                 Event keyboardEvent;
                 var parsed = PrefKey.TryParseUniquePrefString(
-                        EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent
-                        );
+                    EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent
+                );
                 if (!parsed)
                     continue;
                 var prefKeyCurrentValue = new KeyCombination(keyboardEvent);

@@ -64,6 +64,14 @@ namespace UnityEngine.Profiling
             set;
         }
 
+        public extern static int maxUsedMemory
+        {
+            [NativeMethod(Name = "ProfilerBindings::GetMaxUsedMemory", IsFreeFunction = true)]
+            get;
+            [NativeMethod(Name = "ProfilerBindings::SetMaxUsedMemory", IsFreeFunction = true)]
+            set;
+        }
+
         // Enables the Profiler.
         public extern static bool enabled
         {
@@ -147,7 +155,7 @@ namespace UnityEngine.Profiling
         [NativeMethod(Name = "ProfilerBindings::EndSample", IsFreeFunction = true, IsThreadSafe = true)]
         public extern static void EndSample();
 
-        [Obsolete("maxNumberOfSamplesPerFrame is no longer needed, as the profiler buffers auto expand as needed")]
+        [Obsolete("maxNumberOfSamplesPerFrame has been depricated. Use maxUsedMemory instead")]
         public static int maxNumberOfSamplesPerFrame
         {
             get

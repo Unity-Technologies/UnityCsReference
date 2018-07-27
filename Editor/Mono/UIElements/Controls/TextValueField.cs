@@ -32,7 +32,7 @@ namespace UnityEditor.Experimental.UIElements
             : base(maxLength, Char.MinValue)
         {
             m_UpdateTextFromValue = true;
-            value = default(T);
+            SetValueWithoutNotify(default(T));
         }
 
         private bool m_UpdateTextFromValue;

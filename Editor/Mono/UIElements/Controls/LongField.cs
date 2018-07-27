@@ -20,7 +20,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                ((LongField)ve).value = m_Value.GetValueFromBag(bag);
+                ((LongField)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
             }
         }
 

@@ -38,18 +38,18 @@ namespace TreeEditor
         public void Lerp4(TreeVertex[] tv, Vector2 factor)
         {
             pos = Vector3.Lerp(
-                    Vector3.Lerp(tv[1].pos, tv[2].pos, factor.x),
-                    Vector3.Lerp(tv[0].pos, tv[3].pos, factor.x),
-                    factor.y);
+                Vector3.Lerp(tv[1].pos, tv[2].pos, factor.x),
+                Vector3.Lerp(tv[0].pos, tv[3].pos, factor.x),
+                factor.y);
             nor = Vector3.Lerp(
-                    Vector3.Lerp(tv[1].nor, tv[2].nor, factor.x),
-                    Vector3.Lerp(tv[0].nor, tv[3].nor, factor.x),
-                    factor.y).normalized;
+                Vector3.Lerp(tv[1].nor, tv[2].nor, factor.x),
+                Vector3.Lerp(tv[0].nor, tv[3].nor, factor.x),
+                factor.y).normalized;
 
             tangent = Vector4.Lerp(
-                    Vector4.Lerp(tv[1].tangent, tv[2].tangent, factor.x),
-                    Vector4.Lerp(tv[0].tangent, tv[3].tangent, factor.x),
-                    factor.y);
+                Vector4.Lerp(tv[1].tangent, tv[2].tangent, factor.x),
+                Vector4.Lerp(tv[0].tangent, tv[3].tangent, factor.x),
+                factor.y);
             Vector3 tangentNormalized = (new Vector3(tangent.x, tangent.y, tangent.z));
             tangentNormalized.Normalize();
             tangent.x = tangentNormalized.x;
@@ -57,9 +57,9 @@ namespace TreeEditor
             tangent.z = tangentNormalized.z;
 
             color = Color.Lerp(
-                    Color.Lerp(tv[1].color, tv[2].color, factor.x),
-                    Color.Lerp(tv[0].color, tv[3].color, factor.x),
-                    factor.y);
+                Color.Lerp(tv[1].color, tv[2].color, factor.x),
+                Color.Lerp(tv[0].color, tv[3].color, factor.x),
+                factor.y);
         }
     }
 }

@@ -13,14 +13,6 @@ namespace UnityEditor
         [SerializeField]
         float m_StampHeight = 0.0f;
 
-        Material m_Material = null;
-        Material GetPaintMaterial()
-        {
-            if (m_Material == null)
-                m_Material = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeight"));
-            return m_Material;
-        }
-
         public override string GetName()
         {
             return "Stamp Terrain";
@@ -31,17 +23,15 @@ namespace UnityEditor
             return "Left click to stamp the brush onto the terrain.\n\nHold shift and left click to stamp negative.";
         }
 
-        public override bool Paint(Terrain terrain, Texture brushTexture, Vector2 uv, float brushStrength, int brushSizeInTerrainUnits)
+        public override bool Paint(Terrain terrain, Texture brushTexture, Vector2 uv, float brushStrength, int brushSize)
         {
             if (Event.current.type == EventType.MouseDrag)
                 return false;
 
-            Material mat = GetPaintMaterial();
+            Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
 
-            Vector2Int brushSize = TerrainPaintUtility.CalculateBrushSizeInHeightmapSpace(terrain, brushSizeInTerrainUnits);
-
-            TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, uv, brushSize);
-            TerrainPaintUtilityEditor.UpdateTerrainUndo(paintContext, TerrainPaintUtilityEditor.ToolAction.PaintHeightmap, "Terrain Paint - Stamp");
+            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, uv, brushSize);
+            TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushRect);
 
             Vector4 brushParams = new Vector4(brushStrength * 0.01f, 0.0f, m_StampHeight, 0.0f);
 
@@ -50,9 +40,9 @@ namespace UnityEditor
 
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, 1);
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.StampHeight);
 
-            TerrainPaintUtility.EndPaintHeightmap(paintContext);
+            TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Stamp");
             return false;
         }
 

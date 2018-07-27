@@ -45,8 +45,8 @@ namespace UnityEditor
             if (poseCurve.Length != rotationCurve.Length || rotationCurve.Length != heightCurve.Length || heightCurve.Length != positionCurve.Length)
             {
                 throw new ArgumentException(string.Format(
-                        "poseCurve '{0}', rotationCurve '{1}', heightCurve '{2}' and positionCurve '{3}' Length must be equals.",
-                        poseCurve.Length, rotationCurve.Length, heightCurve.Length, positionCurve.Length));
+                    "poseCurve '{0}', rotationCurve '{1}', heightCurve '{2}' and positionCurve '{3}' Length must be equals.",
+                    poseCurve.Length, rotationCurve.Length, heightCurve.Length, positionCurve.Length));
             }
 
             CalculateQualityCurves(clip, time.fixedTime, time.variableEndStart, time.variableEndEnd, time.q, poseCurve, rotationCurve, heightCurve, positionCurve);

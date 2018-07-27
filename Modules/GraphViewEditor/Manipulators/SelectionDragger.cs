@@ -59,8 +59,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Shift });
-            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
-            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            {
+                activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
+            }
+            else
+            {
+                activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
+            }
             panSpeed = new Vector2(1, 1);
             clampToParentEdges = false;
 
@@ -306,6 +312,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // mouse has gone out.
             m_MouseDiff = m_originalMouse - e.mousePosition;
 
+            var groupElementsDraggedOut = e.shiftKey ? new Dictionary<Group, List<GraphElement>>() : null;
             foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
             {
                 GraphElement ce = v.Key;
@@ -316,14 +323,36 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (!v.Value.dragStarted)
                 {
+                    // TODO Would probably be a good idea to batch stack items as we do for group ones.
                     var stackParent = ce.GetFirstAncestorOfType<StackNode>();
                     if (stackParent != null)
                         stackParent.OnStartDragging(ce);
 
+                    if (groupElementsDraggedOut != null)
+                    {
+                        var groupParent = ce.GetContainingScope() as Group;
+                        if (groupParent != null)
+                        {
+                            if (!groupElementsDraggedOut.ContainsKey(groupParent))
+                            {
+                                groupElementsDraggedOut[groupParent] = new List<GraphElement>();
+                            }
+                            groupElementsDraggedOut[groupParent].Add(ce);
+                        }
+                    }
                     v.Value.dragStarted = true;
                 }
 
                 MoveElement(ce, v.Value.pos);
+            }
+
+            // Needed to ensure nodes can be dragged out of multiple groups all at once.
+            if (groupElementsDraggedOut != null)
+            {
+                foreach (KeyValuePair<Group, List<GraphElement>> kvp in groupElementsDraggedOut)
+                {
+                    kvp.Key.OnStartDragging(e, kvp.Value);
+                }
             }
 
             List<ISelectable> selection = m_GraphView.selection;
@@ -379,8 +408,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             Rect newPost = new Rect(0, 0, originalPos.width, originalPos.height);
 
             // Compute the new position of the selected element using the mouse delta position and panning info
-            newPost.x = originalPos.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x;
-            newPost.y = originalPos.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y;
+            newPost.x = originalPos.x - (m_MouseDiff.x - m_ItemPanDiff.x) * panSpeed.x / scale.x * element.transform.scale.x;
+            newPost.y = originalPos.y - (m_MouseDiff.y - m_ItemPanDiff.y) * panSpeed.y / scale.y * element.transform.scale.y;
 
             element.SetPosition(m_GraphView.contentViewContainer.ChangeCoordinatesTo(element.shadow.parent, newPost));
         }
@@ -470,6 +499,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
 
             // Reset the items to their original pos.
+            var groupsElementsToReset = new Dictionary<Scope, List<GraphElement>>();
             foreach (KeyValuePair<GraphElement, OriginalPos> v in m_OriginalPos)
             {
                 OriginalPos originalPos = v.Value;
@@ -481,10 +511,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 {
                     if (originalPos.scope != null)
                     {
-                        originalPos.scope.AddElement(v.Key);
+                        if (!groupsElementsToReset.ContainsKey(originalPos.scope))
+                        {
+                            groupsElementsToReset[originalPos.scope] = new List<GraphElement>();
+                        }
+                        groupsElementsToReset[originalPos.scope].Add(v.Key);
                     }
                     v.Key.SetPosition(originalPos.pos);
                 }
+            }
+
+            foreach (KeyValuePair<Scope, List<GraphElement>> toReset in groupsElementsToReset)
+            {
+                toReset.Key.AddElements(toReset.Value);
             }
 
             m_PanSchedule.Pause();

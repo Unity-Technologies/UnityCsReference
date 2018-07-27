@@ -509,10 +509,10 @@ namespace UnityEditor
             m_DraggingRangeEnd = false;
 
             bool invalidRange = (
-                    startFrame + 0.01f < m_Clip.startTime * m_Clip.frameRate ||
-                    startFrame - 0.01f > m_Clip.stopTime * m_Clip.frameRate ||
-                    stopFrame + 0.01f < m_Clip.startTime * m_Clip.frameRate ||
-                    stopFrame - 0.01f > m_Clip.stopTime * m_Clip.frameRate);
+                startFrame + 0.01f < m_Clip.startTime * m_Clip.frameRate ||
+                startFrame - 0.01f > m_Clip.stopTime * m_Clip.frameRate ||
+                stopFrame + 0.01f < m_Clip.startTime * m_Clip.frameRate ||
+                stopFrame - 0.01f > m_Clip.stopTime * m_Clip.frameRate);
             bool fixRange = false;
             if (invalidRange)
             {
@@ -985,7 +985,7 @@ namespace UnityEditor
             float additivePoseTime = m_AdditivePoseFrame / m_Clip.frameRate;
 
             MuscleClipQualityInfo clipQualityInfo = MuscleClipUtility.GetMuscleClipQualityInfo(m_Clip, startTime,
-                    stopTime);
+                stopTime);
 
             bool IsHumanClip = (target as Motion).isHumanMotion;
             bool hasMotionCurves = m_Clip.hasMotionCurves;
@@ -1088,7 +1088,7 @@ namespace UnityEditor
                     EditorGUILayout.GetControlRect();
                 else
                     animationClipSettings.orientationOffsetY = EditorGUILayout.FloatField(Styles.OrientationOffsetY,
-                            animationClipSettings
+                        animationClipSettings
                             .orientationOffsetY);
                 EditorGUI.indentLevel--;
 
@@ -1150,7 +1150,7 @@ namespace UnityEditor
                     EditorGUILayout.GetControlRect();
                 else
                     animationClipSettings.level = EditorGUILayout.FloatField(Styles.PositionOffsetY,
-                            animationClipSettings.level);
+                        animationClipSettings.level);
                 EditorGUI.indentLevel--;
 
                 EditorGUILayout.Space();
@@ -1498,10 +1498,10 @@ namespace UnityEditor
                 }
 
                 Rect r = new Rect(
-                        keypos + sharedOffset - eventMarker.width / 2,
-                        (rect.height - 10) * (float)(sharedLeft - shared + 1) / Mathf.Max(1, shared - 1),
-                        eventMarker.width,
-                        eventMarker.height);
+                    keypos + sharedOffset - eventMarker.width / 2,
+                    (rect.height - 10) * (float)(sharedLeft - shared + 1) / Mathf.Max(1, shared - 1),
+                    eventMarker.width,
+                    eventMarker.height);
 
                 hitRects[i] = r;
                 drawRects[i] = r;
@@ -1525,18 +1525,18 @@ namespace UnityEditor
 
             // TODO: GUIStyle.none has hopping margins that need to be fixed
             HighLevelEvent hEvent = EditorGUIExt.MultiSelection(
-                    rect,
-                    drawRects,
-                    new GUIContent(eventMarker),
-                    hitRects,
-                    ref m_EventsSelected,
-                    null,
-                    out clickedIndex,
-                    out offset,
-                    out startSelection,
-                    out endSelection,
-                    GUIStyle.none
-                    );
+                rect,
+                drawRects,
+                new GUIContent(eventMarker),
+                hitRects,
+                ref m_EventsSelected,
+                null,
+                out clickedIndex,
+                out offset,
+                out startSelection,
+                out endSelection,
+                GUIStyle.none
+            );
 
 
             if (hEvent != HighLevelEvent.None)
@@ -1588,16 +1588,16 @@ namespace UnityEditor
 
                         GenericMenu menu = new GenericMenu();
                         menu.AddItem(
-                        EditorGUIUtility.TrTextContent("Add Animation Event"),
-                        false,
-                        EventLineContextMenuAdd,
-                        new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
+                            EditorGUIUtility.TrTextContent("Add Animation Event"),
+                            false,
+                            EventLineContextMenuAdd,
+                            new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
                         menu.AddItem((selectedEventsCount > 1 ?
-                                      m_DeleteAnimationEventsText :
-                                      m_DeleteAnimationEventText),
-                        false,
-                        EventLineContextMenuDelete,
-                        new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
+                            m_DeleteAnimationEventsText :
+                            m_DeleteAnimationEventText),
+                            false,
+                            EventLineContextMenuDelete,
+                            new EventModificationContextMenuObject(clipInfo, events[clickedIndex].time, clickedIndex, m_EventsSelected));
                         menu.ShowAsContext();
                         // Mouse may move while context menu is open - make sure instant tooltip is handled
                         m_InstantTooltipText = null;
@@ -1622,8 +1622,8 @@ namespace UnityEditor
                 if (selectedEventsCount > 0)
                 {
                     menu.AddItem((selectedEventsCount > 1 ?
-                                  m_DeleteAnimationEventsText :
-                                  m_DeleteAnimationEventText),
+                        m_DeleteAnimationEventsText :
+                        m_DeleteAnimationEventText),
                         false,
                         EventLineContextMenuDelete,
                         new EventModificationContextMenuObject(clipInfo, mousePosTime, -1, m_EventsSelected));

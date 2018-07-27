@@ -58,6 +58,9 @@ namespace UnityEditor.Experimental.UIElements
             {
                 m_DragElement.CaptureMouse();
 
+                // Make sure no other elements can capture the mouse!
+                evt.StopPropagation();
+
                 dragging = true;
                 startValue = m_DrivenField.value;
 

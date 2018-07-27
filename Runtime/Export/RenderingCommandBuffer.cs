@@ -141,12 +141,22 @@ namespace UnityEngine.Rendering
         // Set a texture parameter.
         public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, string name, RenderTargetIdentifier rt)
         {
-            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt);
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt, 0);
         }
 
         public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, int nameID, RenderTargetIdentifier rt)
         {
-            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt);
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt, 0);
+        }
+
+        public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, string name, RenderTargetIdentifier rt, int mipLevel)
+        {
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, Shader.PropertyToID(name), ref rt, mipLevel);
+        }
+
+        public void SetComputeTextureParam(ComputeShader computeShader, int kernelIndex, int nameID, RenderTargetIdentifier rt, int mipLevel)
+        {
+            Internal_SetComputeTextureParam(computeShader, kernelIndex, nameID, ref rt, mipLevel);
         }
 
         public void SetComputeBufferParam(ComputeShader computeShader, int kernelIndex, string name, ComputeBuffer buffer)

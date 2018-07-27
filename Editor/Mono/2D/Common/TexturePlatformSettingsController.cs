@@ -63,12 +63,12 @@ namespace UnityEditor.U2D.Common
                 if (allCompression != TextureImporterCompression.Uncompressed && (!mixedCompression || compressionChanged))
                 {
                     allUseCrunchedCompression = view.DrawUseCrunchedCompression(allUseCrunchedCompression,
-                            mixedUseCrunchedCompression, false, out useCrunchedCompressionChanged);
+                        mixedUseCrunchedCompression, false, out useCrunchedCompressionChanged);
 
                     if (allUseCrunchedCompression && (!mixedUseCrunchedCompression || useCrunchedCompressionChanged))
                     {
                         allCompressionQuality = view.DrawCompressionQualitySlider(allCompressionQuality,
-                                mixedCompressionQuality, false, out compressionQualityChanged);
+                            mixedCompressionQuality, false, out compressionQualityChanged);
                     }
                 }
             }

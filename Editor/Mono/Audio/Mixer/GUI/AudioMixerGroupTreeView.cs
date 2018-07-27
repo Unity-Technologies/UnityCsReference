@@ -312,7 +312,7 @@ namespace UnityEditor
             m_AudioGroupTree.Init(mixerWindow.position,
                 m_AudioGroupTreeDataSource, m_TreeViewGUI,
                 new AudioGroupTreeViewDragging(m_AudioGroupTree, this)
-                );
+            );
             m_AudioGroupTree.ReloadData();
         }
 

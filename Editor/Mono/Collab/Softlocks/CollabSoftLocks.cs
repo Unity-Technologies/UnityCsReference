@@ -13,7 +13,7 @@ namespace UnityEditor.Collaboration
     //*undocumented
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Editor/Src/Collab/Softlocks/CollabSoftLock.h",
-         IntermediateScriptingStructName = "ScriptingSoftLock")]
+        IntermediateScriptingStructName = "ScriptingSoftLock")]
     [NativeHeader("Editor/Src/Collab/Collab.bindings.h")]
     [NativeAsStruct]
     internal class SoftLock

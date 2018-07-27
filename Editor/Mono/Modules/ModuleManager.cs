@@ -304,13 +304,15 @@ namespace UnityEditor.Modules
             {
                 string playbackEngineFolders = FileUtil.CombinePaths(Directory.GetParent(EditorApplication.applicationPath).ToString(), "PlaybackEngines");
                 locatorType.InvokeMember("Scan", BindingFlags.Public | BindingFlags.Static | BindingFlags.InvokeMethod, null, null,
-                    new object[] {
-                    new string[] {
-                        FileUtil.NiceWinPath(EditorApplication.applicationContentsPath),
-                        FileUtil.NiceWinPath(playbackEngineFolders)
-                    },
-                    Application.unityVersion
-                });
+                    new object[]
+                    {
+                        new string[]
+                        {
+                            FileUtil.NiceWinPath(EditorApplication.applicationContentsPath),
+                            FileUtil.NiceWinPath(playbackEngineFolders)
+                        },
+                        Application.unityVersion
+                    });
             }
             catch (Exception ex)
             {
@@ -716,7 +718,6 @@ namespace UnityEditor.Modules
                 case BuildTarget.WebGL: return "WebGL";
                 case BuildTarget.Lumin: return "Lumin";
                 case BuildTarget.Android: return "Android";
-                case BuildTarget.N3DS: return "N3DS";
                 case BuildTarget.Switch: return "Switch";
                 case BuildTarget.StandaloneLinux:
                 case BuildTarget.StandaloneLinux64:
@@ -751,7 +752,6 @@ namespace UnityEditor.Modules
                 case BuildTargetGroup.WebGL: return "WebGL";
                 case BuildTargetGroup.Lumin: return "Lumin";
                 case BuildTargetGroup.Android: return "Android";
-                case BuildTargetGroup.N3DS: return "N3DS";
                 case BuildTargetGroup.Facebook: return "Facebook";
                 case BuildTargetGroup.Switch: return "Switch";
                 default: return null;

@@ -202,44 +202,44 @@ namespace UnityEditor
                 EditorGUIUtility.IconContent("preAudioPlayOn")
             };
             public GUIContent keepAlphaContent = EditorGUIUtility.TextContent(
-                    "Keep Alpha|If the source clip has alpha, this will encode it in the resulting clip so that transparency is usable during render.");
+                "Keep Alpha|If the source clip has alpha, this will encode it in the resulting clip so that transparency is usable during render.");
             public GUIContent deinterlaceContent = EditorGUIUtility.TextContent(
-                    "Deinterlace|Remove interlacing on this video.");
+                "Deinterlace|Remove interlacing on this video.");
             public GUIContent flipHorizontalContent = EditorGUIUtility.TextContent(
-                    "Flip Horizontally|Flip the video horizontally during transcoding.");
+                "Flip Horizontally|Flip the video horizontally during transcoding.");
             public GUIContent flipVerticalContent = EditorGUIUtility.TextContent(
-                    "Flip Vertically|Flip the video vertically during transcoding.");
+                "Flip Vertically|Flip the video vertically during transcoding.");
             public GUIContent importAudioContent = EditorGUIUtility.TextContent(
-                    "Import Audio|Defines if the audio tracks will be imported during transcoding.");
+                "Import Audio|Defines if the audio tracks will be imported during transcoding.");
             public GUIContent transcodeContent = EditorGUIUtility.TextContent(
-                    "Transcode|Transcoding a clip gives more flexibility through the options below, but takes more time.");
+                "Transcode|Transcoding a clip gives more flexibility through the options below, but takes more time.");
             public GUIContent dimensionsContent = EditorGUIUtility.TextContent(
-                    "Dimensions|Pixel size of the resulting video.");
+                "Dimensions|Pixel size of the resulting video.");
             public GUIContent widthContent = EditorGUIUtility.TextContent(
-                    "Width|Width in pixels of the resulting video.");
+                "Width|Width in pixels of the resulting video.");
             public GUIContent heightContent = EditorGUIUtility.TextContent(
-                    "Height|Height in pixels of the resulting video.");
+                "Height|Height in pixels of the resulting video.");
             public GUIContent aspectRatioContent = EditorGUIUtility.TextContent(
-                    "Aspect Ratio|How the original video is mapped into the target dimensions.");
+                "Aspect Ratio|How the original video is mapped into the target dimensions.");
             public GUIContent codecContent = EditorGUIUtility.TextContent(
-                    "Codec|Codec for the resulting clip. Automatic will make the best choice for the target platform.");
+                "Codec|Codec for the resulting clip. Automatic will make the best choice for the target platform.");
             public GUIContent bitrateContent = EditorGUIUtility.TextContent(
-                    "Bitrate Mode|Higher bit rates give a better quality, but impose higher load on network connections or storage.");
+                "Bitrate Mode|Higher bit rates give a better quality, but impose higher load on network connections or storage.");
             public GUIContent spatialQualityContent = EditorGUIUtility.TextContent(
-                    "Spatial Quality|Adds a downsize during import to reduce bitrate using resolution.");
+                "Spatial Quality|Adds a downsize during import to reduce bitrate using resolution.");
             public GUIContent importerVersionContent = EditorGUIUtility.TextContent(
-                    "Importer Version|Selects the type of video asset produced.");
+                "Importer Version|Selects the type of video asset produced.");
             public GUIContent[] importerVersionOptions =
             {
                 EditorGUIUtility.TrTextContent("VideoClip", "Produce VideoClip asset (for use with VideoPlayer)"),
                 EditorGUIUtility.TrTextContent("MovieTexture (Deprecated)", "Produce MovieTexture asset (deprecated in factor of VideoClip)"),
             };
             public GUIContent transcodeWarning = EditorGUIUtility.TextContent(
-                    "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.");
+                "Not all platforms transcoded. Clip is not guaranteed to be compatible on platforms without transcoding.");
             public GUIContent transcodeSkippedWarning = EditorGUIUtility.TextContent(
-                    "Transcode was skipped. Current clip does not match import settings. Reimport to resolve.");
+                "Transcode was skipped. Current clip does not match import settings. Reimport to resolve.");
             public GUIContent multipleTranscodeSkippedWarning = EditorGUIUtility.TextContent(
-                    "Transcode was skipped for some clips and they don't match import settings. Reimport to resolve.");
+                "Transcode was skipped for some clips and they don't match import settings. Reimport to resolve.");
         };
 
         static Styles s_Styles;
@@ -717,8 +717,8 @@ namespace UnityEditor
             var originalLabelWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 100;
             int selectionIndex = EditorGUILayout.Popup(
-                    s_Styles.importerVersionContent, m_UseLegacyImporter.boolValue ? 1 : 0,
-                    s_Styles.importerVersionOptions, EditorStyles.popup, GUILayout.MaxWidth(230));
+                s_Styles.importerVersionContent, m_UseLegacyImporter.boolValue ? 1 : 0,
+                s_Styles.importerVersionOptions, EditorStyles.popup, GUILayout.MaxWidth(230));
             EditorGUIUtility.labelWidth = originalLabelWidth;
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())

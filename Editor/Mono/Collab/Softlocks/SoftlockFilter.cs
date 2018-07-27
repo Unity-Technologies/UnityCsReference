@@ -14,7 +14,8 @@ namespace UnityEditor.Collaboration
     {
         public override void InitializeFilters()
         {
-            filters = new List<string[]>() {
+            filters = new List<string[]>()
+            {
                 new string[] { "All In Progress" , "s:inprogress"},
             };
         }

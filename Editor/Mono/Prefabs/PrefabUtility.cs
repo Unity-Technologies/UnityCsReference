@@ -4,16 +4,45 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Assertions;
+using UnityEditor;
 using UnityEngine.SceneManagement;
 using UnityEditor.SceneManagement;
-using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 using Object = UnityEngine.Object;
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+using UnityEditor.VersionControl;
 
 namespace UnityEditor
 {
-    // The type of a prefab object as returned by EditorUtility.GetPrefabType.
+    public enum PrefabAssetType
+    {
+        NotAPrefab = 0,
+        Regular = 1,
+        Model = 2,
+        Variant = 3,
+        MissingAsset = 4
+    }
+
+    public enum PrefabInstanceStatus
+    {
+        NotAPrefab = 0,
+        Connected = 1,
+        Disconnected = 2,
+        MissingAsset = 3
+    }
+
+    // Enum for the PrefabUtility.UnpackPrefabInstance function.
+    public enum PrefabUnpackMode
+    {
+        OutermostRoot = 0,
+        Completely = 1,
+    }
+
+    // The type of a prefab object as returned by PrefabUtility.GetPrefabType.
+    [Obsolete("PrefabType no longer tells everything about Prefab instance ")]
     public enum PrefabType
     {
         // The object is not a prefab nor an instance of a prefab.
@@ -35,6 +64,8 @@ namespace UnityEditor
     }
 
     // Flags for the PrefabUtility.ReplacePrefab function.
+    [Flags]
+    [Obsolete("This has turned into the more explicit APIs, SavePrefabAsset, SaveAsPrefabAsset, SaveAsPrefabAssetAndConnect")]
     public enum ReplacePrefabOptions
     {
         // Replaces prefabs by matching pre-existing connections to the prefab.
@@ -47,6 +78,12 @@ namespace UnityEditor
 
     public sealed partial class PrefabUtility
     {
+        internal static class GameObjectStyles
+        {
+            public static Texture2D gameObjectIcon = EditorGUIUtility.LoadIconRequired("UnityEngine/GameObject Icon");
+            public static Texture2D prefabIcon = EditorGUIUtility.LoadIconRequired("Prefab Icon");
+        }
+
         private const string kMaterialExtension = ".mat";
 
         [RequiredByNativeCode]
@@ -62,7 +99,7 @@ namespace UnityEditor
                 if (folder == null)
                 {
                     folder = EditorUtility.SaveFolderPanel("Select Materials Folder", FileUtil.DeleteLastPathNameComponent(path), "");
-                    if (string.IsNullOrEmpty(folder))
+                    if (String.IsNullOrEmpty(folder))
                     {
                         // cancel the extraction if the user did not select a folder
                         return;
@@ -72,12 +109,12 @@ namespace UnityEditor
                 }
 
                 // TODO: [bogdanc 3/6/2017] if we want this function really generic, we need to know what extension the new asset files should have
-                var extension = selectedObj is Material ? kMaterialExtension : string.Empty;
+                var extension = selectedObj is Material ? kMaterialExtension : String.Empty;
                 var newAssetPath = FileUtil.CombinePaths(folder, selectedObj.name) + extension;
                 newAssetPath = AssetDatabase.GenerateUniqueAssetPath(newAssetPath);
 
                 var error = AssetDatabase.ExtractAsset(selectedObj, newAssetPath);
-                if (string.IsNullOrEmpty(error))
+                if (String.IsNullOrEmpty(error))
                 {
                     assetsToReload.Add(path);
                 }
@@ -105,7 +142,7 @@ namespace UnityEditor
                     newAssetPath = AssetDatabase.GenerateUniqueAssetPath(newAssetPath);
 
                     var error = AssetDatabase.ExtractAsset(material, newAssetPath);
-                    if (string.IsNullOrEmpty(error))
+                    if (String.IsNullOrEmpty(error))
                     {
                         assetsToReload.Add(importer.assetPath);
                     }
@@ -119,59 +156,101 @@ namespace UnityEditor
             }
         }
 
-        private static void GetObjectListFromHierarchy(List<Object> hierarchy, GameObject gameObject)
+        private static void GetObjectListFromHierarchy(HashSet<int> hierarchyInstanceIDs, GameObject gameObject)
         {
             Transform transform = null;
             List<Component> components = new List<Component>();
             gameObject.GetComponents(components);
+            hierarchyInstanceIDs.Add(gameObject.GetInstanceID());
             foreach (var component in components)
             {
+                if (component == null)
+                {
+                    throw new Exception(String.Format("Component on GameObject '{0}' is invalid", gameObject.name));
+                }
+
                 if (component is Transform)
                     transform = component as Transform;
-
-                hierarchy.Add(component);
+                else
+                    hierarchyInstanceIDs.Add(component.GetInstanceID());
             }
+
             if (transform == null)
                 return;
 
             int childCount = transform.childCount;
             for (var i = 0; i < childCount; i++)
-                GetObjectListFromHierarchy(hierarchy, transform.GetChild(i).gameObject);
+                GetObjectListFromHierarchy(hierarchyInstanceIDs, transform.GetChild(i).gameObject);
         }
 
-        private static void RegisterNewObjects(List<Object> newHierarchy, List<Object> hierarchy, string actionName)
+        private static void CollectAddedObjects(GameObject gameObject, HashSet<int> hierarchyInstanceIDs, List<Object> danglingObjects)
+        {
+            Transform transform = null;
+            List<Component> components = new List<Component>();
+
+            if (hierarchyInstanceIDs.Contains(gameObject.GetInstanceID()))
+            {
+                gameObject.GetComponents(components);
+                foreach (var component in components)
+                {
+                    if (component is Transform)
+                        transform = component as Transform;
+                    else
+                    {
+                        if (component == null)
+                            continue;
+                        if (!hierarchyInstanceIDs.Contains(component.GetInstanceID()))
+                        {
+                            danglingObjects.Add(component);
+                        }
+                    }
+                }
+
+                if (transform == null)
+                    return;
+
+                int childCount = transform.childCount;
+                for (var i = 0; i < childCount; i++)
+                    CollectAddedObjects(transform.GetChild(i).gameObject, hierarchyInstanceIDs, danglingObjects);
+            }
+            else
+            {
+                danglingObjects.Add(gameObject);
+            }
+        }
+
+        private static void RegisterNewObjects(GameObject newHierarchy, HashSet<int> hierarchyInstanceIDs, string actionName)
         {
             var danglingObjects = new List<Object>();
 
-            foreach (var i in newHierarchy)
-            {
-                var found = false;
-                foreach (var j in hierarchy)
-                {
-                    if (j.GetInstanceID() == i.GetInstanceID())
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                {
-                    danglingObjects.Add(i);
-                }
-            }
+            CollectAddedObjects(newHierarchy, hierarchyInstanceIDs, danglingObjects);
 
             // We need to ensure that dangling components are registered in an acceptable order regarding dependencies. For example, if we're adding RigidBody and ConfigurableJoint, the RigidBody will need to be added first (as the ConfigurableJoint depends upon it existing)
             var addedTypes = new HashSet<Type>()
             {
                 typeof(Transform)
             };
+
             var emptyPass = false;
+            GameObject currentGO = null;
+
             while (danglingObjects.Count > 0 && !emptyPass)
             {
                 emptyPass = true;
                 for (var i = 0; i < danglingObjects.Count; i++)
                 {
                     var danglingObject = danglingObjects[i];
+
+                    if (danglingObject is Component)
+                    {
+                        var comp = (Component)danglingObject;
+                        if (comp.gameObject != currentGO)
+                        {
+                            addedTypes = new HashSet<Type>() { typeof(Transform) };
+                            currentGO = comp.gameObject;
+                        }
+                    }
+
                     var reqs = danglingObject.GetType().GetCustomAttributes(typeof(RequireComponent), inherit: true);
                     var requiredComponentsExist = true;
                     foreach (RequireComponent req in reqs)
@@ -182,13 +261,15 @@ namespace UnityEditor
                             break;
                         }
                     }
+
                     if (requiredComponentsExist)
                     {
-                        if (danglingObject is Transform)
-                            danglingObject = ((Transform)danglingObject).gameObject;
-
                         Undo.RegisterCreatedObjectUndo(danglingObject, actionName);
-                        addedTypes.Add(danglingObject.GetType());
+                        if (danglingObject is Component)
+                        {
+                            addedTypes.Add(danglingObject.GetType());
+                        }
+
                         danglingObjects.RemoveAt(i);
                         i--;
                         emptyPass = false;
@@ -203,102 +284,1001 @@ namespace UnityEditor
             }
         }
 
-        internal static void RevertPrefabInstanceWithUndo(GameObject target)
+        static void CheckInstanceIsNotPersistent(Object prefabInstanceObject)
         {
+            if (EditorUtility.IsPersistent(prefabInstanceObject))
+                throw new ArgumentException("Calling apply or revert methods on an instance which is part of a Prefab asset is not supported.", nameof(prefabInstanceObject));
+        }
+
+        public static void RevertPrefabInstance(GameObject instanceRoot, InteractionMode action)
+        {
+            bool isDisconnected = PrefabUtility.IsDisconnectedFromPrefabAsset(instanceRoot);
+
+            CheckInstanceIsNotPersistent(instanceRoot);
+
+            // The concept of disconnecting are being deprecated. For now use FindRootGameObjectWithSameParentPrefab
+            // to re-connect existing disconnected prefabs.
+            #pragma warning disable 0618 // Type or member is obsolete
+            GameObject prefabInstanceRoot = FindRootGameObjectWithSameParentPrefab(instanceRoot);
+
             var actionName = "Revert Prefab Instance";
+            HashSet<int> hierarchy = null;
 
-            PrefabType prefabType = GetPrefabType(target);
-            bool isDisconnected = (prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.DisconnectedPrefabInstance);
-
-            GameObject root = FindRootGameObjectWithSameParentPrefab(target);
-
-            List<Object> hierarchy = new List<Object>();
-            GetObjectListFromHierarchy(hierarchy, root);
-
-            Undo.RegisterFullObjectHierarchyUndo(root, actionName);
+            if (action == InteractionMode.UserAction)
+            {
+                hierarchy = new HashSet<int>();
+                GetObjectListFromHierarchy(hierarchy, prefabInstanceRoot);
+                Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
+            }
 
             if (isDisconnected)
             {
-                ReconnectToLastPrefab(root);
-                Undo.RegisterCreatedObjectUndo(GetPrefabObject(root), actionName);
+                ReconnectToLastPrefab(prefabInstanceRoot);
+
+                if (action == InteractionMode.UserAction)
+                    Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
             }
 
-            RevertPrefabInstance(root);
-            List<Object> newHierarchy = new List<Object>();
-            GetObjectListFromHierarchy(newHierarchy, FindPrefabRoot(root));
+            RevertPrefabInstance(prefabInstanceRoot);
 
-            RegisterNewObjects(newHierarchy, hierarchy, actionName);
+            if (action == InteractionMode.UserAction)
+            {
+                RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
+            }
         }
 
-        internal static void ReplacePrefabWithUndo(GameObject target)
+        public static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action)
         {
+            DateTime startTime = DateTime.UtcNow;
+
+            CheckInstanceIsNotPersistent(instanceRoot);
+
+            // The concept of disconnecting are being deprecated. For now use FindRootGameObjectWithSameParentPrefab
+            // to re-connect existing disconnected prefabs.
+            #pragma warning disable 0618 // Type or member is obsolete
+            GameObject prefabInstanceRoot = FindRootGameObjectWithSameParentPrefab(instanceRoot);
+
             var actionName = "Apply instance to prefab";
-            Object correspondingAssetObject = GetCorrespondingObjectFromSource(target);
-            GameObject rootUploadGameObject = FindValidUploadPrefabInstanceRoot(target);
+            Object correspondingSourceObject = GetCorrespondingObjectFromSource(prefabInstanceRoot);
 
-            Undo.RegisterFullObjectHierarchyUndo(correspondingAssetObject, actionName);
-            Undo.RegisterFullObjectHierarchyUndo(rootUploadGameObject, actionName);
-            Undo.RegisterCreatedObjectUndo(rootUploadGameObject, actionName);
+            HashSet<int> prefabHierarchy = null;
+            if (action == InteractionMode.UserAction)
+            {
+                Undo.RegisterFullObjectHierarchyUndo(correspondingSourceObject, actionName); // handles changes to existing objects and object what will be deleted but not objects that are created
+                Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
 
-            List<Object> prefabHierarchy = new List<Object>();
-            GetObjectListFromHierarchy(prefabHierarchy, correspondingAssetObject as GameObject);
+                prefabHierarchy = new HashSet<int>();
+                GetObjectListFromHierarchy(prefabHierarchy, correspondingSourceObject as GameObject);
+            }
 
-            if (ReplacePrefab(rootUploadGameObject, correspondingAssetObject, ReplacePrefabOptions.ConnectToPrefab) == null)
+            PrefabUtility.ApplyPrefabInstance(prefabInstanceRoot);
+
+            if (action == InteractionMode.UserAction)
+            {
+                RegisterNewObjects(correspondingSourceObject as GameObject, prefabHierarchy, actionName); // handles created objects
+            }
+
+            Analytics.SendApplyEvent(
+                Analytics.ApplyScope.EntirePrefab,
+                instanceRoot,
+                null,
+                action,
+                startTime,
+                false
+            );
+        }
+
+        private static void MapObjectReferencePropertyToSourceIfApplicable(SerializedProperty property, string assetPath)
+        {
+            var referencedObject = property.objectReferenceValue;
+            if (referencedObject == null)
+            {
+                return;
+            }
+            while (true)
+            {
+                referencedObject = PrefabUtility.GetCorrespondingObjectFromSource(referencedObject);
+                if (referencedObject == null)
+                {
+                    break;
+                }
+                if (AssetDatabase.GetAssetPath(referencedObject) == assetPath)
+                {
+                    property.objectReferenceValue = referencedObject;
+                    break;
+                }
+            }
+        }
+
+        public static void ApplyPropertyOverride(SerializedProperty instanceProperty, string assetPath, InteractionMode action)
+        {
+            ApplyPropertyOverride(instanceProperty, assetPath, action, true);
+        }
+
+        static void ApplyPropertyOverride(SerializedProperty instanceProperty, string assetPath, InteractionMode action, bool singlePropertyOnly)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
+
+            Object prefabSourceObject = GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, assetPath);
+            if (prefabSourceObject == null)
                 return;
 
-            List<Object> newPrefabHierarchy = new List<Object>();
-            GetObjectListFromHierarchy(newPrefabHierarchy, correspondingAssetObject as GameObject);
+            if (IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty) && IsObjectOnRootInAsset(prefabInstanceObject, assetPath))
+            {
+                if (singlePropertyOnly)
+                {
+                    // Neither of these will not happen from our own editor interface since we don't display
+                    // any menus to apply for default-override properties in the first place.
+                    if (action == InteractionMode.AutomatedAction)
+                        Debug.LogWarning("Cannot apply default-override property, since it is protected from being applied or reverted.");
+                    else
+                        EditorUtility.DisplayDialog("Cannot apply default-override property", "Default-override properties are protected from being applied or reverted.", "OK");
+                }
+                return;
+            }
 
-            RegisterNewObjects(newPrefabHierarchy, prefabHierarchy, actionName);
+            SerializedObject prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
+            prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
+            SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
+
+            // Abort if property has reference to object in scene.
+            if (sourceProperty.propertyType == SerializedPropertyType.ObjectReference)
+            {
+                MapObjectReferencePropertyToSourceIfApplicable(sourceProperty, assetPath);
+                if (sourceProperty.objectReferenceValue != null && !EditorUtility.IsPersistent(sourceProperty.objectReferenceValue))
+                {
+                    // The property is a reference to a non-persistent object (scene object which could not be mapped to the asset.
+                    // It can not be applied.
+
+                    // Give a warning if the user tried to specifically apply this property.
+                    if (singlePropertyOnly)
+                    {
+                        if (action == InteractionMode.AutomatedAction)
+                            Debug.LogWarning("Cannot apply reference to scene object that is not part of apply target prefab.");
+                        else
+                            EditorUtility.DisplayDialog("Cannot apply reference to object in scene", "A reference to an object in the scene cannot be applied to the Prefab asset.", "OK");
+                    }
+                    return;
+                }
+            }
+
+            // Write modified value to prefab source object.
+            prefabSourceSerializedObject.ApplyModifiedProperties();
+
+            if (action == InteractionMode.UserAction)
+                Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+
+            // Clear overrides for property in prefab instance and outer prefabs that are using(nesting) the prefab source.
+            // Otherwise applied modification would appear to jump back to the value it had before applying.
+            Object outerPrefabObject = prefabInstanceObject;
+            while (outerPrefabObject != prefabSourceObject)
+            {
+                SerializedObject outerPrefabSerializedObject = new SerializedObject(outerPrefabObject);
+                SerializedProperty outerPrefabProp = outerPrefabSerializedObject.FindProperty(instanceProperty.propertyPath);
+                if (outerPrefabProp.prefabOverride)
+                {
+                    outerPrefabProp.prefabOverride = false;
+                    outerPrefabSerializedObject.ApplyModifiedProperties();
+
+                    if (action == InteractionMode.UserAction)
+                        Undo.FlushUndoRecordObjects();
+                }
+                outerPrefabObject = PrefabUtility.GetCorrespondingObjectFromSource(outerPrefabObject);
+            }
+
+            // If this method is called as part of ApplyObjectOverride, we don't want to send analytics here too.
+            if (singlePropertyOnly)
+            {
+                Analytics.SendApplyEvent(
+                    Analytics.ApplyScope.PropertyOverride,
+                    prefabInstanceObject,
+                    assetPath,
+                    action,
+                    startTime,
+                    IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty)
+                );
+            }
         }
 
-        [Obsolete("GetPrefabParent() has been deprecated. Use GetCorrespondingObjectFromSource() instead (UnityUpgradable) -> GetCorrespondingObjectFromSource(*)")]
+        public static void RevertPropertyOverride(SerializedProperty instanceProperty, InteractionMode action)
+        {
+            instanceProperty.prefabOverride = false;
+            // Because prefabOverride changed ApplyModifiedProperties will do a prefab merge causing the revert.
+            if (action == InteractionMode.UserAction)
+                instanceProperty.serializedObject.ApplyModifiedProperties();
+            else
+                instanceProperty.serializedObject.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        public static void ApplyObjectOverride(Object instanceComponentOrGameObject, string assetPath, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            CheckInstanceIsNotPersistent(instanceComponentOrGameObject);
+
+            SerializedObject so = new SerializedObject(instanceComponentOrGameObject);
+            SerializedProperty property = so.GetIterator();
+            while (property.Next(property.hasChildren))
+            {
+                if (property.prefabOverride)
+                    ApplyPropertyOverride(property, assetPath, action, false);
+            }
+
+            Analytics.SendApplyEvent(
+                Analytics.ApplyScope.ObjectOverride,
+                instanceComponentOrGameObject,
+                assetPath,
+                action,
+                startTime,
+                IsObjectOverrideAllDefaultOverridesComparedToAnySource(instanceComponentOrGameObject)
+            );
+        }
+
+        // TODO Review. This method is redundant since there was already a method for it,
+        // but it fits in with a consistent naming scheme where methods come in pairs of
+        // Apply[x] and Revert[X]. Maybe obsolete the old one?
+        public static void RevertObjectOverride(Object instanceComponentOrGameObject, InteractionMode action)
+        {
+            CheckInstanceIsNotPersistent(instanceComponentOrGameObject);
+
+            if (action == InteractionMode.UserAction)
+                Undo.RegisterCompleteObjectUndo(instanceComponentOrGameObject, "Revert component property overrides");
+            PrefabUtility.ResetToPrefabState(instanceComponentOrGameObject);
+        }
+
+        public static void ApplyAddedComponent(Component component, string assetPath, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            CheckInstanceIsNotPersistent(component);
+
+            try
+            {
+                GameObject prefabSourceGameObject = GetCorrespondingObjectFromSourceAtPath(component.gameObject, assetPath);
+                if (prefabSourceGameObject == null)
+                    return;
+
+                var actionName = "Apply Added Component";
+                if (action == InteractionMode.UserAction)
+                {
+                    Undo.RegisterFullObjectHierarchyUndo(prefabSourceGameObject, actionName);
+                    Undo.RegisterFullObjectHierarchyUndo(component, actionName);
+                }
+
+                PrefabUtility.ApplyAddedComponent(component, prefabSourceGameObject);
+
+                if (action == InteractionMode.UserAction)
+                    Undo.RegisterCreatedObjectUndo(GetCorrespondingObjectFromOriginalSource(component), actionName);
+            }
+            catch (ArgumentException exception)
+            {
+                if (action == InteractionMode.UserAction)
+                {
+                    EditorUtility.DisplayDialog("Can't add component", exception.Message, "OK");
+                    Undo.RevertAllInCurrentGroup();
+                }
+                else
+                {
+                    throw exception;
+                }
+            }
+
+            Analytics.SendApplyEvent(
+                Analytics.ApplyScope.AddedComponent,
+                component,
+                assetPath,
+                action,
+                startTime,
+                false
+            );
+        }
+
+        public static void RevertAddedComponent(Component component, InteractionMode action)
+        {
+            CheckInstanceIsNotPersistent(component);
+
+            if (component == null)
+                throw new ArgumentNullException(nameof(component), "Can't revert added component. Component is null.");
+
+            if (action == InteractionMode.UserAction)
+                Undo.DestroyObjectImmediate(component);
+            else
+                Object.DestroyImmediate(component);
+        }
+
+        private static bool IsPrefabInstanceObjectOf(Object instance, Object source)
+        {
+            var o = instance;
+            while (o != null)
+            {
+                if (o == source)
+                {
+                    return true;
+                }
+
+                if (GetPrefabObject(o) == source)
+                {
+                    return true;
+                }
+
+                o = GetCorrespondingObjectFromSource(o);
+            }
+            return false;
+        }
+
+        private static void RemoveRemovedComponentOverridesWhichAreNull(Object prefabInstanceObject)
+        {
+            var removedComponents = PrefabUtility.GetRemovedComponents(prefabInstanceObject);
+            var filteredRemovedComponents = (from c in removedComponents where c != null select c).ToArray();
+            PrefabUtility.SetRemovedComponents(prefabInstanceObject, filteredRemovedComponents);
+        }
+
+        // We can't use the same pattern of identifyiong the prefab asset via assetPath only,
+        // since when the component is removed in the instance, the only way to identify which component it is,
+        // is via the corresponding component on the asset. Additionally supplying an assetPath would be redundant.
+        public static void ApplyRemovedComponent(GameObject instanceGameObject, Component assetComponent, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            CheckInstanceIsNotPersistent(instanceGameObject);
+
+            if (assetComponent == null)
+                throw new ArgumentNullException(nameof(assetComponent), "Prefab source may not be null.");
+
+            var actionName = "Apply Prefab removed component";
+
+            if (action == InteractionMode.UserAction)
+            {
+                Undo.DestroyObjectUndoable(assetComponent, actionName);
+                // Undo.DestroyObjectUndoable saves prefab asset internally.
+            }
+            else
+            {
+                GameObject prefabAsset = assetComponent.transform.root.gameObject;
+                Object.DestroyImmediate(assetComponent, true);
+                SavePrefabAsset(prefabAsset);
+            }
+
+            var prefabInstanceObject = PrefabUtility.GetPrefabObject(instanceGameObject);
+
+            if (action == InteractionMode.UserAction)
+                Undo.RegisterCompleteObjectUndo(prefabInstanceObject, actionName);
+
+            RemoveRemovedComponentOverridesWhichAreNull(prefabInstanceObject);
+
+            Analytics.SendApplyEvent(
+                Analytics.ApplyScope.RemovedComponent,
+                instanceGameObject,
+                AssetDatabase.GetAssetPath(assetComponent),
+                action,
+                startTime,
+                false
+            );
+        }
+
+        private static void RemoveRemovedComponentOverride(Object instanceObject, Component assetComponent)
+        {
+            var removedComponents = PrefabUtility.GetRemovedComponents(instanceObject);
+            int index = -1;
+            for (int i = 0; i < removedComponents.Length; i++)
+            {
+                if (IsPrefabInstanceObjectOf(removedComponents[i], assetComponent))
+                {
+                    index = i;
+                    break;
+                }
+            }
+            if (index != -1)
+            {
+                var filteredRemovedComponents = (from c in removedComponents where c != removedComponents[index] select c).ToArray();
+                PrefabUtility.SetRemovedComponents(instanceObject, filteredRemovedComponents);
+            }
+        }
+
+        public static void RevertRemovedComponent(GameObject instanceGameObject, Component assetComponent, InteractionMode action)
+        {
+            CheckInstanceIsNotPersistent(instanceGameObject);
+
+            var actionName = "Revert Prefab removed component";
+            var prefabInstanceObject = PrefabUtility.GetPrefabObject(instanceGameObject);
+
+            if (action == InteractionMode.UserAction)
+                Undo.RegisterCompleteObjectUndo(instanceGameObject, actionName);
+
+            RemoveRemovedComponentOverride(prefabInstanceObject, assetComponent);
+
+            if (action == InteractionMode.UserAction)
+            {
+                foreach (var component in instanceGameObject.GetComponents<Component>())
+                {
+                    if (IsPrefabInstanceObjectOf(component, assetComponent))
+                    {
+                        Undo.RegisterCreatedObjectUndo(component, actionName);
+                        break;
+                    }
+                }
+            }
+        }
+
+        public static void ApplyAddedGameObject(GameObject gameObject, string assetPath, InteractionMode action)
+        {
+            DateTime startTime = DateTime.UtcNow;
+
+            CheckInstanceIsNotPersistent(gameObject);
+
+            Transform instanceParent = gameObject.transform.parent;
+            if (instanceParent == null)
+                return;
+            GameObject prefabSourceGameObjectParent = GetCorrespondingObjectFromSourceAtPath(instanceParent.gameObject, assetPath);
+            if (prefabSourceGameObjectParent == null)
+                return;
+
+            var instanceRoot = GetOutermostPrefabInstanceRoot(instanceParent);
+            if (instanceRoot == null)
+                return;
+
+            var sourceRoot = prefabSourceGameObjectParent.transform.root.gameObject;
+
+            var actionName = "Apply Added Game Object";
+            if (action == InteractionMode.UserAction)
+            {
+                Undo.RegisterFullObjectHierarchyUndo(sourceRoot, actionName);
+                Undo.RegisterFullObjectHierarchyUndo(instanceRoot, actionName);
+            }
+
+            PrefabUtility.AddGameObjectsToPrefabAndConnect(
+                new GameObject[] { gameObject },
+                prefabSourceGameObjectParent);
+
+            PrefabUtility.SavePrefabAsset(sourceRoot);
+
+            if (action == InteractionMode.UserAction)
+            {
+                var createdAssetObject = GetCorrespondingObjectFromSourceInAsset(gameObject, prefabSourceGameObjectParent);
+                Undo.RegisterCreatedObjectUndo(createdAssetObject, actionName);
+
+                //var instanceImmediateSourceObject = GetCorrespondingObjectFromSource(prefabInstanceGameObject);
+                //if (instanceImmediateSourceObject != createdAssetObject)
+                //{
+                //    // The asset containing this object is not actually changed and import/merge
+                //    // logic would assure that it is create/deleted correctly based on the changes
+                //    // in the source asset ("createdAssetObject" prefab asset)
+                //    // However, during "redo" the import/merge will happed too late for the
+                //    // following "register created object" operation on the instance object.
+                //    // This would cause the instance to reference a non-existing corresponding
+                //    // object which causes a disconnect.
+                //    Undo.RegisterCreatedObjectUndo(instanceImmediateSourceObject, actionName);
+                //}
+
+                //Undo.RegisterCreatedObjectUndo(instanceRoot, actionName);
+
+                EditorUtility.ForceRebuildInspectors();
+            }
+
+            Analytics.SendApplyEvent(
+                Analytics.ApplyScope.AddedGameObject,
+                instanceRoot,
+                assetPath,
+                action,
+                startTime,
+                false
+            );
+        }
+
+        public static void RevertAddedGameObject(GameObject gameObject, InteractionMode action)
+        {
+            if (gameObject == null)
+                throw new ArgumentNullException(nameof(gameObject), "Can't revert added GameObject. GameObject is null.");
+
+            CheckInstanceIsNotPersistent(gameObject);
+
+            if (action == InteractionMode.UserAction)
+                Undo.DestroyObjectImmediate(gameObject);
+            else
+                Object.DestroyImmediate(gameObject);
+        }
+
+        public static List<ObjectOverride> GetObjectOverrides(GameObject prefabInstance, bool includeDefaultOverrides = false)
+        {
+            return PrefabOverridesUtility.GetObjectOverrides(prefabInstance, includeDefaultOverrides);
+        }
+
+        public static List<AddedComponent> GetAddedComponents(GameObject prefabInstance)
+        {
+            return PrefabOverridesUtility.GetAddedComponents(prefabInstance);
+        }
+
+        public static List<RemovedComponent> GetRemovedComponents(GameObject prefabInstance)
+        {
+            return PrefabOverridesUtility.GetRemovedComponents(prefabInstance);
+        }
+
+        public static List<AddedGameObject> GetAddedGameObjects(GameObject prefabInstance)
+        {
+            return PrefabOverridesUtility.GetAddedGameObjects(prefabInstance);
+        }
+
+        internal static void HandleApplyRevertMenuItems(
+            string thingThatChanged,
+            Object instanceObject,
+            Action<GUIContent, Object> addApplyMenuItemAction,
+            Action<GUIContent> addRevertMenuItemAction,
+            bool defaultOverrideComparedToSomeSources = false)
+        {
+            HandleApplyMenuItems(thingThatChanged, instanceObject, addApplyMenuItemAction, defaultOverrideComparedToSomeSources);
+            HandleRevertMenuItem(thingThatChanged, addRevertMenuItemAction);
+        }
+
+        internal static void HandleApplyMenuItems(
+            string thingThatChanged,
+            Object instanceOrAssetObject,
+            Action<GUIContent, Object> addApplyMenuItemAction,
+            bool defaultOverrideComparedToSomeSources = false)
+        {
+            // If thingThatChanged word is empty, apply menu items directly into menu.
+            // Otherwise, insert as sub-menu named after thingThatChanged.
+            if (thingThatChanged == null)
+                thingThatChanged = String.Empty;
+            if (thingThatChanged != String.Empty)
+                thingThatChanged += "/";
+
+            List<Object> applyTargets = GetApplyTargets(instanceOrAssetObject, defaultOverrideComparedToSomeSources);
+            if (applyTargets == null || applyTargets.Count == 0)
+                return;
+
+            for (int i = 0; i < applyTargets.Count; i++)
+            {
+                Object source = applyTargets[i];
+                GameObject sourceRoot = GetRootGameObject(source);
+
+                var translatedText = L10n.Tr("Apply as Override in Prefab '{0}'");
+                if (i == applyTargets.Count - 1)
+                    translatedText = L10n.Tr("Apply to Prefab '{0}'");
+                GUIContent applyContent = new GUIContent(thingThatChanged + String.Format(translatedText, sourceRoot.name));
+                addApplyMenuItemAction(applyContent, source);
+            }
+        }
+
+        internal static void HandleRevertMenuItem(
+            string thingThatChanged,
+            Action<GUIContent> addRevertMenuItemAction)
+        {
+            // If thingThatChanged word is empty, apply menu items directly into menu.
+            // Otherwise, insert as sub-menu named after thingThatChanged.
+            if (thingThatChanged == null)
+                thingThatChanged = String.Empty;
+            if (thingThatChanged != String.Empty)
+                thingThatChanged += "/";
+
+            GUIContent revertContent = new GUIContent(thingThatChanged + L10n.Tr("Revert"));
+            addRevertMenuItemAction(revertContent);
+        }
+
+        private static Object GetParentPrefabInstance(GameObject gameObject)
+        {
+            var parent = gameObject.transform.parent;
+            if (parent == null)
+            {
+                return null;
+            }
+            return GetPrefabInstanceHandle(parent);
+        }
+
+        internal static GameObject GetGameObject(Object componentOrGameObject)
+        {
+            GameObject go = componentOrGameObject as GameObject;
+            if (go != null)
+                return go;
+
+            Component comp = componentOrGameObject as Component;
+            if (comp != null)
+                return comp.gameObject;
+
+            return null;
+        }
+
+        internal static GameObject GetRootGameObject(Object componentOrGameObject)
+        {
+            GameObject go = GetGameObject(componentOrGameObject);
+            if (go == null)
+                return null;
+
+            return go.transform.root.gameObject;
+        }
+
+        public static bool IsAnyPrefabInstanceRoot(GameObject gameObject)
+        {
+            GameObject prefabInstanceRoot = GetNearestPrefabInstanceRoot(gameObject);
+            return (gameObject == prefabInstanceRoot);
+        }
+
+        public static bool IsOutermostPrefabInstanceRoot(GameObject gameObject)
+        {
+            Assert.IsNotNull(gameObject);
+
+            // Not part of a prefab instance at all.
+            var initialCorrespondingObject = (GameObject)GetCorrespondingObjectFromSource(gameObject);
+            if (initialCorrespondingObject == null)
+                return false;
+
+            Object initialPrefabInstance = GetPrefabObject(gameObject);
+            Object initialPrefabAsset = GetPrefabObject(initialCorrespondingObject.transform.root);
+
+            // See if any ancestor is part of a prefab, in which case
+            // the passed parameter object is not outermost.
+            // We cannot only check the immediate parent, since there could be
+            // an added GameObject under a prefab, and an added prefab under that,
+            // in which case the parent would not be part of a prefab,
+            // but ancestors further up would.
+            Transform current = gameObject.transform.parent;
+            while (current != null && initialPrefabInstance == GetPrefabObject(current))
+            {
+                var currentGo = current.gameObject;
+                var currentCorrespondingObject = (GameObject)GetCorrespondingObjectFromSource(currentGo);
+                if (currentCorrespondingObject == null)
+                    return true;
+                var currentPrefabAsset = GetPrefabObject(currentCorrespondingObject.transform.root);
+                if (currentCorrespondingObject != null && currentPrefabAsset == initialPrefabAsset)
+                    return false;
+                current = current.parent;
+            }
+            return true;
+        }
+
+        public static string GetPrefabAssetPathOfNearestInstanceRoot(Object instanceComponentOrGameObject)
+        {
+            return AssetDatabase.GetAssetPath(GetOriginalSourceOrVariantRoot(instanceComponentOrGameObject));
+        }
+
+        public static Texture2D GetIconForGameObject(GameObject gameObject)
+        {
+            if (IsAnyPrefabInstanceRoot(gameObject))
+            {
+                if (IsPrefabAssetMissing(gameObject))
+                    return GameObjectStyles.prefabIcon;
+
+                string assetPath = GetPrefabAssetPathOfNearestInstanceRoot(gameObject);
+                return (Texture2D)AssetDatabase.GetCachedIcon(assetPath);
+            }
+            else
+            {
+                return GameObjectStyles.gameObjectIcon;
+            }
+        }
+
+        [Obsolete("GetPrefabParent has been deprecated. Use GetCorrespondingObjectFromSource instead")]
         public static Object GetPrefabParent(Object obj)
         {
             return GetCorrespondingObjectFromSource(obj);
         }
 
         // Creates an empty prefab at given path.
+        // TODO Steen Lund 2017 11 28 This needs to be marked OBSOLETE
         public static Object CreateEmptyPrefab(string path)
         {
-            if (!Utils.Paths.CheckValidAssetPathAndThatDirectoryExists(path, ".prefab"))
+            // This is here to simulate previous behaviour
+            if (Path.GetExtension(path) != ".prefab")
+            {
+                Debug.LogError("Create Prefab path must use .prefab extension");
                 return null;
+            }
 
-            return CreateEmptyPrefab_internal(path);
+            var empty = new GameObject("EmptyPrefab");
+            var assetObject = SaveAsPrefabAsset(empty, path);
+            Object.DestroyImmediate(empty);
+            return PrefabUtility.GetPrefabObject(assetObject);
         }
 
-        // Creates a prefab from a game object hierarchy
+#pragma warning disable CS0618 // Type or member is obsolete
+
+        public static GameObject SavePrefabAsset(GameObject asset)
+        {
+            if (asset == null)
+                throw new ArgumentNullException("Parameter prefabAssetGameObject is null");
+
+            // Include model check even though models are also immutable, since we can give a more clear exception message.
+            if (IsPartOfModelPrefab(asset))
+                throw new ArgumentException("Can't save a Model Prefab");
+
+            if (IsPartOfImmutablePrefab(asset))
+                throw new ArgumentException("Can't save an immutable Prefab");
+
+            string path = AssetDatabase.GetAssetPath(asset);
+            if (String.IsNullOrEmpty(path))
+                throw new ArgumentException("Can't save a Prefab instance");
+
+            var root = asset.transform.root.gameObject;
+            if (root != asset)
+                throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
+
+            return SavePrefab(root, path, ReplacePrefabOptions.Default, PrefabCreationFlags.None);
+        }
+
+        private static void SaveAsPrefabAssetArgumentCheck(GameObject root)
+        {
+            if (root == null)
+                throw new ArgumentNullException("Parameter root is null");
+
+            if (EditorUtility.IsPersistent(root))
+                throw new ArgumentException("Can't save persistent object as a Prefab asset");
+
+            if (IsPrefabAssetMissing(root))
+                throw new ArgumentException("Can't save Prefab instance with missing asset as a Prefab. You may unpack the instance and save the unpacked GameObjects as a Prefab.");
+
+            var instanceRoot = GetOutermostPrefabInstanceRoot(root);
+            if (instanceRoot)
+            {
+                if (instanceRoot != root)
+                    throw new ArgumentException("Can't save part of a Prefab instance as a Prefab");
+            }
+        }
+
+        private static bool IsPrefabInstanceRoot(GameObject gameObject)
+        {
+            var instanceRoot = GetOutermostPrefabInstanceRoot(gameObject);
+            return instanceRoot != null && instanceRoot == gameObject;
+        }
+
+        public static GameObject SaveAsPrefabAsset(GameObject root, string assetPath)
+        {
+            SaveAsPrefabAssetArgumentCheck(root);
+
+            PrefabCreationFlags creationFlags = PrefabCreationFlags.None;
+            if (IsPrefabInstanceRoot(root))
+                creationFlags = PrefabCreationFlags.CreateVariant;
+
+            return SavePrefab(root, assetPath, ReplacePrefabOptions.Default, creationFlags);
+        }
+
+        public static GameObject SaveAsPrefabAssetAndConnect(GameObject root, string assetPath, InteractionMode action)
+        {
+            SaveAsPrefabAssetArgumentCheck(root);
+
+            var actionName = "Connect to Prefab";
+
+            if (action == InteractionMode.UserAction)
+            {
+                Undo.RegisterFullObjectHierarchyUndo(root, actionName);
+            }
+
+            PrefabCreationFlags creationFlags = PrefabCreationFlags.None;
+            if (IsPrefabInstanceRoot(root))
+                creationFlags = PrefabCreationFlags.CreateVariant;
+
+            var assetRoot = SavePrefab(root, assetPath, ReplacePrefabOptions.ConnectToPrefab, creationFlags);
+
+            if (action == InteractionMode.UserAction)
+            {
+                Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(root), actionName);
+            }
+
+            return assetRoot;
+        }
+
+        internal static void ApplyPrefabInstance(GameObject instance)
+        {
+            if (instance == null)
+                throw new ArgumentNullException(nameof(instance));
+
+            // Include model check even though models are also immutable, since we can give a more clear exception message.
+            if (IsPartOfModelPrefab(instance))
+                throw new ArgumentException("Can't apply to a Model Prefab");
+
+            if (IsPartOfImmutablePrefab(instance))
+                throw new ArgumentException("Can't apply to an immutable Prefab");
+
+            if (!IsPartOfNonAssetPrefabInstance(instance))
+                throw new ArgumentException("Provided GameObject is not a Prefab instance");
+
+            if (IsDisconnectedFromPrefabAsset(instance))
+            {
+                // The concept of disconnecting are being deprecated. For now use FindRootGameObjectWithSameParentPrefab
+                // to re-connect existing disconnected prefabs.
+                var validRoot = PrefabUtility.FindValidUploadPrefabInstanceRoot(instance);
+                var ok = validRoot == instance;
+                if (!ok && PrefabUtility.GetCorrespondingObjectFromOriginalSource(instance) != PrefabUtility.GetCorrespondingObjectFromSource(instance))
+                    throw new ArgumentException("Can't save Prefab from an object that originates from a nested Prefab");
+            }
+            else
+            {
+                var root = GetOutermostPrefabInstanceRoot(instance);
+                if (root != instance)
+                    throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
+            }
+
+            var assetObject = GetCorrespondingObjectFromSource(instance);
+            string path = AssetDatabase.GetAssetPath(assetObject);
+            SavePrefab(instance, path, ReplacePrefabOptions.ConnectToPrefab, PrefabCreationFlags.None);
+        }
+
+        internal static GameObject ReplacePrefabAssetNameBased(GameObject root, string targetPrefab, bool connectToInstance)
+        {
+            var options = ReplacePrefabOptions.ReplaceNameBased;
+            if (connectToInstance)
+                options |= ReplacePrefabOptions.ConnectToPrefab;
+
+            var createOptions = PrefabCreationFlags.None;
+
+            if (IsPartOfNonAssetPrefabInstance(root))
+            {
+                var instanceRoot = PrefabUtility.GetPrefabInstanceRootGameObject(root);
+                if (root != instanceRoot)
+                    throw new ArgumentException("Can't replace with part of Prefab instance. Please specify instance root object or a non-instance object.");
+
+                createOptions = PrefabCreationFlags.CreateVariant;
+            }
+
+            if (IsPartOfPrefabAsset(root) && connectToInstance)
+                throw new ArgumentException("Argument connectToInstance is true but root object is an asset not an instance");
+
+            return SavePrefab(root, targetPrefab, options, createOptions);
+        }
+
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        //[Obsolete("CreatePrefab() has been deprecated. Use SavePrefab() instead (UnityUpgradable) -> SavePrefab(go, path, ReplacePrefabOptions.Default)")]
         public static GameObject CreatePrefab(string path, GameObject go)
         {
-            return CreatePrefab(path, go, ReplacePrefabOptions.Default);
+            return SaveAsPrefabAsset(go, path);
         }
 
-        // Creates a prefab from a game object hierarchy
+        //[Obsolete("CreatePrefab() has been deprecated. Use SavePrefab() instead (UnityUpgradable) -> SavePrefab(go, path, options)")]
+#pragma warning disable CS0618 // Type or member is obsolete
         public static GameObject CreatePrefab(string path, GameObject go, ReplacePrefabOptions options)
         {
-            if (!Utils.Paths.CheckValidAssetPathAndThatDirectoryExists(path, ".prefab"))
-                return null;
-
-            return CreatePrefab_internal(path, go, options);
+            if (options == ReplacePrefabOptions.ConnectToPrefab)
+                return SaveAsPrefabAssetAndConnect(go, path, InteractionMode.AutomatedAction);
+            else
+                return SaveAsPrefabAsset(go, path);
         }
 
         // Instantiates the given prefab.
-        public static Object InstantiatePrefab(Object target)
+        public static Object InstantiatePrefab(Object assetComponentOrGameObject)
         {
-            return InstantiatePrefab_internal(target, EditorSceneManager.GetTargetSceneForNewGameObjects());
+            return InstantiatePrefab_internal(assetComponentOrGameObject, EditorSceneManager.GetTargetSceneForNewGameObjects());
         }
 
         // Instantiates the given prefab in a given scene
-        public static Object InstantiatePrefab(Object target, Scene destinationScene)
+        public static Object InstantiatePrefab(Object assetComponentOrGameObject, Scene destinationScene)
         {
-            return InstantiatePrefab_internal(target, destinationScene);
+            return InstantiatePrefab_internal(assetComponentOrGameObject, destinationScene);
         }
 
-        // Replaces the /targetPrefab/ with a copy of the game object hierarchy /go/.
         public static GameObject ReplacePrefab(GameObject go, Object targetPrefab)
         {
             return ReplacePrefab(go, targetPrefab, ReplacePrefabOptions.Default);
         }
+
+        public static GameObject ReplacePrefab(GameObject go, Object targetPrefab, ReplacePrefabOptions replaceOptions)
+        {
+            var targetPrefabObject = PrefabUtility.GetPrefabObject(targetPrefab);
+
+            // Previously ReplacePrefab didn't throw any exceptions
+            // This reimplements the previous error handling
+            if (targetPrefabObject == null)
+            {
+                Debug.LogError("The object you are trying to replace does not exist or is not a Prefab.");
+                return null;
+            }
+
+            if (!EditorUtility.IsPersistent(targetPrefabObject))
+            {
+                Debug.LogError("The Prefab you are trying to replace is not a Prefab Asset but a Prefab instance. Please use PrefabUtility.GetCorrespondingObject().", targetPrefab);
+                return null;
+            }
+
+            if (HideFlags.DontSaveInEditor == (HideFlags.DontSaveInEditor & go.hideFlags))
+            {
+                Debug.LogError("The root GameObject of the Prefab source cannot be marked with DontSaveInEditor as it would create an empty Prefab.", go);
+                return null;
+            }
+
+            // Make sure the source object is not the same as the target prefab
+            Object sourcePrefab = PrefabUtility.GetPrefabObject(go);
+            if (sourcePrefab != null)
+            {
+                if (sourcePrefab == targetPrefabObject)
+                {
+                    Debug.LogError("A prefab asset cannot replace itself", go);
+                    return null;
+                }
+            }
+
+            var assetPath = AssetDatabase.GetAssetPath(targetPrefabObject);
+            return SavePrefab(go, assetPath, replaceOptions, PrefabCreationFlags.None);
+        }
+
+#pragma warning restore CS0618 // Type or member is obsolete
+
+        // Returns the corresponding object from its immediate source, or null if it can't be found.
+        public static TObject GetCorrespondingObjectFromSource<TObject>(TObject componentOrGameObject) where TObject : Object
+        {
+            return (TObject)GetCorrespondingObjectFromSource_internal(componentOrGameObject);
+        }
+
+        // Returns the corresponding object from its original source, or null if it can't be found.
+        public static TObject GetCorrespondingObjectFromOriginalSource<TObject>(TObject componentOrGameObject) where TObject : Object
+        {
+            return (TObject)GetCorrespondingObjectFromOriginalSource_Internal(componentOrGameObject);
+        }
+
+        internal static TObject GetCorrespondingObjectFromSourceInAsset<TObject>(TObject instanceOrAsset, Object prefabAssetHandle) where TObject : Object
+        {
+            return (TObject)GetCorrespondingObjectFromSourceInAsset_internal(instanceOrAsset, prefabAssetHandle);
+        }
+
+        public static TObject GetCorrespondingObjectFromSourceAtPath<TObject>(TObject componentOrGameObject, string assetPath) where TObject : Object
+        {
+            return (TObject)GetCorrespondingObjectFromSourceAtPath_internal(componentOrGameObject, assetPath);
+        }
+
+        // Call native functon instead once it exists.
+        private static Object GetCorrespondingObjectFromOriginalSource_Internal(Object instanceOrAsset)
+        {
+            var sourceObjectInPrefabAsset = instanceOrAsset;
+
+            // First one is mandatory for non-persistant asset,
+            // since we want the result to be null if there's asset object at all.
+            if (!EditorUtility.IsPersistent(sourceObjectInPrefabAsset))
+            {
+                sourceObjectInPrefabAsset = GetCorrespondingObjectFromSource(sourceObjectInPrefabAsset);
+                if (sourceObjectInPrefabAsset == null)
+                    return null;
+            }
+
+            while (true)
+            {
+                var inner = GetCorrespondingObjectFromSource(sourceObjectInPrefabAsset);
+                if (inner == null)
+                    return sourceObjectInPrefabAsset;
+                sourceObjectInPrefabAsset = inner;
+            }
+        }
+
+        // Given an object, returns its prefab type (None, if it's not a prefab)
+#pragma warning disable CS0618 // Type or member is obsolete
+        [Obsolete("Use PrefabTypeUtility GetType and GetPrefabInstanceStatus to get the full picture about Prefab types")]
+        public static PrefabType GetPrefabType(Object target)
+        {
+            if (!IsPartOfAnyPrefab(target))
+                return PrefabType.None;
+
+            bool isModel = IsPartOfModelPrefab(target);
+
+            if (IsPartOfPrefabAsset(target))
+            {
+                if (isModel)
+                    return PrefabType.ModelPrefab;
+
+                return PrefabType.Prefab;
+            }
+
+            if (IsDisconnectedFromPrefabAsset(target))
+            {
+                var corresponding = GetCorrespondingObjectFromSource(target);
+                var prefabObject = GetPrefabObject(corresponding);
+                // Object was at some point connected to a prefab, but now it is not attached to one anymore and the prefab no longer exists
+                if (prefabObject == null)
+                    return PrefabType.None;
+
+                if (isModel)
+                    return PrefabType.DisconnectedModelPrefabInstance;
+
+                return PrefabType.DisconnectedPrefabInstance;
+            }
+
+            if (IsPrefabAssetMissing(target))
+                return PrefabType.MissingPrefabInstance;
+
+            if (isModel)
+                return PrefabType.ModelPrefabInstance;
+
+            return PrefabType.PrefabInstance;
+        }
+
+#pragma warning restore CS0618 // Type or member is obsolete
 
         // Called after prefab instances in the scene have been updated
         public delegate void PrefabInstanceUpdated(GameObject instance);
@@ -307,6 +1287,430 @@ namespace UnityEditor
         {
             if (prefabInstanceUpdated != null)
                 prefabInstanceUpdated(instance);
+        }
+
+        public static bool IsAddedGameObjectOverride(GameObject gameObject)
+        {
+            Transform parent = gameObject.transform.parent;
+            if (parent == null)
+                return false;
+
+            // Can't be added to a prefab instance if the parent is not part of a prefab instance.
+            GameObject parentAsset = (GameObject)PrefabUtility.GetCorrespondingObjectFromSource(parent.gameObject);
+            if (parentAsset == null)
+                return false;
+
+            GameObject asset = (GameObject)PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
+
+            // If object is not part of a prefab (but the parent is) we know it's added.
+            if (asset == null)
+                return true;
+
+            // We know now that the object is part of a prefab.
+            // If the root of that prefab, then it can't be part of the parent prefab, and must be added.
+            // This check works regardless of whether this prefab instance is an instance of the same
+            // prefab asset as the parent is an instance of (e.g. instance of A is added under instance of A),
+            // or not (instance of B is added under instance of A).
+            return (asset.transform.parent == null);
+        }
+
+        // Called before the prefab is saved to hdd (called after AssetModificationProcessor.OnWillSaveAssets and before OnPostprocessAllAssets)
+        internal static event Action<GameObject, string> savingPrefab;
+        [RequiredByNativeCode]
+        static void Internal_SavingPrefab(GameObject gameObject, string path)
+        {
+            if (savingPrefab != null)
+                savingPrefab(gameObject, path);
+        }
+
+        internal enum SaveVerb
+        {
+            Save,
+            Apply
+        }
+        internal static bool PromptAndCheckoutPrefabIfNeeded(string assetPath, SaveVerb saveVerb)
+        {
+            bool result = Provider.PromptAndCheckoutIfNeeded(
+                new string[] { assetPath },
+                String.Format(
+                    "The version control requires you to check out the Prefab before {0} changes.",
+                    saveVerb == SaveVerb.Save ? "saving" : "applying")
+            );
+
+            if (!result)
+                EditorUtility.DisplayDialog(
+                    String.Format(
+                        "Could not {0} Prefab",
+                        saveVerb == SaveVerb.Save ? "save" : "apply to"),
+                    String.Format(
+                        "It was not possible to check out the Prefab so the {0} operation has been canceled.",
+                        saveVerb == SaveVerb.Save ? "save" : "apply"),
+                    "OK");
+
+            return result;
+        }
+
+        public static void UnpackPrefabInstance(GameObject root, PrefabUnpackMode unpackMode, InteractionMode action)
+        {
+            if (!IsPartOfNonAssetPrefabInstance(root))
+                throw new ArgumentException("UnpackPrefabInstance must be called with a Prefab instance.");
+
+            if (GetPrefabInstanceRootGameObject(root) != root)
+                throw new ArgumentException("UnpackPrefabInstance must be called with a root Prefab instance GameObject.");
+
+            if (action == InteractionMode.UserAction)
+            {
+                var undoActionName = "Unpack Prefab instance";
+                Undo.RegisterFullObjectHierarchyUndo(root, undoActionName);
+                var instanceRoots = UnpackPrefabInstanceAndReturnNewOutermostRoots(root, unpackMode);
+                foreach (var instanceRoot in instanceRoots)
+                {
+                    var prefabInstance = PrefabUtility.GetPrefabInstanceHandle(instanceRoot);
+                    if (prefabInstance)
+                    {
+                        Undo.RegisterCreatedObjectUndo(prefabInstance, undoActionName);
+                    }
+                }
+            }
+            else
+            {
+                UnpackPrefabInstanceAndReturnNewOutermostRoots(root, unpackMode);
+            }
+        }
+
+        public static bool IsPartOfImmutablePrefab(Object gameObjectOrComponent)
+        {
+            if (IsPartOfModelPrefab(gameObjectOrComponent))
+                return true;
+
+            // If prefab instance, get the prefab asset.
+            if (!EditorUtility.IsPersistent(gameObjectOrComponent))
+                gameObjectOrComponent = GetCorrespondingObjectFromSource(gameObjectOrComponent);
+
+            string prefabAssetPath = AssetDatabase.GetAssetPath(gameObjectOrComponent);
+            bool isRootFolder, isReadonly;
+            bool validPath = AssetDatabase.GetAssetFolderInfo(prefabAssetPath, out isRootFolder, out isReadonly);
+            if (validPath && isReadonly)
+                return true;
+
+            return false;
+        }
+
+        internal static bool HasInvalidComponent(Object gameObjectOrComponent)
+        {
+            if (gameObjectOrComponent == null)
+                return true;
+
+            if (gameObjectOrComponent is Component)
+            {
+                Component comp = (Component)gameObjectOrComponent;
+                gameObjectOrComponent = (GameObject)comp.gameObject;
+            }
+
+            GameObject go;
+            go = (GameObject)gameObjectOrComponent;
+            TransformVisitor transformVisitor = new TransformVisitor();
+            var GOsWithInvalidComponent = new List<GameObject>();
+            transformVisitor.VisitAll(go.transform, PrefabOverridesUtility.CheckForInvalidComponent, GOsWithInvalidComponent);
+            return GOsWithInvalidComponent.Count > 0;
+        }
+
+        public static bool IsPartOfPrefabThatCanBeAppliedTo(Object gameObjectOrComponent)
+        {
+            if (gameObjectOrComponent == null)
+                return false;
+
+            if (IsPartOfImmutablePrefab(gameObjectOrComponent))
+                return false;
+
+            if (!EditorUtility.IsPersistent(gameObjectOrComponent))
+                gameObjectOrComponent = GetCorrespondingObjectFromSource(gameObjectOrComponent);
+
+            if (HasInvalidComponent(gameObjectOrComponent))
+                return false;
+
+            return true;
+        }
+
+        public static PrefabInstanceStatus GetPrefabInstanceStatus(Object componentOrGameObject)
+        {
+            if (!PrefabUtility.IsPartOfNonAssetPrefabInstance(componentOrGameObject))
+                return PrefabInstanceStatus.NotAPrefab;
+
+            if (PrefabUtility.IsDisconnectedFromPrefabAsset(componentOrGameObject))
+                return PrefabInstanceStatus.Disconnected;
+
+            if (PrefabUtility.IsPrefabAssetMissing(componentOrGameObject))
+                return PrefabInstanceStatus.MissingAsset;
+
+            return PrefabInstanceStatus.Connected;
+        }
+
+        public static PrefabAssetType GetPrefabAssetType(Object componentOrGameObject)
+        {
+            if (!PrefabUtility.IsPartOfAnyPrefab(componentOrGameObject))
+                return PrefabAssetType.NotAPrefab;
+
+            if (PrefabUtility.IsPrefabAssetMissing(componentOrGameObject))
+                return PrefabAssetType.MissingAsset;
+
+            if (PrefabUtility.IsPartOfModelPrefab(componentOrGameObject))
+                return PrefabAssetType.Model;
+
+            if (PrefabUtility.IsPartOfVariantPrefab(componentOrGameObject))
+                return PrefabAssetType.Variant;
+
+            return PrefabAssetType.Regular;
+        }
+
+        public static GameObject LoadPrefabContents(string assetPath)
+        {
+            var previewScene = EditorSceneManager.OpenPreviewScene(assetPath);
+            var roots = previewScene.GetRootGameObjects();
+            if (roots.Length != 1)
+            {
+                throw new ArgumentException(string.Format("Could not load Prefab contents at path {0}.", assetPath));
+            }
+            return roots[0];
+        }
+
+        public static void UnloadPrefabContents(GameObject root)
+        {
+            if (!EditorSceneManager.IsPreviewSceneObject(root))
+            {
+                throw new ArgumentException("Specified object is not part of Prefab contents");
+            }
+            var scene = root.scene;
+            EditorSceneManager.ClosePreviewScene(scene);
+        }
+
+        // Since an override can be applied to multiple different apply targets, what is not a default override
+        // compared to e.g. the outermost apply target may still be a default override compared to e.g. the innermost.
+        // For example, if you have child Prefab B inside Prefab A in the scene and try want to apply the position of B,
+        // the position is not a default override if applying to A, but is if applying to B.
+        // This can be used to determine which apply targets are valid to apply to.
+        internal static bool IsPropertyOverrideDefaultOverrideComparedToAnySource(SerializedProperty property)
+        {
+            if (property == null || !property.prefabOverride)
+                return false;
+
+            Object componentOrGameObject = property.serializedObject.targetObject;
+
+            // Only Transform, RectTransform (derived from Transform) and GameObject can have default overrides.
+            if (!(componentOrGameObject is Transform || componentOrGameObject is GameObject))
+                return false;
+
+            Object innermostInstance = componentOrGameObject;
+            Object source = GetCorrespondingObjectFromSource(innermostInstance);
+            if (source == null)
+                return false;
+
+            while (source != null)
+            {
+                Object newSource = GetCorrespondingObjectFromSource(source);
+                if (newSource == null)
+                    break;
+                innermostInstance = source;
+                source = newSource;
+            }
+
+            SerializedObject innermostInstanceSO = new SerializedObject(innermostInstance);
+            return innermostInstanceSO.FindProperty(property.propertyPath).isDefaultOverride;
+        }
+
+        // Same as IsPropertyOverrideDefaultOverrideComparedToAnySource, but checks if it's the case for all overrides
+        // on the object.
+        internal static bool IsObjectOverrideAllDefaultOverridesComparedToAnySource(Object componentOrGameObject)
+        {
+            // Only Transform, RectTransform (derived from Transform) and GameObject can have default overrides.
+            if (!(componentOrGameObject is Transform || componentOrGameObject is GameObject))
+                return false;
+
+            Object innermostInstance = componentOrGameObject;
+            Object source = GetCorrespondingObjectFromSource(innermostInstance);
+            if (source == null)
+                return false;
+
+            while (source != null)
+            {
+                Object newSource = GetCorrespondingObjectFromSource(source);
+                if (newSource == null)
+                    break;
+                innermostInstance = source;
+                source = newSource;
+            }
+
+            SerializedObject passedSO = new SerializedObject(componentOrGameObject);
+            SerializedObject innermostInstanceSO = new SerializedObject(innermostInstance);
+            SerializedProperty property = passedSO.GetIterator();
+            bool anyOverrides = false;
+            while (property.Next(true))
+            {
+                if (property.prefabOverride)
+                {
+                    if (!innermostInstanceSO.FindProperty(property.propertyPath).isDefaultOverride)
+                        return false;
+
+                    anyOverrides = true;
+                }
+            }
+
+            if (!anyOverrides)
+                return false;
+
+            return true;
+        }
+
+        internal static bool IsObjectOnRootInAsset(Object componentOrGameObject, string assetPath)
+        {
+            GameObject go = GetGameObject(componentOrGameObject);
+            GameObject goInAsset = GetCorrespondingObjectFromSourceAtPath(go, assetPath);
+            if (goInAsset == null)
+                return false;
+            return goInAsset.transform.root == goInAsset.transform;
+        }
+
+        internal static List<Object> GetApplyTargets(Object instanceOrAssetObject, bool defaultOverrideComparedToSomeSources)
+        {
+            List<Object> applyTargets = new List<Object>();
+
+            GameObject instanceGameObject = instanceOrAssetObject as GameObject;
+            if (instanceGameObject == null)
+                instanceGameObject = (instanceOrAssetObject as Component).gameObject;
+
+            Object source = instanceOrAssetObject;
+            if (!EditorUtility.IsPersistent(source))
+                source = PrefabUtility.GetCorrespondingObjectFromSource(instanceOrAssetObject);
+            if (source == null)
+                return applyTargets;
+
+            while (source != null)
+            {
+                if (defaultOverrideComparedToSomeSources)
+                {
+                    // If we're dealing with an override that's a default override compared to some sources,
+                    // then we need to check if the source object is or is on the root GameObject in that Prefab.
+                    // If it is, the overrides will be default overrides compared to that Prefab,
+                    // and so it shouldn't be possible to apply to it.
+                    // Note that for changed components that have some overrides that can be default overrides,
+                    // and some not, we do allow applying, but only the properties
+                    // that are not default overrides will be applied.
+                    GameObject sourceGo = GetGameObject(source);
+                    if (sourceGo.transform.root == sourceGo.transform)
+                        break;
+                }
+
+                applyTargets.Add(source);
+
+                source = PrefabUtility.GetCorrespondingObjectFromSource(source);
+            }
+
+            return applyTargets;
+        }
+
+        internal static class Analytics
+        {
+            public enum ApplyScope
+            {
+                PropertyOverride,
+                ObjectOverride,
+                AddedComponent,
+                RemovedComponent,
+                AddedGameObject,
+                EntirePrefab
+            }
+
+            public enum ApplyTarget
+            {
+                OnlyTarget,
+                Outermost,
+                Innermost,
+                Middle
+            }
+
+            [Serializable]
+            class EventData
+            {
+                public ApplyScope applyScope;
+                public bool userAction;
+                public string activeGUIView;
+                public ApplyTarget applyTarget;
+                public int applyTargetCount;
+            }
+
+            public static void SendApplyEvent(
+                ApplyScope applyScope,
+                Object instance,
+                string applyTargetPath,
+                InteractionMode interactionMode,
+                DateTime startTime,
+                bool defaultOverrideComparedToSomeSources
+            )
+            {
+                var duration = DateTime.UtcNow.Subtract(startTime);
+
+                var eventData = new EventData();
+                eventData.applyScope = applyScope;
+                eventData.userAction = (interactionMode == InteractionMode.UserAction);
+                eventData.activeGUIView = GUIView.GetTypeNameOfMostSpecificActiveView();
+
+                // Calculate apply target and apply target count relation.
+                var applyTargets = GetApplyTargets(instance, defaultOverrideComparedToSomeSources);
+                if (applyTargets == null)
+                {
+                    eventData.applyTarget = ApplyTarget.OnlyTarget;
+                    eventData.applyTargetCount = 0;
+                }
+                else if (applyTargets.Count <= 1)
+                {
+                    eventData.applyTarget = ApplyTarget.OnlyTarget;
+                    eventData.applyTargetCount = applyTargets.Count;
+                }
+                else
+                {
+                    eventData.applyTargetCount = applyTargets.Count;
+
+                    int index = -1;
+                    for (int i = 0; i < applyTargets.Count; i++)
+                    {
+                        if (AssetDatabase.GetAssetPath(applyTargets[i]) == applyTargetPath)
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+
+                    if (index == 0)
+                        eventData.applyTarget = ApplyTarget.Outermost;
+                    else if (index == applyTargets.Count - 1)
+                        eventData.applyTarget = ApplyTarget.Innermost;
+                    else
+                        eventData.applyTarget = ApplyTarget.Middle;
+                }
+
+                UsabilityAnalytics.SendEvent("prefabApply", startTime, duration, true, eventData);
+            }
+        }
+
+        static DateTime s_SaveStartTime = DateTime.MinValue;
+
+        [RequiredByNativeCode]
+        static void OnPrefabSavingStarted()
+        {
+            s_SaveStartTime = DateTime.UtcNow;
+        }
+
+        [RequiredByNativeCode]
+        static void OnPrefabSavingEnded()
+        {
+            if (s_SaveStartTime == DateTime.MinValue)
+            {
+                Debug.LogError("Cannot measure duration of saving a Prefab. OnPrefabSavingStarted() has not been called first.");
+                return;
+            }
+            var duration = DateTime.UtcNow.Subtract(s_SaveStartTime);
+            UsabilityAnalytics.SendEvent("prefabSave", s_SaveStartTime, duration, true, null);
+            s_SaveStartTime = DateTime.MinValue;
         }
     }
 }

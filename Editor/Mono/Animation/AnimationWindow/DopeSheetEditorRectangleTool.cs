@@ -80,26 +80,26 @@ namespace UnityEditor
                     m_SelectionBoxes[i] = new AreaManipulator(styles.rectangleToolSelection, MouseCursor.MoveArrow);
 
                     m_SelectionBoxes[i].onStartDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                    {
+                        bool curveEditorOverride = evt.shift || EditorGUI.actionKey;
+                        if (!curveEditorOverride && hasSelection && manipulator.rect.Contains(evt.mousePosition))
                         {
-                            bool curveEditorOverride = evt.shift || EditorGUI.actionKey;
-                            if (!curveEditorOverride && hasSelection && manipulator.rect.Contains(evt.mousePosition))
-                            {
-                                OnStartMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0.0f), rippleTimeClutch);
-                                return true;
-                            }
+                            OnStartMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0.0f), rippleTimeClutch);
+                            return true;
+                        }
 
-                            return false;
-                        };
+                        return false;
+                    };
                     m_SelectionBoxes[i].onDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                        {
-                            OnMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0.0f));
-                            return true;
-                        };
+                    {
+                        OnMove(new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0.0f));
+                        return true;
+                    };
                     m_SelectionBoxes[i].onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                        {
-                            OnEndMove();
-                            return true;
-                        };
+                    {
+                        OnEndMove();
+                        return true;
+                    };
                 }
             }
 
@@ -108,25 +108,25 @@ namespace UnityEditor
                 m_SelectionScaleLeft = new AreaManipulator(styles.dopesheetScaleLeft, MouseCursor.ResizeHorizontal);
 
                 m_SelectionScaleLeft.onStartDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
-                        {
-                            OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), rippleTimeClutch);
-                            return true;
-                        }
+                        OnStartScale(ToolCoord.Right, ToolCoord.Left, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), rippleTimeClutch);
+                        return true;
+                    }
 
-                        return false;
-                    };
+                    return false;
+                };
                 m_SelectionScaleLeft.onDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                    {
-                        OnScaleTime(PixelToTime(evt.mousePosition.x, frameRate));
-                        return true;
-                    };
+                {
+                    OnScaleTime(PixelToTime(evt.mousePosition.x, frameRate));
+                    return true;
+                };
                 m_SelectionScaleLeft.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                    {
-                        OnEndScale();
-                        return true;
-                    };
+                {
+                    OnEndScale();
+                    return true;
+                };
             }
 
             if (m_SelectionScaleRight == null)
@@ -134,25 +134,25 @@ namespace UnityEditor
                 m_SelectionScaleRight = new AreaManipulator(styles.dopesheetScaleRight, MouseCursor.ResizeHorizontal);
 
                 m_SelectionScaleRight.onStartDrag += (AnimationWindowManipulator manipulator, Event evt) =>
+                {
+                    if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
                     {
-                        if (hasSelection && manipulator.rect.Contains(evt.mousePosition))
-                        {
-                            OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), rippleTimeClutch);
-                            return true;
-                        }
+                        OnStartScale(ToolCoord.Left, ToolCoord.Right, new Vector2(PixelToTime(evt.mousePosition.x, frameRate), 0f), rippleTimeClutch);
+                        return true;
+                    }
 
-                        return false;
-                    };
+                    return false;
+                };
                 m_SelectionScaleRight.onDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                    {
-                        OnScaleTime(PixelToTime(evt.mousePosition.x, frameRate));
-                        return true;
-                    };
+                {
+                    OnScaleTime(PixelToTime(evt.mousePosition.x, frameRate));
+                    return true;
+                };
                 m_SelectionScaleRight.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                    {
-                        OnEndScale();
-                        return true;
-                    };
+                {
+                    OnEndScale();
+                    return true;
+                };
             }
         }
 

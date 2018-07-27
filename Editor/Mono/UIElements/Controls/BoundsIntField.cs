@@ -28,9 +28,9 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (BoundsIntField)ve;
-                f.value = new BoundsInt(
-                        new Vector3Int(m_PositionXValue.GetValueFromBag(bag), m_PositionYValue.GetValueFromBag(bag), m_PositionZValue.GetValueFromBag(bag)),
-                        new Vector3Int(m_SizeXValue.GetValueFromBag(bag), m_SizeYValue.GetValueFromBag(bag), m_SizeZValue.GetValueFromBag(bag)));
+                f.SetValueWithoutNotify(new BoundsInt(
+                    new Vector3Int(m_PositionXValue.GetValueFromBag(bag), m_PositionYValue.GetValueFromBag(bag), m_PositionZValue.GetValueFromBag(bag)),
+                    new Vector3Int(m_SizeXValue.GetValueFromBag(bag), m_SizeYValue.GetValueFromBag(bag), m_SizeZValue.GetValueFromBag(bag))));
             }
         }
 
@@ -42,11 +42,11 @@ namespace UnityEditor.Experimental.UIElements
             m_PositionField = new Vector3IntField();
 
             m_PositionField.OnValueChanged(e =>
-                {
-                    var current = value;
-                    current.position = e.newValue;
-                    value = current;
-                });
+            {
+                var current = value;
+                current.position = e.newValue;
+                value = current;
+            });
 
             var centerGroup = new VisualElement();
             centerGroup.AddToClassList("group");
@@ -57,11 +57,11 @@ namespace UnityEditor.Experimental.UIElements
             m_SizeField = new Vector3IntField();
 
             m_SizeField.OnValueChanged(e =>
-                {
-                    var current = value;
-                    current.size = e.newValue;
-                    value = current;
-                });
+            {
+                var current = value;
+                current.size = e.newValue;
+                value = current;
+            });
 
             var extentsGroup = new VisualElement();
             extentsGroup.AddToClassList("group");
@@ -70,17 +70,6 @@ namespace UnityEditor.Experimental.UIElements
             this.shadow.Add(extentsGroup);
         }
 
-        public override BoundsInt value
-        {
-            get { return base.value; }
-            set
-            {
-                base.value = value;
-
-                m_PositionField.SetValueWithoutNotify(m_Value.position);
-                m_SizeField.SetValueWithoutNotify(m_Value.size);
-            }
-        }
         protected internal override void ExecuteDefaultAction(EventBase evt)
         {
             base.ExecuteDefaultAction(evt);
@@ -90,6 +79,13 @@ namespace UnityEditor.Experimental.UIElements
             {
                 m_PositionField.Focus();
             }
+        }
+
+        public override void SetValueWithoutNotify(BoundsInt newValue)
+        {
+            base.SetValueWithoutNotify(newValue);
+            m_PositionField.SetValueWithoutNotify(m_Value.position);
+            m_SizeField.SetValueWithoutNotify(m_Value.size);
         }
     }
 }

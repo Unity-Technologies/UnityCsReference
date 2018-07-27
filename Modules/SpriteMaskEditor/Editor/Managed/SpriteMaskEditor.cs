@@ -52,8 +52,7 @@ namespace UnityEditor
             else if (Selection.activeObject is GameObject)
             {
                 var activeGO = (GameObject)Selection.activeObject;
-                var prefabType = PrefabUtility.GetPrefabType(activeGO);
-                if (prefabType != PrefabType.Prefab && prefabType != PrefabType.ModelPrefab)
+                if (!PrefabUtility.IsPartOfPrefabAsset(activeGO))
                     GameObjectUtility.SetParentAndAlign(go, activeGO);
             }
             go.name = GameObjectUtility.GetUniqueNameForSibling(go.transform.parent, Contents.newSpriteMaskName.text);

@@ -54,6 +54,8 @@ namespace UnityEngine
         public extern Texture texture { get; }
         public extern Vector4 textureHDRDecodeValues {[NativeName("CalculateHDRDecodeValues")] get; }
 
+        public extern void Reset();
+
         public int RenderProbe()
         {
             return RenderProbe(null);

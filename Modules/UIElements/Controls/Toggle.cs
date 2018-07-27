@@ -19,7 +19,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
                 ((Toggle)ve).text = m_Label.GetValueFromBag(bag);
-                ((Toggle)ve).value = m_Value.GetValueFromBag(bag);
+                ((Toggle)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
             }
         }
 

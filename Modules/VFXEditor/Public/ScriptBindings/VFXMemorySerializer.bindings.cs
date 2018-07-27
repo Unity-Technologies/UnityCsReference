@@ -15,7 +15,7 @@ namespace UnityEditor.Experimental.VFX
     [UsedByNativeCode]
     [NativeHeader("Modules/VFXEditor/Public/VFXMemorySerializer.h")]
     [StaticAccessor("VFXMemorySerializerBindings", StaticAccessorType.DoubleColon)]
-    public static class VFXMemorySerializer
+    internal static class VFXMemorySerializer
     {
         extern public static string StoreObjects(ScriptableObject[] objects);
 

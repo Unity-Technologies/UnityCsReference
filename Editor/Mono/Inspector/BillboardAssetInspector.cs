@@ -176,9 +176,9 @@ namespace UnityEditor
         public override string GetInfoString()
         {
             string info = String.Format("{0} verts, {1} tris, {2} images",
-                    m_Vertices.arraySize,
-                    m_Indices.arraySize / 3,
-                    m_Images.arraySize);
+                m_Vertices.arraySize,
+                m_Indices.arraySize / 3,
+                m_Images.arraySize);
             return info;
         }
 
@@ -201,12 +201,12 @@ namespace UnityEditor
             float height = billboard.height;
             float bottom = billboard.bottom;
             mesh.SetVertices(Enumerable.Repeat(
-                    billboard.GetVertices().Select(v => new Vector3(
-                            (v.x - 0.5f) * width,
-                            v.y * height + bottom,
-                            0)),
-                    // Repeat the sequence twice
-                    2).SelectMany(s => s).ToList());
+                billboard.GetVertices().Select(v => new Vector3(
+                    (v.x - 0.5f) * width,
+                    v.y * height + bottom,
+                    0)),
+                // Repeat the sequence twice
+                2).SelectMany(s => s).ToList());
 
             // (0,0,1) for the front-facing vertices and (0,0,-1) for the back-facing vertices
             mesh.SetNormals(
@@ -233,8 +233,8 @@ namespace UnityEditor
             var billboard = target as BillboardAsset;
 
             Bounds bounds = new Bounds(
-                    new Vector3(0, (m_Height.floatValue + m_Bottom.floatValue) * 0.5f, 0),
-                    new Vector3(m_Width.floatValue, m_Height.floatValue, m_Width.floatValue));
+                new Vector3(0, (m_Height.floatValue + m_Bottom.floatValue) * 0.5f, 0),
+                new Vector3(m_Width.floatValue, m_Height.floatValue, m_Width.floatValue));
 
             float halfSize = bounds.extents.magnitude;
             float distance = 8.0f * halfSize;

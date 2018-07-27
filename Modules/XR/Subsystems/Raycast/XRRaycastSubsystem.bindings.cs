@@ -45,7 +45,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/Subsystems/Raycast/XRRaycastSubsystem.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRRaycastSubsystem : Subsystem<XRRaycastSubsystemDescriptor>
+    public class XRRaycastSubsystem : IntegratedSubsystem<XRRaycastSubsystemDescriptor>
     {
         public bool Raycast(Vector3 screenPoint, List<XRRaycastHit> hitResults, TrackableType trackableTypeMask = TrackableType.All)
         {

@@ -54,8 +54,9 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         private VisualTreeTreeView m_VisualTreeTreeView;
         private static readonly PropertyInfo[] k_FieldInfos = typeof(IStyle).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         private static readonly PropertyInfo[] k_SortedFieldInfos = k_FieldInfos.OrderBy(f => f.Name).ToArray();
+        string m_SearchFieldText = string.Empty;
 
-        [MenuItem("Window/Analysis/UIElements Debugger", false, 101, true)]
+        [MenuItem("Window/Analysis/UIElements Debugger", false, 101, false)]
         public static void Open()
         {
             GetWindow<UIElementsDebugger>().Show();
@@ -93,18 +94,17 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             VisualElement e = m_CurPanel.Value.Panel.Pick(ev.mousePosition);
             if (e != null)
+            {
                 panelDebug?.SetHighlightElement(e);
+                m_VisualTreeTreeView.FrameItem((int)e.controlid);
+                m_VisualTreeTreeView.SetSelection(new List<int> { (int)e.controlid }, TreeViewSelectionOptions.RevealAndFrame);
+            }
 
             if (ev.clickCount > 0 && ev.button == 0)
             {
                 m_PickingElementInPanel = false;
-
-                if (e != null)
-                {
-                    m_VisualTreeTreeView.FrameItem((int)e.controlid);
-                    m_VisualTreeTreeView.SetSelection(new List<int> { (int)e.controlid }, TreeViewSelectionOptions.RevealAndFrame);
-                }
             }
+
             return true;
         }
 
@@ -135,6 +135,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             bool refresh = false;
 
             EditorGUI.BeginChangeCheck();
+
             m_PickingData.DoSelectDropDown(() => { m_Refresh = true; });
 
             bool includeShadowHierarchy = GUILayout.Toggle(m_VisualTreeTreeView.includeShadowHierarchy, Styles.includeShadowHierarchyContent, EditorStyles.toolbarButton);
@@ -145,8 +146,14 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             }
 
             GUI.enabled = m_CurPanel.HasValue;
-            bool newPickingElementInPanel = GUILayout.Toggle(m_PickingElementInPanel, Styles.pickElementInPanelContent, EditorStyles.toolbarButton);
-            m_PickingElementInPanel = newPickingElementInPanel;
+            using (var changedScope = new EditorGUI.ChangeCheckScope())
+            {
+                m_PickingElementInPanel = GUILayout.Toggle(m_PickingElementInPanel, Styles.pickElementInPanelContent, EditorStyles.toolbarButton);
+                if (changedScope.changed && m_PickingElementInPanel)
+                {
+                    m_CurPanel?.View.Focus();
+                }
+            }
             GUI.enabled = true;
 
             bool overlay = GUILayout.Toggle(m_Overlay, Styles.overlayContent, EditorStyles.toolbarButton);
@@ -170,7 +177,6 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             }
 
             EditorGUILayout.EndHorizontal();
-
             if (refresh || m_Refresh)
             {
                 Refresh();
@@ -182,17 +188,35 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 SplitterGUILayout.BeginHorizontalSplit(m_SplitterState, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
                 SplitterGUILayout.EndHorizontalSplit();
 
+                float bottomBarHeight = EditorGUI.kSingleLineHeight + Styles.SearchFieldPaddingTop + Styles.SearchFieldPaddingBottom;
                 float column1Width = m_SplitterState.realSizes.Length > 0 ? m_SplitterState.realSizes[0] : 150;
                 float column2Width = position.width - column1Width;
-                Rect column1Rect = new Rect(0, EditorGUI.kWindowToolbarHeight, column1Width, position.height - EditorGUI.kWindowToolbarHeight);
-                Rect column2Rect = new Rect(column1Width, EditorGUI.kWindowToolbarHeight, column2Width, column1Rect.height);
+                float column1Height = position.height - EditorGUI.kWindowToolbarHeight - bottomBarHeight;
+                float column2Height = position.height - EditorGUI.kWindowToolbarHeight;
+
+                Rect column1Rect = new Rect(0, EditorGUI.kWindowToolbarHeight, column1Width, column1Height);
+                Rect column2Rect = new Rect(column1Width, EditorGUI.kWindowToolbarHeight, column2Width, column2Height);
+                Rect bottomBarRect = new Rect(0, column1Rect.yMax, column1Rect.xMax , bottomBarHeight);
+
+                GUI.Label(bottomBarRect, GUIContent.none, Styles.KBottomBarBg);
+
+                float searchFieldWidth = column1Rect.xMax - Styles.SearchFieldPaddingLeft - Styles.SearchFieldPaddingRight;
+                Rect searchFieldRect = new Rect(Styles.SearchFieldPaddingLeft, column1Rect.yMax + Styles.SearchFieldPaddingTop, searchFieldWidth, EditorGUI.kSingleLineHeight);
+                string searchFilter = EditorGUI.ToolbarSearchField(searchFieldRect, m_SearchFieldText, false);
+
+                if (searchFilter != m_SearchFieldText)
+                {
+                    m_SearchFieldText = searchFilter;
+                    m_VisualTreeTreeView.searchString = searchFilter;
+                }
 
                 m_VisualTreeTreeView.OnGUI(column1Rect);
+
                 DrawSelection(column2Rect);
 
                 // Draw separator
                 EditorGUI.DrawRect(
-                    new Rect(column1Width + column1Rect.xMin, column1Rect.y, 1, column1Rect.height),
+                    new Rect(column1Width + column1Rect.xMin, column1Rect.y, 1, column1Rect.height + bottomBarHeight),
                     Styles.separatorColor);
             }
         }
@@ -333,9 +357,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 return;
             s_MatchedRulesExtractor.selectedElementRules.Clear();
             s_MatchedRulesExtractor.selectedElementStylesheets.Clear();
-            s_MatchedRulesExtractor.SetupTarget(m_SelectedElement);
-            s_MatchedRulesExtractor.TraverseRecursive(m_SelectedElement.elementPanel.visualTree, 0, s_MatchedRulesExtractor.ruleMatchers);
-            s_MatchedRulesExtractor.ruleMatchers.Clear();
+            s_MatchedRulesExtractor.FindMatchingRules(m_SelectedElement);
         }
 
         private static int GetSpecificity<T>(StyleValue<T> style)
@@ -364,7 +386,6 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
             EditorGUILayout.LabelField("Layout", m_SelectedElement.layout.ToString());
             EditorGUILayout.LabelField("World Bound", m_SelectedElement.worldBound.ToString());
-            m_SelectedElement.pickingMode = (PickingMode)EditorGUILayout.EnumPopup("Picking Mode", m_SelectedElement.pickingMode);
 
             if (m_ClassList == null)
                 InitClassList();
@@ -400,6 +421,11 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                     continue;
 
                 object val = field.GetValue(m_SelectedElement, null);
+                if (val is StyleValue<Flex>)
+                {
+                    // The properties of Flex (flexBasis, flexGrow, flexShrink) are already displayed individually.
+                    continue;
+                }
                 EditorGUILayout.BeginHorizontal();
                 EditorGUI.BeginChangeCheck();
                 int specificity;
@@ -456,6 +482,39 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 {
                     specificity = HandleReferenceProperty<Texture2D>(field, ref val);
                 }
+                else if (val is StyleValue<CursorStyle>)
+                {
+                    StyleValue<CursorStyle> style = (StyleValue<CursorStyle>)val;
+                    specificity = GetSpecificity(style);
+                    if (m_ShowDefaults || specificity > 0)
+                    {
+                        if (style.value.texture != null)
+                        {
+                            style.specificity = Int32.MaxValue;
+                            style.value.texture  = EditorGUILayout.ObjectField(field.Name + "'s texture2D", style.value.texture, typeof(Texture2D), false) as Texture2D;
+                            EditorGUILayout.EndHorizontal();
+
+                            EditorGUILayout.BeginHorizontal();
+                            EditorGUIUtility.wideMode = true;
+                            style.value.hotspot = EditorGUILayout.Vector2Field(field.Name + "'s hotspot", style.value.hotspot);
+
+                            val = style;
+                        }
+                        else
+                        {
+                            int mouseId = style.value.defaultCursorId;
+                            Enum newEnumValue = EditorGUILayout.EnumPopup(field.Name , (MouseCursor)mouseId);
+
+                            int toCompare = Convert.ToInt32(newEnumValue);
+                            if (!Equals(mouseId, toCompare))
+                            {
+                                style.specificity = Int32.MaxValue;
+                                style.value.defaultCursorId = toCompare;
+                                val = style;
+                            }
+                        }
+                    }
+                }
                 else
                 {
                     Type type = val.GetType();
@@ -505,24 +564,24 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             Action refresh = () => m_ClassList.list = m_SelectedElement.GetClasses().ToList();
             m_ClassList = new ReorderableList(m_SelectedElement.GetClasses().ToList(), typeof(string), false, true, true, true);
             m_ClassList.onRemoveCallback = _ =>
-                {
-                    m_SelectedElement.RemoveFromClassList((string)m_ClassList.list[m_ClassList.index]);
-                    refresh();
-                };
+            {
+                m_SelectedElement.RemoveFromClassList((string)m_ClassList.list[m_ClassList.index]);
+                refresh();
+            };
             m_ClassList.drawHeaderCallback = r =>
-                {
-                    r.width /= 2;
-                    EditorGUI.LabelField(r, "Classes");
-                    r.x += r.width;
-                    m_NewClass = EditorGUI.TextField(r, m_NewClass);
-                };
+            {
+                r.width /= 2;
+                EditorGUI.LabelField(r, "Classes");
+                r.x += r.width;
+                m_NewClass = EditorGUI.TextField(r, m_NewClass);
+            };
             m_ClassList.onCanAddCallback = _ => !String.IsNullOrEmpty(m_NewClass) && !m_SelectedElement.ClassListContains(m_NewClass);
             m_ClassList.onAddCallback = _ =>
-                {
-                    m_SelectedElement.AddToClassList(m_NewClass);
-                    m_NewClass = "";
-                    refresh();
-                };
+            {
+                m_SelectedElement.AddToClassList(m_NewClass);
+                m_NewClass = "";
+                refresh();
+            };
         }
 
         private int HandleReferenceProperty<T>(PropertyInfo field, ref object val) where T : UnityEngine.Object
@@ -557,9 +616,9 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 foreach (MatchedRulesExtractor.MatchedRule rule in s_MatchedRulesExtractor.selectedElementRules)
                 {
                     StringBuilder builder = new StringBuilder();
-                    for (int j = 0; j < rule.ruleMatcher.complexSelector.selectors.Length; j++)
+                    for (int j = 0; j < rule.matchRecord.complexSelector.selectors.Length; j++)
                     {
-                        StyleSelector sel = rule.ruleMatcher.complexSelector.selectors[j];
+                        StyleSelector sel = rule.matchRecord.complexSelector.selectors[j];
                         switch (sel.previousRelationship)
                         {
                             case StyleSelectorRelationship.Child:
@@ -590,7 +649,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                         }
                     }
 
-                    StyleProperty[] props = rule.ruleMatcher.complexSelector.rule.properties;
+                    StyleProperty[] props = rule.matchRecord.complexSelector.rule.properties;
                     bool expanded = m_CurFoldout.Contains(i);
                     EditorGUILayout.BeginHorizontal();
                     bool foldout = EditorGUILayout.Foldout(m_CurFoldout.Contains(i), new GUIContent(builder.ToString()), true);
@@ -608,7 +667,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                         EditorGUI.indentLevel++;
                         for (int j = 0; j < props.Length; j++)
                         {
-                            string s = rule.ruleMatcher.sheet.ReadAsString(props[j].values[0]);
+                            string s = rule.matchRecord.sheet.ReadAsString(props[j].values[0]);
                             EditorGUILayout.LabelField(new GUIContent(props[j].name), new GUIContent(s));
                         }
 
@@ -654,9 +713,9 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         private static void DrawSizeLabels(Rect cursor, GUIContent label, float top, float right, float bottom, float left)
         {
             Rect labelCursor = new Rect(
-                    cursor.x + (cursor.width - Styles.LabelSizeSize) * 0.5f,
-                    cursor.y + 2, Styles.LabelSizeSize,
-                    EditorGUIUtility.singleLineHeight);
+                cursor.x + (cursor.width - Styles.LabelSizeSize) * 0.5f,
+                cursor.y + 2, Styles.LabelSizeSize,
+                EditorGUIUtility.singleLineHeight);
             EditorGUI.LabelField(labelCursor, top.ToString("F2"), Styles.KSizeLabel);
             labelCursor.y = cursor.y + cursor.height + 2 - Styles.SizeRectBetweenSize;
             EditorGUI.LabelField(labelCursor, bottom.ToString("F2"), Styles.KSizeLabel);
@@ -737,6 +796,10 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         internal static class Styles
         {
+            internal const float SearchFieldPaddingTop = 4;
+            internal const float SearchFieldPaddingBottom = 2;
+            internal const float SearchFieldPaddingLeft = 2;
+            internal const float SearchFieldPaddingRight = 2;
             internal const float LabelSizeSize = 50;
             internal const float SizeRectLineSize = 3;
             internal const float SizeRectBetweenSize = 35;
@@ -745,6 +808,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             internal const float LabelWidth = 150;
             public static GUIStyle KSizeLabel = "DefaultCenteredText";
             public static GUIStyle KInspectorTitle = "WhiteLargeCenterLabel";
+            public static GUIStyle KBottomBarBg = "ProjectBrowserBottomBarBg";
 
             public static readonly GUIContent elementStylesContent = EditorGUIUtility.TrTextContent("Element styles");
             public static readonly GUIContent showDefaultsContent = EditorGUIUtility.TrTextContent("Show defaults");
@@ -781,34 +845,28 @@ namespace UnityEditor.Experimental.UIElements.Debugger
         }
     }
 
-    internal class MatchedRulesExtractor : HierarchyTraversal
+    internal class MatchedRulesExtractor
     {
-        internal List<RuleMatcher> ruleMatchers = new List<RuleMatcher>();
-
         internal HashSet<MatchedRule> selectedElementRules = new HashSet<MatchedRule>(MatchedRule.lineNumberFullPathComparer);
         internal HashSet<string> selectedElementStylesheets = new HashSet<string>();
 
-        private VisualElement m_Target;
-        private List<VisualElement> m_Hierarchy = VisualElementListPool.Get();  //TODO: Properly release it when Traversal is done
-        private int m_Index;
-
         internal struct MatchedRule
         {
-            public readonly RuleMatcher ruleMatcher;
+            public readonly SelectorMatchRecord matchRecord;
             public readonly string displayPath;
             public readonly int lineNumber;
             public readonly string fullPath;
 
-            public MatchedRule(RuleMatcher ruleMatcher)
+            public MatchedRule(SelectorMatchRecord matchRecord)
                 : this()
             {
-                this.ruleMatcher = ruleMatcher;
-                fullPath = AssetDatabase.GetAssetPath(ruleMatcher.sheet);
-                lineNumber = ruleMatcher.complexSelector.rule.line;
+                this.matchRecord = matchRecord;
+                fullPath = AssetDatabase.GetAssetPath(matchRecord.sheet);
+                lineNumber = matchRecord.complexSelector.rule.line;
                 if (fullPath != null)
                 {
                     if (fullPath == "Library/unity editor resources")
-                        displayPath = ruleMatcher.sheet.name + ":" + lineNumber;
+                        displayPath = matchRecord.sheet.name + ":" + lineNumber;
                     else
                         displayPath = Path.GetFileNameWithoutExtension(fullPath) + ":" + lineNumber;
                 }
@@ -833,69 +891,36 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             public static IEqualityComparer<MatchedRule> lineNumberFullPathComparer = new LineNumberFullPathEqualityComparer();
         }
 
-        private void Setup(VisualElement cursor)
+        private void FindStyleSheets(VisualElement cursor, StyleMatchingContext matchingContext)
         {
-            m_Hierarchy.Add(cursor);
-
             if (cursor.shadow.parent != null)
-                Setup(cursor.shadow.parent);
+                FindStyleSheets(cursor.shadow.parent, matchingContext);
 
             if (cursor.styleSheets != null)
             {
                 foreach (StyleSheet sheet in cursor.styleSheets)
                 {
                     selectedElementStylesheets.Add(AssetDatabase.GetAssetPath(sheet) ?? "<unknown>");
-                    PushStyleSheet(sheet);
+                    matchingContext.styleSheetStack.Add(sheet);
                 }
             }
         }
 
-        public void SetupTarget(VisualElement target)
+        public void FindMatchingRules(VisualElement target)
         {
-            m_Target = target;
-            m_Hierarchy.Clear();
-            Setup(target);
-            m_Index = m_Hierarchy.Count - 1;
-        }
+            var matchingContext = new StyleMatchingContext((element, info) => {});
+            matchingContext.currentElement = target;
+            FindStyleSheets(target, matchingContext);
 
-        private void PushStyleSheet(StyleSheet styleSheetData)
-        {
-            StyleComplexSelector[] complexSelectors = styleSheetData.complexSelectors;
+            List<SelectorMatchRecord> matches = new List<SelectorMatchRecord>();
+            StyleSelectorHelper.FindMatches(matchingContext, matches);
 
-            // To avoid excessive re-allocations, just resize the list right now
-            int futureSize = ruleMatchers.Count + complexSelectors.Length;
-            ruleMatchers.Capacity = Math.Max(ruleMatchers.Capacity, futureSize);
+            matches.Sort(SelectorMatchRecord.Compare);
 
-            for (int i = 0; i < complexSelectors.Length; i++)
+            foreach (var record in matches)
             {
-                StyleComplexSelector complexSelector = complexSelectors[i];
-
-                // For every complex selector, push a matcher for first sub selector
-                ruleMatchers.Add(new RuleMatcher()
-                {
-                    sheet = styleSheetData,
-                    complexSelector = complexSelector,
-                });
+                selectedElementRules.Add(new MatchedRule(record));
             }
-        }
-
-        public override bool ShouldSkipElement(VisualElement element)
-        {
-            return false;
-        }
-
-        public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
-        {
-            if (element == m_Target)
-                selectedElementRules.Add(new MatchedRule(matcher));
-            return false;
-        }
-
-        protected override void Recurse(VisualElement element, int depth, List<RuleMatcher> allRuleMatchers)
-        {
-            m_Index--;
-            if (m_Index >= 0)
-                TraverseRecursive(m_Hierarchy[m_Index], depth + 1, allRuleMatchers);
         }
     }
 }

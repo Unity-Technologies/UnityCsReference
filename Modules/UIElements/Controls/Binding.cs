@@ -13,6 +13,7 @@ namespace UnityEngine.Experimental.UIElements
     public interface IBinding
     {
         void Update();
+        void Release();
     }
 
     public static class IBindingExtensions

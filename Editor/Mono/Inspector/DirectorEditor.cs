@@ -138,7 +138,7 @@ namespace UnityEditor
             PropertyFieldAsObject(bindingProperty,
                 GetContentForOutput(binding, source),
                 binding.outputTargetType
-                );
+            );
         }
 
         GUIContent GetContentForOutput(PlayableBinding binding, UnityEngine.Object source)

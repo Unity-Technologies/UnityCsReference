@@ -246,12 +246,12 @@ namespace UnityEditor
 
                         // Try the proper registry key
                         key = GetRegistryValue(
-                                string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\{0}.0", (int)version), "InstallDir");
+                            string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\{0}.0", (int)version), "InstallDir");
 
                         // Try to fallback to the 32bits hive
                         if (string.IsNullOrEmpty(key))
                             key = GetRegistryValue(
-                                    string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\{0}.0", (int)version), "InstallDir");
+                                string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\{0}.0", (int)version), "InstallDir");
 
                         if (!string.IsNullOrEmpty(key))
                         {
@@ -265,8 +265,8 @@ namespace UnityEditor
 
                         // Fallback to debugger key
                         key = GetRegistryValue(
-                                // VS uses this key for the local debugger path
-                                string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\{0}.0\Debugger", (int)version), "FEQARuntimeImplDll");
+                            // VS uses this key for the local debugger path
+                            string.Format(@"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\VisualStudio\{0}.0\Debugger", (int)version), "FEQARuntimeImplDll");
                         if (!string.IsNullOrEmpty(key))
                         {
                             string path = DeriveVisualStudioPath(key);

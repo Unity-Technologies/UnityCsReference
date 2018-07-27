@@ -656,7 +656,7 @@ namespace UnityEditor
                 Debug.LogError("GameObject is null");
                 return false;
             }
-            if (PrefabUtility.GetPrefabType(modelAsset) != PrefabType.ModelPrefab)
+            if (!(PrefabUtility.IsPartOfModelPrefab(modelAsset) && PrefabUtility.IsPartOfPrefabAsset(modelAsset)))
             {
                 Debug.LogError(modelAsset.name + ": GameObject is not a ModelPrefab", modelAsset);
                 return false;

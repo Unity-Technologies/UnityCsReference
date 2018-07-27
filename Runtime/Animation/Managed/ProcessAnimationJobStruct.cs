@@ -10,7 +10,7 @@ using Unity.Jobs.LowLevel.Unsafe;
 namespace UnityEngine.Experimental.Animations
 {
     internal struct ProcessAnimationJobStruct<T>
-    where T : struct, IAnimationJob
+        where T : struct, IAnimationJob
     {
         private static IntPtr jobReflectionData;
 
@@ -19,10 +19,10 @@ namespace UnityEngine.Experimental.Animations
             if (jobReflectionData == IntPtr.Zero)
             {
                 jobReflectionData = JobsUtility.CreateJobReflectionData(
-                        typeof(T),
-                        JobType.Single,
-                        (ExecuteJobFunction)ExecuteProcessRootMotion,
-                        (ExecuteJobFunction)ExecuteProcessAnimation);
+                    typeof(T),
+                    JobType.Single,
+                    (ExecuteJobFunction)ExecuteProcessRootMotion,
+                    (ExecuteJobFunction)ExecuteProcessAnimation);
             }
 
             return jobReflectionData;

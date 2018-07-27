@@ -195,10 +195,10 @@ namespace UnityEditor.PlatformSupport
                     elementContentRect.y, slotWidth, slotHeight);
 
             Texture2D texture = (Texture2D)EditorGUI.ObjectField(
-                    textureRect,
-                    platformIcon.GetTexture(0),
-                    typeof(Texture2D),
-                    false);
+                textureRect,
+                platformIcon.GetTexture(0),
+                typeof(Texture2D),
+                false);
 
             platformIcon.SetTexture(texture, 0);
 

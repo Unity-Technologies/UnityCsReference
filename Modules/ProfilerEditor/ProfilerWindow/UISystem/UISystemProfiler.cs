@@ -107,10 +107,10 @@ namespace UnityEditor
         internal static void DrawPreviewToolbarButtons()
         {
             PreviewBackground = (Styles.PreviewBackgroundType)EditorGUILayout.IntPopup(GUIContent.none, (int)PreviewBackground, Styles.backgroundOptions,
-                    Styles.backgroundValues, EditorStyles.toolbarDropDown, GUILayout.MaxWidth(100));
+                Styles.backgroundValues, EditorStyles.toolbarDropDown, GUILayout.MaxWidth(100));
 
             PreviewRenderMode = (Styles.RenderMode)EditorGUILayout.IntPopup(GUIContent.none, (int)PreviewRenderMode, Styles.rendermodeOptions,
-                    Styles.rendermodeValues, EditorStyles.toolbarDropDown, GUILayout.MaxWidth(100));
+                Styles.rendermodeValues, EditorStyles.toolbarDropDown, GUILayout.MaxWidth(100));
         }
 
         private static Styles.RenderMode PreviewRenderMode
@@ -154,7 +154,7 @@ namespace UnityEditor
                         if (canvas != null)
                         {
                             image = m_RenderService.GetThumbnail(currentFrame, canvas.info.renderDataIndex, canvas.info.renderDataCount,
-                                    previewRenderMode != Styles.RenderMode.Standard);
+                                previewRenderMode != Styles.RenderMode.Standard);
                         }
 
                         if (previewRenderMode == Styles.RenderMode.CompositeOverdraw)
@@ -175,8 +175,8 @@ namespace UnityEditor
                             w *= scaleFactor;
                             h *= scaleFactor;
                             var imageRect = new Rect(previewRect.x + (previewRect.width - w) / 2, previewRect.y + (previewRect.height - h) / 2,
-                                    w,
-                                    h);
+                                w,
+                                h);
 
                             if (first)
                             {

@@ -219,7 +219,7 @@ namespace UnityEditor
 
         public void DeactivateFlyModeContext()
         {
-            ShortcutIntegration.instance.contextManager.ClearPriorityContext();
+            ShortcutIntegration.instance.contextManager.DeregisterPriorityContext(m_CameraFlyModeContext);
         }
     }
 }

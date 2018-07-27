@@ -318,7 +318,7 @@ namespace TreeEditor
                     {
                         // Clamp to parent
                         node.size = Mathf.Min(node.parent.group.GetRadiusAtTime(node.parent, node.offset, false) * 0.75f,
-                                node.size);
+                            node.size);
                     }
                 }
                 else if (lockFlags == 0)
@@ -671,8 +671,8 @@ namespace TreeEditor
                                     for (int tri = node.parent.triStart; tri < node.parent.triEnd; tri++)
                                     {
                                         object hit = MathUtils.IntersectRayTriangle(ray, verts[tris[tri].v[0]].pos,
-                                                verts[tris[tri].v[1]].pos,
-                                                verts[tris[tri].v[2]].pos, true);
+                                            verts[tris[tri].v[1]].pos,
+                                            verts[tris[tri].v[2]].pos, true);
                                         if (hit != null)
                                         {
                                             RaycastHit rayHit = ((RaycastHit)hit);

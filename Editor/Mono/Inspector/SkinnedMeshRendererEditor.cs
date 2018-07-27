@@ -74,7 +74,7 @@ namespace UnityEditor
                 "Edit Bounds",
                 PrimitiveBoundsHandle.editModeButton,
                 this
-                );
+            );
             EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_AABB, EditorGUIUtility.TrTextContent("Bounds"));
             // If we set m_AABB then we need to set m_DirtyAABB to false

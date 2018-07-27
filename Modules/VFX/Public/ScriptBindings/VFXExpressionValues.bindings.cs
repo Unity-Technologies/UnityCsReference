@@ -27,35 +27,35 @@ namespace UnityEngine.Experimental.VFX
             return expressionValue;
         }
 
-        [NativeThrows, NativeName("GetValueFromScript<bool>")] extern public bool GetBool(int name);
-        [NativeThrows, NativeName("GetValueFromScript<int>")] extern public int GetInt(int name);
-        [NativeThrows, NativeName("GetValueFromScript<UInt32>")] extern public uint GetUInt(int name);
-        [NativeThrows, NativeName("GetValueFromScript<float>")] extern public float GetFloat(int name);
-        [NativeThrows, NativeName("GetValueFromScript<Vector2f>")] extern public Vector2 GetVector2(int name);
-        [NativeThrows, NativeName("GetValueFromScript<Vector3f>")] extern public Vector3 GetVector3(int name);
-        [NativeThrows, NativeName("GetValueFromScript<Vector4f>")] extern public Vector4 GetVector4(int name);
-        [NativeThrows, NativeName("GetValueFromScript<Matrix4x4f>")] extern public Matrix4x4 GetMatrix4x4(int name);
-        [NativeThrows, NativeName("GetValueFromScript<Texture*>")] extern public Texture GetTexture(int name);
-        [NativeThrows, NativeName("GetValueFromScript<Mesh*>")] extern public Mesh GetMesh(int name);
+        [NativeThrows, NativeName("GetValueFromScript<bool>")] extern public bool GetBool(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<int>")] extern public int GetInt(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<UInt32>")] extern public uint GetUInt(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<float>")] extern public float GetFloat(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<Vector2f>")] extern public Vector2 GetVector2(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<Vector3f>")] extern public Vector3 GetVector3(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<Vector4f>")] extern public Vector4 GetVector4(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<Matrix4x4f>")] extern public Matrix4x4 GetMatrix4x4(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<Texture*>")] extern public Texture GetTexture(int nameID);
+        [NativeThrows, NativeName("GetValueFromScript<Mesh*>")] extern public Mesh GetMesh(int nameID);
 
-        public AnimationCurve GetAnimationCurve(int name)
+        public AnimationCurve GetAnimationCurve(int nameID)
         {
             var animationCurve = new AnimationCurve();
-            Internal_GetAnimationCurveFromScript(name, animationCurve);
+            Internal_GetAnimationCurveFromScript(nameID, animationCurve);
             return animationCurve;
         }
 
         [NativeThrows]
-        extern internal void Internal_GetAnimationCurveFromScript(int name, AnimationCurve curve);
-        public Gradient GetGradient(int name)
+        extern internal void Internal_GetAnimationCurveFromScript(int nameID, AnimationCurve curve);
+        public Gradient GetGradient(int nameID)
         {
             var gradient = new Gradient();
-            Internal_GetGradientFromScript(name, gradient);
+            Internal_GetGradientFromScript(nameID, gradient);
             return gradient;
         }
 
         [NativeThrows]
-        extern internal void Internal_GetGradientFromScript(int name, Gradient gradient);
+        extern internal void Internal_GetGradientFromScript(int nameID, Gradient gradient);
 
         public bool GetBool(string name)
         {
@@ -110,6 +110,11 @@ namespace UnityEngine.Experimental.VFX
         public Gradient GetGradient(string name)
         {
             return GetGradient(Shader.PropertyToID(name));
+        }
+
+        public Mesh GetMesh(string name)
+        {
+            return GetMesh(Shader.PropertyToID(name));
         }
     }
 }

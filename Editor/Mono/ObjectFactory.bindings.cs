@@ -6,6 +6,7 @@ using System;
 using System.Reflection;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -21,6 +22,15 @@ namespace UnityEditor
 
         [FreeFunction]
         static extern GameObject CreateDefaultGameObject(string name);
+
+        public static event Action<Component> componentWasAdded;
+
+        [RequiredByNativeCode]
+        static void InvokeComponentWasAdded(Component component)
+        {
+            if (componentWasAdded != null)
+                componentWasAdded(component);
+        }
 
         static void CheckTypeValidity(Type type)
         {

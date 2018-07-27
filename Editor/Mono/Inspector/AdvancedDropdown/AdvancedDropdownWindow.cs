@@ -69,6 +69,14 @@ namespace UnityEditor.AdvancedDropdown
         {
         }
 
+        protected virtual void OnDestroy()
+        {
+            // This window sets 'editingTextField = true' continuously, through EditorGUI.FocusTextInControl(),
+            // for the searchfield in its AdvancedDropdownGUI so here we ensure to clean up. This fixes the issue that
+            // EditorGUI.IsEditingTextField() was returning true after e.g the Add Component Menu closes
+            EditorGUIUtility.editingTextField = false;
+        }
+
         public static T CreateAndInit<T>(Rect rect) where T : AdvancedDropdownWindow
         {
             var instance = CreateInstance<T>();
@@ -203,12 +211,12 @@ namespace UnityEditor.AdvancedDropdown
         private void OnGUISearch()
         {
             gui.DrawSearchField(isSearchFieldDisabled, m_Search, (newSearch) =>
-                {
-                    dataSource.RebuildSearch(newSearch);
-                    m_CurrentlyRenderedTree =
-                        string.IsNullOrEmpty(newSearch) ? dataSource.mainTree : dataSource.searchTree;
-                    m_Search = newSearch;
-                });
+            {
+                dataSource.RebuildSearch(newSearch);
+                m_CurrentlyRenderedTree =
+                    string.IsNullOrEmpty(newSearch) ? dataSource.mainTree : dataSource.searchTree;
+                m_Search = newSearch;
+            });
         }
 
         private void HandleKeyboard()

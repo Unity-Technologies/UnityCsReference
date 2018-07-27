@@ -319,74 +319,74 @@ namespace UnityEditor
             string queryFilter = m_LastAssetStoreQuerySearchFilter + m_LastAssetStoreQueryClassName + m_LastAssetStoreQueryLabels;
 
             AssetStoreSearchResults.Callback dg = delegate(AssetStoreSearchResults results) {
-                    m_QueryInProgress = false;
+                m_QueryInProgress = false;
 
-                    // If filter changed while fetching the result then requery using the new filter.
-                    if (queryFilter != m_LastAssetStoreQuerySearchFilter + m_LastAssetStoreQueryClassName + m_LastAssetStoreQueryLabels)
-                        m_RequeryAssetStore = true;
+                // If filter changed while fetching the result then requery using the new filter.
+                if (queryFilter != m_LastAssetStoreQuerySearchFilter + m_LastAssetStoreQueryClassName + m_LastAssetStoreQueryLabels)
+                    m_RequeryAssetStore = true;
 
-                    if (results.error != null && results.error != "")
-                    {
-                        if (s_Debug)
-                            Debug.LogError("Error performing Asset Store search: " + results.error);
-                        else
-                            System.Console.Write("Error performing Asset Store search: " + results.error);
-                        m_AssetStoreError = results.error;
-                        m_Groups.Clear();
-                        m_Groups.Add(m_LocalAssets);
-                        Repaint();
-
-                        if (assetStoreSearchEnded != null)
-                            assetStoreSearchEnded();
-
-                        return;
-                    }
-
-                    m_AssetStoreError = "";
-
-                    // Clear groups and use the ones from server
-                    List<string> existingGroupNames = new List<string>();
-                    foreach (AssetStoreGroup g in m_StoreAssets)
-                        existingGroupNames.Add(g.Name);
-
+                if (results.error != null && results.error != "")
+                {
+                    if (s_Debug)
+                        Debug.LogError("Error performing Asset Store search: " + results.error);
+                    else
+                        System.Console.Write("Error performing Asset Store search: " + results.error);
+                    m_AssetStoreError = results.error;
                     m_Groups.Clear();
                     m_Groups.Add(m_LocalAssets);
-
-                    foreach (AssetStoreSearchResults.Group inGroup in results.groups)
-                    {
-                        existingGroupNames.Remove(inGroup.name);
-                        AssetStoreGroup group = m_StoreAssets.Find(g => g.Name == inGroup.name);
-
-                        if (group == null)
-                        {
-                            group = new AssetStoreGroup(this, inGroup.label, inGroup.name);
-                            m_StoreAssets.Add(group);
-                        }
-                        m_Groups.Add(group);
-
-                        // Set total found if initial request or different from 0
-                        if (inGroup.limit != 0)
-                        {
-                            group.ItemsAvailable = inGroup.totalFound;
-                        }
-
-                        if (inGroup.offset == 0 && inGroup.limit != 0)
-                            group.Assets = inGroup.assets;
-                        else
-                            group.Assets.AddRange(inGroup.assets);
-                    }
-
-                    // Remove groups not valid for this request
-                    foreach (string k in existingGroupNames)
-                        m_StoreAssets.RemoveAll(g => g.Name == k);
-
-                    EnsureAssetStoreGroupsAreOpenIfAllClosed();
-
                     Repaint();
 
                     if (assetStoreSearchEnded != null)
                         assetStoreSearchEnded();
-                };
+
+                    return;
+                }
+
+                m_AssetStoreError = "";
+
+                // Clear groups and use the ones from server
+                List<string> existingGroupNames = new List<string>();
+                foreach (AssetStoreGroup g in m_StoreAssets)
+                    existingGroupNames.Add(g.Name);
+
+                m_Groups.Clear();
+                m_Groups.Add(m_LocalAssets);
+
+                foreach (AssetStoreSearchResults.Group inGroup in results.groups)
+                {
+                    existingGroupNames.Remove(inGroup.name);
+                    AssetStoreGroup group = m_StoreAssets.Find(g => g.Name == inGroup.name);
+
+                    if (group == null)
+                    {
+                        group = new AssetStoreGroup(this, inGroup.label, inGroup.name);
+                        m_StoreAssets.Add(group);
+                    }
+                    m_Groups.Add(group);
+
+                    // Set total found if initial request or different from 0
+                    if (inGroup.limit != 0)
+                    {
+                        group.ItemsAvailable = inGroup.totalFound;
+                    }
+
+                    if (inGroup.offset == 0 && inGroup.limit != 0)
+                        group.Assets = inGroup.assets;
+                    else
+                        group.Assets.AddRange(inGroup.assets);
+                }
+
+                // Remove groups not valid for this request
+                foreach (string k in existingGroupNames)
+                    m_StoreAssets.RemoveAll(g => g.Name == k);
+
+                EnsureAssetStoreGroupsAreOpenIfAllClosed();
+
+                Repaint();
+
+                if (assetStoreSearchEnded != null)
+                    assetStoreSearchEnded();
+            };
 
             List<AssetStoreClient.SearchCount> groupsQuery = new List<AssetStoreClient.SearchCount>();
 
@@ -1666,9 +1666,9 @@ namespace UnityEditor
                     m_LeftPaddingForPinging = hierarchyProperty.isMainRepresentation ? LocalGroup.k_ListModeLeftPadding : LocalGroup.k_ListModeLeftPaddingForSubAssets;
                     FilteredHierarchy.FilterResult res = m_LocalAssets.LookupByInstanceID(instanceID);
                     m_Ping.m_ContentDraw = (Rect r) =>
-                        {
-                            ObjectListArea.LocalGroup.DrawIconAndLabel(r, res, label, hierarchyProperty.icon, false, false);
-                        };
+                    {
+                        ObjectListArea.LocalGroup.DrawIconAndLabel(r, res, label, hierarchyProperty.icon, false, false);
+                    };
                 }
                 else
                 {
@@ -1677,13 +1677,13 @@ namespace UnityEditor
                     m_Ping.m_ContentRect.width = pingLabelSize.x;
                     m_Ping.m_ContentRect.height = pingLabelSize.y;
                     m_Ping.m_ContentDraw = (Rect r) =>
-                        {
-                            // We need to temporary adjust style to render into content rect (org anchor is middle-centered)
-                            TextAnchor orgAnchor = s_Styles.resultsGridLabel.alignment;
-                            s_Styles.resultsGridLabel.alignment = TextAnchor.UpperLeft;
-                            s_Styles.resultsGridLabel.Draw(r, label, false, false, false, false);
-                            s_Styles.resultsGridLabel.alignment = orgAnchor;
-                        };
+                    {
+                        // We need to temporary adjust style to render into content rect (org anchor is middle-centered)
+                        TextAnchor orgAnchor = s_Styles.resultsGridLabel.alignment;
+                        s_Styles.resultsGridLabel.alignment = TextAnchor.UpperLeft;
+                        s_Styles.resultsGridLabel.Draw(r, label, false, false, false, false);
+                        s_Styles.resultsGridLabel.alignment = orgAnchor;
+                    };
                 }
                 Vector2 pos = CalculatePingPosition();
                 m_Ping.m_ContentRect.x = pos.x;

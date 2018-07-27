@@ -26,7 +26,7 @@ namespace UnityEngine.Experimental.Rendering
                 else if (!(system is BuiltinRuntimeReflectionSystem)
                          && !(value is BuiltinRuntimeReflectionSystem)
                          && system != value
-                         )
+                )
                     Debug.LogWarningFormat("ScriptableRuntimeReflectionSystemSettings.system is assigned more than once. Only a the last instance will be used. (Last instance {0}, New instance {1})", system, value);
 
                 Internal_ScriptableRuntimeReflectionSystemSettings_system = value;

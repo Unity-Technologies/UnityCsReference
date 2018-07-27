@@ -80,7 +80,7 @@ namespace UnityEditor
             {
                 case DropInfo.Type.Window:
                     m_TargetRect = new Rect(mouseScreenPos.x - m_FullWindowSize.x / 2, mouseScreenPos.y - m_FullWindowSize.y / 2,
-                            m_FullWindowSize.x, m_FullWindowSize.y);
+                        m_FullWindowSize.x, m_FullWindowSize.y);
                     break;
                 case DropInfo.Type.Pane:
                 case DropInfo.Type.Tab:

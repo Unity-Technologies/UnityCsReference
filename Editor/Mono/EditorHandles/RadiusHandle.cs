@@ -13,7 +13,8 @@ namespace UnityEditor
         {
             Vector3 planeNormal;
             float frontAngle = 90;
-            Vector3[] dirs = new[] {
+            Vector3[] dirs = new[]
+            {
                 rotation * Vector3.right,
                       rotation * Vector3.up,
                       rotation * Vector3.forward,

@@ -116,6 +116,13 @@ namespace UnityEngine.Experimental.UIElements
             return e;
         }
 
+        public static T GetPooled(Vector2 mousePosition)
+        {
+            T e = GetPooled();
+            e.mousePosition = mousePosition;
+            return e;
+        }
+
         public static T GetPooled(IMouseEvent triggerEvent)
         {
             T e = GetPooled();
@@ -191,7 +198,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.TricklesDown;
+            flags = EventFlags.TricklesDown | EventFlags.Cancellable;
         }
 
         public MouseEnterEvent()
@@ -205,7 +212,7 @@ namespace UnityEngine.Experimental.UIElements
         protected override void Init()
         {
             base.Init();
-            flags = EventFlags.TricklesDown;
+            flags = EventFlags.TricklesDown | EventFlags.Cancellable;
         }
 
         public MouseLeaveEvent()

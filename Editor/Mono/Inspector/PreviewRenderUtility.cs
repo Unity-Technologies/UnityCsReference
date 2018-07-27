@@ -231,7 +231,7 @@ namespace UnityEditor
                 previewBackground.border.bottom,
                 new Color(.5f, .5f, .5f, 1),
                 null
-                );
+            );
 
 
             if (Unsupported.SetOverrideRenderSettings(previewScene.scene))
@@ -414,10 +414,10 @@ namespace UnityEditor
             var quat = Quaternion.LookRotation(m.GetColumn(2), m.GetColumn(1));
             var pos = m.GetColumn(3);
             var scale = new Vector3(
-                    m.GetColumn(0).magnitude,
-                    m.GetColumn(1).magnitude,
-                    m.GetColumn(2).magnitude
-                    );
+                m.GetColumn(0).magnitude,
+                m.GetColumn(1).magnitude,
+                m.GetColumn(2).magnitude
+            );
 
             DrawMesh(mesh, pos, scale, quat, mat, subMeshIndex, customProperties, probeAnchor, useLightProbe);
         }

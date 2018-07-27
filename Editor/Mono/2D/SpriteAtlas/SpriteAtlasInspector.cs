@@ -291,7 +291,7 @@ namespace UnityEditor.U2D
                 HandlePackableListUI();
 
             bool spriteAtlasPackignEnabled = (EditorSettings.spritePackerMode == SpritePackerMode.BuildTimeOnlyAtlas
-                                              || EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOnAtlas);
+                || EditorSettings.spritePackerMode == SpritePackerMode.AlwaysOnAtlas);
             if (spriteAtlasPackignEnabled)
             {
                 if (GUILayout.Button(s_Styles.packButton, GUILayout.ExpandWidth(false)))

@@ -58,11 +58,11 @@ namespace UnityEditor
             public readonly GUIContent muteLabel = EditorGUIUtility.TrTextContent("Mute");
             public readonly GUIContent volumeLabel = EditorGUIUtility.TrTextContent("Volume");
             public readonly GUIContent controlledAudioTrackCountContent = EditorGUIUtility.TextContent(
-                    "Controlled Tracks|How many audio tracks will the player control.  The actual number of tracks is only known during playback when the source is a URL.");
+                "Controlled Tracks|How many audio tracks will the player control.  The actual number of tracks is only known during playback when the source is a URL.");
             public readonly GUIContent materialRendererContent = EditorGUIUtility.TextContent(
-                    "Renderer|Renderer that will receive the images. Defaults to the first renderer on the game object.");
+                "Renderer|Renderer that will receive the images. Defaults to the first renderer on the game object.");
             public readonly GUIContent materialPropertyContent = EditorGUIUtility.TextContent(
-                    "Material Property|Texture property of the current Material that will receive the images.");
+                "Material Property|Texture property of the current Material that will receive the images.");
 
             public readonly string selectUniformVideoSourceHelp =
                 "Select a uniform video source type before a video clip or URL can be selected.";
@@ -275,12 +275,12 @@ namespace UnityEditor
                     browseRect.xMin += EditorGUIUtility.labelWidth;
                     browseRect.xMax = browseRect.xMin + GUI.skin.label.CalcSize(s_Styles.browseContent).x + 10;
                     if (EditorGUI.DropdownButton(
-                            browseRect, s_Styles.browseContent, FocusType.Passive, GUISkin.current.button))
+                        browseRect, s_Styles.browseContent, FocusType.Passive, GUISkin.current.button))
                     {
                         string path = EditorUtility.OpenFilePanelWithFilters(
-                                s_Styles.selectMovieFile,
-                                EditorPrefs.GetString(s_Styles.selectMovieFileRecentPath),
-                                s_Styles.selectMovieFileFilter);
+                            s_Styles.selectMovieFile,
+                            EditorPrefs.GetString(s_Styles.selectMovieFileRecentPath),
+                            s_Styles.selectMovieFileFilter);
                         if (!string.IsNullOrEmpty(path))
                         {
                             m_Url.stringValue = "file://" + path;
@@ -433,10 +433,10 @@ namespace UnityEditor
                 {
                     Rect rect = EditorGUILayout.GetControlRect(true, EditorGUI.kSingleLineHeight);
                     GUIContent label = EditorGUI.BeginProperty(
-                            rect, s_Styles.materialRendererContent, m_TargetMaterialRenderer);
+                        rect, s_Styles.materialRendererContent, m_TargetMaterialRenderer);
                     EditorGUI.BeginChangeCheck();
                     var newRenderer = EditorGUI.ObjectField(
-                            rect, label, GetTargetRenderer((VideoPlayer)target), typeof(Renderer), true);
+                        rect, label, GetTargetRenderer((VideoPlayer)target), typeof(Renderer), true);
                     if (EditorGUI.EndChangeCheck())
                         m_TargetMaterialRenderer.objectReferenceValue = newRenderer;
                     EditorGUI.EndProperty();
@@ -445,8 +445,8 @@ namespace UnityEditor
                 int curHash = GetMaterialPropertyPopupHash(targets);
                 if (m_MaterialPropertyPopupContentHash != curHash)
                     m_MaterialPropertyPopupContent = BuildPopupEntries(
-                            targets, GetMaterialPropertyNames, out m_MaterialPropertyPopupSelection,
-                            out m_MaterialPropertyPopupInvalidSelections);
+                        targets, GetMaterialPropertyNames, out m_MaterialPropertyPopupSelection,
+                        out m_MaterialPropertyPopupInvalidSelections);
                 HandlePopup(s_Styles.materialPropertyContent, m_TargetMaterialProperty, m_MaterialPropertyPopupContent, m_MaterialPropertyPopupSelection);
                 if (m_MaterialPropertyPopupInvalidSelections > 0 || m_MaterialPropertyPopupContent.Length == 0)
                 {
@@ -581,7 +581,7 @@ namespace UnityEditor
                         if (useControlledAudioTrackCount)
                         {
                             trackCount = (ushort)Math.Min(
-                                    (ushort)m_ControlledAudioTrackCount.intValue, trackCountBefore);
+                                (ushort)m_ControlledAudioTrackCount.intValue, trackCountBefore);
                             trackCount = (ushort)Math.Min(trackCount, m_EnabledAudioTracks.arraySize);
                         }
                         else
@@ -689,7 +689,7 @@ namespace UnityEditor
                 {
                     m_AudioTrackCountCached = audioTrackCount;
                     m_ControlledAudioTrackCountContent = EditorGUIUtility.TextContent(
-                            s_Styles.controlledAudioTrackCountContent.text + " [" + audioTrackCount + " found]");
+                        s_Styles.controlledAudioTrackCountContent.text + " [" + audioTrackCount + " found]");
                     m_ControlledAudioTrackCountContent.tooltip = s_Styles.controlledAudioTrackCountContent.tooltip;
                 }
                 controlledAudioTrackCountContent = m_ControlledAudioTrackCountContent;

@@ -17,7 +17,7 @@ namespace UnityEditor
 
         public ColorPickerHDRConfig(
             float minBrightness, float maxBrightness, float minExposureValue, float maxExposureValue
-            )
+        )
         {
             this.minBrightness = minBrightness;
             this.maxBrightness = maxBrightness;

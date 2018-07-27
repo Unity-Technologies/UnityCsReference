@@ -368,9 +368,9 @@ namespace UnityEditor
             // Calc sizes
             const float barHeight = 1;
             Rect scrollViewRect = new Rect(frameWidth,
-                    startY + barHeight,
-                    position.width - 2 * frameWidth,
-                    height - barHeight - frameWidth);
+                startY + barHeight,
+                position.width - 2 * frameWidth,
+                height - barHeight - frameWidth);
             float totalContentHeight = DrawNormalList(false, 0, 0, 100000);
             Rect contentRect = new Rect(0, 0, 1, totalContentHeight);
             bool isScrollbarVisible = totalContentHeight > scrollViewRect.height;

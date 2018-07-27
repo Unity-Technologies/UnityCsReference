@@ -1237,10 +1237,10 @@ namespace UnityEditor
         {
             // Since CurveEditor doesn't know about AnimationWindowState, a delegate allows it to reflect frame rate changes
             m_State.onFrameRateChange += delegate(float newFrameRate)
-                {
-                    m_CurveEditor.invSnap = newFrameRate;
-                    m_CurveEditor.hTicks.SetTickModulosForFrameRate(newFrameRate);
-                };
+            {
+                m_CurveEditor.invSnap = newFrameRate;
+                m_CurveEditor.hTicks.SetTickModulosForFrameRate(newFrameRate);
+            };
 
             m_State.onStartLiveEdit += OnStartLiveEdit;
             m_State.onEndLiveEdit += OnEndLiveEdit;

@@ -86,28 +86,28 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
             List<ISelectable> newSelection = new List<ISelectable>();
             m_GraphView.graphElements.ForEach(element =>
+            {
+                if (element.IsSelectable())
                 {
-                    if (element.IsSelectable())
+                    for (int i = 1; i < m_FreehandElement.points.Count; i++)
                     {
-                        for (int i = 1; i < m_FreehandElement.points.Count; i++)
-                        {
-                            // Apply offset
-                            Vector2 start = m_GraphView.ChangeCoordinatesTo(element, m_FreehandElement.points[i - 1]);
-                            Vector2 end = m_GraphView.ChangeCoordinatesTo(element, m_FreehandElement.points[i]);
-                            float minx = Mathf.Min(start.x, end.x);
-                            float maxx = Mathf.Max(start.x, end.x);
-                            float miny = Mathf.Min(start.y, end.y);
-                            float maxy = Mathf.Max(start.y, end.y);
+                        // Apply offset
+                        Vector2 start = m_GraphView.ChangeCoordinatesTo(element, m_FreehandElement.points[i - 1]);
+                        Vector2 end = m_GraphView.ChangeCoordinatesTo(element, m_FreehandElement.points[i]);
+                        float minx = Mathf.Min(start.x, end.x);
+                        float maxx = Mathf.Max(start.x, end.x);
+                        float miny = Mathf.Min(start.y, end.y);
+                        float maxy = Mathf.Max(start.y, end.y);
 
-                            var rect = new Rect(minx, miny, maxx - minx + 1, maxy - miny + 1);
-                            if (element.Overlaps(rect))
-                            {
-                                newSelection.Add(element);
-                                break;
-                            }
+                        var rect = new Rect(minx, miny, maxx - minx + 1, maxy - miny + 1);
+                        if (element.Overlaps(rect))
+                        {
+                            newSelection.Add(element);
+                            break;
                         }
                     }
-                });
+                }
+            });
 
             foreach (ISelectable selectable in newSelection)
             {

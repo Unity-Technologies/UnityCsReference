@@ -32,20 +32,20 @@ namespace UnityEditorInternal
                 m_PlayHeadCursor = new TimeCursorManipulator(AnimationWindowStyles.playHead);
 
                 m_PlayHeadCursor.onStartDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                    {
-                        if (evt.mousePosition.y <= (m_Rect.yMin + 20))
-                            return OnStartDragPlayHead(evt);
+                {
+                    if (evt.mousePosition.y <= (m_Rect.yMin + 20))
+                        return OnStartDragPlayHead(evt);
 
-                        return false;
-                    };
+                    return false;
+                };
                 m_PlayHeadCursor.onDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                    {
-                        return OnDragPlayHead(evt);
-                    };
+                {
+                    return OnDragPlayHead(evt);
+                };
                 m_PlayHeadCursor.onEndDrag += (AnimationWindowManipulator manipulator, Event evt) =>
-                    {
-                        return OnEndDragPlayHead(evt);
-                    };
+                {
+                    return OnEndDragPlayHead(evt);
+                };
             }
         }
 

@@ -7,28 +7,69 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Experimental.UIElements;
-using Random = UnityEngine.Random;
 
 namespace UnityEditor.Experimental.UIElements
 {
+    internal class SerializedObjectBindEvent : EventBase<SerializedObjectBindEvent>, IPropagatableEvent
+    {
+        private SerializedObject m_BindObject;
+        public SerializedObject bindObject
+        {
+            get
+            {
+                return m_BindObject;
+            }
+        }
+
+        protected override void Init()
+        {
+            base.Init();
+            this.flags = EventFlags.Cancellable; // Also makes it not propagatable.
+            m_BindObject = null;
+        }
+
+        public static SerializedObjectBindEvent GetPooled(SerializedObject obj)
+        {
+            SerializedObjectBindEvent e = GetPooled();
+            e.m_BindObject = obj;
+            return e;
+        }
+    }
+
+    internal class SerializedPropertyBindEvent : EventBase<SerializedPropertyBindEvent>, IPropagatableEvent
+    {
+        private SerializedProperty m_BindProperty;
+        public SerializedProperty bindProperty
+        {
+            get
+            {
+                return m_BindProperty;
+            }
+        }
+
+        protected override void Init()
+        {
+            base.Init();
+            this.flags = EventFlags.Cancellable; // Also makes it not propagatable.
+            m_BindProperty = null;
+        }
+
+        public static SerializedPropertyBindEvent GetPooled(SerializedProperty obj)
+        {
+            SerializedPropertyBindEvent e = GetPooled();
+            e.m_BindProperty = obj;
+            return e;
+        }
+    }
+
     public static class BindingExtensions
     {
+        // visual element style changes wrt its property state
+        internal static readonly string k_PrefabOverrideClassName = "unity-prefab-override";
+
         public static void Bind(this VisualElement element, SerializedObject obj)
         {
-            IBindable field = element as IBindable;
-
-            if (field != null)
-            {
-                if (!string.IsNullOrEmpty(field.bindingPath))
-                {
-                    obj = field.BindProperty(obj);
-                }
-            }
-
-            for (int i = 0; i < element.shadow.childCount; ++i)
-            {
-                Bind(element.shadow[i], obj);
-            }
+            Bind(element, obj, null);
         }
 
         public static void Unbind(this VisualElement element)
@@ -41,50 +82,101 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        public static SerializedObject BindProperty(this IBindable field, SerializedObject obj)
+        public static SerializedProperty BindProperty(this IBindable field, SerializedObject obj)
         {
-            var property = obj?.FindProperty(field.bindingPath);
-
-            if (property != null)
-            {
-                obj = property.serializedObject;
-                Bind(field as VisualElement, property);
-                return obj;
-            }
-
-            //object is null or property was not found, we have to make sure we delete any previous binding
-            RemoveBinding(field as VisualElement);
-            return obj;
+            return BindPropertyWithParent(field, obj, null);
         }
 
         public static void BindProperty(this IBindable field, SerializedProperty property)
         {
-            if (property != null)
+            var fieldElement = field as VisualElement;
+            if (property == null || fieldElement == null)
             {
-                field.bindingPath = property.propertyPath;
-                Bind(field as VisualElement, property);
+                // Object is null or property was not found, we have to make sure we delete any previous binding
+                RemoveBinding(fieldElement);
+                return;
+            }
+
+            // This covers the case where a field is being manually bound to a property
+            field.bindingPath = property.propertyPath;
+
+            if (property != null && fieldElement != null)
+            {
+                using (var evt = SerializedPropertyBindEvent.GetPooled(property))
+                {
+                    if (SendBindingEvent(evt, fieldElement))
+                    {
+                        return;
+                    }
+                }
+            }
+
+            CreateBindingObjectForProperty(fieldElement, property);
+        }
+
+        private static void Bind(VisualElement element, SerializedObject obj, SerializedProperty parentProperty)
+        {
+            IBindable field = element as IBindable;
+
+            using (var evt = SerializedObjectBindEvent.GetPooled(obj))
+            {
+                if (SendBindingEvent(evt, element))
+                {
+                    return;
+                }
+            }
+
+            if (field != null)
+            {
+                if (!string.IsNullOrEmpty(field.bindingPath))
+                {
+                    var foundProperty = BindPropertyWithParent(field, obj, parentProperty);
+                    if (foundProperty != null)
+                    {
+                        parentProperty = foundProperty;
+                    }
+                }
+            }
+
+            for (int i = 0; i < element.shadow.childCount; ++i)
+            {
+                Bind(element.shadow[i], obj, parentProperty);
             }
         }
 
-        internal static readonly string
-            k_PrefabOverrideClassName = "prefab-override"; // visual element style changes wrt its property state
+        private static SerializedProperty BindPropertyWithParent(IBindable field, SerializedObject obj, SerializedProperty parentProperty)
+        {
+            var property = parentProperty?.FindPropertyRelative(field.bindingPath);
 
+            if (property == null)
+            {
+                property = obj?.FindProperty(field.bindingPath);
+            }
+
+            BindProperty(field, property);
+
+            return property;
+        }
+
+        private static bool SendBindingEvent<TEventType>(TEventType evt, VisualElement target) where TEventType : EventBase<TEventType>, new()
+        {
+            evt.target = target;
+            evt.propagationPhase = PropagationPhase.AtTarget;
+            target.HandleEvent(evt);
+            return evt.isPropagationStopped;
+        }
 
         private static void RemoveBinding(VisualElement element)
         {
             IBindable field = element as IBindable;
-
-            SerializedObjectBindingBase info = field?.binding as SerializedObjectBindingBase;
-
-            if (info != null)
+            if (element == null || !field.IsBound())
             {
-                info.Release();
+                return;
             }
-            else
+            if (field != null)
             {
-                if (field != null)
-                    field.binding = null;
-                element.IncrementVersion(VersionChangeType.Bindings);
+                field.binding?.Release();
+                field.binding = null;
             }
         }
 
@@ -96,7 +188,7 @@ namespace UnityEditor.Experimental.UIElements
         private static string GetStringPropertyValue(SerializedProperty p) { return p.stringValue; }
         private static Color GetColorPropertyValue(SerializedProperty p) { return p.colorValue; }
         private static UnityEngine.Object GetObjectRefPropertyValue(SerializedProperty p) {return p.objectReferenceValue; }
-        private static LayerMask GetLayerMaskPropertyValue(SerializedProperty p) {return p.intValue; }
+        private static int GetLayerMaskPropertyValue(SerializedProperty p) {return p.intValue; }
         private static Vector2 GetVector2PropertyValue(SerializedProperty p) { return p.vector2Value; }
         private static Vector3 GetVector3PropertyValue(SerializedProperty p) { return p.vector3Value; }
         private static Vector4 GetVector4PropertyValue(SerializedProperty p) { return p.vector4Value; }
@@ -129,7 +221,7 @@ namespace UnityEditor.Experimental.UIElements
         private static void SetStringPropertyValue(SerializedProperty p, string v) { p.stringValue = v; }
         private static void SetColorPropertyValue(SerializedProperty p, Color v) { p.colorValue = v; }
         private static void SetObjectRefPropertyValue(SerializedProperty p, UnityEngine.Object v) { p.objectReferenceValue = v; }
-        private static void SetLayerMaskPropertyValue(SerializedProperty p, LayerMask v) { p.intValue = v; }
+        private static void SetLayerMaskPropertyValue(SerializedProperty p, int v) { p.intValue = v; }
         private static void SetVector2PropertyValue(SerializedProperty p, Vector2 v) { p.vector2Value = v; }
         private static void SetVector3PropertyValue(SerializedProperty p, Vector3 v) { p.vector3Value = v; }
         private static void SetVector4PropertyValue(SerializedProperty p, Vector4 v) { p.vector4Value = v; }
@@ -179,7 +271,10 @@ namespace UnityEditor.Experimental.UIElements
 
         internal static bool ValueEquals(string value, SerializedProperty p, Func<SerializedProperty, string> propertyReadFunc)
         {
-            return p.ValueEquals(value);
+            if (p.propertyType == SerializedPropertyType.Enum)
+                return p.enumDisplayNames[p.enumValueIndex] == value;
+            else
+                return p.ValueEquals(value);
         }
 
         internal static bool ValueEquals(AnimationCurve value, SerializedProperty p, Func<SerializedProperty, AnimationCurve> propertyReadFunc)
@@ -212,18 +307,29 @@ namespace UnityEditor.Experimental.UIElements
             else
             {
                 Debug.LogWarning(string.Format("Field type {0} is not compatible with {2} property \"{1}\"",
-                        element.GetType().FullName, prop.propertyPath, prop.type));
+                    element.GetType().FullName, prop.propertyPath, prop.type));
             }
         }
 
         private static void EnumBind(PopupField<string> popup, SerializedProperty prop)
         {
-            //TODO: set
             SerializedEnumBinding.CreateBind(popup, prop);
         }
 
-        private static void Bind(VisualElement element, SerializedProperty prop)
+        private static void CreateBindingObjectForProperty(VisualElement element, SerializedProperty prop)
         {
+            if (element is Foldout)
+            {
+                var foldout = element as Foldout;
+                SerializedObjectBinding<bool>.CreateBind(
+                    foldout, prop,
+                    p => p.isExpanded,
+                    (p, v) => p.isExpanded = v,
+                    ValueEquals<bool>);
+
+                return;
+            }
+
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
@@ -345,7 +451,11 @@ namespace UnityEditor.Experimental.UIElements
 
         private abstract class SerializedObjectBindingBase : IBinding
         {
+            public string boundPropertyPath;
+            public SerializedObject boundObject;
             public SerializedProperty boundProperty;
+
+            protected bool isReleased { get; set; }
             public abstract void Update();
             public abstract void Release();
 
@@ -356,12 +466,170 @@ namespace UnityEditor.Experimental.UIElements
                 else
                     element.RemoveFromClassList(BindingExtensions.k_PrefabOverrideClassName);
             }
+
+            protected bool IsPropertyValid()
+            {
+                if (boundObject.targetObject == null || boundObject.targetObjectsCount == 0)
+                    return false;
+
+                foreach (var obj in boundObject.targetObjects)
+                    if (obj == null)
+                        return false;
+
+                using (var foundProperty = boundObject?.FindProperty(boundPropertyPath))
+                {
+                    return foundProperty != null;
+                }
+            }
         }
 
-        private class SerializedObjectBinding<TValue> : SerializedObjectBindingBase
+        private abstract class SerializedObjectBindingToBaseField<TValue, TField> : SerializedObjectBindingBase where TField : class, INotifyValueChanged<TValue>
         {
-            private INotifyValueChanged<TValue> field;
+            private TField m_Field;
 
+            protected TField field
+            {
+                get { return m_Field; }
+                set
+                {
+                    m_Field?.RemoveOnValueChanged(FieldValueChanged);
+
+                    VisualElement ve = m_Field as VisualElement;
+                    if (ve != null)
+                    {
+                        ve.UnregisterCallback<AttachToPanelEvent>(OnFieldAttached);
+                        ve.UnregisterCallback<DetachFromPanelEvent>(OnFieldDetached);
+                    }
+
+                    m_Field = value;
+                    UpdateFieldIsAttached();
+                    if (m_Field != null)
+                    {
+                        m_Field.OnValueChanged(FieldValueChanged);
+
+                        ve = m_Field as VisualElement;
+                        if (ve != null)
+                        {
+                            ve.RegisterCallback<AttachToPanelEvent>(OnFieldAttached);
+                            ve.RegisterCallback<DetachFromPanelEvent>(OnFieldDetached);
+                        }
+                        FieldBinding = this;
+                    }
+                }
+            }
+
+            protected IBinding FieldBinding
+            {
+                get
+                {
+                    var bindable = m_Field as IBindable;
+                    return bindable?.binding;
+                }
+                set
+                {
+                    var bindable = m_Field as IBindable;
+                    if (bindable != null)
+                    {
+                        var previousBinding = bindable.binding;
+                        bindable.binding = value;
+                        if (previousBinding != this)
+                        {
+                            previousBinding?.Release();
+                        }
+                        (m_Field as VisualElement)?.IncrementVersion(VersionChangeType.Bindings);
+                    }
+                }
+            }
+
+            protected bool isFieldAttached {get; private set; }
+
+            private void FieldValueChanged(ChangeEvent<TValue> evt)
+            {
+                if (isReleased)
+                    return;
+
+                var bindable = evt.target as IBindable;
+                var binding = bindable?.binding;
+
+                if (binding == this && boundProperty != null)
+                {
+                    if (!isFieldAttached)
+                    {
+                        //we don't update when field is not attached to a panel
+                        //but we don't kill binding either
+                        return;
+                    }
+
+                    UpdateLastFieldValue();
+
+                    if (IsPropertyValid())
+                    {
+                        boundProperty.m_SerializedObject.UpdateIfRequiredOrScript();
+                        boundProperty.m_SerializedObject.UpdateExpandedState();
+
+                        SyncFieldValueToProperty();
+                        UpdateElementStyle(field as VisualElement, boundProperty);
+                        return;
+                    }
+                }
+
+                // Something was wrong
+                Release();
+            }
+
+            public override void Update()
+            {
+                if (isReleased)
+                    return;
+
+                if (FieldBinding == this && boundProperty != null && IsPropertyValid())
+                {
+                    boundProperty.m_SerializedObject.UpdateIfRequiredOrScript();
+                    boundProperty.m_SerializedObject.UpdateExpandedState();
+
+                    SyncPropertyToField(field, boundProperty);
+                    return;
+                }
+
+                // We unbind here
+                Release();
+            }
+
+            private void OnFieldAttached(AttachToPanelEvent evt)
+            {
+                UpdateLastFieldValue();
+                isFieldAttached = true;
+            }
+
+            private void OnFieldDetached(DetachFromPanelEvent evt)
+            {
+                isFieldAttached = false;
+            }
+
+            protected void UpdateFieldIsAttached()
+            {
+                VisualElement ve = m_Field as VisualElement;
+
+                if (ve != null)
+                {
+                    isFieldAttached = ve.panel != null;
+                }
+                else
+                {
+                    //we're not dealing with VisualElement
+                    isFieldAttached = true;
+                }
+            }
+
+            // Read the value from the ui field and save it.
+            protected abstract void UpdateLastFieldValue();
+
+            protected abstract void SyncFieldValueToProperty();
+            protected abstract void SyncPropertyToField(TField c, SerializedProperty p);
+        }
+
+        private class SerializedObjectBinding<TValue> : SerializedObjectBindingToBaseField<TValue, INotifyValueChanged<TValue>>
+        {
             private Func<SerializedProperty, TValue> propGetValue;
             private Action<SerializedProperty, TValue> propSetValue;
             private Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> propCompareValues;
@@ -378,21 +646,9 @@ namespace UnityEditor.Experimental.UIElements
                 Action<SerializedProperty, TValue> propSetValue,
                 Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> propCompareValues)
             {
-                IBindable bindable = field as IBindable;
-
-                if (bindable?.binding != null)
-                {
-                    (bindable.binding as SerializedObjectBindingBase)?.Release();
-                }
-
                 var newBinding = s_Pool.Get();
+                newBinding.isReleased = false;
                 newBinding.SetBinding(field, property, propGetValue, propSetValue, propCompareValues);
-
-                if (bindable != null)
-                {
-                    bindable.binding = newBinding;
-                    (field as VisualElement)?.IncrementVersion(VersionChangeType.Bindings);
-                }
             }
 
             private void SetBinding(INotifyValueChanged<TValue> c,
@@ -402,17 +658,18 @@ namespace UnityEditor.Experimental.UIElements
                 Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> compareValues)
             {
                 this.field = c;
+                this.boundPropertyPath = property.propertyPath;
+                this.boundObject = property.serializedObject;
                 this.boundProperty = property;
                 this.propGetValue = getValue;
                 this.propSetValue = setValue;
                 this.propCompareValues = compareValues;
                 this.lastFieldValue = c.value;
-                field.OnValueChanged(OnValueChanged);
 
                 Update();
             }
 
-            private void SyncPropertyToField(INotifyValueChanged<TValue> c, SerializedProperty p)
+            protected override void SyncPropertyToField(INotifyValueChanged<TValue> c, SerializedProperty p)
             {
                 if (!propCompareValues(lastFieldValue, p, propGetValue))
                 {
@@ -421,116 +678,77 @@ namespace UnityEditor.Experimental.UIElements
                 }
             }
 
-            private static void OnValueChanged(ChangeEvent<TValue> evt)
+            protected override void UpdateLastFieldValue()
             {
-                var bindable = evt.target as IBindable;
-                var binding = bindable?.binding as SerializedObjectBinding<TValue>;
-
-                if (binding != null)
-                {
-                    binding.SyncFieldValueToProperty();
-                }
+                lastFieldValue = field.value;
             }
 
-            private void SyncFieldValueToProperty()
+            protected override void SyncFieldValueToProperty()
             {
-                if (boundProperty != null)
+                if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
                 {
-                    boundProperty.m_SerializedObject.UpdateIfRequiredOrScript();
-
-                    lastFieldValue = field.value;
-                    if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
-                    {
-                        propSetValue(boundProperty, lastFieldValue);
-                        boundProperty.m_SerializedObject.ApplyModifiedProperties();
-                    }
-
-                    UpdateElementStyle(field as VisualElement, boundProperty);
-                }
-            }
-
-            public override void Update()
-            {
-                if (boundProperty != null)
-                {
-                    boundProperty.m_SerializedObject.UpdateIfRequiredOrScript();
-                    SyncPropertyToField(field, boundProperty);
-                }
-                else
-                {
-                    //we unbind here
-                    Release();
+                    propSetValue(boundProperty, lastFieldValue);
+                    boundProperty.m_SerializedObject.ApplyModifiedProperties();
                 }
             }
 
             public override void Release()
             {
-                field.RemoveOnValueChanged(OnValueChanged);
+                if (isReleased)
+                    return;
 
-                IBindable bindable = field as IBindable;
-
-                if (bindable != null)
+                if (FieldBinding == this)
                 {
-                    if (bindable.binding == this)
-                    {
-                        bindable.binding = null;
-                    }
-
-                    (field as VisualElement)?.IncrementVersion(VersionChangeType.Bindings);
-
-                    boundProperty = null;
-                    field = null;
-                    propGetValue = null;
-                    propSetValue = null;
-                    propCompareValues = null;
-                    lastFieldValue = default(TValue);
-                    s_Pool.Release(this);
+                    FieldBinding = null;
                 }
+
+                boundProperty = null;
+                field = null;
+                propGetValue = null;
+                propSetValue = null;
+                propCompareValues = null;
+                lastFieldValue = default(TValue);
+                isReleased = true;
+                s_Pool.Release(this);
             }
         }
 
         // specific enum version that binds on the index property of the PopupField<string>
-        private class SerializedEnumBinding : SerializedObjectBindingBase
+        private class SerializedEnumBinding : SerializedObjectBindingToBaseField<string, PopupField<string>>
         {
-            private PopupField<string> field;
-
             public static ObjectPool<SerializedEnumBinding> s_Pool =
                 new ObjectPool<SerializedEnumBinding>(32);
 
             //we need to keep a copy of the last value since some fields will allocate when getting the value
             private int lastFieldValueIndex;
 
+            private List<string> originalChoices;
+            private int originalIndex;
+
             public static void CreateBind(PopupField<string> field,
                 SerializedProperty property)
             {
-                if (field?.binding != null)
-                {
-                    (field.binding as SerializedObjectBindingBase)?.Release();
-                }
-
                 var newBinding = s_Pool.Get();
+                newBinding.isReleased = false;
                 newBinding.SetBinding(field, property);
-
-                if (field != null)
-                {
-                    field.binding = newBinding;
-                    field.IncrementVersion(VersionChangeType.Bindings);
-                }
             }
 
             private void SetBinding(PopupField<string> c,
                 SerializedProperty property)
             {
                 this.field = c;
+                this.boundPropertyPath = property.propertyPath;
+                this.boundObject = property.serializedObject;
                 this.boundProperty = property;
+                this.originalChoices = field.choices;
+                this.originalIndex = field.index;
                 this.field.choices = property.enumLocalizedDisplayNames.ToList();
                 this.lastFieldValueIndex = c.index;
-                field.OnValueChanged(OnValueChanged);
 
                 Update();
             }
 
-            private void SyncPropertyToField(PopupField<string> c, SerializedProperty p)
+            protected override void SyncPropertyToField(PopupField<string> c, SerializedProperty p)
             {
                 int propValueIndex = p.enumValueIndex;
                 if (propValueIndex != lastFieldValueIndex)
@@ -540,64 +758,47 @@ namespace UnityEditor.Experimental.UIElements
                 }
             }
 
-            private static void OnValueChanged(ChangeEvent<string> evt)
+            protected override void UpdateLastFieldValue()
             {
-                var bindable = evt.target as IBindable;
-                var binding = bindable?.binding as SerializedEnumBinding;
-
-                binding?.SyncFieldValueToProperty();
+                lastFieldValueIndex = field.index;
             }
 
-            private void SyncFieldValueToProperty()
+            protected override void SyncFieldValueToProperty()
             {
-                if (boundProperty != null)
+                if (lastFieldValueIndex != boundProperty.enumValueIndex)
                 {
-                    boundProperty.m_SerializedObject.UpdateIfRequiredOrScript();
-
-                    lastFieldValueIndex = field.index;
-                    if (lastFieldValueIndex != boundProperty.enumValueIndex)
-                    {
-                        boundProperty.enumValueIndex = lastFieldValueIndex;
-                        boundProperty.m_SerializedObject.ApplyModifiedProperties();
-                    }
-
-                    UpdateElementStyle(field as VisualElement, boundProperty);
-                }
-            }
-
-            public override void Update()
-            {
-                if (boundProperty != null)
-                {
-                    boundProperty.m_SerializedObject.UpdateIfRequiredOrScript();
-                    SyncPropertyToField(field, boundProperty);
-                }
-                else
-                {
-                    //we unbind here
-                    Release();
+                    boundProperty.enumValueIndex = lastFieldValueIndex;
+                    boundProperty.m_SerializedObject.ApplyModifiedProperties();
                 }
             }
 
             public override void Release()
             {
-                field.RemoveOnValueChanged(OnValueChanged);
-
-                IBindable bindable = field as IBindable;
-
-                if (bindable == null)
+                if (isReleased)
                     return;
 
-                if (bindable.binding == this)
+                if (FieldBinding == this)
                 {
-                    bindable.binding = null;
-                }
+                    //we set the popup values to the original ones
+                    try
+                    {
+                        var previousField = field;
+                        field = null;
+                        previousField.choices = originalChoices;
+                        previousField.index = originalIndex;
+                    }
+                    catch (ArgumentException)
+                    {
+                        //we did our best
+                    }
 
-                (field as VisualElement)?.IncrementVersion(VersionChangeType.Bindings);
+                    FieldBinding = null;
+                }
 
                 boundProperty = null;
                 field = null;
                 lastFieldValueIndex = -1;
+                isReleased = true;
                 s_Pool.Release(this);
             }
         }

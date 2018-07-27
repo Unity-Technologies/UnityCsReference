@@ -60,7 +60,7 @@ namespace UnityEngine
             RenderBuffer[] color, RenderBuffer depth, int mip, CubemapFace face,
             Rendering.RenderBufferLoadAction[] colorLoad, Rendering.RenderBufferStoreAction[] colorStore,
             Rendering.RenderBufferLoadAction depthLoad, Rendering.RenderBufferStoreAction depthStore
-            )
+        )
         {
             this.color          = color;
             this.depth          = depth;
@@ -107,14 +107,17 @@ namespace UnityEngine
             : this(new RenderBuffer[] { color }, depth)
         {
         }
+
         public RenderTargetSetup(RenderBuffer color, RenderBuffer depth, int mipLevel)
             : this(new RenderBuffer[] { color }, depth, mipLevel)
         {
         }
+
         public RenderTargetSetup(RenderBuffer color, RenderBuffer depth, int mipLevel, CubemapFace face)
             : this(new RenderBuffer[] { color }, depth, mipLevel, face)
         {
         }
+
         public RenderTargetSetup(RenderBuffer color, RenderBuffer depth, int mipLevel, CubemapFace face, int depthSlice)
             : this(new RenderBuffer[] { color }, depth, mipLevel, face)
         {
@@ -184,7 +187,7 @@ namespace UnityEngine
             Internal_SetMRTFullSetup(
                 setup.color, setup.depth, setup.mipLevel, setup.cubemapFace, setup.depthSlice,
                 setup.colorLoad, setup.colorStore, setup.depthLoad, setup.depthStore
-                );
+            );
         }
 
         internal static void SetRenderTargetImpl(RenderBuffer colorBuffer, RenderBuffer depthBuffer, int mipLevel, CubemapFace face, int depthSlice)

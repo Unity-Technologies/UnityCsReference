@@ -102,23 +102,23 @@ namespace UnityEditor
             ClipPopupCallbackInfo.instance = new ClipPopupCallbackInfo(controlID);
 
             EditorUtility.DisplayCustomMenu(position, menuContent, null, selected, (userData, options, index) =>
+            {
+                if (index < clips.Length)
                 {
-                    if (index < clips.Length)
+                    ClipPopupCallbackInfo.SetSelectedClip(clips[index]);
+                }
+                else
+                {
+                    AnimationClip newClip = AnimationWindowUtility.CreateNewClip(state.selection.rootGameObject.name);
+                    if (newClip)
                     {
-                        ClipPopupCallbackInfo.SetSelectedClip(clips[index]);
+                        AnimationWindowUtility.AddClipToAnimationPlayerComponent(state.activeAnimationPlayer, newClip);
+                        ClipPopupCallbackInfo.SetSelectedClip(newClip);
                     }
-                    else
-                    {
-                        AnimationClip newClip = AnimationWindowUtility.CreateNewClip(state.selection.rootGameObject.name);
-                        if (newClip)
-                        {
-                            AnimationWindowUtility.AddClipToAnimationPlayerComponent(state.activeAnimationPlayer, newClip);
-                            ClipPopupCallbackInfo.SetSelectedClip(newClip);
-                        }
-                    }
+                }
 
-                    ClipPopupCallbackInfo.SendEvent();
-                }, null);
+                ClipPopupCallbackInfo.SendEvent();
+            }, null);
         }
 
         // (case 1029160) Modified version of EditorGUI.DoPopup to fit large data list query.

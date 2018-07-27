@@ -91,10 +91,10 @@ namespace UnityEditor.Modules
                         textureTypeForThis != TextureImporterType.NormalMap;
 
                     format = (int)TextureImporter.DefaultFormatFromTextureParameters(settings,
-                            platformSettings.platformTextureSettings,
-                            editor.assetTarget && sourceHasAlpha,
-                            editor.assetTarget && imp.IsSourceTextureHDR(),
-                            platformSettings.m_Target);
+                        platformSettings.platformTextureSettings,
+                        editor.assetTarget && sourceHasAlpha,
+                        editor.assetTarget && imp.IsSourceTextureHDR(),
+                        platformSettings.m_Target);
 
                     formatValues = new int[] { format };
                     formatStrings = new string[] { TextureUtil.GetTextureFormatString((TextureFormat)format) };
@@ -167,7 +167,7 @@ namespace UnityEditor.Modules
                 EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent ||
                     platformSettings.crunchedCompressionIsDifferent;
                 bool crunchedCompression = EditorGUILayout.Toggle(
-                        TextureImporterInspector.s_Styles.crunchedCompression, platformSettings.crunchedCompression);
+                    TextureImporterInspector.s_Styles.crunchedCompression, platformSettings.crunchedCompression);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -188,14 +188,14 @@ namespace UnityEditor.Modules
                 (platformSettings.isDefault && platformSettings.crunchedCompression && isCrunchedFormat) ||
                 (!platformSettings.isDefault && isCrunchedFormat) ||
                 (!platformSettings.textureFormatIsDifferent && ArrayUtility.Contains<TextureImporterFormat>(
-                     TextureImporterInspector.kFormatsWithCompressionSettings,
-                     (TextureImporterFormat)formatForAll)))
+                    TextureImporterInspector.kFormatsWithCompressionSettings,
+                    (TextureImporterFormat)formatForAll)))
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = platformSettings.overriddenIsDifferent ||
                     platformSettings.compressionQualityIsDifferent;
                 int compressionQuality = EditCompressionQuality(platformSettings.m_Target,
-                        platformSettings.compressionQuality, isCrunchedFormat);
+                    platformSettings.compressionQuality, isCrunchedFormat);
                 EditorGUI.showMixedValue = false;
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -224,10 +224,10 @@ namespace UnityEditor.Modules
         private int EditCompressionQuality(BuildTarget target, int compression, bool isCrunchedFormat)
         {
             bool showAsEnum = !isCrunchedFormat && (
-                    target == BuildTarget.iOS ||
-                    target == BuildTarget.tvOS ||
-                    target == BuildTarget.Android
-                    );
+                target == BuildTarget.iOS ||
+                target == BuildTarget.tvOS ||
+                target == BuildTarget.Android
+            );
 
             if (showAsEnum)
             {

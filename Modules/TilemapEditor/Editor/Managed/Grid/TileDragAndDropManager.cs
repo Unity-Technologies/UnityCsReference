@@ -112,8 +112,8 @@ namespace UnityEditor
             }
 
             if (instance.m_HoverData != null && (
-                    Event.current.type == EventType.DragExited ||
-                    Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
+                Event.current.type == EventType.DragExited ||
+                Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
             {
                 if (instance.m_HoverData.Count > 0)
                 {

@@ -52,7 +52,6 @@ namespace UnityEditor.Experimental.UIElements
                 new Vector3IntField.UxmlFactory(),
                 new BoundsIntField.UxmlFactory(),
                 new VisualSplitter.UxmlFactory(),
-
                 // Toolbar
                 new Toolbar.UxmlFactory(),
                 new ToolbarButton.UxmlFactory(),
@@ -63,6 +62,9 @@ namespace UnityEditor.Experimental.UIElements
                 new ToolbarPopup.UxmlFactory(),
                 new ToolbarSearchField.UxmlFactory(),
                 new ToolbarPopupSearchField.UxmlFactory(),
+                // Bound
+                new PropertyField.UxmlFactory(),
+                new InspectorElement.UxmlFactory(),
             };
 
             foreach (IUxmlFactory factory in factories)

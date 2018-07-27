@@ -24,10 +24,10 @@ namespace UnityEditor
         {
             return RiderPathLocator.GetAllRiderPaths()
                 .Select(riderInfo => new ScriptEditorUtility.Installation
-            {
-                Path = riderInfo.Path,
-                Name = riderInfo.Presentation
-            })
+                {
+                    Path = riderInfo.Path,
+                    Name = riderInfo.Presentation
+                })
                 .ToArray();
         }
     }
@@ -167,29 +167,29 @@ namespace UnityEditor
                 .Select(b => Path.Combine(b, ".channel.settings.json")).Where(File.Exists).ToArray();
 
             var paths = channelFiles.SelectMany(a => {
-                    try
+                try
+                {
+                    var channelDir = Path.GetDirectoryName(a);
+                    var json = File.ReadAllText(a).Replace("active-application", "active_application");
+                    var toolbox = ToolboxInstallData.FromJson(json);
+                    var builds = toolbox.active_application.builds;
+                    if (builds.Any())
                     {
-                        var channelDir = Path.GetDirectoryName(a);
-                        var json = File.ReadAllText(a).Replace("active-application", "active_application");
-                        var toolbox = ToolboxInstallData.FromJson(json);
-                        var builds = toolbox.active_application.builds;
-                        if (builds.Any())
-                        {
-                            var build = builds.First();
-                            var folder = Path.Combine(Path.Combine(channelDir, build), dirName);
-                            if (!isMac)
-                                return new[] {Path.Combine(folder, searchPattern)};
-                            return new DirectoryInfo(folder).GetDirectories(searchPattern).Select(f => f.FullName);
-                        }
+                        var build = builds.First();
+                        var folder = Path.Combine(Path.Combine(channelDir, build), dirName);
+                        if (!isMac)
+                            return new[] {Path.Combine(folder, searchPattern)};
+                        return new DirectoryInfo(folder).GetDirectories(searchPattern).Select(f => f.FullName);
                     }
-                    catch (Exception e)
-                    {
-                        Debug.LogException(e);
-                        Debug.LogWarning("Failed to get RiderPath via .channel.settings.json");
-                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    Debug.LogWarning("Failed to get RiderPath via .channel.settings.json");
+                }
 
-                    return new string[0];
-                })
+                return new string[0];
+            })
                 .Where(c => !string.IsNullOrEmpty(c))
                 .ToArray();
             return paths;

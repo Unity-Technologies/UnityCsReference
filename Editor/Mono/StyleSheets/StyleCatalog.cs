@@ -781,15 +781,30 @@ namespace UnityEditor.StyleSheets
 
         public bool AddPath(string ussPath)
         {
-            if (sheets.Contains(ussPath))
-                return false;
+            return AddPaths(ussPath);
+        }
 
-            // Check if path can be loaded
-            var loadableStyleSheet = EditorResources.Load<UnityEngine.Object>(ussPath, false) as StyleSheet;
-            if (!loadableStyleSheet)
-                return false;
+        public bool AddPaths(params string[] paths)
+        {
+            return AddPaths((IEnumerable<string>)paths);
+        }
 
-            sheets = sheets.Concat(new[] { ussPath }).ToArray();
+        public bool AddPaths(IEnumerable<string> paths)
+        {
+            var validPaths = paths.Where(p =>
+            {
+                if (sheets.Contains(p))
+                    return false;
+
+                // Check if path can be loaded
+                var loadableStyleSheet = EditorResources.Load<UnityEngine.Object>(p, false) as StyleSheet;
+                if (!loadableStyleSheet)
+                    return false;
+
+                return true;
+            });
+
+            sheets = sheets.Concat(validPaths).ToArray();
             return true;
         }
 
@@ -809,27 +824,33 @@ namespace UnityEditor.StyleSheets
             var groups = new List<StyleValueGroup>();
 
             m_NameCollisionTable.Clear();
-
-            if (m_UseResolver)
+            try
             {
-                var resolver = new StyleSheetResolver();
-                resolver.AddStyleSheets(sheets);
-                resolver.ResolveSheets();
-                if (resolveExtend)
-                    resolver.ResolveExtend();
-                Compile(resolver, numbers, colors, strings, rects, groups, blocks);
-            }
-            else
-            {
-                for (int i = 0; i < sheets.Length; ++i)
+                if (m_UseResolver)
                 {
-                    var path = sheets[i];
-                    var styleSheet = EditorResources.Load<UnityEngine.Object>(path, false) as StyleSheet;
-                    if (!styleSheet)
-                        continue;
-
-                    CompileSheet(styleSheet, numbers, colors, strings, rects, groups, blocks);
+                    var resolver = new StyleSheetResolver();
+                    resolver.AddStyleSheets(sheets);
+                    resolver.ResolveSheets();
+                    if (resolveExtend)
+                        resolver.ResolveExtend();
+                    Compile(resolver, numbers, colors, strings, rects, groups, blocks);
                 }
+                else
+                {
+                    for (int i = 0; i < sheets.Length; ++i)
+                    {
+                        var path = sheets[i];
+                        var styleSheet = EditorResources.Load<UnityEngine.Object>(path, false) as StyleSheet;
+                        if (!styleSheet)
+                            continue;
+
+                        CompileSheet(styleSheet, numbers, colors, strings, rects, groups, blocks);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning("Error while refreshing stylesheet catalog: " + string.Join(", ", sheets) + "\n" + ex.Message);
             }
 
             buffers = new StyleBuffers
@@ -1280,12 +1301,14 @@ namespace UnityEditor.StyleSheets
                     if (ColorUtility.TryParseHtmlString(str, out parsedColor))
                         return SetIndex(colors, parsedColor);
                     return SetIndex(strings, str);
+                case StyleValueType.AssetReference:
+                    return SetIndex(strings, AssetDatabase.GetAssetPath(value.AsAssetReference()));
                 case StyleValueType.String:
                 {
                     return SetIndex(strings, value.AsString());
                 }
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new Exception("Unknown value type: " + value.ValueType);
             }
         }
 

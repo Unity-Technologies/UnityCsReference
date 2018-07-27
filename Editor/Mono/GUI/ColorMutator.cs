@@ -25,7 +25,7 @@ namespace UnityEditor
             baseLinearColor = linearColorHdr;
             var maxColorComponent = linearColorHdr.maxColorComponent;
             // replicate Photoshops's decomposition behaviour
-            if (maxColorComponent == 0f || maxColorComponent <= 1f && maxColorComponent > 1 / 255f)
+            if (maxColorComponent == 0f || maxColorComponent <= 1f && maxColorComponent >= 1 / 255f)
             {
                 exposure = 0f;
 
@@ -61,7 +61,7 @@ namespace UnityEditor
                     m_Color[(int)RgbaChannel.G],
                     m_Color[(int)RgbaChannel.B],
                     m_Color[(int)RgbaChannel.A]
-                    );
+                );
             }
         }
         [SerializeField] private byte[] m_Color = new byte[4];
@@ -89,7 +89,7 @@ namespace UnityEditor
                 out m_Hsv[(int)HsvChannel.H],
                 out m_Hsv[(int)HsvChannel.S],
                 out m_Hsv[(int)HsvChannel.V]
-                );
+            );
         }
 
         public void SetColorChannel(RgbaChannel channel, float normalizedValue)
@@ -106,7 +106,7 @@ namespace UnityEditor
                     m_ColorHdr[(int)RgbaChannel.G],
                     m_ColorHdr[(int)RgbaChannel.B],
                     m_ColorHdr[(int)RgbaChannel.A]
-                    );
+                );
             }
         }
         [SerializeField] private float[] m_ColorHdr = new float[4];
@@ -132,7 +132,7 @@ namespace UnityEditor
                     m_Hsv[(int)HsvChannel.H],
                     m_Hsv[(int)HsvChannel.S],
                     m_Hsv[(int)HsvChannel.V]
-                    );
+                );
             }
         }
         [SerializeField] private float[] m_Hsv = new float[3];
@@ -147,8 +147,8 @@ namespace UnityEditor
             m_Hsv[(int)channel] = Mathf.Clamp01(value);
 
             var newColor = Color.HSVToRGB(
-                    m_Hsv[(int)HsvChannel.H], m_Hsv[(int)HsvChannel.S], m_Hsv[(int)HsvChannel.V]
-                    );
+                m_Hsv[(int)HsvChannel.H], m_Hsv[(int)HsvChannel.S], m_Hsv[(int)HsvChannel.V]
+            );
             m_Color[(int)RgbaChannel.R] = (byte)Mathf.CeilToInt(newColor.r * 255f);
             m_Color[(int)RgbaChannel.G] = (byte)Mathf.CeilToInt(newColor.g * 255f);
             m_Color[(int)RgbaChannel.B] = (byte)Mathf.CeilToInt(newColor.b * 255f);
@@ -213,7 +213,7 @@ namespace UnityEditor
                 out m_Hsv[(int)HsvChannel.H],
                 out m_Hsv[(int)HsvChannel.S],
                 out m_Hsv[(int)HsvChannel.V]
-                );
+            );
         }
     }
 }

@@ -161,5 +161,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         protected virtual void OnGroupRenamed(string oldName, string newName)
         {
         }
+
+        internal void OnStartDragging(IMouseEvent evt, IEnumerable<GraphElement> elements)
+        {
+            m_DropArea.OnStartDragging(evt, elements);
+        }
     }
 }

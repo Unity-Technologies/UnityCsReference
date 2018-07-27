@@ -24,6 +24,7 @@ namespace UnityEditor
         Tizen,
         [System.Obsolete("Windows Phone 8 was removed in 5.3", false)]
         WP8,
+        [System.Obsolete("Nintendo 3DS support is unavailable since 2018.1")]
         N3DS,
         HMD
     }
@@ -35,7 +36,6 @@ namespace UnityEditor
         [SerializeField] GameViewSizeGroup m_Standalone = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_iOS = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_Android = new GameViewSizeGroup();
-        [SerializeField] GameViewSizeGroup m_N3DS = new GameViewSizeGroup();
         [SerializeField] GameViewSizeGroup m_HMD = new GameViewSizeGroup();
 
         [NonSerialized] GameViewSize m_Remote = null;
@@ -70,6 +70,7 @@ namespace UnityEditor
                 case GameViewSizeGroupType.PS3:
                 case GameViewSizeGroupType.Tizen:
                 case GameViewSizeGroupType.WiiU:
+                case GameViewSizeGroupType.N3DS:
 #pragma warning restore 618
                 case GameViewSizeGroupType.Standalone:
                     return m_Standalone;
@@ -77,8 +78,6 @@ namespace UnityEditor
                     return m_iOS;
                 case GameViewSizeGroupType.Android:
                     return m_Android;
-                case GameViewSizeGroupType.N3DS:
-                    return m_N3DS;
                 case GameViewSizeGroupType.HMD:
                     return m_HMD;
                 default:
@@ -116,7 +115,7 @@ namespace UnityEditor
                 InternalEditorUtility.defaultScreenHeight != m_LastStandaloneScreenSize.y)
             {
                 m_LastStandaloneScreenSize = new Vector2(InternalEditorUtility.defaultScreenWidth,
-                        InternalEditorUtility.defaultScreenHeight);
+                    InternalEditorUtility.defaultScreenHeight);
                 RefreshStandaloneDefaultScreenSize((int)m_LastStandaloneScreenSize.x, (int)m_LastStandaloneScreenSize.y);
             }
 
@@ -124,7 +123,7 @@ namespace UnityEditor
                 InternalEditorUtility.remoteScreenHeight != m_LastRemoteScreenSize.y)
             {
                 m_LastRemoteScreenSize = new Vector2(InternalEditorUtility.remoteScreenWidth,
-                        InternalEditorUtility.remoteScreenHeight);
+                    InternalEditorUtility.remoteScreenHeight);
                 RefreshRemoteScreenSize((int)m_LastRemoteScreenSize.x, (int)m_LastRemoteScreenSize.y);
             }
 
@@ -226,9 +225,6 @@ namespace UnityEditor
             GameViewSize k_2960x1440_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1440, 2960, "2960x1440 Portrait");
             GameViewSize k_2960x1440_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2960, 1440, "2960x1440 Landscape");
 
-            // Nintendo 3DS
-            GameViewSize kN3DSTopScreen = new GameViewSize(GameViewSizeType.FixedResolution, 400, 240, "Top Screen");
-            GameViewSize kN3DSBottomScreen = new GameViewSize(GameViewSizeType.FixedResolution, 320, 240, "Bottom Screen");
 
             m_Standalone.AddBuiltinSizes(kFree, k5_4, k4_3, k3_2, k16_10, k16_9, kStandalone);
 
@@ -255,8 +251,6 @@ namespace UnityEditor
                 k_16_9_Portrait, k_16_9_Landscape,
                 k_18_9_Portrait, k_18_9_Landscape);
 
-            m_N3DS.AddBuiltinSizes(kFree, kN3DSTopScreen, kN3DSBottomScreen);
-
             m_HMD.AddBuiltinSizes(kFree, m_Remote);
         }
 
@@ -277,8 +271,6 @@ namespace UnityEditor
             {
                 case GameViewSizeGroupType.Standalone:
                     return DefaultLowResolutionSettingForStandalone();
-                case GameViewSizeGroupType.N3DS:
-                    return true;
                 case GameViewSizeGroupType.iOS:
                 case GameViewSizeGroupType.Android:
                 default:
@@ -505,9 +497,6 @@ namespace UnityEditor
 
                 case BuildTargetGroup.Android:
                     return GameViewSizeGroupType.Android;
-
-                case BuildTargetGroup.N3DS:
-                    return GameViewSizeGroupType.N3DS;
 
                 default:
                     return GameViewSizeGroupType.Standalone;

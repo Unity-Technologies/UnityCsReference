@@ -70,13 +70,13 @@ namespace UnityEngine
         public void ClampToBounds(RectInt bounds)
         {
             position = new Vector2Int(
-                    Math.Max(Math.Min(bounds.xMax, position.x), bounds.xMin),
-                    Math.Max(Math.Min(bounds.yMax, position.y), bounds.yMin)
-                    );
+                Math.Max(Math.Min(bounds.xMax, position.x), bounds.xMin),
+                Math.Max(Math.Min(bounds.yMax, position.y), bounds.yMin)
+            );
             size = new Vector2Int(
-                    Math.Min(bounds.xMax - position.x, size.x),
-                    Math.Min(bounds.yMax - position.y, size.y)
-                    );
+                Math.Min(bounds.xMax - position.x, size.x),
+                Math.Min(bounds.yMax - position.y, size.y)
+            );
         }
 
         public bool Contains(Vector2Int position)

@@ -197,27 +197,27 @@ namespace UnityEditor
 
             Action<bool> updateTexture =
                 clear =>
+            {
+                if (m_Texture == null)
                 {
-                    if (m_Texture == null)
-                    {
-                        m_Texture = new Texture2D(s_BaseTextureWidth, textureHeight, TextureFormat.RGBAHalf, false, true);
-                        m_Texture.filterMode = FilterMode.Point;
-                        clear = false;
-                    }
-                    else
-                    {
-                        m_Texture.Resize(s_BaseTextureWidth, textureHeight);
-                    }
+                    m_Texture = new Texture2D(s_BaseTextureWidth, textureHeight, TextureFormat.RGBAHalf, false, true);
+                    m_Texture.filterMode = FilterMode.Point;
+                    clear = false;
+                }
+                else
+                {
+                    m_Texture.Resize(s_BaseTextureWidth, textureHeight);
+                }
 
-                    if (!clear)
-                        return;
+                if (!clear)
+                    return;
 
-                    var fillColorArray = m_Texture.GetPixels();
-                    for (var i = 0; i < fillColorArray.Length; ++i)
-                        fillColorArray[i] = Color.black;
+                var fillColorArray = m_Texture.GetPixels();
+                for (var i = 0; i < fillColorArray.Length; ++i)
+                    fillColorArray[i] = Color.black;
 
-                    m_Texture.SetPixels(fillColorArray);
-                };
+                m_Texture.SetPixels(fillColorArray);
+            };
 
             if (width == m_Samples && channels == m_Channels && m_Texture != null)
             {

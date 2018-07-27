@@ -85,7 +85,8 @@ namespace UnityEditor.VisualStudioIntegration
         private readonly string _projectName;
 
 
-        private static readonly string DefaultMonoDevelopSolutionProperties = string.Join("\r\n", new[] {
+        private static readonly string DefaultMonoDevelopSolutionProperties = string.Join("\r\n", new[]
+        {
             "    GlobalSection(MonoDevelopProperties) = preSolution",
             "        StartupItem = Assembly-CSharp.csproj",
             "    EndGlobalSection",
@@ -346,8 +347,8 @@ namespace UnityEditor.VisualStudioIntegration
         }
 
         public static readonly Regex scriptReferenceExpression = new Regex(
-                @"^Library.ScriptAssemblies.(?<dllname>(?<project>.*)\.dll$)",
-                RegexOptions.Compiled | RegexOptions.IgnoreCase);
+            @"^Library.ScriptAssemblies.(?<dllname>(?<project>.*)\.dll$)",
+            RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
         static bool IsAdditionalInternalAssemblyReference(bool isBuildingEditorProject, string reference)
         {
@@ -570,9 +571,9 @@ namespace UnityEditor.VisualStudioIntegration
         internal string GetProjectEntries(IEnumerable<MonoIsland> islands)
         {
             var projectEntries = islands.Select(i => string.Format(
-                        DefaultSynchronizationSettings.SolutionProjectEntryTemplate,
-                        SolutionGuid(i), Path.GetFileNameWithoutExtension(i._output), Path.GetFileName(ProjectFile(i)), ProjectGuid(i._output)
-                        ));
+                DefaultSynchronizationSettings.SolutionProjectEntryTemplate,
+                SolutionGuid(i), Path.GetFileNameWithoutExtension(i._output), Path.GetFileName(ProjectFile(i)), ProjectGuid(i._output)
+            ));
 
             return string.Join(WindowsNewline, projectEntries.ToArray());
         }

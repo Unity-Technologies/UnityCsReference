@@ -21,7 +21,7 @@ namespace UnityEditor
         {
             return Packages.GetAll().Where(info => info.isRootDependency && info.type != "module").
                 OrderBy(info => string.IsNullOrEmpty(info.displayName) ? info.name : info.displayName,
-                StringComparer.InvariantCultureIgnoreCase).ToArray();
+                    StringComparer.InvariantCultureIgnoreCase).ToArray();
         }
     }
 }

@@ -593,15 +593,6 @@ namespace UnityEditor
             set;
         }
 
-        // Create a 3DS .cia format image for deploying to test kits.
-        public static extern bool n3dsCreateCIAFile
-        {
-            [NativeMethod("GetCreateCIAFileFor3DS")]
-            get;
-            [NativeMethod("SetCreateCIAFileFor3DS")]
-            set;
-        }
-
         // Instead of creating a ROM file, create a buildable Visual Studio 2015 solution.
         public static extern bool switchCreateSolutionFile
         {

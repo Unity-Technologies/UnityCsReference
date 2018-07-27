@@ -109,11 +109,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             m_AddButton = m_MainContainer.Q(name: "addButton") as Button;
             m_AddButton.clickable.clicked += () => {
-                    if (addItemRequested != null)
-                    {
-                        addItemRequested(this);
-                    }
-                };
+                if (addItemRequested != null)
+                {
+                    addItemRequested(this);
+                }
+            };
 
             m_TitleLabel = m_MainContainer.Q<Label>(name: "titleLabel");
             m_SubTitleLabel = m_MainContainer.Q<Label>(name: "subTitleLabel");
@@ -134,9 +134,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             shadow.Add(new Resizer());
 
             RegisterCallback<DragUpdatedEvent>(e =>
-                {
-                    e.StopPropagation();
-                });
+            {
+                e.StopPropagation();
+            });
         }
     }
 }

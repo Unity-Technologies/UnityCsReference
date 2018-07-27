@@ -38,14 +38,10 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        public override TValue value
+        public override void SetValueWithoutNotify(TValue newValue)
         {
-            get { return base.value; }
-            set
-            {
-                base.value = value;
-                m_TextElement.text = GetValueToDisplay();
-            }
+            base.SetValueWithoutNotify(newValue);
+            m_TextElement.text = GetValueToDisplay();
         }
 
         public string text

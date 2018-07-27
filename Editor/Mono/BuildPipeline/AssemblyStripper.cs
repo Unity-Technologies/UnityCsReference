@@ -35,7 +35,8 @@ namespace UnityEditorInternal
         {
             get
             {
-                return new[] {
+                return new[]
+                {
                     Path.Combine("..", "platform_native_link.xml")
                 };
             }
@@ -81,6 +82,11 @@ namespace UnityEditorInternal
             args.Add($"--dotnetprofile={GetProfileArgumentValueForLinker(buildTargetGroup)}");
             args.Add("--use-editor-options");
 
+            if (EditorUserBuildSettings.allowDebugging)
+                args.Add("--editor-settings-flag=AllowDebugging");
+
+            if (EditorUserBuildSettings.development)
+                args.Add("--editor-settings-flag=Development");
 
             // One final check to make sure we only run aggressive on latest runtime.
             if ((managedStrippingLevel == ManagedStrippingLevel.Aggressive) && (PlayerSettingsEditor.IsLatestApiCompatibility(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))))
@@ -192,10 +198,10 @@ namespace UnityEditorInternal
             var exe = Path.Combine(MonoInstallationFinder.GetFrameWorksFolder(), "Tools/InternalCallRegistrationWriter/InternalCallRegistrationWriter.exe");
             var dlls = Directory.GetFiles(strippedDLLPath, "UnityEngine.*Module.dll").Concat(new[] {Path.Combine(strippedDLLPath, "UnityEngine.dll")});
             var args = string.Format("-output=\"{0}\" -summary=\"{1}\" -assembly=\"{2}\"",
-                    Path.Combine(managedAssemblyFolderPath, "UnityICallRegistration.cpp"),
-                    icallSummaryPath,
-                    dlls.Aggregate((dllArg, next) => dllArg + ";" + next)
-                    );
+                Path.Combine(managedAssemblyFolderPath, "UnityICallRegistration.cpp"),
+                icallSummaryPath,
+                dlls.Aggregate((dllArg, next) => dllArg + ";" + next)
+            );
             Runner.RunManagedProgram(exe, args);
         }
 
@@ -252,7 +258,8 @@ namespace UnityEditorInternal
             IEnumerable<string> blacklists = Il2CppBlacklistPaths;
             if (rcr != null)
             {
-                blacklists = blacklists.Concat(new[] {
+                blacklists = blacklists.Concat(new[]
+                {
                     WriteMethodsToPreserveBlackList(rcr, platformProvider.target),
                     WriteUnityEngineBlackList(),
                     MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(managedAssemblyFolderPath, rcr)
@@ -289,17 +296,17 @@ namespace UnityEditorInternal
                     throw new OperationCanceledException();
 
                 if (!StripAssembliesTo(
-                        assembliesToStrip,
-                        searchDirs,
-                        tempStripPath,
-                        managedAssemblyFolderPath,
-                        out output,
-                        out error,
-                        monoLinkerPath,
-                        platformProvider,
-                        blacklists,
-                        buildTargetGroup,
-                        managedStrippingLevel))
+                    assembliesToStrip,
+                    searchDirs,
+                    tempStripPath,
+                    managedAssemblyFolderPath,
+                    out output,
+                    out error,
+                    monoLinkerPath,
+                    platformProvider,
+                    blacklists,
+                    buildTargetGroup,
+                    managedStrippingLevel))
                     throw new Exception("Error in stripping assemblies: " + assemblies + ", " + error);
 
                 if (platformProvider.supportsEngineStripping)

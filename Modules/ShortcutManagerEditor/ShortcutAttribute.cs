@@ -52,17 +52,17 @@ namespace UnityEditor.ShortcutManagement
             if (methodParams.Length == 0)
             {
                 action = shortcutArgs =>
-                    {
-                        methodInfo.Invoke(null, k_EmptyReusableShortcutArgs);
-                    };
+                {
+                    methodInfo.Invoke(null, k_EmptyReusableShortcutArgs);
+                };
             }
             else
             {
                 action = shortcutArgs =>
-                    {
-                        k_ReusableShortcutArgs[0] = shortcutArgs;
-                        methodInfo.Invoke(null, k_ReusableShortcutArgs);
-                    };
+                {
+                    k_ReusableShortcutArgs[0] = shortcutArgs;
+                    methodInfo.Invoke(null, k_ReusableShortcutArgs);
+                };
             }
 
             return new ShortcutEntry(identifier, defaultCombination, action, context, type);

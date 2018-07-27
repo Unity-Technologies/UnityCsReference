@@ -198,10 +198,10 @@ namespace UnityEditorInternal
             Vector2 labelSize = GUI.skin.label.CalcSize(labelContent);
 
             Rect labelRect = new Rect(
-                    buttonRect.xMax + k_SpaceBetweenLabelAndButton,
-                    rect.yMin + (rect.height - labelSize.y) * .5f,
-                    labelSize.x,
-                    rect.height);
+                buttonRect.xMax + k_SpaceBetweenLabelAndButton,
+                rect.yMin + (rect.height - labelSize.y) * .5f,
+                labelSize.x,
+                rect.height);
 
             int callerID = owner.GetInstanceID();
             bool modeEnabled = editMode == mode && ownerID == callerID;

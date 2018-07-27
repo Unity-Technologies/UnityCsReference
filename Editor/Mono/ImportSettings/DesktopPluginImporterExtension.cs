@@ -216,7 +216,7 @@ namespace UnityEditor
 
             if (!pluginForLinux && !pluginForOSX && !pluginForWindows)
                 throw new Exception(string.Format("Failed to resolve standalone platform, platform string '{0}', resolved target '{1}'",
-                        platformName, target.ToString()));
+                    platformName, target.ToString()));
 
             if (pluginForWindows && !IsUsableOnWindows(imp))
                 return string.Empty;

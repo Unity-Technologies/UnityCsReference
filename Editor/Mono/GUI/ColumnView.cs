@@ -114,8 +114,8 @@ namespace UnityEditor
 
                 int selectedIndex = m_CachedSelectedIndices[listViewIndex];
                 selectedIndex = DoListColumn(listView, columnElements, listViewIndex, selectedIndex,
-                        listViewIndex == 0 ? selectedSearchItemFunction : null, selectedRegularItemFunction,
-                        getDataForDraggingFunction);
+                    listViewIndex == 0 ? selectedSearchItemFunction : null, selectedRegularItemFunction,
+                    getDataForDraggingFunction);
 
                 if (Event.current.type == EventType.Layout && m_ColumnToFocusKeyboard == listViewIndex)
                 {

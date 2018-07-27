@@ -367,9 +367,9 @@ namespace UnityEditor
         {
             // Errors
             if (HasMode(mode, Mode.Fatal | Mode.Assert |
-                    Mode.Error | Mode.ScriptingError |
-                    Mode.AssetImportError | Mode.ScriptCompileError |
-                    Mode.GraphCompileError | Mode.ScriptingAssertion))
+                Mode.Error | Mode.ScriptingError |
+                Mode.AssetImportError | Mode.ScriptCompileError |
+                Mode.GraphCompileError | Mode.ScriptingAssertion))
                 return large ? iconError : iconErrorSmall;
             // Warnings
             if (HasMode(mode, Mode.ScriptCompileWarning | Mode.ScriptingWarning | Mode.AssetImportWarning))
@@ -386,9 +386,9 @@ namespace UnityEditor
         {
             // Errors
             if (HasMode(mode, Mode.Fatal | Mode.Assert |
-                    Mode.Error | Mode.ScriptingError |
-                    Mode.AssetImportError | Mode.ScriptCompileError |
-                    Mode.GraphCompileError | Mode.ScriptingAssertion))
+                Mode.Error | Mode.ScriptingError |
+                Mode.AssetImportError | Mode.ScriptCompileError |
+                Mode.GraphCompileError | Mode.ScriptingAssertion))
             {
                 if (isIcon)
                 {
@@ -444,9 +444,9 @@ namespace UnityEditor
         {
             // Errors
             if (HasMode(mode, Mode.Fatal | Mode.Assert |
-                    Mode.Error | Mode.ScriptingError |
-                    Mode.AssetImportError | Mode.ScriptCompileError |
-                    Mode.GraphCompileError | Mode.ScriptingAssertion))
+                Mode.Error | Mode.ScriptingError |
+                Mode.AssetImportError | Mode.ScriptCompileError |
+                Mode.GraphCompileError | Mode.ScriptingAssertion))
                 return Constants.StatusError;
             // Warnings
             if (HasMode(mode, Mode.ScriptCompileWarning | Mode.ScriptingWarning | Mode.AssetImportWarning))

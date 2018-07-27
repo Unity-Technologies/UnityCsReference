@@ -39,7 +39,7 @@ namespace UnityEditorInternal
                 m_TreeViewDataSource,
                 gui,
                 null
-                );
+            );
 
             m_TreeViewDataSource.UpdateData();
         }

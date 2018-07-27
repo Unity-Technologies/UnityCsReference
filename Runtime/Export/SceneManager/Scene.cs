@@ -6,6 +6,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.SceneManagement
 {
+    [System.Serializable]
     public partial struct Scene
     {
         internal enum LoadingState
@@ -15,9 +16,10 @@ namespace UnityEngine.SceneManagement
             Loaded
         }
 
+        [SerializeField]
         private int m_Handle;
 
-        internal int handle { get { return m_Handle; } }
+        public int handle { get { return m_Handle; } }
 
         internal Scene.LoadingState loadingState
         {
@@ -42,7 +44,7 @@ namespace UnityEngine.SceneManagement
         public string name
         {
             get { return GetNameInternal(handle); }
-            internal set { SetNameInternal(handle, value); }
+            set { SetNameInternal(handle, value); }
         }
 
         public bool isLoaded
@@ -58,6 +60,11 @@ namespace UnityEngine.SceneManagement
         public bool isDirty
         {
             get { return GetIsDirtyInternal(handle); }
+        }
+
+        internal int dirtyID
+        {
+            get { return GetDirtyID(handle); }
         }
 
         public int rootCount

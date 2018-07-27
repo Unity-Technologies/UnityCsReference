@@ -133,7 +133,7 @@ namespace UnityEngine.Experimental.UIElements
         private const string k_ItemHeightProperty = "-unity-item-height";
 
         private int m_FirstVisibleIndex;
-        private Rect m_LastSize;
+        private float m_LastHeight;
         private List<RecycledItem> m_Pool = new List<RecycledItem>();
         private ScrollView m_ScrollView;
 
@@ -147,6 +147,7 @@ namespace UnityEngine.Experimental.UIElements
 
             m_ScrollView = new ScrollView();
             m_ScrollView.StretchToParentSize();
+            m_ScrollView.stretchContentWidth = true;
             m_ScrollView.verticalScroller.valueChanged += OnScroll;
             shadow.Add(m_ScrollView);
 
@@ -187,10 +188,10 @@ namespace UnityEngine.Experimental.UIElements
                     selectedIndex = itemsSource.Count - 1;
                     break;
                 case KeyCode.PageDown:
-                    selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastSize.height / itemHeight));
+                    selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / itemHeight));
                     break;
                 case KeyCode.PageUp:
-                    selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastSize.height / itemHeight));
+                    selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / itemHeight));
                     break;
             }
             ScrollToItem(selectedIndex);
@@ -209,11 +210,11 @@ namespace UnityEngine.Experimental.UIElements
             }
             else // index >= first
             {
-                int actualCount = (int)(m_LastSize.height / itemHeight);
+                int actualCount = (int)(m_LastHeight / itemHeight);
                 if (index < m_FirstVisibleIndex + actualCount)
                     return;
 
-                bool someItemIsPartiallyVisible = (int)m_LastSize.height % itemHeight != 0;
+                bool someItemIsPartiallyVisible = (int)m_LastHeight % itemHeight != 0;
                 int d = index - actualCount;
 
                 // we're scrolling down in that case
@@ -372,16 +373,21 @@ namespace UnityEngine.Experimental.UIElements
         {
             m_Pool.Clear();
             m_ScrollView.Clear();
-
-            m_ScrollView.contentContainer.style.width = m_ScrollView.contentViewport.layout.width;
-            m_ScrollView.contentContainer.style.flexGrow = 0;
-            m_ScrollView.contentContainer.style.flexShrink = 0;
-            m_ScrollView.contentContainer.style.flexBasis = -1f; // magic value for auto
+            m_VisibleItemCount = 0;
 
             if (!HasValidDataAndBindings())
                 return;
 
-            // Resize ScrollView in case the collection has changed.
+            m_LastHeight = m_ScrollView.layout.height;
+
+            if (float.IsNaN(m_LastHeight))
+                return;
+
+            ResizeHeight(m_LastHeight);
+        }
+
+        private void ResizeHeight(float height)
+        {
             m_ScrollView.contentContainer.style.height = itemsSource.Count * itemHeight;
 
             // Restore scroll offset and pre-emptively update the highValue
@@ -391,38 +397,54 @@ namespace UnityEngine.Experimental.UIElements
             m_ScrollView.verticalScroller.highValue = Mathf.Max(m_ScrollOffset, m_ScrollView.verticalScroller.highValue);
             m_ScrollView.verticalScroller.value = m_ScrollOffset;
 
-            if (m_LastSize != m_ScrollView.layout)
-                m_LastSize = m_ScrollView.layout;
+            int itemCount = (int)(height / itemHeight) + m_ExtraVisibleItems;
 
-            if (float.IsNaN(m_LastSize.height))
-                return;
-
-            m_ScrollView.contentContainer.style.height = itemsSource.Count * itemHeight;
-
-            m_VisibleItemCount = (int)(m_LastSize.height / itemHeight) + m_ExtraVisibleItems;
-            for (var i = m_FirstVisibleIndex; i < m_VisibleItemCount + m_FirstVisibleIndex; i++)
+            if (m_VisibleItemCount != itemCount)
             {
-                var item = makeItem();
-                var recycledItem = new RecycledItem(item);
-                m_Pool.Add(recycledItem);
-
-                item.style.marginTop = 0;
-                item.style.marginBottom = 0;
-                item.style.positionType = PositionType.Absolute;
-                item.style.positionLeft = 0;
-                item.style.positionRight = 0;
-                item.style.height = itemHeight;
-                if (i < itemsSource.Count)
+                if (m_VisibleItemCount > itemCount)
                 {
-                    Setup(recycledItem, i);
+                    // Shrink
+                    int removeCount = m_VisibleItemCount - itemCount;
+                    for (int i = 0; i < removeCount; i++)
+                    {
+                        m_Pool.RemoveAt(m_Pool.Count - 1);
+                        m_ScrollView.RemoveAt(m_ScrollView.childCount - 1);
+                    }
                 }
                 else
                 {
-                    item.style.visibility = Visibility.Hidden;
+                    // Grow
+                    int addCount = itemCount - m_VisibleItemCount;
+                    for (int i = 0; i < addCount; i++)
+                    {
+                        int index = i + m_FirstVisibleIndex + m_VisibleItemCount;
+                        var item = makeItem();
+                        var recycledItem = new RecycledItem(item);
+                        m_Pool.Add(recycledItem);
+
+                        item.style.marginTop = 0;
+                        item.style.marginBottom = 0;
+                        item.style.positionType = PositionType.Absolute;
+                        item.style.positionLeft = 0;
+                        item.style.positionRight = 0;
+                        item.style.height = itemHeight;
+                        if (index < itemsSource.Count)
+                        {
+                            Setup(recycledItem, index);
+                        }
+                        else
+                        {
+                            item.style.visibility = Visibility.Hidden;
+                        }
+
+                        m_ScrollView.Add(item);
+                    }
                 }
 
-                m_ScrollView.Add(item);
+                m_VisibleItemCount = itemCount;
             }
+
+            m_LastHeight = height;
         }
 
         private void Setup(RecycledItem recycledItem, int newIndex)
@@ -441,12 +463,10 @@ namespace UnityEngine.Experimental.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            m_ScrollView.contentContainer.style.height = itemsSource.Count * itemHeight;
-
-            if (m_LastSize == m_ScrollView.layout)
+            if (evt.newRect.height == evt.oldRect.height)
                 return;
 
-            Refresh();
+            ResizeHeight(evt.newRect.height);
         }
 
         protected override void OnStyleResolved(ICustomStyle styles)

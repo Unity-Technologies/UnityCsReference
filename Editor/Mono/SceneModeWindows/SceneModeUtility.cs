@@ -92,8 +92,8 @@ namespace UnityEditor
 
             {
                 GUIContent label = EditorGUIUtility.TempContent(
-                        "All",
-                        AssetPreview.GetMiniTypeThumbnail(typeof(GameObject)));
+                    "All",
+                    AssetPreview.GetMiniTypeThumbnail(typeof(GameObject)));
                 if (TypeButton(label, s_FocusType == null, styles.typeButton))
                     SceneModeUtility.SearchForType(null);
             }
@@ -168,9 +168,9 @@ namespace UnityEditor
 
             // Should we include child objects?
             GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targetObjects.OfType<GameObject>(), "Change Static Flags",
-                    allFlagsAreChanged ?
-                    "Do you want to " + (flagValue ? "enable" : "disable") + " the static flags for all the child objects as well?" :
-                    "Do you want to " + (flagValue ? "enable" : "disable") + " the " + ObjectNames.NicifyVariableName(flag.ToString()) + " flag for all the child objects as well?");
+                allFlagsAreChanged ?
+                "Do you want to " + (flagValue ? "enable" : "disable") + " the static flags for all the child objects as well?" :
+                "Do you want to " + (flagValue ? "enable" : "disable") + " the " + ObjectNames.NicifyVariableName(flag.ToString()) + " flag for all the child objects as well?");
 
             if (includeChildren == GameObjectUtility.ShouldIncludeChildren.Cancel)
             {

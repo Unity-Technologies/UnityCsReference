@@ -344,7 +344,7 @@ namespace UnityEditor
             return new Vector2Int(
                 Mathf.FloorToInt(sprite.rect.center.x / cellPixelSize.x),
                 Mathf.FloorToInt(-(sprite.texture.height - sprite.rect.center.y) / cellPixelSize.y) + 1
-                );
+            );
         }
 
         public static RectInt GetMinMaxRect(List<Vector2Int> positions)
@@ -355,7 +355,7 @@ namespace UnityEditor
             return GridEditorUtility.GetMarqueeRect(
                 new Vector2Int(positions.Min(p1 => p1.x), positions.Min(p1 => p1.y)),
                 new Vector2Int(positions.Max(p1 => p1.x), positions.Max(p1 => p1.y))
-                );
+            );
         }
 
         public static Tile CreateTile(Sprite sprite)

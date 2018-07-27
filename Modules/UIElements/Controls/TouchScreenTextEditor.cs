@@ -39,10 +39,10 @@ namespace UnityEngine.Experimental.UIElements
                 textInputField.CaptureMouse();
 
                 editorEngine.keyboardOnScreen = TouchScreenKeyboard.Open(!string.IsNullOrEmpty(secureText) ? secureText : textInputField.text,
-                        TouchScreenKeyboardType.Default,
-                        true, // autocorrection
-                        editorEngine.multiline,
-                        !string.IsNullOrEmpty(secureText));
+                    TouchScreenKeyboardType.Default,
+                    true,     // autocorrection
+                    editorEngine.multiline,
+                    !string.IsNullOrEmpty(secureText));
 
                 // Scroll offset might need to be updated
                 editorEngine.UpdateScrollOffset();

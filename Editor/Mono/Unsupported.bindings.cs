@@ -84,6 +84,7 @@ namespace UnityEditor
 
         internal static extern bool SetOverrideRenderSettingsInternal(int sceneHandle);
 
+
         public static extern void RestoreOverrideRenderSettings();
 
         [FreeFunction("GetRenderSettings().SetUseFogNoDirty")]
@@ -169,8 +170,15 @@ namespace UnityEditor
         [StaticAccessor("AssetDatabaseDeprecated", StaticAccessorType.DoubleColon)]
         public static extern bool GetApplicationSettingCompressAssetsOnImport();
 
+        // This function has always wrongly returned int but we have test data
+        // that relies on this returning int, specifically the model importer test
         [FreeFunction("GetPersistentManager().GetLocalFileID")]
         public static extern int GetLocalIdentifierInFile(int instanceID);
+
+        internal static extern UInt64 GetFileIDHint([NotNull] UnityEngine.Object obj);
+
+        [NativeThrows]
+        internal static extern UInt64 GenerateFileIDHint([NotNull] UnityEngine.Object obj);
 
         [FreeFunction]
         public static extern bool IsHiddenFile(string path);

@@ -25,7 +25,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 RectField r = (RectField)ve;
-                r.value = new Rect(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_WValue.GetValueFromBag(bag), m_HValue.GetValueFromBag(bag));
+                r.SetValueWithoutNotify(new Rect(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_WValue.GetValueFromBag(bag), m_HValue.GetValueFromBag(bag)));
             }
         }
 
@@ -57,7 +57,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var r = (RectIntField)ve;
-                r.value = new RectInt(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_WValue.GetValueFromBag(bag), m_HValue.GetValueFromBag(bag));
+                r.SetValueWithoutNotify(new RectInt(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_WValue.GetValueFromBag(bag), m_HValue.GetValueFromBag(bag)));
             }
         }
 
@@ -87,7 +87,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 Vector2Field f = (Vector2Field)ve;
-                f.value = new Vector2(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag));
+                f.SetValueWithoutNotify(new Vector2(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag)));
             }
         }
 
@@ -116,7 +116,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 Vector3Field f = (Vector3Field)ve;
-                f.value = new Vector3(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_ZValue.GetValueFromBag(bag));
+                f.SetValueWithoutNotify(new Vector3(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_ZValue.GetValueFromBag(bag)));
             }
         }
 
@@ -147,7 +147,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 Vector4Field f = (Vector4Field)ve;
-                f.value = new Vector4(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_ZValue.GetValueFromBag(bag), m_WValue.GetValueFromBag(bag));
+                f.SetValueWithoutNotify(new Vector4(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_ZValue.GetValueFromBag(bag), m_WValue.GetValueFromBag(bag)));
             }
         }
 
@@ -177,7 +177,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (Vector2IntField)ve;
-                f.value = new Vector2Int(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag));
+                f.SetValueWithoutNotify(new Vector2Int(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag)));
             }
         }
 
@@ -206,7 +206,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (Vector3IntField)ve;
-                f.value = new Vector3Int(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_ZValue.GetValueFromBag(bag));
+                f.SetValueWithoutNotify(new Vector3Int(m_XValue.GetValueFromBag(bag), m_YValue.GetValueFromBag(bag), m_ZValue.GetValueFromBag(bag)));
             }
         }
         internal override FieldDescription[] DescribeFields()

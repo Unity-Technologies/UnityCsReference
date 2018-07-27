@@ -33,9 +33,9 @@ namespace UnityEditor.Experimental.UIElements
                     else
                     {
                         genericMenu.AddItem(new GUIContent(action.name), isChecked, () =>
-                            {
-                                action.Execute();
-                            });
+                        {
+                            action.Execute();
+                        });
                     }
                 }
                 else

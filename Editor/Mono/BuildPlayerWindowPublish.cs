@@ -286,8 +286,8 @@ namespace UnityEditor
             {
                 System.Console.WriteLine("Current xiaomi package version is " +
                     (string.IsNullOrEmpty(currentXiaomiPackageVersion)
-                     ? "empty"
-                     : currentXiaomiPackageVersion));
+                        ? "empty"
+                        : currentXiaomiPackageVersion));
 
                 if (currentPackageListRequest.IsCompleted && string.IsNullOrEmpty(currentXiaomiPackageVersion))
                 {
@@ -311,8 +311,8 @@ namespace UnityEditor
             {
                 System.Console.WriteLine("Latest xiaomi package version is " +
                     (string.IsNullOrEmpty(latestXiaomiPackageVersion)
-                     ? "empty"
-                     : latestXiaomiPackageVersion));
+                        ? "empty"
+                        : latestXiaomiPackageVersion));
 
                 if (latestPackageSearchRequest.IsCompleted && latestPackageSearchRequest.Result.Length > 0 &&
                     string.IsNullOrEmpty(latestXiaomiPackageVersion))

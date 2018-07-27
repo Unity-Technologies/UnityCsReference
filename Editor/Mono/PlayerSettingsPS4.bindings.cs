@@ -143,6 +143,36 @@ namespace UnityEditor
                 }
             }
 
+            public static string SdkOverride
+            {
+                get
+                {
+                    return SdkOverrideInternal;
+                }
+                set
+                {
+                    string originalSDK = System.Environment.GetEnvironmentVariable("SCE_ORBIS_SDK_DIR_ORIGINAL");
+                    string newSDK;
+
+                    if (String.IsNullOrEmpty(originalSDK))
+                    {
+                        // If the SCE_ORBIS_SDK_DIR_ORIGINAL has not been set then use the raw value, this could happen during initialization.
+                        newSDK = value;
+                    }
+                    else
+                    {
+                        // Check for an empty SDK string and use the original SDK if so.
+                        newSDK = String.IsNullOrEmpty(value) ? originalSDK : value;
+                    }
+
+                    if (newSDK != SdkOverrideInternal && !String.IsNullOrEmpty(newSDK))
+                    {
+                        System.Environment.SetEnvironmentVariable("SCE_ORBIS_SDK_DIR", newSDK);
+                        SdkOverrideInternal = newSDK;
+                    }
+                }
+            }
+
             [NativeProperty("ps4VideoOutBaseModeInitialWidth", false, TargetType.Field)] extern public static int videoOutBaseModeInitialWidth { get; set; }
             [NativeProperty("ps4VideoOutReprojectionRate", false, TargetType.Field)] extern public static int videoOutReprojectionRate { get; set; }
             [NativeProperty("ps4PronunciationXMLPath", false, TargetType.Function)] extern public static string PronunciationXMLPath { get; set; }
@@ -152,7 +182,7 @@ namespace UnityEditor
             [NativeProperty("ps4StartupImagesFolder", false, TargetType.Function)] extern public static string startupImagesFolder { get; set; }
             [NativeProperty("ps4IconImagesFolder", false, TargetType.Function)] extern public static string iconImagesFolder { get; set; }
             [NativeProperty("ps4SaveDataImagePath", false, TargetType.Function)] extern public static string SaveDataImagePath { get; set; }
-            [NativeProperty("ps4SdkOverride", false, TargetType.Function)] extern public static string SdkOverride { get; set; }
+            [NativeProperty("ps4SdkOverride", false, TargetType.Function)] extern private static string SdkOverrideInternal { get; set; }
             [NativeProperty("ps4BGMPath", false, TargetType.Function)] extern public static string BGMPath { get; set; }
             [NativeProperty("ps4ShareFilePath", false, TargetType.Function)] extern public static string ShareFilePath { get; set; }
             [NativeProperty("ps4ShareOverlayImagePath", false, TargetType.Function)] extern public static string ShareOverlayImagePath { get; set; }

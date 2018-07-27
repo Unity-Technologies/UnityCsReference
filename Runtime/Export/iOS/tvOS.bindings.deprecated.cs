@@ -8,31 +8,4 @@ using UnityEngine.Scripting.APIUpdating;
 
 namespace UnityEngine.Apple.TV
 {
-    [Obsolete("UnityEngine.Apple.TV.Remote has been deprecated. Use UnityEngine.tvOS.Remote instead (UnityUpgradable) -> UnityEngine.tvOS.Remote", true)]
-    public sealed partial class Remote
-    {
-        public static bool allowExitToHome
-        {
-            get;
-            set;
-        }
-
-        public static bool allowRemoteRotation
-        {
-            get;
-            set;
-        }
-
-        public static bool reportAbsoluteDpadValues
-        {
-            get;
-            set;
-        }
-
-        public static bool touchesEnabled
-        {
-            get;
-            set;
-        }
-    }
 }

@@ -209,7 +209,7 @@ namespace UnityEngine
             RenderTextureFormat format = RenderTextureFormat.Default, RenderTextureReadWrite readWrite = RenderTextureReadWrite.Default,
             int antiAliasing = 1, RenderTextureMemoryless memorylessMode = RenderTextureMemoryless.None,
             VRTextureUsage vrUsage = VRTextureUsage.None, bool useDynamicScale = false
-            )
+        )
         {
             RenderTextureDescriptor desc = new RenderTextureDescriptor(width, height, format, depthBuffer);
             desc.sRGB = (readWrite != RenderTextureReadWrite.Linear);
@@ -227,7 +227,7 @@ namespace UnityEngine
             [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite, [uei.DefaultValue("1")] int antiAliasing,
             [uei.DefaultValue("RenderTextureMemoryless.None")] RenderTextureMemoryless memorylessMode,
             [uei.DefaultValue("VRTextureUsage.None")] VRTextureUsage vrUsage, [uei.DefaultValue("false")] bool useDynamicScale
-            )
+        )
         {
             return GetTemporaryImpl(width, height, depthBuffer, format, readWrite, antiAliasing, memorylessMode, vrUsage, useDynamicScale);
         }
@@ -348,7 +348,7 @@ namespace UnityEngine
         {
             return new UnityException(
                 String.Format("Texture '{0}' is not readable, the texture memory can not be accessed from scripts. You can make the texture readable in the Texture Import Settings.", t.name)
-                );
+            );
         }
     }
 

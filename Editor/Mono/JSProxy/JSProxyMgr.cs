@@ -399,9 +399,9 @@ namespace UnityEditor.Web
             }
 
             callback(new JspmStubInfoSuccess(messageID, reference,
-                    (JspmPropertyInfo[])propertyList.ToArray(typeof(JspmPropertyInfo)),
-                    (JspmMethodInfo[])methodList.ToArray(typeof(JspmMethodInfo)),
-                    (string[])eventList.ToArray(typeof(string))));
+                (JspmPropertyInfo[])propertyList.ToArray(typeof(JspmPropertyInfo)),
+                (JspmMethodInfo[])methodList.ToArray(typeof(JspmMethodInfo)),
+                (string[])eventList.ToArray(typeof(string))));
 
             return true;
         }
@@ -461,28 +461,28 @@ namespace UnityEditor.Web
             }
 
             AddTask(() =>
+            {
+                try
                 {
-                    try
+                    object res = foundMethod.Invoke(destObject, parameters);
+                    callback(FormatSuccess(messageID, res));
+                }
+                catch (TargetInvocationException tiex)
+                {
+                    if (tiex.InnerException != null)
                     {
-                        object res = foundMethod.Invoke(destObject, parameters);
-                        callback(FormatSuccess(messageID, res));
+                        callback(FormatError(messageID, kErrInvocationFailed, tiex.InnerException.GetType().Name, tiex.InnerException.Message));
                     }
-                    catch (TargetInvocationException tiex)
+                    else
                     {
-                        if (tiex.InnerException != null)
-                        {
-                            callback(FormatError(messageID, kErrInvocationFailed, tiex.InnerException.GetType().Name, tiex.InnerException.Message));
-                        }
-                        else
-                        {
-                            callback(FormatError(messageID, kErrInvocationFailed, tiex.GetType().Name, tiex.Message));
-                        }
+                        callback(FormatError(messageID, kErrInvocationFailed, tiex.GetType().Name, tiex.Message));
                     }
-                    catch (Exception ex)
-                    {
-                        callback(FormatError(messageID, kErrInvocationFailed, ex.GetType().Name, ex.Message));
-                    }
-                });
+                }
+                catch (Exception ex)
+                {
+                    callback(FormatError(messageID, kErrInvocationFailed, ex.GetType().Name, ex.Message));
+                }
+            });
 
             return true;
         }

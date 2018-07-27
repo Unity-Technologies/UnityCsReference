@@ -60,7 +60,7 @@ namespace UnityEditor
             if (includeDependencies && assets.Any(asset => UnityEditorInternal.InternalEditorUtility.IsScriptOrAssembly(asset.assetPath)))
             {
                 assets = PackageUtility.BuildExportPackageItemsList(
-                        guids.Union(UnityEditorInternal.InternalEditorUtility.GetAllScriptGUIDs()).ToArray(), includeDependencies);
+                    guids.Union(UnityEditorInternal.InternalEditorUtility.GetAllScriptGUIDs()).ToArray(), includeDependencies);
             }
 
             // If the user exports the root Assets folder, we need to remove it from the list

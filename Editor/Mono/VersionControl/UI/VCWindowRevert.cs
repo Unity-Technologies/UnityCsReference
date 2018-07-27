@@ -40,12 +40,12 @@ namespace UnityEditor.VersionControl
 
             const bool includeFolders = true;
             AssetList revert = task.assetList.Filter(includeFolders,
-                    Asset.States.CheckedOutLocal,
-                    Asset.States.DeletedLocal,
-                    Asset.States.AddedLocal,
-                    //Asset.States.Branch,
-                    //Asset.States.Integrate,
-                    Asset.States.Missing);
+                Asset.States.CheckedOutLocal,
+                Asset.States.DeletedLocal,
+                Asset.States.AddedLocal,
+                //Asset.States.Branch,
+                //Asset.States.Integrate,
+                Asset.States.Missing);
 
             GetWindow().DoOpen(revert);
         }
@@ -115,9 +115,9 @@ namespace UnityEditor.VersionControl
                 if (openScenes.Length > 0)
                 {
                     bool continueRevert = EditorUtility.DisplayDialog("Revert open scene(s)?",
-                            "You are about to revert your currently open scene(s):\n\n" +
-                            openScenes + "\nContinuing will remove all unsaved changes.",
-                            "Continue", "Cancel");
+                        "You are about to revert your currently open scene(s):\n\n" +
+                        openScenes + "\nContinuing will remove all unsaved changes.",
+                        "Continue", "Cancel");
                     if (!continueRevert)
                     {
                         Close();

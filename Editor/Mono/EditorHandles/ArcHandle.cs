@@ -23,7 +23,7 @@ namespace UnityEditor.IMGUI.Controls
 
         public static void DefaultAngleHandleDrawFunction(
             int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType
-            )
+        )
         {
             Handles.DrawLine(Vector3.zero, position);
 
@@ -142,7 +142,7 @@ namespace UnityEditor.IMGUI.Controls
                 {
                     Handles.DrawWireArc(
                         Vector3.zero, Vector3.up, Vector3.forward, absAngle >= 360f ? 360f : excessAngle, radius
-                        );
+                    );
                 }
             }
 
@@ -180,13 +180,13 @@ namespace UnityEditor.IMGUI.Controls
                             {
                                 var size = radiusHandleSizeFunction == null ? 0f : radiusHandleSizeFunction(radiusHandlePosition);
                                 newPosition = Handles.Slider(
-                                        m_RadiusHandleControlIDs[i],
-                                        radiusHandlePosition,
-                                        Vector3.forward,
-                                        size,
-                                        radiusHandleDrawFunction,
-                                        SnapSettings.move.z
-                                        );
+                                    m_RadiusHandleControlIDs[i],
+                                    radiusHandlePosition,
+                                    Vector3.forward,
+                                    size,
+                                    radiusHandleDrawFunction,
+                                    SnapSettings.move.z
+                                );
                             }
                             if (EditorGUI.EndChangeCheck())
                             {
@@ -207,15 +207,15 @@ namespace UnityEditor.IMGUI.Controls
                         var size = angleHandleSizeFunction == null ? 0f : angleHandleSizeFunction(angleHandlePosition);
                         s_CurrentlyDrawingAngleHandleHash = GetHashCode();
                         angleHandlePosition = Handles.Slider2D(
-                                m_AngleHandleControlID,
-                                angleHandlePosition,
-                                Vector3.up,
-                                Vector3.forward,
-                                Vector3.right,
-                                size,
-                                angleHandleDrawFunction,
-                                Vector2.zero
-                                );
+                            m_AngleHandleControlID,
+                            angleHandlePosition,
+                            Vector3.up,
+                            Vector3.forward,
+                            Vector3.right,
+                            size,
+                            angleHandleDrawFunction,
+                            Vector2.zero
+                        );
                     }
                     if (EditorGUI.EndChangeCheck())
                     {

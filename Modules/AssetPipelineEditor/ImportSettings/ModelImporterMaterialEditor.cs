@@ -205,7 +205,7 @@ namespace UnityEditor
                         // use the first target for selecting the destination folder, but apply that path for all targets
                         string destinationPath = (target as ModelImporter).assetPath;
                         destinationPath = EditorUtility.SaveFolderPanel("Select Textures Folder",
-                                FileUtil.DeleteLastPathNameComponent(destinationPath), "");
+                            FileUtil.DeleteLastPathNameComponent(destinationPath), "");
                         if (string.IsNullOrEmpty(destinationPath))
                         {
                             // cancel the extraction if the user did not select a folder
@@ -285,7 +285,7 @@ namespace UnityEditor
                         // use the first target for selecting the destination folder, but apply that path for all targets
                         string destinationPath = (target as ModelImporter).assetPath;
                         destinationPath = EditorUtility.SaveFolderPanel("Select Materials Folder",
-                                FileUtil.DeleteLastPathNameComponent(destinationPath), "");
+                            FileUtil.DeleteLastPathNameComponent(destinationPath), "");
                         if (string.IsNullOrEmpty(destinationPath))
                         {
                             // cancel the extraction if the user did not select a folder

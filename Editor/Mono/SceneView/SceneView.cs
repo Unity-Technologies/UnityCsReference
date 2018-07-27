@@ -15,6 +15,7 @@ using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
@@ -70,10 +71,20 @@ namespace UnityEditor
         private static SceneView s_LastActiveSceneView;
         private static SceneView s_CurrentDrawingSceneView;
 
-        public static SceneView lastActiveSceneView { get { return s_LastActiveSceneView; } }
+        public static SceneView lastActiveSceneView
+        {
+            get
+            {
+                if (s_LastActiveSceneView == null && s_SceneViews.Count > 0)
+                    s_LastActiveSceneView = s_SceneViews[0] as SceneView;
+                return s_LastActiveSceneView;
+            }
+        }
+
         public static SceneView currentDrawingSceneView { get { return s_CurrentDrawingSceneView; } }
 
         static readonly PrefColor kSceneViewBackground = new PrefColor("Scene/Background", 0.278431f, 0.278431f, 0.278431f, 0);
+        static readonly PrefColor kSceneViewPrefabBackground = new PrefColor("Scene/Background for Prefabs", 0.132f, 0.231f, 0.330f, 0);
         static readonly PrefColor kSceneViewWire = new PrefColor("Scene/Wireframe", 0.0f, 0.0f, 0.0f, 0.5f);
         static readonly PrefColor kSceneViewWireOverlay = new PrefColor("Scene/Wireframe Overlay", 0.0f, 0.0f, 0.0f, 0.25f);
         static readonly PrefColor kSceneViewSelectedOutline = new PrefColor("Scene/Selected Outline", 255.0f / 255.0f, 102.0f / 255.0f, 0.0f / 255.0f, 0.0f / 255.0f);
@@ -88,6 +99,42 @@ namespace UnityEditor
         internal static Color kSceneViewUpLight = new Color(0.212f, 0.227f, 0.259f, 1);
         internal static Color kSceneViewMidLight = new Color(0.114f, 0.125f, 0.133f, 1);
         internal static Color kSceneViewDownLight = new Color(0.047f, 0.043f, 0.035f, 1);
+
+        [SerializeField]
+        string m_WindowGUID;
+        internal string windowGUID { get { return m_WindowGUID; } }
+
+        Scene m_CustomScene;
+        protected internal Scene customScene
+        {
+            get { return m_CustomScene; }
+            set
+            {
+                m_CustomScene = value;
+                m_Camera.scene = m_CustomScene;
+
+                var stage = StageUtility.GetStage(m_CustomScene);
+                StageUtility.SetSceneToRenderInStage(m_CustomLightsScene, stage);
+            }
+        }
+
+        SceneViewStageHandling m_StageHandling;
+
+        float toolbarHeight { get { return m_StageHandling.isShowingBreadcrumbBar ? m_StageHandling.breadcrumbHeight + EditorGUI.kWindowToolbarHeight : EditorGUI.kWindowToolbarHeight; } }
+        float sceneViewHeight { get { return position.height - toolbarHeight; } }
+
+        // Returns the calculated rect where we render the camera in the SceneView (in window space coordinates)
+        internal Rect cameraRect
+        {
+            get { return new Rect(0, toolbarHeight, position.width, sceneViewHeight); }
+        }
+
+        Transform m_CustomParentForDraggedObjects;
+        protected internal Transform customParentForDraggedObjects
+        {
+            get { return m_CustomParentForDraggedObjects; }
+            set { m_CustomParentForDraggedObjects = value; }
+        }
 
         [NonSerialized]
         static readonly Quaternion kDefaultRotation = Quaternion.LookRotation(new Vector3(-1, -.7f, -1));
@@ -106,7 +153,8 @@ namespace UnityEditor
         ActiveEditorTracker m_Tracker;
 
         [SerializeField]
-        public bool m_SceneLighting = true;
+        public bool m_SceneLighting = true;  // Has been public for a long time (Make it private at some point now that we have the property below)
+        internal bool sceneLighting { get { return m_SceneLighting; } set { m_SceneLighting = value; } }
 
         public double lastFramingTime = 0;
         private const double k_MaxDoubleKeypressTime = 0.5;
@@ -195,7 +243,10 @@ namespace UnityEditor
 
         internal Object m_OneClickDragObject;
 
+        [SerializeField]
         public bool m_AudioPlay = false;
+        internal bool audioPlay { get { return m_AudioPlay; } set { m_AudioPlay = value; } }
+
         static SceneView s_AudioSceneView;
 
         [SerializeField]
@@ -260,7 +311,9 @@ namespace UnityEditor
 
         private DrawCameraMode lastRenderMode = 0;
 
+        [SerializeField]
         public bool m_ValidateTrueMetals = false;
+        internal bool validateTrueMetals { get { return m_ValidateTrueMetals; } set { m_ValidateTrueMetals = value; } }
 
         [SerializeField]
         private SceneViewState m_SceneViewState;
@@ -268,6 +321,7 @@ namespace UnityEditor
         public SceneViewState sceneViewState
         {
             get { return m_SceneViewState; }
+            set { m_SceneViewState = value; }
         }
 
         [SerializeField]
@@ -342,6 +396,9 @@ namespace UnityEditor
             }
         }
 
+
+        [System.NonSerialized]
+        Scene m_CustomLightsScene;
         [System.NonSerialized]
         Light[] m_Light = new Light[3];
 
@@ -493,7 +550,9 @@ namespace UnityEditor
 
         override public void OnEnable()
         {
-            titleContent = GetLocalizedTitleContent();
+            m_StageHandling = new SceneViewStageHandling(this);
+            if (string.IsNullOrEmpty(titleContent.text) || titleContent.text.Contains("UnityEditor"))
+                titleContent = GetLocalizedTitleContent();
             m_RectSelection = new RectSelection(this);
             if (grid == null)
                 grid = new SceneViewGrid();
@@ -537,6 +596,7 @@ namespace UnityEditor
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
 
             base.OnEnable();
+            m_StageHandling.OnEnable();
         }
 
         public SceneView()
@@ -549,6 +609,9 @@ namespace UnityEditor
 
         internal void Awake()
         {
+            if (string.IsNullOrEmpty(m_WindowGUID))
+                m_WindowGUID = GUID.Generate().ToString();
+
             if (sceneViewState == null)
                 m_SceneViewState = new SceneViewState();
 
@@ -574,9 +637,7 @@ namespace UnityEditor
                 if (!view)
                     view = s_SceneViews[0] as SceneView;
                 if (view)
-                {
                     view.MoveToView(go.transform);
-                }
             }
         }
 
@@ -600,8 +661,12 @@ namespace UnityEditor
                 DestroyImmediate(m_Light[1].gameObject, true);
             if (m_Light[2])
                 DestroyImmediate(m_Light[2].gameObject, true);
+
+            EditorSceneManager.ClosePreviewScene(m_CustomLightsScene);
+
             if (s_MipColorsTexture)
                 DestroyImmediate(s_MipColorsTexture, true);
+
             s_SceneViews.Remove(this);
             if (s_LastActiveSceneView == this)
             {
@@ -612,6 +677,7 @@ namespace UnityEditor
             }
 
             CleanupEditorDragFunctions();
+            m_StageHandling.OnDisable();
             SceneViewMotion.DeactivateFlyModeContext();
             base.OnDisable();
         }
@@ -634,6 +700,20 @@ namespace UnityEditor
             }
         }
 
+        // This has to be called explicitly from SceneViewStageHandling to ensure,
+        // this happens *after* SceneViewStageHandling has updated the camera scene.
+        // Thus, we can't just register to the StageNavigationManager.instance.stageChanged
+        // event since that would not guarantee the order dependency.
+        internal void OnStageChanged(StageNavigationItem previousStage, StageNavigationItem newStage)
+        {
+            // m_AudioPlay may be different in the new stage,
+            // so update regardless of whether it's on or off.
+            // Not if we're in Play Mode however, as audio preview
+            // is entirely disabled in that case.
+            if (!EditorApplication.isPlaying)
+                RefreshAudioPlay();
+        }
+
         private static GUIStyle s_DropDownStyle;
         private GUIStyle effectsDropDownStyle
         {
@@ -645,107 +725,125 @@ namespace UnityEditor
             }
         }
 
-        static class Styles
+        void ToolbarDisplayStateGUI()
         {
-            public static readonly GUIStyle toolbar = "toolbar";
+            // render mode popup
+            GUIContent modeContent = EditorGUIUtility.TextContent(cameraMode.name);
+            modeContent.tooltip = L10n.Tr("The Draw Mode used to display the Scene.");
+            Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDown, GUILayout.Width(120));
+            if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            {
+                Rect rect = GUILayoutUtility.topLevel.GetLast();
+                PopupWindow.Show(rect, new SceneRenderModeWindow(this));
+                GUIUtility.ExitGUI();
+            }
+
+            EditorGUILayout.Space();
+
+            in2DMode = GUILayout.Toggle(in2DMode, m_2DModeContent, EditorStyles.toolbarButton);
+
+            EditorGUILayout.Space();
+
+            m_SceneLighting = GUILayout.Toggle(m_SceneLighting, m_Lighting, EditorStyles.toolbarButton);
+            if (cameraMode.drawMode == DrawCameraMode.ShadowCascades)     // cascade visualization requires actual lights with shadows
+                m_SceneLighting = true;
+
+            using (new EditorGUI.DisabledScope(Application.isPlaying))
+            {
+                EditorGUI.BeginChangeCheck();
+                m_AudioPlay = GUILayout.Toggle(m_AudioPlay, m_AudioPlayContent, EditorStyles.toolbarButton);
+                if (EditorGUI.EndChangeCheck())
+                    RefreshAudioPlay();
+            }
+
+            Rect fxRect = GUILayoutUtility.GetRect(m_Fx, effectsDropDownStyle);
+            Rect fxRightRect = new Rect(fxRect.xMax - effectsDropDownStyle.border.right, fxRect.y, effectsDropDownStyle.border.right, fxRect.height);
+            if (EditorGUI.DropdownButton(fxRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
+            {
+                Rect rect = GUILayoutUtility.topLevel.GetLast();
+                PopupWindow.Show(rect, new SceneFXWindow(this));
+                GUIUtility.ExitGUI();
+            }
+
+            var allOn = GUI.Toggle(fxRect, sceneViewState.IsAllOn(), m_Fx, effectsDropDownStyle);
+            if (allOn != sceneViewState.IsAllOn())
+                sceneViewState.Toggle(allOn);
+        }
+
+        void ToolbarGizmosDropdownGUI()
+        {
+            Rect r = GUILayoutUtility.GetRect(m_GizmosContent, EditorStyles.toolbarDropDown);
+            if (EditorGUI.DropdownButton(r, m_GizmosContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            {
+                Rect rect = GUILayoutUtility.topLevel.GetLast();
+                if (AnnotationWindow.ShowAtPosition(rect, false))
+                {
+                    GUIUtility.ExitGUI();
+                }
+            }
+        }
+
+        void ToolbarRenderDocGUI()
+        {
+            if (RenderDoc.IsLoaded())
+            {
+                using (new EditorGUI.DisabledScope(!RenderDoc.IsSupported()))
+                {
+                    if (GUILayout.Button(m_RenderDocContent, EditorStyles.toolbarButton))
+                    {
+                        m_Parent.CaptureRenderDocScene();
+                        GUIUtility.ExitGUI();
+                    }
+                }
+            }
+        }
+
+        void ToolbarSearchFieldGUI()
+        {
+            if (m_MainViewControlID != GUIUtility.keyboardControl
+                && Event.current.type == EventType.KeyDown
+                && !string.IsNullOrEmpty(m_SearchFilter)
+            )
+            {
+                switch (Event.current.keyCode)
+                {
+                    case KeyCode.UpArrow:
+                    case KeyCode.DownArrow:
+                        if (Event.current.keyCode == KeyCode.UpArrow)
+                            SelectPreviousSearchResult();
+                        else
+                            SelectNextSearchResult();
+
+                        FrameSelected(false);
+                        Event.current.Use();
+                        GUIUtility.ExitGUI();
+                        return;
+                }
+            }
+
+            SearchFieldGUI(EditorGUILayout.kLabelFloatMaxW);
         }
 
         void DoToolbarGUI()
         {
-            GUILayout.BeginHorizontal(Styles.toolbar);
+            GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
-                // render mode popup
-                GUIContent modeContent = EditorGUIUtility.TextContent(cameraMode.name);
-                modeContent.tooltip = L10n.Tr("The Draw Mode used to display the Scene.");
-                Rect modeRect = GUILayoutUtility.GetRect(modeContent, EditorStyles.toolbarDropDown, GUILayout.Width(120));
-                if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
-                {
-                    Rect rect = GUILayoutUtility.topLevel.GetLast();
-                    PopupWindow.Show(rect, new SceneRenderModeWindow(this));
-                    GUIUtility.ExitGUI();
-                }
-
-                EditorGUILayout.Space();
-
-                in2DMode = GUILayout.Toggle(in2DMode, m_2DModeContent, EditorStyles.toolbarButton);
-
-                EditorGUILayout.Space();
-
-                m_SceneLighting = GUILayout.Toggle(m_SceneLighting, m_Lighting, EditorStyles.toolbarButton);
-                if (cameraMode.drawMode == DrawCameraMode.ShadowCascades) // cascade visualization requires actual lights with shadows
-                    m_SceneLighting = true;
-
-                GUI.enabled = !Application.isPlaying;
-                GUI.changed = false;
-                m_AudioPlay = GUILayout.Toggle(m_AudioPlay, m_AudioPlayContent, EditorStyles.toolbarButton);
-                if (GUI.changed)
-                    RefreshAudioPlay();
-
-                GUI.enabled = true;
-
-                Rect fxRect = GUILayoutUtility.GetRect(m_Fx, effectsDropDownStyle);
-                Rect fxRightRect = new Rect(fxRect.xMax - effectsDropDownStyle.border.right, fxRect.y, effectsDropDownStyle.border.right, fxRect.height);
-                if (EditorGUI.DropdownButton(fxRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
-                {
-                    Rect rect = GUILayoutUtility.topLevel.GetLast();
-                    PopupWindow.Show(rect, new SceneFXWindow(this));
-                    GUIUtility.ExitGUI();
-                }
-
-                var allOn = GUI.Toggle(fxRect, sceneViewState.IsAllOn(), m_Fx, effectsDropDownStyle);
-                if (allOn != sceneViewState.IsAllOn())
-                    sceneViewState.Toggle(allOn);
+                ToolbarDisplayStateGUI();
 
                 EditorGUILayout.Space();
                 GUILayout.FlexibleSpace();
 
-                if (m_MainViewControlID != GUIUtility.keyboardControl
-                    && Event.current.type == EventType.KeyDown
-                    && !string.IsNullOrEmpty(m_SearchFilter)
-                    )
-                {
-                    switch (Event.current.keyCode)
-                    {
-                        case KeyCode.UpArrow:
-                        case KeyCode.DownArrow:
-                            if (Event.current.keyCode == KeyCode.UpArrow)
-                                SelectPreviousSearchResult();
-                            else
-                                SelectNextSearchResult();
+                ToolbarRenderDocGUI();
+                ToolbarGizmosDropdownGUI();
 
-                            FrameSelected(false);
-                            Event.current.Use();
-                            GUIUtility.ExitGUI();
-                            return;
-                    }
-                }
+                EditorGUILayout.Space();
 
-                if (RenderDoc.IsLoaded())
-                {
-                    using (new EditorGUI.DisabledScope(!RenderDoc.IsSupported()))
-                    {
-                        if (GUILayout.Button(m_RenderDocContent, EditorStyles.toolbarButton))
-                        {
-                            m_Parent.CaptureRenderDocScene();
-                            GUIUtility.ExitGUI();
-                        }
-                    }
-                }
-
-                Rect r = GUILayoutUtility.GetRect(m_GizmosContent, EditorStyles.toolbarDropDown);
-                if (EditorGUI.DropdownButton(r, m_GizmosContent, FocusType.Passive, EditorStyles.toolbarDropDown))
-                {
-                    Rect rect = GUILayoutUtility.topLevel.GetLast();
-                    if (AnnotationWindow.ShowAtPosition(rect, false))
-                    {
-                        GUIUtility.ExitGUI();
-                    }
-                }
-                GUILayout.Space(6);
-
-                SearchFieldGUI(EditorGUILayout.kLabelFloatMaxW);
+                ToolbarSearchFieldGUI();
             }
             GUILayout.EndHorizontal();
+
+            if (m_StageHandling.isShowingBreadcrumbBar)
+                m_StageHandling.BreadcrumbGUI();
         }
 
         // This method should be called after the audio play button has been toggled,
@@ -762,12 +860,16 @@ namespace UnityEditor
                 }
             }
 
-            var sources = (AudioSource[])FindObjectsOfType(typeof(AudioSource));
+            // We have to find all loaded AudioSources, not just the ones in main scenes.
+            var sources = (AudioSource[])Resources.FindObjectsOfTypeAll(typeof(AudioSource));
             foreach (AudioSource source in sources)
             {
+                if (EditorUtility.IsPersistent(source))
+                    continue;
+
                 if (source.playOnAwake)
                 {
-                    if (!m_AudioPlay)
+                    if (!m_AudioPlay || !StageUtility.IsGameObjectRenderedByCamera(source.gameObject, m_Camera))
                     {
                         source.Stop();
                     }
@@ -778,6 +880,17 @@ namespace UnityEditor
                     }
                 }
             }
+
+            // We have to find all loaded ReverbZones, not just the ones in main scenes.
+            var zones = (AudioReverbZone[])Resources.FindObjectsOfTypeAll(typeof(AudioReverbZone));
+            foreach (AudioReverbZone zone in zones)
+            {
+                if (EditorUtility.IsPersistent(zone))
+                    continue;
+
+                zone.active = m_AudioPlay && StageUtility.IsGameObjectRenderedByCamera(zone.gameObject, m_Camera);
+            }
+
             AudioUtil.SetListenerTransform(m_AudioPlay ? m_Camera.transform : null);
 
             s_AudioSceneView = this;
@@ -972,6 +1085,7 @@ namespace UnityEditor
             if (evt.type == EventType.MouseDown)
             {
                 Tools.s_ButtonDown = evt.button;
+
                 if (evt.button == 1 && Application.platform == RuntimePlatform.OSXEditor)
                     Focus();
             }
@@ -1043,7 +1157,7 @@ namespace UnityEditor
             if (!Handles.IsCameraDrawModeEnabled(m_Camera, mode.drawMode))
                 return false;
             return (onValidateCameraMode == null ||
-                    onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
+                onValidateCameraMode.GetInvocationList().All(validate => ((Func<CameraMode, bool>)validate)(mode)));
         }
 
         internal bool IsSceneCameraDeferred()
@@ -1178,7 +1292,7 @@ namespace UnityEditor
             return m_Camera.targetTexture != null;
         }
 
-        private void DoDrawCamera(Rect cameraRect, out bool pushedGUIClip)
+        private void DoDrawCamera(Rect windowSpaceCameraRect, Rect groupSpaceCameraRect, out bool pushedGUIClip)
         {
             pushedGUIClip = false;
             if (!m_Camera.gameObject.activeInHierarchy)
@@ -1197,7 +1311,7 @@ namespace UnityEditor
                     Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowRest);
 
                     float fade = Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
-                    Handles.DrawCamera(cameraRect, m_Camera, m_CameraMode.drawMode);
+                    Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
                     Handles.DrawCameraFade(m_Camera, fade);
 
                     // Second pass: Draw aura for objects which do meet search filter, but are occluded.
@@ -1206,25 +1320,26 @@ namespace UnityEditor
                     if (!s_AuraShader)
                         s_AuraShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewAura.shader") as Shader;
                     m_Camera.SetReplacementShader(s_AuraShader, "");
-                    Handles.DrawCamera(cameraRect, m_Camera, m_CameraMode.drawMode);
+                    Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
 
                     // Third pass: Draw objects which do meet filter normally
                     m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
-                    Handles.DrawCamera(cameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
+                    Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
 
                     if (fade < 1)
                         Repaint();
                 }
-                Rect r = cameraRect;
+
                 if (evt.type == EventType.Repaint)
                     RenderTexture.active = null;
                 GUI.EndGroup();
-                GUI.BeginGroup(new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight));
+
+                GUI.BeginGroup(windowSpaceCameraRect);
                 if (evt.type == EventType.Repaint)
                 {
-                    Graphics.DrawTexture(r, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
+                    Graphics.DrawTexture(groupSpaceCameraRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
                 }
-                Handles.SetCamera(cameraRect, m_Camera);
+                Handles.SetCamera(groupSpaceCameraRect, m_Camera);
             }
             else
             {
@@ -1235,8 +1350,8 @@ namespace UnityEditor
                     GUIClip.Push(new Rect(0f, 0f, position.width, position.height), Vector2.zero, Vector2.zero, true);
                     pushedGUIClip = true;
                 }
-                Handles.DrawCameraStep1(cameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
-                DrawRenderModeOverlay(cameraRect);
+                Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
+                DrawRenderModeOverlay(groupSpaceCameraRect);
             }
         }
 
@@ -1293,7 +1408,7 @@ namespace UnityEditor
         }
 
         // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
-        void HandleViewToolCursor()
+        void HandleViewToolCursor(Rect cameraRect)
         {
             if (!Tools.viewToolActive || Event.current.type != EventType.Repaint)
                 return;
@@ -1315,7 +1430,7 @@ namespace UnityEditor
                     break;
             }
             if (cursor != MouseCursor.Arrow)
-                AddCursorRect(new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight), cursor);
+                AddCursorRect(cameraRect, cursor);
         }
 
         private static bool ComponentHasImageEffectAttribute(Component c)
@@ -1670,7 +1785,7 @@ namespace UnityEditor
             }
         }
 
-        internal void OnGUI()
+        protected virtual void OnGUI()
         {
             s_CurrentDrawingSceneView = this;
 
@@ -1683,6 +1798,7 @@ namespace UnityEditor
 
             Color origColor = GUI.color;
             Rect origCameraRect = m_Camera.rect;
+            Rect windowSpaceCameraRect = cameraRect;
 
             HandleClickAndDragToFocus();
 
@@ -1706,35 +1822,43 @@ namespace UnityEditor
             SetupCamera();
             RenderingPath oldRenderingPath = m_Camera.renderingPath;
 
+            // Use custom scene RenderSettings (if currently showing a custom scene)
+            bool restoreOverrideRenderSettings = false;
+            if (m_CustomScene.IsValid())
+                restoreOverrideRenderSettings = Unsupported.SetOverrideRenderSettings(m_CustomScene);
+
             SetupCustomSceneLighting();
 
-            GUI.BeginGroup(new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight));
-            Rect guiRect = new Rect(0, 0, position.width, (position.height - EditorGUI.kWindowToolbarHeight));
-            Rect cameraRect = EditorGUIUtility.PointsToPixels(guiRect);
+            GUI.BeginGroup(windowSpaceCameraRect);
 
-            HandleViewToolCursor();
+            Rect groupSpaceCameraRect = new Rect(0, 0, windowSpaceCameraRect.width, windowSpaceCameraRect.height);
+            Rect groupSpaceCameraRectInPixels = EditorGUIUtility.PointsToPixels(groupSpaceCameraRect);
 
-            PrepareCameraTargetTexture(cameraRect);
-            DoClearCamera(cameraRect);
+            HandleViewToolCursor(windowSpaceCameraRect);
+
+            PrepareCameraTargetTexture(groupSpaceCameraRectInPixels);
+            DoClearCamera(groupSpaceCameraRectInPixels);
 
             m_Camera.cullingMask = Tools.visibleLayers;
 
             InputForGizmosThatAreRenderedOnTopOfSceneView();
 
-            DoOnPreSceneGUICallbacks(cameraRect);
+            DoOnPreSceneGUICallbacks(groupSpaceCameraRectInPixels);
 
             PrepareCameraReplacementShader();
 
             // Unfocus search field on mouse clicks into content, so that key presses work to navigate.
             m_MainViewControlID = GUIUtility.GetControlID(FocusType.Keyboard);
-            if (evt.GetTypeForControl(m_MainViewControlID) == EventType.MouseDown)
+            if (evt.GetTypeForControl(m_MainViewControlID) == EventType.MouseDown && groupSpaceCameraRect.Contains(evt.mousePosition))
                 GUIUtility.keyboardControl = m_MainViewControlID;
 
             // Draw camera
             bool pushedGUIClip;
-            DoDrawCamera(guiRect, out pushedGUIClip);
+            DoDrawCamera(windowSpaceCameraRect, groupSpaceCameraRect, out pushedGUIClip);
 
             CleanupCustomSceneLighting();
+            if (restoreOverrideRenderSettings)
+                Unsupported.RestoreOverrideRenderSettings();
 
 
             //Ensure that the target texture is clamped [0-1]
@@ -1778,7 +1902,7 @@ namespace UnityEditor
                     GUIClip.Pop();
                 if (evt.type == EventType.Repaint)
                 {
-                    Graphics.DrawTexture(guiRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
+                    Graphics.DrawTexture(groupSpaceCameraRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlit2SRGBMaterial);
                     Profiler.EndSample();
                 }
             }
@@ -1818,12 +1942,12 @@ namespace UnityEditor
             GUIClip.Pop();
 
             GUI.EndGroup();
-            GUI.BeginGroup(new Rect(0, EditorGUI.kWindowToolbarHeight, position.width, position.height - EditorGUI.kWindowToolbarHeight));
+            GUI.BeginGroup(windowSpaceCameraRect);
 
             if (evt.type == EventType.Repaint)
             {
                 // Blit the results with a pre-multiplied alpha shader to compose them correctly on top of the 3D scene on the back buffer
-                Graphics.DrawTexture(guiRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitSceneGUIMaterial);
+                Graphics.DrawTexture(groupSpaceCameraRect, m_SceneTargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, EditorGUIUtility.GUITextureBlitSceneGUIMaterial);
             }
 
             RepaintGizmosThatAreRenderedOnTopOfSceneView();
@@ -2077,7 +2201,10 @@ namespace UnityEditor
             }
             else
             {
-                m_Camera.backgroundColor = kSceneViewBackground;
+                if (StageNavigationManager.instance.currentItem.isPrefabStage)
+                    m_Camera.backgroundColor = kSceneViewPrefabBackground;
+                else
+                    m_Camera.backgroundColor = kSceneViewBackground;
             }
 
             if (Event.current.type == EventType.Repaint)
@@ -2390,7 +2517,7 @@ namespace UnityEditor
                     if (DragAndDrop.visualMode != DragAndDropVisualMode.Copy)
                     {
                         GameObject go = HandleUtility.PickGameObject(Event.current.mousePosition, true);
-                        DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(go, pivot, Event.current.mousePosition, isPerform);
+                        DragAndDrop.visualMode = InternalEditorUtility.SceneViewDrag(go, pivot, Event.current.mousePosition, customParentForDraggedObjects, isPerform);
                     }
 
                     if (isPerform && DragAndDrop.visualMode != DragAndDropVisualMode.None)
@@ -2512,6 +2639,15 @@ namespace UnityEditor
             target.position = pivot;
         }
 
+        bool IsGameObjectInThisSceneView(GameObject gameObject)
+        {
+            if (gameObject == null)
+                return false;
+
+            var stage = StageUtility.GetStage(customScene);
+            return stage.Contains(gameObject);
+        }
+
         public bool FrameSelected()
         {
             return FrameSelected(false);
@@ -2519,6 +2655,14 @@ namespace UnityEditor
 
         public bool FrameSelected(bool lockView)
         {
+            return FrameSelected(lockView, false);
+        }
+
+        public virtual bool FrameSelected(bool lockView, bool instant)
+        {
+            if (!IsGameObjectInThisSceneView(Selection.activeGameObject))
+                return false;
+
             viewIsLockedToObject = lockView;
             FixNegativeSize();
 
@@ -2546,7 +2690,7 @@ namespace UnityEditor
                 }
             }
 
-            return Frame(bounds, EditorApplication.isPlaying);
+            return Frame(bounds, EditorApplication.isPlaying || instant);
         }
 
         public bool Frame(Bounds bounds, bool instant = true)
@@ -2572,7 +2716,10 @@ namespace UnityEditor
             m_Camera = cameraGO.GetComponent<Camera>();
             m_Camera.enabled = false;
             m_Camera.cameraType = CameraType.SceneView;
+            m_Camera.scene = m_CustomScene;
 
+            m_CustomLightsScene = EditorSceneManager.NewPreviewScene();
+            m_CustomLightsScene.name = "CustomLightsScene-SceneView" + m_WindowGUID;
             for (int i = 0; i < 3; i++)
             {
                 GameObject lightGO = EditorUtility.CreateGameObjectWithHideFlags("SceneLight", HideFlags.HideAndDontSave, typeof(Light));
@@ -2580,6 +2727,7 @@ namespace UnityEditor
                 m_Light[i].type = LightType.Directional;
                 m_Light[i].intensity = 1.0f;
                 m_Light[i].enabled = false;
+                SceneManager.MoveGameObjectToScene(lightGO, m_CustomLightsScene);
             }
             m_Light[0].color = kSceneViewFrontLight;
 

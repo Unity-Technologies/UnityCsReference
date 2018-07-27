@@ -52,7 +52,7 @@ namespace UnityEditor
                 "Edit Joint Angular Limits",
                 Styles.editAngularLimitsButton,
                 this
-                );
+            );
 
             base.OnInspectorGUI();
         }
@@ -104,7 +104,7 @@ namespace UnityEditor
                 dynamicBody.bodyType != RigidbodyType2D.Dynamic
                 && hingeJoint2D.connectedBody != null
                 && hingeJoint2D.connectedBody.bodyType == RigidbodyType2D.Dynamic
-                )
+            )
             {
                 dynamicBody = hingeJoint2D.connectedBody;
                 dynamicBodyLocalReferencePosition = Vector3.left;
@@ -115,10 +115,10 @@ namespace UnityEditor
 
             var handlePosition = TransformPoint(dynamicBody.transform, dynamicAnchor);
             var handleOrientation = (
-                    connectedBody == null ?
-                    Quaternion.identity :
-                    Quaternion.LookRotation(Vector3.forward, connectedBody.transform.rotation * Vector3.up)
-                    ) * handleOrientationOffset;
+                connectedBody == null ?
+                Quaternion.identity :
+                Quaternion.LookRotation(Vector3.forward, connectedBody.transform.rotation * Vector3.up)
+                ) * handleOrientationOffset;
             var dynamicActorReferencePosition =
                 handlePosition
                 + Quaternion.LookRotation(Vector3.forward, dynamicBody.transform.rotation * Vector3.up)
@@ -137,7 +137,7 @@ namespace UnityEditor
                 Handles.DrawLine(
                     Vector3.zero,
                     handleMatrix.inverse.MultiplyPoint3x4(dynamicActorReferencePosition).normalized * radius
-                    );
+                );
 
                 m_AngularLimitHandle.DrawHandle();
             }

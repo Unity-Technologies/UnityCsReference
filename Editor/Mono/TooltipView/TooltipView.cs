@@ -19,7 +19,6 @@ namespace UnityEditor
         private GUIStyle m_Style;
         private Rect m_hoverRect;
 
-        ContainerWindow m_tooltipContainer;
         static TooltipView s_guiView;
 
         protected override void OnEnable()
@@ -36,7 +35,7 @@ namespace UnityEditor
 
         protected override void OldOnGUI()
         {
-            if (m_tooltipContainer != null)
+            if (window != null)
             {
                 GUI.Box(new Rect(0, 0, m_optimalSize.x, m_optimalSize.y) , m_tooltip, m_Style);
             }
@@ -60,15 +59,15 @@ namespace UnityEditor
                 m_optimalSize.y = m_Style.CalcHeight(m_tooltip, MAX_WIDTH);
             }
 
-            m_tooltipContainer.position = new Rect(
-                    Mathf.Floor(m_hoverRect.x + (m_hoverRect.width / 2) - (m_optimalSize.x / 2)),
-                    Mathf.Floor(m_hoverRect.y + (m_hoverRect.height) + 10.0f),
-                    m_optimalSize.x, m_optimalSize.y);
+            window.position = new Rect(
+                Mathf.Floor(m_hoverRect.x + (m_hoverRect.width / 2) - (m_optimalSize.x / 2)),
+                Mathf.Floor(m_hoverRect.y + (m_hoverRect.height) + 10.0f),
+                m_optimalSize.x, m_optimalSize.y);
 
             position = new Rect(0, 0, m_optimalSize.x, m_optimalSize.y);
 
-            m_tooltipContainer.ShowPopup();
-            m_tooltipContainer.SetAlpha(1.0f);
+            window.ShowPopup();
+            window.SetAlpha(1.0f);
             s_guiView.mouseRayInvisible = true;
 
             RepaintImmediately(); // Force repaint to fix that the tooltip text did sometimes not update (we did not get a new OnGUI if the rect had the same size)
@@ -79,10 +78,15 @@ namespace UnityEditor
             if (s_guiView == null)
             {
                 s_guiView = ScriptableObject.CreateInstance<TooltipView>();
-                s_guiView.m_tooltipContainer = ScriptableObject.CreateInstance<ContainerWindow>();
-                s_guiView.m_tooltipContainer.m_DontSaveToLayout = true;
-                s_guiView.m_tooltipContainer.rootView = s_guiView;
-                s_guiView.m_tooltipContainer.SetMinMaxSizes(new Vector2(10.0f, 10.0f), new Vector2(2000.0f, 2000.0f));
+            }
+
+            if (s_guiView.window == null)
+            {
+                var newWindow = ScriptableObject.CreateInstance<ContainerWindow>();
+                newWindow.m_DontSaveToLayout = true;
+                newWindow.rootView = s_guiView;
+                newWindow.SetMinMaxSizes(new Vector2(10.0f, 10.0f), new Vector2(2000.0f, 2000.0f));
+                s_guiView.SetWindow(newWindow);
             }
 
             if (s_guiView.m_tooltip.text == tooltip && rect == s_guiView.m_hoverRect)
@@ -94,15 +98,13 @@ namespace UnityEditor
         public static void Close()
         {
             if (s_guiView != null)
-            {
-                s_guiView.m_tooltipContainer.Close();
-            }
+                s_guiView.window.Close();
         }
 
         public static void SetAlpha(float percent)
         {
             if (s_guiView != null)
-                s_guiView.m_tooltipContainer.SetAlpha(percent);
+                s_guiView.window.SetAlpha(percent);
         }
     }
 }

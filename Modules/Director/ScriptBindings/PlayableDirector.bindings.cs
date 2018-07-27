@@ -89,6 +89,7 @@ namespace UnityEngine.Playables
         extern public UnityEngine.Object GetReferenceValue(PropertyName id, out bool idValid);
         [NativeMethod("GetBindingFor")]
         extern public Object GetGenericBinding(Object key);
+        extern public void RebindPlayableGraphOutputs();
 
         extern internal void ProcessPendingGraphChanges();
         [NativeMethod("HasBinding")]

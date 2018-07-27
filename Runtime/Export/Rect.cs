@@ -141,9 +141,9 @@ namespace UnityEngine
         public bool Overlaps(Rect other)
         {
             return (other.xMax > xMin &&
-                    other.xMin < xMax &&
-                    other.yMax > yMin &&
-                    other.yMin < yMax);
+                other.xMin < xMax &&
+                other.yMax > yMin &&
+                other.yMin < yMax);
         }
 
         public bool Overlaps(Rect other, bool allowInverse)
@@ -162,7 +162,7 @@ namespace UnityEngine
             return new Vector2(
                 Mathf.Lerp(rectangle.x, rectangle.xMax, normalizedRectCoordinates.x),
                 Mathf.Lerp(rectangle.y, rectangle.yMax, normalizedRectCoordinates.y)
-                );
+            );
         }
 
         public static Vector2 PointToNormalized(Rect rectangle, Vector2 point)
@@ -170,7 +170,7 @@ namespace UnityEngine
             return new Vector2(
                 Mathf.InverseLerp(rectangle.x, rectangle.xMax, point.x),
                 Mathf.InverseLerp(rectangle.y, rectangle.yMax, point.y)
-                );
+            );
         }
 
         // Returns true if the rectangles are different.

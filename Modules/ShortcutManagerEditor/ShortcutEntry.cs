@@ -27,17 +27,24 @@ namespace UnityEditor.ShortcutManagement
     enum ShortcutType
     {
         Action,
-        Clutch
+        Clutch,
+        Menu,
     }
 
     [Serializable]
     struct Identifier
     {
         public string path;
+        public const string kPathSeparator = "/";
 
         public Identifier(MethodInfo methodInfo, ShortcutAttribute attribute)
         {
             path = attribute.identifier;
+        }
+
+        public Identifier(string path)
+        {
+            this.path = path;
         }
 
         public override string ToString()
@@ -96,7 +103,46 @@ namespace UnityEditor.ShortcutManagement
             if (activeCombination.Count < prefix.Count)
                 return false;
 
-            for (var i = 0; i < prefix.Count; i++)
+            if (prefix.Count != 0)
+            {
+                var contextType = context;
+                if (typeof(IShortcutToolContext).IsAssignableFrom(contextType))
+                {
+                    var attributes = contextType.GetCustomAttributes(typeof(ReserveModifiersAttribute), true);
+
+                    var lastKeyCombination = prefix.Last();
+                    var newModifier = lastKeyCombination.modifiers;
+
+                    foreach (var attribute in attributes)
+                    {
+                        var modifier = (attribute as ReserveModifiersAttribute).modifier;
+                        if ((modifier & ShortcutModifiers.Shift) == ShortcutModifiers.Shift)
+                        {
+                            newModifier = newModifier & ~ShortcutModifiers.Shift;
+                        }
+                        if ((modifier & ShortcutModifiers.Alt) == ShortcutModifiers.Alt)
+                        {
+                            newModifier = newModifier & ~ShortcutModifiers.Alt;
+                        }
+                        if ((modifier & ShortcutModifiers.ControlOrCommand) == ShortcutModifiers.ControlOrCommand)
+                        {
+                            newModifier = newModifier & ~ShortcutModifiers.ControlOrCommand;
+                        }
+                    }
+
+                    lastKeyCombination = new KeyCombination(lastKeyCombination.keyCode, newModifier);
+
+                    for (int i = 0; i < prefix.Count - 1; i++)
+                    {
+                        if (!prefix[i].Equals(activeCombination[i]))
+                            return false;
+                    }
+
+                    return lastKeyCombination.Equals(activeCombination[prefix.Count - 1]);
+                }
+            }
+
+            for (int i = 0; i < prefix.Count; i++)
             {
                 if (!prefix[i].Equals(activeCombination[i]))
                     return false;
@@ -110,13 +156,7 @@ namespace UnityEditor.ShortcutManagement
             if (activeCombination.Count != other.Count)
                 return false;
 
-            for (var i = 0; i < activeCombination.Count; i++)
-            {
-                if (!activeCombination[i].Equals(other[i]))
-                    return false;
-            }
-
-            return true;
+            return StartsWith(other);
         }
 
         public void ResetToDefault()
@@ -127,6 +167,8 @@ namespace UnityEditor.ShortcutManagement
         public void SetOverride(List<KeyCombination> newKeyCombinations)
         {
             m_OverridenCombinations = new List<KeyCombination>(newKeyCombinations);
+            if (m_Type == ShortcutType.Menu && m_OverridenCombinations.Any())
+                Menu.SetHotkey(m_Identifier.path, m_OverridenCombinations[0].ToMenuShortcutString());
         }
 
         public void ApplyOverride(SerializableShortcutEntry shortcutOverride)
@@ -222,17 +264,16 @@ namespace UnityEditor.ShortcutManagement
                 return string.Empty;
 
             var builder = new StringBuilder();
-            builder.Append("_");
-
             if ((modifiers & ShortcutModifiers.Alt) != 0)
                 builder.Append("&");
             if ((modifiers & ShortcutModifiers.Shift) != 0)
                 builder.Append("#");
             if ((modifiers & ShortcutModifiers.ControlOrCommand) != 0)
                 builder.Append("%");
+            if (modifiers == ShortcutModifiers.None)
+                builder.Append("_");
 
-            if (!TryFormatKeycode(keyCode, builder))
-                builder.Append((char)keyCode);
+            VisualizeKeyCode(keyCode, builder);
 
             return builder.ToString();
         }

@@ -362,12 +362,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     float distanceNext = (nextPoint - localPoint).sqrMagnitude;
                     float distanceLine = (currentPoint - nextPoint).sqrMagnitude;
                     if (distance < distanceLine && distanceNext < distanceLine
-                        ) // the point is somewhere between the two points
+                    )     // the point is somewhere between the two points
                     {
                         //https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
                         if (Mathf.Abs((nextPoint.y - currentPoint.y) * localPoint.x -
-                                (nextPoint.x - currentPoint.x) * localPoint.y + nextPoint.x * currentPoint.y -
-                                nextPoint.y * currentPoint.x) / Mathf.Sqrt(distanceLine) < interceptWidth)
+                            (nextPoint.x - currentPoint.x) * localPoint.y + nextPoint.x * currentPoint.y -
+                            nextPoint.y * currentPoint.x) / Mathf.Sqrt(distanceLine) < interceptWidth)
                         {
                             Profiler.EndSample();
                             return true;

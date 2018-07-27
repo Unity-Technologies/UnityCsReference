@@ -66,7 +66,7 @@ namespace UnityEditor
                     handlePos = cloudTransform.TransformPoint(handlePos);
 
                 var newPos = Handles.PositionHandle(handlePos,
-                        Tools.pivotRotation == PivotRotation.Local && cloudTransform != null ? cloudTransform.rotation : Quaternion.identity);
+                    Tools.pivotRotation == PivotRotation.Local && cloudTransform != null ? cloudTransform.rotation : Quaternion.identity);
                 if (GUI.changed)
                 {
                     Vector3 delta;

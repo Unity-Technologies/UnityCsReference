@@ -55,6 +55,7 @@ namespace UnityEditor
 
         Editor m_LastInteractedEditor;
         bool m_IsOpenForEdit = false;
+        Component[] m_ComponentsInPrefabSource;
 
         [SerializeField]
         PreviewResizer m_PreviewResizer = new PreviewResizer();
@@ -210,6 +211,7 @@ namespace UnityEditor
             if (m_Parent != null) // parent may be null in some situations (case 970700, 851988)
                 m_Parent.ClearKeyboardControl();
             ScriptAttributeUtility.ClearGlobalCache();
+            ExtractPrefabComponents();
             Repaint();
         }
 
@@ -330,6 +332,38 @@ namespace UnityEditor
             m_Tracker = sharedTrackerInUse ? new ActiveEditorTracker() : ActiveEditorTracker.sharedTracker;
             m_Tracker.inspectorMode = m_InspectorMode;
             m_Tracker.RebuildIfNecessary();
+
+            ExtractPrefabComponents();
+        }
+
+        bool PrefabComponentsOutdated(Editor[] editors)
+        {
+            if (m_ComponentsInPrefabSource != null && m_ComponentsInPrefabSource.Length >= 1 && editors.Length >= 2)
+            {
+                Object transformFromSource = PrefabUtility.GetCorrespondingObjectFromSource(editors[1].target);
+                Object cachedTransformFromSource = m_ComponentsInPrefabSource[0];
+                if (transformFromSource != cachedTransformFromSource)
+                    return true;
+            }
+            return false;
+        }
+
+        void ExtractPrefabComponents()
+        {
+            m_ComponentsInPrefabSource = null;
+
+            if (m_Tracker.activeEditors.Length == 0)
+                return;
+            if (m_Tracker.activeEditors[0].targets.Length != 1)
+                return;
+            GameObject go = m_Tracker.activeEditors[0].target as GameObject;
+            if (go == null)
+                return;
+            GameObject sourceGo = PrefabUtility.GetCorrespondingObjectFromSource(go);
+            if (sourceGo == null)
+                return;
+
+            m_ComponentsInPrefabSource = sourceGo.GetComponents<Component>();
         }
 
         protected virtual void CreatePreviewables()
@@ -795,7 +829,7 @@ namespace UnityEditor
                 if (EditorSettings.externalVersionControl != ExternalVersionControl.Disabled &&
                     EditorSettings.externalVersionControl != ExternalVersionControl.AutoDetect &&
                     EditorSettings.externalVersionControl != ExternalVersionControl.Generic
-                    )
+                )
                 {
                     windowRect.height -= kBottomToolbarHeight;
                 }
@@ -1034,14 +1068,39 @@ namespace UnityEditor
             }
 
             var rebuildOptimizedGUIBlocks = InspectorWindowUtils.GetRebuildOptimizedGUIBlocks(inspectedObject,
-                    ref m_IsOpenForEdit, ref m_InvalidateGUIBlockCache);
+                ref m_IsOpenForEdit, ref m_InvalidateGUIBlockCache);
 
             Editor.m_AllowMultiObjectAccess = true;
             bool showImportedObjectBarNext = false;
             Rect importedObjectBarRect = new Rect();
 
+            int prefabComponentIndex = -1;
+            if (PrefabComponentsOutdated(editors))
+                ExtractPrefabComponents();
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)
             {
+                if (m_ComponentsInPrefabSource != null && editorIndex != 0)
+                {
+                    while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
+                    {
+                        Object target = editors[editorIndex].target;
+
+                        // This is possible if there's a component with a missing script.
+                        if (target != null)
+                        {
+                            Object correspondingSource = PrefabUtility.GetCorrespondingObjectFromSource(target);
+                            Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
+                            if (correspondingSource == nextInSource)
+                                break;
+
+                            DisplayRemovedComponent((GameObject)editors[0].target, nextInSource);
+                        }
+
+                        prefabComponentIndex++;
+                    }
+                }
+                prefabComponentIndex++;
+
                 if (ShouldCullEditor(editors, editorIndex))
                 {
                     if (Event.current.type == EventType.Repaint)
@@ -1056,6 +1115,17 @@ namespace UnityEditor
                     // If so, We need to flush the OptimizedGUIBlock every frame, so that EditorGUI.DoTextField() repaint keeps getting called and textFieldInput set to true.
                     // textFieldInput is reset to false at beginning of every repaint in c++ GUIView::DoPaint()
                     InspectorWindowUtils.FlushOptimizedGUIBlock(editors[editorIndex]);
+                }
+            }
+
+            // Make sure to display any remaining removed components that come after the last component on the GameObject.
+            if (m_ComponentsInPrefabSource != null)
+            {
+                while (prefabComponentIndex < m_ComponentsInPrefabSource.Length)
+                {
+                    Component nextInSource = m_ComponentsInPrefabSource[prefabComponentIndex];
+                    DisplayRemovedComponent((GameObject)editors[0].target, nextInSource);
+                    prefabComponentIndex++;
                 }
             }
 
@@ -1088,6 +1158,12 @@ namespace UnityEditor
                 GUI.Label(new Rect(0, 0, importedObjectBarRect.width, importedObjectBarRect.height), "Imported Object", "OL Title");
                 GUI.EndGroup();
             }
+        }
+
+        void DisplayRemovedComponent(GameObject go, Component comp)
+        {
+            Rect rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar);
+            EditorGUI.RemovedComponentTitlebar(rect, go, comp);
         }
 
         internal override void OnResized()
@@ -1267,12 +1343,12 @@ namespace UnityEditor
                 GUILayout.Space(
                     -1f // move back up so line overlaps
                     - EditorStyles.inspectorBig.margin.bottom - EditorStyles.inspectorTitlebar.margin.top // move back up margins
-                    );
+                );
             }
 
             using (new EditorGUI.DisabledScope(!editor.IsEnabled()))
             {
-                bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, editor.targets, editor.CanBeExpandedViaAFoldout());
+                bool isVisible = EditorGUILayout.InspectorTitlebar(wasVisible, editor);
                 if (wasVisible != isVisible)
                 {
                     tracker.SetVisible(editorIndex, isVisible ? 1 : 0);
@@ -1306,6 +1382,8 @@ namespace UnityEditor
                     return true;
                 }
 
+                DrawAddedComponentBackground(contentRect, editor.targets);
+
                 // Try reusing optimized block
                 if (optimizedBlock.Begin(rebuildOptimizedGUIBlock, contentRect))
                 {
@@ -1327,6 +1405,8 @@ namespace UnityEditor
                     GUIStyle editorWrapper = (editor.UseDefaultMargins() ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
                     contentRect = EditorGUILayout.BeginVertical(editorWrapper);
                     {
+                        DrawAddedComponentBackground(contentRect, editor.targets);
+
                         HandleLastInteractedEditor(contentRect, editor);
 
                         GUI.changed = false;
@@ -1489,7 +1569,7 @@ namespace UnityEditor
         private void AddComponentButton(Editor[] editors)
         {
             Editor editor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(editors);
-            if (editor != null && editor.target != null && editor.target is GameObject && editor.IsEnabled())
+            if (editor != null && editor.target != null && editor.target is GameObject && editor.IsEnabled() && !EditorUtility.IsPersistent(editor.target))
             {
                 EditorGUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
@@ -1497,9 +1577,8 @@ namespace UnityEditor
                 Rect rect = GUILayoutUtility.GetRect(content, Styles.addComponentButtonStyle);
 
                 // Visually separates the Add Component button from the existing components
-
                 if (Event.current.type == EventType.Repaint)
-                    DrawSplitLine(rect.y - 11);
+                    DrawSplitLine(rect.y - 9);
 
                 Event evt = Event.current;
                 bool openWindow = false;
@@ -1547,6 +1626,23 @@ namespace UnityEditor
             GUI.DrawTextureWithTexCoords(position, EditorStyles.inspectorTitlebar.normal.background, uv);
         }
 
+        private void DrawAddedComponentBackground(Rect position, Object[] targets)
+        {
+            if (Event.current.type == EventType.Repaint && targets.Length == 1)
+            {
+                Component comp = targets[0] as Component;
+                if (comp != null &&
+                    EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
+                    PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
+                    PrefabUtility.GetCorrespondingObjectFromSource(comp) == null)
+                {
+                    // Ensure colored margin here for component body doesn't overlap colored margin from InspectorTitlebar,
+                    // and extends down to exactly touch the separator line between/after components.
+                    EditorGUI.DrawOverrideBackground(new Rect(position.x, position.y + 3, position.width, position.height - 2));
+                }
+            }
+        }
+
         // Invoked from C++
         internal static void ShowWindow()
         {
@@ -1572,6 +1668,8 @@ namespace UnityEditor
             {
                 foreach (var editor in inspector.tracker.activeEditors)
                     InspectorWindowUtils.FlushOptimizedGUIBlock(editor);
+
+                inspector.ExtractPrefabComponents();
             }
         }
 

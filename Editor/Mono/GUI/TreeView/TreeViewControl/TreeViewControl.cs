@@ -191,6 +191,7 @@ namespace UnityEditor.IMGUI.Controls
         protected float depthIndentWidth
         {
             get { return m_GUI.k_IndentWidth; }
+            set { m_GUI.k_IndentWidth = value; }
         }
 
         protected bool showAlternatingRowBackgrounds { get; set; }

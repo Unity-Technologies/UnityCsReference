@@ -506,9 +506,9 @@ namespace UnityEditor
                 EditorGUI.showMixedValue = status.multiCompressionFormat && !properties.compressionFormatChanged;
                 EditorGUI.BeginChangeCheck();
                 AudioCompressionFormat newFormat = (AudioCompressionFormat)EditorGUILayout.IntPopup("Compression Format",
-                        (int)properties.settings.compressionFormat,
-                        Array.ConvertAll(allowedFormats, value => value.ToString()),
-                        Array.ConvertAll(allowedFormats, value => (int)value));
+                    (int)properties.settings.compressionFormat,
+                    Array.ConvertAll(allowedFormats, value => value.ToString()),
+                    Array.ConvertAll(allowedFormats, value => (int)value));
                 if (EditorGUI.EndChangeCheck())
                 {
                     properties.settings.compressionFormat = newFormat;
@@ -546,7 +546,7 @@ namespace UnityEditor
                         EditorGUI.showMixedValue = status.multiSampleRateOverride && !properties.sampleRateOverrideChanged;
                         EditorGUI.BeginChangeCheck();
                         int newRate = EditorGUILayout.IntPopup("Sample Rate", (int)properties.settings.sampleRateOverride,
-                                Styles.kSampleRateStrings, Styles.kSampleRateValues);
+                            Styles.kSampleRateStrings, Styles.kSampleRateValues);
                         if (EditorGUI.EndChangeCheck())
                         {
                             properties.settings.sampleRateOverride = (uint)newRate;

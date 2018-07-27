@@ -169,10 +169,10 @@ namespace UnityEditor
                 return false;
 
             normalizationRect = new Rect(
-                    curveEditor.settings.hRangeMin,
-                    curveEditor.settings.vRangeMin,
-                    curveEditor.settings.hRangeMax - curveEditor.settings.hRangeMin,
-                    curveEditor.settings.vRangeMax - curveEditor.settings.vRangeMin);
+                curveEditor.settings.hRangeMin,
+                curveEditor.settings.vRangeMin,
+                curveEditor.settings.hRangeMax - curveEditor.settings.hRangeMin,
+                curveEditor.settings.vRangeMax - curveEditor.settings.vRangeMin);
             return true;
         }
 
@@ -226,18 +226,18 @@ namespace UnityEditor
             {
                 // Selection callback for library window
                 Action<AnimationCurve> presetSelectedCallback = delegate(AnimationCurve presetCurve)
-                    {
-                        ValidateCurveLibraryTypeAndScale();
+                {
+                    ValidateCurveLibraryTypeAndScale();
 
-                        // Scale curve up using ranges
-                        m_Curve.keys = GetDenormalizedKeys(presetCurve.keys);
-                        m_Curve.postWrapMode = presetCurve.postWrapMode;
-                        m_Curve.preWrapMode = presetCurve.preWrapMode;
+                    // Scale curve up using ranges
+                    m_Curve.keys = GetDenormalizedKeys(presetCurve.keys);
+                    m_Curve.postWrapMode = presetCurve.postWrapMode;
+                    m_Curve.preWrapMode = presetCurve.preWrapMode;
 
-                        m_CurveEditor.SelectNone();
-                        RefreshShownCurves();
-                        SendEvent(CurveChangedCommand, true);
-                    };
+                    m_CurveEditor.SelectNone();
+                    RefreshShownCurves();
+                    SendEvent(CurveChangedCommand, true);
+                };
 
                 // We set the curve to save when showing the popup to ensure to scale the current state of the curve
                 AnimationCurve curveToSaveAsPreset = null;

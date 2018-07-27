@@ -158,8 +158,8 @@ namespace UnityEditor
                         // Switching the build target failed.  No point in trying to continue
                         // with a build.
                         var errStr = string.Format("Could not switch to build target '{0}', '{1}'.",
-                                BuildPipeline.GetBuildTargetGroupDisplayName(options.targetGroup),
-                                BuildPlatforms.instance.GetBuildTargetDisplayName(options.targetGroup, options.target));
+                            BuildPipeline.GetBuildTargetGroupDisplayName(options.targetGroup),
+                            BuildPlatforms.instance.GetBuildTargetDisplayName(options.targetGroup, options.target));
                         throw new BuildMethodException(errStr);
                     }
 

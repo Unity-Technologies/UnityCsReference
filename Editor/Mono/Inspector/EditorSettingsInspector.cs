@@ -224,8 +224,8 @@ namespace UnityEditor
 
             // TODO: move Android stuff to editor extension
             devices.Add(new DevDevice("Any Android Device", "Any Android Device",
-                    "virtual", "Android", DevDeviceState.Connected,
-                    DevDeviceFeatures.RemoteConnection));
+                "virtual", "Android", DevDeviceState.Connected,
+                DevDeviceFeatures.RemoteConnection));
             popupList.Add(new PopupElement("Any Android Device"));
 
             foreach (var device in DevDeviceList.GetDevices())
@@ -335,7 +335,7 @@ namespace UnityEditor
                 else if (Provider.onlineState == OnlineState.Offline)
                     osState = "Disconnected";
 
-                EditorGUILayout.LabelField(Content.status, osState);
+                EditorGUILayout.LabelField(Content.status.text, osState);
 
                 if (Provider.onlineState != OnlineState.Online && !string.IsNullOrEmpty(Provider.offlineReason))
                 {
@@ -406,6 +406,27 @@ namespace UnityEditor
 
             index = Mathf.Clamp((int)EditorSettings.defaultBehaviorMode, 0, behaviorPopupList.Length - 1);
             CreatePopupMenu(Content.mode.text, behaviorPopupList, index, SetDefaultBehaviorMode);
+
+            GUILayout.Space(10);
+
+            GUI.enabled = true;
+            GUILayout.Label("Prefab Editing Environments", EditorStyles.boldLabel);
+            GUI.enabled = editorEnabled;
+
+            {
+                EditorGUI.BeginChangeCheck();
+                SceneAsset scene = EditorSettings.prefabRegularEnvironment;
+                scene = (SceneAsset)EditorGUILayout.ObjectField("Regular Environment", scene, typeof(SceneAsset), false);
+                if (EditorGUI.EndChangeCheck())
+                    EditorSettings.prefabRegularEnvironment = scene;
+            }
+            {
+                EditorGUI.BeginChangeCheck();
+                SceneAsset scene = EditorSettings.prefabUIEnvironment;
+                scene = (SceneAsset)EditorGUILayout.ObjectField("UI Environment", scene, typeof(SceneAsset), false);
+                if (EditorGUI.EndChangeCheck())
+                    EditorSettings.prefabUIEnvironment = scene;
+            }
 
             GUILayout.Space(10);
 
@@ -680,7 +701,7 @@ namespace UnityEditor
             {
                 if (el.content.text == ExternalVersionControl.Disabled ||
                     el.content.text == ExternalVersionControl.Generic
-                    )
+                )
                 {
                     // Close the normal version control window
                     WindowPending.CloseAllWindows();

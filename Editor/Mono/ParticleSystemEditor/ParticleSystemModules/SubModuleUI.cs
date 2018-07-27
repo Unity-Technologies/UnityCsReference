@@ -173,10 +173,10 @@ namespace UnityEditor
 
             string kReparentText = string.Format("The assigned sub emitter is not a child of the current root particle system GameObject: '{0}' and is therefore NOT considered a part of the current effect. Do you want to reparent it?", root.gameObject.name);
             if (EditorUtility.DisplayDialog(
-                    "Reparent GameObjects",
-                    kReparentText,
-                    "Yes, Reparent",
-                    "No, Remove"))
+                "Reparent GameObjects",
+                kReparentText,
+                "Yes, Reparent",
+                "No, Remove"))
             {
                 if (EditorUtility.IsPersistent(subEmitter))
                 {

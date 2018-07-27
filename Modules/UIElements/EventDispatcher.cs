@@ -211,12 +211,26 @@ namespace UnityEngine.Experimental.UIElements
 
         void DispatchDragEnterDragLeave(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, IMouseEvent triggerEvent)
         {
-            DispatchEnterLeave(previousTopElementUnderMouse, currentTopElementUnderMouse, () => DragEnterEvent.GetPooled(triggerEvent), () => DragLeaveEvent.GetPooled(triggerEvent));
+            if (triggerEvent != null)
+            {
+                DispatchEnterLeave(previousTopElementUnderMouse, currentTopElementUnderMouse, () => DragEnterEvent.GetPooled(triggerEvent), () => DragLeaveEvent.GetPooled(triggerEvent));
+            }
+            else
+            {
+                DispatchEnterLeave(previousTopElementUnderMouse, currentTopElementUnderMouse, () => DragEnterEvent.GetPooled(m_LastMousePosition), () => DragLeaveEvent.GetPooled(m_LastMousePosition));
+            }
         }
 
         void DispatchMouseEnterMouseLeave(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, IMouseEvent triggerEvent)
         {
-            DispatchEnterLeave(previousTopElementUnderMouse, currentTopElementUnderMouse, () => MouseEnterEvent.GetPooled(triggerEvent), () => MouseLeaveEvent.GetPooled(triggerEvent));
+            if (triggerEvent != null)
+            {
+                DispatchEnterLeave(previousTopElementUnderMouse, currentTopElementUnderMouse, () => MouseEnterEvent.GetPooled(triggerEvent), () => MouseLeaveEvent.GetPooled(triggerEvent));
+            }
+            else
+            {
+                DispatchEnterLeave(previousTopElementUnderMouse, currentTopElementUnderMouse, () => MouseEnterEvent.GetPooled(m_LastMousePosition), () => MouseLeaveEvent.GetPooled(m_LastMousePosition));
+            }
         }
 
         void DispatchMouseOverMouseOut(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, IMouseEvent triggerEvent)
@@ -229,7 +243,7 @@ namespace UnityEngine.Experimental.UIElements
             // Send MouseOut event for element no longer under the mouse.
             if (previousTopElementUnderMouse != null && previousTopElementUnderMouse.panel != null)
             {
-                using (var outEvent = MouseOutEvent.GetPooled(triggerEvent))
+                using (var outEvent = (triggerEvent == null) ? MouseOutEvent.GetPooled(m_LastMousePosition) : MouseOutEvent.GetPooled(triggerEvent))
                 {
                     outEvent.target = previousTopElementUnderMouse;
                     previousTopElementUnderMouse.SendEvent(outEvent);
@@ -239,7 +253,7 @@ namespace UnityEngine.Experimental.UIElements
             // Send MouseOver event for element now under the mouse
             if (currentTopElementUnderMouse != null)
             {
-                using (var overEvent = MouseOverEvent.GetPooled(triggerEvent))
+                using (var overEvent = (triggerEvent == null) ? MouseOverEvent.GetPooled(m_LastMousePosition) : MouseOverEvent.GetPooled(triggerEvent))
                 {
                     overEvent.target = currentTopElementUnderMouse;
                     currentTopElementUnderMouse.SendEvent(overEvent);
@@ -249,6 +263,8 @@ namespace UnityEngine.Experimental.UIElements
 
         internal void Dispatch(EventBase evt, IPanel panel, DispatchMode dispatchMode)
         {
+            evt.MarkReceivedByDispatcher();
+
             if (evt.GetEventTypeId() == IMGUIEvent.TypeId())
             {
                 Event e = evt.imguiEvent;

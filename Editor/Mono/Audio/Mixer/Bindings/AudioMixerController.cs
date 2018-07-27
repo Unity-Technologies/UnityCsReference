@@ -794,7 +794,7 @@ namespace UnityEditor.Audio
             AudioMixerGroupController groupWhoseEffectIsChanged, AudioMixerEffectController effectWhoseTargetIsChanged, AudioMixerEffectController targetToTest,
             AudioMixerGroupController modifiedGroup1, List<AudioMixerEffectController> modifiedGroupEffects1,
             AudioMixerGroupController modifiedGroup2, List<AudioMixerEffectController> modifiedGroupEffects2
-            )
+        )
         {
             // First build the chains of groups and their contained effects
             var graph = new Dictionary<object, ConnectionNode>();
@@ -1023,9 +1023,9 @@ namespace UnityEditor.Audio
             {
                 viewList[i].guids =
                     (from x in viewList[i].guids
-                     from y in allGroups
-                     where y.groupID == x
-                     select x).ToArray();
+                        from y in allGroups
+                        where y.groupID == x
+                        select x).ToArray();
             }
 
             views = viewList.ToArray();
@@ -1060,8 +1060,8 @@ namespace UnityEditor.Audio
             MixerGroupView view = views[currentViewIndex];
 
             return (from g in allGroups
-                    where view.guids.Contains(g.groupID)
-                    select g).ToArray();
+                where view.guids.Contains(g.groupID)
+                select g).ToArray();
         }
 
         public static float VolumeToScreenMapping(float value, float screenRange, bool forward)

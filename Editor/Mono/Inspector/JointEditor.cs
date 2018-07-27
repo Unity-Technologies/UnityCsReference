@@ -51,7 +51,7 @@ namespace UnityEditor
                 "Edit Joint Angular Limits",
                 Styles.editAngularLimitsButton,
                 this
-                );
+            );
             EditorGUI.EndDisabledGroup();
         }
 
@@ -91,7 +91,7 @@ namespace UnityEditor
             out Rigidbody connectedActor,
             out int jointFrameActorIndex,
             out bool rightHandedLimit
-            )
+        )
         {
             jointFrameActorIndex = 1;
             rightHandedLimit = false;
@@ -120,9 +120,9 @@ namespace UnityEditor
             // to enhance usability, orient the limit region so the dynamic body is within it, assuming bodies were bound on opposite sides of the anchor
             var jointFrame = joint.GetLocalPoseMatrix(jointFrameActorIndex);
             var jointFrameOrientation = Quaternion.LookRotation(
-                    jointFrame.MultiplyVector(Vector3.forward),
-                    jointFrame.MultiplyVector(rightHandedLimit ? Vector3.down : Vector3.up)
-                    );
+                jointFrame.MultiplyVector(Vector3.forward),
+                jointFrame.MultiplyVector(rightHandedLimit ? Vector3.down : Vector3.up)
+            );
 
             // point of rotation is about the anchor of the joint body, which is not necessarily aligned to the anchor on the connected body
             var jointAnchorPosition = joint.anchor;

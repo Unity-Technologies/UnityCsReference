@@ -11,7 +11,7 @@ namespace UnityEditor.Collaboration
     //*undocumented
     [StructLayout(LayoutKind.Sequential)]
     [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Editor/Src/Collab/CollabProgressInfo.h",
-         IntermediateScriptingStructName = "ScriptingCollabProgressInfo")]
+        IntermediateScriptingStructName = "ScriptingCollabProgressInfo")]
     [NativeHeader("Editor/Src/Collab/Collab.bindings.h")]
     [NativeAsStruct]
     internal class ProgressInfo

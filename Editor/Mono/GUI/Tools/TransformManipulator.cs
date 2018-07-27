@@ -59,10 +59,10 @@ namespace UnityEditor
                 for (int i = 0; i < s_Alignments.Length; i++)
                 {
                     float dot = Mathf.Min(
-                            Mathf.Abs(Vector3.Dot(targetRotation * Vector3.right, ownRotation * s_Alignments[i] * Vector3.right)),
-                            Mathf.Abs(Vector3.Dot(targetRotation * Vector3.up, ownRotation * s_Alignments[i] * Vector3.up)),
-                            Mathf.Abs(Vector3.Dot(targetRotation * Vector3.forward, ownRotation * s_Alignments[i] * Vector3.forward))
-                            );
+                        Mathf.Abs(Vector3.Dot(targetRotation * Vector3.right, ownRotation * s_Alignments[i] * Vector3.right)),
+                        Mathf.Abs(Vector3.Dot(targetRotation * Vector3.up, ownRotation * s_Alignments[i] * Vector3.up)),
+                        Mathf.Abs(Vector3.Dot(targetRotation * Vector3.forward, ownRotation * s_Alignments[i] * Vector3.forward))
+                    );
                     if (dot > biggestDot)
                     {
                         biggestDot = dot;

@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using UnityEngine.Bindings;
 using System.Linq;
 
@@ -59,6 +60,15 @@ namespace UnityEngine.StyleSheets
         [SerializeField]
         [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int ruleIndex;
+
+        [NonSerialized]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        // Points to the possible next selector that indexes to the same lookup table in StyleSheet
+        internal StyleComplexSelector nextInTable;
+
+        [NonSerialized]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        internal int orderInStyleSheet;
 
         public override string ToString()
         {

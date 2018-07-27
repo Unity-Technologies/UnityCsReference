@@ -29,7 +29,7 @@ namespace UnityEditor
                 "Edit Bounds",
                 PrimitiveBoundsHandle.editModeButton,
                 this
-                );
+            );
 
             base.OnInspectorGUI();
         }

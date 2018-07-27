@@ -109,7 +109,7 @@ namespace UnityEditorInternal
                 if (list.displayAdd)
                 {
                     using (new EditorGUI.DisabledScope(
-                               list.onCanAddCallback != null && !list.onCanAddCallback(list)))
+                        list.onCanAddCallback != null && !list.onCanAddCallback(list)))
                     {
                         if (GUI.Button(addRect, list.onAddDropdownCallback != null ? iconToolbarPlusMore : iconToolbarPlus, preButton))
                         {
@@ -128,8 +128,8 @@ namespace UnityEditorInternal
                 if (list.displayRemove)
                 {
                     using (new EditorGUI.DisabledScope(
-                               list.index < 0 || list.index >= list.count ||
-                               (list.onCanRemoveCallback != null && !list.onCanRemoveCallback(list))))
+                        list.index < 0 || list.index >= list.count ||
+                        (list.onCanRemoveCallback != null && !list.onCanRemoveCallback(list))))
                     {
                         if (GUI.Button(removeRect, iconToolbarMinus, preButton))
                         {

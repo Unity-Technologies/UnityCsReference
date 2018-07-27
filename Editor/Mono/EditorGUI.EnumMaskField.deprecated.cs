@@ -92,10 +92,10 @@ namespace UnityEditor
 
             var names = Enum.GetNames(enumType).Select(ObjectNames.NicifyVariableName).ToArray();
             int flags = MaskFieldGUIDeprecated.DoMaskField(
-                    IndentedRect(position),
-                    GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position),
-                    Convert.ToInt32(enumValue),
-                    names, style);
+                IndentedRect(position),
+                GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position),
+                Convert.ToInt32(enumValue),
+                names, style);
             return IntToEnumFlags(enumType, flags);
         }
 
@@ -125,10 +125,10 @@ namespace UnityEditor
             var id = GUIUtility.GetControlID(s_MaskField, FocusType.Keyboard, position);
             var names = Enum.GetNames(enumType).Select(ObjectNames.NicifyVariableName).ToArray();
             int flags = MaskFieldGUIDeprecated.DoMaskField(
-                    PrefixLabel(position, id, label),
-                    id,
-                    Convert.ToInt32(enumValue),
-                    names, style, out changedFlags, out changedToValue);
+                PrefixLabel(position, id, label),
+                id,
+                Convert.ToInt32(enumValue),
+                names, style, out changedFlags, out changedToValue);
             return IntToEnumFlags(enumType, flags);
         }
 

@@ -76,7 +76,7 @@ namespace UnityEditor
         static bool PlayerHasSM20Support()
         {
             var apis = PlayerSettings.GetGraphicsAPIs(EditorUserBuildSettings.activeBuildTarget);
-            bool hasSM20Api = apis.Contains(UnityEngine.Rendering.GraphicsDeviceType.OpenGLES2) || apis.Contains(UnityEngine.Rendering.GraphicsDeviceType.N3DS);
+            bool hasSM20Api = apis.Contains(UnityEngine.Rendering.GraphicsDeviceType.OpenGLES2);
             return hasSM20Api;
         }
 

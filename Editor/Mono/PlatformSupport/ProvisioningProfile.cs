@@ -66,7 +66,7 @@ namespace UnityEditor.PlatformSupport
             }
 
             Match matchCertificate = Regex.Match(provisioningFileContents, s_PatternDeveloperCertificates,
-                    RegexOptions.Singleline);
+                RegexOptions.Singleline);
             if (matchCertificate.Success)
             {
                 string value = matchCertificate.Groups[1].Value;

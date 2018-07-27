@@ -256,14 +256,14 @@ namespace UnityEditorInternal
 
             // Sort the mips by size (largest mip first)
             allMips.Sort(delegate(Texture2D first, Texture2D second)
-                {
-                    if (first.width == second.width)
-                        return 0;
-                    else if (first.width < second.width)
-                        return 1;
-                    else
-                        return -1;
-                });
+            {
+                if (first.width == second.width)
+                    return 0;
+                else if (first.width < second.width)
+                    return 1;
+                else
+                    return -1;
+            });
 
             int minResolution = 99999;
             int maxResolution = 0;
@@ -344,7 +344,7 @@ namespace UnityEditorInternal
             {
                 Uri fileUri = new Uri(files[i]);
                 Uri relativeUri = absoluteUri.MakeRelativeUri(fileUri);
-                files[i] = folderPath + relativeUri;
+                files[i] = Uri.UnescapeDataString(folderPath + relativeUri);
             }
             return files;
         }

@@ -25,7 +25,7 @@ namespace Unity.Collections
     [NativeContainerSupportsDeallocateOnJobCompletion]
     [NativeContainerSupportsDeferredConvertListToArray]
     [DebuggerDisplay("Length = {Length}")]
-    [DebuggerTypeProxy(typeof(NativeArrayDebugView < >))]
+    [DebuggerTypeProxy(typeof(NativeArrayDebugView<>))]
     public unsafe struct NativeArray<T> : IDisposable, IEnumerable<T>, IEquatable<NativeArray<T>> where T : struct
     {
         [NativeDisableUnsafePtrRestriction]

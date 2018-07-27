@@ -170,7 +170,7 @@ namespace UnityEngine.Experimental.UIElements
             const int defaultMaxScrollValue = 100;
 
             horizontalScroller = new Scroller(defaultMinScrollValue, defaultMaxScrollValue,
-                    (value) =>
+                (value) =>
                 {
                     scrollOffset = new Vector2(value, scrollOffset.y);
                     UpdateContentViewTransform();
@@ -179,7 +179,7 @@ namespace UnityEngine.Experimental.UIElements
             shadow.Add(horizontalScroller);
 
             verticalScroller = new Scroller(defaultMinScrollValue, defaultMaxScrollValue,
-                    (value) =>
+                (value) =>
                 {
                     scrollOffset = new Vector2(scrollOffset.x, value);
                     UpdateContentViewTransform();

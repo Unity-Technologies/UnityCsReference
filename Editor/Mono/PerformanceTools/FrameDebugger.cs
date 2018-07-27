@@ -823,9 +823,9 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
 
             GUILayout.Label(string.Format("{0}x{1} {2}",
-                    cur.rtWidth,
-                    cur.rtHeight,
-                    (RenderTextureFormat)cur.rtFormat));
+                cur.rtWidth,
+                cur.rtHeight,
+                (RenderTextureFormat)cur.rtFormat));
             if (cur.rtDim == (int)UnityEngine.Rendering.TextureDimension.Cube)
                 GUILayout.Label("Rendering into cubemap");
         }
@@ -984,18 +984,18 @@ namespace UnityEditor
                 e.Use();
                 var menu = new GenericMenu();
                 menu.AddItem(EditorGUIUtility.TrTextContent("Copy value"), false, delegate
-                    {
-                        var str = string.Empty;
-                        if (value is Vector4)
-                            str = ((Vector4)value).ToString(kFloatDetailedFormat);
-                        else if (value is Matrix4x4)
-                            str = ((Matrix4x4)value).ToString(kFloatDetailedFormat);
-                        else if (value is System.Single)
-                            str = ((System.Single)value).ToString(kFloatDetailedFormat);
-                        else
-                            str = value.ToString();
-                        EditorGUIUtility.systemCopyBuffer = str;
-                    });
+                {
+                    var str = string.Empty;
+                    if (value is Vector4)
+                        str = ((Vector4)value).ToString(kFloatDetailedFormat);
+                    else if (value is Matrix4x4)
+                        str = ((Matrix4x4)value).ToString(kFloatDetailedFormat);
+                    else if (value is System.Single)
+                        str = ((System.Single)value).ToString(kFloatDetailedFormat);
+                    else
+                        str = value.ToString();
+                    EditorGUIUtility.systemCopyBuffer = str;
+                });
                 menu.ShowAsContext();
             }
         }
@@ -1359,15 +1359,15 @@ namespace UnityEditor
                 m_ListWidth = dragRect.x;
 
                 var listRect = new Rect(
-                        0,
-                        toolbarHeight,
-                        m_ListWidth,
-                        position.height - toolbarHeight);
+                    0,
+                    toolbarHeight,
+                    m_ListWidth,
+                    position.height - toolbarHeight);
                 var currentEventRect = new Rect(
-                        m_ListWidth + kDetailsMargin,
-                        toolbarHeight + kDetailsMargin,
-                        position.width - m_ListWidth - kDetailsMargin * 2,
-                        position.height - toolbarHeight - kDetailsMargin * 2);
+                    m_ListWidth + kDetailsMargin,
+                    toolbarHeight + kDetailsMargin,
+                    position.width - m_ListWidth - kDetailsMargin * 2,
+                    position.height - toolbarHeight - kDetailsMargin * 2);
 
 
                 DrawEventsTree(listRect);
@@ -1522,9 +1522,9 @@ namespace UnityEditor
 
                     var menu = new GenericMenu();
                     menu.AddItem(EditorGUIUtility.TrTextContent("Copy value"), false, delegate
-                        {
-                            EditorGUIUtility.systemCopyBuffer = allText;
-                        });
+                    {
+                        EditorGUIUtility.systemCopyBuffer = allText;
+                    });
                     menu.ShowAsContext();
                 }
             }

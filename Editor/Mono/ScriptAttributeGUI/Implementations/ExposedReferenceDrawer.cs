@@ -196,7 +196,7 @@ abstract class BaseExposedPropertyDrawer : UnityEditor.PropertyDrawer
 }
 
 
-[CustomPropertyDrawer(typeof(ExposedReference < >))]
+[CustomPropertyDrawer(typeof(ExposedReference<>))]
 class ExposedReferencePropertyDrawer : BaseExposedPropertyDrawer
 {
     protected override void OnRenderProperty(Rect position,
@@ -254,26 +254,26 @@ class ExposedReferencePropertyDrawer : BaseExposedPropertyDrawer
         if (overrideState == OverrideState.DefaultValue)
         {
             menu.AddItem(new GUIContent(ExposePropertyContent.text), false, (userData) =>
-                {
-                    var guid = UnityEditor.GUID.Generate();
-                    exposedName.stringValue = guid.ToString();
-                    exposedName.serializedObject.ApplyModifiedProperties();
-                    var newPropertyName = new PropertyName(exposedName.stringValue);
+            {
+                var guid = UnityEditor.GUID.Generate();
+                exposedName.stringValue = guid.ToString();
+                exposedName.serializedObject.ApplyModifiedProperties();
+                var newPropertyName = new PropertyName(exposedName.stringValue);
 
-                    Undo.RecordObject(exposedPropertyTable as Object, "Set Exposed Property");
-                    exposedPropertyTable.SetReferenceValue(newPropertyName, currentValue);
-                } , null);
+                Undo.RecordObject(exposedPropertyTable as Object, "Set Exposed Property");
+                exposedPropertyTable.SetReferenceValue(newPropertyName, currentValue);
+            } , null);
         }
         else
         {
             menu.AddItem(UnexposePropertyContent, false, (userData) =>
-                {
-                    exposedName.stringValue = "";
-                    exposedName.serializedObject.ApplyModifiedProperties();
+            {
+                exposedName.stringValue = "";
+                exposedName.serializedObject.ApplyModifiedProperties();
 
-                    Undo.RecordObject(exposedPropertyTable as Object, "Clear Exposed Property");
-                    exposedPropertyTable.ClearReferenceValue(propertyName);
-                }, null);
+                Undo.RecordObject(exposedPropertyTable as Object, "Clear Exposed Property");
+                exposedPropertyTable.ClearReferenceValue(propertyName);
+            }, null);
         }
     }
 }

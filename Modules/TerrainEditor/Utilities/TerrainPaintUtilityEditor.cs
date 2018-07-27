@@ -19,45 +19,38 @@ namespace UnityEditor
             QuadPatch
         }
 
-        [Flags]
-        public enum ToolAction
-        {
-            PaintHeightmap = 1 << 0,
-            PaintTexture = 1 << 1,
-        }
-
         // This maintains the list of terrains we have touched in the current operation (and the current operation identifier, as an undo group)
         // We track this to have good cross-tile undo support: each modified tile should be added, at most, ONCE within a single operation
-        static int currentOperationUndoGroup = -1;
-        static ArrayList currentOperationUndoStack = new ArrayList();
+        private static int s_CurrentOperationUndoGroup = -1;
+        private static List<Terrain> s_CurrentOperationUndoStack = new List<Terrain>();
 
-        public static void UpdateTerrainUndo(TerrainPaintUtility.PaintContext ctx, ToolAction toolAction, string undoActionName = "Terrain Paint")
+        static TerrainPaintUtilityEditor()
         {
-            // if we are in a new undo group (new operation) then start with an empty list
-            if (Undo.GetCurrentGroup() != currentOperationUndoGroup)
+            TerrainPaintUtility.onTerrainTileBeforePaint += (tile, action, editorUndoName) =>
             {
-                currentOperationUndoGroup = Undo.GetCurrentGroup();
-                currentOperationUndoStack.Clear();
-            }
-
-            foreach (TerrainPaintUtility.TerrainTile modifiedTile in ctx.terrainTiles)
-            {
-                if (modifiedTile.rect.width == 0 || modifiedTile.rect.height == 0)
-                    continue;
-
-                if (!currentOperationUndoStack.Contains(modifiedTile.terrain))
+                // if we are in a new undo group (new operation) then start with an empty list
+                if (Undo.GetCurrentGroup() != s_CurrentOperationUndoGroup)
                 {
-                    currentOperationUndoStack.Add(modifiedTile.terrain);
-                    var undoObjects = new List<UnityEngine.Object>();
-                    undoObjects.Add(modifiedTile.terrain.terrainData);
-                    if (0 != ((uint)toolAction & (uint)ToolAction.PaintTexture))
-                        undoObjects.AddRange(modifiedTile.terrain.terrainData.alphamapTextures);
-                    Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), undoActionName);
+                    s_CurrentOperationUndoGroup = Undo.GetCurrentGroup();
+                    s_CurrentOperationUndoStack.Clear();
                 }
-            }
+
+                if (tile == null || string.IsNullOrEmpty(editorUndoName) || tile.rect.width == 0 || tile.rect.height == 0)
+                    return;
+
+                if (!s_CurrentOperationUndoStack.Contains(tile.terrain))
+                {
+                    s_CurrentOperationUndoStack.Add(tile.terrain);
+                    var undoObjects = new List<UnityEngine.Object>();
+                    undoObjects.Add(tile.terrain.terrainData);
+                    if (0 != (action & TerrainPaintUtility.ToolAction.PaintTexture))
+                        undoObjects.AddRange(tile.terrain.terrainData.alphamapTextures);
+                    Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), editorUndoName);
+                }
+            };
         }
 
-        public static void ShowDefaultPreviewBrush(Terrain terrain, Texture brushTexture, float brushStrength, int brushSizeInTerrainUnits, float futurePreviewScale)
+        public static void ShowDefaultPreviewBrush(Terrain terrain, Texture brushTexture, float brushStrength, int brushSize, float futurePreviewScale)
         {
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
             RaycastHit hit;
@@ -66,21 +59,21 @@ namespace UnityEditor
                 if (Event.current.shift)
                     brushStrength = -brushStrength;
 
-                Vector2Int brushSize = TerrainPaintUtility.CalculateBrushSizeInHeightmapSpace(terrain, brushSizeInTerrainUnits);
-                TerrainPaintUtility.PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, hit.textureCoord, brushSize);
+                Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, hit.textureCoord, brushSize);
+                TerrainPaintUtility.PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushRect);
 
                 ctx.sourceRenderTexture.filterMode = FilterMode.Bilinear;
                 brushTexture.filterMode = FilterMode.Bilinear;
 
-                Vector2 topLeft = TerrainPaintUtility.CalcTopLeftOfBrushRect(hit.textureCoord, brushSize, terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight);
+                Vector2 topLeft = ctx.brushRect.min;
                 float xfrac = ((topLeft.x - (int)topLeft.x) / (float)ctx.sourceRenderTexture.width);
                 float yfrac = ((topLeft.y - (int)topLeft.y) / (float)ctx.sourceRenderTexture.height);
 
                 Vector4 texScaleOffset = new Vector4(0.5f, 0.5f, 0.5f + xfrac + 0.5f / (float)ctx.sourceRenderTexture.width, 0.5f + yfrac + 0.5f / (float)ctx.sourceRenderTexture.height);
 
-                DrawDefaultBrushPreviewMesh(terrain, hit, ctx.sourceRenderTexture, brushTexture, brushStrength * 0.01f, brushSizeInTerrainUnits, defaultPreviewPatchMesh, false, texScaleOffset);
+                DrawDefaultBrushPreviewMesh(terrain, hit, ctx.sourceRenderTexture, brushTexture, brushStrength * 0.01f, brushSize, defaultPreviewPatchMesh, false, texScaleOffset);
                 if ((futurePreviewScale > Mathf.Epsilon) && Event.current.control)
-                    DrawDefaultBrushPreviewMesh(terrain, hit, ctx.sourceRenderTexture, brushTexture, futurePreviewScale, brushSizeInTerrainUnits, defaultPreviewPatchMesh, true, texScaleOffset);
+                    DrawDefaultBrushPreviewMesh(terrain, hit, ctx.sourceRenderTexture, brushTexture, futurePreviewScale, brushSize, defaultPreviewPatchMesh, true, texScaleOffset);
 
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
@@ -103,8 +96,8 @@ namespace UnityEditor
                 return null;
             }
 
-            ArrayList verts = new ArrayList();
-            ArrayList indices = new ArrayList();
+            var verts = new List<Vector3>();
+            var indices = new List<int>();
 
             Mesh m = new Mesh();
 
@@ -136,8 +129,8 @@ namespace UnityEditor
                 v.z += incr;
             }
 
-            m.vertices = verts.ToArray(typeof(Vector3)) as Vector3[];
-            m.triangles = indices.ToArray(typeof(int)) as int[];
+            m.vertices = verts.ToArray();
+            m.triangles = indices.ToArray();
 
             return m;
         }

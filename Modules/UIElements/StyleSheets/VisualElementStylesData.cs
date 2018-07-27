@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.StyleSheets;
 using UnityEngine.Experimental.UIElements.StyleEnums;
+using UnityEngine.Yoga;
 
 namespace UnityEngine.Experimental.UIElements.StyleSheets
 {
@@ -31,6 +32,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         public static VisualElementStylesData none = new VisualElementStylesData(true);
 
         internal readonly bool isShared;
+        internal YogaNode yogaNode;
 
         internal Dictionary<string, CustomProperty> m_CustomProperties;
 
@@ -215,6 +217,100 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             rect.top = (int)top.GetSpecifiedValueOrDefault(rect.top);
             rect.right = (int)right.GetSpecifiedValueOrDefault(rect.right);
             rect.bottom = (int)bottom.GetSpecifiedValueOrDefault(rect.bottom);
+        }
+
+        public void ApplyLayoutValues()
+        {
+            if (yogaNode == null)
+                yogaNode = new YogaNode();
+
+            SyncWithLayout(yogaNode);
+        }
+
+        public StyleValue<float> FlexBasisToFloat()
+        {
+            if (flexBasis.value.isKeyword)
+            {
+                if (flexBasis.value.keyword == StyleValueKeyword.Auto)
+                {
+                    // Negative values are illegal. Return -1 to indicate auto.
+                    return new StyleValue<float>(-1f, flexBasis.specificity);
+                }
+                else
+                {
+                    return new StyleValue<float>(0f, flexBasis.specificity);
+                }
+            }
+            else
+            {
+                return new StyleValue<float>(flexBasis.value.floatValue, flexBasis.specificity);
+            }
+        }
+
+        internal const Align DefaultAlignContent = Align.FlexStart;
+        internal const Align DefaultAlignItems = Align.Stretch;
+
+        public void SyncWithLayout(YogaNode targetNode)
+        {
+            targetNode.Flex = float.NaN;
+
+            float fb = FlexBasisToFloat().GetSpecifiedValueOrDefault(float.NaN);
+            if (fb == -1f)
+            {
+                targetNode.FlexBasis = YogaValue.Auto();
+            }
+            else
+            {
+                targetNode.FlexBasis = fb;
+            }
+
+            targetNode.FlexGrow = flexGrow.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.FlexShrink = flexShrink.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.Left = positionLeft.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.Top = positionTop.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.Right = positionRight.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.Bottom = positionBottom.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.MarginLeft = marginLeft.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.MarginTop = marginTop.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.MarginRight = marginRight.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.MarginBottom = marginBottom.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.PaddingLeft = paddingLeft.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.PaddingTop = paddingTop.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.PaddingRight = paddingRight.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.PaddingBottom = paddingBottom.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.BorderLeftWidth = borderLeft.GetSpecifiedValueOrDefault(borderLeftWidth.GetSpecifiedValueOrDefault(float.NaN));
+            targetNode.BorderTopWidth = borderTop.GetSpecifiedValueOrDefault(borderTopWidth.GetSpecifiedValueOrDefault(float.NaN));
+            targetNode.BorderRightWidth = borderRight.GetSpecifiedValueOrDefault(borderRightWidth.GetSpecifiedValueOrDefault(float.NaN));
+            targetNode.BorderBottomWidth = borderBottom.GetSpecifiedValueOrDefault(borderBottomWidth.GetSpecifiedValueOrDefault(float.NaN));
+            targetNode.Width = width.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.Height = height.GetSpecifiedValueOrDefault(float.NaN);
+
+            PositionType posType = (PositionType)positionType.value;
+            switch (posType)
+            {
+                case PositionType.Absolute:
+                case PositionType.Manual:
+                    targetNode.PositionType = YogaPositionType.Absolute;
+                    break;
+                case PositionType.Relative:
+                    targetNode.PositionType = YogaPositionType.Relative;
+                    break;
+            }
+
+            targetNode.Overflow = (YogaOverflow)(overflow.value);
+            targetNode.AlignSelf = (YogaAlign)(alignSelf.value);
+            targetNode.MaxWidth = maxWidth.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.MaxHeight = maxHeight.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.MinWidth = minWidth.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.MinHeight = minHeight.GetSpecifiedValueOrDefault(float.NaN);
+
+            // Note: the following applies to VisualContainer only
+            // but it won't cause any trouble and we avoid making this method virtual
+            targetNode.FlexDirection = (YogaFlexDirection)flexDirection.value;
+            targetNode.AlignContent = (YogaAlign)alignContent.GetSpecifiedValueOrDefault((int)DefaultAlignContent);
+            targetNode.AlignItems = (YogaAlign)alignItems.GetSpecifiedValueOrDefault((int)DefaultAlignItems);
+            targetNode.JustifyContent = (YogaJustify)justifyContent.value;
+            targetNode.Wrap = (YogaWrap)flexWrap.value;
         }
 
         internal void ApplyRule(StyleSheet registry, int specificity, StyleRule rule, StylePropertyID[] propertyIDs)

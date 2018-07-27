@@ -43,6 +43,9 @@ namespace UnityEditor
 
         SerializedProperty m_NormalImportMode;
         SerializedProperty m_NormalCalculationMode;
+        SerializedProperty m_BlendShapeNormalCalculationMode;
+        SerializedProperty m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes;
+        SerializedProperty m_NormalSmoothingSource;
         SerializedProperty m_NormalSmoothAngle;
         SerializedProperty m_TangentImportMode;
 
@@ -76,6 +79,9 @@ namespace UnityEditor
             m_NormalSmoothAngle = serializedObject.FindProperty("normalSmoothAngle");
             m_NormalImportMode = serializedObject.FindProperty("normalImportMode");
             m_NormalCalculationMode = serializedObject.FindProperty("normalCalculationMode");
+            m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes = serializedObject.FindProperty("legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes");
+            m_NormalSmoothingSource = serializedObject.FindProperty("normalSmoothingSource");
+            m_BlendShapeNormalCalculationMode = serializedObject.FindProperty("blendShapeNormalImportMode");
             m_TangentImportMode = serializedObject.FindProperty("tangentImportMode");
             m_OptimizeMeshForGPU = serializedObject.FindProperty("optimizeMeshForGPU");
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
@@ -109,11 +115,14 @@ namespace UnityEditor
             public static GUIContent WeldVertices = EditorGUIUtility.TrTextContent("Weld Vertices", "Combine vertices that share the same position in space.");
             public static GUIContent IndexFormatLabel = EditorGUIUtility.TrTextContent("Index Format", "Format of mesh index buffer. Auto mode picks 16 or 32 bit depending on mesh vertex count.");
 
-            public static GUIContent TangentSpaceNormalLabel = EditorGUIUtility.TrTextContent("Normals");
-            public static GUIContent RecalculateNormalsLabel = EditorGUIUtility.TrTextContent("Normals Mode");
-            public static GUIContent SmoothingAngle = EditorGUIUtility.TrTextContent("Smoothing Angle", "Normal Smoothing Angle");
+            public static GUIContent NormalsLabel = EditorGUIUtility.TrTextContent("Normals", "Source of mesh normals. If Import is selected and a mesh has no normals, they will be calculated instead.");
+            public static GUIContent RecalculateNormalsLabel = EditorGUIUtility.TrTextContent("Normals Mode", "How to weight faces when calculating normals.");
+            public static GUIContent SmoothingAngle = EditorGUIUtility.TrTextContent("Smoothing Angle", "When calculating normals on a mesh that doesn’t have smoothing groups, edges between faces will be smooth if this value is greater than the angle between the faces.");
 
-            public static GUIContent TangentSpaceTangentLabel = EditorGUIUtility.TrTextContent("Tangents");
+            public static GUIContent TangentsLabel = EditorGUIUtility.TrTextContent("Tangents", "Source of mesh tangents. If Import is selected and a mesh has no tangents, they will be calculated instead.");
+
+            public static GUIContent BlendShapeNormalsLabel = EditorGUIUtility.TrTextContent("Blend Shape Normals", "Source of blend shape normals. If Import is selected and a blend shape has no normals, they will be calculated instead.");
+            public static GUIContent NormalSmoothingSourceLabel = EditorGUIUtility.TrTextContent("Smoothness Source", "How to determine which edges should be smooth and which should be sharp.");
 
             public static GUIContent SwapUVChannels = EditorGUIUtility.TrTextContent("Swap UVs", "Swaps the 2 UV channels in meshes. Use if your diffuse texture uses UVs from the lightmap.");
             public static GUIContent GenerateSecondaryUV           = EditorGUIUtility.TrTextContent("Generate Lightmap UVs", "Generate lightmap UVs into UV2.");
@@ -122,6 +131,9 @@ namespace UnityEditor
             public static GUIContent secondaryUVAreaDistortion     = EditorGUIUtility.TrTextContent("Area Error");
             public static GUIContent secondaryUVHardAngle          = EditorGUIUtility.TrTextContent("Hard Angle", "Angle between neighbor triangles that will generate seam.");
             public static GUIContent secondaryUVPackMargin         = EditorGUIUtility.TrTextContent("Pack Margin", "Measured in pixels, assuming mesh will cover an entire 1024x1024 lightmap.");
+
+            public static GUIContent LegacyBlendShapeNormalsWarning = EditorGUIUtility.TrTextContent("This Model was originally imported in an earlier version of Unity. If your Mesh has Blend Shapes, you may notice some artifacts or missing normals, and options for Blend Shape Normals and Smoothness Source will not be shown.");
+            public static GUIContent UpgradeButtonLabel = EditorGUIUtility.TrTextContent("Fix Now");
         }
 
         public override void OnInspectorGUI()
@@ -129,6 +141,26 @@ namespace UnityEditor
             SceneGUI();
             MeshesGUI();
             GeometryGUI();
+        }
+
+        bool HelpBoxWithButton(GUIContent messageContent, GUIContent buttonContent, MessageType type)
+        {
+            const float kButtonWidth = 60f;
+            const float kSpacing = 5f;
+            const float kButtonHeight = 20f;
+
+            // Reserve size of wrapped text
+            Rect contentRect = GUILayoutUtility.GetRect(messageContent, EditorStyles.helpBox);
+            // Reserve size of button
+            GUILayoutUtility.GetRect(1, kButtonHeight + kSpacing);
+
+            // Render background box with text at full height
+            contentRect.height += kButtonHeight + kSpacing;
+            GUI.Label(contentRect, EditorGUIUtility.TempContent(messageContent.text, EditorGUIUtility.GetHelpIcon(type)), EditorStyles.helpBox);
+
+            // Button (align lower right)
+            Rect buttonRect = new Rect(contentRect.xMax - kButtonWidth - 4f, contentRect.yMax - kButtonHeight - 4f, kButtonWidth, kButtonHeight);
+            return GUI.Button(buttonRect, buttonContent);
         }
 
         void MeshesGUI()
@@ -223,7 +255,7 @@ namespace UnityEditor
         {
             using (var horizontal = new EditorGUILayout.HorizontalScope())
             {
-                using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.TangentSpaceNormalLabel, m_NormalImportMode))
+                using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.NormalsLabel, m_NormalImportMode))
                 {
                     EditorGUI.BeginChangeCheck();
                     var newValue = (int)(ModelImporterNormals)EditorGUILayout.EnumPopup(property.content, (ModelImporterNormals)m_NormalImportMode.intValue);
@@ -236,12 +268,28 @@ namespace UnityEditor
                             m_TangentImportMode.intValue = (int)ModelImporterTangents.None;
                         else if (m_NormalImportMode.intValue == (int)ModelImporterNormals.Calculate && m_TangentImportMode.intValue == (int)ModelImporterTangents.Import)
                             m_TangentImportMode.intValue = (int)ModelImporterTangents.CalculateMikk;
+
+
+                        // Also make the blendshape normal mode follow normal mode, with the exception that we never
+                        // select Import automatically (since we can't trust imported normals to be correct, and we
+                        // also can't detect when they're not).
+                        if (m_NormalImportMode.intValue == (int)ModelImporterNormals.None)
+                            m_BlendShapeNormalCalculationMode.intValue = (int)ModelImporterNormals.None;
+                        else
+                            m_BlendShapeNormalCalculationMode.intValue = (int)ModelImporterNormals.Calculate;
                     }
                 }
             }
 
-            // Normal split angle
-            if (m_NormalImportMode.intValue == (int)ModelImporterNormals.Calculate)
+            if (!m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue && m_ImportBlendShapes.boolValue && !m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.hasMultipleDifferentValues)
+            {
+                using (new EditorGUI.DisabledScope(m_NormalImportMode.intValue == (int)ModelImporterNormals.None))
+                {
+                    m_BlendShapeNormalCalculationMode.intValue = (int)(ModelImporterNormals)EditorGUILayout.EnumPopup(Styles.BlendShapeNormalsLabel, (ModelImporterNormals)m_BlendShapeNormalCalculationMode.intValue);
+                }
+            }
+
+            if (m_NormalImportMode.intValue != (int)ModelImporterNormals.None || m_BlendShapeNormalCalculationMode.intValue != (int)ModelImporterNormals.None)
             {
                 // Normal calculation mode
                 using (var horizontal = new EditorGUILayout.HorizontalScope())
@@ -257,12 +305,30 @@ namespace UnityEditor
                     }
                 }
 
-                EditorGUI.BeginChangeCheck();
-                EditorGUILayout.Slider(m_NormalSmoothAngle, 0, 180, Styles.SmoothingAngle);
+                // Normal smoothness
+                if (!m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue)
+                {
+                    m_NormalSmoothingSource.intValue = (int)(ModelImporterNormalSmoothingSource)EditorGUILayout.EnumPopup(Styles.NormalSmoothingSourceLabel, (ModelImporterNormalSmoothingSource)m_NormalSmoothingSource.intValue);
+                }
 
-                // Property is serialized as float but we want to show it as an int so we round the value when changed
-                if (EditorGUI.EndChangeCheck())
-                    m_NormalSmoothAngle.floatValue = Mathf.Round(m_NormalSmoothAngle.floatValue);
+                // Normal split angle
+                if (m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue || m_NormalSmoothingSource.intValue == (int)ModelImporterNormalSmoothingSource.PreferSmoothingGroups || m_NormalSmoothingSource.intValue == (int)ModelImporterNormalSmoothingSource.FromAngle)
+                {
+                    EditorGUI.BeginChangeCheck();
+                    EditorGUILayout.Slider(m_NormalSmoothAngle, 0, 180, Styles.SmoothingAngle);
+
+                    // Property is serialized as float but we want to show it as an int so we round the value when changed
+                    if (EditorGUI.EndChangeCheck())
+                        m_NormalSmoothAngle.floatValue = Mathf.Round(m_NormalSmoothAngle.floatValue);
+                }
+
+                if (m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue)
+                {
+                    if (HelpBoxWithButton(Styles.LegacyBlendShapeNormalsWarning, Styles.UpgradeButtonLabel, MessageType.Warning))
+                    {
+                        m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes.boolValue = false;
+                    }
+                }
             }
 
             // Choose the option values and labels based on what the NormalImportMode is
@@ -270,7 +336,7 @@ namespace UnityEditor
             {
                 using (var horizontal = new EditorGUILayout.HorizontalScope())
                 {
-                    using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.TangentSpaceTangentLabel, m_TangentImportMode))
+                    using (var property = new EditorGUI.PropertyScope(horizontal.rect, Styles.TangentsLabel, m_TangentImportMode))
                     {
                         EditorGUI.BeginChangeCheck();
                         var newValue = (int)(ModelImporterTangents)EditorGUILayout.EnumPopup(property.content, (ModelImporterTangents)m_TangentImportMode.intValue, TangentModeAvailabilityCheck, false);

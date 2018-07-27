@@ -37,14 +37,14 @@ namespace TreeEditor
                 if (a.tileV || b.tileV)
                 {
                     return (!((a.packedRect.x > (b.packedRect.x + b.packedRect.width)) ||
-                              ((a.packedRect.x + a.packedRect.width) < b.packedRect.x)));
+                        ((a.packedRect.x + a.packedRect.width) < b.packedRect.x)));
                 }
                 else
                 {
                     return (!((a.packedRect.x > (b.packedRect.x + b.packedRect.width)) ||
-                              ((a.packedRect.x + a.packedRect.width) < b.packedRect.x) ||
-                              (a.packedRect.y > (b.packedRect.y + b.packedRect.height)) ||
-                              ((a.packedRect.y + a.packedRect.height) < b.packedRect.y)));
+                        ((a.packedRect.x + a.packedRect.width) < b.packedRect.x) ||
+                        (a.packedRect.y > (b.packedRect.y + b.packedRect.height)) ||
+                        ((a.packedRect.y + a.packedRect.height) < b.packedRect.y)));
                 }
             }
 

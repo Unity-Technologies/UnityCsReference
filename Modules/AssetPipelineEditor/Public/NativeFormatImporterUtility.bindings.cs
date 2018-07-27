@@ -42,7 +42,7 @@ namespace UnityEditor
 
         internal static void RegisterExtensionForType(
             Type type, string preferredExtension, params string[] otherExtensions
-            )
+        )
         {
             if (!type.IsSubclassOf(typeof(ScriptableObject)))
             {
@@ -50,8 +50,8 @@ namespace UnityEditor
                     string.Format(
                         "{0} may only be added to {1} types.",
                         typeof(AssetFileNameExtensionAttribute), typeof(ScriptableObject)
-                        )
-                    );
+                    )
+                );
             }
 
             if (s_RegisteredExtensionsByType.ContainsKey(type))
@@ -71,8 +71,8 @@ namespace UnityEditor
             if (string.Equals(extension, k_DefaultExtension, StringComparison.OrdinalIgnoreCase))
                 return extension;
             var registered = s_RegisteredExtensionsByType.FirstOrDefault(
-                    kv => kv.Value.Count(ext => string.Equals(ext, extension, StringComparison.OrdinalIgnoreCase)) > 0
-                    );
+                kv => kv.Value.Count(ext => string.Equals(ext, extension, StringComparison.OrdinalIgnoreCase)) > 0
+            );
             if (registered.Key != null)
             {
                 throw new ArgumentException(
@@ -81,7 +81,7 @@ namespace UnityEditor
                         extension, registered.Key, requestingType
                         ),
                     "extension"
-                    );
+                );
             }
             bool nativeExtensionRegistered;
             var registeredType = Internal_GetNativeTypeForExtension(extension, out nativeExtensionRegistered);
@@ -93,7 +93,7 @@ namespace UnityEditor
                         extension
                         ),
                     "extension"
-                    );
+                );
             }
             if (registeredType != null && registeredType != requestingType)
             {
@@ -103,7 +103,7 @@ namespace UnityEditor
                         extension, registeredType, requestingType
                         ),
                     "extension"
-                    );
+                );
             }
             return extension;
         }

@@ -39,9 +39,9 @@ namespace UnityEditor.IMGUI.Controls
                 if (s_EditModeButton == null)
                 {
                     s_EditModeButton = new GUIContent(
-                            EditorGUIUtility.IconContent("EditCollider").image,
-                            EditorGUIUtility.TrTextContent("Edit bounding volume.\n\n - Hold Alt after clicking control handle to pin center in place.\n - Hold Shift after clicking control handle to scale uniformly.").text
-                            );
+                        EditorGUIUtility.IconContent("EditCollider").image,
+                        EditorGUIUtility.TrTextContent("Edit bounding volume.\n\n - Hold Alt after clicking control handle to pin center in place.\n - Hold Shift after clicking control handle to scale uniformly.").text
+                    );
                 }
                 return s_EditModeButton;
             }
@@ -281,8 +281,8 @@ namespace UnityEditor.IMGUI.Controls
                 var size = midpointHandleSizeFunction == null ? 0f : midpointHandleSizeFunction(localPos);
 
                 localPos = UnityEditorInternal.Slider1D.Do(
-                        id, localPos, localDir, size, midpointHandleDrawFunction, SnapSettings.scale
-                        );
+                    id, localPos, localDir, size, midpointHandleDrawFunction, SnapSettings.scale
+                );
             }
 
             Handles.color = oldColor;

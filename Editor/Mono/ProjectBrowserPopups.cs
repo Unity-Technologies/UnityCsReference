@@ -167,7 +167,7 @@ namespace UnityEditor
                 else
                     return m_ListElements.Where(
                         element => element.m_Content.text.StartsWith(prefix, System.StringComparison.OrdinalIgnoreCase)
-                        );
+                    );
             }
 
             public IEnumerable<ListElement> GetFilteredList(string prefix)

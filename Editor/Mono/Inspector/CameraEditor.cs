@@ -10,6 +10,7 @@ using UnityEngine.Rendering;
 using AnimatedBool = UnityEditor.AnimatedValues.AnimBool;
 using UnityEngine.Scripting;
 using UnityEditor.Modules;
+using UnityEditor.SceneManagement;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -234,15 +235,15 @@ namespace UnityEditor
                             using (new EditorGUI.IndentLevelScope())
                             {
                                 using (var horizontal = new EditorGUILayout.HorizontalScope())
-                                    using (new EditorGUI.PropertyScope(horizontal.rect, Styles.focalLength, focalLength))
-                                        using (var checkScope = new EditorGUI.ChangeCheckScope())
-                                        {
-                                            EditorGUI.showMixedValue = focalLength.hasMultipleDifferentValues;
-                                            float focalLengthVal = fovChanged ? Camera.FOVToFocalLength(fovNewValue, sensorSize.vector2Value.y) : focalLength.floatValue;
-                                            focalLengthVal = EditorGUILayout.FloatField(Styles.focalLength, focalLengthVal);
-                                            if (checkScope.changed || fovChanged)
-                                                focalLength.floatValue = focalLengthVal;
-                                        }
+                                using (new EditorGUI.PropertyScope(horizontal.rect, Styles.focalLength, focalLength))
+                                using (var checkScope = new EditorGUI.ChangeCheckScope())
+                                {
+                                    EditorGUI.showMixedValue = focalLength.hasMultipleDifferentValues;
+                                    float focalLengthVal = fovChanged ? Camera.FOVToFocalLength(fovNewValue, sensorSize.vector2Value.y) : focalLength.floatValue;
+                                    focalLengthVal = EditorGUILayout.FloatField(Styles.focalLength, focalLengthVal);
+                                    if (checkScope.changed || fovChanged)
+                                        focalLength.floatValue = focalLengthVal;
+                                }
 
                                 EditorGUI.showMixedValue = sensorSize.hasMultipleDifferentValues;
                                 EditorGUI.BeginChangeCheck();
@@ -262,13 +263,13 @@ namespace UnityEditor
                                 EditorGUILayout.PropertyField(lensShift, Styles.lensShift);
 
                                 using (var horizontal = new EditorGUILayout.HorizontalScope())
-                                    using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.gateFit, gateFit))
-                                        using (var checkScope = new EditorGUI.ChangeCheckScope())
-                                        {
-                                            int gateValue = (int)(Camera.GateFitMode)EditorGUILayout.EnumPopup(propertyScope.content, (Camera.GateFitMode)gateFit.intValue);
-                                            if (checkScope.changed)
-                                                gateFit.intValue = gateValue;
-                                        }
+                                using (var propertyScope = new EditorGUI.PropertyScope(horizontal.rect, Styles.gateFit, gateFit))
+                                using (var checkScope = new EditorGUI.ChangeCheckScope())
+                                {
+                                    int gateValue = (int)(Camera.GateFitMode)EditorGUILayout.EnumPopup(propertyScope.content, (Camera.GateFitMode)gateFit.intValue);
+                                    if (checkScope.changed)
+                                        gateFit.intValue = gateValue;
+                                }
                             }
                         }
                         else if (fovChanged)
@@ -638,8 +639,13 @@ namespace UnityEditor
         {
             if (target == null) return;
 
-            // cache some deep values
             var c = (Camera)target;
+
+            // Do not render the Camera Preview overlay if the target camera is not part of the stage the SceneView is rendering
+            var targetStage = StageUtility.GetStage(c.gameObject);
+            var sceneViewStage = StageUtility.GetStage(sceneView.customScene);
+            if (targetStage != sceneViewStage)
+                return;
 
             Vector2 previewSize = c.targetTexture ? new Vector2(c.targetTexture.width, c.targetTexture.height) : GameView.GetMainGameViewTargetSize();
 
@@ -688,6 +694,10 @@ namespace UnityEditor
             {
                 // setup camera and render
                 previewCamera.CopyFrom(c);
+
+                // make sure the preview camera is rendering the same stage as the SceneView is
+                previewCamera.scene = sceneView.customScene;
+
                 // also make sure to sync any Skybox component on the preview camera
                 var dstSkybox = previewCamera.GetComponent<Skybox>();
                 if (dstSkybox)

@@ -20,7 +20,7 @@ namespace UnityEditor
                         GUIUtility.GetControlID(s_yScaleHandleHash, FocusType.Passive),
                         GUIUtility.GetControlID(s_zScaleHandleHash, FocusType.Passive),
                         GUIUtility.GetControlID(s_xyzScaleHandleHash, FocusType.Passive)
-                        );
+                    );
                 }
             }
 
@@ -197,15 +197,15 @@ namespace UnityEditor
                     color = ToActiveColorSpace(color);
 
                     scale[i] = UnityEditorInternal.SliderScale.DoAxis(
-                            id,
-                            scale[i],
-                            position,
-                            rotation * axisDir,
-                            rotation,
-                            handleSize * param.axisSize[i],
-                            SnapSettings.scale,
-                            offset,
-                            axisLineScale[i]);
+                        id,
+                        scale[i],
+                        position,
+                        rotation * axisDir,
+                        rotation,
+                        handleSize * param.axisSize[i],
+                        SnapSettings.scale,
+                        offset,
+                        axisLineScale[i]);
                 }
             }
 

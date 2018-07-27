@@ -11,7 +11,7 @@ using Unity.Jobs;
 //@TODO: Move this into Runtime/Transform folder with the test of Transform component
 namespace UnityEngine.Jobs
 {
-    [JobProducerType(typeof(IJobParallelForTransformExtensions.TransformParallelForLoopStruct < >))]
+    [JobProducerType(typeof(IJobParallelForTransformExtensions.TransformParallelForLoopStruct<>))]
     public interface IJobParallelForTransform
     {
         void Execute(int index, TransformAccess transform);

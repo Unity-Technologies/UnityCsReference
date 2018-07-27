@@ -307,8 +307,8 @@ namespace UnityEditorInternal
 
             if (m_ControlInterface == null)
                 m_ControlInterface = CreateInstance(typeof(AnimationWindowControl)) as AnimationWindowControl;
-
             m_ControlInterface.state = this;
+            m_ControlInterface.OnEnable();
         }
 
         public void OnDisable()
@@ -321,6 +321,8 @@ namespace UnityEditorInternal
 
         public void OnDestroy()
         {
+            m_ControlInterface.OnDestroy();
+
             Object.DestroyImmediate(m_EmptySelection);
             Object.DestroyImmediate(m_Selection);
             Object.DestroyImmediate(m_KeySelection);

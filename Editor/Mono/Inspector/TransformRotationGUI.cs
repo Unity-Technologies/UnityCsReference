@@ -46,7 +46,7 @@ namespace UnityEditor
                 m_OldEulerAngles.y != localEuler.y ||
                 m_OldEulerAngles.z != localEuler.z ||
                 m_OldRotationOrder != t.rotationOrder
-                )
+            )
             {
                 m_EulerAngles = t.GetLocalEulerAngles(t.rotationOrder);
                 m_OldRotationOrder = t.rotationOrder;

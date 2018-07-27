@@ -174,7 +174,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2),
                 new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4),
                 new CustomScriptAssemblyPlatform("XboxOne", BuildTarget.XboxOne),
-                new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS),
                 new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS),
                 new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch),
                 new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
@@ -186,6 +185,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("PSMobile", BuildTarget.PSM),
                 new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen),
                 new CustomScriptAssemblyPlatform("WiiU", BuildTarget.WiiU),
+                new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS),
             };
 #pragma warning restore 0618
 

@@ -116,7 +116,7 @@ namespace UnityEditor
                         if (!m_UseAutoMass.hasMultipleDifferentValues)
                         {
                             // If we're using auto-mass but either the object is part of a prefab parent or is not active then we cannot show the calculated mass value.
-                            if (m_UseAutoMass.boolValue && targets.Any(x => PrefabUtility.GetPrefabType(x) == PrefabType.Prefab || !(x as Rigidbody2D).gameObject.activeInHierarchy))
+                            if (m_UseAutoMass.boolValue && targets.Any(x => PrefabUtility.IsPartOfPrefabAsset(x) || !(x as Rigidbody2D).gameObject.activeInHierarchy))
                             {
                                 EditorGUILayout.HelpBox("The auto mass value cannot be displayed for a prefab or if the object is not active.  The value will be calculated for a prefab instance and when the object is active.", MessageType.Info);
                             }

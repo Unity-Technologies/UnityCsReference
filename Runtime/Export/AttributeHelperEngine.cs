@@ -80,19 +80,33 @@ namespace UnityEngine
                 return required.ToArray();
         }
 
+        static int GetExecuteMode(Type klass)
+        {
+            var customAttributes = klass.GetCustomAttributes(false);
+            foreach (var attribute in customAttributes)
+            {
+                if (attribute is ExecuteAlways)
+                    return 2;
+                if (attribute is ExecuteInEditMode)
+                    return 1;
+            }
+
+            return 0;
+        }
+
         [RequiredByNativeCode]
-        static bool CheckIsEditorScript(Type klass)
+        static int CheckIsEditorScript(Type klass)
         {
             while (klass != null && klass != typeof(MonoBehaviour))
             {
-                object[] attrs = klass.GetCustomAttributes(typeof(ExecuteInEditMode), false);
-                int count = attrs.Length;
-                if (count != 0)
-                    return true;
+                int executeMode = GetExecuteMode(klass);
+                if (executeMode > 0)
+                    return executeMode;
+
                 klass = klass
-                    .BaseType;
+                        .BaseType;
             }
-            return false;
+            return 0;
         }
 
         [RequiredByNativeCode]

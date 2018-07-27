@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
@@ -15,6 +16,14 @@ namespace UnityEditor
         Hidden = 0,
         Wireframe = 1,
         Highlight = 2
+    }
+
+    public enum InteractionMode
+    {
+        // Perform action without undo or dialogs.
+        AutomatedAction,
+        // Record undo and allow potential dialogs to pop up.
+        UserAction
     }
 
     // Compression Quality. Corresponds to the settings in a [[wiki:class-Texture2D|texture inspector]].
@@ -227,7 +236,7 @@ namespace UnityEditor
             return PrefabUtility.CreateEmptyPrefab(path);
         }
 
-        [Obsolete("Use PrefabUtility.CreateEmptyPrefab", false)]
+        [Obsolete("Use PrefabUtility.RevertPrefabInstance", false)]
         public static bool ReconnectToLastPrefab(GameObject go)
         {
             return PrefabUtility.ReconnectToLastPrefab(go);
@@ -245,7 +254,7 @@ namespace UnityEditor
             return PrefabUtility.GetCorrespondingObjectFromSource(source);
         }
 
-        [Obsolete("Use PrefabUtility.FindPrefabRoot", false)]
+        [Obsolete("Use PrefabUtility.GetOutermostPrefabInstanceRoot", false)]
         public static GameObject FindPrefabRoot(GameObject source)
         {
             return PrefabUtility.FindPrefabRoot(source);
@@ -328,11 +337,93 @@ namespace UnityEditor
 
         internal static void DisplayObjectContextMenu(Rect position, Object[] context, int contextUserData)
         {
+            // Don't show context menu if we're inside the side-by-side diff comparison.
+            if (EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.None)
+                return;
+
             Vector2 temp = GUIUtility.GUIToScreenPoint(new Vector2(position.x, position.y));
             position.x = temp.x;
             position.y = temp.y;
 
-            DisplayObjectContextPopupMenu(position, context, contextUserData);
+            GenericMenu pm = new GenericMenu();
+
+            if (context != null && context.Length == 1 && context[0] is Component)
+            {
+                Object targetObject = context[0];
+                Component targetComponent = (Component)targetObject;
+
+                // Do nothing if component is not on a prefab instance.
+                if (PrefabUtility.GetCorrespondingObjectFromSource(targetComponent.gameObject) == null) {}
+                // Handle added component.
+                else if (PrefabUtility.GetCorrespondingObjectFromSource(targetObject) == null && targetComponent != null)
+                {
+                    GameObject instanceGo = targetComponent.gameObject;
+                    PrefabUtility.HandleApplyRevertMenuItems(
+                        "Added Component",
+                        instanceGo,
+                        (menuItemContent, sourceGo) =>
+                        {
+                            TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
+                            info.instanceObject = targetComponent;
+                            info.assetPath = AssetDatabase.GetAssetPath(sourceGo);
+                            GameObject rootObject = PrefabUtility.GetRootGameObject(sourceGo);
+                            if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                                pm.AddDisabledItem(menuItemContent);
+                            else
+                                pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabAddedComponent, info);
+                        },
+                        (menuItemContent) =>
+                        {
+                            pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabAddedComponent, targetComponent);
+                        }
+                    );
+                }
+                else
+                {
+                    SerializedObject so = new SerializedObject(targetObject);
+                    SerializedProperty property = so.GetIterator();
+                    bool hasPrefabOverride = false;
+                    while (property.Next(property.hasChildren))
+                    {
+                        if (property.isInstantiatedPrefab && property.prefabOverride && !property.isDefaultOverride)
+                        {
+                            hasPrefabOverride = true;
+                            break;
+                        }
+                    }
+
+                    // Handle modified component.
+                    if (hasPrefabOverride)
+                    {
+                        bool defaultOverrides =
+                            PrefabUtility.IsObjectOverrideAllDefaultOverridesComparedToAnySource(targetObject);
+
+                        PrefabUtility.HandleApplyRevertMenuItems(
+                            "Modified Component",
+                            targetObject,
+                            (menuItemContent, sourceObject) =>
+                            {
+                                TargetChoiceHandler.ObjectInstanceAndSourcePathInfo info = new TargetChoiceHandler.ObjectInstanceAndSourcePathInfo();
+                                info.instanceObject = targetObject;
+                                info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
+                                GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
+                                if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                                    pm.AddDisabledItem(menuItemContent);
+                                else
+                                    pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabObjectOverride, info);
+                            },
+                            (menuItemContent) =>
+                            {
+                                pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabObjectOverride, targetObject);
+                            },
+                            defaultOverrides
+                        );
+                    }
+                }
+            }
+
+            pm.ObjectContextDropDown(position, context, contextUserData);
+
             ResetMouseDown();
         }
 
@@ -352,7 +443,7 @@ namespace UnityEditor
         internal static GameObject InstantiateForAnimatorPreview(Object original)
         {
             if (original == null)
-                throw new ArgumentException("The prefab you want to instantiate is null.");
+                throw new ArgumentException("The Prefab you want to instantiate is null.");
 
             GameObject go = InstantiateRemoveAllNonAnimationComponents(original, Vector3.zero, Quaternion.identity) as GameObject;
             go.name = go.name + "AnimatorPreview";       //To avoid FindGameObject picking up our dummy object
@@ -386,7 +477,7 @@ namespace UnityEditor
         internal static Object InstantiateRemoveAllNonAnimationComponents(Object original, Vector3 position, Quaternion rotation)
         {
             if (original == null)
-                throw new ArgumentException("The prefab you want to instantiate is null.");
+                throw new ArgumentException("The Prefab you want to instantiate is null.");
 
             return Internal_InstantiateRemoveAllNonAnimationComponentsSingle(original, position, rotation);
         }

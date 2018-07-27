@@ -3,6 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+//using TableType=System.Collections.Generic.SortedList<string, UnityEngine.StyleSheets.StyleComplexSelector>;
+using TableType = System.Collections.Generic.Dictionary<string, UnityEngine.StyleSheets.StyleComplexSelector>;
 using UnityEngine.Bindings;
 
 namespace UnityEngine.StyleSheets
@@ -48,8 +50,22 @@ namespace UnityEngine.StyleSheets
         [SerializeField]
         internal string[] strings;
 
+
         [SerializeField]
         internal Object[] assets;
+
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NonSerialized]
+        internal TableType orderedNameSelectors;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NonSerialized]
+        internal TableType orderedTypeSelectors;
+
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
+        [NonSerialized]
+        internal TableType orderedClassSelectors;
 
         static bool TryCheckAccess<T>(T[] list, StyleValueType type, StyleValueHandle[] handles, int index, out T value)
         {
@@ -78,7 +94,7 @@ namespace UnityEngine.StyleSheets
             {
                 Debug.LogErrorFormat("Trying to read value of type {0} while reading a value of type {1}", type, handle.valueType);
             }
-            else if (handle.valueIndex < 0 || handle.valueIndex >= list.Length)
+            else if (list == null || handle.valueIndex < 0 || handle.valueIndex >= list.Length)
             {
                 Debug.LogError("Accessing invalid property");
             }
@@ -99,6 +115,10 @@ namespace UnityEngine.StyleSheets
             if (complexSelectors == null || rules == null)
                 return;
 
+            orderedClassSelectors = new TableType(StringComparer.Ordinal);
+            orderedNameSelectors = new TableType(StringComparer.Ordinal);
+            orderedTypeSelectors = new TableType(StringComparer.Ordinal);
+
             for (int i = 0; i < complexSelectors.Length; i++)
             {
                 // Here we set-up runtime-only pointers
@@ -107,6 +127,46 @@ namespace UnityEngine.StyleSheets
                 if (complexSel.ruleIndex < rules.Length)
                 {
                     complexSel.rule = rules[complexSel.ruleIndex];
+                }
+
+                complexSel.orderInStyleSheet = i;
+
+                StyleSelector lastSelector = complexSel.selectors[complexSel.selectors.Length - 1];
+                StyleSelectorPart part = lastSelector.parts[0];
+
+                string key = part.value;
+
+                TableType tableToUse = null;
+
+                switch (part.type)
+                {
+                    case StyleSelectorType.Class:
+                        tableToUse = orderedClassSelectors;
+                        break;
+                    case StyleSelectorType.ID:
+                        tableToUse = orderedNameSelectors;
+                        break;
+                    case StyleSelectorType.Type:
+                    case StyleSelectorType.Wildcard:
+                    // in this case we assume a wildcard selector
+                    // since a selector such as ":selected" applies to all elements
+                    case StyleSelectorType.PseudoClass:
+                        key = part.value ?? "*";
+                        tableToUse = orderedTypeSelectors;
+                        break;
+                    default:
+                        Debug.LogError($"Invalid first part type {part.type}");
+                        break;
+                }
+
+                if (tableToUse != null)
+                {
+                    StyleComplexSelector previous;
+                    if (tableToUse.TryGetValue(key, out previous))
+                    {
+                        complexSel.nextInTable = previous;
+                    }
+                    tableToUse[key] = complexSel;
                 }
             }
         }

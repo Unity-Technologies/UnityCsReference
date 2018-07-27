@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
@@ -23,6 +24,8 @@ namespace UnityEditor
         public static extern string[] GetNavMeshAreaNames();
 
         public static extern string GetUniqueNameForSibling(Transform parent, string name);
+
+        public static extern void EnsureUniqueNameForSibling(GameObject self);
 
         internal static bool ContainsStatic(GameObject[] objects)
         {

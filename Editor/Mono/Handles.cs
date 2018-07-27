@@ -548,7 +548,7 @@ namespace UnityEditor
                     Vector3 up = Camera.current.transform.up * size;
 
                     Color col = color * new Color(1, 1, 1, 0.99f);
-                    HandleUtility.ApplyWireMaterial();
+                    HandleUtility.ApplyWireMaterial(Handles.zTest);
                     GL.Begin(GL.QUADS);
                     GL.Color(col);
                     GL.Vertex(position + sideways + up);
@@ -1281,7 +1281,7 @@ namespace UnityEditor
 
         internal static void DrawCameraImpl(Rect position, Camera camera,
             DrawCameraMode drawMode, bool drawGrid, DrawGridParameters gridParam, bool finish, bool renderGizmos = true
-            )
+        )
         {
             Event evt = Event.current;
 

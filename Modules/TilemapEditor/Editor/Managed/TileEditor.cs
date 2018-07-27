@@ -124,7 +124,7 @@ namespace UnityEditor
                 Mathf.Round(value.x * mult) / mult,
                 Mathf.Round(value.y * mult) / mult,
                 Mathf.Round(value.z * mult) / mult
-                );
+            );
         }
 
         public override Texture2D RenderStaticPreview(string assetPath, Object[] subAssets, int width, int height)

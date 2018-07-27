@@ -65,9 +65,9 @@ namespace UnityEditor
         protected Vector3 ProjectOntoColliderPlane(Vector3 worldVector, Matrix4x4 colliderTransformMatrix)
         {
             Plane worldColliderPlane = new Plane(
-                    Vector3.Cross(colliderTransformMatrix * Vector3.right, colliderTransformMatrix * Vector3.up),
-                    Vector3.zero
-                    );
+                Vector3.Cross(colliderTransformMatrix * Vector3.right, colliderTransformMatrix * Vector3.up),
+                Vector3.zero
+            );
             Ray ray = new Ray(worldVector, Vector3.forward);
             float distance;
             if (worldColliderPlane.Raycast(ray, out distance))

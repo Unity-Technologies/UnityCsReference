@@ -192,12 +192,12 @@ namespace UnityEditor
                 bool wasChanged = GUI.changed;
 
                 templateProp.stringValue = Templates[
-                        ThumbnailList(
-                            GUILayoutUtility.GetRect(numCols * kThumbnailSize, numRows * (kThumbnailSize + kThumbnailLabelHeight), GUILayout.ExpandWidth(false)),
-                            GetTemplateIndex(templateProp.stringValue),
-                            TemplateGUIThumbnails,
-                            numCols
-                            )].ToString();
+                    ThumbnailList(
+                        GUILayoutUtility.GetRect(numCols * kThumbnailSize, numRows * (kThumbnailSize + kThumbnailLabelHeight), GUILayout.ExpandWidth(false)),
+                        GetTemplateIndex(templateProp.stringValue),
+                        TemplateGUIThumbnails,
+                        numCols
+                    )].ToString();
 
                 bool templateChanged = !wasChanged && GUI.changed;
 
@@ -231,8 +231,8 @@ namespace UnityEditor
                 for (int x = 0; x < maxRowItems && i < thumbnails.Length; x++, i++)
                 {
                     if (ThumbnailListItem(
-                            new Rect(rect.x + x * kThumbnailSize, rect.y + y * (kThumbnailSize + kThumbnailLabelHeight), kThumbnailSize, (kThumbnailSize + kThumbnailLabelHeight)),
-                            i == selection, thumbnails[i]))
+                        new Rect(rect.x + x * kThumbnailSize, rect.y + y * (kThumbnailSize + kThumbnailLabelHeight), kThumbnailSize, (kThumbnailSize + kThumbnailLabelHeight)),
+                        i == selection, thumbnails[i]))
                     {
                         selection = i;
                     }

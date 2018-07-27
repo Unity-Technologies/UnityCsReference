@@ -432,29 +432,29 @@ namespace UnityEngine
 
 
             private static readonly RequestLightsDelegate s_DefaultDelegate   = (Light[] requests, NativeArray<LightDataGI> lightsOutput) =>
+            {
+                // get all lights in the scene
+                DirectionalLight dir   = new DirectionalLight();
+                PointLight       point = new PointLight();
+                SpotLight        spot  = new SpotLight();
+                RectangleLight   rect = new RectangleLight();
+                DiscLight        disc = new DiscLight();
+                LightDataGI      ld    = new LightDataGI();
+                for (int i = 0; i < requests.Length; i++)
                 {
-                    // get all lights in the scene
-                    DirectionalLight dir   = new DirectionalLight();
-                    PointLight       point = new PointLight();
-                    SpotLight        spot  = new SpotLight();
-                    RectangleLight   rect = new RectangleLight();
-                    DiscLight        disc = new DiscLight();
-                    LightDataGI      ld    = new LightDataGI();
-                    for (int i = 0; i < requests.Length; i++)
+                    Light l = requests[i];
+                    switch (l.type)
                     {
-                        Light l = requests[i];
-                        switch (l.type)
-                        {
-                            case UnityEngine.LightType.Directional: LightmapperUtils.Extract(l, ref dir); ld.Init(ref dir); break;
-                            case UnityEngine.LightType.Point: LightmapperUtils.Extract(l, ref point); ld.Init(ref point); break;
-                            case UnityEngine.LightType.Spot: LightmapperUtils.Extract(l, ref spot); ld.Init(ref spot); break;
-                            case UnityEngine.LightType.Area: LightmapperUtils.Extract(l, ref rect); ld.Init(ref rect); break;
-                            case UnityEngine.LightType.Disc: LightmapperUtils.Extract(l, ref disc); ld.Init(ref disc); break;
-                            default: ld.InitNoBake(l.GetInstanceID()); break;
-                        }
-                        lightsOutput[i] = ld;
+                        case UnityEngine.LightType.Directional: LightmapperUtils.Extract(l, ref dir); ld.Init(ref dir); break;
+                        case UnityEngine.LightType.Point: LightmapperUtils.Extract(l, ref point); ld.Init(ref point); break;
+                        case UnityEngine.LightType.Spot: LightmapperUtils.Extract(l, ref spot); ld.Init(ref spot); break;
+                        case UnityEngine.LightType.Area: LightmapperUtils.Extract(l, ref rect); ld.Init(ref rect); break;
+                        case UnityEngine.LightType.Disc: LightmapperUtils.Extract(l, ref disc); ld.Init(ref disc); break;
+                        default: ld.InitNoBake(l.GetInstanceID()); break;
                     }
-                };
+                    lightsOutput[i] = ld;
+                }
+            };
             private static RequestLightsDelegate s_RequestLightsDelegate = s_DefaultDelegate;
         }
     }

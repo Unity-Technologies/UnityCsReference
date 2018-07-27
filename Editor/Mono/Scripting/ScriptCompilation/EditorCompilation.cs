@@ -625,7 +625,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         var duplicateRefsString = string.Join(",", duplicateRefs);
 
                         throw new Compilation.AssemblyDefinitionException(string.Format("Assembly has duplicate references: {0}",
-                                duplicateRefsString),
+                            duplicateRefsString),
                             loadedCustomScriptAssembly.FilePath);
                     }
                 }
@@ -868,7 +868,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             var targetAssembliesResult = (targetAssemblies ?? Enumerable.Empty<EditorBuildRules.TargetAssembly>())
                 .Where(x => (x.OptionalUnityReferences & OptionalUnityReferences.TestAssemblies) == OptionalUnityReferences.None
-                    && (x.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.None)
+                && (x.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.None)
                 .ToArray();
             return targetAssembliesResult;
         }
@@ -994,51 +994,51 @@ namespace UnityEditor.Scripting.ScriptCompilation
             compilationTask = new CompilationTask(scriptAssemblies, tempBuildDirectory, options, compilationTaskOptions, UnityEngine.SystemInfo.processorCount);
 
             compilationTask.OnCompilationStarted += (assembly, phase) =>
-                {
-                    var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
-                    Console.WriteLine("- Starting compile {0}", assemblyOutputPath);
-                    InvokeAssemblyCompilationStarted(assemblyOutputPath);
-                };
+            {
+                var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
+                Console.WriteLine("- Starting compile {0}", assemblyOutputPath);
+                InvokeAssemblyCompilationStarted(assemblyOutputPath);
+            };
 
             compilationTask.OnCompilationFinished += (assembly, messages) =>
+            {
+                var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
+                Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
+
+                if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
+                    runScriptUpdaterAssemblies.Remove(assembly.Filename);
+
+                if (messages.Any(m => m.type == CompilerMessageType.Error))
                 {
-                    var assemblyOutputPath = AssetPath.Combine(scriptAssemblySettings.OutputDirectory, assembly.Filename);
-                    Console.WriteLine("- Finished compile {0}", assemblyOutputPath);
-
-                    if (runScriptUpdaterAssemblies.Contains(assembly.Filename))
-                        runScriptUpdaterAssemblies.Remove(assembly.Filename);
-
-                    if (messages.Any(m => m.type == CompilerMessageType.Error))
-                    {
-                        AddUnitySpecificErrorMessages(assembly, messages);
-
-                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
-                        return;
-                    }
-
-                    var buildingForEditor = scriptAssemblySettings.BuildingForEditor;
-                    string enginePath = InternalEditorUtility.GetEngineCoreModuleAssemblyPath();
-
-                    string unetPath = UnityEditor.EditorApplication.applicationContentsPath + "/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll";
-                    if (!Serialization.Weaver.WeaveUnetFromEditor(assembly, tempBuildDirectory, tempBuildDirectory, enginePath, unetPath, buildingForEditor))
-                    {
-                        messages.Add(new CompilerMessage { message = "UNet Weaver failed", type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
-                        StopAllCompilation();
-                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
-                        return;
-                    }
-
-                    // Copy from tempBuildDirectory to assembly output directory
-                    if (!CopyAssembly(AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath))
-                    {
-                        messages.Add(new CompilerMessage { message = string.Format("Copying assembly from '{0}' to '{1}' failed", AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath), type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
-                        StopCompilationTask();
-                        InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
-                        return;
-                    }
+                    AddUnitySpecificErrorMessages(assembly, messages);
 
                     InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
-                };
+                    return;
+                }
+
+                var buildingForEditor = scriptAssemblySettings.BuildingForEditor;
+                string enginePath = InternalEditorUtility.GetEngineCoreModuleAssemblyPath();
+
+                string unetPath = UnityEditor.EditorApplication.applicationContentsPath + "/UnityExtensions/Unity/Networking/UnityEngine.Networking.dll";
+                if (!Serialization.Weaver.WeaveUnetFromEditor(assembly, tempBuildDirectory, tempBuildDirectory, enginePath, unetPath, buildingForEditor))
+                {
+                    messages.Add(new CompilerMessage { message = "UNet Weaver failed", type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
+                    StopAllCompilation();
+                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
+                    return;
+                }
+
+                // Copy from tempBuildDirectory to assembly output directory
+                if (!CopyAssembly(AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath))
+                {
+                    messages.Add(new CompilerMessage { message = string.Format("Copying assembly from '{0}' to '{1}' failed", AssetPath.Combine(tempBuildDirectory, assembly.Filename), assembly.FullPath), type = CompilerMessageType.Error, file = assembly.FullPath, line = -1, column = -1 });
+                    StopCompilationTask();
+                    InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
+                    return;
+                }
+
+                InvokeAssemblyCompilationFinished(assemblyOutputPath, messages);
+            };
 
             compilationTask.Poll();
             return true;

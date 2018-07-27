@@ -558,10 +558,10 @@ internal class ParticleSystemCurveEditor
                 m_LastTopMostCurveID = topMostCurveID;
                 // Selection callback for library window
                 System.Action<DoubleCurve> presetSelectedCallback = delegate(DoubleCurve presetDoubleCurve)
-                    {
-                        SetTopMostCurve(presetDoubleCurve);
-                        UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
-                    };
+                {
+                    SetTopMostCurve(presetDoubleCurve);
+                    UnityEditorInternal.InternalEditorUtility.RepaintAllViews();
+                };
                 DoubleCurve doubleCurveToSaveAsPreset = CreateDoubleCurveFromTopMostCurve();
                 m_DoubleCurvePresets = new DoubleCurvePresetsContentsForPopupWindow(doubleCurveToSaveAsPreset, presetSelectedCallback);
                 m_DoubleCurvePresets.InitIfNeeded();

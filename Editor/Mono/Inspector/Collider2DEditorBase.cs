@@ -239,11 +239,11 @@ namespace UnityEditor
         protected bool CanEditCollider()
         {
             var e = targets.FirstOrDefault((x) =>
-                {
-                    var sr = (x as Component).GetComponent<SpriteRenderer>();
-                    return (sr != null && sr.drawMode != SpriteDrawMode.Simple && m_AutoTiling.boolValue == true);
-                }
-                    );
+            {
+                var sr = (x as Component).GetComponent<SpriteRenderer>();
+                return (sr != null && sr.drawMode != SpriteDrawMode.Simple && m_AutoTiling.boolValue == true);
+            }
+            );
             return e == false;
         }
     }

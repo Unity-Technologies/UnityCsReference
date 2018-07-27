@@ -351,12 +351,12 @@ namespace UnityEngine.WSA
             Color32 backgroundColor = data.backgroundColor;
 
             string tileId = CreateOrUpdateSecondaryTilePoint(
-                    sargs,
-                    bargs,
-                    ref backgroundColor,
-                    (int)data.foregroundText,
-                    pos
-                    );
+                sargs,
+                bargs,
+                ref backgroundColor,
+                (int)data.foregroundText,
+                pos
+            );
             if (string.IsNullOrEmpty(tileId))
                 return null;
             return new Tile(tileId);
@@ -377,12 +377,12 @@ namespace UnityEngine.WSA
             Color32 backgroundColor = data.backgroundColor;
 
             string tileId = CreateOrUpdateSecondaryTileArea(
-                    sargs,
-                    bargs,
-                    ref backgroundColor,
-                    (int)data.foregroundText,
-                    area
-                    );
+                sargs,
+                bargs,
+                ref backgroundColor,
+                (int)data.foregroundText,
+                area
+            );
             if (string.IsNullOrEmpty(tileId))
                 return null;
             return new Tile(tileId);

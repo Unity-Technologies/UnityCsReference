@@ -19,7 +19,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEditor\Debug\</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPATIALTRACKING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUG;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPATIALTRACKING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -31,7 +31,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>..\..\artifacts\Bee.CSharpSupport\UnityEditor\Release\</OutputPath>
-    <DefineConstants>COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPATIALTRACKING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IPHONE_API;UNITY_METRO_API;UNITY_N3DS_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
+    <DefineConstants>COMBINED_ASSEMBLIES;DEBUGGER_LISTENS_FIXED_PORT;ENABLE_ALTERNATIVE_LISTEN_PORT;ENABLE_AR;ENABLE_AUDIO;ENABLE_AUDIO_MANAGER_BASED_SCHEDULING;ENABLE_CACHING;ENABLE_CLOTH;ENABLE_CLOUD_HUB;ENABLE_CLOUD_LICENSE;ENABLE_CLOUD_PROJECT_ID;ENABLE_CLOUD_SERVICES;ENABLE_CLOUD_SERVICES_ADS;ENABLE_CLOUD_SERVICES_ANALYTICS;ENABLE_CLOUD_SERVICES_BUILD;ENABLE_CLOUD_SERVICES_COLLAB;ENABLE_CLOUD_SERVICES_COLLAB_SOFTLOCKS;ENABLE_CLOUD_SERVICES_COLLAB_TESTING;ENABLE_CLOUD_SERVICES_CRASH_REPORTING;ENABLE_CLOUD_SERVICES_PURCHASING;ENABLE_CLOUD_SERVICES_UNET;ENABLE_CLOUD_SERVICES_USE_WEBREQUEST;ENABLE_CRUNCH_TEXTURE_COMPRESSION;ENABLE_CUSTOM_RENDER_TEXTURE;ENABLE_DIRECTOR;ENABLE_DIRECTOR_AUDIO;ENABLE_DIRECTOR_TEXTURE;ENABLE_DUCK_TYPING;ENABLE_EDITOR_HUB;ENABLE_EDITOR_HUB_LICENSE;ENABLE_EDITOR_METRICS;ENABLE_EDITOR_METRICS_CACHING;ENABLE_GRID;ENABLE_HOLOLENS_MODULE_API;ENABLE_LOCALIZATION;ENABLE_LZMA;ENABLE_MANAGED_ANIMATION_JOBS;ENABLE_MANAGED_JOBS;ENABLE_MANAGED_TRANSFORM_JOBS;ENABLE_MICROPHONE;ENABLE_MONO;ENABLE_MONO_BDWGC;ENABLE_MOVIES;ENABLE_MULTIPLE_DISPLAYS;ENABLE_NETWORK;ENABLE_PHYSICS;ENABLE_SPATIALTRACKING;ENABLE_SPRITES;ENABLE_TERRAIN;ENABLE_TEXTURE_STREAMING;ENABLE_TILEMAP;ENABLE_TIMELINE;ENABLE_UNET;ENABLE_UNITYEVENTS;ENABLE_UNITYWEBREQUEST;ENABLE_UNITYWEBREQUEST;ENABLE_UNLOCKED_DIAGNOSTIC_SWITCHES;ENABLE_VERSION_CONTROL_INTEGRATION;ENABLE_VIDEO;ENABLE_VIDEO;ENABLE_VR;ENABLE_WEBCAM;ENABLE_WEBSOCKET_CLIENT;ENABLE_WWW;INCLUDE_DYNAMIC_GI;INCLUDE_GI;INCLUDE_PUBNUB;PLATFORM_SUPPORTS_MONO;PLAYERCONNECTION_LISTENS_FIXED_PORT;RENDER_SOFTWARE_CURSOR;TRACE;UNITY_ANDROID_API;UNITY_ASSEMBLIES_API;UNITY_ASSERTIONS;UNITY_EDITOR;UNITY_EDITOR_API;UNITY_IOS_API;UNITY_METRO_API;UNITY_PS4_API;UNITY_PS4_API;UNITY_STANDALONE_LINUX_API;UNITY_STANDALONE_OSX_API;UNITY_STANDALONE_WIN_API;UNITY_SWITCH_API;UNITY_TVOS_API;UNITY_WEBGL_API;UNITY_XBOXONE_API</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -1136,6 +1136,9 @@
   <Compile Include="..\..\Editor\Mono\GUIDebugger\BaseInspectView.cs">
     <Link>Editor\Mono\GUIDebugger\BaseInspectView.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\GUIDebugger\ElementHighlighter.cs">
+    <Link>Editor\Mono\GUIDebugger\ElementHighlighter.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\GUIDebugger\GUIClipInspectView.cs">
     <Link>Editor\Mono\GUIDebugger\GUIClipInspectView.cs</Link>
   </Compile>
@@ -1156,6 +1159,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\GUIDebugger\StyleDrawInspectView.cs">
     <Link>Editor\Mono\GUIDebugger\StyleDrawInspectView.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\GUIDebugger\StylePicker.cs">
+    <Link>Editor\Mono\GUIDebugger\StylePicker.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\GUIDebugger\UnifiedInspectView.cs">
     <Link>Editor\Mono\GUIDebugger\UnifiedInspectView.cs</Link>
@@ -1946,6 +1952,9 @@
   <Compile Include="..\..\Editor\Mono\Inspector\HingeJointEditor.cs">
     <Link>Editor\Mono\Inspector\HingeJointEditor.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\InspectorElement.cs">
+    <Link>Editor\Mono\Inspector\InspectorElement.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\InspectorWindow.cs">
     <Link>Editor\Mono\Inspector\InspectorWindow.cs</Link>
   </Compile>
@@ -2095,9 +2104,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\PositionConstraintEditor.cs">
     <Link>Editor\Mono\Inspector\PositionConstraintEditor.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\PrefabInspector.cs">
-    <Link>Editor\Mono\Inspector\PrefabInspector.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\PreviewRenderUtility.cs">
     <Link>Editor\Mono\Inspector\PreviewRenderUtility.cs</Link>
@@ -2278,6 +2284,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\TransformUtils.cs">
     <Link>Editor\Mono\Inspector\TransformUtils.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\UIElementsEditor.cs">
+    <Link>Editor\Mono\Inspector\UIElementsEditor.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\UNetBehaviourInspector.cs">
     <Link>Editor\Mono\Inspector\UNetBehaviourInspector.cs</Link>
@@ -2669,6 +2678,27 @@
   <Compile Include="..\..\Editor\Mono\PostprocessScene.cs">
     <Link>Editor\Mono\PostprocessScene.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Prefabs\PrefabImporter.bindings.cs">
+    <Link>Editor\Mono\Prefabs\PrefabImporter.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Prefabs\PrefabImporterEditor.cs">
+    <Link>Editor\Mono\Prefabs\PrefabImporterEditor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Prefabs\PrefabOverrides\PrefabOverride.cs">
+    <Link>Editor\Mono\Prefabs\PrefabOverrides\PrefabOverride.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Prefabs\PrefabOverrides\PrefabOverridesTreeView.cs">
+    <Link>Editor\Mono\Prefabs\PrefabOverrides\PrefabOverridesTreeView.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Prefabs\PrefabOverrides\PrefabOverridesUtility.cs">
+    <Link>Editor\Mono\Prefabs\PrefabOverrides\PrefabOverridesUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Prefabs\PrefabOverrides\PrefabOverridesWindow.cs">
+    <Link>Editor\Mono\Prefabs\PrefabOverrides\PrefabOverridesWindow.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\Prefabs\PrefabOverrides\TransformVisitor.cs">
+    <Link>Editor\Mono\Prefabs\PrefabOverrides\TransformVisitor.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Prefabs\PrefabUtility.bindings.cs">
     <Link>Editor\Mono\Prefabs\PrefabUtility.bindings.cs</Link>
   </Compile>
@@ -2774,8 +2804,14 @@
   <Compile Include="..\..\Editor\Mono\SavedGUIState.bindings.cs">
     <Link>Editor\Mono\SavedGUIState.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneHierarchy.cs">
+    <Link>Editor\Mono\SceneHierarchy.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\SceneHierarchySortingWindow.cs">
     <Link>Editor\Mono\SceneHierarchySortingWindow.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneHierarchyStageHandling.cs">
+    <Link>Editor\Mono\SceneHierarchyStageHandling.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\SceneHierarchyWindow.cs">
     <Link>Editor\Mono\SceneHierarchyWindow.cs</Link>
@@ -2785,6 +2821,42 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\SceneManagement\SceneSetup.cs">
     <Link>Editor\Mono\SceneManagement\SceneSetup.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\AssetEvents.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\AssetEvents.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\BreadcrumbBar.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\BreadcrumbBar.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStage.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStage.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStageUtility.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\PrefabStage\PrefabStageUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\SceneHierarchyState.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\SceneHierarchyState.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\SceneViewCameraState.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\SceneViewCameraState.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\Stage.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\Stage.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\StageNavigationHistory.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\StageNavigationHistory.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\StageNavigationItem.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\StageNavigationItem.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\StageNavigationManager.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\StageNavigationManager.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\StageUtility.bindings.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\StageUtility.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneManagement\StageManager\StageUtility.cs">
+    <Link>Editor\Mono\SceneManagement\StageManager\StageUtility.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\SceneModeWindows\LightTable.cs">
     <Link>Editor\Mono\SceneModeWindows\LightTable.cs</Link>
@@ -2846,6 +2918,9 @@
   <Compile Include="..\..\Editor\Mono\SceneView\SceneViewPicking.cs">
     <Link>Editor\Mono\SceneView\SceneViewPicking.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\SceneView\SceneViewStageHandling.cs">
+    <Link>Editor\Mono\SceneView\SceneViewStageHandling.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\CustomPropertyDrawerAttribute.cs">
     <Link>Editor\Mono\ScriptAttributeGUI\CustomPropertyDrawerAttribute.cs</Link>
   </Compile>
@@ -2872,6 +2947,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\ScriptAttributeUtility.cs">
     <Link>Editor\Mono\ScriptAttributeGUI\ScriptAttributeUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\UIElementsPropertyDrawer.cs">
+    <Link>Editor\Mono\ScriptAttributeGUI\UIElementsPropertyDrawer.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\ScriptEditorUtility.cs">
     <Link>Editor\Mono\ScriptEditorUtility.cs</Link>
@@ -3272,6 +3350,9 @@
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\PropertyControl.cs">
     <Link>Editor\Mono\UIElements\Controls\PropertyControl.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\UIElements\Controls\PropertyField.cs">
+    <Link>Editor\Mono\UIElements\Controls\PropertyField.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\UIElements\Controls\TagField.cs">
     <Link>Editor\Mono\UIElements\Controls\TagField.cs</Link>
   </Compile>
@@ -3482,6 +3563,9 @@
   <Compile Include="..\..\Editor\Mono\Utils\SimpleProfiler.cs">
     <Link>Editor\Mono\Utils\SimpleProfiler.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Utils\StateCache.cs">
+    <Link>Editor\Mono\Utils\StateCache.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Utils\TickTimerHelper.cs">
     <Link>Editor\Mono\Utils\TickTimerHelper.cs</Link>
   </Compile>
@@ -3646,9 +3730,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsLuminBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsLuminBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsN3DSBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsN3DSBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Editor\PlayerSettingsVRGoogleBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Editor\PlayerSettingsVRGoogleBindings.gen.cs</Link>
@@ -4337,6 +4418,9 @@
   <Compile Include="..\..\Modules\ShortcutManagerEditor\Discovery.cs">
     <Link>Modules\ShortcutManagerEditor\Discovery.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\DiscoveryIdentifierConflictHandler.cs">
+    <Link>Modules\ShortcutManagerEditor\DiscoveryIdentifierConflictHandler.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs">
     <Link>Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs</Link>
   </Compile>
@@ -4357,6 +4441,9 @@
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutAttribute.cs">
     <Link>Modules\ShortcutManagerEditor\ShortcutAttribute.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutAttributeDiscoveryProvider.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutAttributeDiscoveryProvider.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutController.cs">
     <Link>Modules\ShortcutManagerEditor\ShortcutController.cs</Link>
@@ -4654,6 +4741,15 @@
   </Compile>
   <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VFXMemorySerializer.bindings.cs">
     <Link>Modules\VFXEditor\Public\ScriptBindings\VFXMemorySerializer.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VisualEffectResource.bindings.cs">
+    <Link>Modules\VFXEditor\Public\ScriptBindings\VisualEffectResource.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VisualEffectTest.bindings.cs">
+    <Link>Modules\VFXEditor\Public\ScriptBindings\VisualEffectTest.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\VFXEditor\Public\ScriptBindings\VisualEffectUtility.bindings.cs">
+    <Link>Modules\VFXEditor\Public\ScriptBindings\VisualEffectUtility.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\VideoEditor\Editor\VideoClipInspector.cs">
     <Link>Modules\VideoEditor\Editor\VideoClipInspector.cs</Link>

@@ -170,9 +170,9 @@ namespace UnityEditor
                 if (m_Positions.hasMultipleDifferentValues)
                 {
                     if (!EditorUtility.DisplayDialog(L10n.Tr("Moving an array element will copy the complete array to all other selected objects."),
-                            L10n.Tr("Unique values in the different selected objects will be lost"),
-                            L10n.Tr("OK"),
-                            L10n.Tr("Cancel")))
+                        L10n.Tr("Unique values in the different selected objects will be lost"),
+                        L10n.Tr("OK"),
+                        L10n.Tr("Cancel")))
                     {
                         return DragAndDropVisualMode.Rejected;
                     }

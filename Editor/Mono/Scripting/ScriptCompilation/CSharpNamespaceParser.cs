@@ -19,14 +19,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly Regex k_Strings = new Regex(@"""((\\[^\n]|[^""\n])*)""", RegexOptions.Compiled);
         static readonly Regex k_VerbatimStrings = new Regex(@"@(""[^""]*"")+", RegexOptions.Compiled);
         static readonly Regex k_NewlineRegex = new Regex("\r\n?", RegexOptions.Compiled);
+        static readonly Regex k_SingleQuote = new Regex(@"((?<![\\])['])(?:.(?!(?<![\\])\1))*.?\1", RegexOptions.Compiled);
+        static string s_ClassName;
 
         public static string GetNamespace(string sourceCode, string className, params string[] defines)
         {
+            s_ClassName = className;
+
             sourceCode = k_NewlineRegex.Replace(sourceCode, "\n");
             sourceCode = k_Strings.Replace(sourceCode, "");
             sourceCode = k_BlockComments.Replace(sourceCode, "");
             sourceCode = k_LineComments.Replace(sourceCode, "\n");
             sourceCode = k_VerbatimStrings.Replace(sourceCode, "");
+            sourceCode = k_SingleQuote.Replace(sourceCode, "");
             try
             {
                 sourceCode = RemoveIfDefs(sourceCode, defines);
@@ -35,7 +40,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             catch (Exception e)
             {
-                Debug.LogError("Error in CSharpNamespaceParser");
+                Debug.LogError("Searching for classname: '" + className + "' caused error in CSharpNameParser");
                 Debug.LogException(e);
                 throw;
             }
@@ -151,14 +156,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
                 else if (s.Contains("#if"))
                 {
-                    var evalResult = EvaulateDefine(s.Split(new[] { "#if" }, StringSplitOptions.None)[1].Trim(), defines);
+                    var evalResult = EvaluateDefine(s.Split(new[] { "#if" }, StringSplitOptions.None)[1].Trim(), defines);
                     var isEmitting = stack.Count == 0 || stack.Peek().Item1;
                     stack.Push(new Tuple<bool, bool>(isEmitting && evalResult, isEmitting && !evalResult));
                 }
                 else if (s.Contains("#elif"))
                 {
                     var elseEmitting = stack.Peek().Item2;
-                    var evalResult = EvaulateDefine(s.Split(new[] { "#elif" }, StringSplitOptions.None)[1], defines);
+                    var evalResult = EvaluateDefine(s.Split(new[] { "#elif" }, StringSplitOptions.None)[1], defines);
                     stack.Pop();
                     stack.Push(new Tuple<bool, bool>(elseEmitting && evalResult, elseEmitting && !evalResult));
                 }
@@ -181,15 +186,25 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return stringBuilder.ToString();
         }
 
-        static bool EvaulateDefine(string expr, ICollection<string> defines)
+        static bool IsNullOrWhiteSpace(string value)
+        {
+            return value == null || value.All(char.IsWhiteSpace);
+        }
+
+        static bool EvaluateDefine(string expr, ICollection<string> defines)
         {
             var res = new List<string>();
             var pos = 0;
             while (pos < expr.Length)
             {
                 var match = k_ReDefineExpr.Match(expr, pos); // eq_operator, bool_val, symbol, operator
+                // TODO: C# 4.0+ Replace with string.IsNullOrWhiteSpace when available
+                if (IsNullOrWhiteSpace(expr.Substring(pos)))
+                    break;
+
                 if (!match.Success)
-                    Console.Error.WriteLine($"Invalid #ifdef expression: {expr} (error around {expr[pos]}");
+                    throw new InvalidOperationException($"Error while searching for {s_ClassName}: invalid #ifdef expression: {expr} (error while searching for {expr.Substring(pos)}");
+
                 pos = match.Index + match.Length;
 
                 if (match.Groups[1].Success)

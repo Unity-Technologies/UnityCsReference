@@ -98,8 +98,8 @@ namespace UnityEditor.Experimental.UIElements
         private void RecordRepaintData(VisualElement ve)
         {
             m_RepaintDatas.Add(new RepaintData(ve.controlid,
-                    ve.worldBound,
-                    Color.HSVToRGB(ve.controlid * 11 % 32 / 32.0f, .6f, 1.0f)));
+                ve.worldBound,
+                Color.HSVToRGB(ve.controlid * 11 % 32 / 32.0f, .6f, 1.0f)));
 
             for (int i = 0; i < ve.shadow.childCount; i++)
             {

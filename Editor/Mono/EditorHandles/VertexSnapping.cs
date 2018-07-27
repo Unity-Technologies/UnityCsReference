@@ -46,7 +46,7 @@ namespace UnityEditor
                 case EventType.KeyDown:
                 {
                     // Vertex selection
-                    if (evt.keyCode == KeyCode.V)
+                    if (!EditorGUIUtility.editingTextField && evt.keyCode == KeyCode.V)
                     {
                         // We are searching for a vertex in our selection
                         if (!Tools.vertexDragging && !evt.shift)
@@ -59,7 +59,7 @@ namespace UnityEditor
                 case EventType.KeyUp:
                 {
                     // Vertex selection
-                    if (evt.keyCode == KeyCode.V)
+                    if (!EditorGUIUtility.editingTextField && evt.keyCode == KeyCode.V)
                     {
                         if (evt.shift)
                             Tools.vertexDragging = !Tools.vertexDragging; // toggle vertex dragging

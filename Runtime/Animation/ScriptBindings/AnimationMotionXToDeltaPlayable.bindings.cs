@@ -67,16 +67,6 @@ namespace UnityEngine.Animations
             return GetHandle() == other.GetHandle();
         }
 
-        public float GetWeight()
-        {
-            return GetWeightInternal(ref m_Handle);
-        }
-
-        public void SetWeight(float value)
-        {
-            SetWeightInternal(ref m_Handle, value);
-        }
-
         public bool IsAbsoluteMotion()
         {
             return IsAbsoluteMotionInternal(ref m_Handle);
@@ -90,10 +80,6 @@ namespace UnityEngine.Animations
         // Bindings methods.
         [NativeThrows]
         extern private static bool CreateHandleInternal(PlayableGraph graph, ref PlayableHandle handle);
-        [NativeThrows]
-        extern static private float GetWeightInternal(ref PlayableHandle handle);
-        [NativeThrows]
-        extern static private void SetWeightInternal(ref PlayableHandle handle, float value);
         [NativeThrows]
         extern static private bool IsAbsoluteMotionInternal(ref PlayableHandle handle);
         [NativeThrows]

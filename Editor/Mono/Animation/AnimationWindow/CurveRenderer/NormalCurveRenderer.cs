@@ -370,7 +370,7 @@ namespace UnityEditor
                     Handles.DrawLine(
                         curTransform.MultiplyPoint(lastPoint),
                         nextTransform.MultiplyPoint(firstPoint)
-                        );
+                    );
 
                     curTransform = nextTransform;
                 }
@@ -401,7 +401,7 @@ namespace UnityEditor
                     Handles.DrawLine(
                         transform.MultiplyPoint(new Vector3(minTime, firstPoint.y, 0)),
                         transform.MultiplyPoint(new Vector3(Mathf.Min(maxTime, firstPoint.x), firstPoint.y, 0))
-                        );
+                    );
                 }
             }
 
@@ -420,7 +420,7 @@ namespace UnityEditor
                     Handles.DrawLine(
                         prevTransform.MultiplyPoint(lastPoint),
                         curTransform.MultiplyPoint(firstPoint)
-                        );
+                    );
 
                     prevTransform = curTransform;
                 }
@@ -461,7 +461,7 @@ namespace UnityEditor
                     Handles.DrawLine(
                         transform.MultiplyPoint(new Vector3(Mathf.Max(minTime, lastPoint.x), lastPoint.y, 0)),
                         transform.MultiplyPoint(new Vector3(maxTime, lastPoint.y, 0))
-                        );
+                    );
                 }
             }
         }
@@ -555,7 +555,8 @@ namespace UnityEditor
             {
                 if (minRep < 0)
                 {
-                    Handles.DrawPolyLine(new Vector3[] {
+                    Handles.DrawPolyLine(new Vector3[]
+                    {
                         transform.MultiplyPoint(new Vector3(minTime, points[0].y, 0)),
                         transform.MultiplyPoint(new Vector3(Mathf.Min(maxTime, points[0].x), points[0].y, 0))
                     });
@@ -608,7 +609,8 @@ namespace UnityEditor
             {
                 if (maxRep > 0)
                 {
-                    Handles.DrawPolyLine(new Vector3[] {
+                    Handles.DrawPolyLine(new Vector3[]
+                    {
                         transform.MultiplyPoint(new Vector3(Mathf.Max(minTime, points[last].x), points[last].y, 0)),
                         transform.MultiplyPoint(new Vector3(maxTime, points[last].y, 0))
                     });

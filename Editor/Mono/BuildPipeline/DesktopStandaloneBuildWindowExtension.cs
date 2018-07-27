@@ -73,14 +73,16 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
         {
             case BuildTarget.StandaloneWindows:
             case BuildTarget.StandaloneWindows64:
-                return new Dictionary<GUIContent, BuildTarget>() {
+                return new Dictionary<GUIContent, BuildTarget>()
+                {
                     { EditorGUIUtility.TrTextContent("x86"), BuildTarget.StandaloneWindows },
                     { EditorGUIUtility.TrTextContent("x86_64"), BuildTarget.StandaloneWindows64 },
                 };
             case BuildTarget.StandaloneLinux:
             case BuildTarget.StandaloneLinux64:
             case BuildTarget.StandaloneLinuxUniversal:
-                return new Dictionary<GUIContent, BuildTarget>() {
+                return new Dictionary<GUIContent, BuildTarget>()
+                {
                     { EditorGUIUtility.TrTextContent("x86"), BuildTarget.StandaloneLinux },
                     { EditorGUIUtility.TrTextContent("x86_64"), BuildTarget.StandaloneLinux64 },
                     { EditorGUIUtility.TrTextContent("x86 + x86_64 (Universal)"), BuildTarget.StandaloneLinuxUniversal },

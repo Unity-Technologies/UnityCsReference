@@ -184,14 +184,14 @@ namespace UnityEngine.XR.WSA
                 throw new ArgumentException("dataRequest.trianglesPerCubicMeter must be greater than zero", "dataRequest.trianglesPerCubicMeter");
             }
             bool ret = Internal_AddToWorkQueue(
-                    m_Observer,
-                    onDataReady,
-                    dataRequest.id.handle,
-                    dataRequest.outputMesh,
-                    dataRequest.outputAnchor,
-                    dataRequest.outputCollider,
-                    dataRequest.trianglesPerCubicMeter,
-                    dataRequest.bakeCollider);
+                m_Observer,
+                onDataReady,
+                dataRequest.id.handle,
+                dataRequest.outputMesh,
+                dataRequest.outputAnchor,
+                dataRequest.outputCollider,
+                dataRequest.trianglesPerCubicMeter,
+                dataRequest.bakeCollider);
             if (!ret)
             {
                 // The only real failure is if the ID is unknown.

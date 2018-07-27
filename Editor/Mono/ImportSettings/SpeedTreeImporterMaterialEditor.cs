@@ -218,7 +218,7 @@ namespace UnityEditor
                         // use the first target for selecting the destination folder, but apply that path for all targets
                         string destinationPath = (target as SpeedTreeImporter).assetPath;
                         destinationPath = EditorUtility.SaveFolderPanel(Styles.SelectMaterialFolder.text,
-                                FileUtil.DeleteLastPathNameComponent(destinationPath), "");
+                            FileUtil.DeleteLastPathNameComponent(destinationPath), "");
                         if (string.IsNullOrEmpty(destinationPath))
                         {
                             // cancel the extraction if the user did not select a folder

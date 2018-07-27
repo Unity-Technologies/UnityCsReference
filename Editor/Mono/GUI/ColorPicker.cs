@@ -204,9 +204,9 @@ namespace UnityEditor
                     {
                         size = thumbStyle.CalcSize(GUIContent.none),
                         center = new Vector2(
-                                value.x / (maxvalue.x - minvalue.x) * rect.width + rect.x,
-                                value.y / (maxvalue.y - minvalue.y) * rect.height + rect.y
-                                )
+                            value.x / (maxvalue.x - minvalue.x) * rect.width + rect.x,
+                            value.y / (maxvalue.y - minvalue.y) * rect.height + rect.y
+                        )
                     };
                     thumbStyle.Draw(thumbRect, GUIContent.none, id);
 
@@ -244,8 +244,8 @@ namespace UnityEditor
                     value = m_Color.GetColorChannel(channel);
                     EditorGUI.BeginChangeCheck();
                     value = EditorGUILayout.SliderWithTexture(
-                            GUIContent.Temp(label), value, 0f, 255f, EditorGUI.kIntFieldFormatString, 0f, 255f, sliderBackground
-                            );
+                        GUIContent.Temp(label), value, 0f, 255f, EditorGUI.kIntFieldFormatString, 0f, 255f, sliderBackground
+                    );
                     if (EditorGUI.EndChangeCheck())
                     {
                         m_Color.SetColorChannel(channel, value / 255f);
@@ -261,12 +261,12 @@ namespace UnityEditor
                     var textFieldMax = m_HDR ? float.MaxValue : 1f;
                     EditorGUI.BeginChangeCheck();
                     value = EditorGUILayout.SliderWithTexture(
-                            GUIContent.Temp(label), value,
-                            0f, m_DraggingFloatSlider ? m_FloatSliderMaxOnMouseDown : sliderMax,
-                            EditorGUI.kFloatFieldFormatString,
-                            0f, textFieldMax,
-                            sliderBackground
-                            );
+                        GUIContent.Temp(label), value,
+                        0f, m_DraggingFloatSlider ? m_FloatSliderMaxOnMouseDown : sliderMax,
+                        EditorGUI.kFloatFieldFormatString,
+                        0f, textFieldMax,
+                        sliderBackground
+                    );
                     switch (evtType)
                     {
                         case EventType.MouseDown:
@@ -288,7 +288,7 @@ namespace UnityEditor
 
         Texture2D Update1DSlider(
             Texture2D tex, int xSize, float const1, float const2, ref float oldConst1, ref float oldConst2, int idx, bool hsvSpace
-            )
+        )
         {
             if (!tex || const1 != oldConst1 || const2 != oldConst2)
             {
@@ -341,8 +341,8 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             h = EditorGUILayout.SliderWithTexture(
-                    GUIContent.Temp("H"), h * 360f, 0f, 360f, EditorGUI.kIntFieldFormatString, m_HueTexture
-                    );
+                GUIContent.Temp("H"), h * 360f, 0f, 360f, EditorGUI.kIntFieldFormatString, m_HueTexture
+            );
             if (EditorGUI.EndChangeCheck())
             {
                 m_Color.SetColorChannel(HsvChannel.H, h / 360f);
@@ -352,8 +352,8 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             s = EditorGUILayout.SliderWithTexture(
-                    GUIContent.Temp("S"), s * 100f, 0f, 100f, EditorGUI.kIntFieldFormatString, m_SatTexture
-                    );
+                GUIContent.Temp("S"), s * 100f, 0f, 100f, EditorGUI.kIntFieldFormatString, m_SatTexture
+            );
             if (EditorGUI.EndChangeCheck())
             {
                 m_Color.SetColorChannel(HsvChannel.S, s / 100f);
@@ -363,8 +363,8 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             v = EditorGUILayout.SliderWithTexture(
-                    GUIContent.Temp("V"), v * 100f, 0f, 100f, EditorGUI.kIntFieldFormatString, m_ValTexture
-                    );
+                GUIContent.Temp("V"), v * 100f, 0f, 100f, EditorGUI.kIntFieldFormatString, m_ValTexture
+            );
             if (EditorGUI.EndChangeCheck())
             {
                 m_Color.SetColorChannel(HsvChannel.V, v / 100f);
@@ -632,13 +632,13 @@ namespace UnityEditor
                     EditorGUI.BeginChangeCheck();
 
                     hue = EditorGUI.AngularDial(
-                            dialRect,
-                            GUIContent.none,
-                            hue * 360f,
-                            ((GUIContent)Styles.hueDialThumbFill).image,
-                            backgroundStyle,
-                            Styles.hueDialThumb
-                            );
+                        dialRect,
+                        GUIContent.none,
+                        hue * 360f,
+                        ((GUIContent)Styles.hueDialThumbFill).image,
+                        backgroundStyle,
+                        Styles.hueDialThumb
+                    );
 
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -683,8 +683,8 @@ namespace UnityEditor
             EditorGUIUtility.fieldWidth = Styles.sliderModeFieldWidth;
 
             m_SliderMode = (SliderMode)EditorGUILayout.IntPopup(
-                    GUIContent.Temp(" "), (int)m_SliderMode, Styles.sliderModeLabels, Styles.sliderModeValues
-                    );
+                GUIContent.Temp(" "), (int)m_SliderMode, Styles.sliderModeLabels, Styles.sliderModeValues
+            );
             GUILayout.Space(Styles.extraVerticalSpacing);
 
             EditorGUIUtility.labelWidth = oldLabelWidth;
@@ -741,8 +741,8 @@ namespace UnityEditor
                 EditorGUI.BeginChangeCheck();
                 var alpha = m_Color.GetColorChannelNormalized(RgbaChannel.A) * displayScale;
                 alpha = EditorGUI.SliderWithTexture(
-                        rect, GUIContent.Temp("A"), alpha, 0f, displayScale, formatString, m_AlphaTexture
-                        );
+                    rect, GUIContent.Temp("A"), alpha, 0f, displayScale, formatString, m_AlphaTexture
+                );
                 if (EditorGUI.EndChangeCheck())
                 {
                     m_Color.SetColorChannel(RgbaChannel.A, alpha / displayScale);
@@ -786,8 +786,8 @@ namespace UnityEditor
 
             EditorGUI.BeginChangeCheck();
             var exposureValue = EditorGUI.Slider(
-                    sliderPosition, Styles.exposureValue, m_Color.exposureValue, -m_ExposureSliderMax, m_ExposureSliderMax, float.MinValue, float.MaxValue
-                    );
+                sliderPosition, Styles.exposureValue, m_Color.exposureValue, -m_ExposureSliderMax, m_ExposureSliderMax, float.MinValue, float.MaxValue
+            );
             if (EditorGUI.EndChangeCheck())
             {
                 m_Color.exposureValue = exposureValue;
@@ -826,8 +826,8 @@ namespace UnityEditor
                         swatchRect,
                         GUIContent.Temp(stop == 0 ? null : (stop < 0 ? stop.ToString() : string.Format("+{0}", stop))),
                         Styles.exposureSwatch
-                        )
                     )
+                )
                 {
                     m_Color.exposureValue =
                         Mathf.Clamp(m_Color.exposureValue + stop, -m_ExposureSliderMax, m_ExposureSliderMax);
@@ -1119,7 +1119,10 @@ namespace UnityEditor
             }
 
             if (cp.m_IsOSColorPicker)
+            {
+                cp.SetColor(col);
                 OSColorPicker.Show(showAlpha);
+            }
             else
             {
                 cp.titleContent = hdr ? EditorGUIUtility.TrTextContent("HDR Color") : EditorGUIUtility.TrTextContent("Color");

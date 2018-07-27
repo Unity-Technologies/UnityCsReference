@@ -33,10 +33,10 @@ namespace UnityEditor
             Texture2DArray tex = (Texture2DArray)target;
 
             string info = string.Format("{0}x{1} {2} slice{5} {3} {4}",
-                    tex.width, tex.height, tex.depth,
-                    TextureUtil.GetTextureFormatString(tex.format),
-                    EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex)),
-                    tex.depth != 1 ? "s" : "");
+                tex.width, tex.height, tex.depth,
+                TextureUtil.GetTextureFormatString(tex.format),
+                EditorUtility.FormatBytes(TextureUtil.GetRuntimeMemorySizeLong(tex)),
+                tex.depth != 1 ? "s" : "");
 
             return info;
         }
@@ -129,7 +129,7 @@ namespace UnityEditor
                     {
                         m_MouseDrag += evt.delta.x;
                         m_Slice = (int)(Mathf.Clamp(m_MouseDrag, 0.0f, scrubberRect.width) * t.depth /
-                                        scrubberRect.width);
+                            scrubberRect.width);
                         evt.Use();
                     }
                     break;

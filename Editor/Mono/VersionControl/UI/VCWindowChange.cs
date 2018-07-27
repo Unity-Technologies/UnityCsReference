@@ -208,9 +208,9 @@ namespace UnityEditor.VersionControl
             {
                 const bool includeFolders = true;
                 assetList = taskStatus.assetList.Filter(includeFolders,
-                        Asset.States.CheckedOutLocal,
-                        Asset.States.DeletedLocal,
-                        Asset.States.AddedLocal/*,
+                    Asset.States.CheckedOutLocal,
+                    Asset.States.DeletedLocal,
+                    Asset.States.AddedLocal/*,
                     Asset.States.Branch,
                     Asset.States.Integrate*/);
                 RefreshList();

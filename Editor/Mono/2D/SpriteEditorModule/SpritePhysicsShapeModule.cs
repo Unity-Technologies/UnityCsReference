@@ -72,8 +72,8 @@ namespace UnityEditor.U2D
         {
             var physicsShape = m_Outline[spriteRect.spriteID];
             var physicsShapes = GenerateSpriteRectOutline(spriteRect.rect,
-                    Math.Abs(physicsShape.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : physicsShape.tessellationDetail,
-                    kDefaultPhysicsAlphaTolerance, m_TextureDataProvider);
+                Math.Abs(physicsShape.tessellationDetail - (-1f)) < Mathf.Epsilon ? kDefaultPhysicsTessellationDetail : physicsShape.tessellationDetail,
+                kDefaultPhysicsAlphaTolerance, m_TextureDataProvider);
             m_Outline[spriteRect.spriteID].spriteOutlines = physicsShapes;
             spriteEditorWindow.SetDataModified();
         }

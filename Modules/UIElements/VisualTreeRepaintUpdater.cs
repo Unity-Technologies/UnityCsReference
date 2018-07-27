@@ -58,7 +58,7 @@ namespace UnityEngine.Experimental.UIElements
         private bool DoesMatrixHaveUnsupportedRotation(Matrix4x4 m)
         {
             Func<float, bool> ApproximatelyZero = delegate(float f)
-                { return Math.Abs(f) < 1e-4f; };
+            { return Math.Abs(f) < 1e-4f; };
 
             // In order to pass on rotation angles that are multiples of 90 degrees, we check for two zeroes per row.
             for (int column = 0; column < 3; ++column)
@@ -162,17 +162,17 @@ namespace UnityEngine.Experimental.UIElements
                     if (cache == null)
                     {
                         root.renderData.pixelCache = cache = new RenderTexture(
-                                    textureWidth,
-                                    textureHeight,
-                                    32, // depth
-                                    RenderTextureFormat.ARGB32,
-                                    RenderTextureReadWrite.Linear);
+                            textureWidth,
+                            textureHeight,
+                            32,         // depth
+                            RenderTextureFormat.ARGB32,
+                            RenderTextureReadWrite.Linear);
                     }
 
                     bool hasRoundedBorderRects = (root.style.borderTopLeftRadius > 0 ||
-                                                  root.style.borderTopRightRadius > 0 ||
-                                                  root.style.borderBottomLeftRadius > 0 ||
-                                                  root.style.borderBottomRightRadius > 0);
+                        root.style.borderTopRightRadius > 0 ||
+                        root.style.borderBottomLeftRadius > 0 ||
+                        root.style.borderBottomRightRadius > 0);
 
                     RenderTexture temporaryTexture = null;
                     var old = RenderTexture.active;
@@ -187,7 +187,7 @@ namespace UnityEngine.Experimental.UIElements
                             // thing is slated to go away, so we take a short-cut here and use a linear texture
                             // along with the use of manualTex2SRGBEnabled to get the correct results.
                             temporaryTexture = cache = RenderTexture.GetTemporary(textureWidth, textureHeight, 32,
-                                        RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+                                RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
                         }
 
                         // render the texture again to clip the round rect borders
@@ -229,6 +229,7 @@ namespace UnityEngine.Experimental.UIElements
                                 GL.Clear(true, true, new Color(0, 0, 0, 0));
 
                                 var textureParams = TextureStylePainterParameters.GetDefault(root);
+                                textureParams.color = Color.white;
                                 textureParams.texture = cache;
                                 textureParams.scaleMode = ScaleMode.StretchToFill;
                                 textureParams.rect = textureClip;

@@ -74,7 +74,6 @@ namespace UnityEditor
                 { EditorGUIUtility.TrTextContent("Your license does not cover PS4 Publishing. Please see the PS4 section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Nintendo 3DS Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Facebook Publishing"), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Nintendo Switch Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
             };
@@ -90,7 +89,6 @@ namespace UnityEditor
                 { EditorGUIUtility.TrTextContent("PS4 Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Universal Windows Platform Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Nintendo 3DS is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Facebook is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Nintendo Switch is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
             };
@@ -137,8 +135,8 @@ namespace UnityEditor
             public Styles()
             {
                 if (Unsupported.IsSourceBuild() && (
-                        buildTargetNotInstalled.GetLength(0) != notLicensedMessages.GetLength(0) ||
-                        buildTargetNotInstalled.GetLength(0) != BuildPlatforms.instance.buildPlatforms.Length))
+                    buildTargetNotInstalled.GetLength(0) != notLicensedMessages.GetLength(0) ||
+                    buildTargetNotInstalled.GetLength(0) != BuildPlatforms.instance.buildPlatforms.Length))
                     Debug.LogErrorFormat("Build platforms and messages are desynced in BuildPlayerWindow! ({0} vs. {1} vs. {2}) DON'T SHIP THIS!", buildTargetNotInstalled.GetLength(0), notLicensedMessages.GetLength(0), BuildPlatforms.instance.buildPlatforms.Length);
             }
         }
@@ -340,7 +338,7 @@ namespace UnityEditor
 
                 if (EditorUserBuildSettings.activeBuildTargetGroup == bp.targetGroup)
                     GUI.Label(new Rect(r.xMax - styles.activePlatformIcon.width - 8, r.y + 3 + (32 - styles.activePlatformIcon.height) / 2,
-                            styles.activePlatformIcon.width, styles.activePlatformIcon.height),
+                        styles.activePlatformIcon.width, styles.activePlatformIcon.height),
                         styles.activePlatformIcon, GUIStyle.none);
             }
 
@@ -487,7 +485,7 @@ namespace UnityEditor
 
         // Major.Minor.Micro followed by one of abxfp followed by an identifier, optionally suffixed with " (revisionhash)"
         static Regex s_VersionPattern = new Regex(@"(?<shortVersion>\d+\.\d+\.\d+(?<suffix>((?<alphabeta>[abx])|[fp])[^\s]*))( \((?<revision>[a-fA-F\d]+)\))?",
-                RegexOptions.Compiled);
+            RegexOptions.Compiled);
         static Dictionary<string, string> s_ModuleNames = new Dictionary<string, string>()
         {
             { "tvOS", "AppleTV" },
@@ -553,7 +551,7 @@ namespace UnityEditor
                 !string.IsNullOrEmpty(moduleName) &&
                 Modules.ModuleManager.GetBuildPostProcessor(moduleName) == null &&
                 (BuildTargetGroup.Standalone != EditorUserBuildSettings.selectedBuildTargetGroup ||
-                 !IsAnyStandaloneModuleLoaded());
+                    !IsAnyStandaloneModuleLoaded());
         }
 
         void ShowBuildTargetSettings()
@@ -603,7 +601,7 @@ namespace UnityEditor
             {
                 // Show copy for using personal edition build targets with pro edition editor
                 string infoText = string.Format(styles.infoText,
-                        BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget));
+                    BuildPlatforms.instance.GetBuildTargetDisplayName(buildTargetGroup, buildTarget));
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(infoText, EditorStyles.wordWrappedMiniLabel);
@@ -872,7 +870,7 @@ namespace UnityEditor
             if (EditorGUILayout.LinkLabel(styles.learnAboutUnityCloudBuild))
             {
                 Application.OpenURL(string.Format("{0}/from/editor/buildsettings?upid={1}&pid={2}&currentplatform={3}&selectedplatform={4}&unityversion={5}",
-                        UnityEditorInternal.WebURLs.cloudBuildPage, CloudProjectSettings.projectId, PlayerSettings.productGUID, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget(), Application.unityVersion));
+                    UnityEditorInternal.WebURLs.cloudBuildPage, CloudProjectSettings.projectId, PlayerSettings.productGUID, EditorUserBuildSettings.activeBuildTarget, EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget(), Application.unityVersion));
             }
             GUILayout.EndHorizontal();
             // Space 6 for alignment with platform column and to reduce missclicks with Build And Run button

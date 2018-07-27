@@ -467,8 +467,8 @@ namespace UnityEditor
                 if (AssetStoreClient.LoggedIn())
                 {
                     AssetStoreAssetSelection.RefreshFromServer(delegate() {
-                            InitiateBuySelected(false);
-                        });
+                        InitiateBuySelected(false);
+                    });
                 }
                 else if (firstAttempt) LoginAndInitiateBuySelected();
             }
@@ -487,8 +487,8 @@ namespace UnityEditor
                 // Maybe the basket has been emptied and this is a retry by the user
                 if (firstAttempt)
                     AssetStoreAssetSelection.RefreshFromServer(delegate() {
-                            InitiateBuySelected(false);
-                        });
+                        InitiateBuySelected(false);
+                    });
                 else
                     AssetStore.Open(string.Format("content/{0}/basketpurchase", asset.packageID));
             }
@@ -500,7 +500,7 @@ namespace UnityEditor
                     AssetStoreAssetInspector.s_PaymentMethodCard,
                     AssetStoreAssetInspector.s_PaymentMethodExpire,
                     AssetStoreAssetInspector.s_PriceText
-                    );
+                );
             }
         }
 

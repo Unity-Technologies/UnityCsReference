@@ -107,8 +107,8 @@ namespace UnityEditor
         private static Mesh s_SphereMesh;
         private static Mesh s_HemisphereMesh;
         private static readonly Matrix4x4 s_ArcHandleOffsetMatrix = Matrix4x4.TRS(
-                Vector3.zero, Quaternion.AngleAxis(90f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up), Vector3.one
-                );
+            Vector3.zero, Quaternion.AngleAxis(90f, Vector3.right) * Quaternion.AngleAxis(90f, Vector3.up), Vector3.one
+        );
         private ArcHandle m_ArcHandle = new ArcHandle();
         private BoxBoundsHandle m_BoxBoundsHandle = new BoxBoundsHandle();
         private SphereBoundsHandle m_SphereBoundsHandle = new SphereBoundsHandle();
@@ -237,22 +237,22 @@ namespace UnityEditor
         }
 
         static MultiModeTexts s_RadiusTexts = new MultiModeTexts(
-                /*_value:*/ "Radius|New particles are spawned along the radius.",
-                /*_mode:*/ "Mode|Control how particles are spawned along the radius.",
-                /*_spread:*/ "Spread|Spawn particles only at specific positions along the radius (0 to disable).",
-                /*_speed:*/ "Speed|Control the speed that the emission position moves along the radius.");
+            /*_value:*/ "Radius|New particles are spawned along the radius.",
+            /*_mode:*/ "Mode|Control how particles are spawned along the radius.",
+            /*_spread:*/ "Spread|Spawn particles only at specific positions along the radius (0 to disable).",
+            /*_speed:*/ "Speed|Control the speed that the emission position moves along the radius.");
 
         static MultiModeTexts s_ArcTexts = new MultiModeTexts(
-                /*_value:*/ "Arc|New particles are spawned around the arc.",
-                /*_mode:*/ "Mode|Control how particles are spawned around the arc.",
-                /*_spread:*/ "Spread|Spawn particles only at specific angles around the arc (0 to disable).",
-                /*_speed:*/ "Speed|Control the speed that the emission position moves around the arc.");
+            /*_value:*/ "Arc|New particles are spawned around the arc.",
+            /*_mode:*/ "Mode|Control how particles are spawned around the arc.",
+            /*_spread:*/ "Spread|Spawn particles only at specific angles around the arc (0 to disable).",
+            /*_speed:*/ "Speed|Control the speed that the emission position moves around the arc.");
 
         static MultiModeTexts s_MeshTexts = new MultiModeTexts(
-                /*_value:*/ null,
-                /*_mode:*/ "Mode|Control how particles are spawned across the mesh.",
-                /*_spread:*/ "Spread|Spawn particles only at specific positions across the mesh (0 to disable).",
-                /*_speed:*/ "Speed|Control the speed that the emission position moves along the edges of the mesh.");
+            /*_value:*/ null,
+            /*_mode:*/ "Mode|Control how particles are spawned across the mesh.",
+            /*_spread:*/ "Spread|Spawn particles only at specific positions across the mesh (0 to disable).",
+            /*_speed:*/ "Speed|Control the speed that the emission position moves along the edges of the mesh.");
 
         public ShapeModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "ShapeModule", displayName, VisibilityState.VisibleAndFolded)

@@ -80,7 +80,12 @@ namespace UnityEngine
     }
 
     // Makes a script execute in edit mode.
+    [UsedByNativeCode]
     public sealed class ExecuteInEditMode : Attribute {}
+
+    // Makes a script execute always: when in edit mode, play mode (also for scripts prefab isolation mode in play mode)
+    [UsedByNativeCode]
+    public sealed class ExecuteAlways : Attribute {}
 
     // Makes a variable not show up in the inspector but be serialized.
     [UsedByNativeCode]

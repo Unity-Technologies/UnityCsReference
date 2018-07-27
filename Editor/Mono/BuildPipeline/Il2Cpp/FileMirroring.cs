@@ -132,25 +132,25 @@ namespace UnityEditorInternal
         static bool AreFilesIdentical(string filePath1, string filePath2)
         {
             using (var file = File.OpenRead(filePath1))
-                using (var file2 = File.OpenRead(filePath2))
+            using (var file2 = File.OpenRead(filePath2))
+            {
+                if (file.Length != file2.Length)
+                    return false;
+
+                const int bufferSize = 0x10000;
+                int count;
+                var buffer = new byte[bufferSize];
+                var buffer2 = new byte[bufferSize];
+
+                while ((count = file.Read(buffer, 0, buffer.Length)) > 0)
                 {
-                    if (file.Length != file2.Length)
-                        return false;
+                    file2.Read(buffer2, 0, buffer2.Length);
 
-                    const int bufferSize = 0x10000;
-                    int count;
-                    var buffer = new byte[bufferSize];
-                    var buffer2 = new byte[bufferSize];
-
-                    while ((count = file.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        file2.Read(buffer2, 0, buffer2.Length);
-
-                        for (int i = 0; i < count; i++)
-                            if (buffer[i] != buffer2[i])
-                                return false;
-                    }
+                    for (int i = 0; i < count; i++)
+                        if (buffer[i] != buffer2[i])
+                            return false;
                 }
+            }
 
             return true;
         }

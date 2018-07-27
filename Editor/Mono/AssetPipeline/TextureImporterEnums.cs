@@ -164,7 +164,9 @@ namespace UnityEditor
         ASTC_RGBA_12x12 = 59,
 
         // Nintendo 3DS-flavoured ETC
+        [System.Obsolete("Nintendo 3DS is no longer supported.")]
         ETC_RGB4_3DS = 60,
+        [System.Obsolete("Nintendo 3DS is no longer supported.")]
         ETC_RGBA8_3DS = 61,
 
         // ETC1 crunched texture format.

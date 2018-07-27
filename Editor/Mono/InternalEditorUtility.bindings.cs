@@ -242,13 +242,13 @@ namespace UnityEditorInternal
         extern public static DragAndDropVisualMode ProjectWindowDrag(HierarchyProperty property, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::HierarchyWindowDrag")]
-        extern public static DragAndDropVisualMode HierarchyWindowDrag(HierarchyProperty property, bool perform, HierarchyDropMode dropMode);
+        extern public static DragAndDropVisualMode HierarchyWindowDrag(HierarchyProperty property, HierarchyDropMode dropMode, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::InspectorWindowDrag")]
         extern internal static DragAndDropVisualMode InspectorWindowDrag(Object[] targets, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::SceneViewDrag")]
-        extern public static DragAndDropVisualMode SceneViewDrag(Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, bool perform);
+        extern public static DragAndDropVisualMode SceneViewDrag(Object dropUpon, Vector3 worldPosition, Vector2 viewportPosition, Transform parentForDraggedObjects, bool perform);
 
         [FreeFunction("InternalEditorUtilityBindings::SetRectTransformTemporaryRect")]
         extern public static void SetRectTransformTemporaryRect([NotNull] RectTransform rectTransform, Rect rect);
@@ -265,6 +265,10 @@ namespace UnityEditorInternal
 
         [FreeFunction("LicenseInfo::IsEdu", IsThreadSafe = true)]
         extern public static bool HasEduLicense();
+
+        [ThreadSafe]
+        [StaticAccessor("LicenseInfo", StaticAccessorType.DoubleColon)]
+        extern internal static bool HasUFSTLicense();
 
         [FreeFunction]
         extern public static bool HasAdvancedLicenseOnBuildTarget(BuildTarget target);

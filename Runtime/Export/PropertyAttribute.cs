@@ -169,6 +169,18 @@ namespace UnityEngine
         }
     }
 
+    // Attribute to control how the gradient can be manipulated in the GradientField
+    [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
+    public sealed class GradientUsageAttribute : PropertyAttribute
+    {
+        public readonly bool hdr = false;
+
+        public GradientUsageAttribute(bool hdr)
+        {
+            this.hdr = hdr;
+        }
+    }
+
     // Attribute to make int or float fields delayed.
     [System.AttributeUsage(AttributeTargets.Field, Inherited = true, AllowMultiple = false)]
     public sealed class DelayedAttribute : PropertyAttribute

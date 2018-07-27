@@ -31,11 +31,11 @@ namespace UnityEditor.Experimental.UIElements
                     if (!Enum.IsDefined(enumField.m_EnumType, v))
                     {
                         Debug.LogErrorFormat("Could not parse value of '{0}', because it isn't defined in the {1} enum.", v, enumField.m_EnumType.FullName);
-                        enumField.value = null;
+                        enumField.SetValueWithoutNotify(null);
                     }
                     else
                     {
-                        enumField.value = (Enum)Enum.Parse(enumField.m_EnumType, v);
+                        enumField.SetValueWithoutNotify((Enum)Enum.Parse(enumField.m_EnumType, v));
                     }
                 }
             }
@@ -43,35 +43,6 @@ namespace UnityEditor.Experimental.UIElements
 
         private Type m_EnumType;
         private TextElement m_TextElement;
-
-        public override Enum value
-        {
-            get { return m_Value; }
-            set
-            {
-                if (m_Value != value)
-                {
-                    m_Value = value;
-                    m_TextElement.text = ObjectNames.NicifyVariableName(m_Value.ToString());
-
-                    if (panel != null)
-                    {
-                        using (ChangeEvent<Enum> evt = ChangeEvent<Enum>.GetPooled(m_Value, value))
-                        {
-                            evt.target = this;
-                            SetValueWithoutNotify(value);
-                            SendEvent(evt);
-                        }
-                    }
-                    else
-                    {
-                        SetValueWithoutNotify(value);
-                    }
-
-                    IncrementVersion(VersionChangeType.Repaint);
-                }
-            }
-        }
 
         public string text
         {
@@ -102,7 +73,7 @@ namespace UnityEditor.Experimental.UIElements
         public void Init(Enum defaultValue)
         {
             m_EnumType = defaultValue.GetType();
-            value = defaultValue;
+            SetValueWithoutNotify(defaultValue);
         }
 
         [Obsolete("This method is replaced by simply using this.value. The default behaviour has been changed to notify when changed. If the behaviour is not to be notified, SetValueWithoutNotify() must be used.", false)]
@@ -111,6 +82,15 @@ namespace UnityEditor.Experimental.UIElements
             if (value != newValue)
             {
                 value = newValue;
+            }
+        }
+
+        public override void SetValueWithoutNotify(Enum newValue)
+        {
+            if (m_Value != newValue)
+            {
+                base.SetValueWithoutNotify(newValue);
+                m_TextElement.text = ObjectNames.NicifyVariableName(m_Value.ToString());
             }
         }
 

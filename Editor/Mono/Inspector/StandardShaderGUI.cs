@@ -264,8 +264,8 @@ namespace UnityEditor
             m_MaterialEditor.TexturePropertySingleLine(Styles.normalMapText, bumpMap, bumpMap.textureValue != null ? bumpScale : null);
             if (bumpScale.floatValue != 1 && UnityEditorInternal.InternalEditorUtility.IsMobilePlatform(EditorUserBuildSettings.activeBuildTarget))
                 if (m_MaterialEditor.HelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("Bump scale is not supported on mobile platforms"),
-                        EditorGUIUtility.TrTextContent("Fix Now")))
+                    EditorGUIUtility.TrTextContent("Bump scale is not supported on mobile platforms"),
+                    EditorGUIUtility.TrTextContent("Fix Now")))
                 {
                     bumpScale.floatValue = 1;
                 }

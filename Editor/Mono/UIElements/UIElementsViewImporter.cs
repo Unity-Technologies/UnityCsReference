@@ -358,15 +358,15 @@ namespace UnityEditor.Experimental.UIElements
                                 child,
                                 Error.Level.Fatal,
                                 child
-                                );
+                            );
                         }
                         break;
                     default:
                         logger.LogError(ImportErrorType.Semantic,
-                        ImportErrorCode.UnknownAttribute,
-                        xAttribute.Name.LocalName,
-                        Error.Level.Fatal,
-                        child
+                            ImportErrorCode.UnknownAttribute,
+                            xAttribute.Name.LocalName,
+                            Error.Level.Fatal,
+                            child
                         );
                         break;
                 }
@@ -379,7 +379,7 @@ namespace UnityEditor.Experimental.UIElements
                     null,
                     Error.Level.Fatal,
                     elt
-                    );
+                );
                 return;
             }
 
@@ -393,7 +393,7 @@ namespace UnityEditor.Experimental.UIElements
                     name,
                     Error.Level.Fatal,
                     elt
-                    );
+                );
                 return;
             }
 

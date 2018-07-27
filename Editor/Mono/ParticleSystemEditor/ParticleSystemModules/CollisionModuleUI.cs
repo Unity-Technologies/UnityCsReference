@@ -122,8 +122,8 @@ namespace UnityEditor
             get
             {
                 return ((EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesMove ||
-                         EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate) &&
-                        EditMode.IsOwner(m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor));
+                    EditMode.editMode == EditMode.SceneViewEditMode.ParticleSystemCollisionModulePlanesRotate) &&
+                    EditMode.IsOwner(m_ParticleSystemUI.m_ParticleEffectUI.m_Owner.customEditor));
             }
             set
             {

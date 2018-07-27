@@ -21,7 +21,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/Subsystems/Depth/XRDepthSubsystem.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRDepthSubsystem : Subsystem<XRDepthSubsystemDescriptor>
+    public class XRDepthSubsystem : IntegratedSubsystem<XRDepthSubsystemDescriptor>
     {
         public event Action<PointCloudUpdatedEventArgs> PointCloudUpdated;
 

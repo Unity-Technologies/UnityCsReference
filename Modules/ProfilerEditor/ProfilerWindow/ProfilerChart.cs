@@ -60,7 +60,8 @@ namespace UnityEditorInternal
         {
             if (s_LocalizedChartNames == null)
             {
-                s_LocalizedChartNames = new string[] {
+                s_LocalizedChartNames = new string[]
+                {
                     LocalizationDatabase.GetLocalizedString("CPU Usage|Graph out the various CPU areas"),
                     LocalizationDatabase.GetLocalizedString("GPU Usage|Graph out the various GPU areas"),
                     LocalizationDatabase.GetLocalizedString("Rendering"),

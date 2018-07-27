@@ -93,16 +93,16 @@ namespace UnityEditorInternal
             bool hasAnyCurve = m_Responder.HasAnyCurves();
 
             menu.AddItem(((hasKey && hasCandidate) ? updateKeyContent : addKeyContent), false, () =>
-                {
-                    m_Responder.AddKey(modifications);
-                });
+            {
+                m_Responder.AddKey(modifications);
+            });
 
             if (hasKey)
             {
                 menu.AddItem(removeKeyContent, false, () =>
-                    {
-                        m_Responder.RemoveKey(modifications);
-                    });
+                {
+                    m_Responder.RemoveKey(modifications);
+                });
             }
             else
             {
@@ -112,9 +112,9 @@ namespace UnityEditorInternal
             if (hasCurve)
             {
                 menu.AddItem(removeCurveContent, false, () =>
-                    {
-                        m_Responder.RemoveCurve(modifications);
-                    });
+                {
+                    m_Responder.RemoveCurve(modifications);
+                });
             }
             else
             {
@@ -125,9 +125,9 @@ namespace UnityEditorInternal
             if (hasAnyCandidate)
             {
                 menu.AddItem(addCandidatesContent, false, () =>
-                    {
-                        m_Responder.AddCandidateKeys();
-                    });
+                {
+                    m_Responder.AddCandidateKeys();
+                });
             }
             else
             {
@@ -137,9 +137,9 @@ namespace UnityEditorInternal
             if (hasAnyCurve)
             {
                 menu.AddItem(addAnimatedContent, false, () =>
-                    {
-                        m_Responder.AddAnimatedKeys();
-                    });
+                {
+                    m_Responder.AddAnimatedKeys();
+                });
             }
             else
             {
@@ -150,13 +150,13 @@ namespace UnityEditorInternal
             if (hasCurve)
             {
                 menu.AddItem(goToPreviousKeyContent, false, () =>
-                    {
-                        m_Responder.GoToPreviousKeyframe(modifications);
-                    });
+                {
+                    m_Responder.GoToPreviousKeyframe(modifications);
+                });
                 menu.AddItem(goToNextKeyContent, false, () =>
-                    {
-                        m_Responder.GoToNextKeyframe(modifications);
-                    });
+                {
+                    m_Responder.GoToNextKeyframe(modifications);
+                });
             }
             else
             {

@@ -30,10 +30,10 @@ namespace UnityEditor
             Vector2 labelSize = GUI.skin.label.CalcSize(labelContent);
 
             Rect labelRect = new Rect(
-                    buttonRect.xMax + k_SpaceBetweenLabelAndButton,
-                    rect.yMin + (rect.height - labelSize.y) * .5f,
-                    labelSize.x,
-                    rect.height);
+                buttonRect.xMax + k_SpaceBetweenLabelAndButton,
+                rect.yMin + (rect.height - labelSize.y) * .5f,
+                labelSize.x,
+                rect.height);
 
             GUILayout.Space(2f);
             bool newValue = GUI.Toggle(buttonRect, editing, EditorGUIUtility.IconContent("EditCollider"), s_EditColliderButtonStyle);

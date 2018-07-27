@@ -327,7 +327,7 @@ namespace UnityEngine
         {
             if (current.layoutGroups.Count == 0
                 || Event.current == null
-                )
+            )
             {
                 Debug.LogError("EndLayoutGroup: BeginLayoutGroup must be called first.");
 

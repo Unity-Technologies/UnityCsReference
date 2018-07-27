@@ -72,9 +72,9 @@ namespace UnityEditor
             // to match the call to GetRect.
             // From this point on, we move to non-layout based code.
             var sliderRect = GUILayoutUtility.GetRect(GUIContent.none
-                    , s_CascadeSliderBG
-                    , GUILayout.Height(kSliderbarTopMargin + kSliderbarHeight + kSliderbarBottomMargin)
-                    , GUILayout.ExpandWidth(true));
+                , s_CascadeSliderBG
+                , GUILayout.Height(kSliderbarTopMargin + kSliderbarHeight + kSliderbarBottomMargin)
+                , GUILayout.ExpandWidth(true));
             GUI.Box(sliderRect, GUIContent.none);
 
             float currentX = sliderRect.x;
@@ -166,7 +166,7 @@ namespace UnityEditor
                             if (s_RestoreSceneView != null)
                             {
                                 s_OldSceneDrawMode = s_RestoreSceneView.cameraMode;
-                                s_OldSceneLightingMode = s_RestoreSceneView.m_SceneLighting;
+                                s_OldSceneLightingMode = s_RestoreSceneView.sceneLighting;
                                 s_RestoreSceneView.cameraMode = SceneView.GetBuiltinCameraMode(DrawCameraMode.ShadowCascades);
                             }
                         }
@@ -186,7 +186,7 @@ namespace UnityEditor
                     if (s_RestoreSceneView != null)
                     {
                         s_RestoreSceneView.cameraMode = s_OldSceneDrawMode;
-                        s_RestoreSceneView.m_SceneLighting = s_OldSceneLightingMode;
+                        s_RestoreSceneView.sceneLighting = s_OldSceneLightingMode;
                         s_RestoreSceneView = null;
                     }
                     break;

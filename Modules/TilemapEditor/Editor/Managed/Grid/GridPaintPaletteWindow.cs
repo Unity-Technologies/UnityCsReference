@@ -405,8 +405,9 @@ namespace UnityEditor
             {
                 m_PaletteInstance = previewUtility.InstantiatePrefabInScene(palette);
 
-                // Prevent palette from overriding the prefab while it is active, unless user saves the palette
-                PrefabUtility.DisconnectPrefabInstance(m_PaletteInstance);
+                // Disconnecting prefabs is no longer possible.
+                // If performance of overrides on palette palette instance turns out to be a problem.
+                // unpack the prefab instance here, and overwrite the prefab later instead of reconnecting.
 
                 EditorUtility.InitInstantiatedPreviewRecursive(m_PaletteInstance);
                 m_PaletteInstance.transform.position = new Vector3(0, 0, 0);
@@ -486,7 +487,8 @@ namespace UnityEditor
             {
                 GridPaintingState.savingPalette = true;
                 SetHideFlagsRecursivelyIgnoringTilemapChildren(paletteInstance, HideFlags.HideInHierarchy);
-                PrefabUtility.ReplacePrefab(paletteInstance, palette, ReplacePrefabOptions.ReplaceNameBased);
+                string path = AssetDatabase.GetAssetPath(palette);
+                PrefabUtility.ReplacePrefabAssetNameBased(paletteInstance, path, true);
                 SetHideFlagsRecursivelyIgnoringTilemapChildren(paletteInstance, HideFlags.HideAndDontSave);
                 GridPaintingState.savingPalette = false;
             }
@@ -818,8 +820,8 @@ namespace UnityEditor
             using (new EditorGUI.DisabledScope(palette == null))
             {
                 clipboardView.unlocked = GUILayout.Toggle(clipboardView.unlocked,
-                        clipboardView.isModified ? Styles.editModified : Styles.edit,
-                        EditorStyles.toolbarButton);
+                    clipboardView.isModified ? Styles.editModified : Styles.edit,
+                    EditorStyles.toolbarButton);
             }
             GUILayout.FlexibleSpace();
             EditorGUILayout.EndHorizontal();

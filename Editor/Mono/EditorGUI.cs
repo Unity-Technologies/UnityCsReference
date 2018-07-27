@@ -136,6 +136,9 @@ namespace UnityEditor
         internal static Color kCurveBGColor = new Color(0.337f, 0.337f, 0.337f, 1f);
         internal static EditorGUIUtility.SkinnedColor kSplitLineSkinnedColor = new EditorGUIUtility.SkinnedColor(new Color(0.6f, 0.6f, 0.6f, 1.333f), new Color(0.12f, 0.12f, 0.12f, 1.333f));
 
+        private static Color k_OverrideMarginColor = new Color(1f / 255f, 153f / 255f, 235f / 255f, 0.75f);
+
+        private const int kInspTitlebarToggleWidth = 16;
         private const int kInspTitlebarSpacing = 2;
         private static readonly GUIContent s_PropertyFieldTempContent = new GUIContent();
         private static GUIContent s_IconDropDown;
@@ -161,6 +164,12 @@ namespace UnityEditor
 
         private static readonly Color s_MixedValueContentColor = new Color(1, 1, 1, 0.5f);
         private static Color s_MixedValueContentColorTemp = Color.white;
+
+        static class Styles
+        {
+            public static Texture2D prefabOverlayAddedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayAdded Icon");
+            public static Texture2D prefabOverlayRemovedIcon = EditorGUIUtility.LoadIcon("PrefabOverlayRemoved Icon");
+        }
 
         internal static void BeginHandleMixedValueContentColor()
         {
@@ -1066,7 +1075,7 @@ namespace UnityEditor
                             editor.IsEditingControl(id) &&
                             MightBePrintableKey(evt) &&
                             !nonPrintableTab // only consume tabs that actually result in a character (above) so we don't disable tabbing between keyboard controls
-                            )
+                        )
                         {
                             evt.Use();
                         }
@@ -1163,6 +1172,7 @@ namespace UnityEditor
                         GUIUtility.hotControl = id;
                         evt.Use();
                         bKeyEventActive = !bKeyEventActive;
+                        EditorGUIUtility.editingTextField = bKeyEventActive;
                     }
                     return _event;
                 case EventType.MouseUp:
@@ -1209,6 +1219,7 @@ namespace UnityEditor
                         bKeyEventActive = false;
                         GUI.changed = true;
                         GUIUtility.hotControl = 0;
+                        EditorGUIUtility.editingTextField = false;
                         Event e = new Event(evt);
                         evt.Use();
                         return e;
@@ -2278,12 +2289,25 @@ namespace UnityEditor
             return f < 0.0f ? -result : result;
         }
 
-        private static void DoPropertyContextMenu(SerializedProperty property)
+        private static void DoPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null)
         {
-            GenericMenu pm = new GenericMenu();
-            SerializedProperty propertyWithPath = property.serializedObject.FindProperty(property.propertyPath);
+            if (linkedProperty != null && linkedProperty.serializedObject != property.serializedObject)
+                linkedProperty = null;
 
+            GenericMenu pm = new GenericMenu();
+
+            // Since the menu items are invoked with delay, we can't assume a SerializedObject we don't own
+            // will still be around at that time. Hence create our own copy. (case 1051734)
+            SerializedObject serializedObjectCopy = new SerializedObject(property.serializedObject.targetObjects);
+            SerializedProperty propertyWithPath = serializedObjectCopy.FindProperty(property.propertyPath);
             ScriptAttributeUtility.GetHandler(property).AddMenuItems(property, pm);
+
+            SerializedProperty linkedPropertyWithPath = null;
+            if (linkedProperty != null)
+            {
+                linkedPropertyWithPath = serializedObjectCopy.FindProperty(linkedProperty.propertyPath);
+                ScriptAttributeUtility.GetHandler(linkedProperty).AddMenuItems(linkedProperty, pm);
+            }
 
             // Would be nice to allow to set to value of a specific target for properties with children too,
             // but it's not currently supported.
@@ -2292,9 +2316,41 @@ namespace UnityEditor
                 TargetChoiceHandler.AddSetToValueOfTargetMenuItems(pm, propertyWithPath, TargetChoiceHandler.SetToValueOfTarget);
             }
 
-            if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab)
+            if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab && property.prefabOverride && !property.isDefaultOverride)
             {
-                pm.AddItem(EditorGUIUtility.TrTextContent("Revert Value to Prefab"), false, TargetChoiceHandler.SetPrefabOverride, propertyWithPath);
+                Object targetObject = property.serializedObject.targetObject;
+
+                SerializedProperty[] properties;
+                if (linkedProperty == null)
+                    properties = new SerializedProperty[] { propertyWithPath };
+                else
+                    properties = new SerializedProperty[] { propertyWithPath, linkedPropertyWithPath };
+
+                bool defaultOverride =
+                    PrefabUtility.IsPropertyOverrideDefaultOverrideComparedToAnySource(property);
+
+                PrefabUtility.HandleApplyRevertMenuItems(
+                    null,
+                    targetObject,
+                    (menuItemContent, sourceObject) =>
+                    {
+                        // Add apply menu item for this apply target.
+                        TargetChoiceHandler.PropertyAndSourcePathInfo info = new TargetChoiceHandler.PropertyAndSourcePathInfo();
+                        info.properties = properties;
+                        info.assetPath = AssetDatabase.GetAssetPath(sourceObject);
+                        GameObject rootObject = PrefabUtility.GetRootGameObject(sourceObject);
+                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(rootObject))
+                            pm.AddDisabledItem(menuItemContent);
+                        else
+                            pm.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabPropertyOverride, info);
+                    },
+                    (menuItemContent) =>
+                    {
+                        // Add revert menu item.
+                        pm.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabPropertyOverride, properties);
+                    },
+                    defaultOverride
+                );
             }
 
             // If property is an element in an array, show duplicate and delete menu options
@@ -2310,15 +2366,15 @@ namespace UnityEditor
                         pm.AddSeparator("");
                     }
                     pm.AddItem(EditorGUIUtility.TrTextContent("Duplicate Array Element"), false, (a) =>
-                        {
-                            TargetChoiceHandler.DuplicateArrayElement(a);
-                            EditorGUIUtility.editingTextField = false;
-                        }, propertyWithPath);
+                    {
+                        TargetChoiceHandler.DuplicateArrayElement(a);
+                        EditorGUIUtility.editingTextField = false;
+                    }, propertyWithPath);
                     pm.AddItem(EditorGUIUtility.TrTextContent("Delete Array Element"), false, (a) =>
-                        {
-                            TargetChoiceHandler.DeleteArrayElement(a);
-                            EditorGUIUtility.editingTextField = false;
-                        }, propertyWithPath);
+                    {
+                        TargetChoiceHandler.DeleteArrayElement(a);
+                        EditorGUIUtility.editingTextField = false;
+                    }, propertyWithPath);
                 }
             }
 
@@ -2341,12 +2397,12 @@ namespace UnityEditor
                 EditorApplication.contextualPropertyMenu(pm, property);
             }
 
-            Event.current.Use();
             if (pm.GetItemCount() == 0)
             {
                 return;
             }
 
+            Event.current.Use();
             pm.ShowAsContext();
         }
 
@@ -2464,7 +2520,7 @@ namespace UnityEditor
 
         private static float DoSlider(
             Rect position, Rect dragZonePosition, int id, float value, float sliderMin, float sliderMax, string formatString, float textFieldMin, float textFieldMax, float power, GUIStyle sliderStyle, GUIStyle thumbStyle, Texture2D sliderBackground
-            )
+        )
         {
             int sliderId = GUIUtility.GetControlID(s_SliderKnobHash, FocusType.Passive, position);
             // Map some nonsensical edge cases to avoid breaking the UI.
@@ -2718,7 +2774,7 @@ namespace UnityEditor
 
             var enumData = GetCachedEnumData(enumType, !includeObsolete);
             var i = Array.IndexOf(enumData.values, selected);
-            GUIContent[] options = EditorUtility.IsUnityAssembly(enumType) ? EditorGUIUtility.TrTempContent(enumData.displayNames) : EditorGUIUtility.TempContent(enumData.displayNames);
+            GUIContent[] options = EditorUtility.IsUnityAssembly(enumType) ? EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip) : EditorGUIUtility.TempContent(enumData.displayNames, enumData.tooltip);
             s_CurrentCheckEnumEnabled = checkEnabled;
             s_CurrentEnumData = enumData;
             i = PopupInternal(position, label, i, options, checkEnabled == null ? (Func<int, bool>)null : CheckCurrentEnumTypeEnabled, style);
@@ -3119,6 +3175,7 @@ namespace UnityEditor
             public Enum[] values;
             public int[] flagValues;
             public string[] displayNames;
+            public string[] tooltip;
             public bool flags;
             public Type underlyingType;
             public bool unsigned;
@@ -3135,7 +3192,36 @@ namespace UnityEditor
             {
                 return ((DescriptionAttribute)description.First()).Description;
             }
+            else if (field.IsDefined(typeof(ObsoleteAttribute), false))
+            {
+                return string.Format("{0} (Obsolete)", ObjectNames.NicifyVariableName(field.Name));
+            }
             return ObjectNames.NicifyVariableName(field.Name);
+        }
+
+        private static string EnumTooltipFromEnumField(FieldInfo field)
+        {
+            var tooltip = field.GetCustomAttributes(typeof(TooltipAttribute), false);
+            if (tooltip.Length > 0)
+            {
+                return ((TooltipAttribute)tooltip.First()).tooltip;
+            }
+            return string.Empty;
+        }
+
+        private static bool CheckObsoleteAddition(FieldInfo field, bool excludeObsolete)
+        {
+            var obsolete = field.GetCustomAttributes(typeof(ObsoleteAttribute), false);
+            if (obsolete.Length > 0)
+            {
+                if (excludeObsolete)
+                {
+                    return false;
+                }
+                return !((ObsoleteAttribute)obsolete.First()).IsError;
+            }
+
+            return true;
         }
 
         internal static EnumData GetCachedEnumData(Type enumType, bool excludeObsolete = true)
@@ -3152,9 +3238,10 @@ namespace UnityEditor
                 || enumData.underlyingType == typeof(uint)
                 || enumData.underlyingType == typeof(ulong);
             var enumFields = enumType.GetFields(BindingFlags.Static | BindingFlags.Public)
-                .Where(f => !excludeObsolete || !f.IsDefined(typeof(ObsoleteAttribute), false))
+                .Where(f => CheckObsoleteAddition(f, excludeObsolete))
                 .OrderBy(f => f.MetadataToken).ToList();
             enumData.displayNames = enumFields.Select(f => EnumNameFromEnumField(f)).ToArray();
+            enumData.tooltip = enumFields.Select(f => EnumTooltipFromEnumField(f)).ToArray();
             enumData.values = enumFields.Select(f => (Enum)Enum.Parse(enumType, f.Name)).ToArray();
             enumData.flagValues = enumData.unsigned ?
                 enumData.values.Select(v => unchecked((int)Convert.ToUInt64(v))).ToArray() :
@@ -4190,24 +4277,24 @@ namespace UnityEditor
                                 var currentView = GUIView.current;
 
                                 EditorUtility.DisplayCustomMenu(
-                                position,
-                                names,
-                                enabled,
-                                null,
-                                delegate(object data, string[] options, int selected)
-                            {
-                                if (selected == 0)
-                                {
-                                    Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
-                                    currentView.SendEvent(e);
-                                }
-                                else if (selected == 1)
-                                {
-                                    Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
-                                    currentView.SendEvent(e);
-                                }
-                            },
-                                null);
+                                    position,
+                                    names,
+                                    enabled,
+                                    null,
+                                    delegate(object data, string[] options, int selected)
+                                    {
+                                        if (selected == 0)
+                                        {
+                                            Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Copy);
+                                            currentView.SendEvent(e);
+                                        }
+                                        else if (selected == 1)
+                                        {
+                                            Event e = EditorGUIUtility.CommandEvent(EventCommandNames.Paste);
+                                            currentView.SendEvent(e);
+                                        }
+                                    },
+                                    null);
                                 return origColor;
                         }
                     }
@@ -4562,7 +4649,7 @@ namespace UnityEditor
         {
             GUIStyle baseStyle = GUIStyle.none;
             int id = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
-            DoInspectorTitlebar(position, id, true, targetObjs, baseStyle);
+            DoInspectorTitlebar(position, id, true, targetObjs, null, baseStyle);
         }
 
         public static bool InspectorTitlebar(Rect position, bool foldout, Object targetObj, bool expandable)
@@ -4577,7 +4664,7 @@ namespace UnityEditor
 
             // Important to get controlId for the foldout first, so it gets keyboard focus before the toggle does.
             int id = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
-            DoInspectorTitlebar(position, id, foldout, targetObjs, baseStyle);
+            DoInspectorTitlebar(position, id, foldout, targetObjs, null, baseStyle);
             foldout = DoObjectMouseInteraction(foldout, position, targetObjs, id);
 
             if (expandable)
@@ -4589,8 +4676,27 @@ namespace UnityEditor
             return foldout;
         }
 
+        // foldable titlebar based on Editor.
+        public static bool InspectorTitlebar(Rect position, bool foldout, Editor editor)
+        {
+            GUIStyle baseStyle = EditorStyles.inspectorTitlebar;
+
+            // Important to get controlId for the foldout first, so it gets keyboard focus before the toggle does.
+            int id = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
+            DoInspectorTitlebar(position, id, foldout, editor.targets, editor.enabledProperty, baseStyle);
+            foldout = DoObjectMouseInteraction(foldout, position, editor.targets, id);
+
+            if (editor.CanBeExpandedViaAFoldout())
+            {
+                Rect renderRect = GetInspectorTitleBarObjectFoldoutRenderRect(position);
+                DoObjectFoldoutInternal(foldout, renderRect, id);
+            }
+
+            return foldout;
+        }
+
         // Make an inspector-window-like titlebar.
-        internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, GUIStyle baseStyle)
+        internal static void DoInspectorTitlebar(Rect position, int id, bool foldout, Object[] targetObjs, SerializedProperty enabledProperty, GUIStyle baseStyle)
         {
             GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
             GUIStyle iconButtonStyle = EditorStyles.iconButton;
@@ -4604,6 +4710,19 @@ namespace UnityEditor
                     iconRect.y, 100, iconRect.height) {xMax = settingsRect.xMin - kInspTitlebarSpacing};
 
             Event evt = Event.current;
+
+            bool isAddedComponentAndEventIsRepaint = false;
+            Component comp = targetObjs[0] as Component;
+            if (evt.type == EventType.Repaint &&
+                targetObjs.Length == 1 &&
+                comp != null &&
+                EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None &&
+                PrefabUtility.GetCorrespondingObjectFromSource(comp.gameObject) != null &&
+                PrefabUtility.GetCorrespondingObjectFromSource(comp) == null)
+            {
+                isAddedComponentAndEventIsRepaint = true;
+                DrawOverrideBackground(position, true);
+            }
 
             int enabled = -1;
             foreach (Object targetObj in targetObjs)
@@ -4623,45 +4742,62 @@ namespace UnityEditor
 
             if (enabled != -1)
             {
-                bool enabledState = enabled != 0;
-                showMixedValue = enabled == -2;
                 Rect toggleRect = iconRect;
                 toggleRect.x = iconRect.xMax + kInspTitlebarSpacing;
-                BeginChangeCheck();
 
-                Color previousColor = GUI.backgroundColor;
-                bool animated = AnimationMode.IsPropertyAnimated(targetObjs[0], kEnabledPropertyName);
-                if (animated)
+                if (enabledProperty != null)
                 {
-                    Color animatedColor = AnimationMode.animatedPropertyColor;
-                    if (AnimationMode.InAnimationRecording())
-                        animatedColor = AnimationMode.recordedPropertyColor;
-                    else if (AnimationMode.IsPropertyCandidate(targetObjs[0], kEnabledPropertyName))
-                        animatedColor = AnimationMode.candidatePropertyColor;
-
-                    animatedColor.a *= GUI.color.a;
-                    GUI.backgroundColor = animatedColor;
+                    enabledProperty.serializedObject.Update();
+                    EditorGUI.PropertyField(toggleRect, enabledProperty, GUIContent.none);
+                    enabledProperty.serializedObject.ApplyModifiedProperties();
                 }
-
-                int toggleId = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
-                enabledState = EditorGUIInternal.DoToggleForward(toggleRect, toggleId, enabledState, GUIContent.none, EditorStyles.toggle);
-
-                if (animated)
+                // The codepath and usage where we do not have a SerializedProperty is more complicated while
+                // providing less functionality. It does not display a line in the margin when the enabled
+                // toggle has been overridden on a Prefab instance.
+                // The stuff it's doing with AnimationMode, undo handling, and multi object editing
+                // is all stuff that's also handled internally in SerializedProperty.
+                // It's kept for backwards compatibility only, since InspectorTitlebar is public API.
+                else
                 {
-                    GUI.backgroundColor = previousColor;
-                }
+                    bool enabledState = enabled != 0;
+                    showMixedValue = enabled == -2;
+                    BeginChangeCheck();
 
-                if (EndChangeCheck())
-                {
-                    Undo.RecordObjects(targetObjs, (enabledState ? "Enable" : "Disable") + " Component" + (targetObjs.Length > 1 ? "s" : ""));
-
-                    foreach (Object targetObj in targetObjs)
+                    Color previousColor = GUI.backgroundColor;
+                    bool animated = AnimationMode.IsPropertyAnimated(targetObjs[0], kEnabledPropertyName);
+                    if (animated)
                     {
-                        EditorUtility.SetObjectEnabled(targetObj, enabledState);
+                        Color animatedColor = AnimationMode.animatedPropertyColor;
+                        if (AnimationMode.InAnimationRecording())
+                            animatedColor = AnimationMode.recordedPropertyColor;
+                        else if (AnimationMode.IsPropertyCandidate(targetObjs[0], kEnabledPropertyName))
+                            animatedColor = AnimationMode.candidatePropertyColor;
+
+                        animatedColor.a *= GUI.color.a;
+                        GUI.backgroundColor = animatedColor;
                     }
+
+                    int toggleId = GUIUtility.GetControlID(s_TitlebarHash, FocusType.Keyboard, position);
+                    enabledState = EditorGUIInternal.DoToggleForward(toggleRect, toggleId, enabledState, GUIContent.none, EditorStyles.toggle);
+
+                    if (animated)
+                    {
+                        GUI.backgroundColor = previousColor;
+                    }
+
+                    if (EndChangeCheck())
+                    {
+                        Undo.RecordObjects(targetObjs, (enabledState ? "Enable" : "Disable") + " Component" + (targetObjs.Length > 1 ? "s" : ""));
+
+                        foreach (Object targetObj in targetObjs)
+                        {
+                            EditorUtility.SetObjectEnabled(targetObj, enabledState);
+                        }
+                    }
+
+                    showMixedValue = false;
                 }
 
-                showMixedValue = false;
 
                 if (toggleRect.Contains(Event.current.mousePosition))
                 {
@@ -4686,6 +4822,9 @@ namespace UnityEditor
             {
                 var icon = AssetPreview.GetMiniThumbnail(targetObjs[0]);
                 GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), false, false, false, false);
+
+                if (isAddedComponentAndEventIsRepaint)
+                    GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(Styles.prefabOverlayAddedIcon), false, false, false, false);
             }
 
             // Temporarily set GUI.enabled = true to enable the Settings button. see Case 947218.
@@ -4706,11 +4845,110 @@ namespace UnityEditor
                     baseStyle.Draw(position, GUIContent.none, id, foldout);
                     position = baseStyle.padding.Remove(position);
                     textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), id, foldout);
-                    iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, id, foldout);
+                    using (new EditorGUI.DisabledScope(EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.None))
+                    {
+                        iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, id, foldout);
+                    }
                     break;
             }
 
             GUI.enabled = oldGUIEnabledState;
+        }
+
+        internal static void RemovedComponentTitlebar(Rect position, GameObject instanceGo, Component sourceComponent)
+        {
+            GUIStyle baseStyle = EditorStyles.inspectorTitlebar;
+            GUIStyle textStyle = EditorStyles.inspectorTitlebarText;
+            GUIStyle iconButtonStyle = EditorStyles.iconButton;
+
+            Vector2 settingsElementSize = iconButtonStyle.CalcSize(GUIContents.titleSettingsIcon);
+
+            Rect iconRect = new Rect(position.x + baseStyle.padding.left, position.y + baseStyle.padding.top, kInspTitlebarIconWidth, kInspTitlebarIconWidth);
+            Rect settingsRect = new Rect(position.xMax - baseStyle.padding.right - kInspTitlebarSpacing - kInspTitlebarIconWidth, iconRect.y, settingsElementSize.x, settingsElementSize.y);
+            Rect textRect = new Rect(iconRect.xMax + kInspTitlebarSpacing + kInspTitlebarSpacing + kInspTitlebarIconWidth, iconRect.y, 100, iconRect.height);
+            textRect.xMax = settingsRect.xMin - kInspTitlebarSpacing;
+
+            Event evt = Event.current;
+
+            if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+                DrawOverrideBackground(position, true);
+
+            bool openMenu = false;
+            Rect openMenuRect = new Rect();
+            if (position.Contains(Event.current.mousePosition))
+            {
+                // It's necessary to handle property context menu here in right mouse down because
+                // component contextual menu will override this otherwise.
+                if ((evt.type == EventType.MouseDown && evt.button == 1) || evt.type == EventType.ContextClick)
+                    openMenu = true;
+            }
+
+            Rect headerItemRect = settingsRect;
+            headerItemRect.x -= kInspTitlebarIconWidth + kInspTitlebarSpacing;
+            textRect.xMax = headerItemRect.xMin - kInspTitlebarSpacing;
+
+            switch (evt.type)
+            {
+                case EventType.MouseDown:
+                    if (settingsRect.Contains(evt.mousePosition))
+                    {
+                        openMenu = true;
+                        openMenuRect = settingsRect;
+                    }
+                    break;
+                case EventType.Repaint:
+                    baseStyle.Draw(position, GUIContent.none, false, false, false, false);
+                    iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, false, false, false, false);
+                    var icon = AssetPreview.GetMiniThumbnail(sourceComponent);
+
+                    using (new DisabledScope(true))
+                    {
+                        GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), false, false, false, false);
+                    }
+
+                    GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(Styles.prefabOverlayRemovedIcon), false, false, false, false);
+                    position = baseStyle.padding.Remove(position);
+
+                    using (new DisabledScope(true))
+                    {
+                        textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(sourceComponent) + " (Removed)"), false, false, false, false);
+                    }
+                    break;
+            }
+
+            if (openMenu)
+            {
+                GenericMenu menu = new GenericMenu();
+                PrefabUtility.HandleApplyRevertMenuItems(
+                    "Removed Component",
+                    sourceComponent,
+                    (menuItemContent, sourceObject) =>
+                    {
+                        TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
+                        info.instanceObject = instanceGo;
+                        Component componentToRemove = sourceComponent;
+                        while (componentToRemove != sourceObject)
+                            componentToRemove = PrefabUtility.GetCorrespondingObjectFromSource(componentToRemove);
+                        info.correspondingObjectInSource = componentToRemove;
+                        if (!PrefabUtility.IsPartOfPrefabThatCanBeAppliedTo(componentToRemove))
+                            menu.AddDisabledItem(menuItemContent);
+                        else
+                            menu.AddItem(menuItemContent, false, TargetChoiceHandler.ApplyPrefabRemovedComponent, info);
+                    },
+                    (menuItemContent) =>
+                    {
+                        TargetChoiceHandler.ObjectInstanceAndSourceInfo info = new TargetChoiceHandler.ObjectInstanceAndSourceInfo();
+                        info.instanceObject = instanceGo;
+                        info.correspondingObjectInSource = sourceComponent;
+                        menu.AddItem(menuItemContent, false, TargetChoiceHandler.RevertPrefabRemovedComponent, info);
+                    }
+                );
+                if (openMenuRect == new Rect())
+                    menu.ShowAsContext();
+                else
+                    menu.DropDown(settingsRect);
+                evt.Use();
+            }
         }
 
         internal static bool ToggleTitlebar(Rect position, GUIContent label, bool foldout, ref bool toggleValue)
@@ -4796,7 +5034,7 @@ namespace UnityEditor
                     string pageName = (isScript ? "script-" : "sealed partial class-") + helpTopic;
 
                     content.tooltip = string.Format(
-                            @"Could not find Reference page for {0} ({1}).
+@"Could not find Reference page for {0} ({1}).
 Docs for this object is missing or all docs are missing.
 This warning only shows up in development builds.", helpTopic, pageName);
                 }
@@ -5214,9 +5452,23 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
 
             bool wasBoldDefaultFont = EditorGUIUtility.GetBoldDefaultFont();
-            if (property.serializedObject.targetObjectsCount == 1 && property.isInstantiatedPrefab)
+            if (property.serializedObject.targetObjectsCount == 1 &&
+                property.isInstantiatedPrefab &&
+                EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.Original &&
+                !property.isDefaultOverride)
             {
-                EditorGUIUtility.SetBoldDefaultFont(property.prefabOverride);
+                PropertyGUIData parentData = s_PropertyStack.Count > 0 ? s_PropertyStack.Peek() : new PropertyGUIData();
+                bool linkedProperties = parentData.totalPosition == totalPosition;
+
+                var hasPrefabOverride = property.prefabOverride;
+                if (!linkedProperties || hasPrefabOverride)
+                    EditorGUIUtility.SetBoldDefaultFont(hasPrefabOverride);
+                if (hasPrefabOverride)
+                {
+                    Rect highlightRect = totalPosition;
+                    highlightRect.xMin += EditorGUI.indent;
+                    DrawOverrideBackground(highlightRect, false);
+                }
             }
 
             s_PropertyStack.Push(new PropertyGUIData(property, totalPosition, wasBoldDefaultFont, GUI.enabled, GUI.backgroundColor));
@@ -5257,13 +5509,20 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
             showMixedValue = false;
             PropertyGUIData data = s_PropertyStack.Pop();
+
+            PropertyGUIData parentData = s_PropertyStack.Count > 0 ? s_PropertyStack.Peek() : new PropertyGUIData();
+            bool linkedProperties = parentData.totalPosition == data.totalPosition;
+
             // Context menu
             // Handle context menu in EndProperty instead of BeginProperty. This ensures that child properties
             // get the event rather than parent properties when clicking inside the child property rects, but the menu can
             // still be invoked for the parent property by clicking inside the parent rect but outside the child rects.
             if (Event.current.type == EventType.ContextClick && data.totalPosition.Contains(Event.current.mousePosition))
             {
-                DoPropertyContextMenu(data.property);
+                if (linkedProperties)
+                    DoPropertyContextMenu(data.property, parentData.property);
+                else
+                    DoPropertyContextMenu(data.property);
             }
 
             EditorGUIUtility.SetBoldDefaultFont(data.wasBoldDefaultFont);
@@ -5292,6 +5551,31 @@ This warning only shows up in development builds.", helpTopic, pageName);
                 }
                 s_PendingPropertyDelete = null;
             }
+        }
+
+        internal static void DrawOverrideBackground(Rect position, bool fixupRectForHeadersAndBackgrounds = false)
+        {
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            if (fixupRectForHeadersAndBackgrounds)
+            {
+                // Tweaks to match the specifics of how the horizontal lines between components are drawn.
+                position.yMin += 2;
+                position.yMax += 1;
+            }
+
+            Color oldColor = GUI.backgroundColor;
+            bool oldEnabled = GUI.enabled;
+            GUI.enabled = true;
+
+            GUI.backgroundColor = k_OverrideMarginColor;
+            position.x = 0;
+            position.width = 3;
+            EditorStyles.overrideMargin.Draw(position, false, false, false, false);
+
+            GUI.enabled = oldEnabled;
+            GUI.backgroundColor = oldColor;
         }
 
         private static SerializedProperty s_PendingPropertyKeyboardHandling = null;
@@ -8300,7 +8584,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         [Obsolete("Use EditorGUILayout.ColorField(GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, params GUILayoutOption[] options)")]
         public static Color ColorField(
             GUIContent label, Color value, bool showEyedropper, bool showAlpha, bool hdr, ColorPickerHDRConfig hdrConfig, params GUILayoutOption[] options
-            )
+        )
         {
             return ColorField(label, value, showEyedropper, showAlpha, hdr);
         }
@@ -8391,6 +8675,12 @@ This warning only shows up in development builds.", helpTopic, pageName);
         {
             return EditorGUI.InspectorTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), foldout,
                 targetObjs, expandable);
+        }
+
+        public static bool InspectorTitlebar(bool foldout, Editor editor)
+        {
+            return EditorGUI.InspectorTitlebar(GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar), foldout,
+                editor);
         }
 
         public static void InspectorTitlebar(Object[] targetObjs)

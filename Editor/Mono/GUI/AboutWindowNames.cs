@@ -67,7 +67,7 @@ namespace UnityEditor
                 return Path.Combine(
                     EditorApplication.applicationContentsPath,
                     "Resources/credits.csv"
-                    );
+                );
             }
         }
 

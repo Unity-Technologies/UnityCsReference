@@ -163,7 +163,7 @@ namespace UnityEditor
                         return (float)(0.5 * mag); // 20 dB range
                     },
                     ScaleAlpha(AudioCurveRendering.kAudioOrange, blend)
-                    );
+                );
             }
 
             DrawFrequencyTickMarks(r, plugin.GetSampleRate(), useLogScale, new Color(1.0f, 1.0f, 1.0f, 0.3f * blend));

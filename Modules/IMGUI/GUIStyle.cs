@@ -389,7 +389,7 @@ namespace UnityEngine
             return new Vector2(
                 (fixedWidth != 0.0f ? fixedWidth : Mathf.Ceil(contentSize.x + padding.left + padding.right)),
                 (fixedHeight != 0.0f ? fixedHeight : Mathf.Ceil(contentSize.y + padding.top + padding.bottom))
-                );
+            );
         }
 
         // How tall this element will be when rendered with /content/ and a specific /width/.

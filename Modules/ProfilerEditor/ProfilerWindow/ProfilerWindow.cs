@@ -847,8 +847,8 @@ namespace UnityEditor
             bool newState = GUILayout.Toggle(oldState, "Record", EditorStyles.toolbarButton);
             if (oldState != newState)
                 ProfilerDriver.SetAudioCaptureFlags((AudioSettings.profilerCaptureFlags & ~(int)toggleFlag) | (newState
-                                                                                                               ? (int)toggleFlag
-                                                                                                               : 0));
+                    ? (int)toggleFlag
+                    : 0));
         }
 
         private void DrawAudioPane()
@@ -1037,8 +1037,8 @@ namespace UnityEditor
             var currentRect = new Rect(1, kRowHeight * row, GUIClip.visibleRect.width, kRowHeight);
 
             var background = (row % 2 == 0
-                              ? Styles.entryEven
-                              : Styles.entryOdd);
+                ? Styles.entryEven
+                : Styles.entryOdd);
             if (Event.current.type == EventType.Repaint)
                 background.Draw(currentRect, GUIContent.none, false, false, selected, false);
         }
@@ -1437,8 +1437,8 @@ namespace UnityEditor
             if (area == ProfilerArea.Rendering)
             {
                 if (GUILayout.Button(GUI.enabled
-                        ? Styles.frameDebugger
-                        : Styles.noFrameDebugger, EditorStyles.toolbarButton))
+                    ? Styles.frameDebugger
+                    : Styles.noFrameDebugger, EditorStyles.toolbarButton))
                 {
                     FrameDebuggerWindow dbg = FrameDebuggerWindow.ShowFrameDebuggerWindow();
                     dbg.EnableIfNeeded();

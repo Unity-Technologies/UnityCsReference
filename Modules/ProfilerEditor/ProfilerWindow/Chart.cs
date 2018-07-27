@@ -193,8 +193,8 @@ namespace UnityEditorInternal
             m_chartControlID = GUIUtility.GetControlID(s_ChartHash, FocusType.Keyboard);
 
             var chartHeight = GUILayout.MinHeight(
-                    Math.Max(kLabelOffset + ((cdata.numSeries + 1) * kLabelHeight) + kDistFromTopToFirstLabel, kChartMinHeight)
-                    );
+                Math.Max(kLabelOffset + ((cdata.numSeries + 1) * kLabelHeight) + kDistFromTopToFirstLabel, kChartMinHeight)
+            );
             Rect chartRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.background, chartHeight);
 
             Rect r = chartRect;
@@ -454,7 +454,7 @@ namespace UnityEditorInternal
                 selectedFrame < data.firstSelectableFrame ||
                 selectedFrame > data.chartDomainOffset + (int)(domain.y - domain.x) ||
                 domain.y - domain.x == 0f
-                )
+            )
                 return;
 
             var selectedIndex = selectedFrame - data.chartDomainOffset;
@@ -514,10 +514,10 @@ namespace UnityEditorInternal
 
                     // default position is left aligned to midline
                     var position = new Vector2(
-                            // offset by half a point so there is a 1-point gap down the midline if labels are on both sides
-                            selectedFrameMidline + 0.5f,
-                            chartPosition.y + chartPosition.height * (1f - (value - rangeAxis.x) / rangeSize)
-                            );
+                        // offset by half a point so there is a 1-point gap down the midline if labels are on both sides
+                        selectedFrameMidline + 0.5f,
+                        chartPosition.y + chartPosition.height * (1f - (value - rangeAxis.x) / rangeSize)
+                    );
                     var size = Styles.whiteLabel.CalcSize(EditorGUIUtility.TempContent(data.selectedLabels[s]));
                     position.y -= 0.5f * size.y;
                     position.y = Mathf.Clamp(position.y, chartPosition.yMin, chartPosition.yMax - size.y);
@@ -631,7 +631,7 @@ namespace UnityEditorInternal
                         if (
                             testRect.Contains(new Vector2(x, minY)) ||
                             testRect.Contains(new Vector2(x, maxY))
-                            )
+                        )
                         {
                             m_MostOverlappingLabels.Add(s);
                             foundOverlaps = true;
@@ -676,7 +676,7 @@ namespace UnityEditorInternal
                     EditorGUIUtility.TempContent(data.selectedLabels[labelIndex]),
                     Styles.whiteLabel,
                     Styles.labelDropShadowOpacity
-                    );
+                );
             }
             GUI.contentColor = oldContentColor;
         }
@@ -729,7 +729,7 @@ namespace UnityEditorInternal
                     (series.xValues[i] - domain.x) * domainScale + r.x,
                     rectBottom - (Mathf.Clamp(series.yValues[i], graphRange.x, graphRange.y) - series.rangeAxis.x) * rangeScale,
                     0f
-                    );
+                );
             }
 
             using (new Handles.DrawingScope(cdata.series[index].color))

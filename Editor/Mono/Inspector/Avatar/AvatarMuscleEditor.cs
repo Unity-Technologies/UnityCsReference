@@ -96,7 +96,8 @@ namespace UnityEditor
                         (int)Dof.LeftArmDofStart + (int)ArmDof.HandDownUp,
                         (int)Dof.LeftArmDofStart + (int)ArmDof.HandInOut},
 
-            new int[] {
+            new int[]
+            {
                 (int)Dof.LeftThumbDofStart + (int)FingerDof.ProximalDownUp,
                 (int)Dof.LeftThumbDofStart + (int)FingerDof.ProximalInOut,
                 (int)Dof.LeftThumbDofStart + (int)FingerDof.IntermediateCloseOpen,
@@ -133,7 +134,8 @@ namespace UnityEditor
                         (int)Dof.RightArmDofStart + (int)ArmDof.HandDownUp,
                         (int)Dof.RightArmDofStart + (int)ArmDof.HandInOut},
 
-            new int[] {
+            new int[]
+            {
                 (int)Dof.RightThumbDofStart + (int)FingerDof.ProximalDownUp,
                 (int)Dof.RightThumbDofStart + (int)FingerDof.ProximalInOut,
                 (int)Dof.RightThumbDofStart + (int)FingerDof.IntermediateCloseOpen,
@@ -160,7 +162,8 @@ namespace UnityEditor
                 (int)Dof.RightLittleDofStart + (int)FingerDof.DistalCloseOpen
             },
 
-            new int[] {
+            new int[]
+            {
                 (int)Dof.LeftLegDofStart + (int)LegDof.UpperLegFrontBack,
                 (int)Dof.LeftLegDofStart + (int)LegDof.UpperLegInOut,
                 (int)Dof.LeftLegDofStart + (int)LegDof.UpperLegRollInOut,
@@ -171,7 +174,8 @@ namespace UnityEditor
                 (int)Dof.LeftLegDofStart + (int)LegDof.ToesUpDown,
             },
 
-            new int[] {
+            new int[]
+            {
                 (int)Dof.RightLegDofStart + (int)LegDof.UpperLegFrontBack,
                 (int)Dof.RightLegDofStart + (int)LegDof.UpperLegInOut,
                 (int)Dof.RightLegDofStart + (int)LegDof.UpperLegRollInOut,
@@ -186,7 +190,8 @@ namespace UnityEditor
         protected int[][] m_MasterMuscle =
         {
             // Body open close
-            new int[] {
+            new int[]
+            {
                 (int)Dof.BodyDofStart + (int)BodyDof.SpineFrontBack,
                 (int)Dof.BodyDofStart + (int)BodyDof.ChestFrontBack,
                 (int)Dof.BodyDofStart + (int)BodyDof.UpperChestFrontBack,
@@ -212,7 +217,8 @@ namespace UnityEditor
             },
 
             // Body Left Right
-            new int[] {
+            new int[]
+            {
                 (int)Dof.BodyDofStart + (int)BodyDof.SpineLeftRight,
                 (int)Dof.BodyDofStart + (int)BodyDof.ChestLeftRight,
                 (int)Dof.BodyDofStart + (int)BodyDof.UpperChestLeftRight,
@@ -221,7 +227,8 @@ namespace UnityEditor
             },
 
             // Roll Left Right
-            new int[] {
+            new int[]
+            {
                 (int)Dof.BodyDofStart + (int)BodyDof.SpineRollLeftRight,
                 (int)Dof.BodyDofStart + (int)BodyDof.ChestRollLeftRight,
                 (int)Dof.BodyDofStart + (int)BodyDof.UpperChestRollLeftRight,
@@ -230,7 +237,8 @@ namespace UnityEditor
             },
 
             // In Out
-            new int[] {
+            new int[]
+            {
                 (int)Dof.LeftLegDofStart + (int)LegDof.UpperLegInOut,
                 (int)Dof.LeftLegDofStart + (int)LegDof.FootInOut,
                 (int)Dof.RightLegDofStart + (int)LegDof.UpperLegInOut,
@@ -244,7 +252,8 @@ namespace UnityEditor
             },
 
             // Roll In Out
-            new int[] {
+            new int[]
+            {
                 (int)Dof.LeftLegDofStart + (int)LegDof.UpperLegRollInOut,
                 (int)Dof.LeftLegDofStart + (int)LegDof.LegRollInOut,
                 (int)Dof.RightLegDofStart + (int)LegDof.UpperLegRollInOut,
@@ -256,7 +265,8 @@ namespace UnityEditor
             },
 
             // Finger open close
-            new int[] {
+            new int[]
+            {
                 (int)Dof.LeftThumbDofStart + (int)FingerDof.ProximalDownUp,
                 (int)Dof.LeftThumbDofStart + (int)FingerDof.IntermediateCloseOpen,
                 (int)Dof.LeftThumbDofStart + (int)FingerDof.DistalCloseOpen,
@@ -299,7 +309,8 @@ namespace UnityEditor
             },
 
             // Finger In Out
-            new int[] {
+            new int[]
+            {
                 (int)Dof.LeftThumbDofStart + (int)FingerDof.ProximalInOut,
                 (int)Dof.LeftIndexDofStart + (int)FingerDof.ProximalInOut,
                 (int)Dof.LeftMiddleDofStart + (int)FingerDof.ProximalInOut,

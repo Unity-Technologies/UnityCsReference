@@ -43,7 +43,7 @@ namespace UnityEditor.AI
             // Find nice scale factor to fit the cylinder inside the view.
             float viewSize = rect.height - (paddingTop + paddingBottom);
             scale = Mathf.Min(viewSize / (cylinderHeight + cylinderRadius * 2.0f * squash),
-                    viewSize / (cylinderRadius * 2.0f));
+                viewSize / (cylinderRadius * 2.0f));
 
             cylinderHeight *= scale;
             cylinderRadius *= scale;

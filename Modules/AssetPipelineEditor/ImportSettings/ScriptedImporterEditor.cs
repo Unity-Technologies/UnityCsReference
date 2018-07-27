@@ -16,14 +16,7 @@ namespace UnityEditor.Experimental.AssetImporters
 
         public override void OnInspectorGUI()
         {
-            // Loop through properties and create one field (including children) for each top level property.
-            SerializedProperty property = serializedObject.GetIterator();
-            bool expanded = true;
-            while (property.NextVisible(expanded))
-            {
-                EditorGUILayout.PropertyField(property, true);
-                expanded = false;
-            }
+            DrawDefaultInspector();
 
             ApplyRevertGUI();
         }

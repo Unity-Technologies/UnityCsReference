@@ -112,7 +112,14 @@ namespace UnityEngine.Experimental.UIElements
             GUIUtility.s_SkinMode = (int)container.contextType;
             GUIUtility.s_OriginalID = container.elementPanel.ownerObject.GetInstanceID();
 
-            Event.current = evt;
+            if (Event.current == null)
+            {
+                Event.current = evt;
+            }
+            else
+            {
+                Event.current.CopyFrom(evt);
+            }
 
             // call AFTER setting current event
             if (s_BeginContainerCallback != null)
@@ -124,7 +131,7 @@ namespace UnityEngine.Experimental.UIElements
         }
 
         // End the 2D GUI.
-        internal static void EndContainerGUI()
+        internal static void EndContainerGUI(Event evt)
         {
             if (Event.current.type == EventType.Layout
                 && s_ContainerStack.Count > 0)
@@ -141,6 +148,12 @@ namespace UnityEngine.Experimental.UIElements
                 IMGUIContainer container = s_ContainerStack.Peek();
                 if (s_EndContainerCallback != null)
                     s_EndContainerCallback(container);
+            }
+
+            evt.CopyFrom(Event.current);
+
+            if (s_ContainerStack.Count > 0)
+            {
                 GUIUtility.EndContainer();
                 s_ContainerStack.Pop();
             }

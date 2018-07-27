@@ -152,10 +152,10 @@ namespace UnityEditor
         private const string kRecentImageAppsKey = "RecentlyUsedImageApp";
 
         private static readonly string k_ExpressNotSupportedMessage = L10n.Tr(
-                "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
-                "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
-                "\n(This does work with Visual Studio Pro)"
-                );
+            "Unfortunately Visual Studio Express does not allow itself to be controlled by external applications. " +
+            "You can still use it by manually opening the Visual Studio project file, but Unity cannot automatically open files for you when you doubleclick them. " +
+            "\n(This does work with Visual Studio Pro)"
+        );
         private static readonly string k_KeyCollisionFormat = L10n.Tr("Key {0} can't be used for action \"{1}\" because it's already used for action \"{2}\"");
 
         private const int kRecentAppsCount = 10;
@@ -168,7 +168,7 @@ namespace UnityEditor
 
         private bool m_ValidKeyChange = true;
         private string m_InvalidKeyMessage = string.Empty;
-        private static readonly char[] kShortcutIdentifierSplitters = { '/' };
+        private static readonly string[] kShortcutIdentifierSplitters = { Identifier.kPathSeparator };
 
         class RefString
         {
@@ -572,16 +572,19 @@ namespace UnityEditor
             ShortcutEntry currentShortcutEntry = null;
             PrefKey currentPrefKey = null;
             var shortcutProfileManager = ShortcutIntegration.instance.profileManager;
+            IEnumerable<ShortcutEntry> shortcuts = shortcutProfileManager.GetAllShortcuts();
+            if (!Unsupported.IsDeveloperMode())
+                shortcuts = shortcuts.Where(shortcut => shortcut.type != ShortcutType.Menu);
 
             m_SortedKeyEntries.Clear();
             m_SortedKeyEntries.AddRange(
-                shortcutProfileManager.GetAllShortcuts().Select(
+                shortcuts.Select(
                     s => new KeyValuePair<string, object>(s.identifier.path, s)
-                    )
-                );
+                )
+            );
             m_SortedKeyEntries.AddRange(
                 Settings.Prefs<PrefKey>().Select(pk => new KeyValuePair<string, object>(pk.Key, pk.Value))
-                );
+            );
             m_SortedKeyEntries.Sort((k1, k2) => k1.Key.CompareTo(k2.Key));
             foreach (var keyEntry in m_SortedKeyEntries)
             {
@@ -683,9 +686,9 @@ namespace UnityEditor
             // Setting the same key to the same action is ok.
             // Setting the same key to a different action from a different tool is ok too.
             KeyValuePair<string, PrefKey> collision = Settings.Prefs<PrefKey>().FirstOrDefault(kvp =>
-                    kvp.Value.KeyboardEvent.Equals(e) &&
-                    kvp.Key.Split('/')[0] == selectedToolName && kvp.Key != identifier
-                    );
+                kvp.Value.KeyboardEvent.Equals(e) &&
+                kvp.Key.Split('/')[0] == selectedToolName && kvp.Key != identifier
+            );
 
             if (collision.Key != null)
             {
@@ -701,7 +704,7 @@ namespace UnityEditor
             GUI.changed = false;
 
             // FIXME: Are we going to support/enforce paths like this?
-            foreach (var label in selectedShortcut.identifier.path.Split(kShortcutIdentifierSplitters, 2))
+            foreach (var label in selectedShortcut.identifier.path.Split(kShortcutIdentifierSplitters, 2, StringSplitOptions.None))
                 GUILayout.Label(label, EditorStyles.boldLabel);
 
             using (new GUILayout.HorizontalScope())
@@ -728,6 +731,7 @@ namespace UnityEditor
                         CheckForCollisions(e, selectedShortcut, null);
                         if (m_ValidKeyChange)
                         {
+                            // TODO: Don't clobber secondary+ combinations
                             var newCombination = new List<KeyCombination> { new KeyCombination(e) };
                             shortcutController.profileManager.ModifyShortcutEntry(selectedShortcut.identifier, newCombination);
                             shortcutController.profileManager.PersistChanges();
@@ -1136,10 +1140,10 @@ namespace UnityEditor
             m_ImageApps = BuildAppPathList(m_ImageAppPath, kRecentImageAppsKey, "");
 
             m_ScriptAppDisplayNames = BuildFriendlyAppNameList(m_ScriptApps, m_ScriptAppsEditions, foundScriptEditorPaths,
-                    "Open by file extension");
+                "Open by file extension");
 
             m_ImageAppDisplayNames = BuildFriendlyAppNameList(m_ImageApps, null, null,
-                    L10n.Tr("Open by file extension"));
+                L10n.Tr("Open by file extension"));
 
             m_DiffTools = InternalEditorUtility.GetAvailableDiffTools();
 

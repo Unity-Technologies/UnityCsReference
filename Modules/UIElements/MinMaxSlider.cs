@@ -23,8 +23,7 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var slider = ((MinMaxSlider)ve);
-                slider.minValue = m_MinValue.GetValueFromBag(bag);
-                slider.maxValue = m_MaxValue.GetValueFromBag(bag);
+                slider.SetValueWithoutNotify(new Vector2(m_MinValue.GetValueFromBag(bag), m_MaxValue.GetValueFromBag(bag)));
                 slider.lowLimit = m_LowLimit.GetValueFromBag(bag);
                 slider.highLimit = m_HighLimit.GetValueFromBag(bag);
             }
@@ -57,7 +56,6 @@ namespace UnityEngine.Experimental.UIElements
             set
             {
                 base.value = ClampValues(new Vector2(value, m_Value.y));
-                UpdateDragElementPosition();
             }
         }
 
@@ -67,7 +65,6 @@ namespace UnityEngine.Experimental.UIElements
             set
             {
                 base.value = ClampValues(new Vector2(m_Value.x, value));
-                UpdateDragElementPosition();
             }
         }
 
@@ -77,8 +74,13 @@ namespace UnityEngine.Experimental.UIElements
             set
             {
                 base.value = ClampValues(value);
-                UpdateDragElementPosition();
             }
+        }
+
+        public override void SetValueWithoutNotify(Vector2 newValue)
+        {
+            base.SetValueWithoutNotify(ClampValues(newValue));
+            UpdateDragElementPosition();
         }
 
         public float range

@@ -457,10 +457,10 @@ namespace Unity.UNetWeaver
 
             // create new reader for this type
             MethodDefinition readerFunc = new MethodDefinition(functionName,
-                    MethodAttributes.Public |
-                    MethodAttributes.Static |
-                    MethodAttributes.HideBySig,
-                    variable);
+                MethodAttributes.Public |
+                MethodAttributes.Static |
+                MethodAttributes.HideBySig,
+                variable);
 
             readerFunc.Parameters.Add(new ParameterDefinition("reader", ParameterAttributes.None, scriptDef.MainModule.ImportReference(NetworkReaderType)));
 
@@ -540,10 +540,10 @@ namespace Unity.UNetWeaver
 
             // create new writer for this type
             MethodDefinition writerFunc = new MethodDefinition(functionName,
-                    MethodAttributes.Public |
-                    MethodAttributes.Static |
-                    MethodAttributes.HideBySig,
-                    voidType);
+                MethodAttributes.Public |
+                MethodAttributes.Static |
+                MethodAttributes.HideBySig,
+                voidType);
 
             writerFunc.Parameters.Add(new ParameterDefinition("writer", ParameterAttributes.None, scriptDef.MainModule.ImportReference(NetworkWriterType)));
             writerFunc.Parameters.Add(new ParameterDefinition("value", ParameterAttributes.None, scriptDef.MainModule.ImportReference(variable)));
@@ -628,10 +628,10 @@ namespace Unity.UNetWeaver
             }
             // create new writer for this type
             MethodDefinition writerFunc = new MethodDefinition(functionName,
-                    MethodAttributes.Public |
-                    MethodAttributes.Static |
-                    MethodAttributes.HideBySig,
-                    voidType);
+                MethodAttributes.Public |
+                MethodAttributes.Static |
+                MethodAttributes.HideBySig,
+                voidType);
 
             writerFunc.Parameters.Add(new ParameterDefinition("writer", ParameterAttributes.None, scriptDef.MainModule.ImportReference(NetworkWriterType)));
             writerFunc.Parameters.Add(new ParameterDefinition("value", ParameterAttributes.None, scriptDef.MainModule.ImportReference(variable)));
@@ -701,10 +701,10 @@ namespace Unity.UNetWeaver
 
             // create new reader for this type
             MethodDefinition readerFunc = new MethodDefinition(functionName,
-                    MethodAttributes.Public |
-                    MethodAttributes.Static |
-                    MethodAttributes.HideBySig,
-                    variable);
+                MethodAttributes.Public |
+                MethodAttributes.Static |
+                MethodAttributes.HideBySig,
+                variable);
 
             // create local for return value
             readerFunc.Body.Variables.Add(new VariableDefinition(variable));
@@ -855,8 +855,8 @@ namespace Unity.UNetWeaver
             if (lists.generateContainerClass == null)
             {
                 lists.generateContainerClass = new TypeDefinition("Unity", "GeneratedNetworkCode",
-                        TypeAttributes.BeforeFieldInit | TypeAttributes.Class | TypeAttributes.AnsiClass | TypeAttributes.Public | TypeAttributes.AutoClass,
-                        objectType);
+                    TypeAttributes.BeforeFieldInit | TypeAttributes.Class | TypeAttributes.AnsiClass | TypeAttributes.Public | TypeAttributes.AutoClass,
+                    objectType);
 
                 const MethodAttributes methodAttributes = MethodAttributes.Public | MethodAttributes.HideBySig | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
                 var method = new MethodDefinition(".ctor", methodAttributes, voidType);

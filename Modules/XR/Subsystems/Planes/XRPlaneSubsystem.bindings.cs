@@ -95,7 +95,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/Subsystems/Planes/XRPlaneSubsystem.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRPlaneSubsystem : Subsystem<XRPlaneSubsystemDescriptor>
+    public class XRPlaneSubsystem : IntegratedSubsystem<XRPlaneSubsystemDescriptor>
     {
         public event Action<PlaneAddedEventArgs> PlaneAdded;
         public event Action<PlaneUpdatedEventArgs> PlaneUpdated;

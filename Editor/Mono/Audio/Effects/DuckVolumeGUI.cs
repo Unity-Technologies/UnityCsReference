@@ -223,7 +223,7 @@ namespace UnityEditor
                             gain = duckThreshold + duckGradient * t;
                         return (2.0f * (gain + duckMakeupGain - dbMin) / dbRange) - 1.0f;
                     }
-                    );
+                );
 
                 // Curve shown when modifying MakeupGain
                 if (dragtype == DragType.MakeupGain)
@@ -245,7 +245,7 @@ namespace UnityEditor
                             return (2.0f * (gain + duckMakeupGain - dbMin) / dbRange) - 1.0f;
                         },
                         Color.white
-                        );
+                    );
                 }
 
 
@@ -264,17 +264,17 @@ namespace UnityEditor
                     Handles.DrawAAPolyLine(2.0f,
                         new Color[] { Color.black, Color.black },
                         new Vector3[]
-                    {
-                        new Vector3(r.x + thresholdPosX + r.width, r.y + thresholdPosY - aspect * r.width, 0.0f),
-                        new Vector3(r.x + thresholdPosX - r.width, r.y + thresholdPosY + aspect * r.width, 0.0f)
-                    });
+                        {
+                            new Vector3(r.x + thresholdPosX + r.width, r.y + thresholdPosY - aspect * r.width, 0.0f),
+                            new Vector3(r.x + thresholdPosX - r.width, r.y + thresholdPosY + aspect * r.width, 0.0f)
+                        });
                     Handles.DrawAAPolyLine(3.0f,
                         new Color[] { Color.white, Color.white },
                         new Vector3[]
-                    {
-                        new Vector3(r.x + thresholdPosX + r.width, r.y + thresholdPosY - aspect * duckGradient * r.width, 0.0f),
-                        new Vector3(r.x + thresholdPosX - r.width, r.y + thresholdPosY + aspect * duckGradient * r.width, 0.0f)
-                    });
+                        {
+                            new Vector3(r.x + thresholdPosX + r.width, r.y + thresholdPosY - aspect * duckGradient * r.width, 0.0f),
+                            new Vector3(r.x + thresholdPosX - r.width, r.y + thresholdPosY + aspect * duckGradient * r.width, 0.0f)
+                        });
                 }
                 else if (dragtype == DragType.ThresholdAndKnee)
                 {

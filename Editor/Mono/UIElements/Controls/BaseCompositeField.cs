@@ -54,10 +54,11 @@ namespace UnityEditor.Experimental.UIElements
         protected List<TField> m_Fields;
         internal abstract FieldDescription[] DescribeFields();
 
+        bool m_ShouldUpdateDisplay;
         protected BaseCompositeField()
         {
             AddToClassList("compositeField");
-
+            m_ShouldUpdateDisplay = true;
             m_Fields = new List<TField>();
             FieldDescription[] fieldDescriptions = DescribeFields();
             foreach (var desc in fieldDescriptions)
@@ -68,11 +69,21 @@ namespace UnityEditor.Experimental.UIElements
                 var field = new TField();
                 fieldContainer.Add(field);
                 field.OnValueChanged(e =>
+                {
+                    TValue cur = value;
+                    desc.write(ref cur, e.newValue);
+
+                    // Here, just check and make sure the text is updated in the basic field and is the same as the value...
+                    // For example, backspace done on a selected value will empty the field (text == "") but the value will be 0.
+                    // Or : a text of "2+3" is valid until enter is pressed, so not equal to a value of "5".
+                    if (e.newValue.ToString() != ((TField)e.currentTarget).text)
                     {
-                        TValue cur = value;
-                        desc.write(ref cur, e.newValue);
-                        value = cur;
-                    });
+                        m_ShouldUpdateDisplay = false;
+                    }
+
+                    value = cur;
+                    m_ShouldUpdateDisplay = true;
+                });
                 m_Fields.Add(field);
                 shadow.Add(fieldContainer);
             }
@@ -83,16 +94,6 @@ namespace UnityEditor.Experimental.UIElements
         public override VisualElement contentContainer
         {
             get { return null; }
-        }
-
-        public override TValue value
-        {
-            get { return base.value; }
-            set
-            {
-                base.value = value;
-                UpdateDisplay();
-            }
         }
 
         private void UpdateDisplay()
@@ -111,13 +112,13 @@ namespace UnityEditor.Experimental.UIElements
 
         public override void SetValueWithoutNotify(TValue newValue)
         {
-            var valueChanged = !EqualityComparer<TValue>.Default.Equals(m_Value, newValue);
+            var displayNeedsUpdate = m_ShouldUpdateDisplay && !EqualityComparer<TValue>.Default.Equals(m_Value, newValue);
 
             // Make sure to call the base class to set the value...
             base.SetValueWithoutNotify(newValue);
 
             // Before Updating the display, just check if the value changed...
-            if (valueChanged)
+            if (displayNeedsUpdate)
             {
                 UpdateDisplay();
             }

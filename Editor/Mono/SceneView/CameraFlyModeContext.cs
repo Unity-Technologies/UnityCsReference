@@ -37,11 +37,11 @@ namespace UnityEditor
 
                 if (m_Context.active)
                 {
-                    ShortcutIntegration.instance.contextManager.SetPriorityContext(context);
+                    ShortcutIntegration.instance.contextManager.RegisterPriorityContext(context);
                 }
                 else
                 {
-                    ShortcutIntegration.instance.contextManager.ClearPriorityContext();
+                    ShortcutIntegration.instance.contextManager.DeregisterPriorityContext(context);
                     m_ArrowKeysActive = DoArrowKeys(controlID, orthographic);
                 }
 

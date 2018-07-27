@@ -263,8 +263,8 @@ namespace UnityEditor
                         foreach (var importer in targets.Cast<SpeedTreeImporter>())
                         {
                             var menuText = String.Format("{0}: {1}",
-                                    Path.GetFileNameWithoutExtension(importer.assetPath),
-                                    String.Join(" | ", importer.LODHeights.Select(height => String.Format("{0:0}%", height * 100)).ToArray()));
+                                Path.GetFileNameWithoutExtension(importer.assetPath),
+                                String.Join(" | ", importer.LODHeights.Select(height => String.Format("{0:0}%", height * 100)).ToArray()));
                             dropDownMenu.AddItem(new GUIContent(menuText), false, OnResetLODMenuClick, importer);
                         }
                         dropDownMenu.DropDown(buttonRect);

@@ -59,9 +59,9 @@ namespace UnityEditor
                 Rect drawArea = toolbarRect;
                 drawArea.width = skin.CalcSize(SpritePolygonModeStyles.changeShapeLabel).x;
                 SpriteUtilityWindow.DrawToolBarWidget(ref drawArea, ref toolbarRect, (adjustedDrawArea) =>
-                    {
-                        showChangeShapeWindow = GUI.Toggle(adjustedDrawArea, showChangeShapeWindow, SpritePolygonModeStyles.changeShapeLabel, EditorStyles.toolbarButton);
-                    });
+                {
+                    showChangeShapeWindow = GUI.Toggle(adjustedDrawArea, showChangeShapeWindow, SpritePolygonModeStyles.changeShapeLabel, EditorStyles.toolbarButton);
+                });
             }
         }
 
@@ -98,19 +98,19 @@ namespace UnityEditor
             var sidesField = moduleView.Q<PropertyControl<long>>("labelIntegerField");
             sidesField.SetValueWithoutNotify(polygonSides);
             sidesField.OnValueChanged((evt) =>
-                {
-                    polygonSides = (int)evt.newValue;
-                    ShowHideWarningMessage();
-                });
+            {
+                polygonSides = (int)evt.newValue;
+                ShowHideWarningMessage();
+            });
             m_ChangeButton = moduleView.Q<UIElementButton>("changeButton");
             m_ChangeButton.RegisterCallback<MouseUpEvent>((e) =>
+            {
+                if (isSidesValid)
                 {
-                    if (isSidesValid)
-                    {
-                        GeneratePolygonOutline();
-                        showChangeShapeWindow = false;
-                    }
-                });
+                    GeneratePolygonOutline();
+                    showChangeShapeWindow = false;
+                }
+            });
             m_WarningMessage = moduleView.Q("warning");
             ShowHideWarningMessage();
         }

@@ -9,6 +9,7 @@ using System.Text;
 using UnityEngine.Yoga;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.Profiling;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -94,8 +95,10 @@ namespace UnityEngine.Experimental.UIElements
 
         private static uint s_NextId;
 
+        private static List<string> s_EmptyClassList = new List<string>(0);
+
         string m_Name;
-        HashSet<string> m_ClassList;
+        List<string> m_ClassList;
         string m_TypeName;
         string m_FullTypeName;
 
@@ -254,9 +257,9 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var spacing = new Spacing(m_Style.paddingLeft,
-                        m_Style.paddingTop,
-                        m_Style.paddingRight,
-                        m_Style.paddingBottom);
+                    m_Style.paddingTop,
+                    m_Style.paddingRight,
+                    m_Style.paddingBottom);
 
                 return paddingRect - spacing;
             }
@@ -267,9 +270,9 @@ namespace UnityEngine.Experimental.UIElements
             get
             {
                 var spacing = new Spacing(style.borderLeftWidth,
-                        style.borderTopWidth,
-                        style.borderRightWidth,
-                        style.borderBottomWidth);
+                    style.borderTopWidth,
+                    style.borderRightWidth,
+                    style.borderBottomWidth);
 
                 return rect - spacing;
             }
@@ -315,7 +318,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        internal bool isWorldTransformClipDirty { get; set; } = true;
+        internal bool isWorldTransformDirty { get; set; } = true;
 
         private Matrix4x4 m_WorldTransform = Matrix4x4.identity;
 
@@ -334,32 +337,17 @@ namespace UnityEngine.Experimental.UIElements
         {
             get
             {
-                if (isWorldTransformClipDirty)
+                if (isWorldTransformDirty)
                 {
-                    UpdateWorldTransformAndClip();
-                    isWorldTransformClipDirty = false;
+                    UpdateWorldTransform();
+                    isWorldTransformDirty = false;
                 }
                 return m_WorldTransform;
             }
         }
 
-        private Rect m_WorldClip = Rect.zero;
-        internal Rect worldClip
+        private void UpdateWorldTransform()
         {
-            get
-            {
-                if (isWorldTransformClipDirty)
-                {
-                    UpdateWorldTransformAndClip();
-                    isWorldTransformClipDirty = false;
-                }
-                return m_WorldClip;
-            }
-        }
-
-        private void UpdateWorldTransformAndClip()
-        {
-            // Update world transform
             var offset = Matrix4x4.Translate(new Vector3(layout.x, layout.y, 0));
             if (shadow.parent != null)
             {
@@ -369,15 +357,33 @@ namespace UnityEngine.Experimental.UIElements
             {
                 m_WorldTransform = offset * transform.matrix;
             }
+        }
 
-            // Update world clip
+        internal bool isWorldClipDirty { get; set; } = true;
+
+        private Rect m_WorldClip = Rect.zero;
+        internal Rect worldClip
+        {
+            get
+            {
+                if (isWorldClipDirty)
+                {
+                    UpdateWorldClip();
+                    isWorldClipDirty = false;
+                }
+                return m_WorldClip;
+            }
+        }
+
+        private void UpdateWorldClip()
+        {
             if (shadow.parent != null)
             {
                 m_WorldClip = shadow.parent.worldClip;
 
                 if (ShouldClip())
                 {
-                    var localClip = ComputeAAAlignedBound(rect, m_WorldTransform);
+                    var localClip = ComputeAAAlignedBound(rect, worldTransform);
 
                     float x1 = Mathf.Max(localClip.x, m_WorldClip.x);
                     float x2 = Mathf.Min(localClip.x + localClip.width, m_WorldClip.x + m_WorldClip.width);
@@ -445,6 +451,11 @@ namespace UnityEngine.Experimental.UIElements
                 m_Name = value;
                 IncrementVersion(VersionChangeType.StyleSheet);
             }
+        }
+
+        internal List<string> classList
+        {
+            get { return m_ClassList; }
         }
 
         internal string fullTypeName
@@ -547,7 +558,7 @@ namespace UnityEngine.Experimental.UIElements
 
             shadow = new Hierarchy(this);
 
-            m_ClassList = new HashSet<string>();
+            m_ClassList = s_EmptyClassList;
             m_FullTypeName = string.Empty;
             m_TypeName = string.Empty;
             SetEnabled(true);
@@ -1001,73 +1012,16 @@ namespace UnityEngine.Experimental.UIElements
             layout = pos;
         }
 
-        internal const Align DefaultAlignContent = Align.FlexStart;
-        internal const Align DefaultAlignItems = Align.Stretch;
-
         void FinalizeLayout()
         {
-            yogaNode.Flex = float.NaN;
-
-            float fb = style.flexBasis.GetSpecifiedValueOrDefault(float.NaN);
-            if (fb == -1f)
+            if (hasInlineStyle)
             {
-                yogaNode.FlexBasis = YogaValue.Auto();
+                effectiveStyle.SyncWithLayout(yogaNode);
             }
             else
             {
-                yogaNode.FlexBasis = fb;
+                yogaNode.CopyStyle(effectiveStyle.yogaNode);
             }
-
-            yogaNode.FlexGrow = style.flexGrow.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.FlexShrink = style.flexShrink.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.Left = style.positionLeft.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.Top = style.positionTop.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.Right = style.positionRight.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.Bottom = style.positionBottom.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.MarginLeft = style.marginLeft.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.MarginTop = style.marginTop.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.MarginRight = style.marginRight.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.MarginBottom = style.marginBottom.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.PaddingLeft = style.paddingLeft.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.PaddingTop = style.paddingTop.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.PaddingRight = style.paddingRight.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.PaddingBottom = style.paddingBottom.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.BorderLeftWidth = style.borderLeft.GetSpecifiedValueOrDefault(style.borderLeftWidth.GetSpecifiedValueOrDefault(float.NaN));
-            yogaNode.BorderTopWidth = style.borderTop.GetSpecifiedValueOrDefault(style.borderTopWidth.GetSpecifiedValueOrDefault(float.NaN));
-            yogaNode.BorderRightWidth = style.borderRight.GetSpecifiedValueOrDefault(style.borderRightWidth.GetSpecifiedValueOrDefault(float.NaN));
-            yogaNode.BorderBottomWidth = style.borderBottom.GetSpecifiedValueOrDefault(style.borderBottomWidth.GetSpecifiedValueOrDefault(float.NaN));
-            yogaNode.Width = style.width.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.Height = style.height.GetSpecifiedValueOrDefault(float.NaN);
-
-            PositionType posType = style.positionType;
-            switch (posType)
-            {
-                case PositionType.Absolute:
-                case PositionType.Manual:
-                    yogaNode.PositionType = YogaPositionType.Absolute;
-                    break;
-                case PositionType.Relative:
-                    yogaNode.PositionType = YogaPositionType.Relative;
-                    break;
-            }
-
-            yogaNode.Overflow = (YogaOverflow)(style.overflow.value);
-            yogaNode.AlignSelf = (YogaAlign)(style.alignSelf.value);
-            yogaNode.MaxWidth = style.maxWidth.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.MaxHeight = style.maxHeight.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.MinWidth = style.minWidth.GetSpecifiedValueOrDefault(float.NaN);
-            yogaNode.MinHeight = style.minHeight.GetSpecifiedValueOrDefault(float.NaN);
-
-            // Note: the following applies to VisualContainer only
-            // but it won't cause any trouble and we avoid making this method virtual
-            yogaNode.FlexDirection = (YogaFlexDirection)style.flexDirection.value;
-            yogaNode.AlignContent = (YogaAlign)style.alignContent.GetSpecifiedValueOrDefault(DefaultAlignContent);
-            yogaNode.AlignItems = (YogaAlign)style.alignItems.GetSpecifiedValueOrDefault(DefaultAlignItems);
-            yogaNode.JustifyContent = (YogaJustify)style.justifyContent.value;
-            yogaNode.Wrap = (YogaWrap)style.flexWrap.value;
-
-            IncrementVersion(VersionChangeType.Layout);
-            IncrementVersion(VersionChangeType.Transform);
         }
 
         internal event OnStylesResolved onStylesResolved;
@@ -1107,7 +1061,10 @@ namespace UnityEngine.Experimental.UIElements
                 onStylesResolved(m_Style);
             }
             OnStyleResolved(m_Style);
-            IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
+
+            // This is a pre-emptive since we do not know if style changes actually cause a repaint or a layout
+            // But thouse should be the only possible type of changes needed
+            IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout | VersionChangeType.Repaint);
         }
 
         public void ResetPositionProperties()
@@ -1149,27 +1106,35 @@ namespace UnityEngine.Experimental.UIElements
 
         public void ClearClassList()
         {
-            if (m_ClassList != null && m_ClassList.Count > 0)
+            if (m_ClassList.Count > 0)
             {
-                m_ClassList.Clear();
+                m_ClassList = s_EmptyClassList;
                 IncrementVersion(VersionChangeType.StyleSheet);
             }
         }
 
         public void AddToClassList(string className)
         {
-            if (m_ClassList == null)
-                m_ClassList = new HashSet<string>();
-
-            if (m_ClassList.Add(className))
+            if (m_ClassList == s_EmptyClassList)
             {
-                IncrementVersion(VersionChangeType.StyleSheet);
+                m_ClassList = new List<string>() { className };
             }
+            else
+            {
+                if (m_ClassList.Contains(className))
+                {
+                    return;
+                }
+                m_ClassList.Capacity += 1;
+                m_ClassList.Add(className);
+            }
+
+            IncrementVersion(VersionChangeType.StyleSheet);
         }
 
         public void RemoveFromClassList(string className)
         {
-            if (m_ClassList != null && m_ClassList.Remove(className))
+            if (m_ClassList.Remove(className))
             {
                 IncrementVersion(VersionChangeType.StyleSheet);
             }
@@ -1193,7 +1158,13 @@ namespace UnityEngine.Experimental.UIElements
 
         public bool ClassListContains(string cls)
         {
-            return m_ClassList != null && m_ClassList.Contains(cls);
+            for (int i = 0; i < m_ClassList.Count; i++)
+            {
+                if (m_ClassList[i] == cls)
+                    return true;
+            }
+
+            return false;
         }
 
         public object FindAncestorUserData()

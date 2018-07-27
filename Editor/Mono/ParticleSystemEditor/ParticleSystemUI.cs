@@ -588,7 +588,8 @@ namespace UnityEditor
         {
             int index = 0;
             // Order should match GetUIModuleNames
-            return new ModuleUI[] {
+            return new ModuleUI[]
+            {
                 new InitialModuleUI(e, so, s_ModuleNames[index++]),
                 new EmissionModuleUI(e, so, s_ModuleNames[index++]),
                 new ShapeModuleUI(e, so, s_ModuleNames[index++]),
@@ -619,7 +620,8 @@ namespace UnityEditor
         public static string[] GetUIModuleNames()
         {
             // Order should match GetUIModules
-            return new string[] {
+            return new string[]
+            {
                 "",
                 L10n.Tr("Emission"),
                 L10n.Tr("Shape"),

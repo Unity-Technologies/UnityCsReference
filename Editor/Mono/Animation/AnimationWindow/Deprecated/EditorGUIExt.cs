@@ -112,18 +112,18 @@ namespace UnityEditor
             if (horiz)
             {
                 sliderRect = new Rect(
-                        position.x + leftButton.fixedWidth, position.y,
-                        position.width - leftButton.fixedWidth - rightButton.fixedWidth, position.height
-                        );
+                    position.x + leftButton.fixedWidth, position.y,
+                    position.width - leftButton.fixedWidth - rightButton.fixedWidth, position.height
+                );
                 minRect = new Rect(position.x, position.y, leftButton.fixedWidth, position.height);
                 maxRect = new Rect(position.xMax - rightButton.fixedWidth, position.y, rightButton.fixedWidth, position.height);
             }
             else
             {
                 sliderRect = new Rect(
-                        position.x, position.y + leftButton.fixedHeight,
-                        position.width, position.height - leftButton.fixedHeight - rightButton.fixedHeight
-                        );
+                    position.x, position.y + leftButton.fixedHeight,
+                    position.width, position.height - leftButton.fixedHeight - rightButton.fixedHeight
+                );
                 minRect = new Rect(position.x, position.y, position.width, leftButton.fixedHeight);
                 maxRect = new Rect(position.x, position.yMax - rightButton.fixedHeight, position.width, rightButton.fixedHeight);
             }
@@ -235,10 +235,10 @@ namespace UnityEditor
                 float thumbSize = thumb.fixedWidth != 0 ? thumb.fixedWidth : thumb.padding.horizontal;
                 pixelsPerValue = (position.width - slider.padding.horizontal - thumbSize) / (maxVisual - minVisual);
                 thumbRect = new Rect(
-                        (displayValue - minVisual) * pixelsPerValue + position.x + slider.padding.left,
-                        position.y + slider.padding.top,
-                        displaySize * pixelsPerValue + thumbSize,
-                        position.height - slider.padding.vertical);
+                    (displayValue - minVisual) * pixelsPerValue + position.x + slider.padding.left,
+                    position.y + slider.padding.top,
+                    displaySize * pixelsPerValue + thumbSize,
+                    position.height - slider.padding.vertical);
                 thumbMinRect = new Rect(thumbRect.x, thumbRect.y, thumb.padding.left, thumbRect.height);
                 thumbMaxRect = new Rect(thumbRect.xMax - thumb.padding.right, thumbRect.y, thumb.padding.right, thumbRect.height);
                 mousePosition = evt.mousePosition.x - position.x;
@@ -248,10 +248,10 @@ namespace UnityEditor
                 float thumbSize = thumb.fixedHeight != 0 ? thumb.fixedHeight : thumb.padding.vertical;
                 pixelsPerValue = (position.height - slider.padding.vertical - thumbSize) / (maxVisual - minVisual);
                 thumbRect = new Rect(
-                        position.x + slider.padding.left,
-                        (displayValue - minVisual) * pixelsPerValue + position.y + slider.padding.top,
-                        position.width - slider.padding.horizontal,
-                        displaySize * pixelsPerValue + thumbSize);
+                    position.x + slider.padding.left,
+                    (displayValue - minVisual) * pixelsPerValue + position.y + slider.padding.top,
+                    position.width - slider.padding.horizontal,
+                    displaySize * pixelsPerValue + thumbSize);
                 thumbMinRect = new Rect(thumbRect.x, thumbRect.y, thumbRect.width, thumb.padding.top);
                 thumbMaxRect = new Rect(thumbRect.x, thumbRect.yMax - thumb.padding.bottom, thumbRect.width, thumb.padding.bottom);
                 mousePosition = evt.mousePosition.y - position.y;
@@ -580,7 +580,7 @@ namespace UnityEditor
             out float startSelect,
             out float endSelect,
             GUIStyle style
-            )
+        )
         {
             int id = GUIUtility.GetControlID(41623453, FocusType.Keyboard);
             Event evt = Event.current;

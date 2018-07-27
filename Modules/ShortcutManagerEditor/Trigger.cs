@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -15,7 +16,7 @@ namespace UnityEditor.ShortcutManagement
 
         List<KeyCombination> m_KeyCombinationSequence = new List<KeyCombination>();
         List<ShortcutEntry> m_Entries = new List<ShortcutEntry>();
-        Dictionary<KeyCode, ShortcutEntry> m_ActiveClutches = new Dictionary<KeyCode, ShortcutEntry>();
+        Dictionary<KeyCode, Tuple<ShortcutEntry, object>> m_ActiveClutches = new Dictionary<KeyCode, Tuple<ShortcutEntry, object>>();
         HashSet<KeyCode> m_KeysDown = new HashSet<KeyCode>();
 
         public Trigger(IDirectory directory, IConflictResolver conflictResolver)
@@ -32,16 +33,18 @@ namespace UnityEditor.ShortcutManagement
             if (evt.type == EventType.KeyUp)
             {
                 m_KeysDown.Remove(evt.keyCode);
-                ShortcutEntry shortcutEntry;
-                if (m_ActiveClutches.TryGetValue(evt.keyCode, out shortcutEntry))
+                Tuple<ShortcutEntry, object> clutchTuple;
+                if (m_ActiveClutches.TryGetValue(evt.keyCode, out clutchTuple))
                 {
+                    var clutchContext = m_ActiveClutches[evt.keyCode].Item2;
+
                     m_ActiveClutches.Remove(evt.keyCode);
                     var args = new ShortcutArguments
                     {
-                        context = contextManager.GetContextInstanceOfType(shortcutEntry.context),
-                        state = ShortcutState.End,
+                        context = clutchContext,
+                        state = ShortcutState.End
                     };
-                    shortcutEntry.action(args);
+                    clutchTuple.Item1.action(args);
                 }
                 return;
             }
@@ -62,13 +65,14 @@ namespace UnityEditor.ShortcutManagement
 
             m_Directory.FindShortcutEntries(m_KeyCombinationSequence, contextManager, m_Entries);
 
-            if (m_Entries.Count > 1 && contextManager.priorityContext != null)
+            // Deal ONLY with prioritycontext
+            if (m_Entries.Count > 1 && contextManager.HasAnyPriorityContext())
             {
-                var entry = m_Entries.FirstOrDefault(a => a.context == contextManager.priorityContext.GetType());
-                if (entry != null)
+                var entry = m_Entries.FindAll(a => contextManager.HasPriorityContextOfType(a.context));
+                if (entry.Any())
                 {
                     m_Entries.Clear();
-                    m_Entries.Add(entry);
+                    m_Entries.AddRange(entry);
                 }
             }
 
@@ -99,12 +103,18 @@ namespace UnityEditor.ShortcutManagement
                             case ShortcutType.Clutch:
                                 if (!m_ActiveClutches.ContainsKey(evt.keyCode))
                                 {
-                                    m_ActiveClutches.Add(evt.keyCode, shortcutEntry);
+                                    m_ActiveClutches.Add(evt.keyCode, new Tuple<ShortcutEntry, object>(shortcutEntry, args.context));
                                     args.state = ShortcutState.Begin;
                                     shortcutEntry.action(args);
                                     evt.Use();
                                     Reset();
                                 }
+                                break;
+                            case ShortcutType.Menu:
+                                args.state = ShortcutState.End;
+                                EditorApplication.ExecuteMenuItem(shortcutEntry.identifier.path);
+                                evt.Use();
+                                Reset();
                                 break;
                         }
                     }
