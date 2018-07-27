@@ -23,7 +23,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                ((ColorField)ve).value = m_Value.GetValueFromBag(bag);
+                ((ColorField)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
                 ((ColorField)ve).showEyeDropper = m_ShowEyeDropper.GetValueFromBag(bag);
                 ((ColorField)ve).showAlpha = m_ShowAlpha.GetValueFromBag(bag);
                 ((ColorField)ve).hdr = m_Hdr.GetValueFromBag(bag);

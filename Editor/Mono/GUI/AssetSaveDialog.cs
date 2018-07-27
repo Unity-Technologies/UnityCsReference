@@ -167,7 +167,7 @@ namespace UnityEditor
             }
 
             if (GUILayout.Button(allSelected ? s_Styles.saveAll : s_Styles.saveSelected,
-                    s_Styles.button, GUILayout.Width(s_Styles.buttonWidth)))
+                s_Styles.button, GUILayout.Width(s_Styles.buttonWidth)))
             {
                 SaveSelectedAssets();
             }

@@ -311,8 +311,8 @@ namespace UnityEditor
                     mapping.ContainsKey((int)HumanBodyBones.LeftUpperArm) && mapping.ContainsKey((int)HumanBodyBones.RightUpperArm))
                 {
                     m_Orientation = AvatarSetupTool.AvatarComputeOrientation(
-                            mapping[(int)HumanBodyBones.LeftUpperLeg].position, mapping[(int)HumanBodyBones.RightUpperLeg].position,
-                            mapping[(int)HumanBodyBones.LeftUpperArm].position, mapping[(int)HumanBodyBones.RightUpperArm].position);
+                        mapping[(int)HumanBodyBones.LeftUpperLeg].position, mapping[(int)HumanBodyBones.RightUpperLeg].position,
+                        mapping[(int)HumanBodyBones.LeftUpperArm].position, mapping[(int)HumanBodyBones.RightUpperArm].position);
 
                     // If not standard aligned, try to map again with correct alignment assumptions
                     if (Vector3.Angle(m_Orientation * Vector3.up, Vector3.up) > 20 || Vector3.Angle(m_Orientation * Vector3.forward, Vector3.forward) > 20)

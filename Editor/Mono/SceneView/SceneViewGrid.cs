@@ -31,7 +31,7 @@ namespace UnityEditor
 
         public DrawGridParameters PrepareGridRender(Camera camera, Vector3 pivot, Quaternion rotation,
             float size, bool orthoMode, bool gridVisible
-            )
+        )
         {
             bool _xGrid = false, _yGrid = false, _zGrid = false;
             if (gridVisible)

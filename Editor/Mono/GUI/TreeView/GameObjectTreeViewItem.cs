@@ -15,6 +15,11 @@ namespace UnityEditor
         bool m_ShouldDisplay;
         Scene m_UnityScene;
 
+        // Lazy initialized together with icon.
+        bool m_LazyInitializationDone;
+        bool m_ShowPrefabModeButton;
+        Texture2D m_OverlayIcon;
+
         public GameObjectTreeViewItem(int id, int depth, TreeViewItem parent, string displayName)
             : base(id, depth, parent, displayName)
         {
@@ -39,6 +44,9 @@ namespace UnityEditor
         virtual public int colorCode { get { return m_ColorCode; } set { m_ColorCode = value; } }
         virtual public Object objectPPTR { get { return m_ObjectPPTR; } set { m_ObjectPPTR = value; } }
         virtual public bool shouldDisplay { get { return m_ShouldDisplay; } set { m_ShouldDisplay = value; } }
+        virtual public bool lazyInitializationDone { get { return m_LazyInitializationDone; } set { m_LazyInitializationDone = value; } }
+        virtual public bool showPrefabModeButton { get { return m_ShowPrefabModeButton; } set { m_ShowPrefabModeButton = value; } }
+        virtual public Texture2D overlayIcon { get { return m_OverlayIcon; } set { m_OverlayIcon = value; } }
 
         public bool isSceneHeader { get; set; }
         public Scene scene

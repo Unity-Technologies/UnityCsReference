@@ -82,14 +82,14 @@ internal abstract class NativeCompiler : INativeCompiler
         for (var i = 0; i < threads.Length; i++)
         {
             threads[i] = new Thread(delegate(object obj)
+            {
+                var c = (Counter)obj;
+                int index;
+                while ((index = Interlocked.Increment(ref c.index)) <= sources.Length)
                 {
-                    var c = (Counter)obj;
-                    int index;
-                    while ((index = Interlocked.Increment(ref c.index)) <= sources.Length)
-                    {
-                        action(sources[index - 1]);
-                    }
-                });
+                    action(sources[index - 1]);
+                }
+            });
         }
         foreach (var t in threads)
             t.Start(counter);

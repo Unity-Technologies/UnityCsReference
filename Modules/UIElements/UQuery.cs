@@ -9,6 +9,23 @@ using UnityEngine.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
 {
+    internal struct RuleMatcher
+    {
+        public StyleSheet sheet;
+        public StyleComplexSelector complexSelector;
+
+        public RuleMatcher(StyleSheet sheet, StyleComplexSelector complexSelector, int styleSheetIndexInStack)
+        {
+            this.sheet = sheet;
+            this.complexSelector = complexSelector;
+        }
+
+        public override string ToString()
+        {
+            return complexSelector.ToString();
+        }
+    }
+
     public static class UQuery
     {
         //This scheme saves us 20 bytes instead of saving a Func<object, bool> directly (12 vs 32 bytes)
@@ -50,25 +67,54 @@ namespace UnityEngine.Experimental.UIElements
         {
             internal List<RuleMatcher> m_Matchers;
 
-            public override bool ShouldSkipElement(VisualElement element)
-            {
-                return false;
-            }
 
-            protected override bool MatchSelectorPart(VisualElement element, StyleSelector selector, StyleSelectorPart part)
-            {
-                if (part.type == StyleSelectorType.Predicate)
-                {
-                    IVisualPredicateWrapper w = part.tempData as IVisualPredicateWrapper;
+            internal List<RuleMatcher> m_MatchersUsedInRecursion;
 
-                    return w != null && w.Predicate(element);
-                }
-                return base.MatchSelectorPart(element, selector, part);
+            protected UQueryMatcher()
+            {
             }
 
             public override void Traverse(VisualElement element)
             {
-                TraverseRecursive(element, 0, new List<RuleMatcher>(m_Matchers));
+                // TODO not actually sure this copy is necessary, review
+                m_MatchersUsedInRecursion = new List<RuleMatcher>(m_Matchers);
+                base.Traverse(element);
+            }
+
+            protected virtual bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+            {
+                return false;
+            }
+
+            static void NoProcessResult(VisualElement e, MatchResultInfo i) {}
+
+            public override void TraverseRecursive(VisualElement element, int depth)
+            {
+                int originalCount = m_MatchersUsedInRecursion.Count;
+
+                int count = m_MatchersUsedInRecursion.Count; // changes while we iterate so save
+
+                for (int j = 0; j < count; j++)
+                {
+                    RuleMatcher matcher = m_MatchersUsedInRecursion[j];
+
+                    if (StyleSelectorHelper.MatchRightToLeft(element, matcher.complexSelector, NoProcessResult))
+                    {
+                        // use by uQuery to determine if we need to stop
+                        if (OnRuleMatchedElement(matcher, element))
+                        {
+                            return;
+                        }
+                    }
+                }
+
+                Recurse(element, depth);
+
+                // Remove all matchers that we could possibly have added at this level of recursion
+                if (m_MatchersUsedInRecursion.Count > originalCount)
+                {
+                    m_MatchersUsedInRecursion.RemoveRange(originalCount, m_MatchersUsedInRecursion.Count - originalCount);
+                }
             }
 
             public virtual void Run(VisualElement root, List<RuleMatcher> matchers)
@@ -91,7 +137,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private class FirstQueryMatcher : SingleQueryMatcher
         {
-            public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+            protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
                 if (match == null)
                     match = element;
@@ -101,7 +147,7 @@ namespace UnityEngine.Experimental.UIElements
 
         private class LastQueryMatcher : SingleQueryMatcher
         {
-            public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+            protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
                 match = element;
                 return false;
@@ -129,7 +175,7 @@ namespace UnityEngine.Experimental.UIElements
                 base.Run(root, matchers);
             }
 
-            public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+            protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
             {
                 ++matchCount;
                 if (matchCount == _matchIndex)
@@ -505,7 +551,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 public List<T> matches { get; set; }
 
-                public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+                protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
                 {
                     matches.Add(element as T);
                     return false;
@@ -549,7 +595,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 internal Action<T> callBack { get; set; }
 
-                public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+                protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
                 {
                     T castedElement = element as T;
 
@@ -581,7 +627,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 public static DelegateQueryMatcher<TReturnType> s_Instance = new DelegateQueryMatcher<TReturnType>();
 
-                public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+                protected override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
                 {
                     T castedElement = element as T;
 

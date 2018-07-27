@@ -523,33 +523,33 @@ namespace UnityEditor
             TextureImporterShape shapeCapsAll = TextureImporterShape.Texture2D | TextureImporterShape.TextureCube;
 
             m_TextureTypeGUIElements[(int)TextureImporterType.Default]      = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.ColorSpace | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapConvolution | TextureInspectorGUIElement.CubeMapping,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
-                    | TextureInspectorGUIElement.StreamingMipmaps
-                    , shapeCapsAll);
+                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                | TextureInspectorGUIElement.StreamingMipmaps
+                , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.NormalMap]    = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.NormalMap | TextureInspectorGUIElement.CubeMapping,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
-                    | TextureInspectorGUIElement.StreamingMipmaps
-                    , shapeCapsAll);
+                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                | TextureInspectorGUIElement.StreamingMipmaps
+                , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.Sprite]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Sprite,
-                    TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
-                    TextureImporterShape.Texture2D);
+                TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.MipMaps | TextureInspectorGUIElement.ColorSpace,
+                TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Cookie]       = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.Cookie | TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.CubeMapping,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
-                    TextureImporterShape.Texture2D | TextureImporterShape.TextureCube);
+                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
+                TextureImporterShape.Texture2D | TextureImporterShape.TextureCube);
             m_TextureTypeGUIElements[(int)TextureImporterType.SingleChannel] = new TextureInspectorTypeGUIProperties(TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.SingleChannelComponent | TextureInspectorGUIElement.CubeMapping,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
-                    | TextureInspectorGUIElement.StreamingMipmaps
-                    , shapeCapsAll);
+                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                | TextureInspectorGUIElement.StreamingMipmaps
+                , shapeCapsAll);
             m_TextureTypeGUIElements[(int)TextureImporterType.GUI]          = new TextureInspectorTypeGUIProperties(0,
-                    TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
-                    TextureImporterShape.Texture2D);
+                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
+                TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Cursor]       = new TextureInspectorTypeGUIProperties(0,
-                    TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
-                    TextureImporterShape.Texture2D);
+                TextureInspectorGUIElement.AlphaHandling | TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps,
+                TextureImporterShape.Texture2D);
             m_TextureTypeGUIElements[(int)TextureImporterType.Lightmap]     = new TextureInspectorTypeGUIProperties(0,
-                    TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
-                    | TextureInspectorGUIElement.StreamingMipmaps
-                    , TextureImporterShape.Texture2D);
+                TextureInspectorGUIElement.PowerOfTwo | TextureInspectorGUIElement.Readable | TextureInspectorGUIElement.MipMaps
+                | TextureInspectorGUIElement.StreamingMipmaps
+                , TextureImporterShape.Texture2D);
 
             m_GUIElementMethods.Clear();
             m_GUIElementMethods.Add(TextureInspectorGUIElement.PowerOfTwo, this.POTScaleGUI);

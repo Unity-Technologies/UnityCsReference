@@ -173,14 +173,14 @@ namespace UnityEditor
                 package.publisher.label,
                 package.category.label,
                 null
-                );
+            );
         }
 
         public static void Download(string package_id, string url, string key, string package_name,
             string publisher_name, string category_name, AssetStoreUtils.DownloadDoneCallback doneCallback)
         {
             string[] dest = PackageStorePath(publisher_name, category_name,
-                    package_name, package_id, url);
+                package_name, package_id, url);
 
             JSONValue existing = JSONParser.SimpleParse(AssetStoreUtils.CheckDownload(package_id, url, dest, key));
 

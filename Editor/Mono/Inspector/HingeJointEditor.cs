@@ -47,7 +47,7 @@ namespace UnityEditor
             out Rigidbody connectedActor,
             out int jointFrameActorIndex,
             out bool rightHandedLimit
-            )
+        )
         {
             base.GetActors(joint, out dynamicActor, out connectedActor, out jointFrameActorIndex, out rightHandedLimit);
             rightHandedLimit = true;

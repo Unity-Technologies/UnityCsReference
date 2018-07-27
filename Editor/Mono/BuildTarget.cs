@@ -16,7 +16,7 @@ namespace UnityEditor
         StandaloneOSX = 2,
 
         [System.Obsolete("Use StandaloneOSX instead (UnityUpgradable) -> StandaloneOSX", true)]
-        StandaloneOSXUniversal = 2,
+        StandaloneOSXUniversal = 3,
 
         [System.Obsolete("StandaloneOSXIntel has been removed in 2017.3")]
         StandaloneOSXIntel = 4,
@@ -104,6 +104,7 @@ namespace UnityEditor
 
         /// Build a Nintendo 3DS application
         /// SA: BuildPipeline.BuildPlayer.
+        [System.Obsolete("Nintendo 3DS support is unavailable since 2018.1")]
         N3DS = 35,
 
         /// Build a Wii U player

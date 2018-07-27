@@ -33,7 +33,7 @@ namespace UnityEngine.Experimental.UIElements
                 slider.highValue = m_HighValue.GetValueFromBag(bag);
                 slider.direction = m_Direction.GetValueFromBag(bag);
                 slider.pageSize = m_PageSize.GetValueFromBag(bag);
-                slider.value = m_Value.GetValueFromBag(bag);
+                slider.SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
             }
         }
 

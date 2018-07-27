@@ -591,9 +591,9 @@ namespace UnityEngine.SocialPlatforms
         {
             List<Score> scores = new List<Score>((Score[])board.scores);
             scores.Sort(delegate(Score s1, Score s2)
-                {
-                    return s2.value.CompareTo(s1.value);
-                });
+            {
+                return s2.value.CompareTo(s1.value);
+            });
             for (int i = 0; i < scores.Count; i++)
                 scores[i].SetRank(i + 1);
         }

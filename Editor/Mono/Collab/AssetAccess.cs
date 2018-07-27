@@ -68,14 +68,13 @@ namespace UnityEditor.Collaboration
         // Success: assigns the retrieval of the GUID to 'assetGUID' and returns true.
         private static bool TryGetPrefabGUID(UnityEngine.Object gameObject, out string assetGUID)
         {
-            PrefabType prefabType = PrefabUtility.GetPrefabType(gameObject);
             UnityEngine.Object prefabObject = null;
 
-            if (prefabType == PrefabType.PrefabInstance)
+            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(gameObject))
             {
                 prefabObject = PrefabUtility.GetCorrespondingObjectFromSource(gameObject);
             }
-            else if (prefabType == PrefabType.Prefab)
+            else if (PrefabUtility.IsPartOfPrefabAsset(gameObject))
             {
                 prefabObject = gameObject;
             }

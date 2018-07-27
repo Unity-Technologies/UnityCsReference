@@ -164,8 +164,8 @@ namespace UnityEditor
                 {
                     float val = kSidesAndMiddle[i];
                     s_SnapGuides[axis].AddGuide(new SnapGuide(val,
-                            GetInterpolatedCorner(s_Corners, axis, val, 0),
-                            GetInterpolatedCorner(s_Corners, axis, val, 1)));
+                        GetInterpolatedCorner(s_Corners, axis, val, 0),
+                        GetInterpolatedCorner(s_Corners, axis, val, 1)));
                 }
 
                 // Snap to sibling anchor values
@@ -254,7 +254,7 @@ namespace UnityEditor
                 // Snap min side to min anchor, center to center point, max side to max anchor - this is always safe
                 float normalized = Mathf.Lerp(rect.anchorMin[axis], rect.anchorMax[axis], val);
                 guides.Add(new SnapGuide(normalized * parentRect.rect.size[axis],
-                        GetGuideLineForRect(parentRect, axis, normalized)));
+                    GetGuideLineForRect(parentRect, axis, normalized)));
 
                 // Snap to sides and center of the parent rect (if not the same as the anchor).
                 // This snapping is not safe.
@@ -262,7 +262,7 @@ namespace UnityEditor
                 if (val != anchorVal)
                 {
                     guides.Add(new SnapGuide(val * parentRect.rect.size[axis], false,
-                            GetGuideLineForRect(parentRect, axis, val)));
+                        GetGuideLineForRect(parentRect, axis, val)));
                 }
             }
 
@@ -281,13 +281,13 @@ namespace UnityEditor
                         // This is safe if both objects have the same min anchor.
                         safe = (sibling.anchorMin[axis] == rect.anchorMin[axis]);
                         guides.Add(new SnapGuide(sibling.GetRectInParentSpace().min[axis], safe,
-                                GetGuideLineForRect(sibling, axis, 0)));
+                            GetGuideLineForRect(sibling, axis, 0)));
 
                         // Snap min to max side
                         // This is safe if min anchor of this object is equal to max anchor of the sibling.
                         safe = (sibling.anchorMax[axis] == rect.anchorMin[axis]);
                         guides.Add(new SnapGuide(sibling.GetRectInParentSpace().max[axis], safe,
-                                GetGuideLineForRect(sibling, axis, 1)));
+                            GetGuideLineForRect(sibling, axis, 1)));
                     }
 
                     if (side == 2)
@@ -296,13 +296,13 @@ namespace UnityEditor
                         // This is safe if both objects have the same max anchor.
                         safe = (sibling.anchorMax[axis] == rect.anchorMax[axis]);
                         guides.Add(new SnapGuide(sibling.GetRectInParentSpace().max[axis], safe,
-                                GetGuideLineForRect(sibling, axis, 1)));
+                            GetGuideLineForRect(sibling, axis, 1)));
 
                         // Snap max to min side
                         // This is safe if max anchor of this object is equal to min anchor of the sibling.
                         safe = (sibling.anchorMin[axis] == rect.anchorMax[axis]);
                         guides.Add(new SnapGuide(sibling.GetRectInParentSpace().min[axis], safe,
-                                GetGuideLineForRect(sibling, axis, 0)));
+                            GetGuideLineForRect(sibling, axis, 0)));
                     }
 
                     if (side == 1)
@@ -312,7 +312,7 @@ namespace UnityEditor
                         // This also includes the case where both objects have the same min and max anchors.
                         safe = (sibling.anchorMin[axis] - rect.anchorMin[axis] == -(sibling.anchorMax[axis] - rect.anchorMax[axis]));
                         guides.Add(new SnapGuide(sibling.GetRectInParentSpace().center[axis], safe,
-                                GetGuideLineForRect(sibling, axis, 0.5f)));
+                            GetGuideLineForRect(sibling, axis, 0.5f)));
                     }
                 }
             }
@@ -372,7 +372,7 @@ namespace UnityEditor
             return new Vector2(
                 SnapToGuides(value.x, snapDistance.x, 0),
                 SnapToGuides(value.y, snapDistance.y, 1)
-                );
+            );
         }
 
         internal static float SnapToGuides(float value, float snapDistance, int axis)

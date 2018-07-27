@@ -70,6 +70,7 @@ namespace UnityEngine.Experimental.VFX
         [NativeMethod(IsThreadSafe = true)]
         extern static private void Internal_Destroy(IntPtr ptr);
 
+        extern public bool playing { get; set; }
         extern public float spawnCount { get; set; }
         extern public float deltaTime { get; set; }
         extern public float totalTime { get; set; }

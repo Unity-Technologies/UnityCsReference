@@ -134,6 +134,7 @@ namespace UnityEngine
 
         // Allow a specific instance of a MonoBehaviour to run in edit mode (only available in the editor)
         public extern bool runInEditMode { get; set; }
+        internal extern bool allowPrefabModeInPlayMode { get; }
 
         // Logs message to the Unity Console. This function is identical to [[Debug.Log]].
         public static void print(object message)

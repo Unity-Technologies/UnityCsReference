@@ -14,7 +14,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/XRPrefix.h")]
     [NativeType(Header = "Modules/XR/Subsystems/ReferencePoints/XRReferencePointSubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRReferencePointSubsystemDescriptor : SubsystemDescriptor<XRReferencePointSubsystem>
+    public class XRReferencePointSubsystemDescriptor : IntegratedSubsystemDescriptor<XRReferencePointSubsystem>
     {
     }
 }

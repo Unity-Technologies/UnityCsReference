@@ -284,9 +284,9 @@ namespace UnityEditor
                 if (!string.IsNullOrEmpty(extensionForBuildTarget))
                 {
                     errorMessage = string.Format(
-                            "For the '{0}' target the 'locationPathName' parameter for BuildPipeline.BuildPlayer should not end with a directory separator.\n" +
-                            "Provided path: '{1}', expected a path with the extension '.{2}'.", target, locationPathName,
-                            extensionForBuildTarget);
+                        "For the '{0}' target the 'locationPathName' parameter for BuildPipeline.BuildPlayer should not end with a directory separator.\n" +
+                        "Provided path: '{1}', expected a path with the extension '.{2}'.", target, locationPathName,
+                        extensionForBuildTarget);
                     return false;
                 }
             }

@@ -11,16 +11,36 @@ namespace UnityEditor.Experimental.UIElements
     {
         public override void DisplayMenuIfEventMatches(EventBase evt, IEventHandler eventHandler)
         {
-            if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
             {
-                MouseUpEvent e = evt as MouseUpEvent;
-                if (e.button == (int)MouseButton.RightMouse)
+                if (evt.GetEventTypeId() == MouseDownEvent.TypeId())
                 {
-                    DisplayMenu(evt, eventHandler);
-                    evt.StopPropagation();
+                    MouseDownEvent e = evt as MouseDownEvent;
+
+                    if (e.button == (int)MouseButton.RightMouse ||
+                        (e.button == (int)MouseButton.LeftMouse && e.modifiers == EventModifiers.Control))
+                    {
+                        DisplayMenu(evt, eventHandler);
+                        evt.StopPropagation();
+                        return;
+                    }
                 }
             }
-            else if (evt.GetEventTypeId() == KeyUpEvent.TypeId())
+            else
+            {
+                if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
+                {
+                    MouseUpEvent e = evt as MouseUpEvent;
+                    if (e.button == (int)MouseButton.RightMouse)
+                    {
+                        DisplayMenu(evt, eventHandler);
+                        evt.StopPropagation();
+                        return;
+                    }
+                }
+            }
+
+            if (evt.GetEventTypeId() == KeyUpEvent.TypeId())
             {
                 KeyUpEvent e = evt as KeyUpEvent;
                 if (e.keyCode == KeyCode.Menu)

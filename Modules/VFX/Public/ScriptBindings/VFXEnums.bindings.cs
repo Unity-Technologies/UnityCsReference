@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 namespace UnityEngine.Experimental.VFX
 {
     [Flags]
-    public enum VFXCullingFlags
+    internal enum VFXCullingFlags
     {
         CullNone = 0,
         CullSimulation = 1 << 0,
@@ -18,13 +18,7 @@ namespace UnityEngine.Experimental.VFX
         CullDefault = CullSimulation | CullBoundsUpdate,
     };
 
-    public enum CoordinateSpace
-    {
-        Local = 0,
-        Global = 1,
-    }
-
-    public enum VFXExpressionOperation
+    internal enum VFXExpressionOperation
     {
         // no-op
         None,
@@ -79,6 +73,11 @@ namespace UnityEngine.Experimental.VFX
         TransformVec,
         TransformDir,
 
+        Vector3sToMatrix,
+        Vector4sToMatrix,
+        MatrixToVector3s,
+        MatrixToVector4s,
+
         // Sampling and baking
         SampleCurve,
         SampleGradient,
@@ -112,9 +111,22 @@ namespace UnityEngine.Experimental.VFX
         // Random
         GenerateRandom,
         GenerateFixedRandom,
+
+        // Camera operations
+        ExtractMatrixFromMainCamera,
+        ExtractFOVFromMainCamera,
+        ExtractNearPlaneFromMainCamera,
+        ExtractFarPlaneFromMainCamera,
+        ExtractAspectRatioFromMainCamera,
+        ExtractPixelDimensionsFromMainCamera,
+
+        // Logical operations
+        LogicalAnd,
+        LogicalOr,
+        LogicalNot
     }
 
-    public enum VFXValueType
+    internal enum VFXValueType
     {
         None,
         Float,
@@ -136,17 +148,7 @@ namespace UnityEngine.Experimental.VFX
         Boolean
     }
 
-    public enum VFXCondition
-    {
-        Equal,
-        NotEqual,
-        Less,
-        LessOrEqual,
-        Greater,
-        GreaterOrEqual,
-    }
-
-    public enum VFXTaskType
+    internal enum VFXTaskType
     {
         None = 0,
 
@@ -155,33 +157,43 @@ namespace UnityEngine.Experimental.VFX
         Update      = 0x30000000,
         Output      = 0x40000000,
 
+        // updates
+        CameraSort                  = Update | 1, // TMP
+
         // outputs
-        ParticlePointOutput        = Output | 0,
-        ParticleLineOutput         = Output | 1,
-        ParticleQuadOutput         = Output | 2,
-        ParticleHexahedronOutput   = Output | 3,
-        ParticleMeshOutput         = Output | 4,
+        ParticlePointOutput         = Output | 0,
+        ParticleLineOutput          = Output | 1,
+        ParticleQuadOutput          = Output | 2,
+        ParticleHexahedronOutput    = Output | 3,
+        ParticleMeshOutput          = Output | 4,
 
         // spawners
-        ConstantRateSpawner     = Spawner | 0,
-        BurstSpawner            = Spawner | 1,
-        PeriodicBurstSpawner    = Spawner | 2,
-        VariableRateSpawner     = Spawner | 3,
-        CustomCallbackSpawner   = Spawner | 4,
-        SetAttributeSpawner     = Spawner | 5,
+        ConstantRateSpawner         = Spawner | 0,
+        BurstSpawner                = Spawner | 1,
+        PeriodicBurstSpawner        = Spawner | 2,
+        VariableRateSpawner         = Spawner | 3,
+        CustomCallbackSpawner       = Spawner | 4,
+        SetAttributeSpawner         = Spawner | 5,
     };
 
-    public enum VFXSystemType
+    internal enum VFXSystemType
     {
         Spawner,
         Particle,
         Mesh
     }
 
-    public enum VFXSystemFlag
+    internal enum VFXSystemFlag
     {
         SystemDefault = 0,
         SystemHasKill = 1 << 0,
         SystemHasIndirectBuffer = 1 << 1,
+        SystemReceivedEventGPU = 1 << 2
+    }
+
+    internal enum VFXUpdateMode
+    {
+        FixedDeltaTime,
+        DeltaTime,
     }
 }

@@ -38,7 +38,8 @@ namespace UnityEditor.VisualStudioIntegration
         {
             get
             {
-                return string.Join("\r\n", new[] {
+                return string.Join("\r\n", new[]
+                {
                     @"",
                     @"Microsoft Visual Studio Solution File, Format Version {0}",
                     @"# Visual Studio {1}",
@@ -65,7 +66,8 @@ namespace UnityEditor.VisualStudioIntegration
         {
             get
             {
-                return string.Join("\r\n", new[] {
+                return string.Join("\r\n", new[]
+                {
                     @"Project(""{{{0}}}"") = ""{1}"", ""{2}"", ""{{{3}}}""",
                     @"EndProject"
                 }).Replace("    ", "\t");
@@ -76,7 +78,8 @@ namespace UnityEditor.VisualStudioIntegration
         {
             get
             {
-                return string.Join("\r\n", new[] {
+                return string.Join("\r\n", new[]
+                {
                     @"        {{{0}}}.Debug|Any CPU.ActiveCfg = Debug|Any CPU",
                     @"        {{{0}}}.Debug|Any CPU.Build.0 = Debug|Any CPU",
                     @"        {{{0}}}.Release|Any CPU.ActiveCfg = Release|Any CPU",
@@ -87,7 +90,8 @@ namespace UnityEditor.VisualStudioIntegration
 
         public virtual string GetProjectHeaderTemplate(ScriptingLanguage language)
         {
-            var header = new[] {
+            var header = new[]
+            {
                 @"<?xml version=""1.0"" encoding=""utf-8""?>",
                 @"<Project ToolsVersion=""{0}"" DefaultTargets=""Build"" xmlns=""{6}"">",
                 @"  <PropertyGroup>",
@@ -129,7 +133,8 @@ namespace UnityEditor.VisualStudioIntegration
                 @"  </PropertyGroup>",
             };
 
-            var forceExplicitReferences = new string[] {
+            var forceExplicitReferences = new string[]
+            {
                 @"  <PropertyGroup>",
                 @"    <NoConfig>true</NoConfig>",
                 @"    <NoStdLib>true</NoStdLib>",
@@ -139,11 +144,13 @@ namespace UnityEditor.VisualStudioIntegration
                 @"  </PropertyGroup>",
             };
 
-            var itemGroupStart = new[] {
+            var itemGroupStart = new[]
+            {
                 @"  <ItemGroup>",
             };
 
-            var systemReferences = new string[] {
+            var systemReferences = new string[]
+            {
                 @"    <Reference Include=""System"" />",
                 @"    <Reference Include=""System.Xml"" />",
                 @"    <Reference Include=""System.Core"" />",
@@ -151,7 +158,8 @@ namespace UnityEditor.VisualStudioIntegration
                 @"    <Reference Include=""System.Xml.Linq"" />",
             };
 
-            var footer = new string[] {
+            var footer = new string[]
+            {
                 @"    <Reference Include=""UnityEngine"">",
                 @"      <HintPath>{3}</HintPath>",
                 @"    </Reference>",
@@ -175,7 +183,8 @@ namespace UnityEditor.VisualStudioIntegration
 
         public virtual string GetProjectFooterTemplate(ScriptingLanguage language)
         {
-            return string.Join("\r\n", new[] {
+            return string.Join("\r\n", new[]
+            {
                 @"  </ItemGroup>",
                 @"  <Import Project=""$(MSBuildToolsPath)\Microsoft.CSharp.targets"" />",
                 @"  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. ",

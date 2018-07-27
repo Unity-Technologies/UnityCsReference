@@ -116,8 +116,7 @@ namespace UnityEditor
                     if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
                         return false;
 
-                    PrefabType type = PrefabUtility.GetPrefabType(m_SerializedObject.targetObject);
-                    return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+                    return PrefabUtility.IsPartOfPrefabAsset(m_SerializedObject.targetObject);
                 }
             }
 
@@ -620,7 +619,7 @@ namespace UnityEditor
             settings.DrawCullingMask();
 
             EditorGUILayout.Space();
-            if (SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.m_SceneLighting == false)
+            if (SceneView.lastActiveSceneView != null && SceneView.lastActiveSceneView.sceneLighting == false)
                 EditorGUILayout.HelpBox(StylesEx.DisabledLightWarning.text, MessageType.Warning);
 
             CommandBufferGUI();

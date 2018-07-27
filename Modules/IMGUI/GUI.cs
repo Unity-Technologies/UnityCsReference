@@ -602,11 +602,11 @@ namespace UnityEngine
                             GUIUtility.keyboardControl = id;
 
                         editor.keyboardOnScreen = TouchScreenKeyboard.Open(
-                                secureText ?? content.text,
-                                TouchScreenKeyboardType.Default,
-                                true, // autocorrection
-                                multiline,
-                                (secureText != null));
+                            secureText ?? content.text,
+                            TouchScreenKeyboardType.Default,
+                            true,     // autocorrection
+                            multiline,
+                            (secureText != null));
 
                         evt.Use();
                     }
@@ -1226,18 +1226,18 @@ namespace UnityEngine
             if (horiz)
             {
                 sliderRect = new Rect(
-                        position.x + leftButton.fixedWidth, position.y,
-                        position.width - leftButton.fixedWidth - rightButton.fixedWidth, position.height
-                        );
+                    position.x + leftButton.fixedWidth, position.y,
+                    position.width - leftButton.fixedWidth - rightButton.fixedWidth, position.height
+                );
                 minRect = new Rect(position.x, position.y, leftButton.fixedWidth, position.height);
                 maxRect = new Rect(position.xMax - rightButton.fixedWidth, position.y, rightButton.fixedWidth, position.height);
             }
             else
             {
                 sliderRect = new Rect(
-                        position.x, position.y + leftButton.fixedHeight,
-                        position.width, position.height - leftButton.fixedHeight - rightButton.fixedHeight
-                        );
+                    position.x, position.y + leftButton.fixedHeight,
+                    position.width, position.height - leftButton.fixedHeight - rightButton.fixedHeight
+                );
                 minRect = new Rect(position.x, position.y, position.width, leftButton.fixedHeight);
                 maxRect = new Rect(position.x, position.yMax - rightButton.fixedHeight, position.width, rightButton.fixedHeight);
             }
@@ -1427,8 +1427,8 @@ namespace UnityEngine
                     if (needsHorizontal && horizontalScrollbar != GUIStyle.none)
                     {
                         scrollPosition.x = HorizontalScrollbar(new Rect(position.x, position.yMax - horizontalScrollbar.fixedHeight, clipRect.width, horizontalScrollbar.fixedHeight),
-                                scrollPosition.x, Mathf.Min(clipRect.width, viewRect.width), 0, viewRect.width,
-                                horizontalScrollbar);
+                            scrollPosition.x, Mathf.Min(clipRect.width, viewRect.width), 0, viewRect.width,
+                            horizontalScrollbar);
                     }
                     else
                     {
@@ -1441,8 +1441,8 @@ namespace UnityEngine
                     if (needsVertical && verticalScrollbar != GUIStyle.none)
                     {
                         scrollPosition.y = VerticalScrollbar(new Rect(clipRect.xMax + verticalScrollbar.margin.left, clipRect.y, verticalScrollbar.fixedWidth, clipRect.height),
-                                scrollPosition.y, Mathf.Min(clipRect.height, viewRect.height), 0, viewRect.height,
-                                verticalScrollbar);
+                            scrollPosition.y, Mathf.Min(clipRect.height, viewRect.height), 0, viewRect.height,
+                            verticalScrollbar);
                     }
                     else
                     {

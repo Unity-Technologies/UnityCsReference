@@ -347,8 +347,8 @@ namespace UnityEditor
             public GUIContent targetStrength = EditorGUIUtility.TrTextContent("Target Strength", "Maximum opacity you can reach by painting continuously.");
             public GUIContent settings = EditorGUIUtility.TrTextContent("Settings");
             public GUIContent mismatchedTerrainData = EditorGUIUtility.TextContentWithIcon(
-                    "The TerrainData used by the TerrainCollider component is different from this terrain. Would you like to assign the same TerrainData to the TerrainCollider component?",
-                    "console.warnicon");
+                "The TerrainData used by the TerrainCollider component is different from this terrain. Would you like to assign the same TerrainData to the TerrainCollider component?",
+                "console.warnicon");
 
             public GUIContent assign = EditorGUIUtility.TrTextContent("Assign");
 
@@ -563,8 +563,8 @@ namespace UnityEditor
             m_Tools = null;
             m_ToolNames = null;
 
-            ArrayList arrTools = new ArrayList();
-            ArrayList arrNames = new ArrayList();
+            var arrTools = new List<ITerrainPaintTool>();
+            var arrNames = new List<string>();
             foreach (var klass in EditorAssemblies.SubclassesOfGenericType(typeof(TerrainPaintTool<>)))
             {
                 if (klass.IsAbstract)
@@ -576,8 +576,8 @@ namespace UnityEditor
                 arrTools.Add(tool);
                 arrNames.Add(tool.GetName());
             }
-            m_Tools = arrTools.ToArray(typeof(ITerrainPaintTool)) as ITerrainPaintTool[];
-            m_ToolNames = arrNames.ToArray(typeof(string)) as string[];
+            m_Tools = arrTools.ToArray();
+            m_ToolNames = arrNames.ToArray();
         }
 
         void Initialize()
@@ -646,6 +646,7 @@ namespace UnityEditor
 
         public void OnDisable()
         {
+            TerrainPaintUtility.FlushAllPaints();
             SceneView.onSceneGUIDelegate -= OnSceneGUICallback;
 
             SaveInspectorSettings();
@@ -1103,6 +1104,8 @@ namespace UnityEditor
 
             ShowResolution();
             ShowTextures();
+
+            RenderLightingFields();
         }
 
         public void ShowPaint()
@@ -1288,11 +1291,11 @@ namespace UnityEditor
 
             if (EditorGUI.EndChangeCheck())
             {
-                ArrayList undoObjects = new ArrayList();
+                var undoObjects = new List<UnityEngine.Object>();
                 undoObjects.Add(m_Terrain.terrainData);
                 undoObjects.AddRange(m_Terrain.terrainData.alphamapTextures);
 
-                Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(typeof(UnityEngine.Object)) as UnityEngine.Object[], "Set Resolution");
+                Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), "Set Resolution");
 
                 m_Terrain.terrainData.size = new Vector3(terrainWidth, terrainHeight, terrainLength);
 
@@ -1327,8 +1330,8 @@ namespace UnityEditor
             if (m_Terrain.terrainData != null && m_Terrain.terrainData.NeedUpgradeScaledTreePrototypes())
             {
                 var msgContent = EditorGUIUtility.TempContent(
-                        "Some of your prototypes have scaling values on the prefab. Since Unity 5.2 these scalings will be applied to terrain tree instances. Do you want to upgrade to this behaviour?",
-                        EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                    "Some of your prototypes have scaling values on the prefab. Since Unity 5.2 these scalings will be applied to terrain tree instances. Do you want to upgrade to this behaviour?",
+                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
                 GUILayout.BeginVertical(EditorStyles.helpBox);
                 GUILayout.Label(msgContent, EditorStyles.wordWrappedLabel);
                 GUILayout.Space(3);
@@ -1477,8 +1480,6 @@ namespace UnityEditor
                     ShowSettings();
                     break;
             }
-
-            RenderLightingFields();
         }
 
         public bool Raycast(out Vector2 uv, out Vector3 pos)
@@ -1750,10 +1751,8 @@ namespace UnityEditor
                     if (!IsModificationToolActive())
                         return;
 
-                    m_Terrain.terrainData.SetBasemapDirty(true);
-
                     m_Terrain.editorRenderFlags = TerrainRenderFlags.All;
-                    m_Terrain.ApplyDelayedHeightmapModification();
+                    TerrainPaintUtility.FlushAllPaints();
 
                     e.Use();
                 }

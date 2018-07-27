@@ -60,7 +60,7 @@ namespace UnityEditor
             PSM, // removed
             Metal,
             OpenGLCore,
-            N3DS,
+            N3DS, // removed
             WiiU, // removed
             Vulkan,
             Switch,

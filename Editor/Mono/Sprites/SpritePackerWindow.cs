@@ -164,30 +164,30 @@ namespace UnityEditor.Sprites
             {
                 drawRect.width = EditorStyles.toolbarButton.CalcSize(PackerWindowStyle.packLabel).x;
                 DrawToolBarWidget(ref drawRect, ref toolbarRect, (adjustedDrawRect) =>
+                {
+                    if (GUI.Button(adjustedDrawRect, PackerWindowStyle.packLabel, EditorStyles.toolbarButton))
                     {
-                        if (GUI.Button(adjustedDrawRect, PackerWindowStyle.packLabel, EditorStyles.toolbarButton))
-                        {
-                            Packer.RebuildAtlasCacheIfNeeded(EditorUserBuildSettings.activeBuildTarget, true);
-                            m_SelectedSprite = null;
-                            RefreshAtlasPageList();
-                            RefreshState();
-                        }
-                    });
+                        Packer.RebuildAtlasCacheIfNeeded(EditorUserBuildSettings.activeBuildTarget, true);
+                        m_SelectedSprite = null;
+                        RefreshAtlasPageList();
+                        RefreshState();
+                    }
+                });
 
                 using (new EditorGUI.DisabledScope(Packer.SelectedPolicy == Packer.kDefaultPolicy))
                 {
                     drawRect.x += drawRect.width;
                     drawRect.width = EditorStyles.toolbarButton.CalcSize(PackerWindowStyle.repackLabel).x;
                     DrawToolBarWidget(ref drawRect, ref toolbarRect, (adjustedDrawRect) =>
+                    {
+                        if (GUI.Button(adjustedDrawRect, PackerWindowStyle.repackLabel, EditorStyles.toolbarButton))
                         {
-                            if (GUI.Button(adjustedDrawRect, PackerWindowStyle.repackLabel, EditorStyles.toolbarButton))
-                            {
-                                Packer.RebuildAtlasCacheIfNeeded(EditorUserBuildSettings.activeBuildTarget, true, Packer.Execution.ForceRegroup);
-                                m_SelectedSprite = null;
-                                RefreshAtlasPageList();
-                                RefreshState();
-                            }
-                        });
+                            Packer.RebuildAtlasCacheIfNeeded(EditorUserBuildSettings.activeBuildTarget, true, Packer.Execution.ForceRegroup);
+                            m_SelectedSprite = null;
+                            RefreshAtlasPageList();
+                            RefreshState();
+                        }
+                    });
                 }
             }
 
@@ -207,17 +207,17 @@ namespace UnityEditor.Sprites
                 drawRect.x += drawRect.width;
                 drawRect.width = viewAtlasWidth / totalWidth * availableWidth;
                 DrawToolBarWidget(ref drawRect, ref toolbarRect, (adjustedDrawArea) =>
-                    {
-                        GUI.Label(adjustedDrawArea, PackerWindowStyle.viewAtlasLabel);
-                    });
+                {
+                    GUI.Label(adjustedDrawArea, PackerWindowStyle.viewAtlasLabel);
+                });
 
                 EditorGUI.BeginChangeCheck();
                 drawRect.x += drawRect.width;
                 drawRect.width = kAtlasNameWidth / totalWidth * availableWidth;
                 DrawToolBarWidget(ref drawRect, ref toolbarRect, (adjustedDrawArea) =>
-                    {
-                        m_SelectedAtlas = EditorGUI.Popup(adjustedDrawArea, m_SelectedAtlas, m_AtlasNames, EditorStyles.toolbarPopup);
-                    });
+                {
+                    m_SelectedAtlas = EditorGUI.Popup(adjustedDrawArea, m_SelectedAtlas, m_AtlasNames, EditorStyles.toolbarPopup);
+                });
                 if (EditorGUI.EndChangeCheck())
                 {
                     RefreshAtlasPageList();
@@ -228,9 +228,9 @@ namespace UnityEditor.Sprites
                 drawRect.x += drawRect.width;
                 drawRect.width = kPagesWidth / totalWidth * availableWidth;
                 DrawToolBarWidget(ref drawRect, ref toolbarRect, (adjustedDrawArea) =>
-                    {
-                        m_SelectedPage = EditorGUI.Popup(adjustedDrawArea, m_SelectedPage, m_PageNames, EditorStyles.toolbarPopup);
-                    });
+                {
+                    m_SelectedPage = EditorGUI.Popup(adjustedDrawArea, m_SelectedPage, m_PageNames, EditorStyles.toolbarPopup);
+                });
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -244,9 +244,9 @@ namespace UnityEditor.Sprites
             drawRect.x += drawRect.width;
             drawRect.width = kPolicyWidth / totalWidth * availableWidth;
             DrawToolBarWidget(ref drawRect, ref toolbarRect, (adjustedDrawArea) =>
-                {
-                    selectedPolicy = EditorGUI.Popup(adjustedDrawArea, selectedPolicy, policies, EditorStyles.toolbarPopup);
-                });
+            {
+                selectedPolicy = EditorGUI.Popup(adjustedDrawArea, selectedPolicy, policies, EditorStyles.toolbarPopup);
+            });
 
             if (EditorGUI.EndChangeCheck())
             {

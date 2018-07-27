@@ -150,7 +150,7 @@ namespace UnityEditor
         static public void DisplayAOTProgressBar(int totalFiles, int filesFinished)
         {
             string msg = String.Format(@"AOT cross compile ({0}/{1})",
-                    (filesFinished + 1).ToString(), totalFiles.ToString());
+                (filesFinished + 1).ToString(), totalFiles.ToString());
             EditorUtility.DisplayProgressBar("Building Player", msg, 0.95F);
         }
 
@@ -173,7 +173,7 @@ namespace UnityEditor
             bool success = true;
 
             var dllList = new List<string>(Directory.GetFiles(sourceAssembliesFolder)
-                    .Where(path => Path.GetExtension(path) == ".dll"));
+                .Where(path => Path.GetExtension(path) == ".dll"));
 
             int numFiles = dllList.Count;
             int numFinished = 0;
@@ -188,8 +188,8 @@ namespace UnityEditor
                 string outputPath = Path.Combine(targetCrossCompiledASMFolder, inputPath + ".s");
 
                 JobCompileAOT job = new JobCompileAOT(buildTarget, crossCompilerPath, sourceAssembliesFolder,
-                        crossCompileOptions, inputPath, outputPath,
-                        additionalOptions);
+                    crossCompileOptions, inputPath, outputPath,
+                    additionalOptions);
                 jobList.Add(job);
                 eventList.Add(job.m_doneEvent);
                 ThreadPool.QueueUserWorkItem(job.ThreadPoolCallback);

@@ -2,31 +2,43 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System.Linq;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace UnityEditor.ShortcutManagement
 {
     class Discovery : IDiscovery
     {
+        IEnumerable<IDiscoveryShortcutProvider> m_ShortcutProviders;
+        IDiscoveryIdentifierConflictHandler m_IdentifierConflictHandler;
+
+        public Discovery(IEnumerable<IDiscoveryShortcutProvider> shortcutProviders, IDiscoveryIdentifierConflictHandler identifierConflictHandler)
+        {
+            m_ShortcutProviders = shortcutProviders;
+            m_IdentifierConflictHandler = identifierConflictHandler;
+        }
+
         public IEnumerable<ShortcutEntry> GetAllShortcuts()
         {
-            var staticMethodsBindings = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
-            var methods = EditorAssemblies.GetAllMethodsWithAttribute<ShortcutBaseAttribute>(staticMethodsBindings);
+            var availableShortcuts = new List<ShortcutEntry>();
+            var identifier2ShortcutEntry = new HashSet<Identifier>();
 
-            var results = new List<ShortcutEntry>(methods.Count());
-            foreach (var methodInfo in methods)
+            foreach (var discoveryModule in m_ShortcutProviders)
             {
-                var attributes = (ShortcutBaseAttribute[])methodInfo.GetCustomAttributes(typeof(ShortcutBaseAttribute), true);
-                foreach (var attribute in attributes)
+                var shortcuts = discoveryModule.GetDefinedShortcuts();
+                foreach (var discoveredEntry in shortcuts)
                 {
-                    var shortcutEntry = attribute.CreateShortcutEntry(methodInfo);
-                    results.Add(shortcutEntry);
+                    var shortcutEntry = discoveredEntry.GetShortcutEntry();
+                    if (identifier2ShortcutEntry.Contains(shortcutEntry.identifier))
+                    {
+                        m_IdentifierConflictHandler.IdentifierConflictDetected(discoveredEntry);
+                        continue;
+                    }
+
+                    identifier2ShortcutEntry.Add(shortcutEntry.identifier);
+                    availableShortcuts.Add(shortcutEntry);
                 }
             }
-
-            return results;
+            return availableShortcuts;
         }
     }
 }

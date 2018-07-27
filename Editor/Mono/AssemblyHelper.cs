@@ -121,10 +121,10 @@ namespace UnityEditor
             alreadyFoundAssemblies.Add(assemblyPath);
 
             var architectureSpecificPlugins = PluginImporter.GetImporters(target).Where(i =>
-                {
-                    var cpu = i.GetPlatformData(target, "CPU");
-                    return !string.IsNullOrEmpty(cpu) && !string.Equals(cpu, "AnyCPU", StringComparison.InvariantCultureIgnoreCase);
-                }).Select(i => Path.GetFileName(i.assetPath)).Distinct();
+            {
+                var cpu = i.GetPlatformData(target, "CPU");
+                return !string.IsNullOrEmpty(cpu) && !string.Equals(cpu, "AnyCPU", StringComparison.InvariantCultureIgnoreCase);
+            }).Select(i => Path.GetFileName(i.assetPath)).Distinct();
 
             // Go through all referenced assemblies
             foreach (AssemblyNameReference referencedAssembly in assembly.MainModule.AssemblyReferences)
@@ -152,9 +152,9 @@ namespace UnityEditor
                     if (found)
                         continue;
                     throw new System.ArgumentException(string.Format("The Assembly {0} is referenced by {1} ('{2}'). But the dll is not allowed to be included or could not be found.",
-                            referencedAssembly.Name,
-                            assembly.MainModule.Assembly.Name.Name,
-                            assemblyPath));
+                        referencedAssembly.Name,
+                        assembly.MainModule.Assembly.Name.Name,
+                        assemblyPath));
                 }
 
                 AddReferencedAssembliesRecurse(foundPath, alreadyFoundAssemblies, allAssemblyPaths, foldersToSearch, cache, target);

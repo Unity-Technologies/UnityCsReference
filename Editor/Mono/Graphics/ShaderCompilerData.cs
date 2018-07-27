@@ -70,7 +70,6 @@ namespace UnityEditor.Rendering
         XboxOneD3D11    = 12, // MS XboxOne
         Metal           = 14, // Apple Metal, compiled with MS D3DCompiler + HLSLcc
         OpenGLCore      = 15, // Desktop OpenGL 3+, compiled with MS D3DCompiler + HLSLcc
-        N3DS            = 16, // Nintendo 3DS
         Vulkan          = 18, // Vulkan SPIR-V, compiled with MS D3DCompiler + HLSLcc
         Switch          = 19, // Nintendo Switch (NVN)
         XboxOneD3D12    = 20  // Xbox One D3D12

@@ -9,6 +9,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditor.Experimental.U2D;
 using UnityEditor.U2D.Interface;
+using UnityEngine.SceneManagement;
 using UnityEngine.U2D.Interface;
 using Object = UnityEngine.Object;
 using UnityTexture2D = UnityEngine.Texture2D;
@@ -104,7 +105,7 @@ namespace UnityEditor
                                 CleanUp(true);
 
                             s_DragType = newDragType;
-                            CreateSceneDragObjects(assets);
+                            CreateSceneDragObjects(assets, sceneView);
                             IgnoreForRaycasts(s_SceneDragObjects);
                         }
                     }
@@ -125,13 +126,18 @@ namespace UnityEditor
                         // For external drags, we have delayed all creation to DragPerform because only now we have the imported sprite assets
                         if (s_SceneDragObjects.Count == 0)
                         {
-                            CreateSceneDragObjects(sprites);
+                            CreateSceneDragObjects(sprites, sceneView);
                             PositionSceneDragObjects(s_SceneDragObjects, sceneView, evt.mousePosition);
                         }
 
                         foreach (GameObject dragGO in s_SceneDragObjects)
                         {
                             dragGO.hideFlags = HideFlags.None;
+
+                            // When in e.g Prefab Mode ensure to reparent dragged objects under the prefab root
+                            if (sceneView.customParentForDraggedObjects != null)
+                                dragGO.transform.SetParent(sceneView.customParentForDraggedObjects, true);
+
                             Undo.RegisterCreatedObjectUndo(dragGO, "Create Sprite");
                             EditorUtility.SetDirty(dragGO);
                         }
@@ -210,7 +216,7 @@ namespace UnityEditor
             }
         }
 
-        private static void CreateSceneDragObjects(List<Sprite> sprites)
+        private static void CreateSceneDragObjects(List<Sprite> sprites, SceneView sceneView)
         {
             if (s_SceneDragObjects == null)
                 s_SceneDragObjects = new List<Object>();
@@ -218,11 +224,11 @@ namespace UnityEditor
             if (s_DragType == DragType.CreateMultiple)
             {
                 foreach (Sprite sprite in sprites)
-                    s_SceneDragObjects.Add(CreateDragGO(sprite, Vector3.zero));
+                    s_SceneDragObjects.Add(CreateDragGO(sprite, Vector3.zero, sceneView));
             }
             else
             {
-                s_SceneDragObjects.Add(CreateDragGO(sprites[0], Vector3.zero));
+                s_SceneDragObjects.Add(CreateDragGO(sprites[0], Vector3.zero, sceneView));
             }
         }
 
@@ -417,7 +423,7 @@ namespace UnityEditor
             return firstSprite as Sprite;
         }
 
-        public static GameObject CreateDragGO(Sprite frame, Vector3 position)
+        public static GameObject CreateDragGO(Sprite frame, Vector3 position, SceneView sceneView)
         {
             string name = string.IsNullOrEmpty(frame.name) ? "Sprite" : frame.name;
             name = GameObjectUtility.GetUniqueNameForSibling(null, name);
@@ -427,6 +433,11 @@ namespace UnityEditor
             spriteRenderer.sprite = frame;
             go.transform.position = position;
             go.hideFlags = HideFlags.HideAndDontSave;
+
+            // Ensure that the dragged gameobjects gets the correct scene culling mask so it can be rendered in the SceneView (when the SceneView camera is culling on a custom scene)
+            if (sceneView.customScene.IsValid())
+                SceneManager.MoveGameObjectToScene(go, sceneView.customScene);
+
             return go;
         }
 
@@ -598,11 +609,11 @@ namespace UnityEditor
             var savedViewport = ShaderUtil.rawViewportRect;
 
             RenderTexture tmp = RenderTexture.GetTemporary(
-                    width,
-                    height,
-                    0,
-                    RenderTextureFormat.Default,
-                    RenderTextureReadWrite.sRGB);
+                width,
+                height,
+                0,
+                RenderTextureFormat.Default,
+                RenderTextureReadWrite.sRGB);
 
             Graphics.Blit(original, tmp);
 

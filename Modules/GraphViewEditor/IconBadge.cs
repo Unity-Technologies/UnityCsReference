@@ -206,7 +206,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_TextElement != null)
             {
                 Vector2 newSize = m_TextElement.DoMeasure(m_TextElement.style.maxWidth, MeasureMode.AtMost,
-                        0, MeasureMode.Undefined);
+                    0, MeasureMode.Undefined);
 
                 m_TextElement.style.width = newSize.x +
                     m_TextElement.style.marginLeft +

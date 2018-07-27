@@ -15,15 +15,6 @@ namespace UnityEditor
         TerrainLayer m_SelectedTerrainLayer = null;
         [SerializeField]
         float m_SplatAlpha = 1.0f;
-
-        Material m_Material = null;
-        Material GetPaintMaterial()
-        {
-            if (m_Material == null)
-                m_Material = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeight"));
-            return m_Material;
-        }
-
         public override string GetName()
         {
             return "Paint Texture";
@@ -34,23 +25,22 @@ namespace UnityEditor
             return "Paints the selected material layer onto the terrain texture";
         }
 
-        public override bool Paint(Terrain terrain, Texture brushTexture, Vector2 uv, float brushStrength, int brushSizeInTerrainUnits)
+        public override bool Paint(Terrain terrain, Texture brushTexture, Vector2 uv, float brushStrength, int brushSize)
         {
-            Vector2Int brushSize = TerrainPaintUtility.CalculateBrushSizeInAlphamapSpace(terrain, brushSizeInTerrainUnits);
-            TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintTexture(terrain, uv, brushSize, m_SelectedTerrainLayer);
+            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, uv, brushSize);
+
+            TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushRect, m_SelectedTerrainLayer);
             if (paintContext == null)
                 return false;
 
-            Material mat = GetPaintMaterial();
-            TerrainPaintUtilityEditor.UpdateTerrainUndo(paintContext, TerrainPaintUtilityEditor.ToolAction.PaintTexture, "Terrain Paint - Texture");
-
+            Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
             // apply brush
             Vector4 brushParams = new Vector4(brushStrength, m_SplatAlpha, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, 4);
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.PaintTexture);
 
-            TerrainPaintUtility.EndPaintTexture(paintContext);
+            TerrainPaintUtility.EndPaintTexture(paintContext, "Terrain Paint - Texture");
             return true;
         }
 

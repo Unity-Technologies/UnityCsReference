@@ -127,12 +127,12 @@ namespace UnityEditor.Scripting.Compilers
             else
             {
                 var program = new ManagedProgram(
-                        MonoInstallationFinder.GetMonoBleedingEdgeInstallation(),
-                        "not needed",
-                        csc,
-                        argsPrefix + "@" + responseFile,
-                        false,
-                        null);
+                    MonoInstallationFinder.GetMonoBleedingEdgeInstallation(),
+                    "not needed",
+                    csc,
+                    argsPrefix + "@" + responseFile,
+                    false,
+                    null);
                 program.Start();
                 return program;
             }

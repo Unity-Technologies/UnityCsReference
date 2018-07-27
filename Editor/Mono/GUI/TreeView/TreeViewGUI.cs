@@ -359,8 +359,6 @@ namespace UnityEditor.IMGUI.Controls
             }
 
             // Draw text
-            lineStyle.padding.left = 0;
-
             if (icon != null)
                 rect.xMin += k_IconWidth + iconTotalPadding + k_SpaceBetweenIconAndText;
             lineStyle.Draw(rect, label, false, false, selected, focused);
@@ -389,19 +387,19 @@ namespace UnityEditor.IMGUI.Controls
                 Vector2 contentSize = m_Ping.m_PingStyle.CalcSize(cont);
 
                 m_Ping.m_ContentRect = new Rect(GetContentIndent(item) + extraSpaceBeforeIconAndLabel,
-                        topPixelOfRow,
-                        k_IconWidth + k_SpaceBetweenIconAndText + contentSize.x + iconTotalPadding,
-                        contentSize.y);
+                    topPixelOfRow,
+                    k_IconWidth + k_SpaceBetweenIconAndText + contentSize.x + iconTotalPadding,
+                    contentSize.y);
                 m_Ping.m_AvailableWidth = availableWidth;
 
                 int row = m_TreeView.data.GetRow(item.id);
 
                 bool useBoldFont = item.displayName.Equals("Assets");
                 m_Ping.m_ContentDraw = (Rect r) =>
-                    {
-                        // get Item parameters from closure
-                        OnContentGUI(r, row, item, item.displayName, false, false, useBoldFont, true);
-                    };
+                {
+                    // get Item parameters from closure
+                    OnContentGUI(r, row, item, item.displayName, false, false, useBoldFont, true);
+                };
 
                 m_TreeView.Repaint();
             }

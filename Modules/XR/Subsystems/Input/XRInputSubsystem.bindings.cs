@@ -12,7 +12,7 @@ namespace UnityEngine.Experimental.XR
 {
     [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystem")]
     [UsedByNativeCode]
-    public class XRInputSubsystem : Subsystem<XRInputSubsystemDescriptor>
+    public class XRInputSubsystem : IntegratedSubsystem<XRInputSubsystemDescriptor>
     {
     }
 }

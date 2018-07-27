@@ -53,9 +53,7 @@ namespace UnityEditor.Collaboration
 
         public static bool IsPrefab(UnityEngine.Object unityObject)
         {
-            PrefabType prefabType = PrefabUtility.GetPrefabType(unityObject);
-            bool isPrefab = (prefabType == PrefabType.PrefabInstance || prefabType == PrefabType.Prefab);
-            return isPrefab;
+            return PrefabUtility.IsPartOfAnyPrefab(unityObject);
         }
 
         public static bool IsPrefab(string assetGUID)

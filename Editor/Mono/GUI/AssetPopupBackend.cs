@@ -92,12 +92,12 @@ namespace UnityEditor
             // Create item
             gm.AddSeparator("");
             gm.AddItem(EditorGUIUtility.TrTextContent("Create New..."), false, delegate
-                {
-                    var newAsset = Activator.CreateInstance<T>();
-                    ProjectWindowUtil.CreateAsset(newAsset, "New " + typeName + "." + fileExtension);
-                    serializedProperty.objectReferenceValue = newAsset;
-                    serializedProperty.m_SerializedObject.ApplyModifiedProperties();
-                });
+            {
+                var newAsset = Activator.CreateInstance<T>();
+                ProjectWindowUtil.CreateAsset(newAsset, "New " + typeName + "." + fileExtension);
+                serializedProperty.objectReferenceValue = newAsset;
+                serializedProperty.m_SerializedObject.ApplyModifiedProperties();
+            });
 
             gm.DropDown(buttonRect);
         }

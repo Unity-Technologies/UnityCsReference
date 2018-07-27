@@ -45,8 +45,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             public GUIStyle previewBackground = "PopupCurveSwatchBackground";
             public GUIStyle previewHeader = "AC PreviewHeader";
             public GUIStyle previewText = "AC PreviewText";
-            public GUIStyle rightArrow = "AC RightArrow";
-            public GUIStyle leftArrow = "AC LeftArrow";
+            public GUIStyle rightArrow = "ArrowNavigationRight";
+            public GUIStyle leftArrow = "ArrowNavigationLeft";
         }
 
         // Constants
@@ -472,7 +472,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Back button
             if (grandParent != null)
             {
-                Rect arrowRect = new Rect(headerRect.x + 4, headerRect.y + 7, 13, 13);
+                float yOffset = (headerRect.height - s_Styles.leftArrow.fixedHeight) / 2;
+                Rect arrowRect = new Rect(
+                    headerRect.x + s_Styles.leftArrow.margin.left,
+                    headerRect.y + yOffset,
+                    s_Styles.leftArrow.fixedWidth,
+                    s_Styles.leftArrow.fixedHeight);
                 if (Event.current.type == EventType.Repaint)
                     s_Styles.leftArrow.Draw(arrowRect, false, false, false, false);
                 if (Event.current.type == EventType.MouseDown && headerRect.Contains(Event.current.mousePosition))
@@ -550,7 +555,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     labelStyle.Draw(r, e.content, false, false, selected, selected);
                     if ((e is SearchTreeGroupEntry))
                     {
-                        Rect arrowRect = new Rect(r.x + r.width - 13, r.y + 4, 13, 13);
+                        float yOffset = (r.height - s_Styles.rightArrow.fixedHeight) / 2;
+                        Rect arrowRect = new Rect(
+                            r.xMax - s_Styles.rightArrow.fixedWidth - s_Styles.rightArrow.margin.right,
+                            r.y + yOffset,
+                            s_Styles.rightArrow.fixedWidth,
+                            s_Styles.rightArrow.fixedHeight);
                         s_Styles.rightArrow.Draw(arrowRect, false, false, false, false);
                     }
                 }

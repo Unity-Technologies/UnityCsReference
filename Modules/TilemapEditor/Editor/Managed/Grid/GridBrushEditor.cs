@@ -4,7 +4,9 @@
 
 using System.Linq;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
@@ -236,7 +238,8 @@ namespace UnityEditor
         {
             get
             {
-                return GameObject.FindObjectsOfType<Tilemap>().Select(x => x.gameObject).ToArray();
+                Stage currentStage = StageUtility.GetCurrentStage();
+                return currentStage.FindComponentsOfType<Tilemap>().Select(x => x.gameObject).ToArray();
             }
         }
 
@@ -322,9 +325,9 @@ namespace UnityEditor
         {
             return new SettingsProvider("Preferences/Grid Brush") {
                 guiHandler = searchContext =>
-                    {
-                        PreferencesGUI();
-                    }, scopes = SettingsScopes.User
+                {
+                    PreferencesGUI();
+                }, scopes = SettingsScopes.User
             };
         }
 

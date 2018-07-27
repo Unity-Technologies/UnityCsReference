@@ -167,11 +167,15 @@ namespace UnityEditor.Collaboration
         }
 
         [UsedByNativeCode]
-        static void OnEnableVersionControl()
+        static bool OnEnableVersionControl()
         {
             if (s_VersionControlInstance != null)
             {
-                s_VersionControlInstance.OnEnableVersionControl();
+                return s_VersionControlInstance.OnEnableVersionControl();
+            }
+            else
+            {
+                return true;
             }
         }
 

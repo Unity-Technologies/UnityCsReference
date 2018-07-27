@@ -26,16 +26,25 @@ namespace UnityEngine.Experimental.VFX
         {
         }
 
+        public VFXEventAttribute(VFXEventAttribute original)
+        {
+            if (original == null)
+                throw new ArgumentNullException("VFXEventAttribute expect a non null attribute");
+            m_Ptr = Internal_Create();
+            Internal_InitFromEventAttribute(original);
+        }
+
         extern static internal IntPtr Internal_Create();
 
         static internal VFXEventAttribute Internal_InstanciateVFXEventAttribute(VisualEffectAsset vfxAsset)
         {
             var eventAttribute = new VFXEventAttribute(Internal_Create(), true);
-            eventAttribute.Internal_Init(vfxAsset);
+            eventAttribute.Internal_InitFromAsset(vfxAsset);
             return eventAttribute;
         }
 
-        extern private void Internal_Init(VisualEffectAsset vfxAsset);
+        extern internal void Internal_InitFromAsset(VisualEffectAsset vfxAsset);
+        extern internal void Internal_InitFromEventAttribute(VFXEventAttribute vfxEventAttribute);
 
         private void Release()
         {
@@ -60,32 +69,32 @@ namespace UnityEngine.Experimental.VFX
         [NativeMethod(IsThreadSafe = true)]
         extern static internal void Internal_Destroy(IntPtr ptr);
 
-        [NativeName("HasValueFromScript<bool>")] extern public bool HasBool(int name);
-        [NativeName("HasValueFromScript<int>")] extern public bool HasInt(int name);
-        [NativeName("HasValueFromScript<UInt32>")] extern public bool HasUint(int name);
-        [NativeName("HasValueFromScript<float>")] extern public bool HasFloat(int name);
-        [NativeName("HasValueFromScript<Vector2f>")] extern public bool HasVector2(int name);
-        [NativeName("HasValueFromScript<Vector3f>")] extern public bool HasVector3(int name);
-        [NativeName("HasValueFromScript<Vector4f>")] extern public bool HasVector4(int name);
-        [NativeName("HasValueFromScript<Matrix4x4f>")] extern public bool HasMatrix4x4(int name);
+        [NativeName("HasValueFromScript<bool>")] extern public bool HasBool(int nameID);
+        [NativeName("HasValueFromScript<int>")] extern public bool HasInt(int nameID);
+        [NativeName("HasValueFromScript<UInt32>")] extern public bool HasUint(int nameID);
+        [NativeName("HasValueFromScript<float>")] extern public bool HasFloat(int nameID);
+        [NativeName("HasValueFromScript<Vector2f>")] extern public bool HasVector2(int nameID);
+        [NativeName("HasValueFromScript<Vector3f>")] extern public bool HasVector3(int nameID);
+        [NativeName("HasValueFromScript<Vector4f>")] extern public bool HasVector4(int nameID);
+        [NativeName("HasValueFromScript<Matrix4x4f>")] extern public bool HasMatrix4x4(int nameID);
 
-        [NativeName("SetValueFromScript<bool>")] extern public void SetBool(int name, bool b);
-        [NativeName("SetValueFromScript<int>")] extern public void SetInt(int name, int i);
-        [NativeName("SetValueFromScript<UInt32>")] extern public void SetUint(int name, uint i);
-        [NativeName("SetValueFromScript<float>")] extern public void SetFloat(int name, float f);
-        [NativeName("SetValueFromScript<Vector2f>")] extern public void SetVector2(int name, Vector2 v);
-        [NativeName("SetValueFromScript<Vector3f>")] extern public void SetVector3(int name, Vector3 v);
-        [NativeName("SetValueFromScript<Vector4f>")] extern public void SetVector4(int name, Vector4 v);
-        [NativeName("SetValueFromScript<Matrix4x4f>")] extern public void SetMatrix4x4(int name, Matrix4x4 v);
+        [NativeName("SetValueFromScript<bool>")] extern public void SetBool(int nameID, bool b);
+        [NativeName("SetValueFromScript<int>")] extern public void SetInt(int nameID, int i);
+        [NativeName("SetValueFromScript<UInt32>")] extern public void SetUint(int nameID, uint i);
+        [NativeName("SetValueFromScript<float>")] extern public void SetFloat(int nameID, float f);
+        [NativeName("SetValueFromScript<Vector2f>")] extern public void SetVector2(int nameID, Vector2 v);
+        [NativeName("SetValueFromScript<Vector3f>")] extern public void SetVector3(int nameID, Vector3 v);
+        [NativeName("SetValueFromScript<Vector4f>")] extern public void SetVector4(int nameID, Vector4 v);
+        [NativeName("SetValueFromScript<Matrix4x4f>")] extern public void SetMatrix4x4(int nameID, Matrix4x4 v);
 
-        [NativeName("GetValueFromScript<bool>")] extern public bool GetBool(int name);
-        [NativeName("GetValueFromScript<int>")] extern public int GetInt(int name);
-        [NativeName("GetValueFromScript<UInt32>")] extern public uint GetUint(int name);
-        [NativeName("GetValueFromScript<float>")] extern public float GetFloat(int name);
-        [NativeName("GetValueFromScript<Vector2f>")] extern public Vector2 GetVector2(int name);
-        [NativeName("GetValueFromScript<Vector3f>")] extern public Vector3 GetVector3(int name);
-        [NativeName("GetValueFromScript<Vector4f>")] extern public Vector4 GetVector4(int name);
-        [NativeName("GetValueFromScript<Matrix4x4f>")] extern public Matrix4x4 GetMatrix4x4(int name);
+        [NativeName("GetValueFromScript<bool>")] extern public bool GetBool(int nameID);
+        [NativeName("GetValueFromScript<int>")] extern public int GetInt(int nameID);
+        [NativeName("GetValueFromScript<UInt32>")] extern public uint GetUint(int nameID);
+        [NativeName("GetValueFromScript<float>")] extern public float GetFloat(int nameID);
+        [NativeName("GetValueFromScript<Vector2f>")] extern public Vector2 GetVector2(int nameID);
+        [NativeName("GetValueFromScript<Vector3f>")] extern public Vector3 GetVector3(int nameID);
+        [NativeName("GetValueFromScript<Vector4f>")] extern public Vector4 GetVector4(int nameID);
+        [NativeName("GetValueFromScript<Matrix4x4f>")] extern public Matrix4x4 GetMatrix4x4(int nameID);
 
         public bool HasBool(string name)
         {
@@ -206,5 +215,7 @@ namespace UnityEngine.Experimental.VFX
         {
             return GetMatrix4x4(Shader.PropertyToID(name));
         }
+
+        extern public void CopyValuesFrom([NotNull] VFXEventAttribute eventAttibute);
     }
 }

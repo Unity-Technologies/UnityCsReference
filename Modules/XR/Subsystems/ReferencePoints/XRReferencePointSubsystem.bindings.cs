@@ -35,7 +35,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/Subsystems/ReferencePoints/XRReferencePointSubsystem.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRReferencePointSubsystem : Subsystem<XRReferencePointSubsystemDescriptor>
+    public class XRReferencePointSubsystem : IntegratedSubsystem<XRReferencePointSubsystemDescriptor>
     {
         public event Action<ReferencePointUpdatedEventArgs> ReferencePointUpdated;
 

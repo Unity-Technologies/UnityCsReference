@@ -124,5 +124,28 @@ namespace UnityEditor
             else if (i.func != null)
                 i.func();
         }
+
+        // Show object context menu with builtin menu items plus the ones from this GenericMenu.
+        internal void ObjectContextDropDown(Rect position, Object[] context, int contextUserData)
+        {
+            string[] titles = new string[menuItems.Count];
+            bool[] enabled = new bool[menuItems.Count];
+            ArrayList selected = new ArrayList();
+            bool[] separator = new bool[menuItems.Count];
+
+            for (int idx = 0; idx < menuItems.Count; idx++)
+            {
+                MenuItem item = (MenuItem)menuItems[idx];
+                titles[idx] = item.content.text;
+                enabled[idx] = ((item.func != null) || (item.func2 != null));
+                separator[idx] = item.separator;
+                if (item.on)
+                    selected.Add(idx);
+            }
+
+            EditorUtility.DisplayObjectContextPopupMenuWithExtraItems(
+                position, context, contextUserData,
+                titles, enabled, separator, (int[])selected.ToArray(typeof(int)), CatchMenu, null, true);
+        }
     }
 }

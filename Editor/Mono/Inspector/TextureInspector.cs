@@ -612,11 +612,11 @@ namespace UnityEditor
             Rect savedViewport = ShaderUtil.rawViewportRect;
 
             RenderTexture tmp = RenderTexture.GetTemporary(
-                    width,
-                    height,
-                    0,
-                    RenderTextureFormat.Default,
-                    RenderTextureReadWrite.sRGB);
+                width,
+                height,
+                0,
+                RenderTextureFormat.Default,
+                RenderTextureReadWrite.sRGB);
             Material mat = EditorGUI.GetMaterialForSpecialTexture(texture);
             if (mat != null)
                 Graphics.Blit(texture, tmp, mat);
@@ -779,8 +779,8 @@ class PreviewGUI
                     GUIStyle horizontalScrollbarThumb = "PreHorizontalScrollbarThumb";
                     float offset = (viewRect.width - clipRect.width) * .5f;
                     scrollPosition.x = GUI.Slider(new Rect(position.x, position.yMax - horizontalScrollbar.fixedHeight, clipRect.width - (needsVerticalScrollbar ? horizontalScrollbar.fixedHeight : 0) , horizontalScrollbar.fixedHeight),
-                            scrollPosition.x, clipRect.width + offset, -offset, viewRect.width,
-                            horizontalScrollbar, horizontalScrollbarThumb, true, id);
+                        scrollPosition.x, clipRect.width + offset, -offset, viewRect.width,
+                        horizontalScrollbar, horizontalScrollbarThumb, true, id);
                 }
                 else
                 {
@@ -796,8 +796,8 @@ class PreviewGUI
                     GUIStyle verticalScrollbarThumb = "PreVerticalScrollbarThumb";
                     float offset = (viewRect.height - clipRect.height) * .5f;
                     scrollPosition.y = GUI.Slider(new Rect(clipRect.xMax - verticalScrollbar.fixedWidth, clipRect.y, verticalScrollbar.fixedWidth, clipRect.height),
-                            scrollPosition.y, clipRect.height + offset, -offset, viewRect.height,
-                            verticalScrollbar, verticalScrollbarThumb, false, id);
+                        scrollPosition.y, clipRect.height + offset, -offset, viewRect.height,
+                        verticalScrollbar, verticalScrollbarThumb, false, id);
                 }
                 else
                 {

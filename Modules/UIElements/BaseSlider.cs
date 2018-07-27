@@ -266,6 +266,12 @@ namespace UnityEngine.Experimental.UIElements
             UpdateDragElementPosition();
         }
 
+        public override void OnPersistentDataReady()
+        {
+            base.OnPersistentDataReady();
+            UpdateDragElementPosition();
+        }
+
         void UpdateDragElementPosition()
         {
             // UpdateDragElementPosition() might be called at times where we have no panel

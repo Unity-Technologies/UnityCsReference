@@ -139,7 +139,7 @@ namespace UnityEditor
         public PresetLibraryEditor(ScriptableObjectSaveLoadHelper<T> helper,
                                    PresetLibraryEditorState state,
                                    System.Action<int, object> itemClickedCallback
-                                   )
+        )
         {
             m_SaveLoadHelper = helper;
             m_State = state;

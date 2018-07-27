@@ -35,6 +35,7 @@ namespace UnityEngine.Experimental.UIElements
             Dispatching = 8,
             Pooled = 16,
             IMGUIEventIsValid = 32,
+            Dispatched = 512,
         }
 
         // Read-only state
@@ -163,10 +164,33 @@ namespace UnityEngine.Experimental.UIElements
                 if (value)
                 {
                     lifeCycleFlags |= LifeCycleFlags.Dispatching;
+                    dispatched = true;
                 }
                 else
                 {
                     lifeCycleFlags &= ~LifeCycleFlags.Dispatching;
+                }
+            }
+        }
+
+        internal void MarkReceivedByDispatcher()
+        {
+            Debug.Assert(dispatched == false, "Events cannot be dispatched more than once.");
+            dispatched = true;
+        }
+
+        bool dispatched
+        {
+            get { return (lifeCycleFlags & LifeCycleFlags.Dispatched) != LifeCycleFlags.None; }
+            set
+            {
+                if (value)
+                {
+                    lifeCycleFlags |= LifeCycleFlags.Dispatched;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.Dispatched;
                 }
             }
         }
@@ -234,6 +258,7 @@ namespace UnityEngine.Experimental.UIElements
             m_CurrentTarget = null;
 
             dispatch = false;
+            dispatched = false;
             imguiEventIsValid = false;
             pooled = false;
         }

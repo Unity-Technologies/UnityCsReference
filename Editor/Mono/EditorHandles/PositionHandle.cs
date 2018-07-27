@@ -23,7 +23,7 @@ namespace UnityEditor
                         GUIUtility.GetControlID(s_xzAxisMoveHandleHash, FocusType.Passive),
                         GUIUtility.GetControlID(s_yzAxisMoveHandleHash, FocusType.Passive),
                         GUIUtility.GetControlID(s_FreeMoveHandleHash, FocusType.Passive)
-                        );
+                    );
                 }
             }
 
@@ -89,13 +89,13 @@ namespace UnityEditor
         internal struct PositionHandleParam
         {
             public static PositionHandleParam DefaultHandle = new PositionHandleParam(
-                    Handle.X | Handle.Y | Handle.Z | Handle.XY | Handle.XZ | Handle.YZ,
-                    Vector3.zero, Vector3.one, Vector3.zero, Vector3.one * 0.25f,
-                    Orientation.Signed, Orientation.Camera);
+                Handle.X | Handle.Y | Handle.Z | Handle.XY | Handle.XZ | Handle.YZ,
+                Vector3.zero, Vector3.one, Vector3.zero, Vector3.one * 0.25f,
+                Orientation.Signed, Orientation.Camera);
             public static PositionHandleParam DefaultFreeMoveHandle = new PositionHandleParam(
-                    Handle.X | Handle.Y | Handle.Z | Handle.XYZ,
-                    Vector3.zero, Vector3.one, Vector3.zero, Vector3.one * 0.25f,
-                    Orientation.Signed, Orientation.Signed);
+                Handle.X | Handle.Y | Handle.Z | Handle.XYZ,
+                Vector3.zero, Vector3.one, Vector3.zero, Vector3.one * 0.25f,
+                Orientation.Signed, Orientation.Signed);
 
             [Flags]
             public enum Handle
@@ -430,14 +430,14 @@ namespace UnityEditor
 
             // And then render the handle itself (this is the colored outline)
             position = Slider2D(id,
-                    position,
-                    handleOffset + positionOffset,
-                    axisNormal,
-                    axis1, axis2,
-                    handleSize * 0.5f,
-                    RectangleHandleCap,
-                    GridSnapping.active ? Vector2.zero : new Vector2(SnapSettings.move[axis1index], SnapSettings.move[axis2index]),
-                    false);
+                position,
+                handleOffset + positionOffset,
+                axisNormal,
+                axis1, axis2,
+                handleSize * 0.5f,
+                RectangleHandleCap,
+                GridSnapping.active ? Vector2.zero : new Vector2(SnapSettings.move[axis1index], SnapSettings.move[axis2index]),
+                false);
 
             Handles.color = prevColor;
 

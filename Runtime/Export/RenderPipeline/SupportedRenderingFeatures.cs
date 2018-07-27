@@ -132,14 +132,14 @@ namespace UnityEngine.Experimental.Rendering
 
             // this is done since the original enum doesn't allow flags due to it starting at 0, not 1
             *isSupported = ((mixedMode == MixedLightingMode.IndirectOnly &&
-                             ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                               LightmapMixedBakeMode.IndirectOnly) == LightmapMixedBakeMode.IndirectOnly)) ||
-                            (mixedMode == MixedLightingMode.Subtractive &&
-                             ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                               LightmapMixedBakeMode.Subtractive) == LightmapMixedBakeMode.Subtractive)) ||
-                            (mixedMode == MixedLightingMode.Shadowmask &&
-                             ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                               LightmapMixedBakeMode.Shadowmask) == LightmapMixedBakeMode.Shadowmask)));
+                ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
+                    LightmapMixedBakeMode.IndirectOnly) == LightmapMixedBakeMode.IndirectOnly)) ||
+                (mixedMode == MixedLightingMode.Subtractive &&
+                    ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
+                        LightmapMixedBakeMode.Subtractive) == LightmapMixedBakeMode.Subtractive)) ||
+                (mixedMode == MixedLightingMode.Shadowmask &&
+                    ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
+                        LightmapMixedBakeMode.Shadowmask) == LightmapMixedBakeMode.Shadowmask)));
         }
 
         internal static unsafe bool IsLightmapBakeTypeSupported(LightmapBakeType bakeType)

@@ -347,9 +347,9 @@ namespace UnityEditorInternal
                     {
                         int id = m_HierarchyItemValueControlIDs[row];
                         bool enterInTextField = (EditorGUIUtility.keyboardControl == id
-                                                 && EditorGUIUtility.editingTextField
-                                                 && Event.current.type == EventType.KeyDown
-                                                 && (Event.current.character == '\n' || (int)Event.current.character == 3));
+                            && EditorGUIUtility.editingTextField
+                            && Event.current.type == EventType.KeyDown
+                            && (Event.current.character == '\n' || (int)Event.current.character == 3));
 
                         //  Force back keyboard focus to float field editor when editing it.
                         //  TreeView forces keyboard focus on itself at mouse down and we lose focus here.
@@ -359,13 +359,13 @@ namespace UnityEditorInternal
                         }
 
                         value = EditorGUI.DoFloatField(EditorGUI.s_RecycledEditor,
-                                valueFieldRect,
-                                valueFieldDragRect,
-                                id,
-                                value,
-                                "g5",
-                                m_AnimationSelectionTextField,
-                                true);
+                            valueFieldRect,
+                            valueFieldDragRect,
+                            id,
+                            value,
+                            "g5",
+                            m_AnimationSelectionTextField,
+                            true);
                         if (enterInTextField)
                         {
                             GUI.changed = true;
@@ -439,9 +439,9 @@ namespace UnityEditorInternal
         private void DoCurveDropdown(Rect rect, AnimationWindowHierarchyNode node, int row, bool enabled)
         {
             rect = new Rect(
-                    rect.xMax - k_RowRightOffset - 12,
-                    rect.yMin + 2,
-                    22, 12);
+                rect.xMax - k_RowRightOffset - 12,
+                rect.yMin + 2,
+                22, 12);
 
             // case 767863.
             // This control id is unique to the hierarchy node it refers to.

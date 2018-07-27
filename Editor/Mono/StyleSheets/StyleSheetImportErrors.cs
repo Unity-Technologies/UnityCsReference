@@ -59,28 +59,28 @@ namespace UnityEditor.StyleSheets
         public void AddSyntaxError(string context)
         {
             m_Errors.Add(new Error(
-                    StyleSheetImportErrorType.Syntax,
-                    StyleSheetImportErrorCode.None,
-                    context)
-                );
+                StyleSheetImportErrorType.Syntax,
+                StyleSheetImportErrorCode.None,
+                context)
+            );
         }
 
         public void AddSemanticError(StyleSheetImportErrorCode code, string context)
         {
             m_Errors.Add(new Error(
-                    StyleSheetImportErrorType.Semantic,
-                    code,
-                    context)
-                );
+                StyleSheetImportErrorType.Semantic,
+                code,
+                context)
+            );
         }
 
         public void AddInternalError(string context)
         {
             m_Errors.Add(new Error(
-                    StyleSheetImportErrorType.Internal,
-                    StyleSheetImportErrorCode.None,
-                    context)
-                );
+                StyleSheetImportErrorType.Internal,
+                StyleSheetImportErrorCode.None,
+                context)
+            );
         }
 
         public bool hasErrors { get { return m_Errors.Count > 0; } }

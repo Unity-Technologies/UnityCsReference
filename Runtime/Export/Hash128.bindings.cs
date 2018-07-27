@@ -3,12 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Collections;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -19,7 +14,7 @@ namespace UnityEngine
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Runtime/Utilities/Hash128.h")]
-    public partial struct Hash128 : IComparable, IComparable<Hash128>, IEquatable<Hash128>
+    public unsafe partial struct Hash128 : IComparable, IComparable<Hash128>, IEquatable<Hash128>
     {
         public Hash128(uint u32_0, uint u32_1, uint u32_2, uint u32_3)
         {
@@ -29,11 +24,39 @@ namespace UnityEngine
             m_u32_3 = u32_3;
         }
 
+        public Hash128(ulong u64_0, ulong u64_1)
+        {
+            var ptr0 = (uint*)&u64_0;
+            var ptr1 = (uint*)&u64_1;
+
+            m_u32_0 = *ptr0;
+            m_u32_1 = *(ptr0 + 1);
+            m_u32_2 = *ptr1;
+            m_u32_3 = *(ptr1 + 1);
+        }
+
         uint m_u32_0;
         uint m_u32_1;
         uint m_u32_2;
         uint m_u32_3;
 
+        internal ulong u64_0
+        {
+            get
+            {
+                fixed(uint* ptr0 = &m_u32_0)
+                return *(ulong*)ptr0;
+            }
+        }
+
+        internal ulong u64_1
+        {
+            get
+            {
+                fixed(uint* ptr1 = &m_u32_1)
+                return *(ulong*)ptr1;
+            }
+        }
 
         public bool isValid
         {

@@ -246,6 +246,15 @@ namespace UnityEditor
     }
 
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
+    public enum ModelImporterNormalSmoothingSource
+    {
+        PreferSmoothingGroups = 0,
+        FromSmoothingGroups = 1,
+        FromAngle = 2,
+        None = 3
+    }
+
+    [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ImportMesh.h")]
     public enum ModelImporterTangents
     {
         Import = 0,
@@ -596,6 +605,26 @@ namespace UnityEditor
             [NativeMethod("GetNormalImportMode")]
             get;
             [NativeMethod("SetNormalImportMode")]
+            set;
+        }
+
+        internal extern bool legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes
+        {
+            get;
+            set;
+        }
+
+        public extern ModelImporterNormalSmoothingSource normalSmoothingSource
+        {
+            get;
+            set;
+        }
+
+        public extern ModelImporterNormals importBlendShapeNormals
+        {
+            [NativeMethod("GetBlendShapeNormalImportMode")]
+            get;
+            [NativeMethod("SetBlendShapeNormalImportMode")]
             set;
         }
 

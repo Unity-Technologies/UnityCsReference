@@ -70,7 +70,7 @@ namespace UnityEditor.U2D.Common
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = isMixedValue;
                 defaultValue = (TextureImporterCompression)EditorGUILayout.IntPopup(s_Styles.compressionLabel,
-                        (int)defaultValue, s_Styles.kTextureCompressionOptions, s_Styles.kTextureCompressionValues);
+                    (int)defaultValue, s_Styles.kTextureCompressionOptions, s_Styles.kTextureCompressionValues);
                 EditorGUI.showMixedValue = false;
                 changed = EditorGUI.EndChangeCheck();
                 return defaultValue;
@@ -107,7 +107,7 @@ namespace UnityEditor.U2D.Common
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = isMixedValue;
                 defaultValue = EditorGUILayout.IntPopup(s_Styles.maxTextureSizeLabel, defaultValue,
-                        s_Styles.kMaxTextureSizeStrings, s_Styles.kMaxTextureSizeValues);
+                    s_Styles.kMaxTextureSizeStrings, s_Styles.kMaxTextureSizeValues);
                 EditorGUI.showMixedValue = false;
                 changed = EditorGUI.EndChangeCheck();
                 return defaultValue;
@@ -134,7 +134,7 @@ namespace UnityEditor.U2D.Common
                 EditorGUI.BeginChangeCheck();
                 EditorGUI.showMixedValue = isMixedValue;
                 defaultValue = EditorGUILayout.Popup(s_Styles.compressionQualityLabel, defaultValue,
-                        s_Styles.kMobileCompressionQualityOptions);
+                    s_Styles.kMobileCompressionQualityOptions);
                 EditorGUI.showMixedValue = false;
                 changed = EditorGUI.EndChangeCheck();
                 return defaultValue;

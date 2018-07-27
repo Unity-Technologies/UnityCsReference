@@ -120,8 +120,8 @@ namespace UnityEditor.VisualStudioIntegration
             // Check if we're installed in the user addins repository
             // ~/Library/Application Support/VisualStudio/X.0/LocalInstall/Addins
             var localAddins = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.Personal),
-                    "Library/Application Support/VisualStudio/" + vsfmVersion.Major + ".0" + "/LocalInstall/Addins");
+                Environment.GetFolderPath(Environment.SpecialFolder.Personal),
+                "Library/Application Support/VisualStudio/" + vsfmVersion.Major + ".0" + "/LocalInstall/Addins");
 
             // In the user addins repository, the addins are suffixed by their versions, like `MonoDevelop.Unity.1.0`
             // When installing another local user addin, MD will remove files inside the folder
@@ -311,8 +311,8 @@ namespace UnityEditor.VisualStudioIntegration
         private static string GetVstuBridgePathFromRegistry(string vsVersion, bool currentUser)
         {
             var registryKey = string.Format(@"{0}\Software\Microsoft\Microsoft Visual Studio {1} Tools for Unity",
-                    currentUser ? "HKEY_CURRENT_USER" : "HKEY_LOCAL_MACHINE",
-                    vsVersion);
+                currentUser ? "HKEY_CURRENT_USER" : "HKEY_LOCAL_MACHINE",
+                vsVersion);
 
             return (string)Registry.GetValue(registryKey, "UnityExtensionPath", null);
         }

@@ -11,7 +11,7 @@ namespace UnityEditor
         internal static float AngularDial(
             GUIContent label, float angle, Texture thumbTexture, GUIStyle background, GUIStyle thumb,
             params GUILayoutOption[] options
-            )
+        )
         {
             var hasLabel = label != null && label != GUIContent.none;
             var height = background == null || background.fixedHeight == 0 ?
@@ -29,7 +29,7 @@ namespace UnityEditor
     {
         internal static float AngularDial(
             Rect rect, GUIContent label, float angle, Texture thumbTexture, GUIStyle background, GUIStyle thumb
-            )
+        )
         {
             var id = GUIUtility.GetControlID(FocusType.Passive);
             var evt = Event.current;

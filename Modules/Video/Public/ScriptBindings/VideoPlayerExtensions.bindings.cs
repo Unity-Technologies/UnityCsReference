@@ -31,7 +31,7 @@ namespace UnityEngine.Experimental.Video
                     "Current: " + mode);
 
             var provider = AudioSampleProvider.Lookup(
-                    InternalGetAudioSampleProviderId(vp, trackIndex), vp, trackIndex);
+                InternalGetAudioSampleProviderId(vp, trackIndex), vp, trackIndex);
 
             if (provider == null)
                 throw new InvalidOperationException(

@@ -856,8 +856,8 @@ namespace UnityEditor
             if (InternalEditorUtility.BumpMapTextureNeedsFixing(prop))
             {
                 if (HelpBoxWithButton(
-                        EditorGUIUtility.TrTextContent("This texture is not marked as a normal map"),
-                        EditorGUIUtility.TrTextContent("Fix Now")))
+                    EditorGUIUtility.TrTextContent("This texture is not marked as a normal map"),
+                    EditorGUIUtility.TrTextContent("Fix Now")))
                 {
                     InternalEditorUtility.FixNormalmapTexture(prop);
                 }
@@ -1554,6 +1554,11 @@ namespace UnityEditor
             if (m_InsidePropertiesGUI)
             {
                 Debug.LogWarning("PropertiesGUI() is being called recursively. If you want to render the default gui for shader properties then call PropertiesDefaultGUI() instead");
+                return false;
+            }
+
+            if (m_LightmapSettings.targetObject == null)
+            {
                 return false;
             }
 

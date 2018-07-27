@@ -39,7 +39,7 @@ namespace UnityEditor.Experimental.UIElements
                     f.choices = listOfChoices;
                 }
                 // The mask is simply an int
-                f.value = m_MaskValue.GetValueFromBag(bag);
+                f.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag));
             }
         }
 
@@ -100,7 +100,7 @@ namespace UnityEditor.Experimental.UIElements
                 ComputeFullChoiceMask();
 
                 // Make sure to update the text displayed
-                this.value = m_Value;
+                SetValueWithoutNotify(m_Value);
             }
         }
         internal virtual List<int> choicesMasks
@@ -126,18 +126,14 @@ namespace UnityEditor.Experimental.UIElements
                     m_UserChoicesMasks.AddRange(value);
                     ComputeFullChoiceMask();
                     // Make sure to update the text displayed
-                    this.value = m_Value;
+                    SetValueWithoutNotify(m_Value);
                 }
             }
         }
 
-        public override int value
+        public override void SetValueWithoutNotify(int newValue)
         {
-            get { return base.value; }
-            set
-            {
-                base.value = UpdateMaskIfEverything(value);
-            }
+            base.SetValueWithoutNotify(UpdateMaskIfEverything(newValue));
         }
 
         internal override string GetValueToDisplay()
@@ -279,7 +275,7 @@ namespace UnityEditor.Experimental.UIElements
 
         public MaskField(List<string> choices, int defaultMask) : this(choices)
         {
-            value = defaultMask;
+            SetValueWithoutNotify(defaultMask);
         }
 
         public MaskField()

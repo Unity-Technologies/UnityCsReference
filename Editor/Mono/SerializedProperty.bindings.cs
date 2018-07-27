@@ -637,6 +637,19 @@ namespace UnityEditor
         [NativeName("SetPrefabOverride")]
         private extern void SetPrefabOverrideInternal(bool value);
 
+        // Is property a default override property which is enforced to always be overridden? (RO)
+        public bool isDefaultOverride
+        {
+            get
+            {
+                Verify(VerifyFlags.IteratorNotAtEnd);
+                return GetIsDefaultOverrideInternal();
+            }
+        }
+
+        [NativeName("IsDefaultOverride")]
+        private extern bool GetIsDefaultOverrideInternal();
+
         // Type of this property (RO).
         public SerializedPropertyType propertyType
         {

@@ -30,7 +30,7 @@ namespace UnityEditor.Experimental.UIElements
 
         public LayerMaskField(int defaultMask) : this()
         {
-            value = defaultMask;
+            SetValueWithoutNotify(defaultMask);
         }
 
         public LayerMaskField()

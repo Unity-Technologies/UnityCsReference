@@ -161,8 +161,10 @@ namespace UnityEngine.Experimental.UIElements
             SaveGlobals();
 
             UIElementsUtility.BeginContainerGUI(cache, evt, this);
+            // From now on, Event.current is either evt or a copy of evt.
+            // Since Event.current may change while being processed, we do not rely on evt below but use Event.current instead.
 
-            if (evt.type != EventType.Layout)
+            if (Event.current.type != EventType.Layout)
             {
                 if (lostFocus)
                 {
@@ -265,10 +267,10 @@ namespace UnityEngine.Experimental.UIElements
             }
             finally
             {
-                if (evt.type != EventType.Layout)
+                if (Event.current.type != EventType.Layout)
                 {
                     int currentKeyboardFocus = GUIUtility.keyboardControl;
-                    int result = GUIUtility.CheckForTabEvent(evt);
+                    int result = GUIUtility.CheckForTabEvent(Event.current);
                     if (focusController != null)
                     {
                         if (result < 0)
@@ -344,16 +346,14 @@ namespace UnityEngine.Experimental.UIElements
                 }
             }
 
-            // The Event will probably be nuked with the next function call, so we get its type now.
-            EventType eventType = Event.current.type;
-
-            UIElementsUtility.EndContainerGUI();
+            // This will copy Event.current into evt.
+            UIElementsUtility.EndContainerGUI(evt);
             RestoreGlobals();
 
             if (!isExitGUIException)
             {
                 // This is the same logic as GUIClipState::EndOnGUI
-                if (eventType != EventType.Ignore && eventType != EventType.Used)
+                if (evt.type != EventType.Ignore && evt.type != EventType.Used)
                 {
                     int currentCount = GUIClip.Internal_GetCount();
                     if (currentCount > guiClipCount)
@@ -367,7 +367,7 @@ namespace UnityEngine.Experimental.UIElements
             while (GUIClip.Internal_GetCount() > guiClipCount)
                 GUIClip.Internal_Pop();
 
-            if (eventType == EventType.Used)
+            if (evt.type == EventType.Used)
             {
                 IncrementVersion(VersionChangeType.Repaint);
             }

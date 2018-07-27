@@ -60,9 +60,9 @@ namespace Unity.UNetWeaver
             }
 
             MethodDefinition serializeFunc = new MethodDefinition("Serialize", MethodAttributes.Public |
-                    MethodAttributes.Virtual |
-                    MethodAttributes.HideBySig,
-                    Weaver.voidType);
+                MethodAttributes.Virtual |
+                MethodAttributes.HideBySig,
+                Weaver.voidType);
 
             serializeFunc.Parameters.Add(new ParameterDefinition("writer", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkWriterType)));
             ILProcessor serWorker = serializeFunc.Body.GetILProcessor();
@@ -121,9 +121,9 @@ namespace Unity.UNetWeaver
             }
 
             MethodDefinition serializeFunc = new MethodDefinition("Deserialize", MethodAttributes.Public |
-                    MethodAttributes.Virtual |
-                    MethodAttributes.HideBySig,
-                    Weaver.voidType);
+                MethodAttributes.Virtual |
+                MethodAttributes.HideBySig,
+                Weaver.voidType);
 
             serializeFunc.Parameters.Add(new ParameterDefinition("reader", ParameterAttributes.None, Weaver.scriptDef.MainModule.ImportReference(Weaver.NetworkReaderType)));
             ILProcessor serWorker = serializeFunc.Body.GetILProcessor();

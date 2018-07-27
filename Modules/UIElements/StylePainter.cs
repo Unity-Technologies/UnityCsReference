@@ -114,7 +114,9 @@ namespace UnityEngine.Experimental.UIElements
             {
                 rect = GUIUtility.AlignRectToDevice(ve.rect),
                 uv = new Rect(0, 0, 1, 1),
-                color = Color.white,
+                // When the background color is not clear, we have to embed it into the texture...
+                //  whereas if the color is clear, the white color is used...
+                color = (style.backgroundColor != Color.clear) ? (Color)style.backgroundColor : (Color)Color.white,
                 texture = style.backgroundImage,
                 scaleMode = style.backgroundSize,
                 sliceLeft = style.sliceLeft,

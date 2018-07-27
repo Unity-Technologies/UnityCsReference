@@ -122,10 +122,10 @@ namespace UnityEditor
             return new SettingsProvider("Preferences/Cache Server")
             {
                 guiHandler = searchContext =>
-                    {
-                        using (new SettingsWindow.GUIScope())
-                            OnGUI(searchContext);
-                    },
+                {
+                    using (new SettingsWindow.GUIScope())
+                        OnGUI(searchContext);
+                },
                 scopes = SettingsScopes.User
             };
         }

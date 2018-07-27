@@ -11,9 +11,9 @@ namespace UnityEditor.Experimental.Rendering
     [RequiredByNativeCode]
     public struct SceneStateHash : IEquatable<SceneStateHash>
     {
-        readonly Hash128 m_SceneObjectsHash;
-        readonly Hash128 m_SkySettingsHash;
-        readonly Hash128 m_AmbientProbeHash;
+        Hash128 m_SceneObjectsHash;
+        Hash128 m_SkySettingsHash;
+        Hash128 m_AmbientProbeHash;
 
         public Hash128 sceneObjectsHash => m_SceneObjectsHash;
         public Hash128 skySettingsHash => m_SkySettingsHash;
@@ -23,7 +23,7 @@ namespace UnityEditor.Experimental.Rendering
             Hash128 sceneObjectsHash,
             Hash128 skySettingsHash,
             Hash128 ambientProbeHash
-            )
+        )
         {
             m_SceneObjectsHash = sceneObjectsHash;
             m_SkySettingsHash = skySettingsHash;
@@ -47,12 +47,11 @@ namespace UnityEditor.Experimental.Rendering
 
         public override int GetHashCode()
         {
-            unchecked
-            {
-                return sceneObjectsHash.GetHashCode()
-                    ^ skySettingsHash.GetHashCode()
-                    ^ ambientProbeHash.GetHashCode();
-            }
+            var h = new Hash128();
+            HashUtilities.AppendHash(ref m_SceneObjectsHash, ref h);
+            HashUtilities.AppendHash(ref m_SkySettingsHash, ref h);
+            HashUtilities.AppendHash(ref m_AmbientProbeHash, ref h);
+            return h.GetHashCode();
         }
     }
 }

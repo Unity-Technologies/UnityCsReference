@@ -46,9 +46,9 @@ namespace JetBrains.Annotations
     /// }
     /// </code></example>
     [AttributeUsage(
-         AttributeTargets.Method | AttributeTargets.Parameter |
-         AttributeTargets.Property | AttributeTargets.Delegate |
-         AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+        AttributeTargets.Method | AttributeTargets.Parameter |
+        AttributeTargets.Property | AttributeTargets.Delegate |
+        AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public sealed class CanBeNullAttribute : Attribute
     {
     }
@@ -62,9 +62,9 @@ namespace JetBrains.Annotations
     /// }
     /// </code></example>
     [AttributeUsage(
-         AttributeTargets.Method | AttributeTargets.Parameter |
-         AttributeTargets.Property | AttributeTargets.Delegate |
-         AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
+        AttributeTargets.Method | AttributeTargets.Parameter |
+        AttributeTargets.Property | AttributeTargets.Delegate |
+        AttributeTargets.Field, AllowMultiple = false, Inherited = true)]
     public sealed class NotNullAttribute : Attribute
     {
     }
@@ -82,8 +82,8 @@ namespace JetBrains.Annotations
     /// }
     /// </code></example>
     [AttributeUsage(
-         AttributeTargets.Constructor | AttributeTargets.Method,
-         AllowMultiple = false, Inherited = true)]
+        AttributeTargets.Constructor | AttributeTargets.Method,
+        AllowMultiple = false, Inherited = true)]
     public sealed class StringFormatMethodAttribute : Attribute
     {
         /// <param name="formatParameterName">
@@ -260,8 +260,8 @@ namespace JetBrains.Annotations
     /// }
     /// </code></example>
     [AttributeUsage(
-         AttributeTargets.Interface | AttributeTargets.Class |
-         AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
+        AttributeTargets.Interface | AttributeTargets.Class |
+        AttributeTargets.Struct, AllowMultiple = false, Inherited = true)]
     public sealed class CannotApplyEqualityOperatorAttribute : Attribute
     {
     }

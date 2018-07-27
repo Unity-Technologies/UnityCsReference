@@ -15,7 +15,7 @@ namespace UnityEngine.Experimental.XR
     [NativeType(Header = "Modules/XR/Subsystems/Input/XRInputSubsystemDescriptor.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRInputSubsystemDescriptor : SubsystemDescriptor<XRInputSubsystem>
+    public class XRInputSubsystemDescriptor : IntegratedSubsystemDescriptor<XRInputSubsystem>
     {
         [NativeConditional("ENABLE_XR")]
         public extern bool disablesLegacyInput { get; }

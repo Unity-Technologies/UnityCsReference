@@ -372,9 +372,9 @@ namespace UnityEditor
         void ScheduleOpenURL(TimeSpan timeout)
         {
             ThreadPool.QueueUserWorkItem(delegate {
-                    Thread.Sleep(timeout);
-                    m_ShouldRetryInitialURL = true;
-                });
+                Thread.Sleep(timeout);
+                m_ShouldRetryInitialURL = true;
+            });
         }
 
         internal WebView webView;

@@ -133,22 +133,22 @@ namespace UnityEditor
             return new SettingsProvider("Preferences/Diagnostics")
             {
                 guiHandler = searchContext =>
-                    {
-                        using (new SettingsWindow.GUIScope())
-                            OnGUI(searchContext);
-                    },
+                {
+                    using (new SettingsWindow.GUIScope())
+                        OnGUI(searchContext);
+                },
                 scopes = SettingsScopes.User,
                 hasSearchInterestHandler = searchContext =>
+                {
+                    var switches = new List<DiagnosticSwitch>();
+                    Debug.GetDiagnosticSwitches(switches);
+                    foreach (var diagSwitch in switches)
                     {
-                        var switches = new List<DiagnosticSwitch>();
-                        Debug.GetDiagnosticSwitches(switches);
-                        foreach (var diagSwitch in switches)
-                        {
-                            if (PassesFilter(diagSwitch, searchContext))
-                                return true;
-                        }
-                        return false;
+                        if (PassesFilter(diagSwitch, searchContext))
+                            return true;
                     }
+                    return false;
+                }
             };
         }
 

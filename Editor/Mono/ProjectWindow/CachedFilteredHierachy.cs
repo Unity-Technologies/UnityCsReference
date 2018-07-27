@@ -35,6 +35,14 @@ namespace UnityEditor
                             // at the same time so don't keep a reference in m_Icon here
                             string path = AssetDatabase.GetAssetPath(instanceID);
                             if (path != null)
+                                // Finding icon based on only file extension fails in several ways, and a different approach have to be found.
+                                // Using InternalEditorUtility.FindIconForFile first in revision f25945218bb6 / 29b23dbe4b5c introduced several regressions.
+                                //  - Doesn't support custom user-assigned icons for monoscripts.
+                                //  - Doesn't support open/closed folder icon destinction.
+                                //  - The change only affected Two-Column mode in Project View and not One-Column mode, adding inconsistency.
+                                //  - Doesn't support showing different icons for different prefab types, such as prefab variants.
+                                // Support for specific file types based on file extensiom have to be supported inside AssetDatabase.GetCachedIcon
+                                // itself to work correctly and universally. for e.g. uxml files from within GetCachedIcon without relying on FindIconForFile.
                                 return AssetDatabase.GetCachedIcon(path) as Texture2D;
                         }
                         else if (type == HierarchyType.GameObjects)
@@ -194,10 +202,16 @@ namespace UnityEditor
 
                 m_Results = list.ToArray();
             }
-            else
+            else if (m_HierarchyType == HierarchyType.GameObjects)
             {
                 HierarchyProperty property = new HierarchyProperty(m_HierarchyType, false);
                 property.SetSearchFilter(m_SearchFilter);
+
+                if (m_SearchFilter.sceneHandles != null &&
+                    m_SearchFilter.sceneHandles.Length > 0)
+                {
+                    property.SetCustomScenes(m_SearchFilter.sceneHandles);
+                }
 
                 int elements = property.CountRemaining(null);
                 elements = Mathf.Min(elements, k_MaxAddCount);
@@ -475,6 +489,11 @@ namespace UnityEditor
         public bool isFolder
         {
             get { return m_Hierarchy.results[m_Position].isFolder; }
+        }
+
+        public GUID[] dynamicDependencies
+        {
+            get { return new GUID[] {}; }
         }
 
         public int depth

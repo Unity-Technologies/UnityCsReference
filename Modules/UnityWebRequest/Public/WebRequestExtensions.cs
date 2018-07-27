@@ -101,11 +101,11 @@ namespace UnityEngine.Networking
         public static UnityWebRequest Put(string uri, byte[] bodyData)
         {
             UnityWebRequest request = new UnityWebRequest(
-                    uri,
-                    kHttpVerbPUT,
-                    new DownloadHandlerBuffer(),
-                    new UploadHandlerRaw(bodyData)
-                    );
+                uri,
+                kHttpVerbPUT,
+                new DownloadHandlerBuffer(),
+                new UploadHandlerRaw(bodyData)
+            );
 
             return request;
         }
@@ -113,11 +113,11 @@ namespace UnityEngine.Networking
         public static UnityWebRequest Put(Uri uri, byte[] bodyData)
         {
             UnityWebRequest request = new UnityWebRequest(
-                    uri,
-                    kHttpVerbPUT,
-                    new DownloadHandlerBuffer(),
-                    new UploadHandlerRaw(bodyData)
-                    );
+                uri,
+                kHttpVerbPUT,
+                new DownloadHandlerBuffer(),
+                new UploadHandlerRaw(bodyData)
+            );
 
             return request;
         }
@@ -125,11 +125,11 @@ namespace UnityEngine.Networking
         public static UnityWebRequest Put(string uri, string bodyData)
         {
             UnityWebRequest request = new UnityWebRequest(
-                    uri,
-                    kHttpVerbPUT,
-                    new DownloadHandlerBuffer(),
-                    new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(bodyData))
-                    );
+                uri,
+                kHttpVerbPUT,
+                new DownloadHandlerBuffer(),
+                new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(bodyData))
+            );
 
             return request;
         }
@@ -137,11 +137,11 @@ namespace UnityEngine.Networking
         public static UnityWebRequest Put(Uri uri, string bodyData)
         {
             UnityWebRequest request = new UnityWebRequest(
-                    uri,
-                    kHttpVerbPUT,
-                    new DownloadHandlerBuffer(),
-                    new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(bodyData))
-                    );
+                uri,
+                kHttpVerbPUT,
+                new DownloadHandlerBuffer(),
+                new UploadHandlerRaw(System.Text.Encoding.UTF8.GetBytes(bodyData))
+            );
 
             return request;
         }

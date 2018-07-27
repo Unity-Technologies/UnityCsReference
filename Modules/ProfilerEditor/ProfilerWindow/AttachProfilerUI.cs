@@ -102,8 +102,8 @@ namespace UnityEditor
                 Enabled = true,
                 IsSelected = () => { return ProfilerDriver.connectedProfiler == PLAYER_DIRECT_IP_CONNECT_GUID; },
                 ConnectTo = () => {
-                        DirectIPConnect(lastIP);
-                    }
+                    DirectIPConnect(lastIP);
+                }
             });
         }
 
@@ -149,10 +149,10 @@ namespace UnityEditor
                     Name = device.name,
                     Enabled = true,
                     IsSelected = () =>
-                        {
-                            return (ProfilerDriver.connectedProfiler == PLAYER_DIRECT_URL_CONNECT_GUID)
-                            && (ProfilerDriver.directConnectionUrl == url);
-                        },
+                    {
+                        return (ProfilerDriver.connectedProfiler == PLAYER_DIRECT_URL_CONNECT_GUID)
+                        && (ProfilerDriver.directConnectionUrl == url);
+                    },
                     ConnectTo = () => { DirectURLConnect(url); }
                 });
             }
@@ -197,9 +197,9 @@ namespace UnityEditor
                         Name = "(Autoconnected Player)",
                         Enabled = false,
                         IsSelected = () =>
-                            {
-                                return true;
-                            },
+                        {
+                            return true;
+                        },
                         ConnectTo = () => {}
                     });
                 }

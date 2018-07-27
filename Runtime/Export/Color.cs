@@ -114,7 +114,7 @@ namespace UnityEngine
                 a.g + (b.g - a.g) * t,
                 a.b + (b.b - a.b) * t,
                 a.a + (b.a - a.a) * t
-                );
+            );
         }
 
         // Interpolates between colors /a/ and /b/ by /t/ without clamping the interpolant
@@ -125,7 +125,7 @@ namespace UnityEngine
                 a.g + (b.g - a.g) * t,
                 a.b + (b.b - a.b) * t,
                 a.a + (b.a - a.a) * t
-                );
+            );
         }
 
         // Returns new color that has RGB components multiplied, but leaving alpha untouched.

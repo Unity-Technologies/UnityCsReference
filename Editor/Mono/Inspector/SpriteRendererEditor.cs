@@ -89,8 +89,8 @@ namespace UnityEditor
             FlipToggles();
 
             Rect r = GUILayoutUtility.GetRect(
-                    EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
-                    EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight);
+                EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
+                EditorGUI.kSingleLineHeight, EditorGUI.kSingleLineHeight);
 
             EditorGUI.showMixedValue = m_Material.hasMultipleDifferentValues;
             Object currentMaterialRef = m_Material.GetArrayElementAtIndex(0).objectReferenceValue;

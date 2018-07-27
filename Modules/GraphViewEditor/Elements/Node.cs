@@ -394,18 +394,18 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             List<GraphElement> toDeleteList = new List<GraphElement>();
             container.Query<Port>().ForEach(elem =>
+            {
+                if (elem.connected)
                 {
-                    if (elem.connected)
+                    foreach (Edge c in elem.connections)
                     {
-                        foreach (Edge c in elem.connections)
-                        {
-                            if ((c.capabilities & Capabilities.Deletable) == 0)
-                                continue;
+                        if ((c.capabilities & Capabilities.Deletable) == 0)
+                            continue;
 
-                            toDeleteList.Add(c);
-                        }
+                        toDeleteList.Add(c);
                     }
-                });
+                }
+            });
 
             toDelete.UnionWith(toDeleteList);
         }

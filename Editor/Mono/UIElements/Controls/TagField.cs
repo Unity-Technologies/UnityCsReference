@@ -23,7 +23,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var tagField = (TagField)ve;
-                tagField.value = m_Value.GetValueFromBag(bag);
+                tagField.SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
             }
         }
 
@@ -45,6 +45,15 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public override void SetValueWithoutNotify(string newValue)
+        {
+            // Allow the setting of value outside of Tags, but do nothing with them...
+            if (m_Choices.Contains(newValue))
+            {
+                base.SetValueWithoutNotify(newValue);
+            }
+        }
+
         static List<string> InitializeTags()
         {
             return new List<string>(InternalEditorUtility.tags);
@@ -54,7 +63,7 @@ namespace UnityEditor.Experimental.UIElements
 
         public TagField(string defaultValue) : this()
         {
-            value = defaultValue;
+            SetValueWithoutNotify(defaultValue);
         }
 
         internal override void AddMenuItems(GenericMenu menu)

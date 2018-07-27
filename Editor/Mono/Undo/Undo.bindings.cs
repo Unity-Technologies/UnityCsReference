@@ -79,7 +79,7 @@ namespace UnityEditor
         }
 
         [FreeFunction]
-        private static extern void DestroyObjectUndoable([NotNull] Object objectToUndo, string name);
+        internal static extern void DestroyObjectUndoable([NotNull] Object objectToUndo, string name);
 
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         public static extern Component AddComponent([NotNull] GameObject gameObject, Type type);
@@ -205,6 +205,10 @@ namespace UnityEditor
             if (undoRedoPerformed != null)
                 undoRedoPerformed();
         }
+
+        [StaticAccessor("GetUndoManager()", StaticAccessorType.Dot)]
+        [NativeMethod("ClearUndoSceneHandle")]
+        internal static extern void ClearUndoSceneHandle(UnityEngine.SceneManagement.Scene scene);
 
         [NativeConditional("ENABLE_SAVE_PLAYMODE_CHANGES_FEATURE")]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]

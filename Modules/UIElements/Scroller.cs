@@ -78,26 +78,10 @@ namespace UnityEngine.Experimental.UIElements
         public ScrollerButton lowButton { get; private set; }
         public ScrollerButton highButton { get; private set; }
 
-        [SerializeField]
-        float m_Value;
-
         public float value
         {
-            get { return m_Value; }
-            set
-            {
-                m_Value = value;
-                UpdateSliderValue(value);
-                SavePersistentData();
-            }
-        }
-
-        void UpdateSliderValue(float newValue)
-        {
-            if (!Mathf.Approximately(slider.value, value))
-            {
-                slider.value = value;
-            }
+            get { return slider.value; }
+            set { slider.value = value; }
         }
 
         public float lowValue
@@ -149,16 +133,6 @@ namespace UnityEngine.Experimental.UIElements
             Add(lowButton);
             highButton = new ScrollerButton(ScrollPageDown, ScrollWaitDefinitions.firstWait, ScrollWaitDefinitions.regularWait) {name = "HighButton"};
             Add(highButton);
-        }
-
-        public override void OnPersistentDataReady()
-        {
-            base.OnPersistentDataReady();
-            var key = GetFullHierarchicalPersistenceKey();
-            OverwriteFromPersistedData(this, key);
-
-            // To make sure the slider is correctly set-up ...
-            UpdateSliderValue(m_Value);
         }
 
         public void Adjust(float factor)

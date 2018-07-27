@@ -594,10 +594,9 @@ namespace UnityEditor
 
             // Find prefab based base
             Transform prefabBase = null;
-            PrefabType pickedType = PrefabUtility.GetPrefabType(go);
-            if (pickedType == PrefabType.PrefabInstance || pickedType == PrefabType.ModelPrefabInstance)
+            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(go))
             {
-                prefabBase = PrefabUtility.FindPrefabRoot(go).transform;
+                prefabBase = PrefabUtility.GetOutermostPrefabInstanceRoot(go).transform;
             }
 
             // Find attribute based base

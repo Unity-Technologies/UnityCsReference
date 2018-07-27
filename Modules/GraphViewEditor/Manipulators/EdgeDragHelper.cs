@@ -57,9 +57,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             {
                 // Reset the highlights.
                 m_GraphView.ports.ForEach((p) => {
-                        p.highlight = true;
-                        p.SetEnabled(true);
-                    });
+                    p.OnStopEdgeDragging();
+                });
                 m_CompatiblePorts = null;
             }
 
@@ -144,9 +143,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             // Only light compatible anchors when dragging an edge.
             m_GraphView.ports.ForEach((p) =>  {
-                    p.highlight = false;
-                    p.SetEnabled(false);
-                });
+                p.OnStartEdgeDragging();
+            });
 
             foreach (Port compatiblePort in m_CompatiblePorts)
             {
@@ -268,9 +266,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             // Reset the highlights.
             m_GraphView.ports.ForEach((p) => {
-                    p.highlight = true;
-                    p.SetEnabled(true);
-                });
+                p.OnStopEdgeDragging();
+            });
 
             // Clean up ghost edges.
             if (m_GhostEdge != null)

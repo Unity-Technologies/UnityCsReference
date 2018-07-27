@@ -12,7 +12,7 @@ namespace UnityEditor
         static void Create3DText(MenuCommand command)
         {
             var parent = command.context as GameObject;
-            var go = GOCreationCommands.CreateGameObject(parent, "New Text", typeof(MeshRenderer), typeof(TextMesh));
+            var go = ObjectFactory.CreateGameObject("New Text", typeof(MeshRenderer), typeof(TextMesh));
 
             var font = Selection.activeObject as Font ?? Font.GetDefault();
             TextMesh tm = go.GetComponent<TextMesh>();

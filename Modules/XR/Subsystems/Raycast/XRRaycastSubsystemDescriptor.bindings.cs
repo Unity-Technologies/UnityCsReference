@@ -14,7 +14,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/XRPrefix.h")]
     [NativeType(Header = "Modules/XR/Subsystems/Raycast/XRRaycastSubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRRaycastSubsystemDescriptor : SubsystemDescriptor<XRRaycastSubsystem>
+    public class XRRaycastSubsystemDescriptor : IntegratedSubsystemDescriptor<XRRaycastSubsystem>
     {
     }
 }

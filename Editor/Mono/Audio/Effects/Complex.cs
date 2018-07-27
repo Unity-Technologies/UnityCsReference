@@ -126,7 +126,7 @@ namespace UnityEditor
             return new ComplexD(
                 m * Math.Cos(p * b),
                 m * Math.Sin(p * b)
-                );
+            );
         }
 
         public double Mag2() { return real * real + imag * imag; }

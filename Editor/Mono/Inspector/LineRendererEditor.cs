@@ -159,19 +159,19 @@ namespace UnityEditor
             if (property.propertyPath.Contains("m_Positions") && m_PositionsView.GetSelection().Count > 1)
             {
                 menu.AddItem(s_Styles.propertyMenuContent, false, () =>
-                    {
-                        var selection = m_PositionsView.GetSelection().ToList();
-                        var query = selection.OrderByDescending(c => c);
+                {
+                    var selection = m_PositionsView.GetSelection().ToList();
+                    var query = selection.OrderByDescending(c => c);
 
-                        foreach (var index in query)
-                        {
-                            m_Positions.DeleteArrayElementAtIndex(index);
-                        }
-                        m_Positions.serializedObject.ApplyModifiedProperties();
-                        m_PositionsView.SetSelection(new int[0]);
-                        m_PositionsView.Reload();
-                        ResetSimplifyPreview();
-                    });
+                    foreach (var index in query)
+                    {
+                        m_Positions.DeleteArrayElementAtIndex(index);
+                    }
+                    m_Positions.serializedObject.ApplyModifiedProperties();
+                    m_PositionsView.SetSelection(new int[0]);
+                    m_PositionsView.Reload();
+                    ResetSimplifyPreview();
+                });
             }
         }
 

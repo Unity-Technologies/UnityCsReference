@@ -43,21 +43,21 @@ namespace UnityEditor
                             GUIUtility.GetControlID(s_TransformTranslationXZHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformTranslationYZHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformTranslationXYZHash, FocusType.Passive)
-                            ),
+                        ),
                         new RotationHandleIds(
                             GUIUtility.GetControlID(s_TransformRotationXHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformRotationYHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformRotationZHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformRotationCameraAxisHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformRotationXYZHash, FocusType.Passive)
-                            ),
+                        ),
                         new ScaleHandleIds(
                             GUIUtility.GetControlID(s_TransformScaleXHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformScaleYHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformScaleZHash, FocusType.Passive),
                             GUIUtility.GetControlID(s_TransformScaleXYZHash, FocusType.Passive)
-                            )
-                        );
+                        )
+                    );
                 }
             }
 
@@ -83,120 +83,120 @@ namespace UnityEditor
         internal struct TransformHandleParam
         {
             static TransformHandleParam s_Default = new TransformHandleParam(
-                    // Global
-                    new PositionHandleParam(
-                        PositionHandleParam.Handle.X | PositionHandleParam.Handle.Y | PositionHandleParam.Handle.Z
-                        | PositionHandleParam.Handle.XY | PositionHandleParam.Handle.XZ | PositionHandleParam.Handle.YZ,
-                        Vector3.one * 0.15f,
-                        Vector3.one,
-                        Vector3.zero,
-                        Vector3.one * 0.375f,
-                        PositionHandleParam.Orientation.Signed,
-                        PositionHandleParam.Orientation.Camera
-                        ),
-                    new RotationHandleParam(
-                        RotationHandleParam.Handle.X | RotationHandleParam.Handle.Y | RotationHandleParam.Handle.Z
-                        | RotationHandleParam.Handle.CameraAxis | RotationHandleParam.Handle.XYZ,
-                        Vector3.one * 1.4f,
-                        1.4f,
-                        1.5f,
-                        false,
-                        false
-                        ),
-                    new ScaleHandleParam(
-                        ScaleHandleParam.Handle.XYZ,
-                        Vector3.zero,
-                        Vector3.one,
-                        Vector3.one,
-                        1,
-                        ScaleHandleParam.Orientation.Signed
-                        ),
+                // Global
+                new PositionHandleParam(
+                    PositionHandleParam.Handle.X | PositionHandleParam.Handle.Y | PositionHandleParam.Handle.Z
+                    | PositionHandleParam.Handle.XY | PositionHandleParam.Handle.XZ | PositionHandleParam.Handle.YZ,
+                    Vector3.one * 0.15f,
+                    Vector3.one,
+                    Vector3.zero,
+                    Vector3.one * 0.375f,
+                    PositionHandleParam.Orientation.Signed,
+                    PositionHandleParam.Orientation.Camera
+                ),
+                new RotationHandleParam(
+                    RotationHandleParam.Handle.X | RotationHandleParam.Handle.Y | RotationHandleParam.Handle.Z
+                    | RotationHandleParam.Handle.CameraAxis | RotationHandleParam.Handle.XYZ,
+                    Vector3.one * 1.4f,
+                    1.4f,
+                    1.5f,
+                    false,
+                    false
+                ),
+                new ScaleHandleParam(
+                    ScaleHandleParam.Handle.XYZ,
+                    Vector3.zero,
+                    Vector3.one,
+                    Vector3.one,
+                    1,
+                    ScaleHandleParam.Orientation.Signed
+                ),
 
-                    // Camera aligned
-                    new PositionHandleParam(
-                        PositionHandleParam.Handle.X | PositionHandleParam.Handle.Y | PositionHandleParam.Handle.XY,
-                        Vector3.one * 0.15f,
-                        Vector3.one,
-                        Vector3.zero,
-                        Vector3.one * 0.375f,
-                        PositionHandleParam.Orientation.Signed,
-                        PositionHandleParam.Orientation.Signed
-                        ),
-                    new RotationHandleParam(
-                        RotationHandleParam.Handle.Z | RotationHandleParam.Handle.XYZ,
-                        Vector3.one * 1.4f,
-                        1.4f,
-                        1.5f,
-                        false,
-                        false
-                        ),
-                    new ScaleHandleParam(
-                        ScaleHandleParam.Handle.XYZ,
-                        Vector3.zero,
-                        Vector3.one,
-                        Vector3.one,
-                        1,
-                        ScaleHandleParam.Orientation.Signed
-                        ),
+                // Camera aligned
+                new PositionHandleParam(
+                    PositionHandleParam.Handle.X | PositionHandleParam.Handle.Y | PositionHandleParam.Handle.XY,
+                    Vector3.one * 0.15f,
+                    Vector3.one,
+                    Vector3.zero,
+                    Vector3.one * 0.375f,
+                    PositionHandleParam.Orientation.Signed,
+                    PositionHandleParam.Orientation.Signed
+                ),
+                new RotationHandleParam(
+                    RotationHandleParam.Handle.Z | RotationHandleParam.Handle.XYZ,
+                    Vector3.one * 1.4f,
+                    1.4f,
+                    1.5f,
+                    false,
+                    false
+                ),
+                new ScaleHandleParam(
+                    ScaleHandleParam.Handle.XYZ,
+                    Vector3.zero,
+                    Vector3.one,
+                    Vector3.one,
+                    1,
+                    ScaleHandleParam.Orientation.Signed
+                ),
 
-                    // Local
-                    new PositionHandleParam(
-                        PositionHandleParam.Handle.X | PositionHandleParam.Handle.Y | PositionHandleParam.Handle.Z
-                        | PositionHandleParam.Handle.XY | PositionHandleParam.Handle.XZ | PositionHandleParam.Handle.YZ,
-                        Vector3.one * 0.15f,
-                        Vector3.one,
-                        Vector3.zero,
-                        Vector3.one * 0.375f,
-                        PositionHandleParam.Orientation.Signed,
-                        PositionHandleParam.Orientation.Camera
-                        ),
-                    new RotationHandleParam(
-                        RotationHandleParam.Handle.X | RotationHandleParam.Handle.Y | RotationHandleParam.Handle.Z
-                        | RotationHandleParam.Handle.CameraAxis | RotationHandleParam.Handle.XYZ,
-                        Vector3.one * 1.4f,
-                        1.4f,
-                        1.5f,
-                        false,
-                        false
-                        ),
-                    new ScaleHandleParam(
-                        ScaleHandleParam.Handle.XYZ | ScaleHandleParam.Handle.X | ScaleHandleParam.Handle.Y | ScaleHandleParam.Handle.Z,
-                        Vector3.one * 1.5f,
-                        Vector3.one,
-                        Vector3.one * 0.25f,
-                        1,
-                        ScaleHandleParam.Orientation.Signed
-                        )
-                    ,
+                // Local
+                new PositionHandleParam(
+                    PositionHandleParam.Handle.X | PositionHandleParam.Handle.Y | PositionHandleParam.Handle.Z
+                    | PositionHandleParam.Handle.XY | PositionHandleParam.Handle.XZ | PositionHandleParam.Handle.YZ,
+                    Vector3.one * 0.15f,
+                    Vector3.one,
+                    Vector3.zero,
+                    Vector3.one * 0.375f,
+                    PositionHandleParam.Orientation.Signed,
+                    PositionHandleParam.Orientation.Camera
+                ),
+                new RotationHandleParam(
+                    RotationHandleParam.Handle.X | RotationHandleParam.Handle.Y | RotationHandleParam.Handle.Z
+                    | RotationHandleParam.Handle.CameraAxis | RotationHandleParam.Handle.XYZ,
+                    Vector3.one * 1.4f,
+                    1.4f,
+                    1.5f,
+                    false,
+                    false
+                ),
+                new ScaleHandleParam(
+                    ScaleHandleParam.Handle.XYZ | ScaleHandleParam.Handle.X | ScaleHandleParam.Handle.Y | ScaleHandleParam.Handle.Z,
+                    Vector3.one * 1.5f,
+                    Vector3.one,
+                    Vector3.one * 0.25f,
+                    1,
+                    ScaleHandleParam.Orientation.Signed
+                )
+                ,
 
-                    // Vertex Snapping
-                    new PositionHandleParam(
-                        PositionHandleParam.Handle.X | PositionHandleParam.Handle.Y | PositionHandleParam.Handle.Z
-                        | PositionHandleParam.Handle.XYZ,
-                        Vector3.one * 0.15f,
-                        Vector3.one,
-                        Vector3.zero,
-                        Vector3.one * 0.375f,
-                        PositionHandleParam.Orientation.Signed,
-                        PositionHandleParam.Orientation.Signed
-                        ),
-                    new RotationHandleParam(
-                        0,
-                        Vector3.one * 1.4f,
-                        1.4f,
-                        1.5f,
-                        false,
-                        false
-                        ),
-                    new ScaleHandleParam(
-                        0,
-                        Vector3.one * 1.5f,
-                        Vector3.one,
-                        Vector3.one * 0.25f,
-                        1,
-                        ScaleHandleParam.Orientation.Signed
-                        )
-                    );
+                // Vertex Snapping
+                new PositionHandleParam(
+                    PositionHandleParam.Handle.X | PositionHandleParam.Handle.Y | PositionHandleParam.Handle.Z
+                    | PositionHandleParam.Handle.XYZ,
+                    Vector3.one * 0.15f,
+                    Vector3.one,
+                    Vector3.zero,
+                    Vector3.one * 0.375f,
+                    PositionHandleParam.Orientation.Signed,
+                    PositionHandleParam.Orientation.Signed
+                ),
+                new RotationHandleParam(
+                    0,
+                    Vector3.one * 1.4f,
+                    1.4f,
+                    1.5f,
+                    false,
+                    false
+                ),
+                new ScaleHandleParam(
+                    0,
+                    Vector3.one * 1.5f,
+                    Vector3.one,
+                    Vector3.one * 0.25f,
+                    1,
+                    ScaleHandleParam.Orientation.Signed
+                )
+            );
             public static TransformHandleParam Default { get { return s_Default; } set { s_Default = value; } }
 
             public readonly PositionHandleParam position;

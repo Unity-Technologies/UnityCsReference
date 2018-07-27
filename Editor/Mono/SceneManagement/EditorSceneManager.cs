@@ -3,7 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEngine;
+using UnityEngine.Assertions;
 using UnityEngine.Scripting;
 using UnityEngine.SceneManagement;
 
@@ -74,6 +77,16 @@ namespace UnityEditor.SceneManagement
         {
             if (sceneSaved != null)
                 sceneSaved(scene);
+        }
+
+        [RequiredByNativeCode]
+        private static Transform Internal_GetParentTransformForNewGameObjects()
+        {
+            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (prefabStage != null)
+                return prefabStage.prefabContentsRoot.transform;
+
+            return null;
         }
     }
 }

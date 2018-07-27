@@ -21,7 +21,7 @@ namespace UnityEditor
                         GUIUtility.GetControlID(s_zRotateHandleHash, FocusType.Passive),
                         GUIUtility.GetControlID(s_cameraAxisRotateHandleHash, FocusType.Passive),
                         GUIUtility.GetControlID(s_xyzRotateHandleHash, FocusType.Passive)
-                        );
+                    );
                 }
             }
 

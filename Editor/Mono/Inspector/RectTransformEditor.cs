@@ -228,9 +228,8 @@ namespace UnityEditor
                         anyDrivenYPositionOrSize = true;
                 }
 
-                PrefabType prefabType = PrefabUtility.GetPrefabType(gui.gameObject);
                 if ((gui.transform.parent == null || gui.transform.parent.GetComponent<RectTransform>() == null)
-                    && (prefabType != PrefabType.Prefab && prefabType != PrefabType.ModelPrefab))
+                    && (!PrefabUtility.IsPartOfPrefabAsset(gui.gameObject)))
                     anyWithoutParent = true;
             }
 
@@ -663,12 +662,12 @@ namespace UnityEditor
             if (gui.anchorMin != gui.anchorMax)
             {
                 alpha = Mathf.Max(alpha,
-                        m_ChangingPosX.faded,
-                        m_ChangingPosY.faded,
-                        m_ChangingLeft.faded,
-                        m_ChangingRight.faded,
-                        m_ChangingTop.faded,
-                        m_ChangingBottom.faded);
+                    m_ChangingPosX.faded,
+                    m_ChangingPosY.faded,
+                    m_ChangingLeft.faded,
+                    m_ChangingRight.faded,
+                    m_ChangingTop.faded,
+                    m_ChangingBottom.faded);
             }
 
             Color rectInParentSpaceColor = kRectInParentSpaceColor;
@@ -850,7 +849,7 @@ namespace UnityEditor
             return new Vector2(
                 Mathf.LerpUnclamped(rectangle.x, rectangle.xMax, normalizedRectCoordinates.x),
                 Mathf.LerpUnclamped(rectangle.y, rectangle.yMax, normalizedRectCoordinates.y)
-                );
+            );
         }
 
         static bool AnchorAllowedOutsideParent(int axis, int minmax)
@@ -1008,17 +1007,17 @@ namespace UnityEditor
             bool stretchH = (gui.anchorMin.y != gui.anchorMax.y);
 
             alpha = Mathf.Max(
-                    m_ChangingPosX.faded,
-                    m_ChangingLeft.faded,
-                    m_ChangingRight.faded,
-                    m_ChangingAnchors.faded);
+                m_ChangingPosX.faded,
+                m_ChangingLeft.faded,
+                m_ChangingRight.faded,
+                m_ChangingAnchors.faded);
             DrawAnchorRect(parentSpace, gui, guiParent, 0, alpha);
 
             alpha = Mathf.Max(
-                    m_ChangingPosY.faded,
-                    m_ChangingTop.faded,
-                    m_ChangingBottom.faded,
-                    m_ChangingAnchors.faded);
+                m_ChangingPosY.faded,
+                m_ChangingTop.faded,
+                m_ChangingBottom.faded,
+                m_ChangingAnchors.faded);
             DrawAnchorRect(parentSpace, gui, guiParent, 1, alpha);
 
             DrawAnchorDistances(parentSpace, gui, guiParent, size, m_ChangingAnchors.faded);

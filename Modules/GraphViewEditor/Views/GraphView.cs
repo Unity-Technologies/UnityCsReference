@@ -1321,22 +1321,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             bool reachedFirstChild = false;
 
             graphElements.ForEach(ge =>
+            {
+                if (ge is Edge || ge is Port)
                 {
-                    if (ge is Edge || ge is Port)
-                    {
-                        return;
-                    }
+                    return;
+                }
 
-                    if (!reachedFirstChild)
-                    {
-                        rectToFit = ge.ChangeCoordinatesTo(contentViewContainer, ge.rect);
-                        reachedFirstChild = true;
-                    }
-                    else
-                    {
-                        rectToFit = RectUtils.Encompass(rectToFit, ge.ChangeCoordinatesTo(contentViewContainer, ge.rect));
-                    }
-                });
+                if (!reachedFirstChild)
+                {
+                    rectToFit = ge.ChangeCoordinatesTo(contentViewContainer, ge.rect);
+                    reachedFirstChild = true;
+                }
+                else
+                {
+                    rectToFit = RectUtils.Encompass(rectToFit, ge.ChangeCoordinatesTo(contentViewContainer, ge.rect));
+                }
+            });
 
             return rectToFit;
         }
@@ -1374,8 +1374,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             };
 
             var parentScale = new Vector3(transform.GetColumn(0).magnitude,
-                    transform.GetColumn(1).magnitude,
-                    transform.GetColumn(2).magnitude);
+                transform.GetColumn(1).magnitude,
+                transform.GetColumn(2).magnitude);
             Vector2 offset = r.center - (rectToFit.center * parentScale.x);
 
             // Update output values before leaving

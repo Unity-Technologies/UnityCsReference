@@ -55,9 +55,9 @@ namespace UnityEditor.Experimental.U2D
         internal bool ContainsAllType(ISpriteEditorDataProvider provider)
         {
             return provider == null ? false : m_Types.Where(x =>
-                {
-                    return provider.HasDataProvider(x);
-                }).Count() == m_Types.Length;
+            {
+                return provider.HasDataProvider(x);
+            }).Count() == m_Types.Length;
         }
     }
 }

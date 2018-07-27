@@ -12,7 +12,7 @@ namespace UnityEngine.Experimental.XR
 {
     [NativeType(Header = "Modules/XR/Subsystems/Display/XRDisplaySubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRDisplaySubsystemDescriptor : SubsystemDescriptor<XRDisplaySubsystem>
+    public class XRDisplaySubsystemDescriptor : IntegratedSubsystemDescriptor<XRDisplaySubsystem>
     {
     }
 }

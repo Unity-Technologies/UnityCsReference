@@ -15,7 +15,7 @@ namespace UnityEditor
             float power,
             Texture2D sliderBackground,
             params GUILayoutOption[] options
-            )
+        )
         {
             var rect = s_LastRect = GetSliderRect(false, options);
             EditorGUI.SliderWithTexture(rect, label, property, sliderMin, sliderMax, power, sliderBackground);
@@ -27,11 +27,11 @@ namespace UnityEditor
             string formatString,
             Texture2D sliderBackground,
             params GUILayoutOption[] options
-            )
+        )
         {
             return SliderWithTexture(
                 label, sliderValue, sliderMin, sliderMax, formatString, sliderMin, sliderMax, sliderBackground
-                );
+            );
         }
 
         internal static float SliderWithTexture(
@@ -40,12 +40,12 @@ namespace UnityEditor
             string formatString, float textFieldMin, float textFieldMax,
             Texture2D sliderBackground,
             params GUILayoutOption[] options
-            )
+        )
         {
             var rect = s_LastRect = GetSliderRect(false, options);
             return EditorGUI.SliderWithTexture(
                 rect, label, sliderValue, sliderMin, sliderMax, formatString, textFieldMin, textFieldMax, 1f, sliderBackground
-                );
+            );
         }
     }
 
@@ -58,7 +58,7 @@ namespace UnityEditor
             float sliderMin, float sliderMax,
             float power,
             Texture2D sliderBackground
-            )
+        )
         {
             label = BeginProperty(position, label, property);
 
@@ -67,8 +67,8 @@ namespace UnityEditor
             var formatString = property.propertyType == SerializedPropertyType.Integer ?
                 kIntFieldFormatString : kFloatFieldFormatString;
             var newValue = SliderWithTexture(
-                    position, label, property.floatValue, sliderMin, sliderMax, formatString, sliderMin, sliderMax, power, sliderBackground
-                    );
+                position, label, property.floatValue, sliderMin, sliderMax, formatString, sliderMin, sliderMax, power, sliderBackground
+            );
 
             if (EndChangeCheck())
                 property.floatValue = newValue;
@@ -83,11 +83,11 @@ namespace UnityEditor
             string formatString,
             Texture2D sliderBackground,
             params GUILayoutOption[] options
-            )
+        )
         {
             return SliderWithTexture(
                 rect, label, sliderValue, sliderMin, sliderMax, formatString, sliderMin, sliderMax, 1f, sliderBackground
-                );
+            );
         }
 
         internal static float SliderWithTexture(
@@ -97,7 +97,7 @@ namespace UnityEditor
             string formatString, float textFieldMin, float textFieldMax,
             float power,
             Texture2D sliderBackground
-            )
+        )
         {
             int id = GUIUtility.GetControlID(s_SliderHash, FocusType.Keyboard, position);
             var controlRect = PrefixLabel(position, id, label);
@@ -107,7 +107,7 @@ namespace UnityEditor
                 : default(Rect);         // Ensure dragzone is empty when we have no label
             return DoSlider(
                 controlRect, dragZone, id, sliderValue, sliderMin, sliderMax, formatString, textFieldMin, textFieldMax, power, "ColorPickerSliderBackground", "ColorPickerHorizThumb", sliderBackground
-                );
+            );
         }
     }
 }

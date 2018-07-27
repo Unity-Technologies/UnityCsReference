@@ -181,10 +181,10 @@ namespace UnityEditor
                     }
 
                     Rect r = new Rect(
-                            keypos + sharedOffset - eventMarker.width / 2,
-                            (rect.height - 10) * (float)(sharedLeft - shared + 1) / Mathf.Max(1, shared - 1),
-                            eventMarker.width,
-                            eventMarker.height);
+                        keypos + sharedOffset - eventMarker.width / 2,
+                        (rect.height - 10) * (float)(sharedLeft - shared + 1) / Mathf.Max(1, shared - 1),
+                        eventMarker.width,
+                        eventMarker.height);
 
                     hitRects[i] = r;
                     drawRects[i] = r;
@@ -222,18 +222,18 @@ namespace UnityEditor
 
                 // TODO: GUIStyle.none has hopping margins that need to be fixed
                 HighLevelEvent hEvent = EditorGUIExt.MultiSelection(
-                        rect,
-                        drawRects,
-                        new GUIContent(eventMarker),
-                        hitRects,
-                        ref selectedEvents,
-                        null,
-                        out clickedIndex,
-                        out offset,
-                        out startSelection,
-                        out endSelection,
-                        GUIStyle.none
-                        );
+                    rect,
+                    drawRects,
+                    new GUIContent(eventMarker),
+                    hitRects,
+                    ref selectedEvents,
+                    null,
+                    out clickedIndex,
+                    out offset,
+                    out startSelection,
+                    out endSelection,
+                    GUIStyle.none
+                );
 
                 if (hEvent != HighLevelEvent.None)
                 {
@@ -298,15 +298,15 @@ namespace UnityEditor
                             int selectedEventsCount = selectedEvents.Count(selected => selected);
 
                             menu.AddItem(
-                            EditorGUIUtility.TrTextContent("Add Animation Event"),
-                            false,
-                            EventLineContextMenuAdd,
-                            contextData);
+                                EditorGUIUtility.TrTextContent("Add Animation Event"),
+                                false,
+                                EventLineContextMenuAdd,
+                                contextData);
                             menu.AddItem(
-                            new GUIContent(selectedEventsCount > 1 ? "Delete Animation Events" : "Delete Animation Event"),
-                            false,
-                            EventLineContextMenuDelete,
-                            contextData);
+                                new GUIContent(selectedEventsCount > 1 ? "Delete Animation Events" : "Delete Animation Event"),
+                                false,
+                                EventLineContextMenuDelete,
+                                contextData);
                             menu.ShowAsContext();
 
                             // Mouse may move while context menu is open - make sure instant tooltip is handled

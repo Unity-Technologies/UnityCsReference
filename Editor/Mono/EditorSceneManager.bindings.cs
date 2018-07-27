@@ -21,6 +21,13 @@ namespace UnityEditor.SceneManagement
             get;
         }
 
+        public extern static int previewSceneCount
+        {
+            [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
+            [NativeMethod("GetPreviewSceneCount")]
+            get;
+        }
+
         public extern static bool preventCrossSceneReferences
         {
             [StaticAccessor("GetSceneManager()", StaticAccessorType.Dot)]
@@ -50,6 +57,11 @@ namespace UnityEditor.SceneManagement
 
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("OpenPreviewScene")]
+        internal extern static Scene OpenPreviewScene(string scenePath);
+
+        [NativeThrows]
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("NewScene")]
         public extern static Scene NewScene(NewSceneSetup setup, [uei.DefaultValue("NewSceneMode.Single")] NewSceneMode mode);
 
@@ -70,6 +82,10 @@ namespace UnityEditor.SceneManagement
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("ClosePreviewScene")]
         public extern static bool ClosePreviewScene(Scene scene);
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("IsPreviewScene")]
+        public extern static bool IsPreviewScene(Scene scene);
 
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("IsPreviewSceneObject")]
@@ -144,6 +160,10 @@ namespace UnityEditor.SceneManagement
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("MarkAllScenesDirty")]
         public extern static void MarkAllScenesDirty();
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("ClearSceneDirtiness")]
+        internal extern static void ClearSceneDirtiness(Scene scene);
 
         [NativeThrows]
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]

@@ -351,7 +351,7 @@ namespace UnityEngine
         extern public void SetMatrixArray(int nameID, Matrix4x4[] values);
 
         [NativeMethod(Name = "ComputeShaderScripting::SetTexture", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
-        extern public void SetTexture(int kernelIndex, int nameID, [NotNull] Texture texture);
+        extern public void SetTexture(int kernelIndex, int nameID, [NotNull] Texture texture, int mipLevel);
         [NativeMethod(Name = "ComputeShaderScripting::SetTextureFromGlobal", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public void SetTextureFromGlobal(int kernelIndex, int nameID, int globalTextureNameID);
 

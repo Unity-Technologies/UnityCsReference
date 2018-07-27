@@ -92,7 +92,7 @@ namespace UnityEditor
                             || (s_ButtonDown <= 0 && actionKey)
                             || s_ButtonDown == 2
                             || SceneView.lastActiveSceneView != null && (SceneView.lastActiveSceneView.in2DMode || SceneView.lastActiveSceneView.isRotationLocked) && !(s_ButtonDown == 1 && evt.alt || s_ButtonDown <= 0 && controlKeyOnMac)
-                            )
+                        )
                         {
                             get.m_ViewTool = ViewTool.Pan;
                         }

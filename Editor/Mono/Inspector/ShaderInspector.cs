@@ -183,14 +183,14 @@ namespace UnityEditor
                     // (C# closures close over variables, not their values)
                     var errorIndex = i;
                     menu.AddItem(EditorGUIUtility.TrTextContent("Copy error text"), false, delegate {
-                            string errMsg = errors[errorIndex].message;
-                            if (!string.IsNullOrEmpty(errors[errorIndex].messageDetails))
-                            {
-                                errMsg += '\n';
-                                errMsg += errors[errorIndex].messageDetails;
-                            }
-                            EditorGUIUtility.systemCopyBuffer = errMsg;
-                        });
+                        string errMsg = errors[errorIndex].message;
+                        if (!string.IsNullOrEmpty(errors[errorIndex].messageDetails))
+                        {
+                            errMsg += '\n';
+                            errMsg += errors[errorIndex].messageDetails;
+                        }
+                        EditorGUIUtility.systemCopyBuffer = errMsg;
+                    });
                     menu.ShowAsContext();
                 }
 
@@ -586,8 +586,8 @@ namespace UnityEditor
             ulong variantCount = ShaderUtil.GetVariantCount(m_Shader, strip);
             var variantText = FormatCount(variantCount) +
                 (strip ?
-                 " variants included" :
-                 " variants total");
+                    " variants included" :
+                    " variants total");
             Rect buttonRect = drawPos;
             buttonRect.x += Styles.menuItem.padding.left;
             buttonRect.width -= Styles.menuItem.padding.left + 4;

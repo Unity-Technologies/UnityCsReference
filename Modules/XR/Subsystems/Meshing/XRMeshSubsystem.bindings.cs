@@ -68,7 +68,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/Subsystems/Meshing/XRMeshSubsystem.h")]
     [NativeConditional("ENABLE_XR")]
     [UsedByNativeCode]
-    public class XRMeshSubsystem : Subsystem<XRMeshSubsystemDescriptor>
+    public class XRMeshSubsystem : IntegratedSubsystem<XRMeshSubsystemDescriptor>
     {
         public bool TryGetMeshInfos(List<MeshInfo> meshInfosOut)
         {

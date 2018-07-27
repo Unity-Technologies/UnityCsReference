@@ -129,7 +129,7 @@ namespace UnityEditor
         public static extern LineEndingsMode lineEndingsForNewScripts { get; set; }
 
         [Obsolete("EditorSettings.webSecurityEmulationEnabled is no longer supported, " +
-             "since the Unity Web Player is no longer supported by Unity.")]
+            "since the Unity Web Player is no longer supported by Unity.")]
         public static bool webSecurityEmulationEnabled
         {
             get { return false; }
@@ -137,7 +137,7 @@ namespace UnityEditor
         }
 
         [Obsolete("EditorSettings.webSecurityEmulationHostUrl is no longer supported, " +
-             "since the Unity Web Player is no longer supported by Unity.")]
+            "since the Unity Web Player is no longer supported by Unity.")]
         public static string webSecurityEmulationHostUrl
         {
             get { return ""; }
@@ -146,6 +146,12 @@ namespace UnityEditor
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern EditorBehaviorMode defaultBehaviorMode { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern SceneAsset prefabRegularEnvironment { get; set; }
+
+        [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
+        public static extern SceneAsset prefabUIEnvironment { get; set; }
 
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern SpritePackerMode spritePackerMode { get; set; }

@@ -113,16 +113,16 @@ namespace Unity.Experimental.EditorMode
             if (Root.visible)
             {
                 menu.AddItem(new UnityEngine.GUIContent(string.Format("Mode/{0}", EditorModes.DefaultMode.Name)), false, () =>
-                    {
-                        SwitchToDefault();
-                    });
+                {
+                    SwitchToDefault();
+                });
             }
             else
             {
                 menu.AddItem(new UnityEngine.GUIContent(string.Format("Mode/{0}", EditorModes.CurrentModeName)), false, () =>
-                    {
-                        SwitchToOverride();
-                    });
+                {
+                    SwitchToOverride();
+                });
             }
         }
 

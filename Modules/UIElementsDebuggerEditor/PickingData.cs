@@ -75,7 +75,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             }
 
             m_Labels = new GUIContent[m_Panels.Count + 1];
-            m_Labels[0] = EditorGUIUtility.TrTextContent("Select a panel");
+            m_Labels[0] = EditorGUIUtility.TrTextContent("None");
             for (int i = 0; i < m_Panels.Count; i++)
                 m_Labels[i + 1] = new GUIContent(GetName(m_Panels[i]));
 
@@ -90,8 +90,8 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 var win = hostview.actualView;
                 if (win != null)
                 {
-                    if (!String.IsNullOrEmpty(win.name))
-                        return win.name;
+                    if (!String.IsNullOrEmpty(win.titleContent.text))
+                        return win.titleContent.text;
                     return win.GetType().Name;
                 }
                 if (!String.IsNullOrEmpty(hostview.name))
@@ -105,20 +105,26 @@ namespace UnityEditor.Experimental.UIElements.Debugger
 
         public void DoSelectDropDown(Action onSelect)
         {
-            var label = m_Selected >= 0 && m_Selected < m_Labels.Length ? m_Labels[m_Selected] : GUIContent.Temp("<NONE>");
-            if (GUILayout.Button(label, EditorStyles.popup))
+            var label = m_Selected > 0 && m_Selected < m_Labels.Length ? m_Labels[m_Selected] : GUIContent.Temp("<Please Select>");
+            if (GUILayout.Button(label, EditorStyles.toolbarDropDown))
             {
                 Refresh();
-                Rect rect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight, EditorStyles.popup);
+                Rect rect = EditorGUILayout.GetControlRect(false, EditorGUI.kSingleLineHeight, EditorStyles.toolbarDropDown);
                 var controlID = GUIUtility.GetControlID(s_PopupHash, FocusType.Keyboard, rect);
                 var position = EditorGUI.IndentedRect(rect);
-                position.y += EditorGUI.kSingleLineHeight;
+                position.y += EditorGUI.kSingleLineHeight / 2;
                 EditorGUI.PopupCallbackInfo.instance = new EditorGUI.PopupCallbackInfo(controlID);
-                EditorUtility.DisplayCustomMenu(position, m_Labels, m_Selected, (data, options, selected) =>
-                    {
-                        m_Selected = selected;
-                        onSelect();
-                    }, null);
+
+                GUIContent[] labels = new GUIContent[m_Labels.Length];
+                labels[0] = new GUIContent(m_Labels[0].text);
+                for (int i = 1; i < m_Labels.Length; ++i)
+                    labels[i] = new GUIContent(string.Format("{0}. {1}", i,  m_Labels[i].text));
+
+                EditorUtility.DisplayCustomMenu(position, labels, m_Selected, (data, options, selected) =>
+                {
+                    m_Selected = selected;
+                    onSelect();
+                }, null);
                 GUIUtility.keyboardControl = controlID;
             }
         }

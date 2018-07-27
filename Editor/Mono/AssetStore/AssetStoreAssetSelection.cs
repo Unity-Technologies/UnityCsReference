@@ -47,94 +47,94 @@ namespace UnityEditor
                 // Request the asset bundle data from the url and register a callback
                 AsyncHTTPClient client = new AsyncHTTPClient(searchResult.dynamicPreviewURL);
                 client.doneCallback = delegate(AsyncHTTPClient c) {
-                        if (!client.IsSuccess())
-                        {
-                            System.Console.WriteLine("Error downloading dynamic preview: " + client.text);
-                            // Try the static preview instead
-                            searchResult.dynamicPreviewURL = null;
-                            DownloadStaticPreview(searchResult);
-                            return;
-                        }
+                    if (!client.IsSuccess())
+                    {
+                        System.Console.WriteLine("Error downloading dynamic preview: " + client.text);
+                        // Try the static preview instead
+                        searchResult.dynamicPreviewURL = null;
+                        DownloadStaticPreview(searchResult);
+                        return;
+                    }
 
-                        // We only suppport one asset so grab the first one
-                        AssetStoreAsset sel = GetFirstAsset();
+                    // We only suppport one asset so grab the first one
+                    AssetStoreAsset sel = GetFirstAsset();
 
-                        // Make sure that the selection hasn't changed meanwhile
-                        if (searchResult.disposed || sel == null || searchResult.id != sel.id)
-                        {
-                            //Debug.Log("dyn disposed " + searchResult.disposed.ToString() + " " + (sel == null ? "null" : sel.id.ToString()) + " " + searchResult.id.ToString());
-                            return;
-                        }
+                    // Make sure that the selection hasn't changed meanwhile
+                    if (searchResult.disposed || sel == null || searchResult.id != sel.id)
+                    {
+                        //Debug.Log("dyn disposed " + searchResult.disposed.ToString() + " " + (sel == null ? "null" : sel.id.ToString()) + " " + searchResult.id.ToString());
+                        return;
+                    }
 
-                        // Go create the asset bundle in memory from the binary blob asynchronously
-                        try
-                        {
-                            AssetBundleCreateRequest cr = AssetBundle.LoadFromMemoryAsync(c.bytes);
+                    // Go create the asset bundle in memory from the binary blob asynchronously
+                    try
+                    {
+                        AssetBundleCreateRequest cr = AssetBundle.LoadFromMemoryAsync(c.bytes);
 
-                            // Workaround: Don't subject the bundle to the usual compatibility checks.  We want
-                            // to stay compatible with previews created in prior versions of Unity and with the
-                            // stuff we put into previews, we should generally be able to still load the content
-                            // in the editor.
-                            cr.DisableCompatibilityChecks();
+                        // Workaround: Don't subject the bundle to the usual compatibility checks.  We want
+                        // to stay compatible with previews created in prior versions of Unity and with the
+                        // stuff we put into previews, we should generally be able to still load the content
+                        // in the editor.
+                        cr.DisableCompatibilityChecks();
 
-                            searchResult.previewBundleRequest = cr;
-                            EditorApplication.CallbackFunction callback = null;
+                        searchResult.previewBundleRequest = cr;
+                        EditorApplication.CallbackFunction callback = null;
 
-                            // The callback will be called each tick and check if the asset bundle is ready
-                            double startTime = EditorApplication.timeSinceStartup;
-                            callback = () => {
-                                AssetStoreUtils.UpdatePreloading();
+                        // The callback will be called each tick and check if the asset bundle is ready
+                        double startTime = EditorApplication.timeSinceStartup;
+                        callback = () => {
+                            AssetStoreUtils.UpdatePreloading();
 
-                                if (!cr.isDone)
+                            if (!cr.isDone)
+                            {
+                                double nowTime = EditorApplication.timeSinceStartup;
+                                if (nowTime - startTime > 10.0)
                                 {
-                                    double nowTime = EditorApplication.timeSinceStartup;
-                                    if (nowTime - startTime > 10.0)
-                                    {
-                                        // Timeout. Stop polling
-                                        EditorApplication.update -= callback;
-                                        System.Console.WriteLine("Timed out fetch live preview bundle " +
-                                            (searchResult.dynamicPreviewURL ?? "<n/a>"));
-                                        // Debug.Log("Not done Timed out" + cr.progress.ToString() );
-                                    }
-                                    else
-                                    {
-                                        // Debug.Log("Not done " + cr.progress.ToString() );
-                                    }
-                                    return;
-                                }
-
-                                // Done cooking. Stop polling.
-                                EditorApplication.update -= callback;
-
-                                // Make sure that the selection hasn't changed meanwhile
-                                AssetStoreAsset sel2 = GetFirstAsset();
-                                if (searchResult.disposed || sel2 == null || searchResult.id != sel2.id)
-                                {
-                                    // No problem. Just ignore.
-                                    // Debug.Log("dyn late disposed " + searchResult.disposed.ToString() + " " + (sel2 == null ? "null" : sel2.id.ToString()) + " " + searchResult.id.ToString());
+                                    // Timeout. Stop polling
+                                    EditorApplication.update -= callback;
+                                    System.Console.WriteLine("Timed out fetch live preview bundle " +
+                                        (searchResult.dynamicPreviewURL ?? "<n/a>"));
+                                    // Debug.Log("Not done Timed out" + cr.progress.ToString() );
                                 }
                                 else
                                 {
-                                    searchResult.previewBundle = cr.assetBundle;
-                                    if (cr.assetBundle == null ||  cr.assetBundle.mainAsset == null)
-                                    {
-                                        // Failed downloading live preview. Fallback to static
-                                        searchResult.dynamicPreviewURL = null;
-                                        DownloadStaticPreview(searchResult);
-                                    }
-                                    else
-                                        searchResult.previewAsset = searchResult.previewBundle.mainAsset;
+                                    // Debug.Log("Not done " + cr.progress.ToString() );
                                 }
-                            };
+                                return;
+                            }
 
-                            EditorApplication.update += callback;
-                        }
-                        catch (System.Exception e)
-                        {
-                            System.Console.Write(e.Message);
-                            Debug.Log(e.Message);
-                        }
-                    };
+                            // Done cooking. Stop polling.
+                            EditorApplication.update -= callback;
+
+                            // Make sure that the selection hasn't changed meanwhile
+                            AssetStoreAsset sel2 = GetFirstAsset();
+                            if (searchResult.disposed || sel2 == null || searchResult.id != sel2.id)
+                            {
+                                // No problem. Just ignore.
+                                // Debug.Log("dyn late disposed " + searchResult.disposed.ToString() + " " + (sel2 == null ? "null" : sel2.id.ToString()) + " " + searchResult.id.ToString());
+                            }
+                            else
+                            {
+                                searchResult.previewBundle = cr.assetBundle;
+                                if (cr.assetBundle == null ||  cr.assetBundle.mainAsset == null)
+                                {
+                                    // Failed downloading live preview. Fallback to static
+                                    searchResult.dynamicPreviewURL = null;
+                                    DownloadStaticPreview(searchResult);
+                                }
+                                else
+                                    searchResult.previewAsset = searchResult.previewBundle.mainAsset;
+                            }
+                        };
+
+                        EditorApplication.update += callback;
+                    }
+                    catch (System.Exception e)
+                    {
+                        System.Console.Write(e.Message);
+                        Debug.Log(e.Message);
+                    }
+                };
                 client.Begin();
             }
             else if (!string.IsNullOrEmpty(searchResult.staticPreviewURL))
@@ -160,25 +160,25 @@ namespace UnityEditor
         {
             AsyncHTTPClient client = new AsyncHTTPClient(searchResult.staticPreviewURL);
             client.doneCallback = delegate(AsyncHTTPClient c) {
-                    if (!client.IsSuccess())
-                    {
-                        System.Console.WriteLine("Error downloading static preview: " + client.text);
-                        // Debug.LogError("Error downloading static preview: " + client.text);
-                        return;
-                    }
+                if (!client.IsSuccess())
+                {
+                    System.Console.WriteLine("Error downloading static preview: " + client.text);
+                    // Debug.LogError("Error downloading static preview: " + client.text);
+                    return;
+                }
 
-                    // Need to put the texture through some scaling magic in order for the
-                    // TextureInspector to be able to show it.
-                    // TODO: This is a workaround and should be fixed.
-                    Texture2D srcTex = c.texture;
-                    Texture2D tex = new Texture2D(srcTex.width, srcTex.height, TextureFormat.RGB24, false, true);
-                    AssetStorePreviewManager.ScaleImage(tex.width, tex.height, srcTex, tex, null);
-                    // tex.Compress(true);
-                    searchResult.previewImage = tex;
+                // Need to put the texture through some scaling magic in order for the
+                // TextureInspector to be able to show it.
+                // TODO: This is a workaround and should be fixed.
+                Texture2D srcTex = c.texture;
+                Texture2D tex = new Texture2D(srcTex.width, srcTex.height, TextureFormat.RGB24, false, true);
+                AssetStorePreviewManager.ScaleImage(tex.width, tex.height, srcTex, tex, null);
+                // tex.Compress(true);
+                searchResult.previewImage = tex;
 
-                    Object.DestroyImmediate(srcTex);
-                    AssetStoreAssetInspector.Instance.Repaint();
-                };
+                Object.DestroyImmediate(srcTex);
+                AssetStoreAssetInspector.Instance.Repaint();
+            };
             client.Begin();
         }
 

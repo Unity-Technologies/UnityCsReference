@@ -438,7 +438,7 @@ namespace UnityEditor
                         -(m_Translation.y - drawRect.height) / m_Scale.y,
                         drawRect.width / m_Scale.x,
                         drawRect.height / -m_Scale.y
-                        );
+                    );
                 }
                 else
                 {
@@ -447,7 +447,7 @@ namespace UnityEditor
                         -m_Translation.y / m_Scale.y,
                         drawRect.width / m_Scale.x,
                         drawRect.height / m_Scale.y
-                        );
+                    );
                 }
             }
         }
@@ -516,7 +516,7 @@ namespace UnityEditor
                 return new Bounds(
                     new Vector3((hBaseRangeMin + hBaseRangeMax) * 0.5f, (vBaseRangeMin + vBaseRangeMax) * 0.5f, 0),
                     new Vector3(hBaseRangeMax - hBaseRangeMin, vBaseRangeMax - vBaseRangeMin, 1)
-                    );
+                );
             }
         }
 
@@ -572,7 +572,7 @@ namespace UnityEditor
                 //|| (Event.current.button == 0 && Event.current.command) // left+commend drag
                 //|| (Event.current.button == 2 && Event.current.command) // middle+command drag
 
-                );
+            );
         }
 
         private bool IsPanEvent()
@@ -580,7 +580,7 @@ namespace UnityEditor
             return (
                 (Event.current.button == 0 && Event.current.alt) // left+alt drag
                 || (Event.current.button == 2 && !Event.current.command) // middle drag
-                );
+            );
         }
 
         public ZoomableArea()
@@ -724,9 +724,9 @@ namespace UnityEditor
                     else
                     {
                         shownXMin = GUI.Scroller(hRangeSliderRect,
-                                shownXMin, shownXRange, editorBounds.min.x, editorBounds.max.x,
-                                styles.horizontalScrollbar, styles.horizontalMinMaxScrollbarThumb,
-                                styles.horizontalScrollbarLeftButton, styles.horizontalScrollbarRightButton, true);
+                            shownXMin, shownXRange, editorBounds.min.x, editorBounds.max.x,
+                            styles.horizontalScrollbar, styles.horizontalMinMaxScrollbarThumb,
+                            styles.horizontalScrollbarLeftButton, styles.horizontalScrollbarRightButton, true);
                     }
                     min = shownXMin;
                     max = shownXMin + shownXRange;
@@ -758,9 +758,9 @@ namespace UnityEditor
                         else
                         {
                             shownYMin = GUI.Scroller(vRangeSliderRect,
-                                    shownYMin, shownYRange, -editorBounds.max.y, -editorBounds.min.y,
-                                    styles.verticalScrollbar, styles.verticalMinMaxScrollbarThumb,
-                                    styles.verticalScrollbarUpButton, styles.verticalScrollbarDownButton, false);
+                                shownYMin, shownYRange, -editorBounds.max.y, -editorBounds.min.y,
+                                styles.verticalScrollbar, styles.verticalMinMaxScrollbarThumb,
+                                styles.verticalScrollbarUpButton, styles.verticalScrollbarDownButton, false);
                         }
                         min = -(shownYMin + shownYRange);
                         max = -shownYMin;
@@ -787,9 +787,9 @@ namespace UnityEditor
                         else
                         {
                             shownYMin = GUI.Scroller(vRangeSliderRect,
-                                    shownYMin, shownYRange, editorBounds.min.y, editorBounds.max.y,
-                                    styles.verticalScrollbar, styles.verticalMinMaxScrollbarThumb,
-                                    styles.verticalScrollbarUpButton, styles.verticalScrollbarDownButton, false);
+                                shownYMin, shownYRange, editorBounds.min.y, editorBounds.max.y,
+                                styles.verticalScrollbar, styles.verticalMinMaxScrollbarThumb,
+                                styles.verticalScrollbarUpButton, styles.verticalScrollbarDownButton, false);
                         }
                         min = shownYMin;
                         max = shownYMin + shownYRange;
@@ -916,41 +916,41 @@ namespace UnityEditor
             {
                 float xLerp = Mathf.InverseLerp(oldArea.width, newArea.width, rect.width / m_HScaleMax);
                 newArea = new Rect(
-                        Mathf.Lerp(oldArea.x, newArea.x, xLerp),
-                        newArea.y,
-                        Mathf.Lerp(oldArea.width, newArea.width, xLerp),
-                        newArea.height
-                        );
+                    Mathf.Lerp(oldArea.x, newArea.x, xLerp),
+                    newArea.y,
+                    Mathf.Lerp(oldArea.width, newArea.width, xLerp),
+                    newArea.height
+                );
             }
             if (newArea.height < oldArea.height - epsilon)
             {
                 float yLerp = Mathf.InverseLerp(oldArea.height, newArea.height, rect.height / m_VScaleMax);
                 newArea = new Rect(
-                        newArea.x,
-                        Mathf.Lerp(oldArea.y, newArea.y, yLerp),
-                        newArea.width,
-                        Mathf.Lerp(oldArea.height, newArea.height, yLerp)
-                        );
+                    newArea.x,
+                    Mathf.Lerp(oldArea.y, newArea.y, yLerp),
+                    newArea.width,
+                    Mathf.Lerp(oldArea.height, newArea.height, yLerp)
+                );
             }
             if (newArea.width > oldArea.width + epsilon)
             {
                 float xLerp = Mathf.InverseLerp(oldArea.width, newArea.width, constrainedHScaleMin);
                 newArea = new Rect(
-                        Mathf.Lerp(oldArea.x, newArea.x, xLerp),
-                        newArea.y,
-                        Mathf.Lerp(oldArea.width, newArea.width, xLerp),
-                        newArea.height
-                        );
+                    Mathf.Lerp(oldArea.x, newArea.x, xLerp),
+                    newArea.y,
+                    Mathf.Lerp(oldArea.width, newArea.width, xLerp),
+                    newArea.height
+                );
             }
             if (newArea.height > oldArea.height + epsilon)
             {
                 float yLerp = Mathf.InverseLerp(oldArea.height, newArea.height, constrainedVScaleMin);
                 newArea = new Rect(
-                        newArea.x,
-                        Mathf.Lerp(oldArea.y, newArea.y, yLerp),
-                        newArea.width,
-                        Mathf.Lerp(oldArea.height, newArea.height, yLerp)
-                        );
+                    newArea.x,
+                    Mathf.Lerp(oldArea.y, newArea.y, yLerp),
+                    newArea.width,
+                    Mathf.Lerp(oldArea.height, newArea.height, yLerp)
+                );
             }
 
             // Enforce ranges

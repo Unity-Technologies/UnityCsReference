@@ -73,9 +73,7 @@ namespace UnityEngine.Experimental.UIElements
 
             if ((versionChangeType & VersionChangeType.Bindings) == VersionChangeType.Bindings)
             {
-                var u = GetUpdaterFromElement(ve);
-
-                if (u != null)
+                if (GetUpdaterFromElement(ve) != null)
                 {
                     StartTracking(ve);
                 }
@@ -150,6 +148,7 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (updater == null || element.elementPanel != panel)
                 {
+                    updater?.Release();
                     StopTracking(element);
                 }
                 else

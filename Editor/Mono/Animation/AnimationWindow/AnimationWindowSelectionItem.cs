@@ -329,9 +329,9 @@ namespace UnityEditorInternal
         public int GetRefreshHash()
         {
             return unchecked (id * 19603 ^
-                              (animationClip != null ? 729 * animationClip.GetHashCode() : 0) ^
-                              (rootGameObject != null ? 27 * rootGameObject.GetHashCode() : 0) ^
-                              (scriptableObject != null ? scriptableObject.GetHashCode() : 0));
+                (animationClip != null ? 729 * animationClip.GetHashCode() : 0) ^
+                (rootGameObject != null ? 27 * rootGameObject.GetHashCode() : 0) ^
+                (scriptableObject != null ? scriptableObject.GetHashCode() : 0));
         }
 
         public void ClearCache()

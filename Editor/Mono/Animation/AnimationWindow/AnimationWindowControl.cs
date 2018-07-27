@@ -110,6 +110,12 @@ namespace UnityEditorInternal
             StopPlayback();
         }
 
+        public void OnDestroy()
+        {
+            if (m_Driver != null)
+                DestroyImmediate(m_Driver);
+        }
+
         public override void OnSelectionChanged()
         {
             // Set back time at beginning and stop recording.
@@ -481,20 +487,21 @@ namespace UnityEditorInternal
             if (m_Driver == null)
             {
                 m_Driver = CreateInstance<AnimationModeDriver>();
+                m_Driver.hideFlags = HideFlags.HideAndDontSave;
                 m_Driver.name = "AnimationWindowDriver";
                 m_Driver.isKeyCallback += (Object target, string propertyPath) =>
+                {
+                    if (AnimationMode.IsPropertyAnimated(target, propertyPath))
                     {
-                        if (AnimationMode.IsPropertyAnimated(target, propertyPath))
-                        {
-                            var modification = new PropertyModification();
-                            modification.target = target;
-                            modification.propertyPath = propertyPath;
+                        var modification = new PropertyModification();
+                        modification.target = target;
+                        modification.propertyPath = propertyPath;
 
-                            return KeyExists(new PropertyModification[] {modification});
-                        }
+                        return KeyExists(new PropertyModification[] {modification});
+                    }
 
-                        return false;
-                    };
+                    return false;
+                };
             }
 
             return m_Driver;

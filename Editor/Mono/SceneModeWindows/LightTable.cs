@@ -115,19 +115,19 @@ namespace UnityEditor
                     dependencyIndices       = new int[] { 2 },
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareEnum,
                     drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
-                        {
-                            bool areaLight = dep.Length > 1 && (dep[0].enumValueIndex == (int)LightType.Area || dep[0].enumValueIndex == (int)LightType.Disc);
+                    {
+                        bool areaLight = dep.Length > 1 && (dep[0].enumValueIndex == (int)LightType.Area || dep[0].enumValueIndex == (int)LightType.Disc);
 
-                            using (new EditorGUI.DisabledScope(areaLight))
+                        using (new EditorGUI.DisabledScope(areaLight))
+                        {
+                            EditorGUI.BeginChangeCheck();
+                            int newval = EditorGUI.IntPopup(r, prop.intValue, Styles.LightmapBakeTypeTitles, Styles.LightmapBakeTypeValues);
+                            if (EditorGUI.EndChangeCheck())
                             {
-                                EditorGUI.BeginChangeCheck();
-                                int newval = EditorGUI.IntPopup(r, prop.intValue, Styles.LightmapBakeTypeTitles, Styles.LightmapBakeTypeValues);
-                                if (EditorGUI.EndChangeCheck())
-                                {
-                                    prop.intValue = newval;
-                                }
+                                prop.intValue = newval;
                             }
                         }
+                    }
                 },
                 new SerializedPropertyTreeView.Column // 4: Color
                 {
@@ -244,9 +244,9 @@ namespace UnityEditor
                     dependencyIndices       = null,
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareInt,
                     drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
-                        {
-                            EditorGUI.IntPopup(r, prop, ReflectionProbeEditor.Styles.reflectionProbeMode, ReflectionProbeEditor.Styles.reflectionProbeModeValues, GUIContent.none);
-                        }
+                    {
+                        EditorGUI.IntPopup(r, prop, ReflectionProbeEditor.Styles.reflectionProbeMode, ReflectionProbeEditor.Styles.reflectionProbeModeValues, GUIContent.none);
+                    }
                 },
                 new SerializedPropertyTreeView.Column // 3: Projection
                 {
@@ -262,10 +262,10 @@ namespace UnityEditor
                     dependencyIndices       = null,
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareCheckbox,
                     drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
-                        {
-                            int[] opts = { 0, 1 };
-                            prop.boolValue = EditorGUI.IntPopup(r, prop.boolValue ? 1 : 0, Styles.ProjectionStrings, opts) == 1;
-                        }
+                    {
+                        int[] opts = { 0, 1 };
+                        prop.boolValue = EditorGUI.IntPopup(r, prop.boolValue ? 1 : 0, Styles.ProjectionStrings, opts) == 1;
+                    }
                 },
                 new SerializedPropertyTreeView.Column // 4: HDR
                 {
@@ -393,12 +393,12 @@ namespace UnityEditor
                     dependencyIndices       = null,
                     compareDelegate         = null,
                     drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
+                    {
+                        if (GUI.Button(r, Styles.SelectObjectsButton, "label"))
                         {
-                            if (GUI.Button(r, Styles.SelectObjectsButton, "label"))
-                            {
-                                SearchableEditorWindow.SearchForReferencesToInstanceID(prop.serializedObject.targetObject.GetInstanceID());
-                            }
+                            SearchableEditorWindow.SearchForReferencesToInstanceID(prop.serializedObject.targetObject.GetInstanceID());
                         }
+                    }
                 },
                 new SerializedPropertyTreeView.Column // 1: Name
                 {
@@ -430,31 +430,31 @@ namespace UnityEditor
                     dependencyIndices       = null,
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareInt,
                     drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
+                    {
+                        if (!prop.serializedObject.targetObject.GetType().Equals(typeof(Material)))
+                            return;
+
+                        using (new EditorGUI.DisabledScope(!IsEditable(prop.serializedObject.targetObject)))
                         {
-                            if (!prop.serializedObject.targetObject.GetType().Equals(typeof(Material)))
-                                return;
+                            MaterialGlobalIlluminationFlags giFlags = ((prop.intValue & (int)MaterialGlobalIlluminationFlags.BakedEmissive) != 0) ? MaterialGlobalIlluminationFlags.BakedEmissive : MaterialGlobalIlluminationFlags.RealtimeEmissive;
 
-                            using (new EditorGUI.DisabledScope(!IsEditable(prop.serializedObject.targetObject)))
+                            int[] lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive };
+
+                            EditorGUI.BeginChangeCheck();
+
+                            giFlags = (MaterialGlobalIlluminationFlags)EditorGUI.IntPopup(r, (int)giFlags, Styles.LightmapEmissiveStrings, lightmapEmissiveValues);
+
+                            if (EditorGUI.EndChangeCheck())
                             {
-                                MaterialGlobalIlluminationFlags giFlags = ((prop.intValue & (int)MaterialGlobalIlluminationFlags.BakedEmissive) != 0) ? MaterialGlobalIlluminationFlags.BakedEmissive : MaterialGlobalIlluminationFlags.RealtimeEmissive;
+                                Material material = (Material)prop.serializedObject.targetObject;
+                                Undo.RecordObjects(new Material[] { material } , "Modify GI Settings of " + material.name);
 
-                                int[] lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive };
+                                material.globalIlluminationFlags = giFlags;
 
-                                EditorGUI.BeginChangeCheck();
-
-                                giFlags = (MaterialGlobalIlluminationFlags)EditorGUI.IntPopup(r, (int)giFlags, Styles.LightmapEmissiveStrings, lightmapEmissiveValues);
-
-                                if (EditorGUI.EndChangeCheck())
-                                {
-                                    Material material = (Material)prop.serializedObject.targetObject;
-                                    Undo.RecordObjects(new Material[] { material } , "Modify GI Settings of " + material.name);
-
-                                    material.globalIlluminationFlags = giFlags;
-
-                                    prop.serializedObject.Update();
-                                }
+                                prop.serializedObject.Update();
                             }
                         }
+                    }
                 },
                 new SerializedPropertyTreeView.Column // 3: Color
                 {
@@ -469,41 +469,41 @@ namespace UnityEditor
                     propertyName            = "m_Shader",
                     dependencyIndices       = null,
                     compareDelegate         = (SerializedProperty lhs, SerializedProperty rhs) =>
-                        {
-                            float lh, ls, lv, rh, rs, rv;
-                            Color.RGBToHSV(((Material)lhs.serializedObject.targetObject).GetColor("_EmissionColor"), out lh, out ls, out lv);
-                            Color.RGBToHSV(((Material)rhs.serializedObject.targetObject).GetColor("_EmissionColor"), out rh, out rs, out rv);
-                            return lv.CompareTo(rv);
-                        },
+                    {
+                        float lh, ls, lv, rh, rs, rv;
+                        Color.RGBToHSV(((Material)lhs.serializedObject.targetObject).GetColor("_EmissionColor"), out lh, out ls, out lv);
+                        Color.RGBToHSV(((Material)rhs.serializedObject.targetObject).GetColor("_EmissionColor"), out rh, out rs, out rv);
+                        return lv.CompareTo(rv);
+                    },
                     drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
-                        {
-                            if (!prop.serializedObject.targetObject.GetType().Equals(typeof(Material)))
-                                return;
+                    {
+                        if (!prop.serializedObject.targetObject.GetType().Equals(typeof(Material)))
+                            return;
 
-                            using (new EditorGUI.DisabledScope(!IsEditable(prop.serializedObject.targetObject)))
+                        using (new EditorGUI.DisabledScope(!IsEditable(prop.serializedObject.targetObject)))
+                        {
+                            Material material = (Material)prop.serializedObject.targetObject;
+
+                            Color color = material.GetColor("_EmissionColor");
+
+                            EditorGUI.BeginChangeCheck();
+                            Color newValue = EditorGUI.ColorField(r, GUIContent.Temp(""), color, true, false, true);
+
+                            if (EditorGUI.EndChangeCheck())
                             {
-                                Material material = (Material)prop.serializedObject.targetObject;
-
-                                Color color = material.GetColor("_EmissionColor");
-
-                                EditorGUI.BeginChangeCheck();
-                                Color newValue = EditorGUI.ColorField(r, GUIContent.Temp(""), color, true, false, true);
-
-                                if (EditorGUI.EndChangeCheck())
-                                {
-                                    Undo.RecordObjects(new Material[] { material }, "Modify Emission Color of " + material.name);
-                                    material.SetColor("_EmissionColor", newValue);
-                                }
+                                Undo.RecordObjects(new Material[] { material }, "Modify Emission Color of " + material.name);
+                                material.SetColor("_EmissionColor", newValue);
                             }
-                        },
-                    copyDelegate = (SerializedProperty target, SerializedProperty source) =>
-                        {
-                            Material sourceMaterial = (Material)source.serializedObject.targetObject;
-                            Color color = sourceMaterial.GetColor("_EmissionColor");
-
-                            Material targetMaterial = (Material)target.serializedObject.targetObject;
-                            targetMaterial.SetColor("_EmissionColor", color);
                         }
+                    },
+                    copyDelegate = (SerializedProperty target, SerializedProperty source) =>
+                    {
+                        Material sourceMaterial = (Material)source.serializedObject.targetObject;
+                        Color color = sourceMaterial.GetColor("_EmissionColor");
+
+                        Material targetMaterial = (Material)target.serializedObject.targetObject;
+                        targetMaterial.SetColor("_EmissionColor", color);
+                    }
                 }
             };
 

@@ -624,10 +624,19 @@ namespace UnityEngine
         public void SetBool(string name, bool val)          { SetInt(Shader.PropertyToID(name), val ? 1 : 0); }
         public void SetBool(int nameID, bool val)           { SetInt(nameID, val ? 1 : 0); }
 
+        public void SetTexture(int kernelIndex, int nameID, Texture texture)
+        {
+            SetTexture(kernelIndex, nameID, texture, 0);
+        }
 
         public void SetTexture(int kernelIndex, string name, Texture texture)
         {
-            SetTexture(kernelIndex, Shader.PropertyToID(name), texture);
+            SetTexture(kernelIndex, Shader.PropertyToID(name), texture, 0);
+        }
+
+        public void SetTexture(int kernelIndex, string name, Texture texture, int mipLevel)
+        {
+            SetTexture(kernelIndex, Shader.PropertyToID(name), texture, mipLevel);
         }
 
         public void SetTextureFromGlobal(int kernelIndex, string name, string globalTextureName)

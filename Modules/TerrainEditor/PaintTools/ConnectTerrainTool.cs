@@ -81,6 +81,8 @@ namespace UnityEditor
             terrain.drawInstanced = parent.drawInstanced;
             AssetDatabase.CreateAsset(terrainData, "Assets/Terrain" + terrainGO.name + ".asset");
 
+            Undo.RegisterCreatedObjectUndo(terrainGO, "Add New neighbor");
+
             AutoConnect(terrain);
             return terrain;
         }

@@ -239,7 +239,7 @@ namespace UnityEditor
             if (idx < 0)
                 return "<error>";
 
-            return string.Format("{0:#.##} {1}", val, scale[idx]);
+            return string.Format("{0:0.##} {1}", val, scale[idx]);
         }
 
         private float SumSizes(float[] sizes)
@@ -269,26 +269,13 @@ namespace UnityEditor
             float oldWidth = EditorGUIUtility.labelWidth;
             EditorGUIUtility.labelWidth = 400.0f;
 
-            System.UInt64[] dummyCounts = new System.UInt64[0];
             {
-                MemLabels labels = Lightmapping.GetTransmissionTexturesMemLabels();
-                ShowObjectNamesSizesAndCounts("Transmission textures", kEditorPrefsTransmissionTextures, labels.labels, labels.sizes, dummyCounts);
-            }
-
-            {
-                MemLabels labels = Lightmapping.GetMaterialTexturesMemLabels();
-                ShowObjectNamesSizesAndCounts("Albedo/emissive textures", kEditorPrefsMaterialTextures, labels.labels, labels.sizes, dummyCounts);
-            }
-
-            {
-                GeoMemLabels labels = Lightmapping.GetGeometryMemory();
-                ShowObjectNamesSizesAndCounts("Geometry data", kEditorPrefsGeometryData, labels.labels, labels.sizes, labels.triCounts);
-            }
-
-            {
-                MemLabels labels = Lightmapping.GetNotShownMemLabels();
-                string remainingEntriesFoldoutName = Lightmapping.isProgressiveLightmapperDone ? "Leaks" : "In-flight";
-                ShowObjectNamesSizesAndCounts(remainingEntriesFoldoutName, kEditorPrefsInFlight, labels.labels, labels.sizes, dummyCounts);
+                float gpuMemory = Lightmapping.ComputeTotalGPUMemoryUsageInBytes();
+                if (gpuMemory > 0.0f)
+                {
+                    string foldoutNameGPU = String.Format("Total GPU memory ({0})", SizeString(gpuMemory));
+                    EditorGUILayout.FoldoutTitlebar(false, new GUIContent(foldoutNameGPU), true);
+                }
             }
 
             {
@@ -324,22 +311,40 @@ namespace UnityEditor
                 }
 
                 string foldoutNameFull = String.Format(
-                        "G-buffers ({0}) | Lightmaps ({1})",
-                        SizeString(totalGBuffersSize),
-                        SizeString(totalLightmapsSize));
+                    "G-buffers ({0}) | Lightmaps ({1})",
+                    SizeString(totalGBuffersSize),
+                    SizeString(totalLightmapsSize));
 
-                EditorGUILayout.FoldoutTitlebar(true, new GUIContent(foldoutNameFull), true);
-
-                EditorGUIUtility.labelWidth = oldWidth;
+                if (lightmaps.Length > 0)
+                    EditorGUILayout.FoldoutTitlebar(false, new GUIContent(foldoutNameFull), true);
             }
+
+            System.UInt64[] dummyCounts = new System.UInt64[0];
             {
-                float gpuMemory = Lightmapping.ComputeTotalGPUMemoryUsageInBytes();
-                if (gpuMemory > 0.0f)
-                {
-                    string foldoutNameGPU = String.Format("Total GPU memory ({0})", SizeString(gpuMemory));
-                    EditorGUILayout.FoldoutTitlebar(true, new GUIContent(foldoutNameGPU), true);
-                }
+                MemLabels labels = Lightmapping.GetTransmissionTexturesMemLabels();
+                ShowObjectNamesSizesAndCounts("Transmission textures", kEditorPrefsTransmissionTextures, labels.labels, labels.sizes, dummyCounts);
             }
+
+            {
+                MemLabels labels = Lightmapping.GetMaterialTexturesMemLabels();
+                ShowObjectNamesSizesAndCounts("Albedo/emissive textures", kEditorPrefsMaterialTextures, labels.labels, labels.sizes, dummyCounts);
+            }
+
+            {
+                GeoMemLabels labels = Lightmapping.GetGeometryMemory();
+                ShowObjectNamesSizesAndCounts("Geometry data", kEditorPrefsGeometryData, labels.labels, labels.sizes, labels.triCounts);
+            }
+
+            {
+                // Note: this needs to go last.
+                // It simply shows all the memory labels that were not explicitly queried after the Lightmapping.ResetExplicitlyShownMemLabels() call.
+                MemLabels labels = Lightmapping.GetNotShownMemLabels();
+                string remainingEntriesFoldoutName = Lightmapping.isProgressiveLightmapperDone ? "Leaks" : "In-flight";
+                ShowObjectNamesSizesAndCounts(remainingEntriesFoldoutName, kEditorPrefsInFlight, labels.labels, labels.sizes, dummyCounts);
+            }
+
+            EditorGUILayout.Space();
+            EditorGUIUtility.labelWidth = oldWidth;
         }
 
         private void LightmapDebugInfo(int index)
@@ -390,6 +395,8 @@ namespace UnityEditor
             GUIContent GPUSizeContent = null;
             if (lightmapMemory.lightmapDataSizeGPU > 0.0f)
                 GPUSizeContent = EditorGUIUtility.TrTextContent("GPU memory: " + SizeString(lightmapMemory.lightmapDataSizeGPU));
+            else
+                GPUSizeContent = EditorGUIUtility.TrTextContent("GPU memory: N/A");
             GUILayout.Label(GPUSizeContent, EditorStyles.miniLabel);
 
             GUILayout.EndVertical();

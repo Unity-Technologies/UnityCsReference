@@ -138,7 +138,7 @@ namespace UnityEditorInternal
             var needReload = !Equals(m_FrameDataView, frameDataView);
             var needSorting = frameDataView != null && frameDataView.IsValid() &&
                 (frameDataView.sortColumn != m_MultiColumnHeader.sortedProfilerColumn ||
-                 frameDataView.sortColumnAscending != m_MultiColumnHeader.sortedProfilerColumnAscending);
+                    frameDataView.sortColumnAscending != m_MultiColumnHeader.sortedProfilerColumnAscending);
 
             if (needReload)
             {

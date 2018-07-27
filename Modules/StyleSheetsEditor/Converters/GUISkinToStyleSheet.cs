@@ -201,9 +201,9 @@ namespace UnityEditor.StyleSheets
 
             // Builtin GUIStyle
             skin.ForEachGUIStyleProperty((name, style) =>
-                {
-                    AddStyle(helper, name.Capitalize(), style);
-                });
+            {
+                AddStyle(helper, name.Capitalize(), style);
+            });
 
             // Custom Styles
             foreach (var style in skin.customStyles)

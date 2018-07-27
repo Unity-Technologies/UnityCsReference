@@ -147,7 +147,7 @@ namespace UnityEditor.CrashReporting
                 UploadPlatformConfig platformConfig = GetUploadPlatformConfig();
 
                 string args = string.Format("-symbolPath \"{0}\" -log \"{1}\" -filter \"{2}\" -excludeFilter \"{3}\"",
-                        symbolPath, platformConfig.LogFilePath, includeFilter, excludeFilter);
+                    symbolPath, platformConfig.LogFilePath, includeFilter, excludeFilter);
 
                 System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo()
                 {

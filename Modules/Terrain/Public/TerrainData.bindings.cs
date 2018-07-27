@@ -200,6 +200,12 @@ namespace UnityEngine
             get;
         }
 
+        extern public RenderTexture normalmapTexture
+        {
+            [NativeName(k_HeightmapPrefix + "GetNormalmapTexture")]
+            get;
+        }
+
         public int heightmapResolution
         {
             get { return internalHeightmapResolution; }

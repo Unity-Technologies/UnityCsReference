@@ -155,6 +155,9 @@ namespace UnityEditor
         internal static GUIStyle textFieldDropDownText { get { return s_Current.m_TextFieldDropDownText; } }
         private GUIStyle m_TextFieldDropDownText;
 
+        internal static GUIStyle overrideMargin { get { return s_Current.m_OverrideMargin; } }
+        private GUIStyle m_OverrideMargin;
+
 
         // Standard font.
         public static Font standardFont  { get { return s_Current.m_StandardFont; } }
@@ -383,6 +386,8 @@ namespace UnityEditor
             m_TextFieldDropDown = GetStyle("TextFieldDropDown");
             m_TextFieldDropDownText = GetStyle("TextFieldDropDownText");
 
+            m_OverrideMargin = GetStyle("OverrideMargin");
+
             m_LinkLabel = new GUIStyle(m_Label)
             {
                 normal = {textColor = new Color(0.25f, 0.5f, 0.9f, 1f)},
@@ -396,8 +401,8 @@ namespace UnityEditor
             m_InspectorDefaultMargins = new GUIStyle
             {
                 padding = new RectOffset(
-                        InspectorWindow.kInspectorPaddingLeft,
-                        InspectorWindow.kInspectorPaddingRight, 0, 0)
+                    InspectorWindow.kInspectorPaddingLeft,
+                    InspectorWindow.kInspectorPaddingRight, 0, 0)
             };
 
             // For the full width margins, use padding from right side in both sides,
@@ -405,8 +410,8 @@ namespace UnityEditor
             m_InspectorFullWidthMargins = new GUIStyle
             {
                 padding = new RectOffset(
-                        InspectorWindow.kInspectorPaddingRight + 1,
-                        InspectorWindow.kInspectorPaddingRight, 0, 0)
+                    InspectorWindow.kInspectorPaddingRight + 1,
+                    InspectorWindow.kInspectorPaddingRight, 0, 0)
             };
 
             // Derive centered grey mini label from base minilabel

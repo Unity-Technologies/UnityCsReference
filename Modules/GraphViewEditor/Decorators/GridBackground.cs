@@ -119,8 +119,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             clientRect.y = 0;
 
             var containerScale = new Vector3(m_Container.transform.matrix.GetColumn(0).magnitude,
-                    m_Container.transform.matrix.GetColumn(1).magnitude,
-                    m_Container.transform.matrix.GetColumn(2).magnitude);
+                m_Container.transform.matrix.GetColumn(1).magnitude,
+                m_Container.transform.matrix.GetColumn(2).magnitude);
             var containerTranslation = m_Container.transform.matrix.GetColumn(3);
             var containerPosition = m_Container.layout;
 

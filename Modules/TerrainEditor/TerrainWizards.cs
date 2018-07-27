@@ -80,6 +80,11 @@ namespace UnityEditor
         public Vector3 m_TerrainSize = new Vector3(2000, 600, 2000);
         private string m_Path;
 
+        public void OnEnable()
+        {
+            minSize = new Vector2(400, 250);
+        }
+
         void PickRawDefaults(string path)
         {
             FileStream file = File.Open(path, FileMode.Open, FileAccess.Read);

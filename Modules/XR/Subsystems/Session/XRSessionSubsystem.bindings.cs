@@ -31,7 +31,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/Subsystems/Session/XRSessionSubsystem.h")]
     [UsedByNativeCode]
     [NativeConditional("ENABLE_XR")]
-    public class XRSessionSubsystem : Subsystem<XRSessionSubsystemDescriptor>
+    public class XRSessionSubsystem : IntegratedSubsystem<XRSessionSubsystemDescriptor>
     {
         public event Action<SessionTrackingStateChangedEventArgs> TrackingStateChanged;
 

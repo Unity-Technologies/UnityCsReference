@@ -10,7 +10,6 @@ using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using UnityEngine.Bindings;
 using UnityEngine.AI;
-using UnityEngine.Scripting;
 
 namespace UnityEngine.Experimental.AI
 {
@@ -121,19 +120,17 @@ namespace UnityEngine.Experimental.AI
     [NativeContainer]
     [StructLayout(LayoutKind.Sequential)]
     [NativeHeader("Modules/AI/NavMeshExperimental.bindings.h")]
+    [NativeHeader("Modules/AI/Public/NavMeshBindingTypes.h")]
     [NativeHeader("Runtime/Math/Matrix4x4.h")]
     [StaticAccessor("NavMeshQueryBindings", StaticAccessorType.DoubleColon)]
     public struct NavMeshQuery : IDisposable
     {
         [NativeDisableUnsafePtrRestriction]
         internal IntPtr             m_NavMeshQuery;
-        Allocator                   m_Allocator;
-        const string                k_NoBufferAllocatedErrorMessage = "This query has no buffer allocated for pathfinding operations. " +
-            "Create a different NavMeshQuery with an explicit node pool size.";
+
 
         public NavMeshQuery(NavMeshWorld world, Allocator allocator, int pathNodePoolSize = 0)
         {
-            m_Allocator = allocator;
             m_NavMeshQuery = Create(world, pathNodePoolSize);
 
         }
@@ -147,7 +144,6 @@ namespace UnityEngine.Experimental.AI
         static extern IntPtr Create(NavMeshWorld world, int nodePoolSize);
 
         static extern void Destroy(IntPtr navMeshQuery);
-
 
 
         public unsafe PathQueryStatus BeginFindPath(NavMeshLocation start, NavMeshLocation end,
@@ -173,7 +169,7 @@ namespace UnityEngine.Experimental.AI
         }
 
         [ThreadSafe]
-        unsafe static extern PathQueryStatus BeginFindPath(IntPtr navMeshQuery, NavMeshLocation start, NavMeshLocation end, int areaMask, void* costs);
+        static extern unsafe PathQueryStatus BeginFindPath(IntPtr navMeshQuery, NavMeshLocation start, NavMeshLocation end, int areaMask, void* costs);
 
         [ThreadSafe]
         static extern PathQueryStatus UpdateFindPath(IntPtr navMeshQuery, int iterations, out int iterationsPerformed);
@@ -182,7 +178,7 @@ namespace UnityEngine.Experimental.AI
         static extern PathQueryStatus EndFindPath(IntPtr navMeshQuery, out int pathSize);
 
         [ThreadSafe]
-        unsafe static extern int GetPathResult(IntPtr navMeshQuery, void* path, int maxPath);
+        static extern unsafe int GetPathResult(IntPtr navMeshQuery, void* path, int maxPath);
 
         // If BeginFindPath/UpdateFindPath/EndFindPath existing NativeArray become invalid...
 //      extern NavMeshPathStatus GetPath(out NativeArray<PolygonId> outputPath);
@@ -231,15 +227,15 @@ namespace UnityEngine.Experimental.AI
         }
 
         [ThreadSafe]
-        static unsafe extern void MoveLocations(IntPtr navMeshQuery, void* locations, void* targets, void* areaMasks, int count);
+        static extern unsafe void MoveLocations(IntPtr navMeshQuery, void* locations, void* targets, void* areaMasks, int count);
         public unsafe void MoveLocations(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, NativeSlice<int> areaMasks)
         {
             MoveLocations(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), areaMasks.GetUnsafeReadOnlyPtr(), locations.Length);
         }
 
         [ThreadSafe]
-        unsafe static extern void MoveLocationsInSameAreas(IntPtr navMeshQuery, void* locations, void* targets, int count, int areaMask);
-        unsafe public void MoveLocationsInSameAreas(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, int areaMask = NavMesh.AllAreas)
+        static extern unsafe void MoveLocationsInSameAreas(IntPtr navMeshQuery, void* locations, void* targets, int count, int areaMask);
+        public unsafe void MoveLocationsInSameAreas(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, int areaMask = NavMesh.AllAreas)
         {
             MoveLocationsInSameAreas(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), locations.Length, areaMask);
         }
@@ -282,8 +278,33 @@ namespace UnityEngine.Experimental.AI
         //NavMeshStatus MoveAlongSurface(NavMeshLocation location, Vector3 targetPosition, int agentTypeID, int areaMask,
         //    out NavMeshLocation outputLocation, NativeArray<PolygonId> visitedBuffer, out int actualVisited);
 
-        //// Trace a ray between two points on the NavMesh.
-        //extern bool Raycast(NavMeshLocation location, Vector3 targetPosition, out NavMeshHit hit, int agentTypeID, int areaMask, NativeArray<float> costs);
+        // Trace a ray between two points on the NavMesh.
+        [ThreadSafe]
+        static extern unsafe PathQueryStatus Raycast(IntPtr navMeshQuery, NavMeshLocation start, Vector3 targetPosition,
+            int areaMask, void* costs, out NavMeshHit hit, void* path, out int pathCount, int maxPath);
+
+        public unsafe PathQueryStatus Raycast(out NavMeshHit hit, NavMeshLocation start, Vector3 targetPosition,
+            int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new NativeArray<float>())
+        {
+            const int kAreaCount = 32;
+            int pathCount;
+            var costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
+            var status = Raycast(m_NavMeshQuery, start, targetPosition, areaMask, costsPtr, out hit, null, out pathCount, 0);
+            status &= ~PathQueryStatus.BufferTooSmall;
+            return status;
+        }
+
+        public unsafe PathQueryStatus Raycast(out NavMeshHit hit, NativeSlice<PolygonId> path, out int pathCount,
+            NavMeshLocation start, Vector3 targetPosition,
+            int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new NativeArray<float>())
+        {
+            const int kAreaCount = 32;
+            var costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
+            var pathPtr = path.Length > 0 ? path.GetUnsafePtr() : null;
+            var maxPath = pathPtr != null ? path.Length : 0;
+            var status = Raycast(m_NavMeshQuery, start, targetPosition, areaMask, costsPtr, out hit, pathPtr, out pathCount, maxPath);
+            return status;
+        }
 
         //// Polygon Queries
         //public NavMeshPolyData GetPolygon(PolygonId poly);

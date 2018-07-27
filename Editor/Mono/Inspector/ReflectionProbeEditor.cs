@@ -13,6 +13,7 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
@@ -258,8 +259,8 @@ namespace UnityEditor
                 if (IsCollidingWithOtherProbes(path, probe, out collidingProbe))
                 {
                     if (!EditorUtility.DisplayDialog("Cubemap is used by other reflection probe",
-                            string.Format("'{0}' path is used by the game object '{1}', do you really want to overwrite it?",
-                                path, collidingProbe.name), "Yes", "No"))
+                        string.Format("'{0}' path is used by the game object '{1}', do you really want to overwrite it?",
+                            path, collidingProbe.name), "Yes", "No"))
                     {
                         return;
                     }
@@ -639,6 +640,9 @@ namespace UnityEditor
             {
                 ReflectionProbe p = (ReflectionProbe)t;
                 if (!reflectiveMaterial)
+                    return;
+
+                if (!StageUtility.IsGameObjectRenderedByCamera(p.gameObject, Camera.current))
                     return;
 
                 Matrix4x4 m = new Matrix4x4();

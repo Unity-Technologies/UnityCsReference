@@ -44,7 +44,7 @@ namespace UnityEditorInternal
                 else
                     return m_ListElements.Where(
                         element => element.m_Content.text.Contains(prefix)
-                        );
+                    );
             }
         }
 

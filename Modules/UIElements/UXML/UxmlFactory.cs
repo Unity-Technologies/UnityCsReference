@@ -208,8 +208,8 @@ namespace UnityEngine.Experimental.UIElements
             // constructor.
             Type[] parameterTypes = { typeof(IUxmlAttributes), typeof(CreationContext) };
             bool doCreateIsOverridden = GetType().GetMethod("DoCreate",
-                    BindingFlags.DeclaredOnly | BindingFlags.ExactBinding | BindingFlags.Instance | BindingFlags.NonPublic,
-                    null, parameterTypes, null) != null;
+                BindingFlags.DeclaredOnly | BindingFlags.ExactBinding | BindingFlags.Instance | BindingFlags.NonPublic,
+                null, parameterTypes, null) != null;
 
             if (doCreateIsOverridden)
             {

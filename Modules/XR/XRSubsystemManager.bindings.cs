@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Collections.Generic;
 
+using UnityEngine.Analytics;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 
@@ -25,7 +26,7 @@ namespace UnityEngine.Experimental
 
     [UsedByNativeCode("XRSubsystemDescriptorBase")]
     [StructLayout(LayoutKind.Sequential)]
-    public class SubsystemDescriptorBase : ISubsystemDescriptor, ISubsystemDescriptorImpl
+    public class IntegratedSubsystemDescriptor : ISubsystemDescriptor, ISubsystemDescriptorImpl
     {
         internal IntPtr m_Ptr;
 
@@ -37,11 +38,17 @@ namespace UnityEngine.Experimental
         IntPtr ISubsystemDescriptorImpl.ptr { get { return m_Ptr; } set { m_Ptr = value; } }
     }
 
+    public abstract class SubsystemDescriptor : ISubsystemDescriptor
+    {
+        public string id { get; set; }
+        public System.Type subsystemImplementationType { get; set; }
+    }
+
     [NativeType(Header = "Modules/XR/XRSubsystemDescriptor.h")]
     [UsedByNativeCode("XRSubsystemDescriptor")]
     [StructLayout(LayoutKind.Sequential)]
-    public class SubsystemDescriptor<TSubsystem> : SubsystemDescriptorBase
-        where TSubsystem : Subsystem
+    public class IntegratedSubsystemDescriptor<TSubsystem> : IntegratedSubsystemDescriptor
+        where TSubsystem : IntegratedSubsystem
     {
         public TSubsystem Create()
         {
@@ -55,73 +62,123 @@ namespace UnityEngine.Experimental
         }
     }
 
+    public class SubsystemDescriptor<TSubsystem> : SubsystemDescriptor
+        where TSubsystem : Subsystem
+    {
+        public TSubsystem Create()
+        {
+            TSubsystem susbsystemImpl = Activator.CreateInstance(subsystemImplementationType) as TSubsystem;
+
+            susbsystemImpl.m_subsystemDescriptor = this;
+            Internal_SubsystemInstances.Internal_AddStandaloneSubsystem(susbsystemImpl);
+            return susbsystemImpl;
+        }
+    }
+
     // Handle instance lifetime (on managed side)
     internal static class Internal_SubsystemInstances
     {
-        internal static List<Subsystem> s_SubsystemInstances = new List<Subsystem>();
+        internal static List<ISubsystem> s_IntegratedSubsystemInstances = new List<ISubsystem>();
+        internal static List<ISubsystem> s_StandaloneSubsystemInstances = new List<ISubsystem>();
 
         [RequiredByNativeCode]
-        internal static void Internal_InitializeManagedInstance(IntPtr ptr, Subsystem inst)
+        internal static void Internal_InitializeManagedInstance(IntPtr ptr, IntegratedSubsystem inst)
         {
             inst.m_Ptr = ptr;
             inst.SetHandle(inst);
-            s_SubsystemInstances.Add(inst);
+            s_IntegratedSubsystemInstances.Add(inst);
         }
 
         [RequiredByNativeCode]
         internal static void Internal_ClearManagedInstances()
         {
-            foreach (var instance in s_SubsystemInstances)
+            foreach (var instance in s_IntegratedSubsystemInstances)
             {
-                instance.m_Ptr = IntPtr.Zero;
+                ((IntegratedSubsystem)instance).m_Ptr = IntPtr.Zero;
             }
-            s_SubsystemInstances.Clear();
+            s_IntegratedSubsystemInstances.Clear();
+            s_StandaloneSubsystemInstances.Clear();
         }
 
         [RequiredByNativeCode]
         internal static void Internal_RemoveInstanceByPtr(IntPtr ptr)
         {
-            for (int i = s_SubsystemInstances.Count - 1; i >= 0; i--)
+            for (int i = s_IntegratedSubsystemInstances.Count - 1; i >= 0; i--)
             {
-                if (s_SubsystemInstances[i].m_Ptr == ptr)
+                if (((IntegratedSubsystem)s_IntegratedSubsystemInstances[i]).m_Ptr == ptr)
                 {
-                    s_SubsystemInstances[i].m_Ptr = IntPtr.Zero;
-                    s_SubsystemInstances.RemoveAt(i);
+                    ((IntegratedSubsystem)s_IntegratedSubsystemInstances[i]).m_Ptr = IntPtr.Zero;
+                    s_IntegratedSubsystemInstances.RemoveAt(i);
                 }
             }
         }
 
-        internal static Subsystem Internal_GetInstanceByPtr(IntPtr ptr)
+        internal static IntegratedSubsystem Internal_GetInstanceByPtr(IntPtr ptr)
         {
-            foreach (Subsystem instance in s_SubsystemInstances)
+            foreach (IntegratedSubsystem instance in s_IntegratedSubsystemInstances)
             {
                 if (instance.m_Ptr == ptr)
                     return instance;
             }
             return null;
         }
+
+        internal static void Internal_AddStandaloneSubsystem(Subsystem inst)
+        {
+            s_StandaloneSubsystemInstances.Add(inst);
+        }
     }
 
     // Handle subsystem descriptor lifetime (on managed side)
     internal static class Internal_SubsystemDescriptors
     {
-        internal static List<ISubsystemDescriptorImpl> s_SubsystemDescriptors = new List<ISubsystemDescriptorImpl>();
+        private static bool analyticsEventRegistered = false;
+        [Serializable]
+        private struct SubsystemInfo
+        {
+            internal string id;
+        };
+
+        internal static List<ISubsystemDescriptorImpl> s_IntegratedSubsystemDescriptors = new List<ISubsystemDescriptorImpl>();
+        internal static List<ISubsystemDescriptor> s_StandaloneSubsystemDescriptors = new List<ISubsystemDescriptor>();
+
+        [RequiredByNativeCode]
+        internal static bool Internal_AddDescriptor(SubsystemDescriptor descriptor)
+        {
+            foreach (var standaloneDescriptor in s_StandaloneSubsystemDescriptors)
+            {
+                if (standaloneDescriptor == descriptor)
+                    return false;
+            }
+            s_StandaloneSubsystemDescriptors.Add(descriptor);
+
+            if (!analyticsEventRegistered)
+            {
+                Analytics.Analytics.RegisterEvent("xrSubsystemInfo", 100, 100, "", "unity.");
+                analyticsEventRegistered = true;
+            }
+
+            SubsystemInfo analyticsInfo = new SubsystemInfo();
+            analyticsInfo.id = descriptor.id;
+            Analytics.Analytics.SendEvent("xrSubsystemInfo", analyticsInfo, 1, String.Empty);
+            return true;
+        }
 
         [RequiredByNativeCode]
         internal static void Internal_InitializeManagedDescriptor(IntPtr ptr, ISubsystemDescriptorImpl desc)
         {
             desc.ptr = ptr;
-            s_SubsystemDescriptors.Add(desc);
+            s_IntegratedSubsystemDescriptors.Add(desc);
         }
 
         [RequiredByNativeCode]
         internal static void Internal_ClearManagedDescriptors()
         {
-            foreach (var descriptor in s_SubsystemDescriptors)
+            foreach (var descriptor in s_IntegratedSubsystemDescriptors)
             {
                 descriptor.ptr = IntPtr.Zero;
             }
-            s_SubsystemDescriptors.Clear();
+            s_IntegratedSubsystemDescriptors.Clear();
         }
 
         // These are here instead of on SubsystemDescriptor because generic types are not supported by .bindings.cs
@@ -144,7 +201,13 @@ namespace UnityEngine.Experimental
             where T : ISubsystemDescriptor
         {
             descriptors.Clear();
-            foreach (var descriptor in Internal_SubsystemDescriptors.s_SubsystemDescriptors)
+            foreach (var descriptor in Internal_SubsystemDescriptors.s_IntegratedSubsystemDescriptors)
+            {
+                if (descriptor is T)
+                    descriptors.Add((T)descriptor);
+            }
+
+            foreach (var descriptor in Internal_SubsystemDescriptors.s_StandaloneSubsystemDescriptors)
             {
                 if (descriptor is T)
                     descriptors.Add((T)descriptor);
@@ -152,10 +215,16 @@ namespace UnityEngine.Experimental
         }
 
         public static void GetInstances<T>(List<T> instances)
-            where T : Subsystem
+            where T : ISubsystem
         {
             instances.Clear();
-            foreach (var instance in Internal_SubsystemInstances.s_SubsystemInstances)
+            foreach (var instance in Internal_SubsystemInstances.s_IntegratedSubsystemInstances)
+            {
+                if (instance is T)
+                    instances.Add((T)instance);
+            }
+
+            foreach (var instance in Internal_SubsystemInstances.s_StandaloneSubsystemInstances)
             {
                 if (instance is T)
                     instances.Add((T)instance);
@@ -169,15 +238,24 @@ namespace UnityEngine.Experimental
         extern internal static void StaticConstructScriptingClassMap();
     }
 
+    public interface ISubsystem
+    {
+        void Start();
+
+        void Stop();
+
+        void Destroy();
+    }
+
     [NativeType(Header = "Modules/XR/XRSubsystem.h")]
     [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
-    public class Subsystem
+    public class IntegratedSubsystem : ISubsystem
     {
         internal IntPtr m_Ptr;
         internal ISubsystemDescriptor m_subsystemDescriptor;
 
-        extern internal void SetHandle(Subsystem inst);
+        extern internal void SetHandle(IntegratedSubsystem inst);
         extern public void Start();
         extern public void Stop();
         public void Destroy()
@@ -187,8 +265,28 @@ namespace UnityEngine.Experimental
             SubsystemManager.DestroyInstance_Internal(removedPtr);
         }
     }
+
     [UsedByNativeCode("XRSubsystem_TXRSubsystemDescriptor")]
-    public class Subsystem<TSubsystemDescriptor> : Subsystem where TSubsystemDescriptor : ISubsystemDescriptor
+    public class IntegratedSubsystem<TSubsystemDescriptor> : IntegratedSubsystem where TSubsystemDescriptor : ISubsystemDescriptor
+    {
+        public TSubsystemDescriptor SubsystemDescriptor
+        {
+            get { return (TSubsystemDescriptor)m_subsystemDescriptor; }
+        }
+    }
+
+    public abstract class Subsystem : ISubsystem
+    {
+        internal ISubsystemDescriptor m_subsystemDescriptor;
+
+        abstract public void Start();
+
+        abstract public void Stop();
+
+        abstract public void Destroy();
+    }
+
+    public abstract class Subsystem<TSubsystemDescriptor> : Subsystem where TSubsystemDescriptor : ISubsystemDescriptor
     {
         public TSubsystemDescriptor SubsystemDescriptor
         {

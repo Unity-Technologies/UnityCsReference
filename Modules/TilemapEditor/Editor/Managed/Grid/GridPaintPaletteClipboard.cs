@@ -137,9 +137,9 @@ namespace UnityEditor
                 Vector2 max = grid.CellToLocal(new Vector3Int(size.xMax, size.yMax, 0));
 
                 Rect result = new Rect(
-                        min - new Vector2(paddingW, paddingH),
-                        (max - min) + new Vector2(paddingW, paddingH) * 2f
-                        );
+                    min - new Vector2(paddingW, paddingH),
+                    (max - min) + new Vector2(paddingW, paddingH) * 2f
+                );
 
                 return result;
             }
@@ -395,8 +395,8 @@ namespace UnityEditor
             Camera cam = previewUtility.camera;
 
             Vector2 sizeDelta = new Vector2(
-                    newSize.width / LocalToScreenRatio(newSize.height) - oldSize.width / LocalToScreenRatio(oldSize.height),
-                    newSize.height / LocalToScreenRatio(newSize.height) - oldSize.height / LocalToScreenRatio(oldSize.height));
+                newSize.width / LocalToScreenRatio(newSize.height) - oldSize.width / LocalToScreenRatio(oldSize.height),
+                newSize.height / LocalToScreenRatio(newSize.height) - oldSize.height / LocalToScreenRatio(oldSize.height));
 
             cam.transform.Translate(sizeDelta / 2f);
 
@@ -723,8 +723,8 @@ namespace UnityEditor
             }
 
             if (m_HoverData != null && (
-                    Event.current.type == EventType.DragExited ||
-                    Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
+                Event.current.type == EventType.DragExited ||
+                Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape))
             {
                 DragAndDrop.visualMode = DragAndDropVisualMode.None;
                 FlushHoverData();

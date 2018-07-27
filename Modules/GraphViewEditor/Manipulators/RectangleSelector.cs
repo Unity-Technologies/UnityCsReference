@@ -18,8 +18,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public RectangleSelector()
         {
             activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse });
-            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
-            activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
+            if (Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.OSXPlayer)
+            {
+                activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Command });
+            }
+            else
+            {
+                activators.Add(new ManipulatorActivationFilter { button = MouseButton.LeftMouse, modifiers = EventModifiers.Control });
+            }
             m_Rectangle = new RectangleSelect();
             m_Rectangle.style.positionType = PositionType.Absolute;
             m_Rectangle.style.positionTop = 0;
@@ -127,13 +133,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // a copy is necessary because Add To selection might cause a SendElementToFront which will change the order.
             List<ISelectable> newSelection = new List<ISelectable>();
             graphView.graphElements.ForEach(child =>
+            {
+                var localSelRect = graphView.contentViewContainer.ChangeCoordinatesTo(child, selectionRect);
+                if (child.IsSelectable() && child.Overlaps(localSelRect))
                 {
-                    var localSelRect = graphView.contentViewContainer.ChangeCoordinatesTo(child, selectionRect);
-                    if (child.IsSelectable() && child.Overlaps(localSelRect))
-                    {
-                        newSelection.Add(child);
-                    }
-                });
+                    newSelection.Add(child);
+                }
+            });
 
             foreach (var selectable in newSelection)
             {

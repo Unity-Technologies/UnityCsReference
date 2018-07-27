@@ -12,6 +12,7 @@ namespace UnityEditor
 {
     // Lets you do ''move'', ''copy'', ''delete'' operations over files or directories
     [NativeHeader("Runtime/Utilities/FileUtilities.h")]
+    [NativeHeader("Runtime/Utilities/File.h")]
     [NativeHeader("Editor/Platform/Interface/EditorUtility.h")]
     public partial class FileUtil
     {
@@ -30,13 +31,13 @@ namespace UnityEditor
             if (PathExists(dest))
             {
                 throw new System.IO.IOException(string.Format(
-                        "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
+                    "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
             }
 
             if (!CopyFileOrDirectoryInternal(source, dest))
             {
                 throw new System.IO.IOException(string.Format(
-                        "Failed to Copy File / Directory from '{0}' to '{1}'.", source, dest));
+                    "Failed to Copy File / Directory from '{0}' to '{1}'.", source, dest));
             }
         }
 
@@ -51,13 +52,13 @@ namespace UnityEditor
             if (PathExists(dest))
             {
                 throw new System.IO.IOException(string.Format(
-                        "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
+                    "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
             }
 
             if (!CopyFileOrDirectoryFollowSymlinksInternal(source, dest))
             {
                 throw new System.IO.IOException(string.Format(
-                        "Failed to Copy File / Directory from '{0}' to '{1}'.", source, dest));
+                    "Failed to Copy File / Directory from '{0}' to '{1}'.", source, dest));
             }
         }
 
@@ -72,13 +73,13 @@ namespace UnityEditor
             if (PathExists(dest))
             {
                 throw new System.IO.IOException(string.Format(
-                        "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
+                    "Failed to Copy File / Directory from '{0}' to '{1}': destination path already exists.", source, dest));
             }
 
             if (!MoveFileOrDirectoryInternal(source, dest))
             {
                 throw new System.IO.IOException(string.Format(
-                        "Failed to Move File / Directory from '{0}' to '{1}'.", source, dest));
+                    "Failed to Move File / Directory from '{0}' to '{1}'.", source, dest));
             }
         }
 
@@ -140,5 +141,9 @@ namespace UnityEditor
 
             FileUtil.CopyFileOrDirectory(src, dst);
         }
+
+        // transform path to absolute, resolving mount points
+        [FreeFunction]
+        extern internal static string PathToAbsolutePath(string path);
     }
 }

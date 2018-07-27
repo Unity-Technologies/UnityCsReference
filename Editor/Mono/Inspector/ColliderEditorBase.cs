@@ -38,7 +38,7 @@ namespace UnityEditor
                 "Edit Collider",
                 editModeButton,
                 this
-                );
+            );
         }
 
         internal override Bounds GetWorldBoundsOfTarget(Object targetObject)

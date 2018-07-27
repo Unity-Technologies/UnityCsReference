@@ -104,7 +104,7 @@ namespace UnityEditor.Experimental.UIElements
 
                 var initValue = m_Value.GetValueFromBag(bag);
                 var text = m_Label.GetValueFromBag(bag);
-                ((PropertyControl<TType>)ve).value = ((PropertyControl<TType>)ve).StringToValue(initValue);
+                ((PropertyControl<TType>)ve).SetValueWithoutNotify(((PropertyControl<TType>)ve).StringToValue(initValue));
                 ((PropertyControl<TType>)ve).label = text;
             }
 
@@ -148,7 +148,7 @@ namespace UnityEditor.Experimental.UIElements
 
             Add(m_Label);
             CreateControl();
-            value = StringToValue(initialValue);
+            SetValueWithoutNotify(StringToValue(initialValue));
 
             EnableMouseDraggerForNumericType();
         }

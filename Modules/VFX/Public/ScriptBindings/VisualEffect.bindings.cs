@@ -5,6 +5,7 @@
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Experimental.VFX;
+using UnityEngine.Scripting;
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
@@ -13,6 +14,14 @@ using System.Collections;
 
 namespace UnityEngine.Experimental.VFX
 {
+    [UsedByNativeCode]
+    [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
+    [NativeHeader("Modules/VFX/Public/VisualEffectAsset.h")]
+    [NativeHeader("VFXScriptingClasses.h")]
+    public class VisualEffectAsset : Object
+    {
+    }
+
     [NativeHeader("Modules/VFX/Public/VisualEffect.h")]
     [RequireComponent(typeof(Transform))]
     public class VisualEffect : Behaviour
@@ -28,6 +37,8 @@ namespace UnityEngine.Experimental.VFX
 
         public VFXEventAttribute CreateVFXEventAttribute()
         {
+            if (visualEffectAsset == null)
+                return null;
             var vfxEventAttribute = VFXEventAttribute.Internal_InstanciateVFXEventAttribute(visualEffectAsset);
             return vfxEventAttribute;
         }
@@ -292,48 +303,7 @@ namespace UnityEngine.Experimental.VFX
             return GetGradient(Shader.PropertyToID(name));
         }
 
-        extern public void SetVisualEffectAssetDirty(bool recreate);
-
-        public VFXSpawnerState DebugGetSpawnerState(uint systemIndex)
-        {
-            var vfxSpawnerState = new VFXSpawnerState(VFXSpawnerState.Internal_Create(), true);
-            Internal_DebugGetSpawnerState(vfxSpawnerState.GetPtr(), systemIndex);
-            return vfxSpawnerState;
-        }
-
-        [NativeThrows] extern private void Internal_DebugGetSpawnerState(IntPtr spawnerState, uint systemIndex);
-
-        [NativeThrows, NativeName("DebugExpressionGetValue<bool>")] extern public bool DebugExpressionGetBool(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<int>")] extern public int DebugExpressionGetInt(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<UInt32>")] extern public uint DebugExpressionGetUInt(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<float>")] extern public float DebugExpressionGetFloat(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<Vector2f>")] extern public Vector2 DebugExpressionGetVector2(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<Vector3f>")] extern public Vector3 DebugExpressionGetVector3(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<Vector4f>")] extern public Vector4 DebugExpressionGetVector4(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<Matrix4x4f>")] extern public Matrix4x4 DebugExpressionGetMatrix4x4(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<Texture*>")] extern public Texture DebugExpressionGetTexture(uint expressionIndex);
-        [NativeThrows, NativeName("DebugExpressionGetValue<Mesh*>")] extern public Mesh DebugExpressionGetMesh(uint expressionIndex);
-
-        public AnimationCurve DebugExpressionGetAnimationCurve(uint expressionIndex)
-        {
-            var animationCurve = new AnimationCurve();
-            Internal_DebugExpressionGetAnimationCurve(expressionIndex, animationCurve);
-            return animationCurve;
-        }
-
-        [NativeThrows]
-        extern private void Internal_DebugExpressionGetAnimationCurve(uint expressionIndex, AnimationCurve curve);
-        public Gradient DebugExpressionGetGradient(uint expressionIndex)
-        {
-            var gradient = new Gradient();
-            Internal_DebugExpressionGetGradient(expressionIndex, gradient);
-            return gradient;
-        }
-
-        [NativeThrows]
-        extern private void Internal_DebugExpressionGetGradient(uint expressionIndex, Gradient gradient);
-
-        extern public static bool renderBounds { get; set; }
+        extern public int aliveParticleCount { get; }
     }
 
     // Bindings for VFXRenderer is needed but we dont want it to be accessible to users

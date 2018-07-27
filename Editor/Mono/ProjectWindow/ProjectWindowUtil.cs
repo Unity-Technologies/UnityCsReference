@@ -116,6 +116,16 @@ namespace UnityEditor
             }
         }
 
+        internal class DoCreatePrefabVariant : EndNameEditAction
+        {
+            public override void Action(int instanceId, string pathName, string resourceFile)
+            {
+                GameObject go = AssetDatabase.LoadAssetAtPath<GameObject>(resourceFile);
+                Object o = PrefabUtility.CreateVariant(go, pathName);
+                ProjectWindowUtil.ShowCreatedAsset(o);
+            }
+        }
+
         internal class DoCreateScriptAsset : EndNameEditAction
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
@@ -253,7 +263,34 @@ namespace UnityEditor
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreatePrefab>(), "New Prefab.prefab", EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D, null);
         }
 
-        public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null)
+        [MenuItem("Assets/Create/Prefab Variant", true)]
+        static bool CreatePrefabVariantValidation()
+        {
+            var go = Selection.activeGameObject;
+            return (go != null && EditorUtility.IsPersistent(go));
+        }
+
+        [MenuItem("Assets/Create/Prefab Variant", false, 202)]
+        static void CreatePrefabVariant()
+        {
+            var go = Selection.activeGameObject;
+            if (go == null || !EditorUtility.IsPersistent(go))
+                return;
+
+            string sourcePath = AssetDatabase.GetAssetPath(go);
+
+            string sourceDir = System.IO.Path.GetDirectoryName(sourcePath);
+            string variantPath = string.Format("{0}/{1} Variant.prefab", sourceDir, go.name);
+
+            StartNameEditingIfProjectWindowExists(
+                0,
+                ScriptableObject.CreateInstance<DoCreatePrefabVariant>(),
+                variantPath,
+                EditorGUIUtility.FindTexture("PrefabVariant Icon") as Texture2D,
+                sourcePath);
+        }
+
+        internal static void CreateAssetWithContent(string filename, string content, Texture2D icon = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
             action.filecontent = content;
@@ -756,12 +793,12 @@ namespace UnityEditor
                     }
 
                     var newPath = AssetDatabase.GenerateUniqueAssetPath(
-                            string.Format("{0}{1}{2}.{3}",
-                                Path.GetDirectoryName(assetPath),
-                                Path.DirectorySeparatorChar,
-                                asset.name,
-                                extension)
-                            );
+                        string.Format("{0}{1}{2}.{3}",
+                            Path.GetDirectoryName(assetPath),
+                            Path.DirectorySeparatorChar,
+                            asset.name,
+                            extension)
+                    );
                     AssetDatabase.CreateAsset(Object.Instantiate(asset), newPath);
                     copiedPaths.Add(newPath);
                 }
@@ -777,9 +814,9 @@ namespace UnityEditor
             if (firstDuplicatedObjectToFail != null)
             {
                 var errString = string.Format(
-                        "Duplication error: One or more sub assets (with types of {0}) can not be duplicated directly, use the appropriate editor instead",
-                        firstDuplicatedObjectToFail.GetType().Name
-                        );
+                    "Duplication error: One or more sub assets (with types of {0}) can not be duplicated directly, use the appropriate editor instead",
+                    firstDuplicatedObjectToFail.GetType().Name
+                );
 
                 Debug.LogError(errString, firstDuplicatedObjectToFail);
             }

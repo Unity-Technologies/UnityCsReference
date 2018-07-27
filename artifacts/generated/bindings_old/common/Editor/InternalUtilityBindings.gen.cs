@@ -65,6 +65,7 @@ interface IHierarchyProperty
         bool hasFullPreviewImage { get; }
         IconDrawStyle iconDrawStyle { get; }
         bool isFolder { get; }
+        GUID[] dynamicDependencies { get; }
 
         bool IsExpanded(int[] expanded);
         bool Next(int[] expanded);
@@ -117,6 +118,16 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal void SetCustomScenes (Scene[] scenes) ;
+
+    public void SetCustomScenes(int[] sceneHandles)
+        {
+            SetCustomSceneHandles(sceneHandles);
+        }
+    
+    
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern private void SetCustomSceneHandles (int[] sceneHandles) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -216,6 +227,16 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
         set;
     }
 
+    public extern  bool showSceneHeaders
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        set;
+    }
+
     public extern  bool isValid
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -245,6 +266,13 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
     }
 
     public extern  bool isFolder
+    {
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        get;
+    }
+
+    public extern  GUID[] dynamicDependencies
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -295,13 +323,13 @@ public sealed partial class HierarchyProperty : IHierarchyProperty
     
     internal void SetSearchFilter(SearchFilter filter)
         {
-            SetSearchFilterINTERNAL(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, filter.versionControlStates, filter.softLockControlStates, filter.referencingInstanceIDs, filter.scenePaths, filter.showAllHits);
+            SetSearchFilterINTERNAL(SearchFilter.Split(filter.nameFilter), filter.classNames, filter.assetLabels, filter.assetBundleNames, filter.versionControlStates, filter.softLockControlStates, filter.referencingInstanceIDs, filter.sceneHandles, filter.showAllHits);
         }
     
     
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void SetSearchFilterINTERNAL (string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, string[] scenePaths, bool showAllHits) ;
+    extern private void SetSearchFilterINTERNAL (string[] nameFilters, string[] classNames, string[] assetLabels, string[] assetBundleNames, string[] versionControlStates, string[] softLockControlStates, int[] referencingInstanceIDs, int[] sceneHandles, bool showAllHits) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

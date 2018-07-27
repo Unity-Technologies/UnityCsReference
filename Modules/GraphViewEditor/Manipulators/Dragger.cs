@@ -100,6 +100,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_Active)
             {
                 Vector2 diff = e.localMousePosition - m_Start;
+
+                if (ce != null)
+                {
+                    var targetScale = ce.transform.scale;
+                    diff.x *= targetScale.x;
+                    diff.y *= targetScale.y;
+                }
+
                 Rect rect = CalculatePosition(target.layout.x + diff.x, target.layout.y + diff.y, target.layout.width, target.layout.height);
 
                 if (target.style.positionType == PositionType.Manual)

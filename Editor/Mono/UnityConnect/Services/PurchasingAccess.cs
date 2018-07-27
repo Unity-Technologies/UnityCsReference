@@ -84,27 +84,27 @@ namespace UnityEditor.Web
 
             var client = new WebClient();
             client.DownloadFileCompleted += (sender, args) =>
+            {
+                // Installation must be done on the main thread.
+                EditorApplication.CallbackFunction handler = null;
+                handler = () =>
                 {
-                    // Installation must be done on the main thread.
-                    EditorApplication.CallbackFunction handler = null;
-                    handler = () =>
+                    ServicePointManager.ServerCertificateValidationCallback = originalCallback;
+                    EditorApplication.update -= handler;
+                    m_InstallInProgress = false;
+                    if (args.Error == null)
                     {
-                        ServicePointManager.ServerCertificateValidationCallback = originalCallback;
-                        EditorApplication.update -= handler;
-                        m_InstallInProgress = false;
-                        if (args.Error == null)
-                        {
-                            SaveETag(client);
-                            AssetDatabase.ImportPackage(location, false);
-                        }
-                        else
-                        {
-                            UnityEngine.Debug.LogWarning("Failed to download IAP package. Please check connectivity and retry.");
-                            UnityEngine.Debug.LogException(args.Error);
-                        }
-                    };
-                    EditorApplication.update += handler;
+                        SaveETag(client);
+                        AssetDatabase.ImportPackage(location, false);
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.LogWarning("Failed to download IAP package. Please check connectivity and retry.");
+                        UnityEngine.Debug.LogException(args.Error);
+                    }
                 };
+                EditorApplication.update += handler;
+            };
 
             client.DownloadFileAsync(kPackageUri, location);
         }

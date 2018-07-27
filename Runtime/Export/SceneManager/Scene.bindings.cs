@@ -38,6 +38,9 @@ namespace UnityEngine.SceneManagement
         extern private static bool GetIsDirtyInternal(int sceneHandle);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
+        extern private static int GetDirtyID(int sceneHandle);
+
+        [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]
         extern private static int GetBuildIndexInternal(int sceneHandle);
 
         [StaticAccessor("SceneBindings", StaticAccessorType.DoubleColon)]

@@ -49,7 +49,7 @@ namespace UnityEditor.ShortcutManagement
             {
                 if (shortcutEntry.StartsWith(combinationSequence))
                 {
-                    if (contextManager != null && !contextManager.HasAnyActiveContextOfType(shortcutEntry.context))
+                    if (!contextManager.HasActiveContextOfType(shortcutEntry.context))
                         continue;
                     outputShortcuts.Add(shortcutEntry);
                 }

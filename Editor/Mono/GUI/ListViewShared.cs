@@ -561,8 +561,8 @@ namespace UnityEditor
                                     if (DragAndDrop.visualMode != DragAndDropVisualMode.None)
                                     {
                                         ilvState.state.dropHereRect = new Rect(ilvState.rect.x,
-                                                (Mathf.RoundToInt(Event.current.mousePosition.y / ilvState.state.rowHeight) - 1) * ilvState.state.rowHeight,
-                                                ilvState.rect.width, ilvState.state.rowHeight);
+                                            (Mathf.RoundToInt(Event.current.mousePosition.y / ilvState.state.rowHeight) - 1) * ilvState.state.rowHeight,
+                                            ilvState.rect.width, ilvState.state.rowHeight);
 
                                         if (ilvState.state.dropHereRect.y >= ilvState.state.rowHeight * ilvState.state.totalRows)
                                             ilvState.state.dropHereRect.y = ilvState.state.rowHeight * (ilvState.state.totalRows - 1);

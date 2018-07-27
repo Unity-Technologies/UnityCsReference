@@ -256,7 +256,7 @@ namespace UnityEngine
         }
 
         // Removes a gameobject, component or asset.
-        [FreeFunction("Scripting::DestroyObjectFromScripting")]
+        [NativeMethod(Name = "Scripting::DestroyObjectFromScripting", IsFreeFunction = true, ThrowsException = true)]
         public extern static void Destroy(Object obj, [uei.DefaultValue("0.0F")] float t);
 
         [uei.ExcludeFromDocs]
@@ -267,7 +267,7 @@ namespace UnityEngine
         }
 
         // Destroys the object /obj/ immediately. It is strongly recommended to use Destroy instead.
-        [FreeFunction("Scripting::DestroyObjectFromScriptingImmediate")]
+        [NativeMethod(Name = "Scripting::DestroyObjectFromScriptingImmediate", IsFreeFunction = true, ThrowsException = true)]
         public extern static void DestroyImmediate(Object obj, [uei.DefaultValue("false")]  bool allowDestroyingAssets);
 
         [uei.ExcludeFromDocs]
@@ -293,15 +293,17 @@ namespace UnityEngine
         // We cannot properly deprecate this in C# right now, since the optional parameter creates
         // another method calling this, which creates compiler warnings when deprecated.
         [Obsolete("use Object.Destroy instead.")]
-        [FreeFunction("Scripting::DestroyObjectFromScripting")]
-        public extern static void DestroyObject(Object obj, [uei.DefaultValue("0.0F")]  float t);
+        public static void DestroyObject(Object obj, [uei.DefaultValue("0.0F")]  float t)
+        {
+            Destroy(obj, t);
+        }
 
         [Obsolete("use Object.Destroy instead.")]
         [uei.ExcludeFromDocs]
         public static void DestroyObject(Object obj)
         {
             float t = 0.0F;
-            DestroyObject(obj, t);
+            Destroy(obj, t);
         }
 
         //*undocumented* DEPRECATED

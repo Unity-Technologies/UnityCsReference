@@ -569,7 +569,7 @@ namespace UnityEditor
 
             // Shadowmap sampling matrix, from world space into shadowmap space
             Matrix4x4 texMatrix = Matrix4x4.TRS(new Vector3(0.5f, 0.5f, 0.5f), Quaternion.identity,
-                    new Vector3(0.5f, 0.5f, 0.5f));
+                new Vector3(0.5f, 0.5f, 0.5f));
             outShadowMatrix = texMatrix * cam.projectionMatrix * cam.worldToCameraMatrix;
 
             // Restore previous camera parameters
@@ -792,7 +792,7 @@ namespace UnityEditor
             float time = timeControl.currentTime - timeControl.startTime;
             EditorGUI.DropShadowLabel(new Rect(rect.x, rect.y, rect.width, 20),
                 string.Format("{0,2}:{1:00} ({2:000.0%}) Frame {3}", (int)time, Repeat(Mathf.FloorToInt(time * fps), fps), timeControl.normalizedTime, Mathf.FloorToInt(timeControl.currentTime * fps))
-                );
+            );
         }
 
         enum PreviewPopupOptions { Auto, DefaultModel, Other }

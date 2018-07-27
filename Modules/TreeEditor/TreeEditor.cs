@@ -6,6 +6,7 @@ using UnityEditor.AnimatedValues;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 
@@ -284,18 +285,16 @@ namespace TreeEditor
             materialCutoutAsset.hideFlags = HideFlags.NotEditable | HideFlags.HideInInspector;
 
             // Create optimized tree mesh prefab the user can instantiate in the scene
-            GameObject tempTree = new GameObject("OptimizedTree", typeof(Tree), typeof(MeshFilter), typeof(MeshRenderer));
-            tempTree.GetComponent<MeshFilter>().sharedMesh = meshAsset;
+            GameObject prefabInstance = new GameObject("OptimizedTree", typeof(Tree), typeof(MeshFilter), typeof(MeshRenderer));
 
             // Create a tree prefab
             string path = "Assets/Tree.prefab";
             path = AssetDatabase.GenerateUniqueAssetPath(path);
-            Object prefab = PrefabUtility.CreateEmptyPrefab(path);
+            GameObject prefabAsset = PrefabUtility.SaveAsPrefabAssetAndConnect(prefabInstance, path, InteractionMode.AutomatedAction); // saving the unfinished prefab here allows assets to be added
+
+            prefabInstance.GetComponent<MeshFilter>().sharedMesh = meshAsset;
 
             // Add mesh, material and textures to the prefab
-            AssetDatabase.AddObjectToAsset(meshAsset, prefab);
-            AssetDatabase.AddObjectToAsset(materialSolidAsset, prefab);
-            AssetDatabase.AddObjectToAsset(materialCutoutAsset, prefab);
 
             TreeData data = ScriptableObject.CreateInstance<TreeData>();
             data.name = "Tree Data";
@@ -304,14 +303,15 @@ namespace TreeEditor
             data.optimizedCutoutMaterial = materialCutoutAsset;
             data.mesh = meshAsset;
 
-            tempTree.GetComponent<Tree>().data = data;
+            prefabInstance.GetComponent<Tree>().data = data;
 
-            AssetDatabase.AddObjectToAsset(data, prefab);
+            AssetDatabase.AddObjectToAsset(meshAsset, prefabAsset);
+            AssetDatabase.AddObjectToAsset(materialSolidAsset, prefabAsset);
+            AssetDatabase.AddObjectToAsset(materialCutoutAsset, prefabAsset);
+            AssetDatabase.AddObjectToAsset(data, prefabAsset);
 
-            GameObject optimizedTreePrefab = PrefabUtility.ReplacePrefab(tempTree, prefab, ReplacePrefabOptions.Default);
-            Object.DestroyImmediate(tempTree, false);
+            PrefabUtility.ApplyPrefabInstance(prefabInstance);
 
-            GameObject prefabInstance = PrefabUtility.InstantiatePrefab(optimizedTreePrefab) as GameObject;
             GameObjectUtility.SetParentAndAlign(prefabInstance, menuCommand.context as GameObject);
 
             // Store Creation undo
@@ -321,9 +321,12 @@ namespace TreeEditor
             Material[] materials;
             data.UpdateMesh(prefabInstance.transform.worldToLocalMatrix, out materials);
 
-            AssignMaterials(prefabInstance.GetComponent<Renderer>(), materials, true);
+            AssignMaterials(prefabInstance.GetComponent<Renderer>(), materials);
+            PrefabUtility.ApplyPrefabInstance(prefabInstance);
 
+            StageUtility.PlaceGameObjectInCurrentStage(prefabInstance);
             Selection.activeObject = prefabInstance;
+            Undo.RegisterCreatedObjectUndo(prefabInstance, "Create Tree");
         }
 
         static TreeData GetTreeData(Tree tree)
@@ -350,7 +353,7 @@ namespace TreeEditor
             Material[] materials;
             treeData.PreviewMesh(tree.transform.worldToLocalMatrix, out materials);
 
-            AssignMaterials(tree.GetComponent<Renderer>(), materials, false);
+            AssignMaterials(tree.GetComponent<Renderer>(), materials);
 
             Profiler.EndSample(); // TreeEditor.PreviewMesh
 
@@ -365,32 +368,14 @@ namespace TreeEditor
             UpdateMesh(tree, true);
         }
 
-        static void AssignMaterials(Renderer renderer, Material[] materials, bool applyToPrefab)
+        static void AssignMaterials(Renderer renderer, Material[] materials)
         {
             if (renderer != null)
             {
                 if (materials == null)
                     materials = new Material[0];
 
-                if (applyToPrefab)
-                {
-                    Renderer correspondingSourceObject = PrefabUtility.GetCorrespondingObjectFromSource(renderer) as Renderer;
-                    if (correspondingSourceObject != null)
-                    {
-                        // set materials on the prefab
-                        correspondingSourceObject.sharedMaterials = materials;
-
-                        // revert the instance's property to the value newly set in the prefab
-                        SerializedObject serializedObject = new SerializedObject(renderer);
-                        SerializedProperty property = serializedObject.FindProperty("m_Materials");
-                        property.prefabOverride = false;
-                        serializedObject.ApplyModifiedProperties();
-                    }
-                }
-                else
-                {
-                    renderer.sharedMaterials = materials;
-                }
+                renderer.sharedMaterials = materials;
             }
         }
 
@@ -405,7 +390,20 @@ namespace TreeEditor
             Material[] materials;
             treeData.UpdateMesh(tree.transform.worldToLocalMatrix, out materials);
 
-            AssignMaterials(tree.GetComponent<Renderer>(), materials, true);
+            AssignMaterials(tree.GetComponent<Renderer>(), materials);
+
+            // If a Tree is opened in Prefab Mode the Tree should be saved by the Prefab Mode logic (manual- or auto-save)
+            // Note: When opened in Prefab Mode the Tree will be unpacked (have no connection to its Prefab).
+            // so we have to dirty its scene instead.
+            if (PrefabUtility.IsPartOfNonAssetPrefabInstance(tree.gameObject))
+            {
+                PrefabUtility.ApplyPrefabInstance(tree.gameObject);
+            }
+            else
+            {
+                if (tree.gameObject.scene.IsValid())
+                    EditorSceneManager.MarkSceneDirty(tree.gameObject.scene);
+            }
 
             s_SavedSourceMaterialsHash = treeData.materialHash;
 
@@ -423,7 +421,9 @@ namespace TreeEditor
             // Create a wind zone
             GameObject wind = CreateDefaultWindZone();
             GameObjectUtility.SetParentAndAlign(wind, menuCommand.context as GameObject);
+            StageUtility.PlaceGameObjectInCurrentStage(wind);
             Selection.activeObject = wind;
+            Undo.RegisterCreatedObjectUndo(wind, "Create Wind Zone");
         }
 
         static GameObject CreateDefaultWindZone()
@@ -1056,7 +1056,7 @@ namespace TreeEditor
                                             {
                                                 // Snap to parent branch
                                                 s_SelectedNode.offset = FindClosestOffset(treeData, treeMatrix, parentNode,
-                                                        mouseRay, ref angle);
+                                                    mouseRay, ref angle);
                                                 worldPos = branchMatrix.MultiplyPoint(Vector3.zero);
                                             }
                                             else if (parentGroup.GetType() == typeof(TreeGroupRoot))
@@ -1814,7 +1814,7 @@ namespace TreeEditor
             {
                 float pref = group.distributionTwirl;
                 group.distributionTwirl = GUISlider(PropertyType.Normal, group.TwirlString, group.distributionTwirl, -1.0f, 1.0f,
-                        false);
+                    false);
                 if (group.distributionTwirl != pref)
                 {
                     treeData.UpdateDistribution(group.uniqueID);
@@ -1826,7 +1826,7 @@ namespace TreeEditor
             {
                 pre = group.distributionNodes;
                 group.distributionNodes = GUIIntSlider(PropertyType.Normal, group.WhorledStepString, group.distributionNodes, 1, 21,
-                        false);
+                    false);
                 if (group.distributionNodes != pre)
                 {
                     treeData.UpdateDistribution(group.uniqueID);

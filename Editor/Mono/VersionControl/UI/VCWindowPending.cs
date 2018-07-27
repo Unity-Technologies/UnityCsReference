@@ -359,8 +359,8 @@ namespace UnityEditor.VersionControl
             ChangeSets set = l.EmptyChangeSets;
             ChangeSets toDelete = new ChangeSets();
             set
-            .FindAll(item => item.id != ChangeSet.defaultID)
-            .ForEach(delegate(ChangeSet s) { toDelete.Add(s); });
+                .FindAll(item => item.id != ChangeSet.defaultID)
+                .ForEach(delegate(ChangeSet s) { toDelete.Add(s); });
             return toDelete;
         }
 

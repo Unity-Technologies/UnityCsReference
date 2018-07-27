@@ -86,7 +86,7 @@ namespace Unity.DataContract
             if ((parts == 2 && other.parts > 2) &&
                 major == other.major &&
                 minor == other.minor
-                )
+            )
                 return true;
 
             if ((parts == 3 && other.parts >= 3) &&

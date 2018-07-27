@@ -17,21 +17,80 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent[] spriteAlignmentOptions =
-            {
-                EditorGUIUtility.TrTextContent("Center"),
-                EditorGUIUtility.TrTextContent("Top Left"),
-                EditorGUIUtility.TrTextContent("Top"),
-                EditorGUIUtility.TrTextContent("Top Right"),
-                EditorGUIUtility.TrTextContent("Left"),
-                EditorGUIUtility.TrTextContent("Right"),
-                EditorGUIUtility.TrTextContent("Bottom Left"),
-                EditorGUIUtility.TrTextContent("Bottom"),
-                EditorGUIUtility.TrTextContent("Bottom Right"),
-                EditorGUIUtility.TrTextContent("Custom"),
-            };
+            public static readonly GUIContent nameLabel = EditorGUIUtility.TrTextContent("Name", "The name for the Sprite.");
+            public static readonly GUIContent spriteAlignmentLabel = EditorGUIUtility.TrTextContent("Pivot", "The value is normalized to the Sprite's size where (0, 0) is the lower left and (1, 1) is the upper right. May be used for syncing animation frames of different sizes.");
+            public static readonly GUIContent spriteAlignmentText = EditorGUIUtility.TrTextContent("X:{0}, Y:{1}");
+            public static readonly GUIContent borderLabel = EditorGUIUtility.TrTextContent("Border", "Border values for the Sprite set in Sprite Editor window. May be useful for 9-Slicing Sprites.");
+            public static readonly GUIContent borderText = EditorGUIUtility.TrTextContent("L:{0} B:{1} R:{2} T:{3}");
+            public static readonly GUIContent multiValueText = EditorGUIUtility.TrTextContent("-");
+        }
 
-            public static readonly GUIContent spriteAlignment = EditorGUIUtility.TrTextContent("Pivot", "Sprite pivot point in its localspace. May be used for syncing animation frames of different sizes.");
+        SerializedProperty m_Name;
+        SerializedProperty m_Pivot;
+        Vector4 m_BorderValue;
+        bool m_BorderHasSameValue = true;
+        GUIContent m_SpriteNameContent;
+        GUIContent m_SpriteAlignmentContent;
+        GUIContent m_SpriteBorderContent;
+
+        void OnEnable()
+        {
+            m_Name = serializedObject.FindProperty("m_Name");
+            m_Pivot = serializedObject.FindProperty("m_Pivot");
+            m_BorderValue = GetSpriteBorderValue(sprite);
+
+            CheckBorderHasSameValue();
+            m_SpriteNameContent = new GUIContent(sprite.name);
+            m_SpriteAlignmentContent = new GUIContent(string.Format(Styles.spriteAlignmentText.text, m_Pivot.vector2Value.x, m_Pivot.vector2Value.y));
+            m_SpriteBorderContent = new GUIContent(string.Format(Styles.borderText.text, m_BorderValue.x, m_BorderValue.y, m_BorderValue.z, m_BorderValue.w));
+        }
+
+        Vector4 GetSpriteBorderValue(Sprite sprite)
+        {
+            var returnValue = Vector4.one;
+            var path = AssetDatabase.GetAssetPath(sprite);
+            var spriteDataProvider = AssetImporter.GetAtPath(path) as ISpriteEditorDataProvider;
+            if (spriteDataProvider != null)
+            {
+                var textureDataProvider = spriteDataProvider.GetDataProvider<ITextureDataProvider>();
+                if (textureDataProvider?.texture != null)
+                {
+                    int width, height;
+                    textureDataProvider.GetTextureActualWidthAndHeight(out width, out height);
+                    var texture = textureDataProvider.texture;
+                    var textureScale = new Vector2(width / (float)texture.width, height / (float)texture.height);
+                    returnValue.x = Mathf.RoundToInt(sprite.border.x * textureScale.x);
+                    returnValue.z = Mathf.RoundToInt(sprite.border.z * textureScale.x);
+                    returnValue.y = Mathf.RoundToInt(sprite.border.y * textureScale.y);
+                    returnValue.w = Mathf.RoundToInt(sprite.border.w * textureScale.y);
+                }
+            }
+
+            return returnValue;
+        }
+
+        void CheckBorderHasSameValue()
+        {
+            foreach (var obj in serializedObject.targetObjects)
+            {
+                if (obj == target)
+                    continue;
+                if (obj is Sprite)
+                {
+                    var spr = (Sprite)obj;
+                    var borderValue = GetSpriteBorderValue(spr);
+                    if (borderValue != m_BorderValue)
+                    {
+                        m_BorderHasSameValue = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    m_BorderHasSameValue = false;
+                    break;
+                }
+            }
         }
 
         private Sprite sprite
@@ -39,124 +98,22 @@ namespace UnityEditor
             get { return target as Sprite; }
         }
 
-        private SpriteMetaData GetMetaData(string name)
-        {
-            string path = AssetDatabase.GetAssetPath(sprite);
-            TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (textureImporter != null)
-            {
-                if (textureImporter.spriteImportMode == SpriteImportMode.Single)
-                {
-                    return GetMetaDataInSingleMode(name, textureImporter);
-                }
-                else
-                {
-                    return GetMetaDataInMultipleMode(name, textureImporter);
-                }
-            }
-
-            return new SpriteMetaData();
-        }
-
-        private static SpriteMetaData GetMetaDataInMultipleMode(string name, TextureImporter textureImporter)
-        {
-            SpriteMetaData[] spritesheet = textureImporter.spritesheet;
-            for (int i = 0; i < spritesheet.Length; i++)
-            {
-                if (spritesheet[i].name.Equals(name))
-                {
-                    return spritesheet[i];
-                }
-            }
-            return new SpriteMetaData();
-        }
-
-        private static SpriteMetaData GetMetaDataInSingleMode(string name, TextureImporter textureImporter)
-        {
-            SpriteMetaData metaData = new SpriteMetaData();
-            metaData.border = textureImporter.spriteBorder;
-            metaData.name = name;
-            metaData.pivot = textureImporter.spritePivot;
-            metaData.rect = new Rect(0, 0, 1, 1);
-            TextureImporterSettings textureImporterSettings = new TextureImporterSettings();
-            textureImporter.ReadTextureSettings(textureImporterSettings);
-            metaData.alignment = textureImporterSettings.spriteAlignment;
-            return metaData;
-        }
-
         public override void OnInspectorGUI()
         {
-            bool nameM;
-            bool alignM;
-            bool borderM;
-            UnifiedValues(out nameM, out alignM, out borderM);
-
-            if (nameM)
-                EditorGUILayout.LabelField("Name", sprite.name);
+            if (!m_Name.hasMultipleDifferentValues)
+                EditorGUILayout.LabelField(Styles.nameLabel, m_SpriteNameContent);
             else
-                EditorGUILayout.LabelField("Name", "-");
+                EditorGUILayout.LabelField(Styles.nameLabel, Styles.multiValueText);
 
-            if (alignM)
-            {
-                int align = GetMetaData(sprite.name).alignment;
-                EditorGUILayout.LabelField(Styles.spriteAlignment, Styles.spriteAlignmentOptions[align]);
-            }
+            if (!m_Pivot.hasMultipleDifferentValues)
+                EditorGUILayout.LabelField(Styles.spriteAlignmentLabel, m_SpriteAlignmentContent);
             else
-                EditorGUILayout.LabelField(Styles.spriteAlignment.text, "-");
+                EditorGUILayout.LabelField(Styles.spriteAlignmentLabel, Styles.multiValueText);
 
-            if (borderM)
-            {
-                Vector4 border = GetMetaData(sprite.name).border;
-                EditorGUILayout.LabelField("Border", string.Format("L:{0} B:{1} R:{2} T:{3}", border.x, border.y, border.z, border.w));
-            }
+            if (m_BorderHasSameValue)
+                EditorGUILayout.LabelField(Styles.borderLabel, m_SpriteBorderContent);
             else
-                EditorGUILayout.LabelField("Border", "-");
-        }
-
-        private void UnifiedValues(out bool name, out bool alignment, out bool border)
-        {
-            name = true;
-            alignment = true;
-            border = true;
-            if (targets.Length < 2)
-                return;
-
-            string path = AssetDatabase.GetAssetPath(sprite);
-            var spriteDataProvider = AssetImporter.GetAtPath(path) as ISpriteEditorDataProvider;
-            if (spriteDataProvider == null)
-                return;
-
-            spriteDataProvider.InitSpriteEditorDataProvider();
-            var spritesheet = spriteDataProvider.GetSpriteRects();
-
-            string previousName = null;
-            int previousAligment = -1;
-            Vector4? previousBorder = null;
-
-            for (int targetsIndex = 0; targetsIndex < targets.Length; targetsIndex++)
-            {
-                Sprite curSprite = targets[targetsIndex] as Sprite;
-                for (int spritesIndex = 0; spritesIndex < spritesheet.Length; spritesIndex++)
-                {
-                    if (spritesheet[spritesIndex].name.Equals(curSprite.name))
-                    {
-                        if ((int)spritesheet[spritesIndex].alignment != previousAligment && previousAligment > 0)
-                            alignment = false;
-                        else
-                            previousAligment = (int)spritesheet[spritesIndex].alignment;
-
-                        if (spritesheet[spritesIndex].name != previousName && previousName != null)
-                            name = false;
-                        else
-                            previousName = spritesheet[spritesIndex].name;
-
-                        if (spritesheet[spritesIndex].border != previousBorder && previousBorder != null)
-                            border = false;
-                        else
-                            previousBorder = spritesheet[spritesIndex].border;
-                    }
-                }
-            }
+                EditorGUILayout.LabelField(Styles.borderLabel, Styles.multiValueText);
         }
 
         public static Texture2D BuildPreviewTexture(int width, int height, Sprite sprite, Material spriteRendererMaterial, bool isPolygon)
@@ -181,11 +138,11 @@ namespace UnityEditor
             SavedRenderTargetState savedRTState = new SavedRenderTargetState();
 
             RenderTexture tmp = RenderTexture.GetTemporary(
-                    width,
-                    height,
-                    0,
-                    RenderTextureFormat.Default,
-                    RenderTextureReadWrite.Linear);
+                width,
+                height,
+                0,
+                RenderTextureFormat.Default,
+                RenderTextureReadWrite.Linear);
 
             RenderTexture.active = tmp;
 
@@ -368,7 +325,7 @@ namespace UnityEditor
             return string.Format("({0}x{1})",
                 (int)sprite.rect.width,
                 (int)sprite.rect.height
-                );
+            );
         }
     }
 }

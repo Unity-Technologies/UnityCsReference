@@ -21,11 +21,11 @@ namespace UnityEditorInternal
             int id = GUIUtility.GetControlID("Slider1D".GetHashCode(), FocusType.Keyboard);
             Vector2 screenVal = Handles.matrix.MultiplyPoint(pos);
             Rect handleScreenPos = new Rect(
-                    screenVal.x - dragDot.fixedWidth * .5f,
-                    screenVal.y - dragDot.fixedHeight * .5f,
-                    dragDot.fixedWidth,
-                    dragDot.fixedHeight
-                    );
+                screenVal.x - dragDot.fixedWidth * .5f,
+                screenVal.y - dragDot.fixedHeight * .5f,
+                dragDot.fixedWidth,
+                dragDot.fixedHeight
+            );
 
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
@@ -115,11 +115,11 @@ namespace UnityEditorInternal
             Vector2 screenVal = Handles.matrix.MultiplyPoint(pos);
 
             Rect handleScreenPos = new Rect(
-                    screenVal.x - pivotDot.fixedWidth * .5f,
-                    screenVal.y - pivotDot.fixedHeight * .5f,
-                    pivotDotActive.fixedWidth,
-                    pivotDotActive.fixedHeight
-                    );
+                screenVal.x - pivotDot.fixedWidth * .5f,
+                screenVal.y - pivotDot.fixedHeight * .5f,
+                pivotDotActive.fixedWidth,
+                pivotDotActive.fixedHeight
+            );
 
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))

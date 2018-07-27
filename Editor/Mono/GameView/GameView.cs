@@ -198,7 +198,7 @@ namespace UnityEditor
                 return new Rect(
                     m_ZoomArea.DrawingToViewTransformPoint(targetInContentCached.position),
                     m_ZoomArea.DrawingToViewTransformVector(targetInContentCached.size)
-                    );
+                );
             }
         }
 
@@ -250,11 +250,11 @@ namespace UnityEditor
                 var targetInParentCached = targetInParent;
                 var viewInParentCached = viewInParent;
                 var clippedTargetInParent = Rect.MinMaxRect(
-                        Mathf.Max(targetInParentCached.xMin, viewInParentCached.xMin),
-                        Mathf.Max(targetInParentCached.yMin, viewInParentCached.yMin),
-                        Mathf.Min(targetInParentCached.xMax, viewInParentCached.xMax),
-                        Mathf.Min(targetInParentCached.yMax, viewInParentCached.yMax)
-                        );
+                    Mathf.Max(targetInParentCached.xMin, viewInParentCached.xMin),
+                    Mathf.Max(targetInParentCached.yMin, viewInParentCached.yMin),
+                    Mathf.Min(targetInParentCached.xMax, viewInParentCached.xMax),
+                    Mathf.Min(targetInParentCached.yMax, viewInParentCached.yMax)
+                );
                 return clippedTargetInParent;
             }
         }

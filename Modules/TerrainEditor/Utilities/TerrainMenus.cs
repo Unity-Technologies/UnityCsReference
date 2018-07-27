@@ -8,6 +8,7 @@ using UnityEditor;
 using System.Collections;
 using System.IO;
 using UnityEngine.Rendering;
+using UnityEditor.SceneManagement;
 
 namespace UnityEditor
 {
@@ -29,9 +30,8 @@ namespace UnityEditor
 
             AssetDatabase.CreateAsset(terrainData, AssetDatabase.GenerateUniqueAssetPath("Assets/New Terrain.asset"));
             var parent = menuCommand.context as GameObject;
-            var name = GameObjectUtility.GetUniqueNameForSibling(parent != null ? parent.transform : null, "Terrain");
             GameObject terrain = Terrain.CreateTerrainGameObject(terrainData);
-            terrain.name = name;
+            terrain.name = "Terrain";
 
             if (GraphicsSettings.renderPipelineAsset != null)
             {
@@ -44,6 +44,8 @@ namespace UnityEditor
                 }
             }
             GameObjectUtility.SetParentAndAlign(terrain, parent);
+            StageUtility.PlaceGameObjectInCurrentStage(terrain);
+            GameObjectUtility.EnsureUniqueNameForSibling(terrain);
             Selection.activeObject = terrain;
             Undo.RegisterCreatedObjectUndo(terrain, "Create terrain");
         }

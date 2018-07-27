@@ -123,7 +123,7 @@ namespace UnityEditor
             UpdateFrameTime();
 
             string timeStats = System.String.Format("{0:F1} FPS ({1:F1}ms)",
-                    1.0f / Mathf.Max(m_MaxFrameTime, 1.0e-5f), m_MaxFrameTime * 1000.0f);
+                1.0f / Mathf.Max(m_MaxFrameTime, 1.0e-5f), m_MaxFrameTime * 1000.0f);
             GUI.Label(new Rect(170, 75, 120, 20), timeStats);
 
             int screenBytes = UnityStats.screenBytes;

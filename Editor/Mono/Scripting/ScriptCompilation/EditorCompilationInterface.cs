@@ -227,9 +227,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 foreach (var assemblyAndReference in assembliesWithMissingReference)
                 {
                     LogWarning(string.Format("The assembly for Assembly Definition File '{0}' will not be loaded. Because the assembly for its reference '{1}'' does not exist on the file system. " +
-                            "This can be caused by the reference assembly not being compiled due to errors or not having any scripts associated with it.",
-                            assemblyAndReference.Assembly.FilePath,
-                            assemblyAndReference.Reference.FilePath),
+                        "This can be caused by the reference assembly not being compiled due to errors or not having any scripts associated with it.",
+                        assemblyAndReference.Assembly.FilePath,
+                        assemblyAndReference.Reference.FilePath),
                         assemblyAndReference.Assembly.FilePath);
                 }
             }

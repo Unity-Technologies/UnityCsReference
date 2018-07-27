@@ -92,6 +92,8 @@ namespace UnityEditor
             GUILayout.EndVertical();
             if (modified)
                 InvokeWizardUpdate();
+
+            GUILayout.Space(8);
         }
 
         protected virtual bool DrawWizardGUI()

@@ -76,8 +76,8 @@ namespace UnityEditor
                         dialogText.AppendLine(st.Substring(0, st.IndexOf(Environment.NewLine)));
 
                         bool abortQuit = !EditorUtility.DisplayDialog("Error while quitting",
-                                dialogText.ToString(),
-                                "Ignore", "Cancel Quit");
+                            dialogText.ToString(),
+                            "Ignore", "Cancel Quit");
 
                         if (abortQuit)
                             return false;
@@ -125,17 +125,23 @@ namespace UnityEditor
         // Delegate for OnGUI events for every visible list item in the HierarchyWindow.
         public static HierarchyWindowItemCallback hierarchyWindowItemOnGUI;
 
+        // Delegate for refreshing hierarchies.
+        internal static CallbackFunction refreshHierarchy;
+
         // Can be used to ensure repaint of the HierarchyWindow.
         public static void RepaintHierarchyWindow()
         {
-            foreach (SceneHierarchyWindow pw in Resources.FindObjectsOfTypeAll(typeof(SceneHierarchyWindow)))
-                pw.Repaint();
+            if (refreshHierarchy != null)
+                refreshHierarchy();
         }
+
+        // Delegate for dirtying hierarchy sorting.
+        internal static CallbackFunction dirtyHierarchySorting;
 
         public static void DirtyHierarchyWindowSorting()
         {
-            foreach (SceneHierarchyWindow pw in Resources.FindObjectsOfTypeAll(typeof(SceneHierarchyWindow)))
-                pw.DirtySortingMethods();
+            if (dirtyHierarchySorting != null)
+                dirtyHierarchySorting();
         }
 
         // Delegate to be called from [[EditorApplication]] callbacks.

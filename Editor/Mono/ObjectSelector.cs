@@ -24,17 +24,20 @@ namespace UnityEditor
     internal class ObjectSelector : EditorWindow
     {
         // Styles used in the object selector
-        class Styles
+        static class Styles
         {
-            public GUIStyle smallStatus = "ObjectPickerSmallStatus";
-            public GUIStyle largeStatus = "ObjectPickerLargeStatus";
-            public GUIStyle toolbarBack = "ObjectPickerToolbar";
-            public GUIStyle tab = "ObjectPickerTab";
-            public GUIStyle bottomResize = "WindowBottomResize";
-            public GUIStyle previewBackground = "PopupCurveSwatchBackground"; // TODO: Make dedicated style
-            public GUIStyle previewTextureBackground = "ObjectPickerPreviewBackground"; // TODO: Make dedicated style
+            public static GUIStyle smallStatus = "ObjectPickerSmallStatus";
+            public static GUIStyle largeStatus = "ObjectPickerLargeStatus";
+            public static GUIStyle toolbarBack = "ObjectPickerToolbar";
+            public static GUIStyle tab = "ObjectPickerTab";
+            public static GUIStyle bottomResize = "WindowBottomResize";
+            public static GUIStyle previewBackground = "PopupCurveSwatchBackground"; // TODO: Make dedicated style
+            public static GUIStyle previewTextureBackground = "ObjectPickerPreviewBackground"; // TODO: Make dedicated style
+
+            public static GUIContent assetsTabLabel = EditorGUIUtility.TrTextContent("Assets");
+            public static GUIContent sceneTabLabel = EditorGUIUtility.TrTextContent("Scene");
+            public static GUIContent selfTabLabel = EditorGUIUtility.TrTextContent("Self");
         }
-        Styles m_Styles;
 
         public const string ObjectSelectorClosedCommand = "ObjectSelectorClosed";
         public const string ObjectSelectorUpdatedCommand = "ObjectSelectorUpdated";
@@ -256,7 +259,7 @@ namespace UnityEditor
             {
                 var scene = GetSceneFromObject(m_ObjectBeingEdited);
                 if (scene.IsValid())
-                    filter.scenePaths = new[] { scene.path };
+                    filter.sceneHandles = new[] { scene.handle };
             }
 
             // For now, we don t want to display assets from Packages
@@ -457,7 +460,7 @@ namespace UnityEditor
         // This is our search field
         void SearchArea()
         {
-            GUI.Label(new Rect(0, 0, position.width, m_ToolbarHeight), GUIContent.none, m_Styles.toolbarBack);
+            GUI.Label(new Rect(0, 0, position.width, m_ToolbarHeight), GUIContent.none, Styles.toolbarBack);
 
             // ESC clears search field and removes it's focus. But if we get an esc event we only want to clear search field.
             // So we need special handling afterwards.
@@ -496,7 +499,7 @@ namespace UnityEditor
             GUILayout.BeginHorizontal();
 
             // Asset Tab
-            bool showAssets = GUILayout.Toggle(m_IsShowingAssets, "Assets", m_Styles.tab);
+            bool showAssets = GUILayout.Toggle(m_IsShowingAssets, Styles.assetsTabLabel, Styles.tab);
             if (!m_IsShowingAssets && showAssets)
                 m_IsShowingAssets = true;
 
@@ -509,7 +512,8 @@ namespace UnityEditor
             }
 
             bool showingSceneTab = !m_IsShowingAssets;
-            showingSceneTab = GUILayout.Toggle(showingSceneTab, "Scene", m_Styles.tab);
+            GUIContent sceneLabel = StageNavigationManager.instance.currentItem.isPrefabStage ? Styles.selfTabLabel : Styles.sceneTabLabel;
+            showingSceneTab = GUILayout.Toggle(showingSceneTab, sceneLabel, Styles.tab);
             if (m_IsShowingAssets && showingSceneTab)
                 m_IsShowingAssets = false;
 
@@ -546,7 +550,7 @@ namespace UnityEditor
         // This is the preview area at the bottom of the screen
         void PreviewArea()
         {
-            GUI.Box(new Rect(0, m_TopSize, position.width, m_PreviewSize), "", m_Styles.previewBackground);
+            GUI.Box(new Rect(0, m_TopSize, position.width, m_PreviewSize), "", Styles.previewBackground);
 
             if (m_ListArea.GetSelection().Length == 0)
                 return;
@@ -626,14 +630,14 @@ namespace UnityEditor
             Rect labelRect = new Rect(m_PreviewSize + 3, m_TopSize + (m_PreviewSize - kPreviewExpandedAreaHeight) * 0.5f, m_Parent.window.position.width - m_PreviewSize - 3 - margin, kPreviewExpandedAreaHeight);
 
             if (p != null && p.HasPreviewGUI())
-                p.OnPreviewGUI(previewRect, m_Styles.previewTextureBackground);
+                p.OnPreviewGUI(previewRect, Styles.previewTextureBackground);
             else if (o != null)
                 DrawObjectIcon(previewRect, m_ListArea.m_SelectedObjectIcon);
 
             if (EditorGUIUtility.isProSkin)
-                EditorGUI.DropShadowLabel(labelRect, s, m_Styles.smallStatus);
+                EditorGUI.DropShadowLabel(labelRect, s, Styles.smallStatus);
             else
-                GUI.Label(labelRect, s, m_Styles.smallStatus);
+                GUI.Label(labelRect, s, Styles.smallStatus);
         }
 
         void OverlapPreview(float actualSize, string s, UnityObject o, EditorWrapper p)
@@ -642,14 +646,14 @@ namespace UnityEditor
             Rect previewRect = new Rect(margin, m_TopSize + margin, position.width - margin * 2, actualSize - margin * 2);
 
             if (p != null && p.HasPreviewGUI())
-                p.OnPreviewGUI(previewRect, m_Styles.previewTextureBackground);
+                p.OnPreviewGUI(previewRect, Styles.previewTextureBackground);
             else if (o != null)
                 DrawObjectIcon(previewRect, m_ListArea.m_SelectedObjectIcon);
 
             if (EditorGUIUtility.isProSkin)
-                EditorGUI.DropShadowLabel(previewRect, s, m_Styles.largeStatus);
+                EditorGUI.DropShadowLabel(previewRect, s, Styles.largeStatus);
             else
-                EditorGUI.DoDropShadowLabel(previewRect, EditorGUIUtility.TempContent(s), m_Styles.largeStatus, .3f);
+                EditorGUI.DoDropShadowLabel(previewRect, EditorGUIUtility.TempContent(s), Styles.largeStatus, .3f);
         }
 
         void LinePreview(string s, UnityObject o, EditorWrapper p)
@@ -658,9 +662,9 @@ namespace UnityEditor
                 GUI.DrawTexture(new Rect(2, (int)(m_TopSize + 2), 16, 16), m_ListArea.m_SelectedObjectIcon, ScaleMode.StretchToFill);
             Rect labelRect = new Rect(20, m_TopSize + 1, position.width - 22, 18);
             if (EditorGUIUtility.isProSkin)
-                EditorGUI.DropShadowLabel(labelRect, s, m_Styles.smallStatus);
+                EditorGUI.DropShadowLabel(labelRect, s, Styles.smallStatus);
             else
-                GUI.Label(labelRect, s, m_Styles.smallStatus);
+                GUI.Label(labelRect, s, Styles.smallStatus);
         }
 
         void DrawObjectIcon(Rect position, Texture icon)
@@ -788,10 +792,6 @@ namespace UnityEditor
         {
             InitIfNeeded();
 
-            // Initialize m_Styles
-            if (m_Styles == null)
-                m_Styles = new Styles();
-
             if (m_EditorCache == null)
                 m_EditorCache = new EditorCache(EditorFeatures.PreviewGUI);
 
@@ -819,7 +819,7 @@ namespace UnityEditor
             GUI.EndGroup();
 
             // overlay preview resize widget
-            GUI.Label(new Rect(position.width * .5f - 16, position.height - m_PreviewSize + 2, 32, m_Styles.bottomResize.fixedHeight), GUIContent.none, m_Styles.bottomResize);
+            GUI.Label(new Rect(position.width * .5f - 16, position.height - m_PreviewSize + 2, 32, Styles.bottomResize.fixedHeight), GUIContent.none, Styles.bottomResize);
         }
 
         void GridListArea()

@@ -14,8 +14,8 @@ namespace UnityEditor.Experimental.UIElements
 {
     [LibraryFolderPath("UIElements/EditorWindows")]
     internal class EditorWindowPersistentViewData : ScriptableSingletonDictionary<
-            EditorWindowPersistentViewData,
-            SerializableJsonDictionary>
+        EditorWindowPersistentViewData,
+        SerializableJsonDictionary>
     {
         public static SerializableJsonDictionary GetEditorData(EditorWindow window)
         {

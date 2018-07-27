@@ -107,8 +107,8 @@ namespace UnityEditor.Collaboration
         }
 
         static GUIContent WarningText = EditorGUIUtility.TextContent(string.Format(
-                    "Files that have been moved or in a changed folder cannot be selectively published, " +
-                    "please use the Publish option in the collab window to publish all your changes."));
+            "Files that have been moved or in a changed folder cannot be selectively published, " +
+            "please use the Publish option in the collab window to publish all your changes."));
         static GUIContent IssuesText = EditorGUIUtility.TrTextContent("Issues:");
         static GUIContent AcceptText = EditorGUIUtility.TrTextContent("Accept");
 

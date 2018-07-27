@@ -8,7 +8,7 @@ using Unity.Collections.LowLevel.Unsafe;
 
 namespace Unity.Jobs
 {
-    [JobProducerType(typeof(IJobExtensions.JobStruct < >))]
+    [JobProducerType(typeof(IJobExtensions.JobStruct<>))]
     public interface IJob
     {
         void Execute();

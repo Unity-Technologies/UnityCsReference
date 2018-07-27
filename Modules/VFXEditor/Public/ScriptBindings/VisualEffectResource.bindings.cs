@@ -5,62 +5,41 @@
 using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.Experimental.VFX;
 
-namespace UnityEngine.Experimental.VFX
+using UnityObject = UnityEngine.Object;
+
+namespace UnityEditor.Experimental.VFX
 {
-    public struct VFXGPUBufferDesc
+    [NativeHeader("Modules/VFX/Public/VFXHelpers.h")]
+    internal static class VFXExpressionHelper
     {
-        public VFXLayoutElementDesc[] layout;
-        public uint capacity;
-        public ComputeBufferType type;
-        public uint size;
+        [FreeFunction("VFX::GetTypeOfOperation", IsThreadSafe = true)]
+        extern public static VFXValueType GetTypeOfOperation(VFXExpressionOperation op, int data0, int data1, int data2, int data3);
+
+        [FreeFunction("VFX::GetSizeOfType", IsThreadSafe = true)]
+        extern public static int GetSizeOfType(VFXValueType type);
+
+        [FreeFunction("VFX::GetTextureDimension", IsThreadSafe = true)]
+        extern public static TextureDimension GetTextureDimension(VFXValueType type);
     }
 
-    [UsedByNativeCode]
-    public sealed class VFXCPUBufferData : IDisposable
+    internal struct VFXRendererSettings
     {
-        internal IntPtr m_Ptr;
-        public VFXCPUBufferData()
-        {
-            m_Ptr = Internal_Create();
-        }
-
-        extern static internal IntPtr Internal_Create();
-
-        public void Dispose()
-        {
-            if (m_Ptr != IntPtr.Zero)
-            {
-                Internal_Destroy(m_Ptr);
-                m_Ptr = IntPtr.Zero;
-            }
-            GC.SuppressFinalize(this);
-        }
-
-        extern static internal void Internal_Destroy(IntPtr ptr);
-
-        extern public void PushUInt(uint v);
-        extern public void PushInt(int v);
-        extern public void PushFloat(float v);
-        extern public void PushBool(bool v);
-    }
-
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXCPUBufferDesc")]
-    public struct VFXCPUBufferDesc
-    {
-        public VFXLayoutElementDesc[] layout;
-        public uint capacity;
-        public uint stride;
-        public VFXCPUBufferData initialData;
+        public MotionVectorGenerationMode motionVectorGenerationMode;
+        public ShadowCastingMode shadowCastingMode;
+        public bool receiveShadows;
+        public ReflectionProbeUsage reflectionProbeUsage;
+        public LightProbeUsage lightProbeUsage;
     }
 
     [UsedByNativeCode]
     [NativeType(CodegenOptions.Custom, "ScriptingVFXMapping")]
-    public struct VFXMapping
+    internal struct VFXMapping
     {
         public string name;
         public int index;
@@ -71,61 +50,145 @@ namespace UnityEngine.Experimental.VFX
             this.index = index;
         }
     }
+    internal struct VFXGPUBufferDesc
+    {
+        public VFXLayoutElementDesc[] layout;
+        public uint capacity;
+        public ComputeBufferType type;
+        public uint size;
+        public uint stride;
+    }
 
-    [NativeType(CodegenOptions.Custom, "ScriptingVFXTaskDesc")]
-    public struct VFXTaskDesc
+    [UsedByNativeCode]
+    internal sealed class VFXCPUBufferData : IDisposable
+    {
+        internal IntPtr m_Ptr;
+        public VFXCPUBufferData()
+        {
+            m_Ptr = Internal_Create();
+        }
+
+        extern static internal IntPtr Internal_Create();
+
+        private void Release()
+        {
+            if (m_Ptr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_Ptr);
+                m_Ptr = IntPtr.Zero;
+            }
+        }
+
+        ~VFXCPUBufferData()
+        {
+            Release();
+        }
+
+        public void Dispose()
+        {
+            Release();
+            GC.SuppressFinalize(this);
+        }
+
+        [NativeMethod(IsThreadSafe = true)]
+        extern static internal void Internal_Destroy(IntPtr ptr);
+
+        extern public void PushUInt(uint v);
+        extern public void PushInt(int v);
+        extern public void PushFloat(float v);
+        extern public void PushBool(bool v);
+    }
+
+    [NativeType(CodegenOptions.Custom, "ScriptingVFXCPUBufferDesc")]
+    internal struct VFXCPUBufferDesc
+    {
+        public VFXLayoutElementDesc[] layout;
+        public uint capacity;
+        public uint stride;
+        public VFXCPUBufferData initialData;
+    }
+
+    [NativeType(CodegenOptions.Custom, "ScriptingVFXShaderSourceDesc")]
+    internal struct VFXShaderSourceDesc
+    {
+        public bool compute;
+        public string name;
+        public string source;
+    }
+
+    [NativeType(CodegenOptions.Custom, "ScriptingVFXEditorTaskDesc")]
+    internal struct VFXEditorTaskDesc
     {
         public VFXTaskType type;
         public VFXMapping[] buffers;
         public VFXMapping[] values;
         public VFXMapping[] parameters;
-        public Object processor;
+        private UnityObject processor;
+
+        public UnityObject externalProcessor
+        {
+            get
+            {
+                return processor;
+            }
+            set
+            {
+                processor = value;
+                m_ShaderSourceIndex = -1;
+            }
+        }
+        private int m_ShaderSourceIndex;
+        public int shaderSourceIndex
+        {
+            get
+            {
+                return m_ShaderSourceIndex;
+            }
+            set
+            {
+                processor = null;
+                m_ShaderSourceIndex = value;
+            }
+        }
     }
 
-    public struct VFXSystemDesc
+    internal struct VFXEditorSystemDesc
     {
         public VFXSystemType type;
         public VFXSystemFlag flags;
         public uint capacity;
+        public uint layer;
         public VFXMapping[] buffers;
         public VFXMapping[] values;
-        public VFXTaskDesc[] tasks;
+        public VFXEditorTaskDesc[] tasks;
     };
 
-    public struct VFXRendererSettings
-    {
-        public MotionVectorGenerationMode motionVectorGenerationMode;
-        public ShadowCastingMode shadowCastingMode;
-        public bool receiveShadows;
-        public ReflectionProbeUsage reflectionProbeUsage;
-        public LightProbeUsage lightProbeUsage;
-    }
-
     [NativeType(CodegenOptions.Custom, "ScriptingVFXEventDesc")]
-    public struct VFXEventDesc
+    internal struct VFXEventDesc
     {
         public string name;
         public uint[] startSystems;
         public uint[] stopSystems;
     };
 
-    public abstract class VFXExpressionValueContainerDescAbstract
+    internal abstract class VFXExpressionValueContainerDesc
     {
-        public uint expressionIndex;
+        public uint expressionIndex = uint.MaxValue;
     }
 
-    public class VFXExpressionValueContainerDesc<T> : VFXExpressionValueContainerDescAbstract
+    internal class VFXExpressionValueContainerDesc<T> : VFXExpressionValueContainerDesc
     {
-        public T value;
+        public T value = default(T);
     }
 
-    public struct VFXExpressionDesc
+    [NativeType(CodegenOptions.Custom, "ScriptingVFXExpressionDesc")]
+    internal struct VFXExpressionDesc
     {
         public VFXExpressionOperation op;
         public int[] data;
     }
 
-    public struct VFXLayoutOffset
+    internal struct VFXLayoutOffset
     {
         public uint bucket;
         public uint structure;
@@ -134,17 +197,17 @@ namespace UnityEngine.Experimental.VFX
 
     [RequiredByNativeCode]
     [NativeType(CodegenOptions.Custom, "ScriptingVFXLayoutElementDesc")]
-    public struct VFXLayoutElementDesc
+    internal struct VFXLayoutElementDesc
     {
         public string name;
         public VFXValueType type;
         public VFXLayoutOffset offset;
     }
 
-    public struct VFXExpressionSheet
+    internal struct VFXExpressionSheet
     {
         public VFXExpressionDesc[] expressions;
-        public VFXExpressionValueContainerDescAbstract[] values;
+        public VFXExpressionValueContainerDesc[] values;
         public VFXMapping[] exposed;
     }
 
@@ -185,25 +248,23 @@ namespace UnityEngine.Experimental.VFX
         public VFXExpressionValuesSheetInternal values;
         public VFXMapping[] exposed;
     }
-}
-namespace UnityEngine.Experimental.VFX
-{
+
     [UsedByNativeCode]
+    [NativeHeader("Modules/VFXEditor/Public/ScriptBindings/VisualEffectResourceBindings.h")]
     [NativeHeader("Modules/VFX/Public/ScriptBindings/VisualEffectAssetBindings.h")]
-    [NativeHeader("Modules/VFX/Public/VisualEffectAsset.h")]
+    [NativeHeader("Modules/VFXEditor/Public/VisualEffectResource.h")]
     [NativeHeader("VFXScriptingClasses.h")]
-    public class VisualEffectAsset : Object
+    internal class VisualEffectResource : UnityObject
     {
-        public VisualEffectAsset()
+        public VisualEffectResource()
         {
-            CreateVisualEffectAsset(this);
+            CreateVisualEffectResource(this);
         }
 
-        extern private static void CreateVisualEffectAsset([Writable] VisualEffectAsset scriptingVfx);
+        extern private static void CreateVisualEffectResource([Writable] VisualEffectResource resource);
+        extern public void ClearRuntimeData();
 
-        extern public void ClearPropertyData();
-
-        private static VFXExpressionValuesSheetInternal CreateValueSheet(VFXExpressionValueContainerDescAbstract[] values)
+        private static VFXExpressionValuesSheetInternal CreateValueSheet(VFXExpressionValueContainerDesc[] values)
         {
             var internalSheet = new VFXExpressionValuesSheetInternal();
             foreach (var group in values.GroupBy(o => o.GetType()))
@@ -288,18 +349,7 @@ namespace UnityEngine.Experimental.VFX
             return internalSheet;
         }
 
-        public void SetExpressionSheet(VFXExpressionSheet sheet)
-        {
-            var internalSheet = new VFXExpressionSheetInternal();
-            internalSheet.expressions = sheet.expressions;
-            internalSheet.values = CreateValueSheet(sheet.values);
-            internalSheet.exposed = sheet.exposed;
-            SetExpressionSheetInternal(internalSheet);
-        }
-
-        extern private void SetExpressionSheetInternal(VFXExpressionSheetInternal sheet);
-
-        public void SetValueSheet(VFXExpressionValueContainerDescAbstract[] values)
+        public void SetValueSheet(VFXExpressionValueContainerDesc[] values)
         {
             var sheet = CreateValueSheet(values);
             SetValueSheet(sheet);
@@ -307,42 +357,51 @@ namespace UnityEngine.Experimental.VFX
 
         extern private void SetValueSheet(VFXExpressionValuesSheetInternal sheet);
 
+        public extern VFXShaderSourceDesc[] shaderSources { get; set; }
+
+        public void SetRuntimeData(VFXExpressionSheet sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc)
+        {
+            var internalSheet = new VFXExpressionSheetInternal();
+            internalSheet.expressions = sheet.expressions;
+            internalSheet.values = CreateValueSheet(sheet.values);
+            internalSheet.exposed = sheet.exposed;
+
+            SetRuntimeData(internalSheet, systemDesc, eventDesc, bufferDesc, cpuBufferDesc);
+        }
+
         [NativeThrows]
-        extern public void SetSystems(VFXSystemDesc[] taskDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc);
-        extern public void MarkRuntimeVersion();
+        extern private void SetRuntimeData(VFXExpressionSheetInternal sheet, VFXEditorSystemDesc[] systemDesc, VFXEventDesc[] eventDesc, VFXGPUBufferDesc[] bufferDesc, VFXCPUBufferDesc[] cpuBufferDesc);
         extern public VFXRendererSettings rendererSettings { get; set; }
+        extern public VFXUpdateMode updateMode { get; set; }
         extern public VFXCullingFlags cullingFlags { get; set; }
 
+        extern public void MarkRuntimeVersion();
+        extern public void ValidateAsset();
+        extern public void WriteAsset();
+
+        public static extern VisualEffectResource GetResourceAtPath(string path);
+        static extern public void DeleteAtPath(string path);
+        public extern void SetAssetPath(string path);
+
+        public static extern VisualEffectAsset CreateNewAsset(string path);
+
+        public extern UnityObject[] GetContents();
+        public extern void SetContents(UnityObject[] dependencies);
+
+        VisualEffectAsset m_Asset;
+        public VisualEffectAsset asset
+        {
+            get
+            {
+                if (m_Asset == null)
+                    m_Asset = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(AssetDatabase.GetAssetPath(this));
+                return m_Asset;
+            }
+        }
+
         extern public ScriptableObject graph { get; set; }
-    }
 
-    public enum VFXManagerUpdateMode
-    {
-        Default,
-        Force20Hz,
-        Force30Hz
-    };
-
-    [NativeHeader("Modules/VFX/Public/VFXManager.h")]
-    [StaticAccessor("GetVFXManager()", StaticAccessorType.Dot)]
-    public static class VFXManager
-    {
-        extern public static VisualEffect[] GetComponents();
-        extern public static string renderPipeSettingsPath { get; }
-        extern public static VFXManagerUpdateMode updateMode { get; set; }
-        extern public static uint frameIndex { get; }
-    }
-
-    [NativeHeader("Modules/VFX/Public/VFXHelpers.h")]
-    public static class VFXExpressionHelper
-    {
-        [FreeFunction("VFX::GetTypeOfOperation", IsThreadSafe = true)]
-        extern public static VFXValueType GetTypeOfOperation(VFXExpressionOperation op, int data0, int data1, int data2, int data3);
-
-        [FreeFunction("VFX::GetSizeOfType", IsThreadSafe = true)]
-        extern public static int GetSizeOfType(VFXValueType type);
-
-        [FreeFunction("VFX::GetTextureDimension", IsThreadSafe = true)]
-        extern public static TextureDimension GetTextureDimension(VFXValueType type);
+        extern public int GetShaderIndex(UnityObject shader);
+        public extern void ShowGeneratedShaderFile(int index, int line = 0);
     }
 }

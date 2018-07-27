@@ -11,8 +11,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 {
     internal class GroupDropArea : VisualElement, IDropTarget
     {
-        List<GraphElement> m_RemovedElements = null;
-
         public bool CanAcceptDrop(List<ISelectable> selection)
         {
             if (selection.Count == 0)
@@ -35,7 +33,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public bool DragExited()
         {
             RemoveFromClassList("dragEntered");
-            m_RemovedElements = null;
             return false;
         }
 
@@ -45,9 +42,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             List<GraphElement> elemsToAdd =
                 selection
-                .Cast<GraphElement>()
-                .Where(e => e != group && !group.containedElements.Contains(e) && !(e.GetContainingScope() is Group))
-                .ToList();     // ToList required here as the enumeration might be done again *after* the elements are added to the group
+                    .Cast<GraphElement>()
+                    .Where(e => e != group && !group.containedElements.Contains(e) && !(e.GetContainingScope() is Group))
+                    .ToList(); // ToList required here as the enumeration might be done again *after* the elements are added to the group
 
             if (elemsToAdd.Any())
             {
@@ -55,7 +52,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             RemoveFromClassList("dragEntered");
-            m_RemovedElements = null;
             return true;
         }
 
@@ -63,7 +59,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             Group group = parent.GetFirstAncestorOfType<Group>();
             bool canDrop = false;
-            bool areElementsDraggedOut = false;
 
             foreach (ISelectable selectedElement in selection)
             {
@@ -72,28 +67,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 var selectedGraphElement = selectedElement as GraphElement;
 
-                if (evt.shiftKey)
-                {
-                    if (group.containedElements.Contains(selectedGraphElement))
-                    {
-                        areElementsDraggedOut = true;
-                        if (m_RemovedElements == null)
-                        {
-                            m_RemovedElements = new List<GraphElement>();
-                        }
-                        m_RemovedElements.Add(selectedGraphElement);
-                    }
-                }
-
                 if (!group.containedElements.Contains(selectedGraphElement) && !(selectedGraphElement.GetContainingScope() is Group))
                 {
                     canDrop = true;
                 }
-            }
-
-            if (areElementsDraggedOut)
-            {
-                group.RemoveElementsWithoutNotification(m_RemovedElements);
             }
 
             if (canDrop)
@@ -106,6 +83,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
 
             return true;
+        }
+
+        internal void OnStartDragging(IMouseEvent evt, IEnumerable<GraphElement> elements)
+        {
+            if (evt.shiftKey)
+            {
+                Group group = parent.GetFirstAncestorOfType<Group>();
+                group.RemoveElements(elements);
+            }
         }
     }
 }

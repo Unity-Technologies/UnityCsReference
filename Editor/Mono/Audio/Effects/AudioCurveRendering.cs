@@ -77,7 +77,7 @@ namespace UnityEditor
                     color = curveColor;
                     return eval(x);
                 }
-                );
+            );
         }
 
         public static void DrawFilledCurve(Rect r, AudioCurveAndColorEvaluator eval)

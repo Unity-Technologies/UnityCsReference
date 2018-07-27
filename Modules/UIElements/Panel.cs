@@ -44,19 +44,21 @@ namespace UnityEngine.Experimental.UIElements
     internal enum VersionChangeType
     {
         //Some data was bound
-        Bindings = 1 << 7,
+        Bindings = 1 << 8,
         // persistent data ready
-        PersistentData = 1 << 6,
+        PersistentData = 1 << 7,
         // changes to hierarchy
-        Hierarchy = 1 << 5,
+        Hierarchy = 1 << 6,
         // changes to layout
-        Layout = 1 << 4,
+        Layout = 1 << 5,
         // changes to StyleSheet, USS class
-        StyleSheet = 1 << 3,
+        StyleSheet = 1 << 4,
         // changes to styles, colors and other render properties
-        Styles = 1 << 2,
+        Styles = 1 << 3,
         // transforms are invalid
-        Transform = 1 << 1,
+        Transform = 1 << 2,
+        // clips are invalid
+        Clip = 1 << 1,
         // pixels in the target have been changed, just repaint, only makes sense on the Panel
         Repaint = 1 << 0,
     }
@@ -455,7 +457,7 @@ namespace UnityEngine.Experimental.UIElements
             Profiler.BeginSample(m_ProfileLayoutName);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Layout);
-            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Transform);
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.TransformClip);
             Profiler.EndSample();
         }
 

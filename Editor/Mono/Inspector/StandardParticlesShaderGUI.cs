@@ -73,19 +73,19 @@ namespace UnityEditor
 
             public static GUIContent emissionEnabled = EditorGUIUtility.TrTextContent("Emission");
 
-            public static string blendingOptionsText = "Blending Options";
-            public static string mainOptionsText = "Main Options";
-            public static string mapsOptionsText = "Maps";
-            public static string requiredVertexStreamsText = "Required Vertex Streams";
+            public static GUIContent blendingOptionsText = EditorGUIUtility.TrTextContent("Blending Options");
+            public static GUIContent mainOptionsText = EditorGUIUtility.TrTextContent("Main Options");
+            public static GUIContent mapsOptionsText = EditorGUIUtility.TrTextContent("Maps");
+            public static GUIContent requiredVertexStreamsText = EditorGUIUtility.TrTextContent("Required Vertex Streams");
 
-            public static string streamPositionText = "Position (POSITION.xyz)";
-            public static string streamNormalText = "Normal (NORMAL.xyz)";
-            public static string streamColorText = "Color (COLOR.xyzw)";
-            public static string streamUVText = "UV (TEXCOORD0.xy)";
-            public static string streamUV2Text = "UV2 (TEXCOORD0.zw)";
-            public static string streamAnimBlendText = "AnimBlend (TEXCOORD1.x)";
-            public static string streamAnimFrameText = "AnimFrame (INSTANCED0.x)";
-            public static string streamTangentText = "Tangent (TANGENT.xyzw)";
+            public static GUIContent streamPositionText = EditorGUIUtility.TrTextContent("Position (POSITION.xyz)");
+            public static GUIContent streamNormalText = EditorGUIUtility.TrTextContent("Normal (NORMAL.xyz)");
+            public static GUIContent streamColorText = EditorGUIUtility.TrTextContent("Color (COLOR.xyzw)");
+            public static GUIContent streamUVText = EditorGUIUtility.TrTextContent("UV (TEXCOORD0.xy)");
+            public static GUIContent streamUV2Text = EditorGUIUtility.TrTextContent("UV2 (TEXCOORD0.zw)");
+            public static GUIContent streamAnimBlendText = EditorGUIUtility.TrTextContent("AnimBlend (TEXCOORD1.x)");
+            public static GUIContent streamAnimFrameText = EditorGUIUtility.TrTextContent("AnimFrame (INSTANCED0.x)");
+            public static GUIContent streamTangentText = EditorGUIUtility.TrTextContent("Tangent (TANGENT.xyzw)");
 
             public static GUIContent streamApplyToAllSystemsText = EditorGUIUtility.TrTextContent("Apply to Systems", "Apply the vertex stream layout to all Particle Systems using this material");
         }

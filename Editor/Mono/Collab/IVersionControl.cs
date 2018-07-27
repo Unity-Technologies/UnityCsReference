@@ -6,7 +6,7 @@ namespace UnityEditor.Collaboration
 {
     internal interface IVersionControl
     {
-        void OnEnableVersionControl();
+        bool OnEnableVersionControl();
         void OnDisableVersionControl();
         ChangeItem[] GetChanges();
     }

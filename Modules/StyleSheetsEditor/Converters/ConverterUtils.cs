@@ -356,11 +356,11 @@ namespace UnityEditor.StyleSheets
         public static void Assign(this GUISkin skin, GUISkin src)
         {
             skin.customStyles = src.customStyles.Select(style =>
-                {
-                    var newStyle = new GUIStyle();
-                    newStyle.Assign(style);
-                    return newStyle;
-                }).ToArray();
+            {
+                var newStyle = new GUIStyle();
+                newStyle.Assign(style);
+                return newStyle;
+            }).ToArray();
             skin.font = src.font;
 
             skin.settings.Assign(src.settings);

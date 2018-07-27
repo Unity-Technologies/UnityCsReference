@@ -368,7 +368,7 @@ namespace UnityEditor
                 if (sourceAvatar.isHuman && (animationType != ModelImporterAnimationType.Human))
                 {
                     if (EditorUtility.DisplayDialog("Asigning an Humanoid Avatar on a Generic Rig",
-                            "Do you want to change Animation Type to Humanoid ?", "Yes", "No"))
+                        "Do you want to change Animation Type to Humanoid ?", "Yes", "No"))
                     {
                         animationType = ModelImporterAnimationType.Human;
                     }
@@ -380,7 +380,7 @@ namespace UnityEditor
                 else if (!sourceAvatar.isHuman && (animationType != ModelImporterAnimationType.Generic))
                 {
                     if (EditorUtility.DisplayDialog("Asigning an Generic Avatar on a Humanoid Rig",
-                            "Do you want to change Animation Type to Generic ?", "Yes", "No"))
+                        "Do you want to change Animation Type to Generic ?", "Yes", "No"))
                     {
                         animationType = ModelImporterAnimationType.Generic;
                     }
@@ -395,7 +395,7 @@ namespace UnityEditor
         void CopyAvatarGUI()
         {
             GUILayout.Label(
-                @"If you have already created an Avatar for another model with a rig identical to this one, you can copy its Avatar definition.
+@"If you have already created an Avatar for another model with a rig identical to this one, you can copy its Avatar definition.
 With this option, this model will not create any avatar but only import animations.", EditorStyles.helpBox);
 
             EditorGUILayout.BeginHorizontal();
@@ -531,8 +531,8 @@ With this option, this model will not create any avatar but only import animatio
                     {
                         // Do not allow multi edit of exposed transform list if all rigs doesn't match
                         using (new EditorGUI.DisabledScope(!m_CanMultiEditTransformList))
-                            using (new EditorGUI.IndentLevelScope())
-                                m_ExposeTransformEditor.OnGUI();
+                        using (new EditorGUI.IndentLevelScope())
+                            m_ExposeTransformEditor.OnGUI();
                     }
                 }
             }

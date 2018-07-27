@@ -160,8 +160,9 @@ namespace UnityEditor
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
             public static readonly GUIContent scriptingRuntimeVersionActive = EditorGUIUtility.TrTextContent("Active Scripting Runtime Version*", "The scripting runtime version currently in use by the Editor.");
             public static readonly GUIContent scriptingRuntimeVersionActiveWarning = EditorGUIUtility.TrTextContent("The scripting runtime version currently in use by the Editor does not match the version specified by the project. An Editor restart is required for requested changes to take effect.");
+            public static readonly GUIContent scriptingRuntimeVersionDeprecationWarning = EditorGUIUtility.TrTextContent("The .NET 3.5 scripting runtime has been deprecated and will be removed in a future release.");
             public static readonly GUIContent scriptingRuntimeVersion = EditorGUIUtility.TrTextContent("Scripting Runtime Version*", "The scripting runtime version to be used. Unity uses different scripting backends based on platform, so these options are listed as equivalent expected behavior.");
-            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent");
+            public static readonly GUIContent scriptingRuntimeVersionLegacy = EditorGUIUtility.TrTextContent(".NET 3.5 Equivalent (Deprecated)");
             public static readonly GUIContent scriptingRuntimeVersionLatest = EditorGUIUtility.TrTextContent(".NET 4.x Equivalent");
             public static readonly GUIContent scriptingBackend = EditorGUIUtility.TrTextContent("Scripting Backend");
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
@@ -771,10 +772,10 @@ namespace UnityEditor
                                 int slotWidth = kSlotSize;
                                 int slotHeight = (int)((float)heights[i] / widths[i] * kSlotSize);  // take into account the aspect ratio
                                 icons[i] = (Texture2D)EditorGUI.ObjectField(
-                                        new Rect(rect.x + width - kMaxPreviewSize - kSlotSize - kIconSpacing, rect.y, slotWidth, slotHeight),
-                                        icons[i],
-                                        typeof(Texture2D),
-                                        false);
+                                    new Rect(rect.x + width - kMaxPreviewSize - kSlotSize - kIconSpacing, rect.y, slotWidth, slotHeight),
+                                    icons[i],
+                                    typeof(Texture2D),
+                                    false);
                             }
 
                             // Preview
@@ -1059,8 +1060,8 @@ namespace UnityEditor
             {
                 doChange = false;
                 if (EditorUtility.DisplayDialog("Changing editor graphics device",
-                        "Changing active graphics API requires reloading all graphics objects, it might take a while",
-                        "Apply", "Cancel"))
+                    "Changing active graphics API requires reloading all graphics objects, it might take a while",
+                    "Apply", "Cancel"))
                 {
                     if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                         doChange = doReload = true;
@@ -1217,9 +1218,9 @@ namespace UnityEditor
         private static Dictionary<BuildTargetGroup, List<ColorGamut>> s_SupportedColorGamuts =
             new Dictionary<BuildTargetGroup, List<ColorGamut>>
         {
-            { BuildTargetGroup.Standalone, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } },
-            { BuildTargetGroup.iOS, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } },
-            { BuildTargetGroup.tvOS, new List<ColorGamut>{ ColorGamut.sRGB, ColorGamut.DisplayP3 } }
+            { BuildTargetGroup.Standalone, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
+            { BuildTargetGroup.iOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } },
+            { BuildTargetGroup.tvOS, new List<ColorGamut> { ColorGamut.sRGB, ColorGamut.DisplayP3 } }
         };
 
         private static bool IsColorGamutSupportedOnTargetGroup(BuildTargetGroup targetGroup, ColorGamut gamut)
@@ -1807,8 +1808,8 @@ namespace UnityEditor
                 foreach (var kind in PlayerSettings.GetSupportedIconKindsForPlatform(iconFieldGroup.targetGroup))
                 {
                     iconFieldGroup.AddPlatformIcons(PlayerSettings.GetPlatformIcons(
-                            iconFieldGroup.targetGroup, kind), kind
-                        );
+                        iconFieldGroup.targetGroup, kind), kind
+                    );
                 }
             }
             foreach (var kindGroup in iconFieldGroup.m_IconsFields)
@@ -1902,6 +1903,11 @@ namespace UnityEditor
             else
             {
                 newScriptingRuntimeVersions = BuildEnumPopup(SettingsContent.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
+            }
+
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+            {
+                EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionDeprecationWarning.text, MessageType.Warning);
             }
 
             if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
@@ -2089,10 +2095,15 @@ namespace UnityEditor
             {
                 if (inputOption != oldInputOption)
                 {
-                    EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.", "OK");
-                    m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
-                    m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
-                    m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
+                    // Give the user a chance to change mind and revert changes.
+                    if (EditorUtility.DisplayDialog("Unity editor restart required", "The Unity editor must be restarted for this change to take effect.  Cancel to revert changes.", "Apply", "Cancel"))
+                    {
+                        m_EnableInputSystem.boolValue = (inputOption == 1 || inputOption == 2);
+                        m_DisableInputManager.boolValue = !(inputOption == 0 || inputOption == 2);
+                        m_EnableInputSystem.serializedObject.ApplyModifiedProperties();
+                        if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                            EditorApplication.OpenProject(Environment.CurrentDirectory);
+                    }
                 }
                 EditorGUIUtility.ExitGUI();
             }
@@ -2569,9 +2580,9 @@ namespace UnityEditor
             };
             provider.PopulateSearchKeywordsFromGUIContentProperties<SettingsContent>();
             provider.onEditorCreated = editor =>
-                {
-                    (editor as PlayerSettingsEditor).SetSectionOpenListener(provider.settingsWindow.Repaint);
-                };
+            {
+                (editor as PlayerSettingsEditor).SetSectionOpenListener(provider.settingsWindow.Repaint);
+            };
             return provider;
         }
     }

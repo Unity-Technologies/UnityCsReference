@@ -229,13 +229,13 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var lowerPathPrefix = customAssembly.PathPrefix.ToLower(CultureInfo.InvariantCulture);
 
                 var targetAssembly = new TargetAssembly(customAssembly.Name + ".dll",
-                        null,
-                        customAssembly.AssemblyFlags,
-                        TargetAssemblyType.Custom,
-                        customAssembly.PathPrefix,
-                        path => FastStartsWith(path, customAssembly.PathPrefix, lowerPathPrefix) ? customAssembly.PathPrefix.Length : -1,
-                        (settings) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, settings.Defines),
-                        customAssembly.CompilerOptions)
+                    null,
+                    customAssembly.AssemblyFlags,
+                    TargetAssemblyType.Custom,
+                    customAssembly.PathPrefix,
+                    path => FastStartsWith(path, customAssembly.PathPrefix, lowerPathPrefix) ? customAssembly.PathPrefix.Length : -1,
+                    (settings) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, settings.Defines),
+                    customAssembly.CompilerOptions)
                 {
                     OptionalUnityReferences = customAssembly.OptionalUnityReferences,
                     PrecompiledReferences = new List<PrecompiledAssembly>(),
@@ -258,7 +258,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     throw new PrecompiledAssemblyException(
                         $"Multiple precompiled assemblies with the same name {groupedPrecompiledAssemblies.Key} included for the current platform. Only one assembly with the same name is allowed per platform. Assembly path: {{0}}",
                         groupedPrecompiledAssemblies.Select(x => x.Path).ToArray()
-                        );
+                    );
                 }
                 nameToPrecompiledAssemblies.Add(groupedPrecompiledAssemblies.Key, groupedPrecompiledAssemblies.Single());
             }
@@ -799,43 +799,43 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var languageName = language.GetLanguageName();
 
                 var runtimeFirstPass = new TargetAssembly("Assembly-" + languageName + "-firstpass" + ".dll",
-                        language,
-                        AssemblyFlags.FirstPass,
-                        TargetAssemblyType.Predefined,
-                        null,
-                        FilterAssemblyInFirstpassFolder,
-                        null,
-                        scriptCompilerOptions);
+                    language,
+                    AssemblyFlags.FirstPass,
+                    TargetAssemblyType.Predefined,
+                    null,
+                    FilterAssemblyInFirstpassFolder,
+                    null,
+                    scriptCompilerOptions);
 
                 var runtime = new TargetAssembly("Assembly-" + languageName + ".dll",
-                        language,
-                        AssemblyFlags.None,
-                        TargetAssemblyType.Predefined,
-                        null,
-                        null,
-                        null,
-                        scriptCompilerOptions);
+                    language,
+                    AssemblyFlags.None,
+                    TargetAssemblyType.Predefined,
+                    null,
+                    null,
+                    null,
+                    scriptCompilerOptions);
 
                 var editorFirstPass = new TargetAssembly("Assembly-" + languageName + "-Editor-firstpass" + ".dll",
-                        language,
-                        AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass,
-                        TargetAssemblyType.Predefined,
-                        null,
-                        FilterAssemblyInFirstpassEditorFolder,
-                        IsCompatibleWithEditor,
-                        scriptCompilerOptions)
+                    language,
+                    AssemblyFlags.EditorOnly | AssemblyFlags.FirstPass,
+                    TargetAssemblyType.Predefined,
+                    null,
+                    FilterAssemblyInFirstpassEditorFolder,
+                    IsCompatibleWithEditor,
+                    scriptCompilerOptions)
                 {
                     OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
                 };
 
                 var editor = new TargetAssembly("Assembly-" + languageName + "-Editor" + ".dll",
-                        language,
-                        AssemblyFlags.EditorOnly,
-                        TargetAssemblyType.Predefined,
-                        null,
-                        FilterAssemblyInEditorFolder,
-                        IsCompatibleWithEditor,
-                        scriptCompilerOptions)
+                    language,
+                    AssemblyFlags.EditorOnly,
+                    TargetAssemblyType.Predefined,
+                    null,
+                    FilterAssemblyInEditorFolder,
+                    IsCompatibleWithEditor,
+                    scriptCompilerOptions)
                 {
                     OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
                 };

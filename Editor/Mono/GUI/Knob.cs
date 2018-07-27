@@ -255,9 +255,9 @@ namespace UnityEditor
             Vector3 GetUVForPoint(Vector3 point)
             {
                 Vector3 uv = new Vector3(
-                        (point.x - position.x) / knobSize.x,
-                        (point.y - position.y - knobSize.y) / -knobSize.y // we need to flip uv over Y otherwise image is upside-down
-                        );
+                    (point.x - position.x) / knobSize.x,
+                    (point.y - position.y - knobSize.y) / -knobSize.y     // we need to flip uv over Y otherwise image is upside-down
+                );
                 return uv;
             }
 

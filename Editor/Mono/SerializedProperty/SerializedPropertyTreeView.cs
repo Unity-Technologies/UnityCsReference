@@ -172,52 +172,52 @@ namespace UnityEditor
         internal class DefaultDelegates
         {
             public static readonly Column.DrawEntry s_DrawDefault = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) =>
-                {
-                    Profiler.BeginSample("PropDrawDefault");
-                    EditorGUI.PropertyField(r, prop, GUIContent.none);
-                    Profiler.EndSample();
-                };
+            {
+                Profiler.BeginSample("PropDrawDefault");
+                EditorGUI.PropertyField(r, prop, GUIContent.none);
+                Profiler.EndSample();
+            };
             public static readonly Column.DrawEntry s_DrawCheckbox = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) =>
-                {
-                    Profiler.BeginSample("PropDrawCheckbox");
-                    float off = (r.width / 2) - 8;
-                    r.x += off >= 0 ? off : 0;
-                    EditorGUI.PropertyField(r, prop, GUIContent.none);
-                    Profiler.EndSample();
-                };
+            {
+                Profiler.BeginSample("PropDrawCheckbox");
+                float off = (r.width / 2) - 8;
+                r.x += off >= 0 ? off : 0;
+                EditorGUI.PropertyField(r, prop, GUIContent.none);
+                Profiler.EndSample();
+            };
             public static readonly Column.DrawEntry s_DrawName = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) => {};
 
             public static readonly Column.CompareEntry s_CompareFloat = (SerializedProperty lhs, SerializedProperty rhs) =>
-                {
-                    return lhs.floatValue.CompareTo(rhs.floatValue);
-                };
+            {
+                return lhs.floatValue.CompareTo(rhs.floatValue);
+            };
             public static readonly Column.CompareEntry s_CompareCheckbox = (SerializedProperty lhs, SerializedProperty rhs) =>
-                {
-                    return lhs.boolValue.CompareTo(rhs.boolValue);
-                };
+            {
+                return lhs.boolValue.CompareTo(rhs.boolValue);
+            };
             public static readonly Column.CompareEntry s_CompareEnum = (SerializedProperty lhs, SerializedProperty rhs) =>
-                {
-                    return lhs.enumValueIndex.CompareTo(rhs.enumValueIndex);
-                };
+            {
+                return lhs.enumValueIndex.CompareTo(rhs.enumValueIndex);
+            };
             public static readonly Column.CompareEntry s_CompareInt = (SerializedProperty lhs, SerializedProperty rhs) =>
-                {
-                    return lhs.intValue.CompareTo(rhs.intValue);
-                };
+            {
+                return lhs.intValue.CompareTo(rhs.intValue);
+            };
             public static readonly Column.CompareEntry s_CompareColor = (SerializedProperty lhs, SerializedProperty rhs) =>
-                {
-                    float lh, ls, lv, rh, rs, rv;
-                    Color.RGBToHSV(lhs.colorValue, out lh, out ls, out lv);
-                    Color.RGBToHSV(rhs.colorValue, out rh, out rs, out rv);
-                    return lh.CompareTo(rh);
-                };
+            {
+                float lh, ls, lv, rh, rs, rv;
+                Color.RGBToHSV(lhs.colorValue, out lh, out ls, out lv);
+                Color.RGBToHSV(rhs.colorValue, out rh, out rs, out rv);
+                return lh.CompareTo(rh);
+            };
             public static readonly Column.CompareEntry s_CompareName = (SerializedProperty lhs, SerializedProperty rhs) =>
-                {
-                    return 0;
-                };
+            {
+                return 0;
+            };
             public static readonly Column.CopyDelegate s_CopyDefault = (SerializedProperty target, SerializedProperty source) =>
-                {
-                    target.serializedObject.CopyFromSerializedProperty(source);
-                };
+            {
+                target.serializedObject.CopyFromSerializedProperty(source);
+            };
         }
         // reference to the data store (not owned by this class)
         SerializedPropertyDataStore m_DataStore;
@@ -568,24 +568,24 @@ namespace UnityEditor
             else if (comp == DefaultDelegates.s_CompareName) // special case for sorting by the object name
             {
                 sortAscend = (TreeViewItem lhs, TreeViewItem rhs) =>
-                    {
-                        return EditorUtility.NaturalCompare(((SerializedPropertyItem)lhs).GetData().name, ((SerializedPropertyItem)rhs).GetData().name);
-                    };
+                {
+                    return EditorUtility.NaturalCompare(((SerializedPropertyItem)lhs).GetData().name, ((SerializedPropertyItem)rhs).GetData().name);
+                };
                 sortDescend = (TreeViewItem lhs, TreeViewItem rhs) =>
-                    {
-                        return -EditorUtility.NaturalCompare(((SerializedPropertyItem)lhs).GetData().name, ((SerializedPropertyItem)rhs).GetData().name);
-                    };
+                {
+                    return -EditorUtility.NaturalCompare(((SerializedPropertyItem)lhs).GetData().name, ((SerializedPropertyItem)rhs).GetData().name);
+                };
             }
             else
             {
                 sortAscend = (TreeViewItem lhs, TreeViewItem rhs) =>
-                    {
-                        return comp(((SerializedPropertyItem)lhs).GetData().properties[sortIdx], ((SerializedPropertyItem)rhs).GetData().properties[sortIdx]);
-                    };
+                {
+                    return comp(((SerializedPropertyItem)lhs).GetData().properties[sortIdx], ((SerializedPropertyItem)rhs).GetData().properties[sortIdx]);
+                };
                 sortDescend = (TreeViewItem lhs, TreeViewItem rhs) =>
-                    {
-                        return -comp(((SerializedPropertyItem)lhs).GetData().properties[sortIdx], ((SerializedPropertyItem)rhs).GetData().properties[sortIdx]);
-                    };
+                {
+                    return -comp(((SerializedPropertyItem)lhs).GetData().properties[sortIdx], ((SerializedPropertyItem)rhs).GetData().properties[sortIdx]);
+                };
             }
 
             myRows.Sort(ascend ? sortAscend : sortDescend);

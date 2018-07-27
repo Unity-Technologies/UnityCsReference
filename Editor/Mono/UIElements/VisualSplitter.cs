@@ -114,13 +114,13 @@ namespace UnityEditor.Experimental.UIElements
                     {
                         relativeMousePosition = (e.localMousePosition.y - visualElement.layout.yMin - visualElement.style.minHeight) /
                             (visualElement.layout.height + nextVisualElement.layout.height -
-                             visualElement.style.minHeight - nextVisualElement.style.minHeight);
+                                visualElement.style.minHeight - nextVisualElement.style.minHeight);
                     }
                     else
                     {
                         relativeMousePosition = (e.localMousePosition.x - visualElement.layout.xMin - visualElement.style.minWidth) /
                             (visualElement.layout.width + nextVisualElement.layout.width -
-                             visualElement.style.minWidth - nextVisualElement.style.minWidth);
+                                visualElement.style.minWidth - nextVisualElement.style.minWidth);
                     }
 
                     relativeMousePosition = Math.Max(0.0f, Math.Min(1.0f, relativeMousePosition));

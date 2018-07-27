@@ -288,22 +288,22 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Display elements in the MiniMap
             Color currentColor = Handles.color;
             gView.graphElements.ForEach(elem =>
-                {
-                    if (elem is Edge || elem is Port)
-                        return;
+            {
+                if (elem is Edge || elem is Port)
+                    return;
 
-                    var rect = CalculateElementRect(elem);
-                    Handles.color = elem.elementTypeColor;
+                var rect = CalculateElementRect(elem);
+                Handles.color = elem.elementTypeColor;
 
-                    s_CachedRect[0].Set(rect.xMin, rect.yMin, 0.0f);
-                    s_CachedRect[1].Set(rect.xMax, rect.yMin, 0.0f);
-                    s_CachedRect[2].Set(rect.xMax, rect.yMax, 0.0f);
-                    s_CachedRect[3].Set(rect.xMin, rect.yMax, 0.0f);
-                    Handles.DrawSolidRectangleWithOutline(s_CachedRect, elem.elementTypeColor, elem.elementTypeColor);
+                s_CachedRect[0].Set(rect.xMin, rect.yMin, 0.0f);
+                s_CachedRect[1].Set(rect.xMax, rect.yMin, 0.0f);
+                s_CachedRect[2].Set(rect.xMax, rect.yMax, 0.0f);
+                s_CachedRect[3].Set(rect.xMin, rect.yMax, 0.0f);
+                Handles.DrawSolidRectangleWithOutline(s_CachedRect, elem.elementTypeColor, elem.elementTypeColor);
 
-                    if (elem.selected)
-                        DrawRectangleOutline(rect, m_SelectedChildrenColor);
-                });
+                if (elem.selected)
+                    DrawRectangleOutline(rect, m_SelectedChildrenColor);
+            });
 
             // Draw viewport outline
             DrawRectangleOutline(m_ViewportRect, m_ViewportColor);
@@ -348,21 +348,21 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var mousePosition = e.localMousePosition;
 
             gView.graphElements.ForEach(child =>
-                {
-                    if (child == null)
-                        return;
-                    var selectable = child.GetFirstOfType<ISelectable>();
-                    if (selectable == null || !selectable.IsSelectable())
-                        return;
+            {
+                if (child == null)
+                    return;
+                var selectable = child.GetFirstOfType<ISelectable>();
+                if (selectable == null || !selectable.IsSelectable())
+                    return;
 
-                    if (CalculateElementRect(child).Contains(mousePosition))
-                    {
-                        gView.ClearSelection();
-                        gView.AddToSelection(selectable);
-                        gView.FrameSelection();
-                        e.StopPropagation();
-                    }
-                });
+                if (CalculateElementRect(child).Contains(mousePosition))
+                {
+                    gView.ClearSelection();
+                    gView.AddToSelection(selectable);
+                    gView.FrameSelection();
+                    e.StopPropagation();
+                }
+            });
 
             EatMouseDown(e);
         }

@@ -142,9 +142,9 @@ namespace UnityEditor
                     return; // no more items to fetch from A$ server
 
                 r = new Rect(m_Owner.GetVisibleWidth() - m_ShowMoreDims.x - 6,
-                        yOffset +  m_Grid.height + kMoreButtonOffset,
-                        m_ShowMoreDims.x,
-                        m_ShowMoreDims.y);
+                    yOffset +  m_Grid.height + kMoreButtonOffset,
+                    m_ShowMoreDims.x,
+                    m_ShowMoreDims.y);
 
                 if (ItemsAvailable > (m_Grid.rows * m_Grid.columns) &&
                     ItemsAvailable >= Assets.Count &&
@@ -254,7 +254,7 @@ namespace UnityEditor
                     position.height -= s_Styles.resultsGridLabel.fixedHeight;
                     // The -1 is to ensure the label has same width as the image and that it aligns with the bottom of the image
                     s_Styles.resultsGridLabel.Draw(new Rect(position.x, position.yMax + 1, position.width - 1,
-                            s_Styles.resultsGridLabel.fixedHeight), labeltext,
+                        s_Styles.resultsGridLabel.fixedHeight), labeltext,
                         false, false, selected, m_Owner.HasFocus());
                 }
             }

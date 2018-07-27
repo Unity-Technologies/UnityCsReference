@@ -10,19 +10,29 @@ namespace UnityEditor.ShortcutManagement
     [InitializeOnLoad]
     class ShortcutIntegration
     {
-        public static ShortcutController instance { get; }
+        public static ShortcutController instance { get; private set; }
 
         static ShortcutIntegration()
         {
-            instance = new ShortcutController(new Discovery());
-            instance.Initialize(instance.profileManager);
+            InitializeController();
             EditorApplication.globalEventHandler += EventHandler;
+
+            // Need to reinitialize after project load if we want menu items
+            EditorApplication.projectWasLoaded += InitializeController;
         }
 
         static void EventHandler()
         {
             instance.contextManager.SetFocusedWindow(EditorWindow.focusedWindow);
             instance.HandleKeyEvent(Event.current);
+        }
+
+        static void InitializeController()
+        {
+            var discoveryIdentifierConflictHandler = new DiscoveryIdentifierConflictHandler();
+            var discovery = new Discovery(new IDiscoveryShortcutProvider[] { new ShortcutAttributeDiscoveryProvider(), new ShortcutMenuItemDiscoveryProvider() }, discoveryIdentifierConflictHandler);
+            instance = new ShortcutController(discovery);
+            instance.Initialize(instance.profileManager);
         }
     }
 
@@ -33,7 +43,9 @@ namespace UnityEditor.ShortcutManagement
         public IShortcutProfileManager profileManager { get; }
         public IDirectory directory { get; private set; }
 
-        public ContextManager contextManager = new ContextManager();
+        ContextManager m_ContextManager = new ContextManager();
+
+        public IContextManager contextManager => m_ContextManager;
 
         public ShortcutController(IDiscovery discovery)
         {
@@ -49,36 +61,6 @@ namespace UnityEditor.ShortcutManagement
         }
 
         internal void HandleKeyEvent(Event evt)
-        {
-            if (contextManager.priorityContext != null && contextManager.priorityContext.active)
-            {
-                // For now the ReserveModifiersAttribute only works with priority context.
-                // Making it working with any contex will require changing how Directory works
-                var contextType = contextManager.priorityContext.GetType();
-                var attributes = contextType.GetCustomAttributes(typeof(ReserveModifiersAttribute), true);
-
-                foreach (var attribue in attributes)
-                {
-                    var modifier = (attribue as ReserveModifiersAttribute).modifier;
-                    if ((modifier & ShortcutModifiers.Shift) == ShortcutModifiers.Shift)
-                    {
-                        evt.shift = false;
-                    }
-                    if ((modifier & ShortcutModifiers.Alt) == ShortcutModifiers.Alt)
-                    {
-                        evt.alt = false;
-                    }
-                    if ((modifier & ShortcutModifiers.ControlOrCommand) == ShortcutModifiers.ControlOrCommand)
-                    {
-                        evt.control = evt.command = false;
-                    }
-                }
-            }
-
-            HandleInTrigger(evt, contextManager);
-        }
-
-        internal virtual void HandleInTrigger(Event evt, IContextManager contextManager)
         {
             m_Trigger.HandleKeyEvent(evt, contextManager);
         }

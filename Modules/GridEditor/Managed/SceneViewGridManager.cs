@@ -152,10 +152,10 @@ namespace UnityEditor
                 Vector3 local = activeGridProxy.WorldToLocal(position);
                 Vector3 interpolatedCell = activeGridProxy.LocalToCellInterpolated(local);
                 Vector3 roundedCell = new Vector3(
-                        Mathf.Round(2.0f * interpolatedCell.x) / 2,
-                        Mathf.Round(2.0f * interpolatedCell.y) / 2,
-                        Mathf.Round(2.0f * interpolatedCell.z) / 2
-                        );
+                    Mathf.Round(2.0f * interpolatedCell.x) / 2,
+                    Mathf.Round(2.0f * interpolatedCell.y) / 2,
+                    Mathf.Round(2.0f * interpolatedCell.z) / 2
+                );
                 local = activeGridProxy.CellToLocalInterpolated(roundedCell);
                 result = activeGridProxy.LocalToWorld(local);
             }

@@ -104,40 +104,40 @@ namespace UnityEditor
             get
             {
                 string r = string.Format("id: {0}\nname: {1}\nstaticPreviewURL: {2}\ndynamicPreviewURL: {3}\n" +
-                        "className: {4}\nprice: {5}\npackageID: {6}",
-                        id, name ?? "N/A", staticPreviewURL ?? "N/A", dynamicPreviewURL ?? "N/A", className ?? "N/A", price, packageID);
+                    "className: {4}\nprice: {5}\npackageID: {6}",
+                    id, name ?? "N/A", staticPreviewURL ?? "N/A", dynamicPreviewURL ?? "N/A", className ?? "N/A", price, packageID);
                 if (previewInfo != null)
                 {
                     r += string.Format("previewInfo {{\n" +
-                            "    packageName: {0}\n" +
-                            "    packageShortUrl: {1}\n" +
-                            "    packageSize: {2}\n" +
-                            "    packageVersion: {3}\n" +
-                            "    packageRating: {4}\n" +
-                            "    packageAssetCount: {5}\n" +
-                            "    isPurchased: {6}\n" +
-                            "    isDownloadable: {7}\n" +
-                            "    publisherName: {8}\n" +
-                            "    encryptionKey: {9}\n" +
-                            "    packageUrl: {10}\n" +
-                            "    buildProgress: {11}\n" +
-                            "    downloadProgress: {12}\n" +
-                            "    categoryName: {13}\n" +
-                            "}}",
-                            previewInfo.packageName ?? "N/A",
-                            previewInfo.packageShortUrl ?? "N/A",
-                            previewInfo.packageSize,
-                            previewInfo.packageVersion ?? "N/A",
-                            previewInfo.packageRating,
-                            previewInfo.packageAssetCount,
-                            previewInfo.isPurchased,
-                            previewInfo.isDownloadable,
-                            previewInfo.publisherName ?? "N/A",
-                            previewInfo.encryptionKey ?? "N/A",
-                            previewInfo.packageUrl ?? "N/A",
-                            previewInfo.buildProgress,
-                            previewInfo.downloadProgress,
-                            previewInfo.categoryName ?? "N/A");
+                        "    packageName: {0}\n" +
+                        "    packageShortUrl: {1}\n" +
+                        "    packageSize: {2}\n" +
+                        "    packageVersion: {3}\n" +
+                        "    packageRating: {4}\n" +
+                        "    packageAssetCount: {5}\n" +
+                        "    isPurchased: {6}\n" +
+                        "    isDownloadable: {7}\n" +
+                        "    publisherName: {8}\n" +
+                        "    encryptionKey: {9}\n" +
+                        "    packageUrl: {10}\n" +
+                        "    buildProgress: {11}\n" +
+                        "    downloadProgress: {12}\n" +
+                        "    categoryName: {13}\n" +
+                        "}}",
+                        previewInfo.packageName ?? "N/A",
+                        previewInfo.packageShortUrl ?? "N/A",
+                        previewInfo.packageSize,
+                        previewInfo.packageVersion ?? "N/A",
+                        previewInfo.packageRating,
+                        previewInfo.packageAssetCount,
+                        previewInfo.isPurchased,
+                        previewInfo.isDownloadable,
+                        previewInfo.publisherName ?? "N/A",
+                        previewInfo.encryptionKey ?? "N/A",
+                        previewInfo.packageUrl ?? "N/A",
+                        previewInfo.buildProgress,
+                        previewInfo.downloadProgress,
+                        previewInfo.categoryName ?? "N/A");
                 }
                 return r;
             }

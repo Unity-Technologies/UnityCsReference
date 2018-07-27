@@ -51,6 +51,11 @@ namespace UnityEditor.StyleSheets
                 return (string)Obj;
             }
 
+            public UnityEngine.Object AsAssetReference()
+            {
+                return (UnityEngine.Object)Obj;
+            }
+
             public override string ToString()
             {
                 return Obj.ToString();
@@ -558,6 +563,11 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.Float:
                     value = srcSheet.ReadFloat(valueHandle);
                     break;
+                case StyleValueType.AssetReference:
+                    value = srcSheet.ReadAssetReference(valueHandle);
+                    break;
+                default:
+                    throw new Exception("Unhandled value type: " + valueHandle.valueType);
             }
             return value;
         }
@@ -582,6 +592,8 @@ namespace UnityEditor.StyleSheets
                     case StyleValueType.ResourcePath:
                         helper.builder.AddValue(value.AsString(), value.ValueType);
                         break;
+                    default:
+                        throw new Exception("Unhandled value type: " + value.ValueType);
                 }
             }
         }

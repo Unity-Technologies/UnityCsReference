@@ -20,6 +20,9 @@ namespace UnityEngine.Animations
     {
         PlayableHandle m_Handle;
 
+        static readonly AnimationMixerPlayable m_NullPlayable = new AnimationMixerPlayable(PlayableHandle.Null);
+        public static AnimationMixerPlayable Null { get { return m_NullPlayable; } }
+
         public static AnimationMixerPlayable Create(PlayableGraph graph, int inputCount = 0, bool normalizeWeights = false)
         {
             var handle = CreateHandle(graph, inputCount, normalizeWeights);

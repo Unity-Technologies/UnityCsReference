@@ -398,10 +398,10 @@ namespace Unity.Experimental.EditorMode
             s_Overrides.Add(window, @override);
 
             CallOnOverride(window, o =>
-                {
-                    o.OnEnable();
-                    o.OnSwitchedToOverride();
-                });
+            {
+                o.OnEnable();
+                o.OnSwitchedToOverride();
+            });
 
             if (s_VisibleWindowsSet.Contains(window) && null != window.m_Parent)
             {

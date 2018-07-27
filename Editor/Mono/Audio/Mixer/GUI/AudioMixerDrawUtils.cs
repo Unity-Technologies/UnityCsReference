@@ -268,7 +268,7 @@ namespace UnityEditor
                 width,
                 new[] { new Color(col.r, col.g, col.b, mixLevel), new Color(col.r, col.g, col.b, mixLevel) },
                 new[] { new Vector3(srcX, srcY, 0.0f), new Vector3(dstX, dstY, 0.0f) }
-                );
+            );
             //Profiler.EndSample ();
         }
 

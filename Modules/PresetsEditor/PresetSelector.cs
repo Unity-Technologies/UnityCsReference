@@ -110,7 +110,7 @@ namespace UnityEditor.Presets
                 return false;
 
             if (EditorGUI.DropdownButton(rectangle, Style.presetIcon , FocusType.Passive,
-                    EditorStyles.iconButton))
+                EditorStyles.iconButton))
             {
                 PresetContextMenu.CreateAndShow(targets);
             }

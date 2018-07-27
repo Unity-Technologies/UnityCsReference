@@ -14,7 +14,7 @@ using Unity.Jobs;
 namespace Unity.Jobs.LowLevel.Unsafe
 {
     public struct BatchQueryJob<CommandT, ResultT> where CommandT : struct
-    where ResultT : struct
+        where ResultT : struct
     {
         public BatchQueryJob(NativeArray<CommandT> commands, NativeArray<ResultT> results)
         {

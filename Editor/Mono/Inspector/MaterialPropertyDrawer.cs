@@ -285,7 +285,7 @@ namespace UnityEditor
             if (!IsPropertyTypeSuitable(prop))
             {
                 GUIContent c = EditorGUIUtility.TempContent("Toggle used on a non-float property: " + prop.name,
-                        EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
                 EditorGUI.LabelField(position, c, EditorStyles.helpBox);
                 return;
             }
@@ -390,7 +390,7 @@ namespace UnityEditor
             if (prop.type != MaterialProperty.PropType.Range)
             {
                 GUIContent c = EditorGUIUtility.TempContent("PowerSlider used on a non-range property: " + prop.name,
-                        EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
                 EditorGUI.LabelField(position, c, EditorStyles.helpBox);
                 return;
             }
@@ -406,7 +406,7 @@ namespace UnityEditor
             if (prop.type != MaterialProperty.PropType.Range)
             {
                 GUIContent c = EditorGUIUtility.TempContent("IntRange used on a non-range property: " + prop.name,
-                        EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
                 EditorGUI.LabelField(position, c, EditorStyles.helpBox);
                 return;
             }
@@ -469,7 +469,7 @@ namespace UnityEditor
             if (!IsPropertyTypeSuitable(prop))
             {
                 GUIContent c = EditorGUIUtility.TempContent("KeywordEnum used on a non-float property: " + prop.name,
-                        EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
                 EditorGUI.LabelField(position, c, EditorStyles.helpBox);
                 return;
             }
@@ -521,8 +521,8 @@ namespace UnityEditor
             try
             {
                 var enumType = loadedTypes.FirstOrDefault(
-                        x => x.IsSubclassOf(typeof(Enum)) && (x.Name == enumName || x.FullName == enumName)
-                        );
+                    x => x.IsSubclassOf(typeof(Enum)) && (x.Name == enumName || x.FullName == enumName)
+                );
                 var enumNames = Enum.GetNames(enumType);
                 this.names = new GUIContent[enumNames.Length];
                 for (int i = 0; i < enumNames.Length; ++i)
@@ -573,7 +573,7 @@ namespace UnityEditor
             if (prop.type != MaterialProperty.PropType.Float && prop.type != MaterialProperty.PropType.Range)
             {
                 GUIContent c = EditorGUIUtility.TempContent("Enum used on a non-float property: " + prop.name,
-                        EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+                    EditorGUIUtility.GetHelpIcon(MessageType.Warning));
                 EditorGUI.LabelField(position, c, EditorStyles.helpBox);
                 return;
             }

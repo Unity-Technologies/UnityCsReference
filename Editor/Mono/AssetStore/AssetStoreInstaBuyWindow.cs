@@ -378,54 +378,54 @@ namespace UnityEditor
             m_Password = "";
             m_Purchasing = PurchaseStatus.InProgress;
             AssetStoreClient.DirectPurchase(m_Asset.packageID, pw, delegate(PurchaseResult result) {
-                    m_Purchasing = PurchaseStatus.Init;
-                    if (result.error != null)
-                    {
-                        m_Purchasing = PurchaseStatus.Declined;
-                        m_Message = "An error occurred while completing you purhase.";
-                        Close();
-                    }
+                m_Purchasing = PurchaseStatus.Init;
+                if (result.error != null)
+                {
+                    m_Purchasing = PurchaseStatus.Declined;
+                    m_Message = "An error occurred while completing you purhase.";
+                    Close();
+                }
 
-                    string msg = null;
-                    switch (result.status)
-                    {
-                        case PurchaseResult.Status.BasketNotEmpty:
-                            m_Message = "Something else has been put in our Asset Store basket while doing this purchase.";
-                            m_Purchasing = PurchaseStatus.Declined;
-                            break;
-                        case PurchaseResult.Status.ServiceDisabled:
-                            m_Message = "Single click purchase has been disabled while doing this purchase.";
-                            m_Purchasing = PurchaseStatus.Declined;
-                            break;
-                        case PurchaseResult.Status.AnonymousUser:
-                            m_Message = "You have been logged out from somewhere else while doing this purchase.";
-                            m_Purchasing = PurchaseStatus.Declined;
-                            break;
-                        case PurchaseResult.Status.PasswordMissing:
+                string msg = null;
+                switch (result.status)
+                {
+                    case PurchaseResult.Status.BasketNotEmpty:
+                        m_Message = "Something else has been put in our Asset Store basket while doing this purchase.";
+                        m_Purchasing = PurchaseStatus.Declined;
+                        break;
+                    case PurchaseResult.Status.ServiceDisabled:
+                        m_Message = "Single click purchase has been disabled while doing this purchase.";
+                        m_Purchasing = PurchaseStatus.Declined;
+                        break;
+                    case PurchaseResult.Status.AnonymousUser:
+                        m_Message = "You have been logged out from somewhere else while doing this purchase.";
+                        m_Purchasing = PurchaseStatus.Declined;
+                        break;
+                    case PurchaseResult.Status.PasswordMissing:
+                        m_Message = result.message;
+                        Repaint();
+                        break;
+                    case PurchaseResult.Status.PasswordWrong:
+                        m_Message = result.message;
+                        Repaint();
+                        break;
+                    case PurchaseResult.Status.PurchaseDeclined:
+                        m_Purchasing = PurchaseStatus.Declined;
+                        if (result.message != null)
                             m_Message = result.message;
-                            Repaint();
-                            break;
-                        case PurchaseResult.Status.PasswordWrong:
+                        Repaint();
+                        break;
+                    case PurchaseResult.Status.Ok:
+                        m_Purchasing = PurchaseStatus.Complete;
+                        if (result.message != null)
                             m_Message = result.message;
-                            Repaint();
-                            break;
-                        case PurchaseResult.Status.PurchaseDeclined:
-                            m_Purchasing = PurchaseStatus.Declined;
-                            if (result.message != null)
-                                m_Message = result.message;
-                            Repaint();
-                            break;
-                        case PurchaseResult.Status.Ok:
-                            m_Purchasing = PurchaseStatus.Complete;
-                            if (result.message != null)
-                                m_Message = result.message;
-                            Repaint();
-                            break;
-                    }
-                    if (msg != null)
-                        EditorUtility.DisplayDialog("Purchase failed", msg + " This purchase has been cancelled.",
-                            "Add this item to basket", "Cancel");
-                });
+                        Repaint();
+                        break;
+                }
+                if (msg != null)
+                    EditorUtility.DisplayDialog("Purchase failed", msg + " This purchase has been cancelled.",
+                        "Add this item to basket", "Cancel");
+            });
         }
 
         void BuildPackage()
@@ -445,35 +445,35 @@ namespace UnityEditor
             m_Purchasing = PurchaseStatus.Building;
 
             AssetStoreClient.BuildPackage(m_Asset, delegate(BuildPackageResult result) {
-                    if (this == null) return; // aborted
-                    if (result.error != null)
-                    {
-                        Debug.Log(result.error);
-                        if (EditorUtility.DisplayDialog("Error building package",
-                                "The server was unable to build the package. Please re-import.",
-                                "Ok"))
-                            Close();
-                        return;
-                    }
-
-                    if (m_Asset == null || m_Purchasing != PurchaseStatus.Building || result.packageID != m_Asset.packageID)
-                    {
-                        // Aborted
+                if (this == null) return;     // aborted
+                if (result.error != null)
+                {
+                    Debug.Log(result.error);
+                    if (EditorUtility.DisplayDialog("Error building package",
+                        "The server was unable to build the package. Please re-import.",
+                        "Ok"))
                         Close();
-                    }
+                    return;
+                }
 
-                    string url = result.asset.previewInfo.packageUrl;
-                    if (url != null && url != "")
-                    {
-                        DownloadPackage();
-                    }
-                    else
-                    {
-                        // Retry since package is not done building on server
-                        m_Purchasing = PurchaseStatus.StartBuild;
-                    }
-                    Repaint();
-                });
+                if (m_Asset == null || m_Purchasing != PurchaseStatus.Building || result.packageID != m_Asset.packageID)
+                {
+                    // Aborted
+                    Close();
+                }
+
+                string url = result.asset.previewInfo.packageUrl;
+                if (url != null && url != "")
+                {
+                    DownloadPackage();
+                }
+                else
+                {
+                    // Retry since package is not done building on server
+                    m_Purchasing = PurchaseStatus.StartBuild;
+                }
+                Repaint();
+            });
         }
 
         void DownloadPackage()

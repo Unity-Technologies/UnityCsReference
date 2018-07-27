@@ -8,6 +8,7 @@ using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Assertions;
 using UnityEngine.Profiling;
@@ -27,7 +28,7 @@ namespace UnityEditor
 
         int m_RootInstanceID;
         string m_SearchString = "";
-        int m_SearchMode = 0; // 0 = All
+        SearchableEditorWindow.SearchModeHierarchyWindow m_SearchMode = 0; // 0 = All
         double m_LastFetchTime = 0.0;
         int m_DelayedFetches = 0;
         bool m_NeedsChildParentReferenceSetup;
@@ -53,7 +54,7 @@ namespace UnityEditor
                 m_SearchString = value;
             }
         }
-        public int searchMode { get { return m_SearchMode; } set { m_SearchMode = value; } }
+        public SearchableEditorWindow.SearchModeHierarchyWindow searchMode { get { return m_SearchMode; } set { m_SearchMode = value; } }
         public bool isFetchAIssue { get { return m_DelayedFetches >= k_MaxDelayedFetch; } }
 
         public Scene[] scenes { get; set; }
@@ -111,7 +112,7 @@ namespace UnityEditor
 
         private bool IsValidHierarchyInstanceID(int instanceID)
         {
-            bool isScene = SceneHierarchyWindow.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(instanceID));
+            bool isScene = SceneHierarchy.IsSceneHeaderInHierarchyWindow(EditorSceneManager.GetSceneByHandle(instanceID));
             bool isGameObject = InternalEditorUtility.GetTypeWithoutLoadingObject(instanceID) == typeof(GameObject);
             return isScene || isGameObject;
         }
@@ -171,11 +172,24 @@ namespace UnityEditor
             return base.FindItem(id);
         }
 
-        HierarchyProperty CreateHierarchyProperty()
+        bool AreScenesValid(Scene[] customScenes)
+        {
+            if (customScenes == null)
+                return false;
+
+            foreach (var scene in customScenes)
+                if (!scene.IsValid())
+                    return false;
+
+            return true;
+        }
+
+        internal HierarchyProperty CreateHierarchyProperty()
         {
             HierarchyProperty property = new HierarchyProperty(k_HierarchyType);
             property.alphaSorted = IsUsingAlphaSort();
-            if (scenes != null && scenes.Length > 0)
+            property.showSceneHeaders = PrefabStageUtility.GetCurrentPrefabStage() == null;
+            if (AreScenesValid(scenes))
                 property.SetCustomScenes(scenes);
             return property;
         }
@@ -236,7 +250,7 @@ namespace UnityEditor
             if (isSearching || subTreeWanted)
             {
                 if (isSearching)
-                    property.SetSearchFilter(m_SearchString, m_SearchMode);
+                    property.SetSearchFilter(m_SearchString, (int)m_SearchMode);
 
                 InitializeProgressivly(property, subTreeWanted, isSearching);
             }
@@ -263,7 +277,7 @@ namespace UnityEditor
 
             CreateSceneHeaderItems();
 
-            if (SceneHierarchyWindow.s_Debug)
+            if (SceneHierarchy.s_Debug)
                 Debug.Log("Fetch time: " + fetchTotalTime * 1000.0 + " ms, alphaSort = " + IsUsingAlphaSort());
 
             Profiler.EndSample();
@@ -325,7 +339,7 @@ namespace UnityEditor
             ResizeItemList(m_RowCount);
             property.Reset();
 
-            if (SceneHierarchyWindow.debug)
+            if (SceneHierarchy.s_Debug)
                 Log("Init minimal (" + m_RowCount + ")");
 
             int firstRow, lastRow;
@@ -338,7 +352,7 @@ namespace UnityEditor
 
         void InitializeFull()
         {
-            if (SceneHierarchyWindow.debug)
+            if (SceneHierarchy.s_Debug)
                 Log("Init full (" + m_RowCount + ")");
 
             HierarchyProperty property = CreateHierarchyProperty();
@@ -431,6 +445,9 @@ namespace UnityEditor
 
         bool AddSceneHeaderToSearchIfNeeded(GameObjectTreeViewItem item, HierarchyProperty property, ref int currentSceneHandle)
         {
+            if (PrefabStageUtility.GetCurrentPrefabStage() != null)
+                return false;
+
             Scene scene = property.GetScene();
             if (currentSceneHandle != scene.handle)
             {
@@ -491,6 +508,7 @@ namespace UnityEditor
             item.id = itemID;
             item.depth = depth;
             item.parent = null;
+            item.icon = null;
             if (isSceneHeader)
                 item.displayName = string.IsNullOrEmpty(scene.name) ? "Untitled" : scene.name;
             else
@@ -501,7 +519,10 @@ namespace UnityEditor
             item.shouldDisplay = true;
             item.isSceneHeader = isSceneHeader;
             item.scene = scene;
-            item.icon = isSceneHeader ? EditorGUIUtility.FindTexture(typeof(SceneAsset)) : null;
+
+            item.lazyInitializationDone = false;
+            item.showPrefabModeButton = false;
+            item.overlayIcon = null;
 
             if (hasChildren)
             {
@@ -573,6 +594,23 @@ namespace UnityEditor
 
                 m_StickySceneHeaderItems.Add(item);
             }
+        }
+
+        public Scene GetLastScene()
+        {
+            if (scenes != null)
+            {
+                for (int i = scenes.Length - 1; i >= 0; i--)
+                    if (scenes[i].isLoaded)
+                        return scenes[i];
+            }
+
+            for (int i = SceneManager.sceneCount - 1; i >= 0; i--)
+                if (SceneManager.GetSceneAt(i).isLoaded)
+                    return SceneManager.GetSceneAt(i);
+
+            Assert.IsTrue(false, "No loaded scene could be found");
+            return new Scene();
         }
     }
 }

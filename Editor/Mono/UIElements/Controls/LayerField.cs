@@ -23,7 +23,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var lf = (LayerField)ve;
-                lf.value = m_Value.GetValueFromBag(bag);
+                lf.SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
             }
         }
 
@@ -41,6 +41,14 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     base.value = value;
                 }
+            }
+        }
+
+        public override void SetValueWithoutNotify(int newValue)
+        {
+            if (m_Choices.Contains(newValue))
+            {
+                base.SetValueWithoutNotify(newValue);
             }
         }
 
@@ -63,7 +71,7 @@ namespace UnityEditor.Experimental.UIElements
 
         public LayerField(int defaultValue) : this()
         {
-            value = defaultValue;
+            SetValueWithoutNotify(defaultValue);
         }
 
         internal override void AddMenuItems(GenericMenu menu)

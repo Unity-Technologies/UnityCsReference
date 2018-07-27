@@ -26,11 +26,22 @@ namespace UnityEditor.Experimental.UIElements
                 {
                     throw new ArgumentException(string.Format("Value {0} is not present in the list of possible values", value));
                 }
-
                 m_Index = newIndex;
 
                 base.value = value;
             }
+        }
+
+        public override void SetValueWithoutNotify(T newValue)
+        {
+            int newIndex = m_Choices.IndexOf(newValue);
+            if (newIndex < 0)
+            {
+                throw new ArgumentException(string.Format("Value {0} is not present in the list of possible values", newValue));
+            }
+            m_Index = newIndex;
+
+            base.SetValueWithoutNotify(newValue);
         }
 
         private int m_Index = -1;
@@ -64,7 +75,7 @@ namespace UnityEditor.Experimental.UIElements
                 throw new ArgumentException(string.Format("Default value {0} is not present in the list of possible values", defaultValue));
 
             // Note: idx will be set when setting value
-            value = defaultValue;
+            SetValueWithoutNotify(defaultValue);
         }
 
         public PopupField(List<T> choices, int defaultIndex) :

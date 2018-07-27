@@ -200,7 +200,7 @@ namespace UnityEngine
             [NotNull] RenderBuffer[] color, RenderBuffer depth, int mip, CubemapFace face, int depthSlice,
             [NotNull] RenderBufferLoadAction[] colorLA, [NotNull] RenderBufferStoreAction[] colorSA,
             RenderBufferLoadAction depthLA, RenderBufferStoreAction depthSA
-            );
+        );
 
         [NativeMethod(Name = "GraphicsScripting::SetRandomWriteTargetRT", IsFreeFunction = true, ThrowsException = true)]
         extern private static void Internal_SetRandomWriteTargetRT(int index, RenderTexture uav);

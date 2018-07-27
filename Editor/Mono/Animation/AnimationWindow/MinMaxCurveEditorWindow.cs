@@ -97,20 +97,20 @@ namespace UnityEditor
 
                 // Selection callback for library window
                 System.Action<DoubleCurve> presetSelectedCallback = delegate(DoubleCurve presetCurve)
-                    {
-                        var doubleCurve = new DoubleCurve(min, max, true);
-                        doubleCurve.minCurve.keys = CurveEditorWindow.GetNormalizedKeys(presetCurve.minCurve.keys, m_CurveEditor);
-                        doubleCurve.minCurve.postWrapMode = presetCurve.minCurve.postWrapMode;
-                        doubleCurve.minCurve.preWrapMode = presetCurve.minCurve.preWrapMode;
+                {
+                    var doubleCurve = new DoubleCurve(min, max, true);
+                    doubleCurve.minCurve.keys = CurveEditorWindow.GetNormalizedKeys(presetCurve.minCurve.keys, m_CurveEditor);
+                    doubleCurve.minCurve.postWrapMode = presetCurve.minCurve.postWrapMode;
+                    doubleCurve.minCurve.preWrapMode = presetCurve.minCurve.preWrapMode;
 
-                        doubleCurve.maxCurve.keys = CurveEditorWindow.GetNormalizedKeys(presetCurve.maxCurve.keys, m_CurveEditor);
-                        doubleCurve.maxCurve.postWrapMode = presetCurve.maxCurve.postWrapMode;
-                        doubleCurve.maxCurve.preWrapMode = presetCurve.maxCurve.preWrapMode;
+                    doubleCurve.maxCurve.keys = CurveEditorWindow.GetNormalizedKeys(presetCurve.maxCurve.keys, m_CurveEditor);
+                    doubleCurve.maxCurve.postWrapMode = presetCurve.maxCurve.postWrapMode;
+                    doubleCurve.maxCurve.preWrapMode = presetCurve.maxCurve.preWrapMode;
 
-                        m_CurveEditor.SelectNone();
-                        RefreshShownCurves();
-                        SendEvent("CurveChanged", true);
-                    };
+                    m_CurveEditor.SelectNone();
+                    RefreshShownCurves();
+                    SendEvent("CurveChanged", true);
+                };
 
                 // We set the curve to save when showing the popup to ensure to scale the current state of the curve
                 m_CurvePresets = new DoubleCurvePresetsContentsForPopupWindow(new DoubleCurve(min, max, true), presetSelectedCallback);

@@ -58,6 +58,7 @@ namespace UnityEditor
         internal SearchMode m_SearchMode = SearchMode.All;
         bool m_FocusSearchField = false;
         bool m_HasSearchFilterFocus = false;
+        protected int m_SearchGroup;
 
         [MenuItem("Assets/Find References In Scene", false, 25)]
         private static void OnSearchForReferences()
@@ -182,7 +183,7 @@ namespace UnityEditor
             {
                 foreach (SearchableEditorWindow sw in searchableWindows)
                 {
-                    if (sw != this && sw.m_HierarchyType == m_HierarchyType && sw.m_HierarchyType != HierarchyType.Assets)
+                    if (sw != this && sw.m_HierarchyType == m_HierarchyType && m_SearchGroup == sw.m_SearchGroup && sw.m_HierarchyType != HierarchyType.Assets)
                         sw.SetSearchFilter(m_SearchFilter, m_SearchMode, false);
                 }
             }
@@ -232,7 +233,7 @@ namespace UnityEditor
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape && m_SearchFilter != "" && GUIUtility.hotControl == 0)
             {
                 m_SearchFilter = "";
-                SetSearchFilter(searchFilter, (SearchMode)searchMode, true);
+                SetSearchFilter("", (SearchMode)searchMode, true);
                 Event.current.Use();
                 m_HasSearchFilterFocus = false;
             }

@@ -391,7 +391,7 @@ namespace UnityEditor
             {
                 rect = ModuleUI.PrefixLabel(rect, m_RenderingLayerMaskStyle);
                 mask = EditorGUI.MaskField(rect, GUIContent.none, mask, layerNames,
-                        ParticleSystemStyles.Get().popup);
+                    ParticleSystemStyles.Get().popup);
             }
             else
                 mask = EditorGUI.MaskField(rect, m_RenderingLayerMaskStyle, mask, layerNames);

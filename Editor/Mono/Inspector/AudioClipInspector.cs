@@ -179,24 +179,24 @@ namespace UnityEditor
                 Color curveColor = new Color(1.0f, 140.0f / 255.0f, 0.0f, 1.0f);
 
                 AudioCurveRendering.AudioMinMaxCurveAndColorEvaluator dlg = delegate(float x, out Color col, out float minValue, out float maxValue)
+                {
+                    col = curveColor;
+                    if (numSamples <= 0)
                     {
-                        col = curveColor;
-                        if (numSamples <= 0)
-                        {
-                            minValue = 0.0f;
-                            maxValue = 0.0f;
-                        }
-                        else
-                        {
-                            float p = Mathf.Clamp(x * (numSamples - 2), 0.0f, numSamples - 2);
-                            int i = (int)Mathf.Floor(p);
-                            int offset1 = (i * numChannels + channel) * 2;
-                            int offset2 = offset1 + numChannels * 2;
-                            minValue = Mathf.Min(minMaxData[offset1 + 1], minMaxData[offset2 + 1]) * scaleFactor;
-                            maxValue = Mathf.Max(minMaxData[offset1 + 0], minMaxData[offset2 + 0]) * scaleFactor;
-                            if (minValue > maxValue) { float tmp = minValue; minValue = maxValue; maxValue = tmp; }
-                        }
-                    };
+                        minValue = 0.0f;
+                        maxValue = 0.0f;
+                    }
+                    else
+                    {
+                        float p = Mathf.Clamp(x * (numSamples - 2), 0.0f, numSamples - 2);
+                        int i = (int)Mathf.Floor(p);
+                        int offset1 = (i * numChannels + channel) * 2;
+                        int offset2 = offset1 + numChannels * 2;
+                        minValue = Mathf.Min(minMaxData[offset1 + 1], minMaxData[offset2 + 1]) * scaleFactor;
+                        maxValue = Mathf.Max(minMaxData[offset1 + 0], minMaxData[offset2 + 0]) * scaleFactor;
+                        if (minValue > maxValue) { float tmp = minValue; minValue = maxValue; maxValue = tmp; }
+                    }
+                };
 
                 if (setMaterial)
                     AudioCurveRendering.DrawMinMaxFilledCurve(channelRect, dlg);

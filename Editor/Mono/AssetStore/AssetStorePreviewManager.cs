@@ -196,34 +196,34 @@ namespace UnityEditor
             cached.client = client;
             client.tag = tag;
             client.doneCallback = delegate(AsyncHTTPClient c) {
-                    // Debug.Log("Got image " + EditorApplication.timeSinceStartup.ToString());
-                    cached.client = null;
-                    if (!client.IsSuccess())
+                // Debug.Log("Got image " + EditorApplication.timeSinceStartup.ToString());
+                cached.client = null;
+                if (!client.IsSuccess())
+                {
+                    if (client.state != AsyncHTTPClient.State.ABORTED)
                     {
-                        if (client.state != AsyncHTTPClient.State.ABORTED)
-                        {
-                            string err = "error " + client.text + " " + client.state.ToString() + " '" + url + "'";
-                            if (ObjectListArea.s_Debug)
-                                Debug.LogError(err);
-                            else
-                                System.Console.Write(err);
-                        }
+                        string err = "error " + client.text + " " + client.state.ToString() + " '" + url + "'";
+                        if (ObjectListArea.s_Debug)
+                            Debug.LogError(err);
                         else
-                        {
-                            Instance.m_Aborted++;
-                        }
-                        return;
+                            System.Console.Write(err);
                     }
+                    else
+                    {
+                        Instance.m_Aborted++;
+                    }
+                    return;
+                }
 
-                    // In the case of refetch because of resize first destroy the current image
-                    if (cached.image != null)
-                        Object.DestroyImmediate(cached.image);
+                // In the case of refetch because of resize first destroy the current image
+                if (cached.image != null)
+                    Object.DestroyImmediate(cached.image);
 
-                    cached.image = c.texture;
+                cached.image = c.texture;
 
-                    s_NeedsRepaint = true;
-                    Instance.m_Success++;
-                };
+                s_NeedsRepaint = true;
+                Instance.m_Success++;
+            };
             return client;
         }
 

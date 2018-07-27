@@ -79,6 +79,7 @@ namespace UnityEditor
         SamsungTV = 22,
 
         /// Nintendo 3DS target.
+        [System.Obsolete("Nintendo 3DS support is unavailable since 2018.1")]
         N3DS = 23,
 
         [Obsolete("Wii U support was removed in 2018.1")]

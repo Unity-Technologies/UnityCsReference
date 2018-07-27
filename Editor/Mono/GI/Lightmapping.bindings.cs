@@ -380,24 +380,24 @@ namespace UnityEditor
             // Restore old scene setup once the bake finishes
             Lightmapping.OnCompletedFunction OnBakeFinish = null;
             OnBakeFinish = () =>
-                {
-                    EditorSceneManager.SaveOpenScenes();
-                    if (sceneSetup.Length > 0)
-                        EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
-                    Lightmapping.completed -= OnBakeFinish;
-                };
+            {
+                EditorSceneManager.SaveOpenScenes();
+                if (sceneSetup.Length > 0)
+                    EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
+                Lightmapping.completed -= OnBakeFinish;
+            };
 
             // Call BakeAsync when all scenes are loaded and attach cleanup delegate
             EditorSceneManager.SceneOpenedCallback BakeOnAllOpen = null;
             BakeOnAllOpen = (UnityEngine.SceneManagement.Scene scene, SceneManagement.OpenSceneMode loadSceneMode) =>
+            {
+                if (EditorSceneManager.loadedSceneCount == paths.Length)
                 {
-                    if (EditorSceneManager.loadedSceneCount == paths.Length)
-                    {
-                        BakeAsync();
-                        Lightmapping.completed += OnBakeFinish;
-                        EditorSceneManager.sceneOpened -= BakeOnAllOpen;
-                    }
-                };
+                    BakeAsync();
+                    Lightmapping.completed += OnBakeFinish;
+                    EditorSceneManager.sceneOpened -= BakeOnAllOpen;
+                }
+            };
 
             EditorSceneManager.sceneOpened += BakeOnAllOpen;
 

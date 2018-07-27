@@ -565,8 +565,8 @@ namespace UnityEditor.IMGUI.Controls
             if (m_UseScrollView)
             {
                 state.scrollPos = GUI.BeginScrollView(m_TotalRect, state.scrollPos, m_ContentRect,
-                        horizontalScrollbarStyle != null ? horizontalScrollbarStyle : GUI.skin.horizontalScrollbar,
-                        verticalScrollbarStyle != null ? verticalScrollbarStyle : GUI.skin.verticalScrollbar);
+                    horizontalScrollbarStyle != null ? horizontalScrollbarStyle : GUI.skin.horizontalScrollbar,
+                    verticalScrollbarStyle != null ? verticalScrollbarStyle : GUI.skin.verticalScrollbar);
             }
             else
                 GUI.BeginClip(m_TotalRect);
@@ -1184,6 +1184,7 @@ namespace UnityEditor.IMGUI.Controls
             {
                 state.selectedIDs = newSelection;
                 NotifyListenersThatSelectionChanged();
+                Repaint();
             }
         }
 

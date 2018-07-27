@@ -50,7 +50,7 @@ namespace UnityEditorInternal
                 Mathf.RoundToInt(rect.yMin),
                 Mathf.RoundToInt(rect.width),
                 Mathf.RoundToInt(rect.height)
-                );
+            );
         }
 
         public static Rect RoundToInt(Rect r)

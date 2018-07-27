@@ -116,13 +116,6 @@ namespace UnityEngine
         [FreeFunction("SetActivityIndicatorStyle_Bindings")]
         private static extern void SetActivityIndicatorStyleImpl_Bindings(int style);
 
-        /// Sets ActivityIndicator style. See iOS.ActivityIndicatorStyle enumeration for possible values.
-        /// Be warned that it will take effect on next call to StartActivityIndicator.
-        public static void SetActivityIndicatorStyle(iOS.ActivityIndicatorStyle style)
-        {
-            SetActivityIndicatorStyleImpl_Bindings((int)style);
-        }
-
 
         /// Sets ActivityIndicator style. See AndroidActivityIndicatorStyle enumeration for possible values.
         /// Be warned that it will take effect on next call to StartActivityIndicator.

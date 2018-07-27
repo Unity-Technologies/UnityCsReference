@@ -12,7 +12,7 @@ namespace UnityEditor
         {
             float height = EditorGUI.kStructHeaderLineHeight + EditorGUI.kSingleLineHeight * GetChildrenCount(property);
             Rect rect = GUILayoutUtility.GetRect(EditorGUILayout.kLabelFloatMinW, EditorGUILayout.kLabelFloatMaxW,
-                    height, height, EditorStyles.layerMaskField, options);
+                height, height, EditorStyles.layerMaskField, options);
 
             StructPropertyGUI.GenericStruct(rect, property);
         }

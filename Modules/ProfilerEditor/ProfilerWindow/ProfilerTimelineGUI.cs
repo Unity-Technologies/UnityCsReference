@@ -1042,10 +1042,10 @@ namespace UnityEditorInternal
         void HandleThreadSplitter(GroupInfo group, ThreadInfo thread, Rect fullThreadsRect, float yOffsetForThisThread)
         {
             Rect splitterRect = new Rect(
-                    fullThreadsRect.x + 1,
-                    CalculateMaxYPositionForThread(thread.linesToDisplay, fullThreadsRect.y, yOffsetForThisThread) - (k_ThreadSplitterHandleSize / 2f),
-                    fullThreadsRect.width - 2,
-                    k_ThreadSplitterHandleSize);
+                fullThreadsRect.x + 1,
+                CalculateMaxYPositionForThread(thread.linesToDisplay, fullThreadsRect.y, yOffsetForThisThread) - (k_ThreadSplitterHandleSize / 2f),
+                fullThreadsRect.width - 2,
+                k_ThreadSplitterHandleSize);
 
             // Handle the mouse cursor look
             if (Event.current.type == EventType.Repaint)
@@ -1127,10 +1127,10 @@ namespace UnityEditorInternal
                 float threadYMax = CalculateMaxYPositionForThread(roundedLineCount, fullThreadsRectWithoutSidebar.y, yOffsetForThisThread);
                 Vector2 expandCollapsButtonSize = expandCollapsButtonStyle.CalcSize(GUIContent.none);
                 Rect expandCollapsButtonRect = new Rect(
-                        fullThreadsRectWithoutSidebar.x + fullThreadsRectWithoutSidebar.width / 2 - expandCollapsButtonSize.x / 2,
-                        threadYMax - expandCollapsButtonSize.y,
-                        expandCollapsButtonSize.x,
-                        expandCollapsButtonSize.y);
+                    fullThreadsRectWithoutSidebar.x + fullThreadsRectWithoutSidebar.width / 2 - expandCollapsButtonSize.x / 2,
+                    threadYMax - expandCollapsButtonSize.y,
+                    expandCollapsButtonSize.x,
+                    expandCollapsButtonSize.y);
 
                 // only do the button if it is visible
                 if (GUIClip.visibleRect.Overlaps(expandCollapsButtonRect))

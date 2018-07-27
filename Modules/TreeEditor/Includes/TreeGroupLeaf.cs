@@ -182,7 +182,7 @@ namespace TreeEditor
                         Vector4 opos = node.matrix.GetColumn(3);
                         Quaternion targetQuat = Quaternion.Euler(90.0f, node.angle, 0.0f);
                         Quaternion newQuat = Quaternion.Slerp(MathUtils.QuaternionFromMatrix(node.matrix), targetQuat,
-                                horizontalAlign);
+                            horizontalAlign);
 
                         node.matrix = Matrix4x4.TRS(Vector3.zero, newQuat, Vector3.one);
                         node.matrix.SetColumn(3, opos);
@@ -524,7 +524,8 @@ namespace TreeEditor
 
                 int materialIndex = GetMaterialIndex(materialLeaf, materials, false);
 
-                Vector2[] rawHull = new Vector2[] {
+                Vector2[] rawHull = new Vector2[]
+                {
                     new Vector2(0, 1),
                     new Vector2(0, 0),
                     new Vector2(1, 0),
@@ -534,7 +535,8 @@ namespace TreeEditor
                 if (textureHull == null)
                     textureHull = rawHull;
                 float ns = node.scale;
-                Vector3[] positionsRaw = new Vector3[] {
+                Vector3[] positionsRaw = new Vector3[]
+                {
                     new Vector3(-ns, 0f, -ns),
                     new Vector3(-ns, 0f,  ns),
                     new Vector3(ns, 0f,  ns),
@@ -543,7 +545,8 @@ namespace TreeEditor
 
                 Vector3 normal = new Vector3(GenerateBendNormalFactor, 1.0f - GenerateBendNormalFactor, GenerateBendNormalFactor);
 
-                Vector3[] normalsRaw = new Vector3[] {
+                Vector3[] normalsRaw = new Vector3[]
+                {
                     new Vector3(-normal.x, normal.y, -normal.z).normalized,
                     new Vector3(-normal.x, normal.y, 0).normalized, // note z always 0
                     new Vector3(normal.x, normal.y, 0).normalized, // note z always 0

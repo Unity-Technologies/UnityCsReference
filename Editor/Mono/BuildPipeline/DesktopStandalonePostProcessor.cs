@@ -321,14 +321,14 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     {
         File.WriteAllText(Path.Combine(args.stagingAreaData, "app.info"),
             string.Join("\n", new[]
-        {
-            args.companyName,
-            args.productName
-        }));
+            {
+                args.companyName,
+                args.productName
+            }));
         args.report.RecordFileAdded(Path.Combine(args.stagingAreaData, "app.info"), CommonRoles.appInfo);
     }
 
-    protected bool CopyPlayerFilter(string path, BuildPostProcessArgs args)
+    protected virtual bool CopyPlayerFilter(string path, BuildPostProcessArgs args)
     {
         // Don't copy UnityEngine mdb files
         return Path.GetExtension(path) != ".mdb" || !Path.GetFileName(path).StartsWith("UnityEngine.");
@@ -447,7 +447,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     protected void DeleteUnusedMono(string dataFolder, BuildReport report)
     {
         // Mono is built by the il2cpp builder, so we dont need the libs copied
-        bool deleteBoth = IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
+        bool deleteBoth = UseIl2Cpp && !IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildTargetGroup.Standalone);
 
         if (deleteBoth || EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
         {
@@ -500,6 +500,7 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     }
 
     protected abstract string PlatformStringFor(BuildTarget target);
+
     protected abstract void RenameFilesInStagingArea(BuildPostProcessArgs args);
 
     protected abstract IIl2CppPlatformProvider GetPlatformProvider(BuildPostProcessArgs args);

@@ -95,9 +95,9 @@ namespace UnityEditorInternal
                     else
                     {
                         Rect rect = new Rect((element.position.center.x - icon.width / 2),
-                                (element.position.center.y - icon.height / 2),
-                                icon.width,
-                                icon.height);
+                            (element.position.center.y - icon.height / 2),
+                            icon.width,
+                            icon.height);
                         GUI.Label(rect, icon, GUIStyle.none);
                     }
                 }

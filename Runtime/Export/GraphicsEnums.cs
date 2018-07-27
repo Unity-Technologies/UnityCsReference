@@ -328,7 +328,9 @@ namespace UnityEngine
         ASTC_RGBA_12x12 = 59,
 
         // Nintendo 3DS
+        [System.Obsolete("Nintendo 3DS is no longer supported.")]
         ETC_RGB4_3DS = 60,
+        [System.Obsolete("Nintendo 3DS is no longer supported.")]
         ETC_RGBA8_3DS = 61,
 
         RG16 = 62,
@@ -1079,6 +1081,7 @@ namespace UnityEngine.Rendering
         Metal = 16,
         OpenGLCore = 17,
         Direct3D12 = 18,
+        [System.Obsolete("Nintendo 3DS support is unavailable since 2018.1")]
         N3DS = 19,
         Vulkan = 21,
         Switch = 22,

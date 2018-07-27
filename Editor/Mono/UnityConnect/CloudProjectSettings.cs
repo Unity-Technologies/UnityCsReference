@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -30,6 +31,11 @@ namespace UnityEditor
             {
                 return UnityConnect.instance.GetAccessToken();
             }
+        }
+
+        public static void RefreshAccessToken(Action<bool> refresh)
+        {
+            UnityConnect.instance.RefreshAccessToken(refresh);
         }
 
         public static string projectId

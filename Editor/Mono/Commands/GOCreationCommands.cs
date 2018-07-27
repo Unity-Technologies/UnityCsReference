@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Video;
 
@@ -11,11 +12,6 @@ namespace UnityEditor
 {
     static class GOCreationCommands
     {
-        internal static GameObject CreateGameObject(GameObject parent, string name, params Type[] types)
-        {
-            return ObjectFactory.CreateGameObject(GameObjectUtility.GetUniqueNameForSibling(parent != null ? parent.transform : null, name), types);
-        }
-
         internal static void Place(GameObject go, GameObject parent)
         {
             if (parent != null)
@@ -33,7 +29,13 @@ namespace UnityEditor
             else
             {
                 SceneView.PlaceGameObjectInFrontOfSceneView(go);
+                StageUtility.PlaceGameObjectInCurrentStage(go); // may change parent
             }
+
+            // Only at this point do we know the actual parent of the object and can mopdify its name accordingly.
+            GameObjectUtility.EnsureUniqueNameForSibling(go);
+            Undo.SetCurrentGroupName("Create " + go.name);
+
             EditorWindow.FocusWindowIfItsOpen<SceneHierarchyWindow>();
             Selection.activeGameObject = go;
         }
@@ -42,7 +44,7 @@ namespace UnityEditor
         static void CreateEmpty(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(CreateGameObject(parent, "GameObject"), parent);
+            Place(ObjectFactory.CreateGameObject("GameObject"), parent);
         }
 
         [MenuItem("GameObject/Create Empty Child &#n", priority = 0)]
@@ -51,17 +53,14 @@ namespace UnityEditor
             var parent = menuCommand.context as GameObject;
             if (parent == null)
                 parent = Selection.activeGameObject;
-            var go = CreateGameObject(parent, "GameObject");
+            var go = ObjectFactory.CreateGameObject("GameObject");
             Place(go, parent);
         }
 
         static void CreateAndPlacePrimitive(PrimitiveType type, GameObject parent)
         {
-            // make sure to get the unique name before the GameObject is created
-            // or GetUniqueNameForSibling will always end up with (1) in empty scene
-            string uniqueName = GameObjectUtility.GetUniqueNameForSibling(parent != null ? parent.transform : null, type.ToString());
             var primitive = ObjectFactory.CreatePrimitive(type);
-            primitive.name = uniqueName;
+            primitive.name = type.ToString();
             Place(primitive, parent);
         }
 
@@ -105,7 +104,7 @@ namespace UnityEditor
         static void CreateSprite(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(parent, "New Sprite", typeof(SpriteRenderer));
+            var go = ObjectFactory.CreateGameObject("New Sprite", typeof(SpriteRenderer));
             var sprite = Selection.activeObject as Sprite;
             if (sprite == null)
             {
@@ -144,7 +143,7 @@ namespace UnityEditor
         static void CreateDirectionalLight(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(null, "Directional Light", typeof(Light));
+            var go = ObjectFactory.CreateGameObject("Directional Light", typeof(Light));
 
             go.GetComponent<Light>().type = LightType.Directional;
             go.GetComponent<Light>().intensity = 1f;
@@ -157,7 +156,7 @@ namespace UnityEditor
         static void CreatePointLight(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(null, "Point Light", typeof(Light));
+            var go = ObjectFactory.CreateGameObject("Point Light", typeof(Light));
 
             go.GetComponent<Light>().type = LightType.Point;
 
@@ -168,7 +167,7 @@ namespace UnityEditor
         static void CreateSpotLight(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(null, "Spot Light", typeof(Light));
+            var go = ObjectFactory.CreateGameObject("Spot Light", typeof(Light));
 
             go.GetComponent<Light>().type = LightType.Spot;
             go.GetComponent<Transform>().SetLocalEulerAngles(new Vector3(90, 0, 0), RotationOrder.OrderZXY);
@@ -180,7 +179,7 @@ namespace UnityEditor
         static void CreateAreaLight(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(null, "Rectangular Light", typeof(Light));
+            var go = ObjectFactory.CreateGameObject("Rectangular Light", typeof(Light));
 
             go.GetComponent<Light>().type = LightType.Area;
             go.GetComponent<Light>().shadows = LightShadows.Soft;
@@ -193,7 +192,7 @@ namespace UnityEditor
         static void CreateDiscLight(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(null, "Disc Light", typeof(Light));
+            var go = ObjectFactory.CreateGameObject("Disc Light", typeof(Light));
 
             go.GetComponent<Light>().type = LightType.Disc;
             go.GetComponent<Light>().shadows = LightShadows.Soft;
@@ -206,42 +205,42 @@ namespace UnityEditor
         static void CreateReflectionProbe(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(CreateGameObject(parent, "Reflection Probe", typeof(ReflectionProbe)), parent);
+            Place(ObjectFactory.CreateGameObject("Reflection Probe", typeof(ReflectionProbe)), parent);
         }
 
         [MenuItem("GameObject/Light/Light Probe Group", priority = 21)]
         static void CreateLightProbeGroup(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(CreateGameObject(parent, "Light Probe Group", typeof(LightProbeGroup)), parent);
+            Place(ObjectFactory.CreateGameObject("Light Probe Group", typeof(LightProbeGroup)), parent);
         }
 
         [MenuItem("GameObject/Audio/Audio Source", priority = 1)]
         static void CreateAudioSource(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(CreateGameObject(parent, "Audio Source", typeof(AudioSource)), parent);
+            Place(ObjectFactory.CreateGameObject("Audio Source", typeof(AudioSource)), parent);
         }
 
         [MenuItem("GameObject/Audio/Audio Reverb Zone", priority = 2)]
         static void CreateAudioReverbZone(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(CreateGameObject(parent, "Audio Reverb Zone", typeof(AudioReverbZone)), parent);
+            Place(ObjectFactory.CreateGameObject("Audio Reverb Zone", typeof(AudioReverbZone)), parent);
         }
 
         [MenuItem("GameObject/Video/Video Player", priority = 1)]
         static void CreateVideoPlayer(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(CreateGameObject(parent, "Video Player", typeof(VideoPlayer)), parent);
+            Place(ObjectFactory.CreateGameObject("Video Player", typeof(VideoPlayer)), parent);
         }
 
         [MenuItem("GameObject/Effects/Particle System", priority = 1)]
         static void CreateParticleSystem(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(parent, "Particle System", typeof(ParticleSystem));
+            var go = ObjectFactory.CreateGameObject("Particle System", typeof(ParticleSystem));
 
             go.GetComponent<Transform>().SetLocalEulerAngles(new Vector3(-90, 0, 0), RotationOrder.OrderZXY);
             var renderer = go.GetComponent<ParticleSystemRenderer>();
@@ -257,7 +256,7 @@ namespace UnityEditor
         static void CreateTrail(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(parent, "Trail", typeof(TrailRenderer));
+            var go = ObjectFactory.CreateGameObject("Trail", typeof(TrailRenderer));
             go.GetComponent<TrailRenderer>().material = Material.GetDefaultLineMaterial();
             Place(go, parent);
         }
@@ -266,7 +265,7 @@ namespace UnityEditor
         static void CreateLine(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            var go = CreateGameObject(parent, "Line", typeof(LineRenderer));
+            var go = ObjectFactory.CreateGameObject("Line", typeof(LineRenderer));
             var line = go.GetComponent<LineRenderer>();
             line.material = Material.GetDefaultLineMaterial();
             line.widthMultiplier = 0.1f;
@@ -278,7 +277,7 @@ namespace UnityEditor
         static void CreateCamera(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
-            Place(CreateGameObject(parent, "Camera", typeof(Camera), typeof(AudioListener)), parent);
+            Place(ObjectFactory.CreateGameObject("Camera", typeof(Camera), typeof(AudioListener)), parent);
         }
     }
 }

@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using System.Runtime.InteropServices;
 using UnityEngine.Internal;
+using UnityEngine.SceneManagement;
 
 
 namespace UnityEngine
@@ -602,6 +603,147 @@ namespace UnityEngine
         extern private static Collider GetColliderByInstanceID(int instanceID);
     }
 
+    #region Scene
+
+    [NativeHeader("Runtime/Dynamics/Public/PhysicsSceneHandle.h")]
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct PhysicsScene : IEquatable<PhysicsScene>
+    {
+        private int m_Handle;
+
+        public override string ToString() { return UnityString.Format("({0})", m_Handle); }
+        public static bool operator==(PhysicsScene lhs, PhysicsScene rhs) { return lhs.m_Handle == rhs.m_Handle; }
+        public static bool operator!=(PhysicsScene lhs, PhysicsScene rhs) { return lhs.m_Handle != rhs.m_Handle; }
+        public override int GetHashCode() { return m_Handle; }
+        public override bool Equals(object other)
+        {
+            if (!(other is PhysicsScene))
+                return false;
+
+            PhysicsScene rhs = (PhysicsScene)other;
+            return m_Handle == rhs.m_Handle;
+        }
+
+        public bool Equals(PhysicsScene other)
+        {
+            return m_Handle == other.m_Handle;
+        }
+
+        public bool IsValid() { return IsValid_Internal(this); }
+        [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
+        [NativeMethod("IsPhysicsSceneValid")]
+        extern private static bool IsValid_Internal(PhysicsScene physicsScene);
+
+        public bool IsEmpty()
+        {
+            if (IsValid())
+                return IsEmpty_Internal(this);
+
+            throw new InvalidOperationException("Cannot check if physics scene is empty as it is invalid.");
+        }
+
+        [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
+        [NativeMethod("IsPhysicsWorldEmpty")]
+        extern private static bool IsEmpty_Internal(PhysicsScene physicsScene);
+
+        // Perform a manual simulation step.
+        public void Simulate(float step)
+        {
+            if (IsValid())
+            {
+                // Only check auto-simulation if simulating the default physics scene.
+                if (this == Physics.defaultPhysicsScene && Physics.autoSimulation)
+                {
+                    Debug.LogWarning("PhysicsScene.Simulate(...) was called but auto simulation is active. You should disable auto simulation first before calling this function therefore the simulation was not run.");
+                    return;
+                }
+
+                Physics.Simulate_Internal(this, step);
+                return;
+            }
+
+            throw new InvalidOperationException("Cannot simulate the physics scene as it is invalid.");
+        }
+
+        // Hit Test.
+        public bool Raycast(Vector3 origin, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance = Mathf.Infinity, [DefaultValue("Physics.DefaultRaycastLayers")] int layerMask = Physics.DefaultRaycastLayers, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+        {
+            float dirLength = direction.magnitude;
+            if (dirLength > float.Epsilon)
+            {
+                Vector3 normalizedDirection = direction / dirLength;
+                Ray ray = new Ray(origin, normalizedDirection);
+                return Internal_RaycastTest(this, ray, maxDistance, layerMask, queryTriggerInteraction);
+            }
+
+            return false;
+        }
+
+        [NativeName("RaycastTest")]
+        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
+        extern private static bool Internal_RaycastTest(PhysicsScene physicsScene, Ray ray, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+        // Single hit.
+        public bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, [DefaultValue("Mathf.Infinity")] float maxDistance = Mathf.Infinity, [DefaultValue("Physics.DefaultRaycastLayers")] int layerMask = Physics.DefaultRaycastLayers, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+        {
+            hitInfo = new RaycastHit();
+
+            float dirLength = direction.magnitude;
+            if (dirLength > float.Epsilon)
+            {
+                Vector3 normalizedDirection = direction / dirLength;
+                Ray ray = new Ray(origin, normalizedDirection);
+
+                return Internal_Raycast(this, ray, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
+            }
+            else
+                return false;
+        }
+
+        [NativeName("Raycast")]
+        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
+        extern private static bool Internal_Raycast(PhysicsScene physicsScene, Ray ray, float maxDistance, ref RaycastHit hit, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+
+        // Multiple hits.
+        public int Raycast(Vector3 origin, Vector3 direction, RaycastHit[] raycastHits, [DefaultValue("Mathf.Infinity")] float maxDistance = Mathf.Infinity, [DefaultValue("Physics.DefaultRaycastLayers")] int layerMask = Physics.DefaultRaycastLayers, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction = QueryTriggerInteraction.UseGlobal)
+        {
+            float dirLength = direction.magnitude;
+
+            if (dirLength > float.Epsilon)
+            {
+                Ray ray = new Ray(origin, direction.normalized);
+                return Internal_RaycastNonAlloc(this, ray, raycastHits, maxDistance, layerMask, queryTriggerInteraction);
+            }
+
+            return 0;
+        }
+
+        [NativeName("RaycastNonAlloc")]
+        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
+        extern private static int Internal_RaycastNonAlloc(PhysicsScene physicsScene, Ray ray, [Out] RaycastHit[] raycastHits, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+    }
+
+    public static class PhysicsSceneExtensions
+    {
+        public static PhysicsScene GetPhysicsScene(this Scene scene)
+        {
+            if (!scene.IsValid())
+                throw new ArgumentException("Cannot get physics scene; Unity scene is invalid.", "scene");
+
+            PhysicsScene physicsScene = GetPhysicsScene_Internal(scene);
+            if (physicsScene.IsValid())
+                return physicsScene;
+
+            throw new Exception("The physics scene associated with the Unity scene is invalid.");
+        }
+
+        [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
+        [NativeMethod("GetPhysicsSceneFromUnityScene")]
+        extern private static PhysicsScene GetPhysicsScene_Internal(Scene scene);
+    }
+
+    #endregion
+
     [NativeHeader("Runtime/Dynamics/PhysicsManager.h")]
     [StaticAccessor("GetPhysicsManager()", StaticAccessorType.Dot)]
     public class Physics
@@ -655,6 +797,9 @@ namespace UnityEngine
         [Obsolete("penetrationPenaltyForce has no effect.")]
         public static float penetrationPenaltyForce { get { return 0f; } set {} }
 
+        [NativeProperty("DefaultPhysicsSceneHandle")]
+        extern public static PhysicsScene defaultPhysicsScene { get; }
+
         extern public static void IgnoreCollision(Collider collider1, Collider collider2, [DefaultValue("true")] bool ignore);
 
         [ExcludeFromDocs]
@@ -675,64 +820,32 @@ namespace UnityEngine
         [NativeName("GetIgnoreCollision")]
         extern public static bool GetIgnoreLayerCollision(int layer1, int layer2);
 
-        [NativeName("RaycastTest")]
-        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern private static bool Query_RaycastTest(Ray ray, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
-
-        private static bool Internal_RaycastTest(Vector3 origin, Vector3 direction, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
-        {
-            float dirLength = direction.magnitude;
-            if (dirLength > float.Epsilon)
-            {
-                Vector3 normalizedDirection = direction / dirLength;
-                Ray ray = new Ray(origin, normalizedDirection);
-                return Query_RaycastTest(ray, maxDistance, layerMask, queryTriggerInteraction);
-            }
-            else
-                return false;
-        }
-
         static public bool Raycast(Vector3 origin, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return Internal_RaycastTest(origin, direction, maxDistance, layerMask, queryTriggerInteraction);
+            return defaultPhysicsScene.Raycast(origin, direction, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Vector3 origin, Vector3 direction, float maxDistance, int layerMask)
         {
-            return Internal_RaycastTest(origin, direction, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(origin, direction, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Vector3 origin, Vector3 direction, float maxDistance)
         {
-            return Internal_RaycastTest(origin, direction, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(origin, direction, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Vector3 origin, Vector3 direction)
         {
-            return Internal_RaycastTest(origin, direction, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(origin, direction, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
-
-        [NativeName("Raycast")]
-        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern private static bool Internal_Raycast(Ray ray, float maxDistance, ref RaycastHit hit, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 
         public static bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
         {
-            hitInfo = new RaycastHit();
-
-            float dirLength = direction.magnitude;
-            if (dirLength > float.Epsilon)
-            {
-                Vector3 normalizedDirection = direction / dirLength;
-                Ray ray = new Ray(origin, normalizedDirection);
-
-                return Internal_Raycast(ray, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
-            }
-            else
-                return false;
+            return defaultPhysicsScene.Raycast(origin, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         // This is not actually called by native code, but needs the [RequiredByNativeCode]
@@ -742,71 +855,71 @@ namespace UnityEngine
         [ExcludeFromDocs]
         static public bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask)
         {
-            return Raycast(origin, direction, out hitInfo, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(origin, direction, out hitInfo, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance)
         {
-            return Raycast(origin, direction, out hitInfo, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(origin, direction, out hitInfo, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo)
         {
-            return Raycast(origin, direction, out hitInfo, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(origin, direction, out hitInfo, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
         static public bool Raycast(Ray ray, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return Raycast(ray.origin, ray.direction, maxDistance, layerMask, queryTriggerInteraction);
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Ray ray, float maxDistance, int layerMask)
         {
-            return Raycast(ray.origin, ray.direction, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Ray ray, float maxDistance)
         {
-            return Raycast(ray.origin, ray.direction, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Ray ray)
         {
-            return Raycast(ray.origin, ray.direction, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
         static public bool Raycast(Ray ray, out RaycastHit hitInfo, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return Raycast(ray.origin, ray.direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance, int layerMask)
         {
-            return Raycast(ray.origin, ray.direction, out hitInfo, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, out hitInfo, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Ray ray, out RaycastHit hitInfo, float maxDistance)
         {
-            return Raycast(ray.origin, ray.direction, out hitInfo, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, out hitInfo, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
         [ExcludeFromDocs]
         static public bool Raycast(Ray ray, out RaycastHit hitInfo)
         {
-            return Raycast(ray.origin, ray.direction, out hitInfo, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, out hitInfo, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
         static public bool Linecast(Vector3 start, Vector3 end, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             Vector3 dir = end - start;
-            return Raycast(start, dir, dir.magnitude, layerMask, queryTriggerInteraction);
+            return defaultPhysicsScene.Raycast(start, dir, dir.magnitude, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -824,7 +937,7 @@ namespace UnityEngine
         static public bool Linecast(Vector3 start, Vector3 end, out RaycastHit hitInfo, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             Vector3 dir = end - start;
-            return Raycast(start, dir, out hitInfo, dir.magnitude, layerMask, queryTriggerInteraction);
+            return defaultPhysicsScene.Raycast(start, dir, out hitInfo, dir.magnitude, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -841,9 +954,9 @@ namespace UnityEngine
 
         [NativeName("CapsuleCast")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern private static bool Query_CapsuleCast(Vector3 point1, Vector3 point2, float radius, Vector3 direction, float maxDistance, ref RaycastHit hitInfo, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        extern private static bool Query_CapsuleCast(PhysicsScene physicsScene, Vector3 point1, Vector3 point2, float radius, Vector3 direction, float maxDistance, ref RaycastHit hitInfo, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 
-        private static bool Internal_CapsuleCast(Vector3 point1, Vector3 point2, float radius, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
+        private static bool Internal_CapsuleCast(PhysicsScene physicsScene, Vector3 point1, Vector3 point2, float radius, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
         {
             float dirLength = direction.magnitude;
             hitInfo = new RaycastHit();
@@ -851,7 +964,7 @@ namespace UnityEngine
             {
                 Vector3 normalizedDirection = direction / dirLength;
 
-                return Query_CapsuleCast(point1, point2, radius, normalizedDirection, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
+                return Query_CapsuleCast(physicsScene, point1, point2, radius, normalizedDirection, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
             }
             else
                 return false;
@@ -860,7 +973,7 @@ namespace UnityEngine
         static public bool CapsuleCast(Vector3 point1, Vector3 point2, float radius, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             RaycastHit hitInfo;
-            return Internal_CapsuleCast(point1, point2, radius, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_CapsuleCast(defaultPhysicsScene, point1, point2, radius, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -883,7 +996,7 @@ namespace UnityEngine
 
         static public bool CapsuleCast(Vector3 point1, Vector3 point2, float radius, Vector3 direction, out RaycastHit hitInfo, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return Internal_CapsuleCast(point1, point2, radius, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_CapsuleCast(defaultPhysicsScene, point1, point2, radius, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -906,9 +1019,9 @@ namespace UnityEngine
 
         [NativeName("SphereCast")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern private static bool Query_SphereCast(Vector3 origin, float radius, Vector3 direction, float maxDistance, ref RaycastHit hitInfo, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        extern private static bool Query_SphereCast(PhysicsScene physicsScene, Vector3 origin, float radius, Vector3 direction, float maxDistance, ref RaycastHit hitInfo, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 
-        private static bool Internal_SphereCast(Vector3 origin, float radius, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
+        private static bool Internal_SphereCast(PhysicsScene physicsScene, Vector3 origin, float radius, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
         {
             float dirLength = direction.magnitude;
             hitInfo = new RaycastHit();
@@ -916,7 +1029,7 @@ namespace UnityEngine
             {
                 Vector3 normalizedDirection = direction / dirLength;
 
-                return Query_SphereCast(origin, radius, normalizedDirection, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
+                return Query_SphereCast(physicsScene, origin, radius, normalizedDirection, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
             }
             else
                 return false;
@@ -924,7 +1037,7 @@ namespace UnityEngine
 
         static public bool SphereCast(Vector3 origin, float radius, Vector3 direction, out RaycastHit hitInfo, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return Internal_SphereCast(origin, radius, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_SphereCast(defaultPhysicsScene, origin, radius, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -948,7 +1061,7 @@ namespace UnityEngine
         static public bool SphereCast(Ray ray, float radius, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             RaycastHit hitInfo;
-            return Internal_SphereCast(ray.origin, radius, ray.direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_SphereCast(defaultPhysicsScene, ray.origin, radius, ray.direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -971,7 +1084,7 @@ namespace UnityEngine
 
         static public bool SphereCast(Ray ray, float radius, out RaycastHit hitInfo, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return Internal_CapsuleCast(ray.origin, ray.origin, radius, ray.direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_CapsuleCast(defaultPhysicsScene, ray.origin, ray.origin, radius, ray.direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -994,9 +1107,9 @@ namespace UnityEngine
 
         [NativeName("BoxCast")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern static private bool Query_BoxCast(Vector3 center, Vector3 halfExtents, Vector3 direction, Quaternion orientation, float maxDistance, ref RaycastHit outHit, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        extern static private bool Query_BoxCast(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Vector3 direction, Quaternion orientation, float maxDistance, ref RaycastHit outHit, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 
-        private static bool Internal_BoxCast(Vector3 center, Vector3 halfExtents, Quaternion orientation, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
+        private static bool Internal_BoxCast(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Quaternion orientation, Vector3 direction, out RaycastHit hitInfo, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction)
         {
             float dirLength = direction.magnitude;
             hitInfo = new RaycastHit();
@@ -1004,7 +1117,7 @@ namespace UnityEngine
             {
                 Vector3 normalizedDirection = direction / dirLength;
 
-                return Query_BoxCast(center, halfExtents, normalizedDirection, orientation, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
+                return Query_BoxCast(physicsScene, center, halfExtents, normalizedDirection, orientation, maxDistance, ref hitInfo, layerMask, queryTriggerInteraction);
             }
             else
                 return false;
@@ -1013,7 +1126,7 @@ namespace UnityEngine
         static public bool BoxCast(Vector3 center, Vector3 halfExtents, Vector3 direction, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
             RaycastHit hitInfo;
-            return Internal_BoxCast(center, halfExtents, orientation, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_BoxCast(defaultPhysicsScene, center, halfExtents, orientation, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -1042,7 +1155,7 @@ namespace UnityEngine
 
         static public bool BoxCast(Vector3 center, Vector3 halfExtents, Vector3 direction, out RaycastHit hitInfo, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return Internal_BoxCast(center, halfExtents, orientation, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
+            return Internal_BoxCast(defaultPhysicsScene, center, halfExtents, orientation, direction, out hitInfo, maxDistance, layerMask, queryTriggerInteraction);
         }
 
         [ExcludeFromDocs]
@@ -1071,7 +1184,7 @@ namespace UnityEngine
 
         [NativeName("RaycastAll")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern static RaycastHit[] Internal_RaycastAll(Ray ray, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+        extern static RaycastHit[] Internal_RaycastAll(PhysicsScene physicsScene, Ray ray, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
 
         public static RaycastHit[] RaycastAll(Vector3 origin, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
@@ -1080,7 +1193,7 @@ namespace UnityEngine
             {
                 Vector3 normalizedDirection = direction / dirLength;
                 Ray ray = new Ray(origin, normalizedDirection);
-                return Internal_RaycastAll(ray, maxDistance, layerMask, queryTriggerInteraction);
+                return Internal_RaycastAll(defaultPhysicsScene, ray, maxDistance, layerMask, queryTriggerInteraction);
             }
             else
             {
@@ -1133,9 +1246,55 @@ namespace UnityEngine
             return RaycastAll(ray.origin, ray.direction, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
+        static public int RaycastNonAlloc(Ray ray, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, results, maxDistance, layerMask, queryTriggerInteraction);
+        }
+
+        [ExcludeFromDocs]
+        static public int RaycastNonAlloc(Ray ray, RaycastHit[] results, float maxDistance, int layerMask)
+        {
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, results, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
+        }
+
+        [ExcludeFromDocs]
+        static public int RaycastNonAlloc(Ray ray, RaycastHit[] results, float maxDistance)
+        {
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, results, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+        }
+
+        [ExcludeFromDocs]
+        static public int RaycastNonAlloc(Ray ray, RaycastHit[] results)
+        {
+            return defaultPhysicsScene.Raycast(ray.origin, ray.direction, results, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+        }
+
+        static public int RaycastNonAlloc(Vector3 origin, Vector3 direction, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return defaultPhysicsScene.Raycast(origin, direction, results, maxDistance, layerMask, queryTriggerInteraction);
+        }
+
+        [ExcludeFromDocs]
+        static public int RaycastNonAlloc(Vector3 origin, Vector3 direction, RaycastHit[] results, float maxDistance, int layerMask)
+        {
+            return defaultPhysicsScene.Raycast(origin, direction, results, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
+        }
+
+        [ExcludeFromDocs]
+        static public int RaycastNonAlloc(Vector3 origin, Vector3 direction, RaycastHit[] results, float maxDistance)
+        {
+            return defaultPhysicsScene.Raycast(origin, direction, results, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+        }
+
+        [ExcludeFromDocs]
+        static public int RaycastNonAlloc(Vector3 origin, Vector3 direction, RaycastHit[] results)
+        {
+            return defaultPhysicsScene.Raycast(origin, direction, results, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
+        }
+
         [NativeName("CapsuleCastAll")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern private static RaycastHit[] Query_CapsuleCastAll(Vector3 p0, Vector3 p1, float radius, Vector3 direction, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+        extern private static RaycastHit[] Query_CapsuleCastAll(PhysicsScene physicsScene, Vector3 p0, Vector3 p1, float radius, Vector3 direction, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
 
         public static RaycastHit[] CapsuleCastAll(Vector3 point1, Vector3 point2, float radius, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
@@ -1144,7 +1303,7 @@ namespace UnityEngine
             {
                 Vector3 normalizedDirection = direction / dirLength;
 
-                return Query_CapsuleCastAll(point1, point2, radius, normalizedDirection, maxDistance, layerMask, queryTriggerInteraction);
+                return Query_CapsuleCastAll(defaultPhysicsScene, point1, point2, radius, normalizedDirection, maxDistance, layerMask, queryTriggerInteraction);
             }
             else
             {
@@ -1172,7 +1331,7 @@ namespace UnityEngine
 
         [NativeName("SphereCastAll")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern private static RaycastHit[] Query_SphereCastAll(Vector3 origin, float radius, Vector3 direction, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+        extern private static RaycastHit[] Query_SphereCastAll(PhysicsScene physicsScene, Vector3 origin, float radius, Vector3 direction, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
 
         public static RaycastHit[] SphereCastAll(Vector3 origin, float radius, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
@@ -1181,7 +1340,7 @@ namespace UnityEngine
             {
                 Vector3 normalizedDirection = direction / dirLength;
 
-                return Query_SphereCastAll(origin, radius, normalizedDirection, maxDistance, layerMask, queryTriggerInteraction);
+                return Query_SphereCastAll(defaultPhysicsScene, origin, radius, normalizedDirection, maxDistance, layerMask, queryTriggerInteraction);
             }
             else
             {
@@ -1230,8 +1389,13 @@ namespace UnityEngine
             return SphereCastAll(ray, radius, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
+        [NativeName("OverlapCapsule")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern public static Collider[] OverlapCapsule(Vector3 point0, Vector3 point1, float radius, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
+        extern private static Collider[] OverlapCapsule_Internal(PhysicsScene physicsScene, Vector3 point0, Vector3 point1, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        public static Collider[] OverlapCapsule(Vector3 point0, Vector3 point1, float radius, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return OverlapCapsule_Internal(defaultPhysicsScene, point0, point1, radius, layerMask, queryTriggerInteraction);
+        }
 
         [ExcludeFromDocs]
         public static Collider[] OverlapCapsule(Vector3 point0, Vector3 point1, float radius, int layerMask)
@@ -1245,8 +1409,13 @@ namespace UnityEngine
             return OverlapCapsule(point0, point1, radius, AllLayers, QueryTriggerInteraction.UseGlobal);
         }
 
+        [NativeName("OverlapSphere")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()", StaticAccessorType.Dot)]
-        extern public static Collider[] OverlapSphere(Vector3 position, float radius, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
+        extern private static Collider[] OverlapSphere_Internal(PhysicsScene physicsScene, Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        public static Collider[] OverlapSphere(Vector3 position, float radius, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return OverlapSphere_Internal(defaultPhysicsScene, position, radius, layerMask, queryTriggerInteraction);
+        }
 
         [ExcludeFromDocs]
         public static Collider[] OverlapSphere(Vector3 position, float radius, int layerMask)
@@ -1261,7 +1430,7 @@ namespace UnityEngine
         }
 
         [NativeName("Simulate")]
-        extern private static void Internal_Simulate(float step);
+        extern internal static void Simulate_Internal(PhysicsScene physicsScene, float step);
 
         public static void Simulate(float step)
         {
@@ -1271,7 +1440,7 @@ namespace UnityEngine
                 return;
             }
 
-            Internal_Simulate(step);
+            Simulate_Internal(defaultPhysicsScene, step);
         }
 
         extern public static bool autoSimulation { get; set; }
@@ -1307,69 +1476,13 @@ namespace UnityEngine
         [StaticAccessor("GetPhysicsManager()")]
         public extern static bool interCollisionSettingsToggle {[NativeName("GetClothInterCollisionSettingsToggle")] get; [NativeName("SetClothInterCollisionSettingsToggle")] set; }
 
-        [NativeName("RaycastNonAlloc")]
+        [NativeName("OverlapSphereNonAlloc")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        extern private static int Internal_RaycastNonAlloc(Ray ray, [Out] RaycastHit[] raycastHits, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
-
-        static public int RaycastNonAlloc(Ray ray, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        extern private static int OverlapSphereNonAlloc_Internal(PhysicsScene physicsScene, Vector3 position, float radius, [Out] Collider[] results, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        public static int OverlapSphereNonAlloc(Vector3 position, float radius, [Out] Collider[] results, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
-            return RaycastNonAlloc(ray.origin, ray.direction, results, maxDistance, layerMask, queryTriggerInteraction);
+            return OverlapSphereNonAlloc_Internal(defaultPhysicsScene, position, radius, results, layerMask, queryTriggerInteraction);
         }
-
-        [ExcludeFromDocs]
-        static public int RaycastNonAlloc(Ray ray, RaycastHit[] results, float maxDistance, int layerMask)
-        {
-            return RaycastNonAlloc(ray, results, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
-        }
-
-        [ExcludeFromDocs]
-        static public int RaycastNonAlloc(Ray ray, RaycastHit[] results, float maxDistance)
-        {
-            return RaycastNonAlloc(ray, results, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
-        }
-
-        [ExcludeFromDocs]
-        static public int RaycastNonAlloc(Ray ray, RaycastHit[] results)
-        {
-            return RaycastNonAlloc(ray, results, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
-        }
-
-        static public int RaycastNonAlloc(Vector3 origin, Vector3 direction, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
-        {
-            float dirLength = direction.magnitude;
-
-            if (dirLength > float.Epsilon)
-            {
-                Ray ray = new Ray(origin, direction.normalized);
-
-                return Internal_RaycastNonAlloc(ray, results, maxDistance, layerMask, queryTriggerInteraction);
-            }
-            else
-            {
-                return 0;
-            }
-        }
-
-        [ExcludeFromDocs]
-        static public int RaycastNonAlloc(Vector3 origin, Vector3 direction, RaycastHit[] results, float maxDistance, int layerMask)
-        {
-            return RaycastNonAlloc(origin, direction, results, maxDistance, layerMask, QueryTriggerInteraction.UseGlobal);
-        }
-
-        [ExcludeFromDocs]
-        static public int RaycastNonAlloc(Vector3 origin, Vector3 direction, RaycastHit[] results, float maxDistance)
-        {
-            return RaycastNonAlloc(origin, direction, results, maxDistance, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
-        }
-
-        [ExcludeFromDocs]
-        static public int RaycastNonAlloc(Vector3 origin, Vector3 direction, RaycastHit[] results)
-        {
-            return RaycastNonAlloc(origin, direction, results, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
-        }
-
-        [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        extern public static int OverlapSphereNonAlloc(Vector3 position, float radius, [Out] Collider[] results, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
 
         [ExcludeFromDocs]
         public static int OverlapSphereNonAlloc(Vector3 position, float radius, [Out] Collider[] results, int layerMask)
@@ -1385,7 +1498,11 @@ namespace UnityEngine
 
         [NativeName("SphereTest")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        extern public static bool CheckSphere(Vector3 position, float radius, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
+        extern private static bool CheckSphere_Internal(PhysicsScene physicsScene, Vector3 position, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        public static bool CheckSphere(Vector3 position, float radius, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return CheckSphere_Internal(defaultPhysicsScene, position, radius, layerMask, queryTriggerInteraction);
+        }
 
         [ExcludeFromDocs]
         public static bool CheckSphere(Vector3 position, float radius, int layerMask)
@@ -1401,7 +1518,7 @@ namespace UnityEngine
 
         [NativeName("CapsuleCastNonAlloc")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        extern private static int Internal_CapsuleCastNonAlloc(Vector3 p0, Vector3 p1, float radius, Vector3 direction, [Out] RaycastHit[] raycastHits, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+        extern private static int Internal_CapsuleCastNonAlloc(PhysicsScene physicsScene, Vector3 p0, Vector3 p1, float radius, Vector3 direction, [Out] RaycastHit[] raycastHits, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
 
         public static int CapsuleCastNonAlloc(Vector3 point1, Vector3 point2, float radius, Vector3 direction, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
@@ -1409,7 +1526,7 @@ namespace UnityEngine
 
             if (dirLength > float.Epsilon)
             {
-                return Internal_CapsuleCastNonAlloc(point1, point2, radius, direction, results, maxDistance, layerMask, queryTriggerInteraction);
+                return Internal_CapsuleCastNonAlloc(defaultPhysicsScene, point1, point2, radius, direction, results, maxDistance, layerMask, queryTriggerInteraction);
             }
             else
             {
@@ -1437,7 +1554,7 @@ namespace UnityEngine
 
         [NativeName("SphereCastNonAlloc")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        extern private static int Internal_SphereCastNonAlloc(Vector3 origin, float radius, Vector3 direction, [Out] RaycastHit[] raycastHits, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+        extern private static int Internal_SphereCastNonAlloc(PhysicsScene physicsScene, Vector3 origin, float radius, Vector3 direction, [Out] RaycastHit[] raycastHits, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
 
         public static int SphereCastNonAlloc(Vector3 origin, float radius, Vector3 direction, RaycastHit[] results, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
@@ -1445,7 +1562,7 @@ namespace UnityEngine
 
             if (dirLength > float.Epsilon)
             {
-                return Internal_SphereCastNonAlloc(origin, radius, direction, results, maxDistance, layerMask, queryTriggerInteraction);
+                return Internal_SphereCastNonAlloc(defaultPhysicsScene, origin, radius, direction, results, maxDistance, layerMask, queryTriggerInteraction);
             }
             else
             {
@@ -1496,7 +1613,11 @@ namespace UnityEngine
 
         [NativeName("CapsuleTest")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        extern public static bool CheckCapsule(Vector3 start, Vector3 end, float radius, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
+        extern private static bool CheckCapsule_Internal(PhysicsScene physicsScene, Vector3 start, Vector3 end, float radius, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        public static bool CheckCapsule(Vector3 start, Vector3 end, float radius, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return CheckCapsule_Internal(defaultPhysicsScene, start, end, radius, layerMask, queryTriggerInteraction);
+        }
 
         [ExcludeFromDocs]
         public static bool CheckCapsule(Vector3 start, Vector3 end, float radius, int layerMask)
@@ -1512,7 +1633,11 @@ namespace UnityEngine
 
         [NativeName("BoxTest")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        extern  public static bool CheckBox(Vector3 center, Vector3 halfExtents, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("DefaultRaycastLayers")] int layermask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
+        extern private static bool CheckBox_Internal(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Quaternion orientation, int layermask, QueryTriggerInteraction queryTriggerInteraction);
+        public static bool CheckBox(Vector3 center, Vector3 halfExtents, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("DefaultRaycastLayers")] int layermask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return CheckBox_Internal(defaultPhysicsScene, center, halfExtents, orientation, layermask, queryTriggerInteraction);
+        }
 
         [ExcludeFromDocs]
         public static bool CheckBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask)
@@ -1532,8 +1657,13 @@ namespace UnityEngine
             return CheckBox(center, halfExtents, Quaternion.identity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
+        [NativeName("OverlapBox")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        extern public static Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
+        extern private static Collider[] OverlapBox_Internal(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        public static Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return OverlapBox_Internal(defaultPhysicsScene, center, halfExtents, orientation, layerMask, queryTriggerInteraction);
+        }
 
         [ExcludeFromDocs]
         public static Collider[] OverlapBox(Vector3 center, Vector3 halfExtents, Quaternion orientation, int layerMask)
@@ -1553,8 +1683,13 @@ namespace UnityEngine
             return OverlapBox(center, halfExtents, Quaternion.identity, AllLayers, QueryTriggerInteraction.UseGlobal);
         }
 
+        [NativeName("OverlapBoxNonAlloc")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        public extern static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, [Out] Collider[] results, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("AllLayers")] int mask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
+        extern private static int OverlapBoxNonAlloc_Internal(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, [Out] Collider[] results, Quaternion orientation, int mask, QueryTriggerInteraction queryTriggerInteraction);
+        public static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, [Out] Collider[] results, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("AllLayers")] int mask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return OverlapBoxNonAlloc_Internal(defaultPhysicsScene, center, halfExtents, results, orientation, mask, queryTriggerInteraction);
+        }
 
         [ExcludeFromDocs]
         public static int OverlapBoxNonAlloc(Vector3 center, Vector3 halfExtents, [Out] Collider[] results, Quaternion orientation, int mask)
@@ -1576,7 +1711,7 @@ namespace UnityEngine
 
         [NativeName("BoxCastNonAlloc")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        private static extern int Internal_BoxCastNonAlloc(Vector3 center, Vector3 halfExtents, Vector3 direction, [Out] RaycastHit[] raycastHits, Quaternion orientation, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
+        private static extern int Internal_BoxCastNonAlloc(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Vector3 direction, [Out] RaycastHit[] raycastHits, Quaternion orientation, float maxDistance, int mask, QueryTriggerInteraction queryTriggerInteraction);
 
         public static int BoxCastNonAlloc(Vector3 center, Vector3 halfExtents, Vector3 direction, RaycastHit[] results, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
@@ -1584,7 +1719,7 @@ namespace UnityEngine
 
             if (dirLength > float.Epsilon)
             {
-                return Internal_BoxCastNonAlloc(center, halfExtents, direction, results, orientation, maxDistance, layerMask, queryTriggerInteraction);
+                return Internal_BoxCastNonAlloc(defaultPhysicsScene, center, halfExtents, direction, results, orientation, maxDistance, layerMask, queryTriggerInteraction);
             }
             else
             {
@@ -1618,7 +1753,7 @@ namespace UnityEngine
 
         [NativeName("BoxCastAll")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        private static extern RaycastHit[] Internal_BoxCastAll(Vector3 center, Vector3 halfExtents, Vector3 direction, Quaternion orientation, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        private static extern RaycastHit[] Internal_BoxCastAll(PhysicsScene physicsScene, Vector3 center, Vector3 halfExtents, Vector3 direction, Quaternion orientation, float maxDistance, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
 
         public static RaycastHit[] BoxCastAll(Vector3 center, Vector3 halfExtents, Vector3 direction, [DefaultValue("Quaternion.identity")] Quaternion orientation, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {
@@ -1627,7 +1762,7 @@ namespace UnityEngine
             {
                 Vector3 normalizedDirection = direction / dirLength;
 
-                return Internal_BoxCastAll(center, halfExtents, normalizedDirection, orientation, maxDistance, layerMask, queryTriggerInteraction);
+                return Internal_BoxCastAll(defaultPhysicsScene, center, halfExtents, normalizedDirection, orientation, maxDistance, layerMask, queryTriggerInteraction);
             }
             else
             {
@@ -1659,8 +1794,13 @@ namespace UnityEngine
             return BoxCastAll(center, halfExtents, direction, Quaternion.identity, Mathf.Infinity, DefaultRaycastLayers, QueryTriggerInteraction.UseGlobal);
         }
 
+        [NativeName("OverlapCapsuleNonAlloc")]
         [StaticAccessor("GetPhysicsManager().GetPhysicsQuery()")]
-        public static extern int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, [Out] Collider[] results, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction);
+        extern private static int OverlapCapsuleNonAlloc_Internal(PhysicsScene physicsScene, Vector3 point0, Vector3 point1, float radius, [Out] Collider[] results, int layerMask, QueryTriggerInteraction queryTriggerInteraction);
+        public static int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, [Out] Collider[] results, [DefaultValue("AllLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
+        {
+            return OverlapCapsuleNonAlloc_Internal(defaultPhysicsScene, point0, point1, radius, results, layerMask, queryTriggerInteraction);
+        }
 
         [ExcludeFromDocs]
         public static int OverlapCapsuleNonAlloc(Vector3 point0, Vector3 point1, float radius, [Out] Collider[] results, int layerMask)

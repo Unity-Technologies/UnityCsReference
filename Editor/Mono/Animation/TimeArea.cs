@@ -334,7 +334,7 @@ namespace UnityEditor
                     if (GUIUtility.hotControl == id)
                     {
                         float newT = SnapTimeToWholeFPS(PixelToTime(evt.mousePosition.x - s_PickOffset, position),
-                                frameRate);
+                            frameRate);
                         if (newT != time)
                             GUI.changed = true;
                         time = newT;
@@ -382,14 +382,14 @@ namespace UnityEditor
             if (timeFormat == TimeFormat.None)
             {
                 float newTime = EditorGUI.DoFloatField(
-                        EditorGUI.s_RecycledEditor,
-                        rect,
-                        new Rect(0, 0, 0, 0),
-                        id,
-                        time,
-                        EditorGUI.kFloatFieldFormatString,
-                        EditorStyles.numberField,
-                        false);
+                    EditorGUI.s_RecycledEditor,
+                    rect,
+                    new Rect(0, 0, 0, 0),
+                    id,
+                    time,
+                    EditorGUI.kFloatFieldFormatString,
+                    EditorStyles.numberField,
+                    false);
 
                 return SnapTimeToWholeFPS(newTime, frameRate);
             }
@@ -399,15 +399,15 @@ namespace UnityEditor
                 int frame = Mathf.RoundToInt(time * frameRate);
 
                 int newFrame = EditorGUI.DoIntField(
-                        EditorGUI.s_RecycledEditor,
-                        rect,
-                        new Rect(0, 0, 0, 0),
-                        id,
-                        frame,
-                        EditorGUI.kIntFieldFormatString,
-                        EditorStyles.numberField,
-                        false,
-                        0f);
+                    EditorGUI.s_RecycledEditor,
+                    rect,
+                    new Rect(0, 0, 0, 0),
+                    id,
+                    frame,
+                    EditorGUI.kIntFieldFormatString,
+                    EditorStyles.numberField,
+                    false,
+                    0f);
 
                 return (float)newFrame / frameRate;
             }
@@ -419,7 +419,7 @@ namespace UnityEditor
 
                 bool changed;
                 str = EditorGUI.DoTextField(EditorGUI.s_RecycledEditor, id, rect, str, EditorStyles.numberField,
-                        allowedCharacters, out changed, false, false, false);
+                    allowedCharacters, out changed, false, false, false);
 
                 if (changed)
                 {
@@ -463,14 +463,14 @@ namespace UnityEditor
         public float ValueField(Rect rect, int id, float value)
         {
             float newValue = EditorGUI.DoFloatField(
-                    EditorGUI.s_RecycledEditor,
-                    rect,
-                    new Rect(0, 0, 0, 0),
-                    id,
-                    value,
-                    EditorGUI.kFloatFieldFormatString,
-                    EditorStyles.numberField,
-                    false);
+                EditorGUI.s_RecycledEditor,
+                rect,
+                new Rect(0, 0, 0, 0),
+                id,
+                value,
+                EditorGUI.kFloatFieldFormatString,
+                EditorStyles.numberField,
+                false);
 
             return newValue;
         }

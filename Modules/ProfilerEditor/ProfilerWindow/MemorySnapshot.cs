@@ -121,13 +121,13 @@ namespace UnityEditor.MemoryProfiler
                     for (uint i = 0; i < size; i++)
                     {
                         m_NativeObjects[offset + i] = new PackedNativeUnityEngineObject(
-                                cacheString[i],
-                                cacheInt[i],
-                                (int)cacheULong[i],
-                                cacheInt2[i],
-                                cacheHideFlags[i],
-                                (PackedNativeUnityEngineObject.ObjectFlags)cacheObjectFlags[i],
-                                (long)cacheULong2[i]);
+                            cacheString[i],
+                            cacheInt[i],
+                            (int)cacheULong[i],
+                            cacheInt2[i],
+                            cacheHideFlags[i],
+                            (PackedNativeUnityEngineObject.ObjectFlags)cacheObjectFlags[i],
+                            (long)cacheULong2[i]);
                     }
                 }
             }
@@ -216,15 +216,15 @@ namespace UnityEditor.MemoryProfiler
                         }
 
                         m_TypeDescriptions[offset + i] = new TypeDescription(
-                                cacheString[i],
-                                cacheString2[i],
-                                fieldDescription,
-                                cacheBytes[i],
-                                cacheInt[i],
-                                cacheInt2[i],
-                                (UInt64)cacheULong[i],
-                                cacheInt3[i],
-                                (TypeDescription.TypeFlags)cacheFlags[i]);
+                            cacheString[i],
+                            cacheString2[i],
+                            fieldDescription,
+                            cacheBytes[i],
+                            cacheInt[i],
+                            cacheInt2[i],
+                            (UInt64)cacheULong[i],
+                            cacheInt3[i],
+                            (TypeDescription.TypeFlags)cacheFlags[i]);
                     }
                 }
             }

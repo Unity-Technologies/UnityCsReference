@@ -66,13 +66,13 @@ namespace UnityEditor.Macros
             {
                 var assembly = Assembly.LoadFrom(assemblyFile);
                 var method = assembly.GetType(typeName, true).GetMethod(methodName,
-                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
-                        null, paramTypes, null);
+                    BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static,
+                    null, paramTypes, null);
                 if (method == null)
                     throw new ArgumentException(string.Format(
-                            "Method {0}.{1}({2}) not found in assembly {3}!", typeName,
-                            methodName, ToCommaSeparatedString(paramTypes),
-                            assembly.FullName));
+                        "Method {0}.{1}({2}) not found in assembly {3}!", typeName,
+                        methodName, ToCommaSeparatedString(paramTypes),
+                        assembly.FullName));
                 return method.Invoke(null, args);
             }
             finally
@@ -107,8 +107,8 @@ namespace UnityEditor.Macros
                     var method = type.GetMethod(methodName, methodVisibility, null, methodParametersTypes, null);
                     if (method == null)
                         throw new Exception(string.Format(
-                                "Could not find method {0}.{1} in assembly {2} located in {3}.",
-                                type.FullName, methodName, assembly.GetName().Name, assemblyPath));
+                            "Could not find method {0}.{1} in assembly {2} located in {3}.",
+                            type.FullName, methodName, assembly.GetName().Name, assemblyPath));
 
                     var arguments = (object[])s_Formatter.Deserialize(stream);
                     var returnValue = ExecuteCode(type, method, arguments);

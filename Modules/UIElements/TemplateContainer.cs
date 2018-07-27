@@ -7,7 +7,7 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class TemplateContainer : VisualElement
+    public class TemplateContainer : BindableElement
     {
         public new class UxmlFactory : UxmlFactory<TemplateContainer, UxmlTraits> {}
 

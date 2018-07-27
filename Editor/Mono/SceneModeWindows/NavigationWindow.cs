@@ -771,7 +771,7 @@ namespace UnityEditor
                     var newNavAreaIndex = GameObjectUtility.GetNavMeshAreaFromName(navAreaNames[navMeshArea]);
 
                     GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(Selection.gameObjects,
-                            "Change Navigation Area", "Do you want change the navigation area to " + navAreaNames[navMeshArea] + " for all the child objects as well?");
+                        "Change Navigation Area", "Do you want change the navigation area to " + navAreaNames[navMeshArea] + " for all the child objects as well?");
                     if (includeChildren != GameObjectUtility.ShouldIncludeChildren.Cancel)
                     {
                         property.intValue = newNavAreaIndex;

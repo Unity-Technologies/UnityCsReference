@@ -78,7 +78,7 @@ namespace UnityEngine
                 a.y + (b.y - a.y) * t,
                 a.z + (b.z - a.z) * t,
                 a.w + (b.w - a.w) * t
-                );
+            );
         }
 
         // Linearly interpolates between two vectors without clamping the interpolant
@@ -89,7 +89,7 @@ namespace UnityEngine
                 a.y + (b.y - a.y) * t,
                 a.z + (b.z - a.z) * t,
                 a.w + (b.w - a.w) * t
-                );
+            );
         }
 
         // Moves a point /current/ towards /target/.

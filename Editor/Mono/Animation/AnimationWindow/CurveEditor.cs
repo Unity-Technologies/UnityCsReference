@@ -570,7 +570,8 @@ namespace UnityEditor
             this.rect = rect;
             animationCurves = curves;
 
-            float[] modulos = new float[] {
+            float[] modulos = new float[]
+            {
                 0.0000001f, 0.0000005f, 0.000001f, 0.000005f, 0.00001f, 0.00005f, 0.0001f, 0.0005f,
                 0.001f, 0.005f, 0.01f, 0.05f, 0.1f, 0.5f, 1, 5, 10, 50, 100, 500,
                 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000
@@ -1400,7 +1401,7 @@ namespace UnityEditor
 
                     return keyframe;
                 }
-                );
+            );
 
             if (!inLiveEdit)
                 EndLiveEdit();
@@ -1437,7 +1438,7 @@ namespace UnityEditor
 
                     return keyframe;
                 }
-                );
+            );
 
             if (!inLiveEdit)
                 EndLiveEdit();
@@ -1497,7 +1498,7 @@ namespace UnityEditor
                     }
                     return keyframe;
                 }
-                );
+            );
 
             if (!inLiveEdit)
                 EndLiveEdit();
@@ -1567,7 +1568,7 @@ namespace UnityEditor
 
                     return keyframe;
                 }
-                );
+            );
 
             if (!inLiveEdit)
                 EndLiveEdit();
@@ -2666,12 +2667,12 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             GUI.SetNextControlName(kPointTimeFieldName);
             m_NewTime = PointFieldForSelection(
-                    new Rect(fieldPosition.x, fieldPosition.y, kFieldWidth, kFieldHeight),
-                    1,
-                    m_NewTime,
-                    x => GetKeyframeFromSelection(x).time,
-                    (r, id, time) => TimeField(r, id, time, invSnap, timeFormat),
-                    settings.xAxisLabel);
+                new Rect(fieldPosition.x, fieldPosition.y, kFieldWidth, kFieldHeight),
+                1,
+                m_NewTime,
+                x => GetKeyframeFromSelection(x).time,
+                (r, id, time) => TimeField(r, id, time, invSnap, timeFormat),
+                settings.xAxisLabel);
             if (EditorGUI.EndChangeCheck())
             {
                 m_TimeWasEdited = true;
@@ -2680,12 +2681,12 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             GUI.SetNextControlName(kPointValueFieldName);
             m_NewValue = PointFieldForSelection(
-                    new Rect(fieldPosition.x, fieldPosition.y + kFieldHeight, kFieldWidth, kFieldHeight),
-                    2,
-                    m_NewValue,
-                    x => GetKeyframeFromSelection(x).value,
-                    (r, id, value) => ValueField(r, id, value),
-                    settings.yAxisLabel);
+                new Rect(fieldPosition.x, fieldPosition.y + kFieldHeight, kFieldWidth, kFieldHeight),
+                2,
+                m_NewValue,
+                x => GetKeyframeFromSelection(x).value,
+                (r, id, value) => ValueField(r, id, value),
+                settings.yAxisLabel);
             if (EditorGUI.EndChangeCheck())
             {
                 m_ValueWasEdited = true;
@@ -3330,7 +3331,7 @@ namespace UnityEditor
                 Vector2 size = Styles.dragLabel.CalcSize(content);
                 EditorGUI.DoDropShadowLabel(
                     new Rect(p.x, p.y - size.y, size.x, size.y), content, Styles.dragLabel, 0.3f
-                    );
+                );
             }
         }
 
@@ -3968,9 +3969,9 @@ namespace UnityEditor
                         string minNumber = min.ToString(format) + settings.vTickStyle.unit;
                         string maxNumber = max.ToString(format) + settings.vTickStyle.unit;
                         labelSize = Mathf.Max(
-                                Styles.labelTickMarksY.CalcSize(new GUIContent(minNumber)).x,
-                                Styles.labelTickMarksY.CalcSize(new GUIContent(maxNumber)).x
-                                ) + 6;
+                            Styles.labelTickMarksY.CalcSize(new GUIContent(minNumber)).x,
+                            Styles.labelTickMarksY.CalcSize(new GUIContent(maxNumber)).x
+                            ) + 6;
                     }
 
                     // Now draw

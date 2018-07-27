@@ -168,25 +168,25 @@ namespace UnityEditor
                 previewPositionInner.height += kGridSpacing;
 
                 Vector2 cellSize = new Vector2(
-                        Mathf.FloorToInt(previewPositionInner.width / division[0] - kGridSpacing),
-                        Mathf.FloorToInt(previewPositionInner.height / division[1] - kGridSpacing)
-                        );
+                    Mathf.FloorToInt(previewPositionInner.width / division[0] - kGridSpacing),
+                    Mathf.FloorToInt(previewPositionInner.height / division[1] - kGridSpacing)
+                );
                 float previewSize = Mathf.Min(cellSize.x, cellSize.y - kPreviewLabelHeight);
                 if (fixedSize)
                     previewSize = Mathf.Min(previewSize, kPreviewMinSize);
 
                 bool selectingOne = (evt.type == EventType.MouseDown && evt.button == 0 && evt.clickCount == 2 &&
-                                     previewArea.Contains(evt.mousePosition));
+                    previewArea.Contains(evt.mousePosition));
 
                 defaultPreview.ResetTarget();
                 for (int i = 0; i < count; i++)
                 {
                     Rect r = new Rect(
-                            previewPositionInner.x + (i % division[0]) * previewPositionInner.width / division[0],
-                            previewPositionInner.y + (i / division[0]) * previewPositionInner.height / division[1],
-                            cellSize.x,
-                            cellSize.y
-                            );
+                        previewPositionInner.x + (i % division[0]) * previewPositionInner.width / division[0],
+                        previewPositionInner.y + (i / division[0]) * previewPositionInner.height / division[1],
+                        cellSize.x,
+                        cellSize.y
+                    );
 
                     if (selectingOne && r.Contains(Event.current.mousePosition))
                     {
@@ -326,6 +326,7 @@ namespace UnityEditor
         IPreviewable m_DummyPreview;
 
         internal SerializedObject m_SerializedObject = null;
+        internal SerializedProperty m_EnabledProperty = null;
         internal InspectorMode m_InspectorMode = InspectorMode.Normal;
         internal const float kLineHeight = 16;
 
@@ -432,6 +433,15 @@ namespace UnityEditor
             }
         }
 
+        internal SerializedProperty enabledProperty
+        {
+            get
+            {
+                GetSerializedObjectInternal();
+                return m_EnabledProperty;
+            }
+        }
+
         internal bool isInspectorDirty
         {
             get { return m_IsDirty != 0; }
@@ -511,7 +521,10 @@ namespace UnityEditor
         internal virtual SerializedObject GetSerializedObjectInternal()
         {
             if (m_SerializedObject == null)
+            {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
+                m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
+            }
 
             return m_SerializedObject;
         }
@@ -663,7 +676,7 @@ namespace UnityEditor
                     - BaseStyles.inspectorBig.margin.bottom
                     - BaseStyles.inspectorBig.padding.bottom
                     - BaseStyles.inspectorBig.overflow.bottom    // move up to bottom of content area in header
-                    );
+                );
 
                 // align with controls in the Inspector
                 // see InspectorWindow.DrawEditor before calls to OnOptimizedInspectorGUI()/OnInspectorGUI()
@@ -769,7 +782,7 @@ namespace UnityEditor
             // Settings
             Rect settingsRect = new Rect(r.xMax - currentOffset, r.y + kTopMargin, settingsSize.x, settingsSize.y);
             if (EditorGUI.DropdownButton(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, FocusType.Passive,
-                    EditorStyles.iconButton))
+                EditorStyles.iconButton))
                 EditorUtility.DisplayObjectContextMenu(settingsRect, targets, 0);
             currentOffset += settingsSize.x;
 

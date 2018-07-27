@@ -58,7 +58,7 @@ namespace UnityEngine
                 (byte)(a.g + (b.g - a.g) * t),
                 (byte)(a.b + (b.b - a.b) * t),
                 (byte)(a.a + (b.a - a.a) * t)
-                );
+            );
         }
 
         // Interpolates between colors /a/ and /b/ by /t/ without clamping the interpolant
@@ -69,7 +69,7 @@ namespace UnityEngine
                 (byte)(a.g + (b.g - a.g) * t),
                 (byte)(a.b + (b.b - a.b) * t),
                 (byte)(a.a + (b.a - a.a) * t)
-                );
+            );
         }
 
         public override string ToString()

@@ -7,17 +7,14 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public abstract class BaseField<T> : VisualElement, IBindable, INotifyValueChanged<T>
+    public abstract class BaseField<T> : BindableElement, INotifyValueChanged<T>
     {
         [SerializeField]
         protected T m_Value;
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        public new class UxmlTraits : BindableElement.UxmlTraits
         {
-            UxmlStringAttributeDescription m_PropertyPath;
-
             public UxmlTraits()
             {
-                m_PropertyPath = new UxmlStringAttributeDescription { name = "binding-path" };
                 m_FocusIndex.defaultValue = 0;
             }
 
@@ -26,22 +23,6 @@ namespace UnityEngine.Experimental.UIElements
                 get
                 {
                     yield break;
-                }
-            }
-
-
-            public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
-            {
-                base.Init(ve, bag, cc);
-                string propPath = m_PropertyPath.GetValueFromBag(bag);
-
-                if (!string.IsNullOrEmpty(propPath))
-                {
-                    BaseField<T> control = ve as BaseField<T>;
-                    if (control != null)
-                    {
-                        control.bindingPath = propPath;
-                    }
                 }
             }
         }
@@ -83,6 +64,22 @@ namespace UnityEngine.Experimental.UIElements
             value = newValue;
         }
 
+        public override void OnPersistentDataReady()
+        {
+            base.OnPersistentDataReady();
+            var key = GetFullHierarchicalPersistenceKey();
+
+            var oldValue = m_Value;
+            OverwriteFromPersistedData(this, key);
+
+            if (!EqualityComparer<T>.Default.Equals(oldValue, m_Value))
+                using (ChangeEvent<T> evt = ChangeEvent<T>.GetPooled(oldValue, m_Value))
+                {
+                    evt.target = this;
+                    SendEvent(evt);
+                }
+        }
+
         public void OnValueChanged(EventCallback<ChangeEvent<T>> callback)
         {
             RegisterCallback(callback);
@@ -101,8 +98,5 @@ namespace UnityEngine.Experimental.UIElements
                 SavePersistentData();
             MarkDirtyRepaint();
         }
-
-        public IBinding binding { get; set; }
-        public string bindingPath { get; set; }
     }
 }

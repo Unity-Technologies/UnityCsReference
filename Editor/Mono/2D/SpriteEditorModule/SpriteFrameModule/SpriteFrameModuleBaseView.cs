@@ -109,174 +109,174 @@ namespace UnityEditor
             m_NameElement = m_SelectedFrameInspector.Q("name");
             m_NameField = m_SelectedFrameInspector.Q<PropertyControl<string>>("spriteName");
             m_NameField.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        selectedSpriteName = evt.newValue;
-                    }
-                });
+                    selectedSpriteName = evt.newValue;
+                }
+            });
 
             m_PositionElement = m_SelectedFrameInspector.Q("position");
             m_PositionFieldX = m_PositionElement.Q<PropertyControl<long>>("positionX");
             m_PositionFieldX.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        var rect = selectedSpriteRect;
-                        rect.x = evt.newValue;
-                        selectedSpriteRect = rect;
-                        m_PositionFieldX.SetValueWithoutNotify((long)selectedSpriteRect.x);
-                    }
-                });
+                    var rect = selectedSpriteRect;
+                    rect.x = evt.newValue;
+                    selectedSpriteRect = rect;
+                    m_PositionFieldX.SetValueWithoutNotify((long)selectedSpriteRect.x);
+                }
+            });
 
             m_PositionFieldY = m_PositionElement.Q<PropertyControl<long>>("positionY");
             m_PositionFieldY.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        var rect = selectedSpriteRect;
-                        rect.y = evt.newValue;
-                        selectedSpriteRect = rect;
-                        m_PositionFieldY.SetValueWithoutNotify((long)selectedSpriteRect.y);
-                    }
-                });
+                    var rect = selectedSpriteRect;
+                    rect.y = evt.newValue;
+                    selectedSpriteRect = rect;
+                    m_PositionFieldY.SetValueWithoutNotify((long)selectedSpriteRect.y);
+                }
+            });
 
             m_PositionFieldW = m_PositionElement.Q<PropertyControl<long>>("positionW");
             m_PositionFieldW.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        var rect = selectedSpriteRect;
-                        rect.width = evt.newValue;
-                        selectedSpriteRect = rect;
-                        m_PositionFieldW.SetValueWithoutNotify((long)selectedSpriteRect.width);
-                    }
-                });
+                    var rect = selectedSpriteRect;
+                    rect.width = evt.newValue;
+                    selectedSpriteRect = rect;
+                    m_PositionFieldW.SetValueWithoutNotify((long)selectedSpriteRect.width);
+                }
+            });
 
             m_PositionFieldH = m_PositionElement.Q<PropertyControl<long>>("positionH");
             m_PositionFieldH.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        var rect = selectedSpriteRect;
-                        rect.height = evt.newValue;
-                        selectedSpriteRect = rect;
-                        m_PositionFieldH.SetValueWithoutNotify((long)selectedSpriteRect.height);
-                    }
-                });
+                    var rect = selectedSpriteRect;
+                    rect.height = evt.newValue;
+                    selectedSpriteRect = rect;
+                    m_PositionFieldH.SetValueWithoutNotify((long)selectedSpriteRect.height);
+                }
+            });
 
             var borderElement = m_SelectedFrameInspector.Q("border");
             m_BorderFieldL = borderElement.Q<PropertyControl<long>>("borderL");
             m_BorderFieldL.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        var border = selectedSpriteBorder;
-                        border.x = evt.newValue;
-                        selectedSpriteBorder = border;
-                        m_BorderFieldL.SetValueWithoutNotify((long)selectedSpriteBorder.x);
-                    }
-                });
+                    var border = selectedSpriteBorder;
+                    border.x = evt.newValue;
+                    selectedSpriteBorder = border;
+                    m_BorderFieldL.SetValueWithoutNotify((long)selectedSpriteBorder.x);
+                }
+            });
 
             m_BorderFieldT = borderElement.Q<PropertyControl<long>>("borderT");
             m_BorderFieldT.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        var border = selectedSpriteBorder;
-                        border.y = evt.newValue;
-                        selectedSpriteBorder = border;
-                        m_BorderFieldT.SetValueWithoutNotify((long)selectedSpriteBorder.y);
-                    }
-                });
+                    var border = selectedSpriteBorder;
+                    border.y = evt.newValue;
+                    selectedSpriteBorder = border;
+                    m_BorderFieldT.SetValueWithoutNotify((long)selectedSpriteBorder.y);
+                }
+            });
 
             m_BorderFieldR = borderElement.Q<PropertyControl<long>>("borderR");
             m_BorderFieldR.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        var border = selectedSpriteBorder;
-                        border.z = evt.newValue;
-                        selectedSpriteBorder = border;
-                        m_BorderFieldR.SetValueWithoutNotify((long)selectedSpriteBorder.z);
-                    }
-                });
+                    var border = selectedSpriteBorder;
+                    border.z = evt.newValue;
+                    selectedSpriteBorder = border;
+                    m_BorderFieldR.SetValueWithoutNotify((long)selectedSpriteBorder.z);
+                }
+            });
 
             m_BorderFieldB = borderElement.Q<PropertyControl<long>>("borderB");
             m_BorderFieldB.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        var border = selectedSpriteBorder;
-                        border.w = evt.newValue;
-                        selectedSpriteBorder = border;
-                        m_BorderFieldB.SetValueWithoutNotify((long)selectedSpriteBorder.w);
-                    }
-                });
+                    var border = selectedSpriteBorder;
+                    border.w = evt.newValue;
+                    selectedSpriteBorder = border;
+                    m_BorderFieldB.SetValueWithoutNotify((long)selectedSpriteBorder.w);
+                }
+            });
 
             m_PivotField = m_SelectedFrameInspector.Q<EnumField>("pivotField");
             m_PivotField.Init(SpriteAlignment.Center);
             m_PivotField.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        SpriteAlignment alignment = (SpriteAlignment)evt.newValue;
-                        SetSpritePivotAndAlignment(selectedSpritePivot, alignment);
-                        m_CustomPivotElement.SetEnabled(selectedSpriteAlignment == SpriteAlignment.Custom);
-                        Vector2 pivot = selectedSpritePivotInCurUnitMode;
-                        m_CustomPivotFieldX.SetValueWithoutNotify(pivot.x);
-                        m_CustomPivotFieldY.SetValueWithoutNotify(pivot.y);
-                    }
-                });
+                    SpriteAlignment alignment = (SpriteAlignment)evt.newValue;
+                    SetSpritePivotAndAlignment(selectedSpritePivot, alignment);
+                    m_CustomPivotElement.SetEnabled(selectedSpriteAlignment == SpriteAlignment.Custom);
+                    Vector2 pivot = selectedSpritePivotInCurUnitMode;
+                    m_CustomPivotFieldX.SetValueWithoutNotify(pivot.x);
+                    m_CustomPivotFieldY.SetValueWithoutNotify(pivot.y);
+                }
+            });
 
 
             m_PivotUnitModeField = m_SelectedFrameInspector.Q<EnumField>("pivotUnitModeField");
             m_PivotUnitModeField.Init(PivotUnitMode.Normalized);
             m_PivotUnitModeField.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        m_PivotUnitMode = (PivotUnitMode)evt.newValue;
+                    m_PivotUnitMode = (PivotUnitMode)evt.newValue;
 
-                        Vector2 pivot = selectedSpritePivotInCurUnitMode;
-                        m_CustomPivotFieldX.SetValueWithoutNotify(pivot.x);
-                        m_CustomPivotFieldY.SetValueWithoutNotify(pivot.y);
-                    }
-                });
+                    Vector2 pivot = selectedSpritePivotInCurUnitMode;
+                    m_CustomPivotFieldX.SetValueWithoutNotify(pivot.x);
+                    m_CustomPivotFieldY.SetValueWithoutNotify(pivot.y);
+                }
+            });
 
 
             m_CustomPivotElement = m_SelectedFrameInspector.Q("customPivot");
             m_CustomPivotFieldX = m_CustomPivotElement.Q<PropertyControl<double>>("customPivotX");
             m_CustomPivotFieldX.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        float newValue = (float)evt.newValue;
-                        float pivotX = m_PivotUnitMode == PivotUnitMode.Pixels
-                            ? ConvertFromRectToNormalizedSpace(new Vector2(newValue, 0.0f), selectedSpriteRect).x
-                            : newValue;
+                    float newValue = (float)evt.newValue;
+                    float pivotX = m_PivotUnitMode == PivotUnitMode.Pixels
+                        ? ConvertFromRectToNormalizedSpace(new Vector2(newValue, 0.0f), selectedSpriteRect).x
+                        : newValue;
 
-                        var pivot = selectedSpritePivot;
-                        pivot.x = pivotX;
-                        SetSpritePivotAndAlignment(pivot, selectedSpriteAlignment);
-                    }
-                });
+                    var pivot = selectedSpritePivot;
+                    pivot.x = pivotX;
+                    SetSpritePivotAndAlignment(pivot, selectedSpriteAlignment);
+                }
+            });
 
             m_CustomPivotFieldY = m_CustomPivotElement.Q<PropertyControl<double>>("customPivotY");
             m_CustomPivotFieldY.OnValueChanged((evt) =>
+            {
+                if (hasSelected)
                 {
-                    if (hasSelected)
-                    {
-                        float newValue = (float)evt.newValue;
-                        float pivotY = m_PivotUnitMode == PivotUnitMode.Pixels
-                            ? ConvertFromRectToNormalizedSpace(new Vector2(0.0f, newValue), selectedSpriteRect).y
-                            : newValue;
+                    float newValue = (float)evt.newValue;
+                    float pivotY = m_PivotUnitMode == PivotUnitMode.Pixels
+                        ? ConvertFromRectToNormalizedSpace(new Vector2(0.0f, newValue), selectedSpriteRect).y
+                        : newValue;
 
-                        var pivot = selectedSpritePivot;
-                        pivot.y = pivotY;
-                        SetSpritePivotAndAlignment(pivot, selectedSpriteAlignment);
-                    }
-                });
+                    var pivot = selectedSpritePivot;
+                    pivot.y = pivotY;
+                    SetSpritePivotAndAlignment(pivot, selectedSpriteAlignment);
+                }
+            });
 
             //// Force an update of all the fields.
             PopulateSpriteFrameInspectorField();

@@ -63,7 +63,7 @@ namespace UnityEditor
             public GUIStyle selectedPathLabel = "Label";
             public GUIStyle exposablePopup = GetStyle("ExposablePopupMenu");
             public GUIStyle lockButton = "IN LockButton";
-            public GUIStyle foldout = "AC RightArrow";
+            public GUIStyle separator = "ArrowNavigationRight";
 
             public GUIContent m_FilterByLabel = new GUIContent(EditorGUIUtility.FindTexture("FilterByLabel"), "Search by Label");
             public GUIContent m_FilterByType = new GUIContent(EditorGUIUtility.FindTexture("FilterByType"), "Search by Type");
@@ -701,7 +701,7 @@ namespace UnityEditor
                 data,
                 new AssetsTreeViewGUI(m_AssetTree),
                 new AssetsTreeViewDragging(m_AssetTree)
-                );
+            );
             m_AssetTree.ReloadData();
         }
 
@@ -717,7 +717,7 @@ namespace UnityEditor
                 new ProjectBrowserColumnOneTreeViewDataSource(m_FolderTree),
                 new ProjectBrowserColumnOneTreeViewGUI(m_FolderTree),
                 new ProjectBrowserColumnOneTreeViewDragging(m_FolderTree)
-                );
+            );
             m_FolderTree.ReloadData();
         }
 
@@ -2527,11 +2527,11 @@ namespace UnityEditor
                         ShowFolderContents(GetFolderInstanceID(folderPath), false);
                     }
 
-                    rect.x += size.x + 3f;
+                    rect.x += size.x;
                     if (!lastElement || m_BreadCrumbLastFolderHasSubFolders)
                     {
-                        Rect buttonRect = new Rect(rect.x, rect.y + 2, 13, 13);
-                        if (EditorGUI.DropdownButton(buttonRect, GUIContent.none, FocusType.Passive, s_Styles.foldout))
+                        Rect buttonRect = new Rect(rect.x, rect.y, s_Styles.separator.fixedWidth, s_Styles.separator.fixedHeight);
+                        if (EditorGUI.DropdownButton(buttonRect, GUIContent.none, FocusType.Passive, s_Styles.separator))
                         {
                             string currentSubFolder = "";
                             if (!lastElement)
@@ -2539,7 +2539,7 @@ namespace UnityEditor
                             BreadCrumbListMenu.Show(folderPath, currentSubFolder, buttonRect, this);
                         }
                     }
-                    rect.x += 11f;
+                    rect.x += s_Styles.separator.fixedWidth;
                 }
             }
             else if (m_SearchFilter.folders.Length > 1)

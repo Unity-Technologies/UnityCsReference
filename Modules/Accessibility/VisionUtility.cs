@@ -53,9 +53,9 @@ namespace UnityEngine.Accessibility
                 throw new ArgumentNullException("palette");
 
             Color[] acceptableColors = Enumerable.Range(0, s_ColorBlindSafePalette.Length).Where(
-                    i => s_ColorBlindSafePaletteLuminanceValues[i] >= minimumLuminance && s_ColorBlindSafePaletteLuminanceValues[i] <= maximumLuminance
-                    ).Select(i => s_ColorBlindSafePalette[i]
-                    ).ToArray();
+                i => s_ColorBlindSafePaletteLuminanceValues[i] >= minimumLuminance && s_ColorBlindSafePaletteLuminanceValues[i] <= maximumLuminance
+                ).Select(i => s_ColorBlindSafePalette[i]
+                ).ToArray();
 
             int numUniqueColors = Mathf.Min(palette.Length, acceptableColors.Length);
 

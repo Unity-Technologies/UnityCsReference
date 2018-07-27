@@ -147,14 +147,16 @@ namespace UnityEditor
         [RequiredByNativeCode]
         private static int[] ProcessInitializeOnLoadAttributes()
         {
+            const BindingFlags kStaticMethodFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+
             m_TotalNumRuntimeInitializeMethods = 0;
             m_RuntimeInitializeClassInfoList = new List<RuntimeInitializeClassInfo>();
 
             foreach (Type type in GetAllTypesWithAttribute<InitializeOnLoadAttribute>())
                 ProcessEditorInitializeOnLoad(type);
-            foreach (MethodInfo method in GetAllMethodsWithAttribute<RuntimeInitializeOnLoadMethodAttribute>())
+            foreach (MethodInfo method in GetAllMethodsWithAttribute<RuntimeInitializeOnLoadMethodAttribute>(kStaticMethodFlags))
                 ProcessRuntimeInitializeOnLoad(method);
-            foreach (MethodInfo method in GetAllMethodsWithAttribute<InitializeOnLoadMethodAttribute>())
+            foreach (MethodInfo method in GetAllMethodsWithAttribute<InitializeOnLoadMethodAttribute>(kStaticMethodFlags))
                 ProcessInitializeOnLoadMethod(method);
 
             return null;

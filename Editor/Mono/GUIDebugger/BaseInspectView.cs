@@ -98,8 +98,12 @@ namespace UnityEditor
 
         public virtual void SelectRow(int index)
         {
-            m_ListViewState.row = index;
-            m_ListViewState.selectionChanged = true;
+            if (index >= 0 && index < m_ListViewState.totalRows)
+            {
+                m_ListViewState.row = index;
+                m_ListViewState.selectionChanged = true;
+                m_ListViewState.scrollPos = new Vector2(m_ListViewState.scrollPos.x, index * GUIViewDebuggerWindow.Styles.listItem.fixedHeight);
+            }
         }
 
         public virtual void ClearRowSelection()
@@ -132,7 +136,7 @@ namespace UnityEditor
                     else
                     {
                         callstack += string.Format("{0} [<color={3}>{1}</color>:{2}]\n", signature,
-                                stackframe.sourceFile, stackframe.lineNumber, EditorGUIUtility.isProSkin ? "#4c7effff" : "#0000ffff");
+                            stackframe.sourceFile, stackframe.lineNumber, EditorGUIUtility.isProSkin ? "#4c7effff" : "#0000ffff");
                     }
                 }
 

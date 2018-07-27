@@ -216,8 +216,8 @@ namespace UnityEditor
         private bool IsPickingEvent(Event evt)
         {
             return ((evt.control && EditMode.editMode != EditMode.SceneViewEditMode.GridMove) ||
-                    EditMode.editMode == EditMode.SceneViewEditMode.GridPicking ||
-                    EditMode.editMode != EditMode.SceneViewEditMode.GridSelect && PickingIsDefaultTool()) &&
+                EditMode.editMode == EditMode.SceneViewEditMode.GridPicking ||
+                EditMode.editMode != EditMode.SceneViewEditMode.GridSelect && PickingIsDefaultTool()) &&
                 evt.button == 0 && !evt.alt;
         }
 
@@ -382,11 +382,11 @@ namespace UnityEditor
         private bool IsErasingEvent(Event evt)
         {
             return (evt.button == 0 && !evt.control && !evt.alt
-                    && ((evt.shift && EditMode.editMode != EditMode.SceneViewEditMode.GridBox
-                         && EditMode.editMode != EditMode.SceneViewEditMode.GridFloodFill
-                         && EditMode.editMode != EditMode.SceneViewEditMode.GridSelect
-                         && EditMode.editMode != EditMode.SceneViewEditMode.GridMove)
-                        || EditMode.editMode == EditMode.SceneViewEditMode.GridEraser));
+                && ((evt.shift && EditMode.editMode != EditMode.SceneViewEditMode.GridBox
+                    && EditMode.editMode != EditMode.SceneViewEditMode.GridFloodFill
+                    && EditMode.editMode != EditMode.SceneViewEditMode.GridSelect
+                    && EditMode.editMode != EditMode.SceneViewEditMode.GridMove)
+                    || EditMode.editMode == EditMode.SceneViewEditMode.GridEraser));
         }
 
         private void HandleFloodFill()
@@ -458,9 +458,9 @@ namespace UnityEditor
         private Vector2Int GetMarqueePivot(Vector2Int start, Vector2Int end)
         {
             Vector2Int pivot = new Vector2Int(
-                    Math.Max(end.x - start.x, 0),
-                    Math.Max(end.y - start.y, 0)
-                    );
+                Math.Max(end.x - start.x, 0),
+                Math.Max(end.y - start.y, 0)
+            );
             return pivot;
         }
 

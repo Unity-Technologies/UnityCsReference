@@ -370,39 +370,39 @@ namespace UnityEditor
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsDuckVolume())
                 {
                     menu.AddItem(EditorGUIUtility.TrTextContent("Allow Wet Mixing (causes higher memory usage)"), effect.enableWetMix, delegate()
-                        {
-                            Undo.RecordObject(effect, "Enable Wet Mixing");
-                            effect.enableWetMix = !effect.enableWetMix;
-                        });
+                    {
+                        Undo.RecordObject(effect, "Enable Wet Mixing");
+                        effect.enableWetMix = !effect.enableWetMix;
+                    });
                     menu.AddItem(EditorGUIUtility.TrTextContent("Bypass"), effect.bypass, delegate()
-                        {
-                            Undo.RecordObject(effect, "Bypass Effect");
-                            effect.bypass = !effect.bypass;
+                    {
+                        Undo.RecordObject(effect, "Bypass Effect");
+                        effect.bypass = !effect.bypass;
 
-                            controller.UpdateBypass();
-                            AudioMixerUtility.RepaintAudioMixerAndInspectors();
-                        });
+                        controller.UpdateBypass();
+                        AudioMixerUtility.RepaintAudioMixerAndInspectors();
+                    });
                     menu.AddSeparator("");
                 }
 
                 menu.AddItem(EditorGUIUtility.TrTextContent("Copy effect settings to all snapshots"), false, delegate()
-                    {
-                        Undo.RecordObject(controller, "Copy effect settings to all snapshots");
-                        if (effect.IsAttenuation())
-                            controller.CopyAttenuationToAllSnapshots(group, controller.TargetSnapshot);
-                        else
-                            controller.CopyEffectSettingsToAllSnapshots(group, effectIndex, controller.TargetSnapshot, effect.IsSend());
-                        AudioMixerUtility.RepaintAudioMixerAndInspectors();
-                    });
+                {
+                    Undo.RecordObject(controller, "Copy effect settings to all snapshots");
+                    if (effect.IsAttenuation())
+                        controller.CopyAttenuationToAllSnapshots(group, controller.TargetSnapshot);
+                    else
+                        controller.CopyEffectSettingsToAllSnapshots(group, effectIndex, controller.TargetSnapshot, effect.IsSend());
+                    AudioMixerUtility.RepaintAudioMixerAndInspectors();
+                });
 
                 if (!effect.IsAttenuation() && !effect.IsSend() && !effect.IsDuckVolume() && effect.enableWetMix)
                 {
                     menu.AddItem(EditorGUIUtility.TrTextContent("Copy effect settings to all snapshots, including wet level"), false, delegate()
-                        {
-                            Undo.RecordObject(controller, "Copy effect settings to all snapshots, including wet level");
-                            controller.CopyEffectSettingsToAllSnapshots(group, effectIndex, controller.TargetSnapshot, true);
-                            AudioMixerUtility.RepaintAudioMixerAndInspectors();
-                        });
+                    {
+                        Undo.RecordObject(controller, "Copy effect settings to all snapshots, including wet level");
+                        controller.CopyEffectSettingsToAllSnapshots(group, effectIndex, controller.TargetSnapshot, true);
+                        AudioMixerUtility.RepaintAudioMixerAndInspectors();
+                    });
                 }
 
                 menu.AddSeparator("");
@@ -416,11 +416,11 @@ namespace UnityEditor
             {
                 menu.AddSeparator("");
                 menu.AddItem(EditorGUIUtility.TrTextContent("Remove this effect"), false, delegate()
-                    {
-                        controller.ClearSendConnectionsTo(effect);
-                        controller.RemoveEffect(effect, group);
-                        AudioMixerUtility.RepaintAudioMixerAndInspectors();
-                    });
+                {
+                    controller.ClearSendConnectionsTo(effect);
+                    controller.RemoveEffect(effect, group);
+                    AudioMixerUtility.RepaintAudioMixerAndInspectors();
+                });
             }
 
             menu.DropDown(buttonRect);

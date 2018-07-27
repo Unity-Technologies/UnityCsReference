@@ -24,8 +24,8 @@ namespace UnityEditor.IMGUI.Controls
         private static float GetSortingDistance(ArcHandle handle)
         {
             Vector3 worldPosition = Handles.matrix.MultiplyPoint3x4(
-                    Quaternion.AngleAxis(handle.angle, Vector3.up) * Vector3.forward * handle.radius
-                    );
+                Quaternion.AngleAxis(handle.angle, Vector3.up) * Vector3.forward * handle.radius
+            );
             Vector3 toHandle = worldPosition - Camera.current.transform.position;
             if (Camera.current.orthographic)
             {
@@ -37,7 +37,7 @@ namespace UnityEditor.IMGUI.Controls
 
         private static int CompareHandleFunctionsByDistance(
             KeyValuePair<Action, float> func1, KeyValuePair<Action, float> func2
-            )
+        )
         {
             return func2.Value.CompareTo(func1.Value);
         }

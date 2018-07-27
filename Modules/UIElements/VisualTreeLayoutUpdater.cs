@@ -60,6 +60,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     root.IncrementVersion(VersionChangeType.Transform);
                 }
+                root.IncrementVersion(VersionChangeType.Clip);
                 root.renderData.lastLayout = yogaRect;
             }
 

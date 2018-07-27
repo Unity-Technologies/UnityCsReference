@@ -29,6 +29,8 @@ namespace UnityEditor
             public static readonly string defaultWindowPopupText = "<Please Select>";
 
             public static readonly GUIContent inspectedWindowLabel = EditorGUIUtility.TrTextContent("Inspected View: ");
+            public static readonly GUIContent pickStyleLabel = EditorGUIUtility.TrTextContent("Pick Style");
+            public static readonly GUIContent pickingStyleLabel = EditorGUIUtility.TrTextContent("Picking   ");
 
             public static readonly GUIStyle listItem = "PR Label";
             public static readonly GUIStyle listItemBackground = "CN EntryBackOdd";
@@ -82,7 +84,8 @@ namespace UnityEditor
                     if (m_Inspected != null)
                     {
                         m_InspectedEditorWindow = (m_Inspected is HostView) ? ((HostView)m_Inspected).actualView : null;
-                        GUIViewDebuggerHelper.DebugWindow(m_Inspected);
+                        if (!m_StylePicker.IsPicking)
+                            GUIViewDebuggerHelper.DebugWindow(m_Inspected);
                         m_Inspected.Repaint();
                     }
                     else
@@ -100,6 +103,8 @@ namespace UnityEditor
         [SerializeField]
         GUIView m_Inspected;
         EditorWindow m_InspectedEditorWindow;
+        ElementHighlighter m_Highlighter;
+        StylePicker m_StylePicker;
 
         public IBaseInspectView instructionModeView { get { return m_InstructionModeView; } }
         IBaseInspectView m_InstructionModeView;
@@ -107,19 +112,15 @@ namespace UnityEditor
         protected GUIViewDebuggerWindow()
         {
             m_InstructionModeView = new StyleDrawInspectView(this);
+            m_Highlighter = new ElementHighlighter();
+            m_StylePicker = new StylePicker(this, m_Highlighter);
+            m_StylePicker.CanInspectView = CanInspectView;
         }
 
         public void ClearInstructionHighlighter()
         {
-            if (m_PaddingHighlighter != null && m_PaddingHighlighter.shadow.parent != null)
-            {
-                var parent = m_PaddingHighlighter.shadow.parent;
-
-                m_PaddingHighlighter.RemoveFromHierarchy();
-                m_ContentHighlighter.RemoveFromHierarchy();
-
-                parent.MarkDirtyRepaint();
-            }
+            if (!m_StylePicker.IsPicking)
+                m_Highlighter.ClearElement();
         }
 
         public void HighlightInstruction(GUIView view, Rect instructionRect, GUIStyle style)
@@ -129,30 +130,7 @@ namespace UnityEditor
 
             ClearInstructionHighlighter();
 
-            if (m_PaddingHighlighter == null)
-            {
-                var borderWidth = 1f;
-                m_PaddingHighlighter = new VisualElement();
-                m_PaddingHighlighter.style.borderColor = UIElementsDebugger.Styles.kSizePaddingSecondaryColor;
-                m_PaddingHighlighter.style.borderLeftWidth = borderWidth;
-                m_PaddingHighlighter.style.borderRightWidth = borderWidth;
-                m_PaddingHighlighter.style.borderTopWidth = borderWidth;
-                m_PaddingHighlighter.style.borderBottomWidth = borderWidth;
-                m_PaddingHighlighter.pickingMode = PickingMode.Ignore;
-                m_ContentHighlighter = new VisualElement();
-                m_ContentHighlighter.style.borderColor = UIElementsDebugger.Styles.kSizeSecondaryColor;
-                m_ContentHighlighter.style.borderLeftWidth = borderWidth;
-                m_ContentHighlighter.style.borderRightWidth = borderWidth;
-                m_ContentHighlighter.style.borderTopWidth = borderWidth;
-                m_ContentHighlighter.style.borderBottomWidth = borderWidth;
-                m_ContentHighlighter.pickingMode = PickingMode.Ignore;
-            }
-            m_PaddingHighlighter.layout = instructionRect;
-            view.visualTree.Add(m_PaddingHighlighter);
-            if (style != null)
-                instructionRect = style.padding.Remove(instructionRect);
-            m_ContentHighlighter.layout = instructionRect;
-            view.visualTree.Add(m_ContentHighlighter);
+            m_Highlighter.HighlightElement(view.visualTree, instructionRect, style);
         }
 
         InstructionType instructionType
@@ -191,19 +169,11 @@ namespace UnityEditor
         [SerializeField]
         InstructionType m_InstructionType = InstructionType.Draw;
 
-        VisualElement m_ContentHighlighter;
-        VisualElement m_PaddingHighlighter;
         [SerializeField]
         bool m_ShowHighlighter = true;
 
         [SerializeField]
         private bool m_InspectOptimizedGUIBlocks = false;
-
-        [NonSerialized]
-        bool m_QueuedPointInspection = false;
-
-        [NonSerialized]
-        Vector2 m_PointToInspect;
 
         //TODO: figure out proper minimum values and make sure the window also has compatible minimum size
         readonly SplitterState m_InstructionListDetailSplitter = new SplitterState(new float[] { 30, 70 }, new int[] { 32, 32 }, null);
@@ -225,6 +195,7 @@ namespace UnityEditor
         {
             titleContent =  EditorGUIUtility.TrTextContent("IMGUI Debugger");
             GUIViewDebuggerHelper.onViewInstructionsChanged += OnInspectedViewChanged;
+            GUIViewDebuggerHelper.onDebuggingViewchanged += OnDebuggedViewChanged;
             GUIView serializedInspected = m_Inspected;
             inspected = null;
             inspected = serializedInspected;
@@ -232,10 +203,18 @@ namespace UnityEditor
             instructionType = m_InstructionType;
         }
 
+        void OnDestroy()
+        {
+            m_StylePicker.StopExploreStyle();
+            m_StylePicker = null;
+        }
+
         void OnDisable()
         {
             GUIViewDebuggerHelper.onViewInstructionsChanged -= OnInspectedViewChanged;
+            GUIViewDebuggerHelper.onDebuggingViewchanged -= OnDebuggedViewChanged;
             inspected = null;
+            m_StylePicker.StopExploreStyle();
         }
 
         void OnBecameVisible()
@@ -250,11 +229,20 @@ namespace UnityEditor
 
         void OnGUI()
         {
+            HandleStylePicking();
             DoToolbar();
             ShowDrawInstructions();
         }
 
         private bool m_FlushingOptimizedGUIBlock;
+
+        void OnDebuggedViewChanged(GUIView view, bool isDebugged)
+        {
+            if (!m_StylePicker.IsPicking && isDebugged && inspected != view)
+            {
+                inspected = view;
+            }
+        }
 
         void OnInspectedViewChanged()
         {
@@ -274,6 +262,23 @@ namespace UnityEditor
             Repaint();
         }
 
+        void HandleStylePicking()
+        {
+            if (m_StylePicker != null && m_StylePicker.IsPicking)
+            {
+                m_StylePicker.OnGUI();
+                if (Event.current.type == EventType.Ignore || Event.current.type == EventType.MouseUp)
+                {
+                    m_StylePicker.StopExploreStyle();
+                }
+
+                if (m_StylePicker.ExploredView != null && inspected != m_StylePicker.ExploredView)
+                {
+                    inspected = m_StylePicker.ExploredView;
+                }
+            }
+        }
+
         void DoToolbar()
         {
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
@@ -282,6 +287,7 @@ namespace UnityEditor
             DoInspectTypePopup();
             DoInstructionOverlayToggle();
             DoOptimizedGUIBlockToggle();
+            DoStylePicker();
 
             GUILayout.EndHorizontal();
         }
@@ -366,6 +372,16 @@ namespace UnityEditor
                 OnInspectedViewChanged();
         }
 
+        void DoStylePicker()
+        {
+            var pickerRect = GUILayoutUtility.GetRect(Styles.pickStyleLabel, EditorStyles.toolbarButton);
+            if (!m_StylePicker.IsPicking && Event.current.isMouse && Event.current.type == EventType.MouseDown && pickerRect.Contains(Event.current.mousePosition))
+            {
+                m_StylePicker.StartExploreStyle();
+            }
+            GUI.Toggle(pickerRect, m_StylePicker.IsPicking, m_StylePicker.IsPicking ? Styles.pickingStyleLabel : Styles.pickStyleLabel, EditorStyles.toolbarButton);
+        }
+
         void OnShowOverlayChanged()
         {
             if (m_ShowHighlighter == false)
@@ -400,47 +416,24 @@ namespace UnityEditor
                 return;
             }
 
-            if (m_QueuedPointInspection)
-            {
-                instructionModeView.ClearRowSelection();
-                instructionModeView.SelectRow(FindInstructionUnderPoint(m_PointToInspect));
-                m_QueuedPointInspection = false;
-            }
-
             SplitterGUILayout.BeginHorizontalSplit(m_InstructionListDetailSplitter);
 
             instructionModeView.DrawInstructionList();
 
             EditorGUILayout.BeginVertical();
             {
+                if (m_StylePicker.IsPicking &&
+                    m_StylePicker.ExploredDrawInstructionIndex != -1 &&
+                    m_InstructionType == InstructionType.Draw)
+                {
+                    m_InstructionModeView.ClearRowSelection();
+                    m_InstructionModeView.SelectRow(m_StylePicker.ExploredDrawInstructionIndex);
+                }
                 instructionModeView.DrawSelectedInstructionDetails(position.width - m_InstructionListDetailSplitter.realSizes[0]);
             }
             EditorGUILayout.EndVertical();
 
             SplitterGUILayout.EndHorizontalSplit();
-        }
-
-        void InspectPointAt(Vector2 point)
-        {
-            m_PointToInspect = point;
-            m_QueuedPointInspection = true;
-            inspected.Repaint();
-            Repaint();
-        }
-
-        int FindInstructionUnderPoint(Vector2 point)
-        {
-            List<IMGUIDrawInstruction> drawInstructions = new List<IMGUIDrawInstruction>();
-            GUIViewDebuggerHelper.GetDrawInstructions(drawInstructions);
-            for (int i = 0; i < drawInstructions.Count; ++i)
-            {
-                Rect rect = drawInstructions[i].rect;
-                if (rect.Contains(point))
-                {
-                    return i;
-                }
-            }
-            return -1;
         }
     }
 
@@ -457,13 +450,19 @@ namespace UnityEditor
 
     internal static partial class GUIViewDebuggerHelper
     {
-        internal static Action onViewInstructionsChanged;
+        internal static event Action onViewInstructionsChanged = null;
+        internal static event Action<GUIView, bool> onDebuggingViewchanged = null;
 
         [RequiredByNativeCode]
         private static void CallOnViewInstructionsChanged()
         {
-            if (onViewInstructionsChanged != null)
-                onViewInstructionsChanged();
+            onViewInstructionsChanged?.Invoke();
+        }
+
+        [RequiredByNativeCode]
+        private static void CallDebuggingViewChanged(GUIView view, bool isBeingDebugged)
+        {
+            onDebuggingViewchanged?.Invoke(view, isBeingDebugged);
         }
     }
 }

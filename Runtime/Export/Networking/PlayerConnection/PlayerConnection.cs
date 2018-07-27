@@ -79,7 +79,7 @@ namespace UnityEngine.Networking.PlayerConnection
             }
 
             m_PlayerEditorConnectionEvents.AddAndCreate(messageId)
-            .AddListener(callback);
+                .AddListener(callback);
         }
 
         public void Unregister(Guid messageId, UnityAction<MessageEventArgs> callback)

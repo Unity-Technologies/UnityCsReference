@@ -162,7 +162,8 @@ namespace UnityEditor
 
         protected System.Type[] GetPaneTypes()
         {
-            return new System.Type[] {
+            return new System.Type[]
+            {
                 typeof(SceneView),
                 typeof(GameView),
                 typeof(InspectorWindow),
@@ -546,7 +547,6 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Inspect Window"), false, Inspect, window);
                 menu.AddItem(EditorGUIUtility.TrTextContent("Inspect View"), false, Inspect, window.m_Parent);
                 menu.AddItem(EditorGUIUtility.TrTextContent("Reload Window _f5"), false, Reload, window);
-                menu.AddItem(EditorGUIUtility.TextContent("UIElements Debugger _%f5"), false, DebugWindow, window);
 
                 menu.AddSeparator("");
             }

@@ -173,10 +173,10 @@ namespace UnityEditor
                 (m_ShowMode == (int)ShowMode.Utility || m_ShowMode == (int)ShowMode.AuxWindow) ||
 
                 (rootView is SplitView &&
-                 rootView.children.Length == 1 &&
-                 rootView.children[0] is DockArea &&
-                 ((DockArea)rootView.children[0]).m_Panes.Count == 1)
-                );
+                    rootView.children.Length == 1 &&
+                    rootView.children[0] is DockArea &&
+                    ((DockArea)rootView.children[0]).m_Panes.Count == 1)
+            );
         }
 
         private string NotDockedWindowID()

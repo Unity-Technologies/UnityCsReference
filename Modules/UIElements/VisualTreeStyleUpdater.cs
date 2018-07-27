@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
+using UnityEngine.Profiling;
 using UnityEngine.StyleSheets;
 
 namespace UnityEngine.Experimental.UIElements
@@ -113,20 +114,31 @@ namespace UnityEngine.Experimental.UIElements
         }
     }
 
+    class StyleMatchingContext
+    {
+        public List<StyleSheet> styleSheetStack;
+        public VisualElement currentElement;
+        public Action<VisualElement, MatchResultInfo> processResult;
+
+        public StyleMatchingContext(Action<VisualElement, MatchResultInfo> processResult)
+        {
+            styleSheetStack = new List<StyleSheet>();
+            currentElement = null;
+            this.processResult = processResult;
+        }
+    }
+
+
     internal class VisualTreeStyleUpdaterTraversal : HierarchyTraversal
     {
         private HashSet<VisualElement> m_UpdateList = new HashSet<VisualElement>();
         private HashSet<VisualElement> m_ParentList = new HashSet<VisualElement>();
 
-        internal struct RuleRef
-        {
-            public StyleComplexSelector selector;
-            public StyleSheet sheet;
-        }
+        private List<SelectorMatchRecord> m_TempMatchResults = new List<SelectorMatchRecord>();
 
-        protected List<RuleRef> m_MatchedRules = new List<RuleRef>(capacity: 0);
-        protected long m_MatchingRulesHash;
-        public float currentPixelsPerPoint { get; set; }
+        public float currentPixelsPerPoint { get; set; } = 1.0f;
+
+        StyleMatchingContext m_StyleMatchingContext = new StyleMatchingContext(OnProcessMatchResult);
 
         public void AddChangedElement(VisualElement ve)
         {
@@ -139,6 +151,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             m_UpdateList.Clear();
             m_ParentList.Clear();
+            m_TempMatchResults.Clear();
         }
 
         private void PropagateToChildren(VisualElement ve)
@@ -167,92 +180,100 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        public override bool ShouldSkipElement(VisualElement element)
+        static void OnProcessMatchResult(VisualElement current, MatchResultInfo info)
         {
-            return !m_ParentList.Contains(element) && !m_UpdateList.Contains(element);
+            current.triggerPseudoMask |= info.triggerPseudoMask;
+            current.dependencyPseudoMask |= info.dependencyPseudoMask;
         }
 
-        public override bool OnRuleMatchedElement(RuleMatcher matcher, VisualElement element)
+        public override void TraverseRecursive(VisualElement element, int depth)
         {
-            StyleRule rule = matcher.complexSelector.rule;
-            int specificity = matcher.complexSelector.specificity;
-            m_MatchingRulesHash = (m_MatchingRulesHash * 397) ^ rule.GetHashCode();
-            m_MatchingRulesHash = (m_MatchingRulesHash * 397) ^ specificity;
-            m_MatchedRules.Add(new RuleRef { selector = matcher.complexSelector, sheet = matcher.sheet });
-            return false;
-        }
-
-        public override void OnBeginElementTest(VisualElement element, List<RuleMatcher> ruleMatchers)
-        {
-            if (element == null)
+            if (ShouldSkipElement(element))
+            {
                 return;
+            }
 
-            // If the element is fully dirty, we need to purge those caches
-            // they will be recomputed as part of the following loop
+            // If the element is fully dirty, we need to erase those flags since the full element and its subtree
+            // will be re-styled.
+            // If the element is not in the update list, it's a parent of something dirty and therefore it won't be restyled.
             if (m_UpdateList.Contains(element))
             {
                 element.triggerPseudoMask = 0;
                 element.dependencyPseudoMask = 0;
             }
 
+            int originalStyleSheetCount = m_StyleMatchingContext.styleSheetStack.Count;
+
             if (element.styleSheets != null)
             {
                 for (var index = 0; index < element.styleSheets.Count; index++)
                 {
                     var styleSheetData = element.styleSheets[index];
-                    var complexSelectors = styleSheetData.complexSelectors;
-
-                    // To avoid excessive re-allocations, just resize the list right now
-                    int futureSize = ruleMatchers.Count + complexSelectors.Length;
-                    ruleMatchers.Capacity = Math.Max(ruleMatchers.Capacity, futureSize);
-
-                    for (int i = 0; i < complexSelectors.Length; i++)
-                    {
-                        StyleComplexSelector complexSelector = complexSelectors[i];
-
-                        // For every complex selector, push a matcher for first sub selector
-                        ruleMatchers.Add(new RuleMatcher
-                        {
-                            sheet = styleSheetData,
-                            complexSelector = complexSelector,
-                        });
-                    }
+                    m_StyleMatchingContext.styleSheetStack.Add(styleSheetData);
                 }
             }
-            m_MatchedRules.Clear();
-            string elementTypeName = element.fullTypeName;
 
-            Int64 matchingRulesHash = elementTypeName.GetHashCode();
-            // Let current DPI contribute to the hash so cache is invalidated when this changes
-            m_MatchingRulesHash = (matchingRulesHash * 397) ^ currentPixelsPerPoint.GetHashCode();
-        }
-
-        public override void OnProcessMatchResult(UIElements.VisualElement element, ref StyleSheets.RuleMatcher matcher, ref MatchResultInfo matchInfo)
-        {
-            element.triggerPseudoMask |= matchInfo.triggerPseudoMask;
-            element.dependencyPseudoMask |= matchInfo.dependencyPseudoMask;
-        }
-
-        public override void ProcessMatchedRules(VisualElement element)
-        {
-            VisualElementStylesData resolvedStyles;
-            if (StyleCache.TryGetValue(m_MatchingRulesHash, out resolvedStyles))
+            if (m_UpdateList.Contains(element))
             {
-                // we should not new it in StyleTree
+                m_StyleMatchingContext.currentElement = element;
+
+                StyleSelectorHelper.FindMatches(m_StyleMatchingContext, m_TempMatchResults);
+
+
+                ProcessMatchedRules(element, m_TempMatchResults);
+
+                m_StyleMatchingContext.currentElement = null;
+                m_TempMatchResults.Clear();
+            }
+
+            Recurse(element, depth);
+
+            if (m_StyleMatchingContext.styleSheetStack.Count > originalStyleSheetCount)
+            {
+                m_StyleMatchingContext.styleSheetStack.RemoveRange(originalStyleSheetCount, m_StyleMatchingContext.styleSheetStack.Count - originalStyleSheetCount);
+            }
+        }
+
+        bool ShouldSkipElement(VisualElement element)
+        {
+            return !m_ParentList.Contains(element) && !m_UpdateList.Contains(element);
+        }
+
+        void ProcessMatchedRules(VisualElement element, List<SelectorMatchRecord> matchingSelectors)
+        {
+            matchingSelectors.Sort(SelectorMatchRecord.Compare);
+
+            Int64 matchingRulesHash = element.fullTypeName.GetHashCode();
+            // Let current DPI contribute to the hash so cache is invalidated when this changes
+            matchingRulesHash = (matchingRulesHash * 397) ^ currentPixelsPerPoint.GetHashCode();
+
+            foreach (var record in matchingSelectors)
+            {
+                StyleRule rule = record.complexSelector.rule;
+                int specificity = record.complexSelector.specificity;
+                matchingRulesHash = (matchingRulesHash * 397) ^ rule.GetHashCode();
+                matchingRulesHash = (matchingRulesHash * 397) ^ specificity;
+            }
+
+            VisualElementStylesData resolvedStyles;
+            if (StyleCache.TryGetValue(matchingRulesHash, out resolvedStyles))
+            {
                 element.SetSharedStyles(resolvedStyles);
             }
             else
             {
                 resolvedStyles = new VisualElementStylesData(isShared: true);
 
-                for (int i = 0, ruleCount = m_MatchedRules.Count; i < ruleCount; i++)
+                foreach (var record in matchingSelectors)
                 {
-                    RuleRef ruleRef = m_MatchedRules[i];
-                    StylePropertyID[] propertyIDs = StyleSheetCache.GetPropertyIDs(ruleRef.sheet, ruleRef.selector.ruleIndex);
-                    resolvedStyles.ApplyRule(ruleRef.sheet, ruleRef.selector.specificity, ruleRef.selector.rule, propertyIDs);
+                    StylePropertyID[] propertyIDs = StyleSheetCache.GetPropertyIDs(record.sheet, record.complexSelector.ruleIndex);
+                    resolvedStyles.ApplyRule(record.sheet, record.complexSelector.specificity, record.complexSelector.rule, propertyIDs);
                 }
 
-                StyleCache.SetValue(m_MatchingRulesHash, resolvedStyles);
+                resolvedStyles.ApplyLayoutValues();
+
+
+                StyleCache.SetValue(matchingRulesHash, resolvedStyles);
 
                 element.SetSharedStyles(resolvedStyles);
             }

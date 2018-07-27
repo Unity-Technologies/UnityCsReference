@@ -426,12 +426,12 @@ namespace UnityEditor.Experimental.UIElements
                 if (!m_ValueNull)
                 {
                     style.backgroundImage = AnimationCurvePreviewCache.GenerateCurvePreview(
-                            previewWidth,
-                            previewHeight,
-                            rangeRect,
-                            m_Value,
-                            curveColor,
-                            style.backgroundImage.value);
+                        previewWidth,
+                        previewHeight,
+                        rangeRect,
+                        m_Value,
+                        curveColor,
+                        style.backgroundImage.value);
                 }
                 else
                 {

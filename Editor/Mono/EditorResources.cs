@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor.Experimental.UIElements;
@@ -18,22 +19,19 @@ namespace UnityEditor.Experimental
     public partial class EditorResources
     {
         private static bool s_DelayedInitialization;
-        private static bool s_IgnoreFirstPostProcessImport;
         private static bool s_RefreshGlobalCatalog;
 
         // Global editor styles
-        private static readonly StyleCatalog s_StyleCatalog;
+        private static StyleCatalog s_StyleCatalog;
 
         static EditorResources()
         {
-            s_IgnoreFirstPostProcessImport = true;
             s_StyleCatalog = new StyleCatalog();
-            s_StyleCatalog.AddPath(UIElementsEditorUtility.s_DefaultCommonStyleSheetPath);
-            s_StyleCatalog.AddPath(EditorGUIUtility.isProSkin
+            // Initially only load catalog with bundle resources (since they area already compiled and valid)
+            s_StyleCatalog.AddPaths(UIElementsEditorUtility.s_DefaultCommonStyleSheetPath,
+                EditorGUIUtility.isProSkin
                 ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath
                 : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath);
-            foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
-                s_StyleCatalog.AddPath(editorUssPath);
             s_StyleCatalog.Refresh();
 
             EditorApplication.update -= DelayInitialization;
@@ -44,22 +42,43 @@ namespace UnityEditor.Experimental
         {
             var pathLowerCased = path.ToLower();
             return pathLowerCased.Contains("/editor/") && (pathLowerCased.EndsWith("common.uss") ||
-                                                           pathLowerCased.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss"));
+                pathLowerCased.EndsWith(EditorGUIUtility.isProSkin ? "dark.uss" : "light.uss"));
         }
 
         private static void DelayInitialization()
         {
             EditorApplication.update -= DelayInitialization;
             s_DelayedInitialization = true;
+
+            if (!s_RefreshGlobalCatalog)
+            {
+                // Only refresh catalog with in project USS after initial compilation:
+                BuildCatalog();
+            }
         }
 
         private static void RefreshGlobalCatalog()
         {
-            EditorApplication.update -= RefreshGlobalCatalog;
-            s_StyleCatalog.Refresh();
-            InternalEditorUtility.RepaintAllViews();
-
             s_RefreshGlobalCatalog = false;
+            EditorApplication.update -= RefreshGlobalCatalog;
+
+            BuildCatalog();
+            InternalEditorUtility.RepaintAllViews();
+        }
+
+        private static void BuildCatalog()
+        {
+            s_StyleCatalog = new StyleCatalog();
+            var paths = new List<string>();
+            paths.Add(UIElementsEditorUtility.s_DefaultCommonStyleSheetPath);
+            paths.Add(EditorGUIUtility.isProSkin
+                ? UIElementsEditorUtility.s_DefaultCommonDarkStyleSheetPath
+                : UIElementsEditorUtility.s_DefaultCommonLightStyleSheetPath);
+            foreach (var editorUssPath in AssetDatabase.GetAllAssetPaths().Where(IsEditorStyleSheet))
+                paths.Add(editorUssPath);
+
+            s_StyleCatalog.AddPaths(paths);
+            s_StyleCatalog.Refresh();
         }
 
         internal class StylePostprocessor : AssetPostprocessor
@@ -69,26 +88,10 @@ namespace UnityEditor.Experimental
                 if (!s_DelayedInitialization)
                     return;
 
-                if (s_IgnoreFirstPostProcessImport)
-                {
-                    s_IgnoreFirstPostProcessImport = false;
-                    return;
-                }
-
-                bool reloadStyles = false;
-                foreach (var path in importedAssets)
-                {
-                    if (s_StyleCatalog.sheets.Contains(path))
-                    {
-                        reloadStyles = true;
-                    }
-                    else if (IsEditorStyleSheet(path))
-                    {
-                        if (s_StyleCatalog.AddPath(path))
-                            reloadStyles = true;
-                    }
-                }
-
+                var reloadStyles = importedAssets.Any(IsEditorStyleSheet) ||
+                    deletedAssets.Any(IsEditorStyleSheet) ||
+                    movedAssets.Any(IsEditorStyleSheet) ||
+                    movedFromPath.Any(IsEditorStyleSheet);
                 if (reloadStyles && !s_RefreshGlobalCatalog)
                 {
                     s_RefreshGlobalCatalog = true;

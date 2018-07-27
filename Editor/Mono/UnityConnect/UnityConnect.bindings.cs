@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEditor.Web;
 using UnityEditorInternal;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor.Connect
 {
@@ -162,57 +163,57 @@ namespace UnityEditor.Connect
 
             AsyncHTTPClient client = new AsyncHTTPClient(url);
             client.postData = string.Format("client_id={0}&response_type=code&format=json&access_token={1}&prompt=none",
-                    clientId,
-                    UnityConnect.instance.GetAccessToken());
+                clientId,
+                UnityConnect.instance.GetAccessToken());
             client.doneCallback = delegate(AsyncHTTPClient c)
+            {
+                AuthCodeResponse response = new AuthCodeResponse();
+                if (!c.IsSuccess())
                 {
-                    AuthCodeResponse response = new AuthCodeResponse();
-                    if (!c.IsSuccess())
+                    response.Exception = new InvalidOperationException("Failed to call Unity ID to get auth code.");
+                }
+                else
+                {
+                    try
                     {
-                        response.Exception = new InvalidOperationException("Failed to call Unity ID to get auth code.");
-                    }
-                    else
-                    {
-                        try
+                        var json = new JSONParser(c.text).Parse();
+                        if (json.ContainsKey("code") && !json["code"].IsNull())
                         {
-                            var json = new JSONParser(c.text).Parse();
-                            if (json.ContainsKey("code") && !json["code"].IsNull())
+                            response.AuthCode = json["code"].AsString();
+                        }
+                        else if (json.ContainsKey("message"))
+                        {
+                            response.Exception = new InvalidOperationException(string.Format("Error from server: {0}", json["message"].AsString()));
+                        }
+                        else if (json.ContainsKey("location") && !json["location"].IsNull())
+                        {
+                            UnityConnectConsentView consentView = UnityConnectConsentView.ShowUnityConnectConsentView(json["location"].AsString());
+                            if (!string.IsNullOrEmpty(consentView.Code))
                             {
-                                response.AuthCode = json["code"].AsString();
+                                response.AuthCode = consentView.Code;
                             }
-                            else if (json.ContainsKey("message"))
+                            else if (!string.IsNullOrEmpty(consentView.Error))
                             {
-                                response.Exception = new InvalidOperationException(string.Format("Error from server: {0}", json["message"].AsString()));
-                            }
-                            else if (json.ContainsKey("location") && !json["location"].IsNull())
-                            {
-                                UnityConnectConsentView consentView = UnityConnectConsentView.ShowUnityConnectConsentView(json["location"].AsString());
-                                if (!string.IsNullOrEmpty(consentView.Code))
-                                {
-                                    response.AuthCode = consentView.Code;
-                                }
-                                else if (!string.IsNullOrEmpty(consentView.Error))
-                                {
-                                    response.Exception = new InvalidOperationException(string.Format("Error from server: {0}", consentView.Error));
-                                }
-                                else
-                                {
-                                    response.Exception = new InvalidOperationException("Consent Windows was closed unexpected.");
-                                }
+                                response.Exception = new InvalidOperationException(string.Format("Error from server: {0}", consentView.Error));
                             }
                             else
                             {
-                                response.Exception = new InvalidOperationException("Unexpected response from server.");
+                                response.Exception = new InvalidOperationException("Consent Windows was closed unexpected.");
                             }
                         }
-                        catch (JSONParseException)
+                        else
                         {
-                            response.Exception = new InvalidOperationException("Unexpected response from server: Failed to parse JSON.");
+                            response.Exception = new InvalidOperationException("Unexpected response from server.");
                         }
                     }
+                    catch (JSONParseException)
+                    {
+                        response.Exception = new InvalidOperationException("Unexpected response from server: Failed to parse JSON.");
+                    }
+                }
 
-                    callback(response);
-                };
+                callback(response);
+            };
             client.Begin();
         }
 
@@ -251,6 +252,8 @@ namespace UnityEditor.Connect
         public event StateChangedDelegate StateChanged;
         public event ProjectStateChangedDelegate ProjectStateChanged;
         public event UserStateChangedDelegate UserStateChanged;
+
+        Action<bool> m_AccessTokenRefreshed;
 
         private static readonly UnityConnect s_Instance;
 
@@ -487,6 +490,23 @@ namespace UnityEditor.Connect
         public void ClearAccessToken()
         {
             ClearAccessToken_Internal();
+        }
+
+        private static extern void RefreshAccessToken();
+        public void RefreshAccessToken(Action<bool> refresh)
+        {
+            m_AccessTokenRefreshed += refresh;
+            RefreshAccessToken();
+        }
+
+        [RequiredByNativeCode]
+        internal static void AccessTokenRefreshed(bool success)
+        {
+            if (instance.m_AccessTokenRefreshed != null)
+            {
+                instance.m_AccessTokenRefreshed(success);
+                instance.m_AccessTokenRefreshed = null;
+            }
         }
 
         [NativeMethod("GetProjectGUID")]

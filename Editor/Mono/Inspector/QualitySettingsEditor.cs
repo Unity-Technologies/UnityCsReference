@@ -226,9 +226,9 @@ namespace UnityEditor
             foreach (var platform in m_ValidPlatforms)
             {
                 var iconRect = GUILayoutUtility.GetRect(GUIContent.none, Styles.kToggle,
-                        GUILayout.MinWidth(Styles.kMinToggleWidth),
-                        GUILayout.MaxWidth(Styles.kMaxToggleWidth),
-                        GUILayout.Height(Styles.kHeaderRowHeight));
+                    GUILayout.MinWidth(Styles.kMinToggleWidth),
+                    GUILayout.MaxWidth(Styles.kMaxToggleWidth),
+                    GUILayout.Height(Styles.kHeaderRowHeight));
 
                 int position;
                 if (!platformDefaultQualitySettings.TryGetValue(platform.name, out position))
@@ -380,9 +380,9 @@ namespace UnityEditor
         private static void DrawHorizontalDivider()
         {
             var spacerLine = GUILayoutUtility.GetRect(GUIContent.none,
-                    GUIStyle.none,
-                    GUILayout.ExpandWidth(true),
-                    GUILayout.Height(1));
+                GUIStyle.none,
+                GUILayout.ExpandWidth(true),
+                GUILayout.Height(1));
             var oldBgColor = GUI.backgroundColor;
             if (EditorGUIUtility.isProSkin)
                 GUI.backgroundColor = oldBgColor * 0.7058f;
@@ -425,7 +425,8 @@ namespace UnityEditor
             else if (type == typeof(Vector3))
             {
                 Vector3 splits = shadowCascadeSplit.vector3Value;
-                cascadePartitionSizes = new float[] {
+                cascadePartitionSizes = new float[]
+                {
                     Mathf.Clamp(splits[0], 0.0f, 1.0f),
                     Mathf.Clamp(splits[1] - splits[0], 0.0f, 1.0f),
                     Mathf.Clamp(splits[2] - splits[1], 0.0f, 1.0f)

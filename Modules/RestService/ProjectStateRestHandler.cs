@@ -98,11 +98,11 @@ namespace UnityEditor.RestService
         {
             var projectPath = ProjectPath.EndsWith("/") ? ProjectPath : ProjectPath + "/";
             return AssetDatabase.GetAllAssetPaths().Where(asset => {
-                    var absolutePath = Path.GetFullPath(asset).ConvertSeparatorsToUnity();
-                    if (!absolutePath.StartsWith(projectPath))
-                        return false;
-                    return IsSupportedExtension(Path.GetExtension(asset));
-                });
+                var absolutePath = Path.GetFullPath(asset).ConvertSeparatorsToUnity();
+                if (!absolutePath.StartsWith(projectPath))
+                    return false;
+                return IsSupportedExtension(Path.GetExtension(asset));
+            });
         }
 
         private static JSONValue JsonForIsland(Island island)

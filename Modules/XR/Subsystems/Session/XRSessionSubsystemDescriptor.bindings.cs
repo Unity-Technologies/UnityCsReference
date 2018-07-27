@@ -14,7 +14,7 @@ namespace UnityEngine.Experimental.XR
     [NativeHeader("Modules/XR/XRPrefix.h")]
     [NativeType(Header = "Modules/XR/Subsystems/Session/XRSessionSubsystemDescriptor.h")]
     [UsedByNativeCode]
-    public class XRSessionSubsystemDescriptor : SubsystemDescriptor<XRSessionSubsystem>
+    public class XRSessionSubsystemDescriptor : IntegratedSubsystemDescriptor<XRSessionSubsystem>
     {
     }
 }

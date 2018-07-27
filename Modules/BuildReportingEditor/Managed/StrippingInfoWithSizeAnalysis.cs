@@ -39,10 +39,10 @@ namespace UnityEditor.Build.Reporting
         {
             var functionSizesList = sizes.ToList();
             functionSizesList.Sort((firstPair, nextPair) =>
-                {
-                    return nextPair.Value.CompareTo(firstPair.Value);
-                }
-                );
+            {
+                return nextPair.Value.CompareTo(firstPair.Value);
+            }
+            );
             foreach (var f in functionSizesList)
             {
                 if (f.Value < 10000)
@@ -57,11 +57,11 @@ namespace UnityEditor.Build.Reporting
 
             myList.Sort(
                 delegate(KeyValuePair<string, int> pair1,
-                         KeyValuePair<string, int> pair2)
+                    KeyValuePair<string, int> pair2)
                 {
                     return pair2.Value.CompareTo(pair1.Value);
                 }
-                );
+            );
 
             for (int i = 0; i < maxSize && i < myList.Count; i++)
                 System.Console.WriteLine(myList[i].Value.ToString("D8") + " " + myList[i].Key);

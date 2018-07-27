@@ -4,6 +4,7 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -13,6 +14,10 @@ namespace UnityEditor
         protected virtual void OnToolGUI(SceneView view)
         {
             if (!Selection.activeTransform || Tools.s_Hidden)
+                return;
+
+
+            if (!StageUtility.IsGameObjectRenderedByCamera(Selection.activeTransform.gameObject, Camera.current))
                 return;
 
             bool isStatic = (!Tools.s_Hidden && EditorApplication.isPlaying && GameObjectUtility.ContainsStatic(Selection.gameObjects));
@@ -474,8 +479,8 @@ namespace UnityEditor
         private static Vector3 GetRectPointInWorld(Rect rect, Vector3 pivot, Quaternion rotation, int xHandle, int yHandle)
         {
             Vector3 pos = new Vector2(
-                    pos.x = Mathf.Lerp(rect.xMin, rect.xMax, xHandle * 0.5f),
-                    pos.y = Mathf.Lerp(rect.yMin, rect.yMax, yHandle * 0.5f));
+                pos.x = Mathf.Lerp(rect.xMin, rect.xMax, xHandle * 0.5f),
+                pos.y = Mathf.Lerp(rect.yMin, rect.yMax, yHandle * 0.5f));
             return rotation * pos + pivot;
         }
 

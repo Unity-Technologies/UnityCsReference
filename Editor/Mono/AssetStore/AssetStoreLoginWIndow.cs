@@ -48,11 +48,11 @@ namespace UnityEditor
             }
 
             AssetStoreClient.LoginWithRememberedSession(delegate(string errorMessage) {
-                    if (string.IsNullOrEmpty(errorMessage))
-                        callback(errorMessage);
-                    else
-                        ShowAssetStoreLoginWindow(loginReason, callback);
-                });
+                if (string.IsNullOrEmpty(errorMessage))
+                    callback(errorMessage);
+                else
+                    ShowAssetStoreLoginWindow(loginReason, callback);
+            });
         }
 
         /** Logout of the asset store

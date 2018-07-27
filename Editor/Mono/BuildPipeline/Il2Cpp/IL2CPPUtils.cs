@@ -134,8 +134,8 @@ namespace UnityEditorInternal
                 return pathOverride;
             else
                 return Path.GetFullPath(Path.Combine(
-                        EditorApplication.applicationContentsPath,
-                        "il2cpp"));
+                    EditorApplication.applicationContentsPath,
+                    "il2cpp"));
         }
     }
 
@@ -505,7 +505,8 @@ namespace UnityEditorInternal
         {
             get
             {
-                return new[] {
+                return new[]
+                {
                     Path.Combine(libraryFolder, "bdwgc/include"),
                     Path.Combine(libraryFolder, "libil2cpp/include")
                 };

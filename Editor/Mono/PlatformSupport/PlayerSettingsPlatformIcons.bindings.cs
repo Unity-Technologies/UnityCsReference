@@ -163,11 +163,10 @@ namespace UnityEditor
             else if (textures.Length > maxLayerCount || textures.Length < minLayerCount)
             {
                 throw new InvalidOperationException(string.Format("Attempting to assign an incorrect amount of layers to an PlatformIcon, trying to assign {0} textures while the Icon requires atleast {1} but no more than {2} layers",
-                        textures.Length,
-                        minLayerCount,
-                        maxLayerCount
-                        )
-                    );
+                    textures.Length,
+                    minLayerCount,
+                    maxLayerCount
+                ));
             }
 
             m_Textures = textures.ToList();
@@ -306,16 +305,16 @@ namespace UnityEditor
             else if (requiredIconCount != icons.Length)
             {
                 throw new InvalidOperationException(string.Format("Attempting to set an incorrect number of icons for {0} {1} kind, it requires {2} icons but trying to assign {3}.", platform.ToString(),
-                        kind.ToString(),
-                        requiredIconCount,
-                        icons.Length)
-                    );
+                    kind.ToString(),
+                    requiredIconCount,
+                    icons.Length)
+                );
             }
             else
             {
                 iconStructs = icons.Select(
-                        i => i.GetPlatformIconStruct()
-                        ).ToArray<PlatformIconStruct>();
+                    i => i.GetPlatformIconStruct()
+                    ).ToArray<PlatformIconStruct>();
             }
 
             SetPlatformIconsInternal(platformName, iconStructs, kind.kind);
@@ -340,7 +339,7 @@ namespace UnityEditor
         {
             return icons.Count(
                 i => i.GetTextures().Count(t => t != null) >= i.minLayerCount && i.layerCount <= i.maxLayerCount
-                );
+            );
         }
 
         [StaticAccessor("GetPlayerSettings()", StaticAccessorType.Dot)]

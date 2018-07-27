@@ -139,7 +139,7 @@ namespace UnityEditor
         {
             listViewState.row = index;
 
-            if (listViewState.row >= 0)
+            if (listViewState.row >= 0 && index < m_Instructions.Count)
             {
                 if (m_CachedInstructionInfo == null)
                 {

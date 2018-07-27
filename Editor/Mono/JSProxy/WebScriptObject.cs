@@ -34,11 +34,11 @@ namespace UnityEditor.Web
             if (m_WebView != null)
             {
                 return JSProxyMgr.GetInstance().DoMessage(jsonRequest, (object result) =>
-                    {
-                        string res = JSProxyMgr.GetInstance().Stringify(result);
-                        callback.Callback(res);
-                    }, m_WebView
-                    );
+                {
+                    string res = JSProxyMgr.GetInstance().Stringify(result);
+                    callback.Callback(res);
+                }, m_WebView
+                );
             }
             return false;
         }

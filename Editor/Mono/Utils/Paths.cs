@@ -187,6 +187,13 @@ namespace UnityEditor.Utils
                     return false;
                 }
 
+                if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+                {
+                    if (errorMsg != null)
+                        SetFullErrorMessage("Invalid characters in file name: ", assetPath, ref errorMsg);
+                    return false;
+                }
+
                 if (fileName.StartsWith("."))
                 {
                     if (errorMsg != null)

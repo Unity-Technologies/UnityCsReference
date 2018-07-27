@@ -106,7 +106,7 @@ namespace UnityEngine
                 Mathf.FloorToInt(v.x),
                 Mathf.FloorToInt(v.y),
                 Mathf.FloorToInt(v.z)
-                );
+            );
         }
 
         public static Vector3Int CeilToInt(Vector3 v)
@@ -115,7 +115,7 @@ namespace UnityEngine
                 Mathf.CeilToInt(v.x),
                 Mathf.CeilToInt(v.y),
                 Mathf.CeilToInt(v.z)
-                );
+            );
         }
 
         public static Vector3Int RoundToInt(Vector3 v)
@@ -124,7 +124,7 @@ namespace UnityEngine
                 Mathf.RoundToInt(v.x),
                 Mathf.RoundToInt(v.y),
                 Mathf.RoundToInt(v.z)
-                );
+            );
         }
 
         public static Vector3Int operator+(Vector3Int a, Vector3Int b)

@@ -5,10 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.VersionControl;
 using UnityEditorInternal;
 using UnityEngine;
-
+using UnityEngine.SceneManagement;
+using UnityEditor.SceneManagement;
 using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
@@ -26,10 +28,9 @@ namespace UnityEditor
 
         class Styles
         {
-            public GUIContent goIcon = EditorGUIUtility.IconContent<GameObject>();
             public GUIContent typelessIcon = EditorGUIUtility.IconContent("Prefab Icon");
-            public GUIContent prefabIcon = EditorGUIUtility.IconContent("PrefabNormal Icon");
-            public GUIContent modelIcon = EditorGUIUtility.IconContent("PrefabModel Icon");
+
+            public GUIContent overridesContent = EditorGUIUtility.TrTextContent("Overrides");
 
             public GUIContent staticContent = EditorGUIUtility.TrTextContent("Static", "Enable the checkbox to mark this GameObject as static for all systems.\n\nDisable the checkbox to mark this GameObject as not static for all systems.\n\nUse the drop-down menu to mark as this GameObject as static or not static for individual systems.");
             public GUIContent layerContent = EditorGUIUtility.TrTextContent("Layer", "The layer that this GameObject is in.\n\nChoose Add Layer... to edit the list of available layers.");
@@ -46,16 +47,30 @@ namespace UnityEditor
 
             public GUIContent goTypeLabelMultiple = EditorGUIUtility.TrTextContent("Multiple");
 
-            public GUIContent[] goTypeLabel =
+            private static GUIContent regularPrefab = EditorGUIUtility.TrTextContent("Prefab");
+            private static GUIContent disconnectedPrefab = EditorGUIUtility.TrTextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.");
+            private static GUIContent modelPrefab = EditorGUIUtility.TrTextContent("Model");
+            private static GUIContent disconnectedModelPrefab =  EditorGUIUtility.TrTextContent("Model", "You have broken the prefab connection. Changes to the model will not be applied to this object before you Revert.");
+            private static GUIContent variantPrefab = EditorGUIUtility.TrTextContent("Variant");
+            private static GUIContent disconnectedVariantPrefab = EditorGUIUtility.TrTextContent("Variant", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert.");
+            private static GUIContent missingPrefabAsset = EditorGUIUtility.TrTextContent("Missing", "The source Prefab or Model has been deleted.");
+
+            // Matrix based on two enums:
+            // Columns correspond to PrefabTypeUtility.PrefabTypes (see comments above rows).
+            // Rows correspond to PrefabTypeUtility.PrefabInstanceStatus (None, Connected, Disconnected, Missing).
+            // If missing, both enums will be "Missing".
+            public GUIContent[,] goTypeLabel =
             {
-                null,//             None = 0,
-                EditorGUIUtility.TrTextContent("Prefab"),           // Prefab = 1
-                EditorGUIUtility.TrTextContent("Model"),            // ModelPrefab = 2
-                EditorGUIUtility.TrTextContent("Prefab"),           // PrefabInstance = 3
-                EditorGUIUtility.TrTextContent("Model"),            // ModelPrefabInstance = 4
-                EditorGUIUtility.TrTextContent("Missing", "The source Prefab or Model has been deleted."),          // MissingPrefabInstance
-                EditorGUIUtility.TrTextContent("Prefab", "You have broken the prefab connection. Changes to the prefab will not be applied to this object before you Apply or Revert."), // DisconnectedPrefabInstance
-                EditorGUIUtility.TrTextContent("Model", "You have broken the prefab connection. Changes to the model will not be applied to this object before you Revert."), // DisconnectedModelPrefabInstance
+                // None
+                { null, null, null, null },
+                // Prefab
+                { regularPrefab, regularPrefab, disconnectedPrefab, null },
+                // Model
+                { modelPrefab , modelPrefab, disconnectedModelPrefab, null},
+                // Variant
+                { variantPrefab, variantPrefab, disconnectedVariantPrefab, null },
+                // Missing
+                { null, null, null, missingPrefabAsset }
             };
 
             public Styles()
@@ -112,7 +127,11 @@ namespace UnityEditor
 
         Dictionary<int, PreviewData> m_PreviewInstances = new Dictionary<int, PreviewData>();
 
-        bool m_HasInstance = false;
+        bool m_IsAsset;
+        bool m_ImmutableSelf;
+        bool m_ImmutableSourceAsset;
+        bool m_IsPrefabInstanceAnyRoot = false;
+        bool m_IsPrefabInstanceOutermostRoot = false;
         bool m_AllOfSamePrefabType = true;
 
         public void OnEnable()
@@ -134,16 +153,30 @@ namespace UnityEditor
 
         void CalculatePrefabStatus()
         {
-            m_HasInstance = false;
+            m_IsPrefabInstanceAnyRoot = false;
+            m_IsAsset = false;
             m_AllOfSamePrefabType = true;
-            PrefabType firstType = PrefabUtility.GetPrefabType(targets[0] as GameObject);
+            PrefabAssetType firstType = PrefabUtility.GetPrefabAssetType(targets[0]);
+            PrefabInstanceStatus firstStatus = PrefabUtility.GetPrefabInstanceStatus(targets[0]);
+
             foreach (GameObject go in targets)
             {
-                PrefabType type = PrefabUtility.GetPrefabType(go);
-                if (type != firstType)
+                PrefabAssetType type = PrefabUtility.GetPrefabAssetType(go);
+                PrefabInstanceStatus status = PrefabUtility.GetPrefabInstanceStatus(go);
+                if (type != firstType || status != firstStatus)
                     m_AllOfSamePrefabType = false;
-                if (type != PrefabType.None && type != PrefabType.Prefab && type != PrefabType.ModelPrefab)
-                    m_HasInstance = true;
+
+                if (PrefabUtility.IsAnyPrefabInstanceRoot(go))
+                    m_IsPrefabInstanceAnyRoot = true;
+                if (m_IsPrefabInstanceAnyRoot)
+                    m_IsPrefabInstanceOutermostRoot = PrefabUtility.IsOutermostPrefabInstanceRoot(go);
+                if (PrefabUtility.IsPartOfPrefabAsset(go))
+                    m_IsAsset = true;
+                if (m_IsAsset && PrefabUtility.IsPartOfImmutablePrefab(go))
+                    m_ImmutableSelf = true;
+                GameObject originalSourceOrVariant = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
+                if (originalSourceOrVariant != null && PrefabUtility.IsPartOfImmutablePrefab(originalSourceOrVariant))
+                    m_ImmutableSourceAsset = true;
             }
         }
 
@@ -183,7 +216,46 @@ namespace UnityEditor
             EditorGUILayout.EndVertical();
         }
 
-        public override void OnInspectorGUI() {}
+        public override void OnInspectorGUI()
+        {
+            if (m_IsAsset && m_AllOfSamePrefabType)
+            {
+                if (Unsupported.IsDeveloperBuild())
+                    ShowPrefabGameObjectTree();
+            }
+        }
+
+        void ShowPrefabGameObjectTree()
+        {
+            GUILayout.Space(20);
+
+            if (Selection.instanceIDs.Length > 1)
+            {
+                GUILayout.Label("Multiple Prefab Assets selected", EditorStyles.miniLabel);
+                return;
+            }
+
+            GUILayout.Label("Prefab Hierarchy", EditorStyles.boldLabel);
+            int indent = 0;
+            IterateOverGameObjects(target as GameObject, ref indent, (o, i) =>
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(indent * 16);
+                GUILayout.Label(o.name, EditorStyles.miniLabel);
+                EditorGUILayout.EndHorizontal();
+            });
+        }
+
+        static void IterateOverGameObjects(GameObject obj, ref int indent, Action<GameObject, int> action)
+        {
+            action(obj, indent);
+            indent++;
+            foreach (Transform child in obj.transform)
+            {
+                IterateOverGameObjects(child.gameObject, ref indent, action);
+            }
+            indent--;
+        }
 
         internal bool DrawInspector()
         {
@@ -191,39 +263,20 @@ namespace UnityEditor
 
             GameObject go = target as GameObject;
 
-            GUIContent iconContent = null;
+            // Don't let icon be null as it will create null reference exceptions.
+            Texture2D icon = (Texture2D)(s_Styles.typelessIcon.image);
 
-            PrefabType prefabType = PrefabType.None;
-            // Leave iconContent to be null if multiple objects not the same type.
+            // Leave iconContent to be default if multiple objects not the same type.
             if (m_AllOfSamePrefabType)
             {
-                prefabType = PrefabUtility.GetPrefabType(go);
-                switch (prefabType)
-                {
-                    case PrefabType.None:
-                        iconContent = s_Styles.goIcon;
-                        break;
-                    case PrefabType.Prefab:
-                    case PrefabType.PrefabInstance:
-                    case PrefabType.DisconnectedPrefabInstance:
-                    case PrefabType.MissingPrefabInstance:
-                        iconContent = s_Styles.prefabIcon;
-                        break;
-                    case PrefabType.ModelPrefab:
-                    case PrefabType.ModelPrefabInstance:
-                    case PrefabType.DisconnectedModelPrefabInstance:
-                        iconContent = s_Styles.modelIcon;
-                        break;
-                }
+                icon = PrefabUtility.GetIconForGameObject(go);
             }
-            else
-                iconContent = s_Styles.typelessIcon;
 
             EditorGUILayout.BeginHorizontal();
-            EditorGUI.ObjectIconDropDown(GUILayoutUtility.GetRect(kIconSize, kIconSize, GUILayout.ExpandWidth(false)), targets, true, iconContent.image as Texture2D, m_Icon);
+            EditorGUI.ObjectIconDropDown(GUILayoutUtility.GetRect(kIconSize, kIconSize, GUILayout.ExpandWidth(false)), targets, true, icon as Texture2D, m_Icon);
             DrawPostIconContent();
 
-            using (new EditorGUI.DisabledScope(prefabType == PrefabType.ModelPrefab))
+            using (new EditorGUI.DisabledScope(m_ImmutableSelf))
             {
                 EditorGUILayout.BeginVertical();
 
@@ -268,32 +321,44 @@ namespace UnityEditor
             GUILayout.Space(2f);
 
             // Prefab Toolbar
-            using (new EditorGUI.DisabledScope(prefabType == PrefabType.ModelPrefab))
-                DoPrefabButtons(prefabType, go);
+            if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
+            {
+                DoPrefabButtons(go);
+            }
 
             serializedObject.ApplyModifiedProperties();
 
             return true;
         }
 
-        private void DoPrefabButtons(PrefabType prefabType, GameObject go)
+        private void DoPrefabButtons(GameObject go)
         {
             // @TODO: If/when we support multi-editing of prefab/model instances,
             // handle it here. Only show prefab bar if all are same type?
-            if (!m_HasInstance) return;
+            if (!m_IsPrefabInstanceAnyRoot) return;
 
-            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode))
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode && PrefabStageUtility.GetPrefabStage(go) == null))
             {
                 EditorGUILayout.BeginHorizontal();
 
                 // Prefab information
-                GUIContent prefixLabel = targets.Length > 1 ? s_Styles.goTypeLabelMultiple : s_Styles.goTypeLabel[(int)prefabType];
+                PrefabAssetType prefabType = PrefabUtility.GetPrefabAssetType(go);
+                PrefabInstanceStatus instanceStatus = PrefabUtility.GetPrefabInstanceStatus(go);
+                GUIContent prefixLabel;
+                if (targets.Length > 1)
+                {
+                    prefixLabel = s_Styles.goTypeLabelMultiple;
+                }
+                else
+                {
+                    prefixLabel = s_Styles.goTypeLabel[(int)prefabType, (int)instanceStatus];
+                }
 
                 if (prefixLabel != null)
                 {
                     EditorGUILayout.BeginHorizontal(GUILayout.Width(kIconSize + s_Styles.tagFieldWidth));
                     GUILayout.FlexibleSpace();
-                    if (prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.MissingPrefabInstance || prefabType == PrefabType.DisconnectedPrefabInstance)
+                    if (PrefabUtility.IsDisconnectedFromPrefabAsset(go) || PrefabUtility.IsPrefabAssetMissing(go))
                     {
                         GUI.contentColor = GUI.skin.GetStyle("CN StatusWarn").normal.textColor;
                         GUILayout.Label(prefixLabel, EditorStyles.whiteLabel, GUILayout.ExpandWidth(false));
@@ -308,83 +373,61 @@ namespace UnityEditor
                     GUILayout.Label("Instance Management Disabled", s_Styles.instanceManagementInfo);
                 else
                 {
-                    // Select prefab
-                    if (prefabType != PrefabType.MissingPrefabInstance)
+                    if (!PrefabUtility.IsPrefabAssetMissing(go))
                     {
-                        if (GUILayout.Button("Select", "MiniButtonLeft"))
+                        if (prefabType == PrefabAssetType.Model)
                         {
-                            Selection.activeObject = PrefabUtility.GetCorrespondingObjectFromSource(target);
+                            // Open Model Prefab
+                            if (GUILayout.Button("Open", "MiniButtonLeft"))
+                            {
+                                GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
+                                AssetDatabase.OpenAsset(asset);
+                                GUIUtility.ExitGUI();
+                            }
+                        }
+                        else
+                        {
+                            // Open non-Model Prefab
+                            using (new EditorGUI.DisabledScope(m_ImmutableSourceAsset))
+                            {
+                                if (GUILayout.Button("Open", "MiniButtonLeft"))
+                                {
+                                    GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
+                                    PrefabStageUtility.OpenPrefab(AssetDatabase.GetAssetPath(asset), (GameObject)target, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceInspectorOpenButton);
+                                    GUIUtility.ExitGUI();
+                                }
+                            }
+                        }
+
+                        // Select prefab
+                        if (GUILayout.Button("Select", "MiniButtonRight"))
+                        {
+                            Selection.activeObject = PrefabUtility.GetOriginalSourceOrVariantRoot(target);
+
+                            // Because of legacy prefab references we have to have this extra step
+                            // to make sure we ping the prefab asset correctly.
+                            // Reason is that scene files created prior to making prefabs CopyAssets
+                            // will reference prefabs as if they are serialized assets. Those references
+                            // works fine but we are not able to ping objects loaded directly from the asset
+                            // file, so we have to make sure we ping the metadata version of the prefab.
+                            var assetPath = AssetDatabase.GetAssetPath(Selection.activeObject);
+                            Selection.activeObject = AssetDatabase.LoadMainAssetAtPath(assetPath);
+
                             EditorGUIUtility.PingObject(Selection.activeObject);
                         }
                     }
 
-                    using (new EditorGUI.DisabledScope(AnimationMode.InAnimationMode()))
+                    // Should be EditorGUILayout.Space, except it does not have ExpandWidth set to false.
+                    // Maybe we can change that?
+                    GUILayoutUtility.GetRect(6, 6, GUILayout.ExpandWidth(false));
+
+                    // Reserve space regardless of whether the button is there or not to avoid jumps in button sizes.
+                    Rect rect = GUILayoutUtility.GetRect(s_Styles.overridesContent, "MiniPullDown");
+                    if (m_IsPrefabInstanceOutermostRoot)
                     {
-                        if (prefabType != PrefabType.MissingPrefabInstance)
+                        if (EditorGUI.DropdownButton(rect, s_Styles.overridesContent, FocusType.Passive))
                         {
-                            // Revert this gameobject and components to prefab
-                            if (GUILayout.Button("Revert", "MiniButtonMid"))
-                            {
-                                PrefabUtility.RevertPrefabInstanceWithUndo(go);
-
-                                // case931300 - The selected gameobject might get destroyed by RevertPrefabInstance
-                                if (go != null)
-                                {
-                                    CalculatePrefabStatus();
-                                }
-
-                                // This is necessary because Revert can potentially destroy game objects and components
-                                // In that case the Editor classes would be destroyed but still be invoked. (case 837113)
-                                GUIUtility.ExitGUI();
-                            }
-
-                            // Apply to prefab
-                            if (prefabType == PrefabType.PrefabInstance || prefabType == PrefabType.DisconnectedPrefabInstance)
-                            {
-                                GameObject rootUploadGameObject = PrefabUtility.FindValidUploadPrefabInstanceRoot(go);
-
-                                GUI.enabled = rootUploadGameObject != null && !AnimationMode.InAnimationMode();
-
-                                if (GUILayout.Button("Apply", "MiniButtonRight"))
-                                {
-                                    UnityObject correspondingAssetObject = PrefabUtility.GetCorrespondingObjectFromSource(rootUploadGameObject);
-                                    string prefabAssetPath = AssetDatabase.GetAssetPath(correspondingAssetObject);
-                                    bool isRootFolder, isReadonly;
-                                    bool validPath = AssetDatabase.GetAssetFolderInfo(prefabAssetPath, out isRootFolder, out isReadonly);
-
-                                    if (validPath && isReadonly)
-                                    {
-                                        string prefabName = FileUtil.GetLastPathNameComponent(FileUtil.GetPathWithoutExtension(prefabAssetPath));
-                                        EditorUtility.DisplayDialog("Cannot apply changes", string.Format("Original prefab \"{0}\" is immutable.", prefabName), "Close");
-                                    }
-                                    else
-                                    {
-                                        bool editablePrefab = Provider.PromptAndCheckoutIfNeeded(
-                                                new string[] { prefabAssetPath },
-                                                "The version control requires you to check out the prefab before applying changes.");
-
-                                        if (editablePrefab)
-                                        {
-                                            PrefabUtility.ReplacePrefabWithUndo(rootUploadGameObject);
-
-                                            CalculatePrefabStatus();
-
-                                            // This is necessary because ReplacePrefab can potentially destroy game objects and components
-                                            // In that case the Editor classes would be destroyed but still be invoked. (case 468434)
-                                            GUIUtility.ExitGUI();
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    // Edit model prefab
-                    if (prefabType == PrefabType.DisconnectedModelPrefabInstance || prefabType == PrefabType.ModelPrefabInstance)
-                    {
-                        if (GUILayout.Button("Open", "MiniButtonRight"))
-                        {
-                            AssetDatabase.OpenAsset(PrefabUtility.GetCorrespondingObjectFromSource(target));
+                            PopupWindow.Show(rect, new PrefabOverridesWindow(go));
                             GUIUtility.ExitGUI();
                         }
                     }
@@ -403,7 +446,7 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 GameObjectUtility.ShouldIncludeChildren includeChildren = GameObjectUtility.DisplayUpdateChildrenDialogIfNeeded(targets.OfType<GameObject>(),
-                        "Change Layer", string.Format("Do you want to set layer to {0} for all child objects as well?", InternalEditorUtility.GetLayerName(layer)));
+                    "Change Layer", string.Format("Do you want to set layer to {0} for all child objects as well?", InternalEditorUtility.GetLayerName(layer)));
                 if (includeChildren != GameObjectUtility.ShouldIncludeChildren.Cancel)
                 {
                     m_Layer.intValue = layer;
@@ -454,7 +497,7 @@ namespace UnityEditor
                 false,
                 out changedFlags, out changedToValue,
                 s_Styles.staticDropdown
-                );
+            );
             EditorGUI.showMixedValue = false;
             if (EditorGUI.EndChangeCheck())
             {
@@ -785,17 +828,20 @@ namespace UnityEditor
         public void OnSceneDrag(SceneView sceneView)
         {
             GameObject go = target as GameObject;
-            PrefabType prefabType = PrefabUtility.GetPrefabType(go);
-            if (prefabType != PrefabType.Prefab && prefabType != PrefabType.ModelPrefab)
+            if (!PrefabUtility.IsPartOfPrefabAsset(go))
                 return;
+
+            var prefabAssetRoot = go.transform.root.gameObject;
 
             Event evt = Event.current;
             switch (evt.type)
             {
                 case EventType.DragUpdated:
+
+                    Scene destinationScene = sceneView.customScene.IsValid() ? sceneView.customScene : SceneManager.GetActiveScene();
                     if (dragObject == null)
                     {
-                        dragObject = (GameObject)PrefabUtility.InstantiatePrefab(PrefabUtility.FindPrefabRoot(go));
+                        dragObject = (GameObject)PrefabUtility.InstantiatePrefab(prefabAssetRoot, destinationScene);
                         dragObject.hideFlags = HideFlags.HideInHierarchy;
                         dragObject.name = go.name;
                     }
@@ -804,7 +850,10 @@ namespace UnityEditor
                         HandleUtility.ignoreRaySnapObjects = dragObject.GetComponentsInChildren<Transform>();
 
                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                    object hit = HandleUtility.RaySnap(HandleUtility.GUIPointToWorldRay(evt.mousePosition));
+                    object hit = null;
+                    if (!EditorSceneManager.IsPreviewScene(destinationScene))
+                        hit = HandleUtility.RaySnap(HandleUtility.GUIPointToWorldRay(evt.mousePosition)); // TODO: This only works for normal scenes because preview scene colliders are not added to the physX scene
+
                     if (hit != null)
                     {
                         RaycastHit rh = (RaycastHit)hit;
@@ -824,14 +873,30 @@ namespace UnityEditor
                     if (sceneView.in2DMode)
                     {
                         Vector3 dragPosition = dragObject.transform.position;
-                        dragPosition.z = PrefabUtility.FindPrefabRoot(go).transform.position.z;
+                        dragPosition.z = prefabAssetRoot.transform.position.z;
                         dragObject.transform.position = dragPosition;
                     }
 
                     evt.Use();
                     break;
                 case EventType.DragPerform:
-                    string uniqueName = GameObjectUtility.GetUniqueNameForSibling(null, dragObject.name);
+
+                    var stage = StageNavigationManager.instance.currentItem;
+                    if (stage.isPrefabStage)
+                    {
+                        var prefabAssetThatIsAddedTo = AssetDatabase.LoadMainAssetAtPath(stage.prefabAssetPath);
+                        if (PrefabUtility.CheckIfAddingPrefabWouldResultInCyclicNesting(prefabAssetThatIsAddedTo, go))
+                        {
+                            PrefabUtility.ShowCyclicNestingWarningDialog();
+                            return;
+                        }
+                    }
+
+                    Transform parent = sceneView.customParentForDraggedObjects;
+
+                    string uniqueName = GameObjectUtility.GetUniqueNameForSibling(parent, dragObject.name);
+                    if (parent != null)
+                        dragObject.transform.parent = parent;
                     dragObject.hideFlags = 0;
                     Undo.RegisterCreatedObjectUndo(dragObject, "Place " + dragObject.name);
                     EditorUtility.SetDirty(dragObject);

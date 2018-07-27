@@ -304,9 +304,9 @@ namespace UnityEngine.XR.WSA
                 }
                 //we delay the call to let the RemoteMachineAddress control commit the value
                 EditorApplication.CallDelayed(() =>
-                    {
-                        HandleButtonPress();
-                    }, 0f);
+                {
+                    HandleButtonPress();
+                }, 0f);
             }
         }
 

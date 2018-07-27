@@ -41,10 +41,10 @@ namespace UnityEditor
             s_Instance.dataSource = dataSource;
 
             s_Instance.windowClosed += (w) =>
-                {
-                    if (s_ParentWindow != null)
-                        s_ParentWindow.Repaint();
-                };
+            {
+                if (s_ParentWindow != null)
+                    s_ParentWindow.Repaint();
+            };
 
             s_Instance.Init(rect);
         }
@@ -61,10 +61,10 @@ namespace UnityEditor
             s_Instance.showHeader = false;
 
             s_Instance.selectionChanged += (w) =>
-                {
-                    if (s_ParentWindow != null)
-                        s_ParentWindow.Repaint();
-                };
+            {
+                if (s_ParentWindow != null)
+                    s_ParentWindow.Repaint();
+            };
 
             s_Instance.Init(rect);
         }
@@ -77,10 +77,10 @@ namespace UnityEditor
             s_Instance.searchable = false;
             s_Instance.closeOnSelection = false;
             s_Instance.selectionChanged += (w) =>
-                {
-                    if (s_ParentWindow != null)
-                        s_ParentWindow.Repaint();
-                };
+            {
+                if (s_ParentWindow != null)
+                    s_ParentWindow.Repaint();
+            };
 
             s_Instance.Init(rect);
         }
@@ -103,10 +103,10 @@ namespace UnityEditor
                 InitSearchableWindow(rect, content.text, selectedIndex, displayedOptions);
 
                 s_Instance.windowClosed += w =>
-                    {
-                        m_Result = w.GetSelectedIndex();
-                        m_WindowClosed = true;
-                    };
+                {
+                    m_Result = w.GetSelectedIndex();
+                    m_WindowClosed = true;
+                };
             }
             if (m_WindowClosed && s_CurrentControl == id)
             {
@@ -132,10 +132,10 @@ namespace UnityEditor
                 InitPopupWindow(rect, selectedIndex, displayedOptions);
 
                 s_Instance.windowClosed += w =>
-                    {
-                        m_Result = w.GetSelectedIndex();
-                        m_WindowClosed = true;
-                    };
+                {
+                    m_Result = w.GetSelectedIndex();
+                    m_WindowClosed = true;
+                };
                 GUIUtility.ExitGUI();
             }
             if (m_WindowClosed && s_CurrentControl == id)
@@ -167,13 +167,13 @@ namespace UnityEditor
                 InitMultiselectPopupWindow(rect, new MultiselectDataSource(options));
 
                 s_Instance.selectionChanged += i =>
-                    {
-                        m_ShouldReturnValue = true;
-                    };
+                {
+                    m_ShouldReturnValue = true;
+                };
                 s_Instance.windowClosed += w =>
-                    {
-                        m_WindowClosed = true;
-                    };
+                {
+                    m_WindowClosed = true;
+                };
             }
 
             if (m_ShouldReturnValue && s_CurrentControl == id)
@@ -198,7 +198,7 @@ namespace UnityEditor
             bool localize = EditorUtility.IsUnityAssembly(enumType);
             var enumData = EditorGUI.GetCachedEnumData(enumType);
             var i = Array.IndexOf(enumData.values, selected);
-            i = DoPopup(rect, i, localize ? EditorGUIUtility.TrTempContent(enumData.displayNames) : EditorGUIUtility.TempContent(enumData.displayNames));
+            i = DoPopup(rect, i, localize ? EditorGUIUtility.TrTempContent(enumData.displayNames, enumData.tooltip) : EditorGUIUtility.TempContent(enumData.displayNames, enumData.tooltip));
             return (i < 0 || i >= enumData.flagValues.Length) ? selected : enumData.values[i];
         }
 
@@ -230,13 +230,13 @@ namespace UnityEditor
                 InitMultiselectPopupWindow(rect, new MultiselectDataSource(mask, displayedOptions, flagValues));
 
                 s_Instance.selectionChanged += i =>
-                    {
-                        m_ShouldReturnValue = true;
-                    };
+                {
+                    m_ShouldReturnValue = true;
+                };
                 s_Instance.windowClosed += w =>
-                    {
-                        m_WindowClosed = true;
-                    };
+                {
+                    m_WindowClosed = true;
+                };
             }
 
             if (m_ShouldReturnValue && s_CurrentControl == id)

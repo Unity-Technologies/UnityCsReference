@@ -269,8 +269,8 @@ namespace UnityEditor.IMGUI.Controls
                 if (rowCount != m_RowRects.Count)
                 {
                     var errorMessage = string.Format(
-                            "Number of rows does not match number of row rects. Did you remember to update the row rects when BuildRootAndRows was called? Number of rows: {0}, number of custom row rects: {1}. Falling back to fixed row height.",
-                            rowCount, m_RowRects.Count);
+                        "Number of rows does not match number of row rects. Did you remember to update the row rects when BuildRootAndRows was called? Number of rows: {0}, number of custom row rects: {1}. Falling back to fixed row height.",
+                        rowCount, m_RowRects.Count);
                     m_RowRects = null;
                     throw new InvalidOperationException(errorMessage);
                 }

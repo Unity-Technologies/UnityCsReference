@@ -49,7 +49,7 @@ namespace UnityEditor
         [SerializeField]
         private int[] m_ReferencingInstanceIDs = new int[0];
         [SerializeField]
-        private string[] m_ScenePaths;
+        private int[] m_SceneHandles;
         [SerializeField]
         private bool m_ShowAllHits = false;         // If true then just one filter must match to show an object, if false then all filters must match to show an object
         [SerializeField]
@@ -66,7 +66,7 @@ namespace UnityEditor
         public string[] softLockControlStates { get { return m_SoftLockControlStates; } set { m_SoftLockControlStates = value; } }
         public string[] assetBundleNames {get {return m_AssetBundleNames; } set {m_AssetBundleNames = value; }}
         public int[] referencingInstanceIDs { get { return m_ReferencingInstanceIDs; } set { m_ReferencingInstanceIDs = value; } }
-        public string[] scenePaths { get { return m_ScenePaths; } set { m_ScenePaths = value; } }
+        public int[] sceneHandles { get { return m_SceneHandles; } set { m_SceneHandles = value; } }
         public bool showAllHits { get { return m_ShowAllHits; } set { m_ShowAllHits = value; }}
         public string[] folders { get {return m_Folders; } set {m_Folders = value; }}
         public SearchArea searchArea {  get { return m_SearchArea; } set { m_SearchArea = value; }}
@@ -78,7 +78,7 @@ namespace UnityEditor
             m_AssetLabels = new string[0];
             m_AssetBundleNames = new string[0];
             m_ReferencingInstanceIDs = new int[0];
-            m_ScenePaths = new string[0];
+            m_SceneHandles = new int[0];
             m_VersionControlStates = new string[0];
             m_SoftLockControlStates = new string[0];
             m_ShowAllHits = false;
@@ -131,10 +131,10 @@ namespace UnityEditor
         {
             State state = GetState();
             return (state == State.SearchingInAllAssets ||
-                    state == State.SearchingInAssetsOnly ||
-                    state == State.SearchingInPackagesOnly ||
-                    state == State.SearchingInFolders ||
-                    state == State.SearchingInAssetStore);
+                state == State.SearchingInAssetsOnly ||
+                state == State.SearchingInPackagesOnly ||
+                state == State.SearchingInFolders ||
+                state == State.SearchingInAssetStore);
         }
 
         public bool SetNewFilter(SearchFilter newFilter)
@@ -186,9 +186,9 @@ namespace UnityEditor
                 changed = true;
             }
 
-            if (newFilter.m_ScenePaths != m_ScenePaths)
+            if (newFilter.m_SceneHandles != m_SceneHandles)
             {
-                m_ScenePaths = newFilter.m_ScenePaths;
+                m_SceneHandles = newFilter.m_SceneHandles;
                 changed = true;
             }
 

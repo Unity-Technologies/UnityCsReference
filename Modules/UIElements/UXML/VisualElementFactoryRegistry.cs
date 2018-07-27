@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace UnityEngine.Experimental.UIElements
@@ -50,20 +51,31 @@ namespace UnityEngine.Experimental.UIElements
                 if (!userAssemblies.Contains(assembly.GetName().Name + ".dll"))
                     continue;
 
+                Type[] types;
                 try
                 {
-                    foreach (var type in assembly.GetTypes())
-                    {
-                        if (typeof(IUxmlFactory).IsAssignableFrom(type))
-                        {
-                            var factory = (IUxmlFactory)Activator.CreateInstance(type);
-                            RegisterFactory(factory);
-                        }
-                    }
+                    types = assembly.GetTypes();
                 }
-                catch (TypeLoadException e)
+                catch (ReflectionTypeLoadException ex)
                 {
-                    Debug.LogWarningFormat("Error while loading types from assembly {0}: {1}", assembly.FullName, e);
+                    var exceptionMessages = ex.LoaderExceptions.OfType<TypeLoadException>().Select(x  => $"{x.TypeName} : {x.Message}").ToArray();
+                    string loaderExceptionMessage = string.Empty;
+                    if (exceptionMessages.Any())
+                    {
+                        loaderExceptionMessage = "\n\n"  + string.Join("\n", exceptionMessages) + "\n";
+                    }
+
+                    Debug.LogWarning($"Error while loading types from assembly {assembly.FullName}: {ex}{loaderExceptionMessage}");
+                    types = ex.Types.Where(t => t != null).ToArray();
+                }
+
+                foreach (var type in types)
+                {
+                    if (typeof(IUxmlFactory).IsAssignableFrom(type))
+                    {
+                        var factory = (IUxmlFactory)Activator.CreateInstance(type);
+                        RegisterFactory(factory);
+                    }
                 }
             }
         }
@@ -100,6 +112,8 @@ namespace UnityEngine.Experimental.UIElements
                 new Box.UxmlFactory(),
                 new PopupWindow.UxmlFactory(),
                 new ListView.UxmlFactory(),
+                new Foldout.UxmlFactory(),
+                new BindableElement.UxmlFactory(),
             };
 
             foreach (var factory in factories)

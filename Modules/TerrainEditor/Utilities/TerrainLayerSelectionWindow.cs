@@ -4,7 +4,7 @@
 
 using System;
 using System.IO;
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
 
@@ -56,7 +56,7 @@ namespace UnityEditor
 
         void LoadTerrainLayers()
         {
-            ArrayList arr = new ArrayList();
+            var arr = new List<TerrainLayer>();
 
             // Load all the .terrainlayer files
             string[] fileEntries = Directory.GetFiles(Application.dataPath, "*.terrainlayer", SearchOption.AllDirectories);
@@ -70,7 +70,7 @@ namespace UnityEditor
                     arr.Add(b);
             }
 
-            m_TerrainLayerList = arr.ToArray(typeof(TerrainLayer)) as TerrainLayer[];
+            m_TerrainLayerList = arr.ToArray();
             m_ShouldRefreshList = false;
         }
 

@@ -66,16 +66,16 @@ namespace UnityEditor
                 m_TableTabs = new List<LightingExplorerWindowTab>
                 {
                     new LightingExplorerWindowTab(new SerializedPropertyTable("LightTable",   () => {
-                            return UnityEngine.Object.FindObjectsOfType<Light>();
-                        }, LightTableColumns.CreateLightColumns)),
+                        return UnityEngine.Object.FindObjectsOfType<Light>();
+                    }, LightTableColumns.CreateLightColumns)),
                     new LightingExplorerWindowTab(new SerializedPropertyTable("ReflectionTable", () => {
-                            return UnityEngine.Object.FindObjectsOfType<ReflectionProbe>();
-                        }, LightTableColumns.CreateReflectionColumns)),
+                        return UnityEngine.Object.FindObjectsOfType<ReflectionProbe>();
+                    }, LightTableColumns.CreateReflectionColumns)),
                     new LightingExplorerWindowTab(new SerializedPropertyTable("LightProbeTable", () => {
-                            return UnityEngine.Object.FindObjectsOfType<LightProbeGroup>();
-                        }, LightTableColumns.CreateLightProbeColumns)),
+                        return UnityEngine.Object.FindObjectsOfType<LightProbeGroup>();
+                    }, LightTableColumns.CreateLightProbeColumns)),
                     new LightingExplorerWindowTab(new SerializedPropertyTable("EmissiveMaterialTable",
-                            StaticEmissivesGatherDelegate(), LightTableColumns.CreateEmissivesColumns))
+                        StaticEmissivesGatherDelegate(), LightTableColumns.CreateEmissivesColumns))
                 };
             }
 
@@ -118,8 +118,8 @@ namespace UnityEditor
                     if (i == (m_TableTabs.Count - 1)) // last tab containing materials
                     {
                         int[] selectedIds = Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
-                                return Selection.instanceIDs.Contains(mr.gameObject.GetInstanceID());
-                            }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
+                            return Selection.instanceIDs.Contains(mr.gameObject.GetInstanceID());
+                        }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                                 return m != null && (m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0;
                             }).Select(m => m.GetInstanceID()).Union(Selection.instanceIDs).Distinct().ToArray();
 
@@ -170,12 +170,12 @@ namespace UnityEditor
         private SerializedPropertyDataStore.GatherDelegate StaticEmissivesGatherDelegate()
         {
             return () => {
-                    return Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
-                        return (GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.LightmapStatic));
-                    }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
+                return Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
+                    return (GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.LightmapStatic));
+                }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                         return m != null && ((m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0) && m.HasProperty("_EmissionColor");
                     }).Distinct().ToArray();
-                };
+            };
         }
     }
 }

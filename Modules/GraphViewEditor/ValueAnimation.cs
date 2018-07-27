@@ -58,15 +58,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             s_InterpolateFuncs[typeof(Vector2)] = (a, b, interp) => Vector2.Lerp((Vector2)a, (Vector2)b, interp);
             s_InterpolateFuncs[typeof(Vector3)] = (a, b, interp) => Vector3.Lerp((Vector3)a, (Vector3)b, interp);
             s_InterpolateFuncs[typeof(Rect)] = (a, b, interp) =>
-                {
-                    Rect r1 = (Rect)a;
-                    Rect r2 = (Rect)b;
+            {
+                Rect r1 = (Rect)a;
+                Rect r2 = (Rect)b;
 
-                    return new Rect(Mathf.Lerp(r1.x, r2.x, interp)
-                        , Mathf.Lerp(r1.y, r2.y, interp)
-                        , Mathf.Lerp(r1.width, r2.width, interp)
-                        , Mathf.Lerp(r1.height, r2.height, interp));
-                };
+                return new Rect(Mathf.Lerp(r1.x, r2.x, interp)
+                    , Mathf.Lerp(r1.y, r2.y, interp)
+                    , Mathf.Lerp(r1.width, r2.width, interp)
+                    , Mathf.Lerp(r1.height, r2.height, interp));
+            };
             s_InterpolateFuncs[typeof(Color)] = (a, b, interp) => Color.Lerp((Color)a, (Color)b, interp);
         }
 

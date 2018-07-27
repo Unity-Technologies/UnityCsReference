@@ -110,7 +110,7 @@ namespace UnityEditor
             if (
                 ((Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDown) && zoomMode) ||
                 ((Event.current.type == EventType.KeyUp || Event.current.type == EventType.KeyDown) && Event.current.keyCode == KeyCode.LeftAlt)
-                )
+            )
             {
                 Repaint();
             }
@@ -162,7 +162,7 @@ namespace UnityEditor
             if (
                 ((Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDown) && panMode) ||
                 (Event.current.type == EventType.KeyUp || Event.current.type == EventType.KeyDown)  && Event.current.keyCode == KeyCode.LeftAlt
-                )
+            )
             {
                 Repaint();
             }
@@ -308,11 +308,11 @@ namespace UnityEditor
 
             // Texture rect in view space
             m_TextureRect = new Rect(
-                    m_TextureViewRect.width / 2f - (m_Texture.width * m_Zoom / 2f),
-                    m_TextureViewRect.height / 2f - (m_Texture.height * m_Zoom / 2f),
-                    (m_Texture.width * m_Zoom),
-                    (m_Texture.height * m_Zoom)
-                    );
+                m_TextureViewRect.width / 2f - (m_Texture.width * m_Zoom / 2f),
+                m_TextureViewRect.height / 2f - (m_Texture.height * m_Zoom / 2f),
+                (m_Texture.width * m_Zoom),
+                (m_Texture.height * m_Zoom)
+            );
 
             HandleScrollbars();
             SetupHandlesMatrix();

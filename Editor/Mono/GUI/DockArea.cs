@@ -384,16 +384,13 @@ namespace UnityEditor
             const float viewMarginLeftOffset = 2f;
             float viewMarginTopOffset = GetViewMarginTopOffset(isBottomTab, customBorder);
             var viewRect = new Rect(
-                    dockAreaRect.x + viewMarginLeftOffset,
-                    dockAreaRect.y + kTabHeight - viewMarginTopOffset + (customBorder ? -1f : -0f),
-                    dockAreaRect.width - viewMarginLeftOffset * 2f,
-                    dockAreaRect.height - kTabHeight + viewMarginTopOffset - (customBorder ? -1f : 1f) + (floatingWindow && isBottomTab ? 1f : 0f));
+                dockAreaRect.x + viewMarginLeftOffset,
+                dockAreaRect.y + kTabHeight - viewMarginTopOffset + (customBorder ? -1f : -0f),
+                dockAreaRect.width - viewMarginLeftOffset * 2f,
+                dockAreaRect.height - kTabHeight + viewMarginTopOffset - (customBorder ? -1f : 1f) + (floatingWindow && isBottomTab ? 1f : 0f));
 
             if (selected >= 0 && selected < m_Panes.Count)
-            {
-                m_Panes[selected].m_Pos.width = viewRect.width;
-                m_Panes[selected].m_Pos.height = viewRect.height;
-            }
+                m_Panes[selected].m_Pos = new Rect(GUIUtility.GUIToScreenPoint(Vector2.zero), viewRect.size);
 
             return viewRect;
         }
@@ -471,8 +468,8 @@ namespace UnityEditor
             if (m_ScrollOffset > 0f)
             {
                 m_ScrollLeftRect = new Rect(tabAreaRect.xMin,
-                        tabAreaRect.yMin + Styles.tabScrollButtonTopMargin,
-                        16f, 17f);
+                    tabAreaRect.yMin + Styles.tabScrollButtonTopMargin,
+                    16f, 17f);
                 DrawTabScroller(m_ScrollLeftRect, Styles.tabScrollPrevButtonImg);
             }
             else
@@ -481,8 +478,8 @@ namespace UnityEditor
             if (m_TotalTabWidth > tabAreaRect.xMax && m_ScrollOffset < m_TotalTabWidth - dockAreaRect.width + Styles.tabDropdownOptions)
             {
                 m_ScrollRightRect = new Rect(tabAreaRect.xMax - 11f,
-                        tabAreaRect.yMin + Styles.tabScrollButtonTopMargin,
-                        16f, 17f);
+                    tabAreaRect.yMin + Styles.tabScrollButtonTopMargin,
+                    16f, 17f);
                 DrawTabScroller(m_ScrollRightRect, Styles.tabScrollNextButtonImg);
             }
             else
@@ -661,6 +658,9 @@ namespace UnityEditor
                 entry.text = baseContent.text + "/" + entry.text;
                 menu.AddItem(entry, false, AddTabToHere, t);
             }
+
+            menu.AddSeparator("");
+            menu.AddItem(EditorGUIUtility.TextContent("UIElements Debugger _%f5"), false, DebugWindow, view);
         }
 
         void AddTabToHere(object userData)
@@ -812,7 +812,7 @@ namespace UnityEditor
                                 s_DragPane.titleContent,
                                 position.size,
                                 GUIUtility.GUIToScreenPoint(evt.mousePosition)
-                                );
+                            );
                             EditorApplication.update += CheckDragWindowExists;
                             // We just showed a window. Exit the GUI because the window might be
                             // repainting already (esp. on Windows)
@@ -965,7 +965,7 @@ namespace UnityEditor
                 if (text.Length > cappedMaxChars)
                 {
                     gc = new GUIContent(text.Substring(0, Mathf.Min(cappedMaxChars - 2, text.Length)) + "\u2026", tabContent.image,
-                            String.IsNullOrEmpty(tabContent.tooltip) ? text : tabContent.tooltip);
+                        String.IsNullOrEmpty(tabContent.tooltip) ? text : tabContent.tooltip);
                     s_GUIContents[text] = gc;
                     return gc;
                 }
@@ -1113,10 +1113,7 @@ namespace UnityEditor
             viewRect.height = position.height - backRect.yMax + topBottomPadding;
 
             if (actualView)
-            {
-                actualView.m_Pos.width = viewRect.width;
-                actualView.m_Pos.height = viewRect.height;
-            }
+                actualView.m_Pos = new Rect(GUIUtility.GUIToScreenPoint(Vector2.zero), viewRect.size);
 
             InvokeOnGUI(maximizedViewRect, viewRect);
         }
@@ -1157,6 +1154,9 @@ namespace UnityEditor
                 entry.text = baseContent.text + "/" + entry.text;
                 menu.AddDisabledItem(entry);
             }
+
+            menu.AddSeparator("");
+            menu.AddItem(EditorGUIUtility.TextContent("UIElements Debugger _%f5"), false, DebugWindow, window);
         }
     }
 }

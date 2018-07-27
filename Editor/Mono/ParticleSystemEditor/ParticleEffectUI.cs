@@ -301,7 +301,7 @@ namespace UnityEditor
                         float lastPlayBackTime = simulationState.z;
                         if (lastPlayBackTime > 0f)
                         {
-                            if (m_MainPlaybackSystem != mainSystem || ParticleSystemEditorUtils.playbackTime != lastPlayBackTime)
+                            if (m_MainPlaybackSystem != mainSystem)
                                 ParticleSystemEditorUtils.PerformCompleteResimulation();
                             ParticleSystemEditorUtils.playbackTime = lastPlayBackTime;
                         }

@@ -3,7 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System.Linq;
+using System.Collections.Generic;
+using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -31,11 +34,15 @@ namespace UnityEditor
             public static GUIContent saveSceneGUIContent = new GUIContent(EditorGUIUtility.FindTexture("SceneSave"), "Save scene");
             public static GUIStyle optionsButtonStyle = "PaneOptions";
             public static GUIStyle sceneHeaderBg = "ProjectBrowserTopBarBg";
+            public static GUIStyle rightArrow = "ArrowNavigationRight";
             public static GUIStyle hoveredItemBackgroundStyle = "WhiteBackgound";
             public static Color hoveredBackgroundColor =
                 EditorGUIUtility.isProSkin
                 ? new Color(48.0f / 255.0f, 48.0f / 255.0f, 48.0f / 255.0f)
                 : new Color(170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f);
+
+            public static Texture2D sceneAssetIcon = EditorGUIUtility.FindTexture(typeof(SceneAsset));
+            public static Texture2D prefabIcon = EditorGUIUtility.FindTexture("Prefab Icon");
 
             public static readonly int kSceneHeaderIconsInterval = 2;
         }
@@ -274,6 +281,8 @@ namespace UnityEditor
             if (goItem == null)
                 return;
 
+            EnsureLazyInitialization(goItem);
+
             // Scene header background (make it slightly transparent to hint it
             // is not the normal scene header)
             if (goItem.isSceneHeader)
@@ -282,15 +291,19 @@ namespace UnityEditor
                 GUI.color = GUI.color * new Color(1, 1, 1, 0.9f);
                 GUI.Label(rect, GUIContent.none, GameObjectStyles.sceneHeaderBg);
                 GUI.color = oldColor;
+
+                useBoldFont = (goItem.scene == SceneManager.GetActiveScene()) || IsPrefabStageHeader(goItem);
             }
 
             base.DoItemGUI(rect, row, item, selected, focused, useBoldFont);
 
-            // Scene header extras
+
             if (goItem.isSceneHeader)
                 DoAdditionalSceneHeaderGUI(goItem, rect);
+            else
+                PrefabModeButton(goItem, rect);
 
-            if (SceneHierarchyWindow.s_Debug)
+            if (SceneHierarchy.s_Debug)
                 GUI.Label(new Rect(rect.xMax - 70, rect.y, 70, rect.height), "" + row + " (" + goItem.id + ")", EditorStyles.boldLabel);
         }
 
@@ -327,6 +340,91 @@ namespace UnityEditor
             }
         }
 
+        static bool IsPrefabStageHeader(GameObjectTreeViewItem item)
+        {
+            if (!item.isSceneHeader)
+                return false;
+
+            Scene scene = EditorSceneManager.GetSceneByHandle(item.id);
+            if (!scene.IsValid())
+                return false;
+
+            return EditorSceneManager.IsPreviewScene(scene);
+        }
+
+        void EnsureLazyInitialization(GameObjectTreeViewItem item)
+        {
+            if (!item.lazyInitializationDone)
+            {
+                item.lazyInitializationDone = true;
+                SetItemIcon(item);
+                SetItemOverlayIcon(item);
+                SetPrefabModeButtonVisibility(item);
+            }
+        }
+
+        void SetItemIcon(GameObjectTreeViewItem item)
+        {
+            var go = item.objectPPTR as GameObject;
+            if (go == null)
+            {
+                if (IsPrefabStageHeader(item))
+                {
+                    string prefabAssetPath = PrefabStageUtility.GetCurrentPrefabStage().prefabAssetPath;
+                    item.icon = (Texture2D)AssetDatabase.GetCachedIcon(prefabAssetPath);
+                }
+                else
+                {
+                    item.icon = GameObjectStyles.sceneAssetIcon;
+                }
+            }
+            else
+            {
+                item.icon = PrefabUtility.GetIconForGameObject(go);
+            }
+        }
+
+        void SetItemOverlayIcon(GameObjectTreeViewItem item)
+        {
+            item.overlayIcon = null;
+
+            var go = item.objectPPTR as GameObject;
+            if (go == null)
+                return;
+
+            if (PrefabUtility.IsAddedGameObjectOverride(go))
+                item.overlayIcon = EditorGUIUtility.LoadIcon("PrefabOverlayAdded Icon");
+        }
+
+        void SetPrefabModeButtonVisibility(GameObjectTreeViewItem item)
+        {
+            item.showPrefabModeButton = false;
+
+            GameObject go = item.objectPPTR as GameObject;
+
+            if (go == null)
+                return;
+
+            if (!PrefabUtility.IsPartOfAnyPrefab(go))
+                return;
+
+            if (!PrefabUtility.IsAnyPrefabInstanceRoot(go))
+                return;
+
+            // Don't show button for disconnected prefab instances and if prefab asset is missing
+            if (PrefabUtility.GetPrefabInstanceStatus(go) != PrefabInstanceStatus.Connected)
+                return;
+
+            // We can't simply check if the go is part of an immutable prefab, since that would check the asset of the
+            // outermost prefab this go is part of. Instead we have to check original source or variant root
+            // - the same one that would get opened if clicking the arrow.
+            var source = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
+            if (source == null || PrefabUtility.IsPartOfImmutablePrefab(source))
+                return;
+
+            item.showPrefabModeButton = true;
+        }
+
         protected override void OnContentGUI(Rect rect, int row, TreeViewItem item, string label, bool selected, bool focused,
             bool useBoldFont, bool isPinging)
         {
@@ -353,10 +451,9 @@ namespace UnityEditor
                 }
 
                 // Render disabled if scene is unloaded
-                bool isBold = (goItem.scene == SceneManager.GetActiveScene());
                 using (new EditorGUI.DisabledScope(!goItem.scene.isLoaded))
                 {
-                    base.OnContentGUI(rect, row, item, label, selected, focused, isBold, isPinging);
+                    base.OnContentGUI(rect, row, item, label, selected, focused, useBoldFont, isPinging);
                 }
                 return;
             }
@@ -367,7 +464,7 @@ namespace UnityEditor
                 rect.xMin += GetContentIndent(item) + extraSpaceBeforeIconAndLabel;
             }
 
-            int i = goItem.colorCode;
+            int colorCode = goItem.colorCode;
 
             if (string.IsNullOrEmpty(item.displayName))
             {
@@ -394,22 +491,27 @@ namespace UnityEditor
             }
             else
             {
-                if ((i & 3) == (int)GameObjectColorType.Normal)
-                    lineStyle = (i < 4) ? Styles.lineStyle : GameObjectStyles.disabledLabel;
-                else if ((i & 3) == (int)GameObjectColorType.Prefab)
-                    lineStyle = (i < 4) ? GameObjectStyles.prefabLabel : GameObjectStyles.disabledPrefabLabel;
-                else if ((i & 3) == (int)GameObjectColorType.BrokenPrefab)
-                    lineStyle = (i < 4) ? GameObjectStyles.brokenPrefabLabel : GameObjectStyles.disabledBrokenPrefabLabel;
+                if ((colorCode & 3) == (int)GameObjectColorType.Normal)
+                    lineStyle = (colorCode < 4) ? Styles.lineStyle : GameObjectStyles.disabledLabel;
+                else if ((colorCode & 3) == (int)GameObjectColorType.Prefab)
+                    lineStyle = (colorCode < 4) ? GameObjectStyles.prefabLabel : GameObjectStyles.disabledPrefabLabel;
+                else if ((colorCode & 3) == (int)GameObjectColorType.BrokenPrefab)
+                    lineStyle = (colorCode < 4) ? GameObjectStyles.brokenPrefabLabel : GameObjectStyles.disabledBrokenPrefabLabel;
             }
 
-            Texture icon = GetIconForItem(item);
-
             lineStyle.padding.left = 0;
-            if (icon != null)
+            if (goItem.icon != null)
             {
                 Rect iconRect = rect;
                 iconRect.width = k_IconWidth;
-                GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
+                bool renderDisabled = colorCode >= 4;
+                Color col = GUI.color;
+                if (renderDisabled)
+                    col = new Color(1f, 1f, 1f, 0.5f);
+                GUI.DrawTexture(iconRect, goItem.icon, ScaleMode.ScaleToFit, true, 0, col, 0, 0);
+
+                if (goItem.overlayIcon != null)
+                    GUI.DrawTexture(iconRect, goItem.overlayIcon, ScaleMode.ScaleToFit, true, 0, col, 0, 0);
 
                 rect.xMin += iconTotalPadding + k_IconWidth + k_SpaceBetweenIconAndText;
             }
@@ -417,5 +519,48 @@ namespace UnityEditor
             // Draw text
             lineStyle.Draw(rect, label, false, false, selected, focused);
         }
+
+        public void PrefabModeButton(GameObjectTreeViewItem item, Rect selectionRect)
+        {
+            if (item.showPrefabModeButton)
+            {
+                float yOffset = (selectionRect.height - GameObjectStyles.rightArrow.fixedWidth) / 2;
+                Rect buttonRect = new Rect(
+                    selectionRect.xMax - GameObjectStyles.rightArrow.fixedWidth - GameObjectStyles.rightArrow.margin.right,
+                    selectionRect.y + yOffset,
+                    GameObjectStyles.rightArrow.fixedWidth,
+                    GameObjectStyles.rightArrow.fixedHeight);
+
+                int instanceID = item.id;
+                GUIContent content = buttonRect.Contains(Event.current.mousePosition) ? GetPrefabButtonContent(instanceID) : GUIContent.none;
+                if (GUI.Button(buttonRect, content, GameObjectStyles.rightArrow))
+                {
+                    GameObject go = EditorUtility.InstanceIDToObject(instanceID) as GameObject;
+                    string assetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(go);
+                    Object originalSource = AssetDatabase.LoadMainAssetAtPath(assetPath);
+                    if (originalSource != null)
+                    {
+                        PrefabStageUtility.OpenPrefab(assetPath, go, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyRightArrow);
+                    }
+                }
+            }
+        }
+
+        GUIContent GetPrefabButtonContent(int instanceID)
+        {
+            GUIContent result;
+            if (m_PrefabButtonContents.TryGetValue(instanceID, out result))
+            {
+                return result;
+            }
+
+            string path = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(EditorUtility.InstanceIDToObject(instanceID) as GameObject);
+            string filename = System.IO.Path.GetFileNameWithoutExtension(path);
+            result = new GUIContent("", null, "Open Prefab Asset '" + filename + "'");
+            m_PrefabButtonContents[instanceID] = result;
+            return result;
+        }
+
+        Dictionary<int, GUIContent> m_PrefabButtonContents = new Dictionary<int, GUIContent>();
     }
 }

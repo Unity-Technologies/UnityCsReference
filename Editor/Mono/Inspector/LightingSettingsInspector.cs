@@ -111,8 +111,7 @@ namespace UnityEditor
                 if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
                     return false;
 
-                PrefabType type = PrefabUtility.GetPrefabType(m_SerializedObject.targetObject);
-                return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+                return PrefabUtility.IsPartOfPrefabAsset(m_SerializedObject.targetObject);
             }
         }
 

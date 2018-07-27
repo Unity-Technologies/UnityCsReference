@@ -16,6 +16,7 @@ namespace UnityEditor.Web
         private const string kServiceName = "Game Performance";
         private const string kServiceDisplayName = "Game Performance";
         private const string kServiceUrl = "https://public-cdn.cloud.unity3d.com/editor/production/cloud/crash";
+        private const UInt32 kMaxLogBufferSize = 50;
 
         public override string GetServiceName()
         {
@@ -57,6 +58,16 @@ namespace UnityEditor.Web
         public void SetCaptureEditorExceptions(bool captureEditorExceptions)
         {
             CrashReportingSettings.captureEditorExceptions = captureEditorExceptions;
+        }
+
+        public UInt32 GetLogBufferSize()
+        {
+            return CrashReportingSettings.logBufferSize;
+        }
+
+        public void SetLogBufferSize(UInt32 logBufferSize)
+        {
+            CrashReportingSettings.logBufferSize = logBufferSize <= kMaxLogBufferSize ? logBufferSize : kMaxLogBufferSize;
         }
     }
 }

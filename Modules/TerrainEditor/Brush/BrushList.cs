@@ -4,7 +4,7 @@
 
 using System;
 using System.IO;
-using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
@@ -42,7 +42,7 @@ namespace UnityEditor
         public void LoadBrushes()
         {
             // Load the textures;
-            ArrayList arr = new ArrayList();
+            var arr = new List<Brush>();
             int idx = 1;
             Texture2D t = null;
 
@@ -81,7 +81,7 @@ namespace UnityEditor
                     arr.Add(b);
             }
 
-            m_BrushList = arr.ToArray(typeof(Brush)) as Brush[];
+            m_BrushList = arr.ToArray();
         }
 
         public void SelectPrevBrush()

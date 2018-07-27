@@ -64,7 +64,7 @@ namespace UnityEditor
                     fileName.Equals(extension, StringComparison.OrdinalIgnoreCase);
                 bool debugMatch =       debugExtension != null && debugExtension.Length != 0 &&
                     (fileExtension.Equals(debugExtension, StringComparison.OrdinalIgnoreCase) ||
-                     fileName.Equals(debugExtension, StringComparison.OrdinalIgnoreCase));
+                        fileName.Equals(debugExtension, StringComparison.OrdinalIgnoreCase));
 
                 // Do we really need to check the file name here?
                 if (filenameMatch || debugMatch)
@@ -193,7 +193,7 @@ namespace UnityEditor
                     throw new System.NotSupportedException();
 
                 ProgressHandler progressHandler = new ProgressHandler("Deploying Player",
-                        delegate(string title, string message, float globalProgress)
+                    delegate(string title, string message, float globalProgress)
                     {
                         if (EditorUtility.DisplayCancelableProgressBar(title, message, globalProgress))
                             throw new DeploymentOperationAbortedException();
@@ -203,33 +203,33 @@ namespace UnityEditor
 
                 // Launch on all selected targets
                 taskManager.AddTask(() =>
+                {
+                    int successfulLaunches = 0;
+                    var exceptions = new List<DeploymentOperationFailedException>();
+                    foreach (var target in launchTargets)
                     {
-                        int successfulLaunches = 0;
-                        var exceptions = new List<DeploymentOperationFailedException>();
-                        foreach (var target in launchTargets)
+                        try
                         {
-                            try
-                            {
-                                var manager = DeploymentTargetManager.CreateInstance(targetGroup, buildReport.summary.platform);
-                                var buildProperties = BuildProperties.GetFromBuildReport(buildReport);
-                                manager.LaunchBuildOnTarget(buildProperties, target, taskManager.SpawnProgressHandlerFromCurrentTask());
-                                successfulLaunches++;
-                            }
-                            catch (DeploymentOperationFailedException e)
-                            {
-                                exceptions.Add(e);
-                            }
+                            var manager = DeploymentTargetManager.CreateInstance(targetGroup, buildReport.summary.platform);
+                            var buildProperties = BuildProperties.GetFromBuildReport(buildReport);
+                            manager.LaunchBuildOnTarget(buildProperties, target, taskManager.SpawnProgressHandlerFromCurrentTask());
+                            successfulLaunches++;
                         }
-
-                        foreach (var e in exceptions)
-                            UnityEngine.Debug.LogException(e);
-
-                        if (successfulLaunches == 0)
+                        catch (DeploymentOperationFailedException e)
                         {
-                            // TODO: Maybe more specifically no compatible targets?
-                            throw new NoTargetsFoundException("Could not launch build");
+                            exceptions.Add(e);
                         }
-                    });
+                    }
+
+                    foreach (var e in exceptions)
+                        UnityEngine.Debug.LogException(e);
+
+                    if (successfulLaunches == 0)
+                    {
+                        // TODO: Maybe more specifically no compatible targets?
+                        throw new NoTargetsFoundException("Could not launch build");
+                    }
+                });
 
                 taskManager.Run();
             }

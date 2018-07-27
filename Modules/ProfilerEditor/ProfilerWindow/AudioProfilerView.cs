@@ -701,10 +701,10 @@ namespace UnityEditorInternal
                 bool active = (info.flags & AUDIOPROFILER_DSPFLAGS_ACTIVE) != 0;
                 bool bypass = (info.flags & AUDIOPROFILER_DSPFLAGS_BYPASS) != 0;
                 var color = new Color(
-                        (!active || bypass) ? 0.5f : Mathf.Clamp(2.0f * cpuColoring * cpuLoad, 0.0f, 1.0f),
-                        (!active || bypass) ? 0.5f : Mathf.Clamp(2.0f - 2.0f * cpuColoring * cpuLoad, 0.0f, 1.0f),
-                        bypass ? 1.0f : active ? 0.0f : 0.5f,
-                        (!highlightAudibleDSPChains || node.audible) ? 1.0f : 0.4f);
+                    (!active || bypass) ? 0.5f : Mathf.Clamp(2.0f * cpuColoring * cpuLoad, 0.0f, 1.0f),
+                    (!active || bypass) ? 0.5f : Mathf.Clamp(2.0f - 2.0f * cpuColoring * cpuLoad, 0.0f, 1.0f),
+                    bypass ? 1.0f : active ? 0.0f : 0.5f,
+                    (!highlightAudibleDSPChains || node.audible) ? 1.0f : 0.4f);
                 name = name.Replace("ChannelGroup", "Group");
                 name = name.Replace("FMOD Channel", "Channel");
                 name = name.Replace("FMOD WaveTable Unit", "Wavetable");

@@ -22,7 +22,7 @@ namespace UnityEditorInternal
                 Math.Max(Math.Min(p.x, origin.x + gridSize.x - 1), origin.x),
                 Math.Max(Math.Min(p.y, origin.y + gridSize.y - 1), origin.y),
                 p.z
-                );
+            );
         }
 
         public static Vector3 ScreenToLocal(Transform transform, Vector2 screenPosition)
@@ -58,7 +58,7 @@ namespace UnityEditorInternal
                 Math.Min(p1.y, p2.y),
                 Math.Abs(p2.x - p1.x) + 1,
                 Math.Abs(p2.y - p1.y) + 1
-                );
+            );
         }
 
         public static BoundsInt GetMarqueeBounds(Vector3Int p1, Vector3Int p2)
@@ -70,7 +70,7 @@ namespace UnityEditorInternal
                 Math.Abs(p2.x - p1.x) + 1,
                 Math.Abs(p2.y - p1.y) + 1,
                 Math.Abs(p2.z - p1.z) + 1
-                );
+            );
         }
 
         // http://ericw.ca/notes/bresenhams-line-algorithm-in-csharp.html
@@ -340,7 +340,7 @@ namespace UnityEditorInternal
                     sprite.rect.size.x / sprite.pixelsPerUnit,
                     sprite.rect.size.y / sprite.pixelsPerUnit,
                     1f
-                    );
+                );
             }
             return Vector3.one;
         }

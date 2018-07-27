@@ -98,7 +98,7 @@ namespace UnityEngine
             return new Vector2Int(
                 Mathf.FloorToInt(v.x),
                 Mathf.FloorToInt(v.y)
-                );
+            );
         }
 
         public static Vector2Int CeilToInt(Vector2 v)
@@ -106,7 +106,7 @@ namespace UnityEngine
             return new Vector2Int(
                 Mathf.CeilToInt(v.x),
                 Mathf.CeilToInt(v.y)
-                );
+            );
         }
 
         public static Vector2Int RoundToInt(Vector2 v)
@@ -114,7 +114,7 @@ namespace UnityEngine
             return new Vector2Int(
                 Mathf.RoundToInt(v.x),
                 Mathf.RoundToInt(v.y)
-                );
+            );
         }
 
         public static Vector2Int operator+(Vector2Int a, Vector2Int b)

@@ -10,39 +10,48 @@ namespace UnityEditor.ShortcutManagement
 {
     interface IContextManager
     {
-        bool HasAnyActiveContextOfType(Type type);
+        void SetFocusedWindow(EditorWindow window);
+        void RegisterPriorityContext(IShortcutToolContext context);
+        void DeregisterPriorityContext(IShortcutToolContext context);
+        void RegisterToolContext(IShortcutToolContext context);
+        void DeregisterToolContext(IShortcutToolContext context);
+        bool HasAnyPriorityContext();
+        bool HasPriorityContextOfType(Type type);
+        bool HasActiveContextOfType(Type type);
         object GetContextInstanceOfType(Type type);
-        IShortcutToolContext priorityContext { get; }
     }
 
     internal class ContextManager : IContextManager
     {
-        internal class GlobalContext{}
+        internal class GlobalContext {}
+
         public static readonly GlobalContext globalContext = new GlobalContext();
         public static readonly Type globalContextType = typeof(GlobalContext);
 
-        EditorWindow m_FocusedWindow;
+        WeakReference m_FocusedWindow;
 
-        IShortcutToolContext m_PriorityContext;
-        public IShortcutToolContext priorityContext => m_PriorityContext;
+        List<IShortcutToolContext> m_PriorityContexts = new List<IShortcutToolContext>();
 
         List<IShortcutToolContext> m_ToolContexts = new List<IShortcutToolContext>();
 
-        public int activeContextCount => 1 + (m_FocusedWindow != null ? 1 : 0) + (m_PriorityContext != null && m_PriorityContext.active ? 1 : 0) + m_ToolContexts.Count(c => c.active);
+        public int activeContextCount => 1 + ((m_FocusedWindow != null && m_FocusedWindow.IsAlive) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
 
         public void SetFocusedWindow(EditorWindow window)
         {
-            m_FocusedWindow = window;
+            m_FocusedWindow = new WeakReference(window);
         }
 
-        public void SetPriorityContext(IShortcutToolContext context)
+        public void RegisterPriorityContext(IShortcutToolContext context)
         {
-            m_PriorityContext = context;
+            if (!m_PriorityContexts.Contains(context))
+            {
+                m_PriorityContexts.Add(context);
+            }
         }
 
-        public void ClearPriorityContext()
+        public void DeregisterPriorityContext(IShortcutToolContext context)
         {
-            m_PriorityContext = null;
+            m_PriorityContexts.Remove(context);
         }
 
         public void RegisterToolContext(IShortcutToolContext context)
@@ -61,31 +70,70 @@ namespace UnityEditor.ShortcutManagement
                 m_ToolContexts.Remove(context);
         }
 
+        public bool HasAnyPriorityContext()
+        {
+            return m_PriorityContexts.Count > 0;
+        }
+
+        internal bool HasToolContextOfType(Type type)
+        {
+            return GetToolContextOfType(type) != null;
+        }
+
+        public bool HasPriorityContextOfType(Type type)
+        {
+            return GetPriorityContextOfType(type) != null;
+        }
+
+        public bool HasActiveContextOfType(Type type)
+        {
+            return GetContextInstanceOfType(type) != null;
+        }
+
+        internal object GetToolContextOfType(Type type)
+        {
+            foreach (var toolContext in m_ToolContexts)
+            {
+                if (toolContext.active && type.IsInstanceOfType(toolContext))
+                    return toolContext;
+            }
+
+            return null;
+        }
+
+        internal object GetPriorityContextOfType(Type type)
+        {
+            foreach (var priorityContext in m_PriorityContexts)
+            {
+                if (priorityContext.active && type.IsInstanceOfType(priorityContext))
+                {
+                    return priorityContext;
+                }
+            }
+
+            return null;
+        }
+
         public object GetContextInstanceOfType(Type type)
         {
             if (type == globalContextType)
                 return globalContext;
-            if (type.IsInstanceOfType(m_FocusedWindow))
+            if (m_FocusedWindow != null && m_FocusedWindow.IsAlive && type.IsInstanceOfType(m_FocusedWindow.Target))
                 return m_FocusedWindow;
-            if (m_PriorityContext != null && m_PriorityContext.active && type.IsInstanceOfType(m_PriorityContext))
-                return m_PriorityContext;
-            for (int i = 0; i < m_ToolContexts.Count; i++)
-            {
-                if (m_ToolContexts[i].active && m_ToolContexts[i].GetType() == type)
-                    return m_ToolContexts[i];
-            }
-            return m_ToolContexts.FirstOrDefault(c => c.active && type.IsInstanceOfType(c));
-        }
 
-        public bool HasAnyActiveContextOfType(Type type)
-        {
-            if (type.IsInstanceOfType(globalContext))
-                return true;
-            if (type.IsInstanceOfType(m_FocusedWindow))
-                return true;
-            if (priorityContext != null && priorityContext.active && type.IsInstanceOfType(priorityContext))
-                return true;
-            return m_ToolContexts.Any(c => c.active && type.IsInstanceOfType(c));
+            object priorityContextType = GetPriorityContextOfType(type);
+            if (priorityContextType != null)
+            {
+                return priorityContextType;
+            }
+
+            object toolContextType = GetToolContextOfType(type);
+            if (toolContextType != null)
+            {
+                return toolContextType;
+            }
+
+            return null;
         }
     }
 }

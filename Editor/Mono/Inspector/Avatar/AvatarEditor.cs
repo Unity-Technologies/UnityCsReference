@@ -144,7 +144,7 @@ namespace UnityEditor
 
                 if (GUILayout.Button("Done"))
                 {
-                    m_Inspector.SwitchToAssetMode();
+                    m_Inspector.SwitchToAssetMode(true);
                     GUIUtility.ExitGUI();
                 }
             }
@@ -282,6 +282,7 @@ namespace UnityEditor
 
         void OnEnable()
         {
+            StageNavigationManager.instance.stageChanging += OnStageChanging;
             EditorApplication.update += Update;
             m_SwitchToEditMode = false;
             if (m_EditMode == EditMode.Editing)
@@ -306,6 +307,7 @@ namespace UnityEditor
             if (m_EditMode == EditMode.Editing)
                 editor.Disable();
 
+            StageNavigationManager.instance.stageChanging -= OnStageChanging;
             EditorApplication.update -= Update;
 
             if (m_SerializedAssetImporter != null)
@@ -319,7 +321,15 @@ namespace UnityEditor
         {
             // If we are in Edit mode, we need to switch back to asset mode first
             if (m_EditMode == EditMode.Editing)
-                SwitchToAssetMode();
+                SwitchToAssetMode(false);
+        }
+
+        void OnStageChanging(StageNavigationItem previousStage, StageNavigationItem newStage)
+        {
+            // Exit Avatar Editing before entering Prefab Mode so the camera states of the Prefab Mode is set last.
+            // This is why we use the stageChanging and not stageChanged event.
+            if (newStage.isPrefabStage && m_EditMode == EditMode.Editing)
+                SwitchToAssetMode(false);
         }
 
         void SelectAsset()
@@ -445,7 +455,7 @@ namespace UnityEditor
                     bool wasEnable = GUI.enabled;
                     GUI.enabled = !(avatar == null || !avatar.isHuman);
                     tabIndex = GUILayout.Toolbar(tabIndex, styles.tabs, "LargeButton",
-                            GUI.ToolbarButtonSize.FitToContents);
+                        GUI.ToolbarButtonSize.FitToContents);
                     GUI.enabled = wasEnable;
                     if (tabIndex != m_TabIndex)
                     {
@@ -470,6 +480,12 @@ namespace UnityEditor
 
         internal void SwitchToEditMode()
         {
+            // Ensure we show the main stage before starting editing the Avatar since it will be edited on the Main stage (we are using a main scene for it)
+            if (StageNavigationManager.instance.currentItem.isPrefabStage)
+            {
+                StageNavigationManager.instance.GoToMainStage(false, StageNavigationManager.Analytics.ChangeType.GoToMainViaAvatarSetup);
+            }
+
             m_EditMode = EditMode.Starting;
 
             // Lock inspector
@@ -518,7 +534,7 @@ namespace UnityEditor
             }
         }
 
-        internal void SwitchToAssetMode()
+        internal void SwitchToAssetMode(bool selectAvatarAsset)
         {
             foreach (var state in m_SceneStates)
             {
@@ -545,37 +561,33 @@ namespace UnityEditor
             {
                 EditorApplication.CallbackFunction CleanUpSceneOnDestroy = null;
                 CleanUpSceneOnDestroy = () =>
+                {
+                    string currentScene = SceneManager.GetActiveScene().path;
+                    if (currentScene.Length > 0)
                     {
-                        string currentScene = SceneManager.GetActiveScene().path;
-                        if (currentScene.Length > 0)
-                        {
-                            // in this case the user did save manually the current scene and want to keep it or
-                            // he did open a new scene
-                            // do nothing
-                        }
-                        // Restore scene that was loaded when user pressed Configure button
-                        else if (sceneSetup != null && sceneSetup.Length > 0)
-                        {
-                            EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
-                            sceneSetup = null;
-                        }
-                        else
-                            EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects);
+                        // in this case the user did save manually the current scene and want to keep it or
+                        // he did open a new scene
+                        // do nothing
+                    }
+                    // Restore scene that was loaded when user pressed Configure button
+                    else if (sceneSetup != null && sceneSetup.Length > 0)
+                    {
+                        EditorSceneManager.RestoreSceneManagerSetup(sceneSetup);
+                        sceneSetup = null;
+                    }
+                    else
+                        EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects);
 
-                        // Make sure that we restore the "original" selection
-                        // globally.
-                        // This should really be done in a more controlled manner
-                        // so that a globally important/observable state (i.e. selection) is not set
-                        // in a "random" very granular piece of control flow and
-                        // by an unrelated editor for which it is not the responsability to do so.
-
+                    // Make sure that we restore the "original" selection if we exit Avatar Editing mode
+                    // from the avatar tooling itself (e.g by clicking done).
+                    if (selectAvatarAsset)
                         SelectAsset();
 
-                        if (!m_CameFromImportSettings)
-                            m_EditMode = EditMode.NotEditing;
+                    if (!m_CameFromImportSettings)
+                        m_EditMode = EditMode.NotEditing;
 
-                        EditorApplication.update -= CleanUpSceneOnDestroy;
-                    };
+                    EditorApplication.update -= CleanUpSceneOnDestroy;
+                };
 
                 EditorApplication.update += CleanUpSceneOnDestroy;
             }
@@ -614,7 +626,7 @@ namespace UnityEditor
             if (m_EditMode == EditMode.Editing)
             {
                 if (m_GameObject == null || m_ModelBones == null || EditorApplication.isPlaying)
-                    SwitchToAssetMode();
+                    SwitchToAssetMode(true);
 
                 else if (m_ModelBones != null)
                 {
@@ -622,7 +634,7 @@ namespace UnityEditor
                     {
                         if (pair.Key == null)
                         {
-                            SwitchToAssetMode();
+                            SwitchToAssetMode(true);
                             return;
                         }
                     }

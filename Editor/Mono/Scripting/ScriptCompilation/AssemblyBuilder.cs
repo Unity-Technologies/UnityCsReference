@@ -91,19 +91,19 @@ namespace UnityEditor.Compilation
             var scriptAssembly = editorCompilation.CreateScriptAssembly(this);
 
             compilationTask = new CompilationTask(new ScriptAssembly[] { scriptAssembly }, scriptAssembly.OutputDirectory,
-                    EditorScriptCompilationOptions.BuildingEmpty, CompilationTaskOptions.StopOnFirstError, 1);
+                EditorScriptCompilationOptions.BuildingEmpty, CompilationTaskOptions.StopOnFirstError, 1);
 
             compilationTask.OnCompilationStarted += (assembly, phase) =>
-                {
-                    editorCompilation.InvokeAssemblyCompilationStarted(assemblyPath);
-                    OnCompilationStarted(assembly, phase);
-                };
+            {
+                editorCompilation.InvokeAssemblyCompilationStarted(assemblyPath);
+                OnCompilationStarted(assembly, phase);
+            };
 
             compilationTask.OnCompilationFinished += (assembly, messages) =>
-                {
-                    editorCompilation.InvokeAssemblyCompilationFinished(assemblyPath, messages);
-                    OnCompilationFinished(assembly, messages);
-                };
+            {
+                editorCompilation.InvokeAssemblyCompilationFinished(assemblyPath, messages);
+                OnCompilationFinished(assembly, messages);
+            };
 
             compilationTask.Poll();
 

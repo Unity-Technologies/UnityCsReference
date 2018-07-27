@@ -569,33 +569,33 @@ namespace UnityEditor
         static AsyncHTTPClient.DoneCallback WrapLoginCallback(DoneLoginCallback callback)
         {
             return delegate(AsyncHTTPClient job) {
-                    // We're logging in
-                    string msg = job.text;
-                    if (!job.IsSuccess())
-                    {
-                        AssetStoreClient.sLoginState = LoginState.LOGIN_ERROR;
-                        AssetStoreClient.sLoginErrorMessage = job.responseCode >= 200 && job.responseCode < 300 ? msg : "Failed to login - please retry";
-                    }
-                    else if (msg.StartsWith("<!DOCTYPE")) // TODO: Expose status line in job
-                    {
-                        AssetStoreClient.sLoginState = LoginState.LOGIN_ERROR;
-                        AssetStoreClient.sLoginErrorMessage = "Failed to login";
-                    }
+                // We're logging in
+                string msg = job.text;
+                if (!job.IsSuccess())
+                {
+                    AssetStoreClient.sLoginState = LoginState.LOGIN_ERROR;
+                    AssetStoreClient.sLoginErrorMessage = job.responseCode >= 200 && job.responseCode < 300 ? msg : "Failed to login - please retry";
+                }
+                else if (msg.StartsWith("<!DOCTYPE"))     // TODO: Expose status line in job
+                {
+                    AssetStoreClient.sLoginState = LoginState.LOGIN_ERROR;
+                    AssetStoreClient.sLoginErrorMessage = "Failed to login";
+                }
+                else
+                {
+                    AssetStoreClient.sLoginState = LoginState.LOGGED_IN;
+                    if (msg.Contains("@"))     // login with reused session id returns the user email
+                        AssetStoreClient.ActiveSessionID = SavedSessionID;
                     else
-                    {
-                        AssetStoreClient.sLoginState = LoginState.LOGGED_IN;
-                        if (msg.Contains("@")) // login with reused session id returns the user email
-                            AssetStoreClient.ActiveSessionID = SavedSessionID;
-                        else
-                            AssetStoreClient.ActiveSessionID = msg;
+                        AssetStoreClient.ActiveSessionID = msg;
 
-                        if (RememberSession)
-                        {
-                            SavedSessionID = ActiveSessionID;
-                        }
+                    if (RememberSession)
+                    {
+                        SavedSessionID = ActiveSessionID;
                     }
-                    callback(AssetStoreClient.sLoginErrorMessage);
-                };
+                }
+                callback(AssetStoreClient.sLoginErrorMessage);
+            };
         }
 
         public static void Logout()
@@ -672,20 +672,20 @@ namespace UnityEditor
         private static AsyncHTTPClient.DoneCallback WrapJsonCallback(DoneCallback callback)
         {
             return delegate(AsyncHTTPClient job) {
-                    if (job.IsDone())
+                if (job.IsDone())
+                {
+                    try
                     {
-                        try
-                        {
-                            AssetStoreResponse c = ParseContent(job);
-                            callback(c);
-                        }
-                        catch (Exception ex)
-                        {
-                            Debug.Log("Uncaught exception in async net callback: " + ex.Message);
-                            Debug.Log(ex.StackTrace);
-                        }
+                        AssetStoreResponse c = ParseContent(job);
+                        callback(c);
                     }
-                };
+                    catch (Exception ex)
+                    {
+                        Debug.Log("Uncaught exception in async net callback: " + ex.Message);
+                        Debug.Log(ex.StackTrace);
+                    }
+                }
+            };
         }
 
         /*
@@ -811,11 +811,11 @@ namespace UnityEditor
             }
 
             string url =  string.Format("{0}&q={1}&c={2}&l={3}&O={4}&N={5}&G={6}",
-                    APISearchUrl("/search/assets"),
-                    System.Uri.EscapeDataString(searchString),
-                    System.Uri.EscapeDataString(string.Join(",", requiredClassNames)),
-                    System.Uri.EscapeDataString(string.Join(",", assetLabels)),
-                    offsets, limits, groupNames);
+                APISearchUrl("/search/assets"),
+                System.Uri.EscapeDataString(searchString),
+                System.Uri.EscapeDataString(string.Join(",", requiredClassNames)),
+                System.Uri.EscapeDataString(string.Join(",", assetLabels)),
+                offsets, limits, groupNames);
 
             //Debug.Log(url);
             //Debug.Log("session key " + ActiveOrUnauthSessionID + GetToken());

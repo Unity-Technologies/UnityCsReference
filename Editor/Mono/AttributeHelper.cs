@@ -44,7 +44,7 @@ namespace UnityEditor
                         Debug.LogWarningFormat(
                             "Method {0}.{1} is marked with the DrawGizmo attribute but does not take parameters (ComponentType, GizmoType) so will be ignored.",
                             mi.DeclaringType?.FullName, mi.Name
-                            );
+                        );
                         continue;
                     }
                     if (mi.DeclaringType != null && mi.DeclaringType.IsGenericTypeDefinition)
@@ -52,7 +52,7 @@ namespace UnityEditor
                         Debug.LogWarningFormat(
                             "Method {0}.{1} is marked with the DrawGizmo attribute but is defined on a generic type definition, so will be ignored.",
                             mi.DeclaringType.FullName, mi.Name
-                            );
+                        );
                         continue;
                     }
 
@@ -67,7 +67,7 @@ namespace UnityEditor
                         Debug.LogWarningFormat(
                             "Method {0}.{1} is marked with the DrawGizmo attribute but the component type it applies to could not be determined.",
                             mi.DeclaringType?.FullName, mi.Name
-                            );
+                        );
                         continue;
                     }
 
@@ -77,7 +77,7 @@ namespace UnityEditor
                         Debug.LogWarningFormat(
                             "Method {0}.{1} is marked with the DrawGizmo attribute but does not take a second parameter of type GizmoType so will be ignored.",
                             mi.DeclaringType?.FullName, mi.Name
-                            );
+                        );
                         continue;
                     }
 
@@ -280,7 +280,7 @@ namespace UnityEditor
                     {
                         Debug.LogErrorFormat(
                             "{0} is a generic method. {1} cannot be applied to it.", MethodToString(method), typeof(T)
-                            );
+                        );
                     }
                     else
                     {

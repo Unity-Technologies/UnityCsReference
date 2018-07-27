@@ -15,7 +15,7 @@ namespace UnityEditor
     // Example: [FilePathAttribute("Library/SearchFilters.ssf", FilePathAttribute.Location.ProjectFolder)]
     // Ensure to call Save() from client code (derived instance)
     [AttributeUsage(AttributeTargets.Class)]
-    class FilePathAttribute : Attribute
+    internal class FilePathAttribute : Attribute
     {
         public enum Location { PreferencesFolder, ProjectFolder }
         public string filepath {get; set; }

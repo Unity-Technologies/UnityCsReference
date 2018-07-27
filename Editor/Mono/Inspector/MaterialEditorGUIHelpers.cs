@@ -22,8 +22,7 @@ namespace UnityEditor
                 if (m_SerializedObject == null || m_SerializedObject.targetObject == null)
                     return false;
 
-                PrefabType type = PrefabUtility.GetPrefabType(m_SerializedObject.targetObject);
-                return (type == PrefabType.Prefab || type == PrefabType.ModelPrefab);
+                return PrefabUtility.IsPartOfPrefabAsset(m_SerializedObject.targetObject);
             }
         }
 
@@ -75,9 +74,9 @@ namespace UnityEditor
                     int targetQueueValueOverflow = curRawQueue - Styles.queueValues[targetQueueIndex];
 
                     string newQueueName = string.Format(
-                            targetQueueValueOverflow > 0 ? "{0}+{1}" : "{0}{1}",
-                            targetQueueName,
-                            targetQueueValueOverflow);
+                        targetQueueValueOverflow > 0 ? "{0}+{1}" : "{0}{1}",
+                        targetQueueName,
+                        targetQueueValueOverflow);
                     Styles.customQueueNames[Styles.kCustomQueueIndex].text = newQueueName;
                     Styles.customQueueValues[Styles.kCustomQueueIndex] = curRawQueue;
                 }
@@ -242,7 +241,7 @@ namespace UnityEditor
         [Obsolete("Use TexturePropertyWithHDRColor(GUIContent label, MaterialProperty textureProp, MaterialProperty colorProperty, bool showAlpha)")]
         public Rect TexturePropertyWithHDRColor(
             GUIContent label, MaterialProperty textureProp, MaterialProperty colorProperty, ColorPickerHDRConfig hdrConfig, bool showAlpha
-            )
+        )
         {
             return TexturePropertyWithHDRColor(label, textureProp, colorProperty, showAlpha);
         }

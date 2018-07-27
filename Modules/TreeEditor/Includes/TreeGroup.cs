@@ -457,8 +457,8 @@ namespace TreeEditor
                                     int clusterIndex = nodeLocalIndex % clusterCount;
                                     int clusterOffset = nodeLocalIndex / clusterCount;
                                     float offset = ComputeOffset(nodeLocalIndex / clusterCount, nodeLocalCount / clusterCount,
-                                            distributionSum,
-                                            distributionStep);
+                                        distributionSum,
+                                        distributionStep);
                                     float angle = ((360.0f / clusterCount) * clusterIndex) +
                                         ((180.0f / clusterCount) * clusterOffset);
 

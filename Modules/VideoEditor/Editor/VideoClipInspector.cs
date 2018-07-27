@@ -98,7 +98,7 @@ namespace UnityEditor
 
             bool needRepaint = clip != m_PlayingClip ||
                 (!m_PreviewID.Empty() &&
-                 VideoUtil.IsPreviewPlaying(m_PreviewID));
+                    VideoUtil.IsPreviewPlaying(m_PreviewID));
 
             if (clip != m_PlayingClip)
             {

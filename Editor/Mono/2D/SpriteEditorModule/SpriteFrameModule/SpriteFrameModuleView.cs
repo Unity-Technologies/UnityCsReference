@@ -63,27 +63,27 @@ namespace UnityEditor
 
                 drawArea.width = skin.CalcSize(SpriteFrameModuleStyles.sliceButtonLabel).x;
                 SpriteUtilityWindow.DrawToolBarWidget(ref drawArea, ref toolbarRect, (adjustedDrawArea) =>
+                {
+                    if (GUI.Button(adjustedDrawArea, SpriteFrameModuleStyles.sliceButtonLabel, skin))
                     {
-                        if (GUI.Button(adjustedDrawArea, SpriteFrameModuleStyles.sliceButtonLabel, skin))
-                        {
-                            if (SpriteEditorMenu.ShowAtPosition(adjustedDrawArea, this, m_TextureDataProvider))
-                                GUIUtility.ExitGUI();
-                        }
-                    });
+                        if (SpriteEditorMenu.ShowAtPosition(adjustedDrawArea, this, m_TextureDataProvider))
+                            GUIUtility.ExitGUI();
+                    }
+                });
 
                 using (new EditorGUI.DisabledScope(!hasSelected))
                 {
                     drawArea.x += drawArea.width;
                     drawArea.width = skin.CalcSize(SpriteFrameModuleStyles.trimButtonLabel).x;
                     SpriteUtilityWindow.DrawToolBarWidget(ref drawArea, ref toolbarRect, (adjustedDrawArea) =>
+                    {
+                        if (GUI.Button(adjustedDrawArea, SpriteFrameModuleStyles.trimButtonLabel, EditorStyles.toolbarButton) ||
+                            (string.IsNullOrEmpty(GUI.GetNameOfFocusedControl()) && k_SpriteEditorTrim.activated))
                         {
-                            if (GUI.Button(adjustedDrawArea, SpriteFrameModuleStyles.trimButtonLabel, EditorStyles.toolbarButton) ||
-                                (string.IsNullOrEmpty(GUI.GetNameOfFocusedControl()) && k_SpriteEditorTrim.activated))
-                            {
-                                TrimAlpha();
-                                Repaint();
-                            }
-                        });
+                            TrimAlpha();
+                            Repaint();
+                        }
+                    });
                 }
             }
         }

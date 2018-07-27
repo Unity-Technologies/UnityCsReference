@@ -9,14 +9,6 @@ namespace UnityEditor
 {
     public class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
     {
-        Material m_Material = null;
-        Material GetPaintMaterial()
-        {
-            if (m_Material == null)
-                m_Material = new Material(Shader.Find("Hidden/TerrainEngine/PaintHeight"));
-            return m_Material;
-        }
-
         public override string GetName()
         {
             return "Smooth Height";
@@ -32,19 +24,18 @@ namespace UnityEditor
             TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(terrain, brushTexture, brushStrength, brushSizeInTerrainUnits, 0.0f);
         }
 
-        public override bool Paint(Terrain terrain, Texture brushTexture, Vector2 uv, float brushStrength, int brushSizeInTerrainUnits)
+        public override bool Paint(Terrain terrain, Texture brushTexture, Vector2 uv, float brushStrength, int brushSize)
         {
-            Vector2Int brushSize = TerrainPaintUtility.CalculateBrushSizeInHeightmapSpace(terrain, brushSizeInTerrainUnits);
-            TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, uv, brushSize);
-            TerrainPaintUtilityEditor.UpdateTerrainUndo(paintContext, TerrainPaintUtilityEditor.ToolAction.PaintHeightmap, "Terrain Paint - Smooth Height");
+            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, uv, brushSize);
+            TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushRect);
 
-            Material mat = GetPaintMaterial();
+            Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
             Vector4 brushParams = new Vector4(brushStrength, 0.0f, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", brushTexture);
             mat.SetVector("_BrushParams", brushParams);
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, 3);
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.SmoothHeights);
 
-            TerrainPaintUtility.EndPaintHeightmap(paintContext);
+            TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Smooth Height");
             return false;
         }
     }

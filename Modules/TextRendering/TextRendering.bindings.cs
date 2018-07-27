@@ -439,11 +439,11 @@ namespace UnityEngine
 
             uint uerror = 0;
             bool res = Populate_Internal(
-                    str, font, color,
-                    fontSize, scaleFactor, lineSpacing, style, richText,
-                    resizeTextForBestFit, resizeTextMinSize, resizeTextMaxSize,
-                    (int)verticalOverFlow, (int)horizontalOverflow, updateBounds,
-                    anchor, extents.x, extents.y, pivot.x, pivot.y, generateOutOfBounds, alignByGeometry, out uerror);
+                str, font, color,
+                fontSize, scaleFactor, lineSpacing, style, richText,
+                resizeTextForBestFit, resizeTextMinSize, resizeTextMaxSize,
+                (int)verticalOverFlow, (int)horizontalOverflow, updateBounds,
+                anchor, extents.x, extents.y, pivot.x, pivot.y, generateOutOfBounds, alignByGeometry, out uerror);
             error = (TextGenerationError)uerror;
             return res;
         }
