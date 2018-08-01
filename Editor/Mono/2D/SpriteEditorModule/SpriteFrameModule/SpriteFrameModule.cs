@@ -10,6 +10,7 @@ using UnityEditor.U2D.Interface;
 using UnityEngine.U2D.Interface;
 using UnityTexture2D = UnityEngine.Texture2D;
 using UnityEditor.Experimental.U2D;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
@@ -24,6 +25,7 @@ namespace UnityEditor
         }
 
         private bool[] m_AlphaPixelCache;
+        SpriteFrameModuleContext m_SpriteFrameModuleContext;
         private const int kDefaultColliderAlphaCutoff = 254;
         private const float kDefaultColliderDetail = 0.25f;
 
@@ -31,15 +33,49 @@ namespace UnityEditor
             base("Sprite Editor", sw, es, us, ad)
         {}
 
+        class SpriteFrameModuleContext : IShortcutToolContext
+        {
+            SpriteFrameModule m_SpriteFrameModule;
+
+            public SpriteFrameModuleContext(SpriteFrameModule spriteFrame)
+            {
+                m_SpriteFrameModule = spriteFrame;
+            }
+
+            public bool active
+            {
+                get { return true; }
+            }
+            public SpriteFrameModule spriteFrameModule
+            {
+                get { return m_SpriteFrameModule; }
+            }
+        }
+
+        [FormerlyPrefKeyAs("Sprite Editor/Trim", "#t")]
+        [Shortcut("Sprite Editor/Trim", typeof(SpriteFrameModuleContext), "#t")]
+        static void ShortcutTrim(ShortcutArguments args)
+        {
+            if (!string.IsNullOrEmpty(GUI.GetNameOfFocusedControl()))
+                return;
+            var spriteFrameContext = (SpriteFrameModuleContext)args.context;
+            spriteFrameContext.spriteFrameModule.TrimAlpha();
+            spriteFrameContext.spriteFrameModule.spriteEditor.RequestRepaint();
+        }
+
         public override void OnModuleActivate()
         {
             base.OnModuleActivate();
             spriteEditor.enableMouseMoveEvent = true;
+            m_SpriteFrameModuleContext = new SpriteFrameModuleContext(this);
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_SpriteFrameModuleContext);
         }
 
         public override void OnModuleDeactivate()
         {
             base.OnModuleDeactivate();
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_SpriteFrameModuleContext);
+
             m_AlphaPixelCache = null;
         }
 

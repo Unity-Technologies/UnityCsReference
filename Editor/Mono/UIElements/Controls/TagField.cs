@@ -23,7 +23,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var tagField = (TagField)ve;
-                tagField.SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
+                tagField.SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
             }
         }
 

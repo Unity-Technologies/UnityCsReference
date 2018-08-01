@@ -403,8 +403,11 @@ namespace UnityEditor.Experimental.UIElements
             foreach (UxmlAttributeDescription attrDesc in factory.uxmlAttributesDescription)
             {
                 XmlQualifiedName typeName = AddAttributeTypeToXmlSchema(schemaInfo, attrDesc, factory, processingData);
-                AddAttributeToXmlSchema(restriction, attrDesc, typeName);
-                schemaInfo.importNamespaces.Add(attrDesc.typeNamespace);
+                if (typeName != null)
+                {
+                    AddAttributeToXmlSchema(restriction, attrDesc, typeName);
+                    schemaInfo.importNamespaces.Add(attrDesc.typeNamespace);
+                }
             }
 
             bool hasChildElements = false;
@@ -443,6 +446,11 @@ namespace UnityEditor.Experimental.UIElements
 
         static XmlQualifiedName AddAttributeTypeToXmlSchema(SchemaInfo schemaInfo, UxmlAttributeDescription description, IUxmlFactory factory, FactoryProcessingHelper processingData)
         {
+            if (description.name == null)
+            {
+                return null;
+            }
+
             string attrTypeName = factory.uxmlQualifiedName + "_" + description.name + "_" + k_TypeSuffix;
             string attrTypeNameInBaseElement = factory.substituteForTypeQualifiedName + "_" + description.name + "_" + k_TypeSuffix;
 

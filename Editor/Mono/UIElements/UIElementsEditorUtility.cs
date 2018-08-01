@@ -21,11 +21,9 @@ namespace UnityEditor.Experimental.UIElements
             return new CursorStyle() { texture = null, hotspot = Vector2.zero, defaultCursorId = (int)mouseCursor };
         }
 
-        internal static CursorStyle CreateDefaultCursorStyle(StyleSheet sheet, StyleValueHandle handle)
+        internal static int GetCursorId(StyleSheet sheet, StyleValueHandle handle)
         {
-            int type = StyleSheetCache.GetEnumValue<MouseCursor>(sheet, handle);
-            CursorStyle cursor = new CursorStyle() { texture = null, hotspot = Vector2.zero, defaultCursorId = type };
-            return cursor;
+            return StyleSheetCache.GetEnumValue<MouseCursor>(sheet, handle);
         }
 
         internal static void AddDefaultEditorStyleSheets(VisualElement p)

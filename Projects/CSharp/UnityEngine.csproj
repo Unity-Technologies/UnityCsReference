@@ -1940,6 +1940,9 @@
   <Compile Include="..\..\Modules\UnityWebRequest\Public\WebRequestUtils.cs">
     <Link>Modules\UnityWebRequest\Public\WebRequestUtils.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\VFX\FriendAttributes.cs">
+    <Link>Modules\VFX\FriendAttributes.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\VFX\Public\ScriptBindings\VFXEnums.bindings.cs">
     <Link>Modules\VFX\Public\ScriptBindings\VFXEnums.bindings.cs</Link>
   </Compile>
@@ -2207,8 +2210,8 @@
   <Compile Include="..\..\Runtime\Dynamics\ScriptBindings\Dynamics.bindings.cs">
     <Link>Runtime\Dynamics\ScriptBindings\Dynamics.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Dynamics\ScriptBindings\RaycastCommand.bindings.cs">
-    <Link>Runtime\Dynamics\ScriptBindings\RaycastCommand.bindings.cs</Link>
+  <Compile Include="..\..\Runtime\Dynamics\ScriptBindings\QueryCommand.bindings.cs">
+    <Link>Runtime\Dynamics\ScriptBindings\QueryCommand.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Networking\Managed\MatchMakingClient.cs">
     <Link>Runtime\Networking\Managed\MatchMakingClient.cs</Link>

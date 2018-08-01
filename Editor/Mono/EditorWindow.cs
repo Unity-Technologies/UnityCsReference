@@ -614,7 +614,9 @@ namespace UnityEditor
         {
             ShowWithMode(ShowMode.AuxWindow);
             SavedGUIState guiState = SavedGUIState.Create();
+            m_Parent.visualTree.panel.dispatcher?.PushDispatcherContext();
             MakeModal(m_Parent.window);
+            m_Parent.visualTree.panel.dispatcher?.PopDispatcherContext();
             guiState.ApplyAndForget();
         }
 

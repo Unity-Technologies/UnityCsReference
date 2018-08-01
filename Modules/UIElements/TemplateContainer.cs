@@ -25,7 +25,7 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 TemplateContainer templateContainer = ((TemplateContainer)ve);
-                templateContainer.templateId = m_Template.GetValueFromBag(bag);
+                templateContainer.templateId = m_Template.GetValueFromBag(bag, cc);
                 VisualTreeAsset vea = cc.visualTreeAsset.ResolveTemplate(templateContainer.templateId);
 
                 if (vea == null)

@@ -185,6 +185,11 @@ namespace UnityEditor
         [NonSerialized]
         public GUIContent m_SearchAssetStore = EditorGUIUtility.TrTextContent("Asset Store"); // updated when needed
 
+        [NonSerialized]
+        private string m_lastSearchFilter;
+        [NonSerialized]
+        private double m_NextSearch = double.MaxValue;
+
         ProjectBrowser()
         {
         }
@@ -1008,6 +1013,13 @@ namespace UnityEditor
                                 Event.current.Use();
                         }
                         break;
+                    case KeyCode.Delete:
+                        if (Event.current.shift)
+                        {
+                            DeleteSelectedAssets(false);
+                            Event.current.Use();
+                        }
+                        break;
                 }
             }
         }
@@ -1443,6 +1455,18 @@ namespace UnityEditor
         {
             if (m_ListArea != null)
                 m_ListArea.OnInspectorUpdate();
+
+
+            // if it's time for a search we do it
+            if (EditorApplication.timeSinceStartup > m_NextSearch)
+            {
+                //Perform the Search
+                m_NextSearch = double.MaxValue;
+                m_SearchFilter.SearchFieldStringToFilter(m_SearchFieldText);
+                SyncFilterGUI();
+                TopBarSearchSettingsChanged();
+                Repaint();
+            }
         }
 
         void OnDestroy()
@@ -2283,15 +2307,14 @@ namespace UnityEditor
                 }
             }
 
-            string searchFilter = EditorGUI.ToolbarSearchField(searchFieldControlID, rect, m_SearchFieldText, false);
-            if (searchFilter != m_SearchFieldText || m_FocusSearchField)
+            m_lastSearchFilter = EditorGUI.ToolbarSearchField(searchFieldControlID, rect, m_SearchFieldText, false);
+
+            if (m_lastSearchFilter != m_SearchFieldText || m_FocusSearchField)
             {
                 // Update filter with string
-                m_SearchFieldText = searchFilter;
-                m_SearchFilter.SearchFieldStringToFilter(m_SearchFieldText);
-                SyncFilterGUI();
-                TopBarSearchSettingsChanged();
-                Repaint();
+                m_SearchFieldText = m_lastSearchFilter;
+
+                m_NextSearch = EditorApplication.timeSinceStartup + SearchableEditorWindow.k_SearchTimerDelaySecs;
             }
         }
 

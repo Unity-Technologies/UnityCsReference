@@ -20,7 +20,7 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 RepeatButton repeatButton = (RepeatButton)ve;
-                repeatButton.SetAction(null, m_Delay.GetValueFromBag(bag), m_Interval.GetValueFromBag(bag));
+                repeatButton.SetAction(null, m_Delay.GetValueFromBag(bag, cc), m_Interval.GetValueFromBag(bag, cc));
             }
         }
 

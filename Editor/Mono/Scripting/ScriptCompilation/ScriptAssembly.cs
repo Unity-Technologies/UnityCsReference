@@ -20,7 +20,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public ScriptCompilerOptions PredefinedAssembliesCompilerOptions { get; set; }
 
         public OptionalUnityReferences OptionalUnityReferences { get; set; }
-        public string FilenameSuffix { get; set; }
 
         public ScriptAssemblySettings()
         {

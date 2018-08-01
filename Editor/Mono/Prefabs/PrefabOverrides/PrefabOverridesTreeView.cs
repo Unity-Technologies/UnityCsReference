@@ -525,11 +525,13 @@ namespace UnityEditor
                 public static GUIStyle centeredLabelStyle = new GUIStyle(EditorStyles.label);
                 public static GUIStyle headerGroupStyle = new GUIStyle();
                 public static GUIStyle headerStyle = new GUIStyle(EditorStyles.boldLabel);
-                public static GUIContent sourceContent = new GUIContent("Prefab Source");
-                public static GUIContent instanceContent = new GUIContent("Override");
-                public static GUIContent removedContent = new GUIContent("Removed");
-                public static GUIContent addedContent = new GUIContent("Added");
-                public static GUIContent noModificationsContent = new GUIContent("No Overrides");
+                public static GUIContent sourceContent = EditorGUIUtility.TrTextContent("Prefab Source");
+                public static GUIContent instanceContent = EditorGUIUtility.TrTextContent("Override");
+                public static GUIContent removedContent = EditorGUIUtility.TrTextContent("Removed");
+                public static GUIContent addedContent = EditorGUIUtility.TrTextContent("Added");
+                public static GUIContent noModificationsContent = EditorGUIUtility.TrTextContent("No Overrides");
+                public static GUIContent applyContent = EditorGUIUtility.TrTextContent("Apply");
+                public static GUIContent revertContent = EditorGUIUtility.TrTextContent("Revert");
 
                 static Styles()
                 {
@@ -675,7 +677,7 @@ namespace UnityEditor
                 GUILayout.BeginHorizontal(Styles.headerGroupStyle);
                 GUILayout.FlexibleSpace();
 
-                if (GUILayout.Button("Revert", EditorStyles.miniButton, GUILayout.Width(50)))
+                if (GUILayout.Button(Styles.revertContent, EditorStyles.miniButton, GUILayout.Width(50)))
                 {
                     m_Modification.Revert();
                     UpdateAndClose();
@@ -685,7 +687,7 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(m_Unappliable))
                 {
                     Rect applyRect = GUILayoutUtility.GetRect(GUIContent.none, "MiniPulldown", GUILayout.Width(50));
-                    if (EditorGUI.DropdownButton(applyRect, new GUIContent("Apply"), FocusType.Passive))
+                    if (EditorGUI.DropdownButton(applyRect, Styles.applyContent, FocusType.Passive))
                     {
                         GenericMenu menu = new GenericMenu();
                         m_Modification.HandleApplyMenuItems(menu, Apply);

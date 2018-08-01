@@ -64,5 +64,15 @@ namespace UnityEditor.ShortcutManagement
         {
             m_Trigger.HandleKeyEvent(evt, contextManager);
         }
+
+        internal string GetKeyCombinationFor(string shortcutId)
+        {
+            var shortcutEntry = directory.FindShortcutEntry(shortcutId);
+            if (shortcutEntry != null)
+            {
+                return KeyCombination.SequenceToString(shortcutEntry.combinations);
+            }
+            throw new System.ArgumentException(shortcutId + " is not defined.", nameof(shortcutId));
+        }
     }
 }

@@ -30,7 +30,7 @@ namespace UnityEditor
 
         SerializedProperty m_SupportsEmbeddedMaterials;
 
-        SerializedProperty m_SRGBMaterialColor;
+        SerializedProperty m_UseSRGBMaterialColor;
 
         private bool m_HasEmbeddedMaterials = false;
 
@@ -113,7 +113,6 @@ namespace UnityEditor
         {
             // We need to display BasedOnTextureName_Or_ModelNameAndMaterialName obsolete option for objects which use this option
 #pragma warning disable 618
-            m_MaterialName = serializedObject.FindProperty("m_MaterialName");
             m_ShowAllMaterialNameOptions = (m_MaterialName.intValue == (int)ModelImporterMaterialName.BasedOnTextureName_Or_ModelNameAndMaterialName);
 #pragma warning restore 618
         }
@@ -161,20 +160,7 @@ namespace UnityEditor
 
             m_SupportsEmbeddedMaterials = serializedObject.FindProperty("m_SupportsEmbeddedMaterials");
 
-            m_SRGBMaterialColor = serializedObject.FindProperty("m_UseSRGBMaterialColor");
-
-            UpdateShowAllMaterialNameOptions();
-        }
-
-        internal override void ResetValues()
-        {
-            base.ResetValues();
-            UpdateShowAllMaterialNameOptions();
-        }
-
-        internal override void PostApply()
-        {
-            UpdateShowAllMaterialNameOptions();
+            m_UseSRGBMaterialColor = serializedObject.FindProperty("m_UseSRGBMaterialColor");
         }
 
         public override void OnInspectorGUI()
@@ -372,6 +358,8 @@ namespace UnityEditor
         {
             serializedObject.UpdateIfRequiredOrScript();
 
+            UpdateShowAllMaterialNameOptions();
+
             EditorGUILayout.PropertyField(m_ImportMaterials, Styles.ImportMaterials);
 
             string materialHelp = string.Empty;
@@ -379,7 +367,7 @@ namespace UnityEditor
             {
                 if (m_ImportMaterials.boolValue)
                 {
-                    EditorGUILayout.PropertyField(m_SRGBMaterialColor, Styles.SRGBMaterialColor);
+                    EditorGUILayout.PropertyField(m_UseSRGBMaterialColor, Styles.SRGBMaterialColor);
 
                     EditorGUILayout.Popup(m_MaterialLocation, Styles.MaterialLocationOpt, Styles.MaterialLocation);
                     if (!m_MaterialLocation.hasMultipleDifferentValues)

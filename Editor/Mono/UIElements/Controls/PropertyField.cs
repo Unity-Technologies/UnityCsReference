@@ -36,9 +36,9 @@ namespace UnityEditor.Experimental.UIElements
                 if (field == null)
                     return;
 
-                field.label = m_Label.GetValueFromBag(bag);
+                field.label = m_Label.GetValueFromBag(bag, cc);
 
-                string propPath = m_PropertyPath.GetValueFromBag(bag);
+                string propPath = m_PropertyPath.GetValueFromBag(bag, cc);
                 if (!string.IsNullOrEmpty(propPath))
                     field.bindingPath = propPath;
             }

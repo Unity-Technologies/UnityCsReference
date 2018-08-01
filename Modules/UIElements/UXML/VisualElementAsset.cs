@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
-using System.Runtime.CompilerServices;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -17,13 +15,6 @@ namespace UnityEngine.Experimental.UIElements
 
         [SerializeField]
         private int m_Id;
-
-        [Obsolete("Use GetPropertyString(\"name\", null) instead.")]
-        public string name
-        {
-            get { return GetPropertyString("name", null); }
-            set { SetOrAddProperty("name", value); }
-        }
 
         public int id
         {
@@ -52,22 +43,8 @@ namespace UnityEngine.Experimental.UIElements
         [SerializeField]
         private string m_Text;
 
-        [Obsolete("Use GetPropertyString(\"text\", null) instead.")]
-        public string text
-        {
-            get { return GetPropertyString("text", null); }
-            set { SetOrAddProperty("text", value); }
-        }
-
         [SerializeField]
         private PickingMode m_PickingMode;
-
-        [Obsolete("Use GetPropertyString(\"pickingMode\", null) instead.")]
-        public string pickingMode
-        {
-            get { return GetPropertyString("pickingMode", null); }
-            set { SetOrAddProperty("pickingMode", value); }
-        }
 
         [SerializeField]
         private string m_FullTypeName;
@@ -119,7 +96,7 @@ namespace UnityEngine.Experimental.UIElements
             IUxmlFactory factory = null;
             foreach (IUxmlFactory f in factoryList)
             {
-                if (f.AcceptsAttributeBag(this))
+                if (f.AcceptsAttributeBag(this, ctx))
                 {
                     factory = f;
                     break;
@@ -174,9 +151,9 @@ namespace UnityEngine.Experimental.UIElements
             {
                 AddProperty("text", m_Text);
             }
-            if (!m_Properties.Contains("pickingMode"))
+            if (!m_Properties.Contains("picking-mode") && !m_Properties.Contains("pickingMode"))
             {
-                AddProperty("pickingMode", m_PickingMode.ToString());
+                AddProperty("picking-mode", m_PickingMode.ToString());
             }
         }
 
@@ -203,90 +180,25 @@ namespace UnityEngine.Experimental.UIElements
             m_Properties.Add(propertyValue);
         }
 
-        [Obsolete("Use GetPropertyString(string propertyName, string defaultValue)")]
-        public virtual string GetPropertyString(string propertyName)
-        {
-            return GetPropertyString(propertyName, null);
-        }
-
-        public virtual string GetPropertyString(string propertyName, string defaultValue)
+        public bool TryGetAttributeValue(string propertyName, out string value)
         {
             if (m_Properties == null)
-                return defaultValue;
+            {
+                value = null;
+                return false;
+            }
 
             for (int i = 0; i < m_Properties.Count - 1; i += 2)
             {
                 if (m_Properties[i] == propertyName)
-                    return m_Properties[i + 1];
+                {
+                    value = m_Properties[i + 1];
+                    return true;
+                }
             }
 
-            return defaultValue;
-        }
-
-        public int GetPropertyInt(string propertyName, int defaultValue)
-        {
-            var v = GetPropertyString(propertyName, null);
-            int l;
-            if (v == null || !int.TryParse(v, out l))
-                return defaultValue;
-
-            return l;
-        }
-
-        public long GetPropertyLong(string propertyName, long defaultValue)
-        {
-            var v = GetPropertyString(propertyName, null);
-            long l;
-            if (v == null || !long.TryParse(v, out l))
-                return defaultValue;
-            return l;
-        }
-
-        public bool GetPropertyBool(string propertyName, bool defaultValue)
-        {
-            var v = GetPropertyString(propertyName, null);
-            bool l;
-            if (v == null || !bool.TryParse(v, out l))
-                return defaultValue;
-
-            return l;
-        }
-
-        public Color GetPropertyColor(string propertyName, Color defaultValue)
-        {
-            var v = GetPropertyString(propertyName, null);
-            Color l;
-            if (v == null || !ColorUtility.TryParseHtmlString(v, out l))
-                return defaultValue;
-            return l;
-        }
-
-        public float GetPropertyFloat(string propertyName, float defaultValue)
-        {
-            var v = GetPropertyString(propertyName, null);
-            float l;
-            if (v == null || !float.TryParse(v, out l))
-                return defaultValue;
-            return l;
-        }
-
-        public double GetPropertyDouble(string propertyName, double defaultValue)
-        {
-            var v = GetPropertyString(propertyName, null);
-            double l;
-            if (v == null || !double.TryParse(v, out l))
-                return defaultValue;
-            return l;
-        }
-
-        public T GetPropertyEnum<T>(string propertyName, T defaultValue)
-        {
-            var v = GetPropertyString(propertyName, null);
-            if (v == null || !Enum.IsDefined(typeof(T), v))
-                return defaultValue;
-
-            var l = (T)Enum.Parse(typeof(T), v);
-            return l;
+            value = null;
+            return false;
         }
     }
 }

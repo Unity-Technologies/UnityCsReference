@@ -2,11 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEngine;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
+using UnityEngine;
+using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -16,9 +16,6 @@ namespace UnityEditor
         [System.Serializable]
         internal class BoneWrapper
         {
-            private static string sHumanName = "m_HumanName";
-            private static string sBoneName = "m_BoneName";
-
             private string m_HumanBoneName;
             public string humanBoneName { get { return m_HumanBoneName; } }
             public string error = string.Empty;
@@ -33,16 +30,17 @@ namespace UnityEditor
                 }
             }
 
-            public BoneWrapper(string humanBoneName, SerializedObject serializedObject, Dictionary<Transform, bool> bones)
+            public BoneWrapper(string humanBoneName, Transform bone)
             {
-                m_HumanBoneName = humanBoneName;
-                Reset(serializedObject, bones);
+                this.m_HumanBoneName = humanBoneName;
+                this.bone = bone;
+                this.state = BoneState.Valid;
             }
 
-            public void Reset(SerializedObject serializedObject, Dictionary<Transform, bool> bones)
+            public void Reset(SerializedProperty humanBoneArray, Dictionary<Transform, bool> bones)
             {
                 bone = null;
-                SerializedProperty property = GetSerializedProperty(serializedObject, false);
+                SerializedProperty property = GetSerializedProperty(humanBoneArray, false);
                 if (property != null)
                 {
                     string boneName = property.FindPropertyRelative(sBoneName).stringValue;
@@ -51,23 +49,22 @@ namespace UnityEditor
                 state = BoneState.Valid;
             }
 
-            public void Serialize(SerializedObject serializedObject)
+            public void Serialize(SerializedProperty humanBoneArray)
             {
                 if (bone == null)
                 {
-                    DeleteSerializedProperty(serializedObject);
+                    DeleteSerializedProperty(humanBoneArray);
                 }
                 else
                 {
-                    SerializedProperty property = GetSerializedProperty(serializedObject, true);
+                    SerializedProperty property = GetSerializedProperty(humanBoneArray, true);
                     if (property != null)
                         property.FindPropertyRelative(sBoneName).stringValue = bone.name;
                 }
             }
 
-            protected void DeleteSerializedProperty(SerializedObject serializedObject)
+            protected void DeleteSerializedProperty(SerializedProperty humanBoneArray)
             {
-                SerializedProperty humanBoneArray = serializedObject.FindProperty(sHuman);
                 if (humanBoneArray == null || !humanBoneArray.isArray)
                     return;
 
@@ -82,9 +79,8 @@ namespace UnityEditor
                 }
             }
 
-            public SerializedProperty GetSerializedProperty(SerializedObject serializedObject, bool createIfMissing)
+            public SerializedProperty GetSerializedProperty(SerializedProperty humanBoneArray, bool createIfMissing)
             {
-                SerializedProperty humanBoneArray = serializedObject.FindProperty(sHuman);
                 if (humanBoneArray == null || !humanBoneArray.isArray)
                     return null;
 
@@ -194,7 +190,8 @@ namespace UnityEditor
                             //  Unreference transform component in selected bone.
                             bone = null;
                             state = BoneState.None;
-                            Serialize(serializedObject);
+                            SerializedProperty humanBoneArray = serializedObject.FindProperty(sHuman);
+                            Serialize(humanBoneArray);
 
                             //  Clear scene selection.
                             Selection.activeTransform = null;
@@ -238,7 +235,8 @@ namespace UnityEditor
                                     else
                                         bone = validatedObject as Transform;
 
-                                    Serialize(serializedObject);
+                                    SerializedProperty humanBoneArray = serializedObject.FindProperty(sHuman);
+                                    Serialize(humanBoneArray);
 
                                     GUI.changed = true;
                                     DragAndDrop.AcceptDrag();
@@ -282,7 +280,6 @@ namespace UnityEditor
         }
 
         private static string sHuman = "m_HumanDescription.m_Human";
-        private static string sHasTranslationDoF = "m_HumanDescription.m_HasTranslationDoF";
 
         internal static string sSkeleton = "m_HumanDescription.m_Skeleton";
         internal static string sName = "m_Name";
@@ -290,6 +287,8 @@ namespace UnityEditor
         internal static string sPosition = "m_Position";
         internal static string sRotation = "m_Rotation";
         internal static string sScale = "m_Scale";
+        internal static string sHumanName = "m_HumanName";
+        internal static string sBoneName = "m_BoneName";
 
         private static BonePoseData[] sBonePoses = new BonePoseData[]
         {
@@ -503,41 +502,59 @@ namespace UnityEditor
             return -1;
         }
 
-        public static BoneWrapper[] GetHumanBones(SerializedObject serializedObject, Dictionary<Transform, bool> actualBones)
+        public static BoneWrapper[] GetHumanBones(SerializedProperty humanBoneArray, Dictionary<Transform, bool> actualBones)
+        {
+            // cache the (human bone name, bone name) mapping,
+            // since accessing a dictionary is much faster than iterating over the serialized properties
+            Dictionary<string, string> existingMappings = new Dictionary<string, string>();
+            for (int j = 0; j < humanBoneArray?.arraySize; ++j)
+            {
+                var prop = humanBoneArray.GetArrayElementAtIndex(j);
+                SerializedProperty humanNameP = prop.FindPropertyRelative(sHumanName);
+                SerializedProperty boneNameP = prop.FindPropertyRelative(sBoneName);
+
+                existingMappings[humanNameP.stringValue] = boneNameP.stringValue;
+            }
+
+            return GetHumanBones(existingMappings, actualBones);
+        }
+
+        public static BoneWrapper[] GetHumanBones(Dictionary<string, string> existingMappings, Dictionary<Transform, bool> actualBones)
         {
             string[] humanBoneNames = HumanTrait.BoneName;
             BoneWrapper[] bones = new BoneWrapper[humanBoneNames.Length];
             for (int i = 0; i < humanBoneNames.Length; i++)
-                bones[i] = new BoneWrapper(humanBoneNames[i], serializedObject, actualBones);
+            {
+                Transform bone = null;
+
+                var humanBoneName = humanBoneNames[i];
+                if (existingMappings?.ContainsKey(humanBoneName) == true)
+                {
+                    string boneName = existingMappings[humanBoneName];
+                    bone = actualBones.Keys.FirstOrDefault(b => (b?.name == boneName));
+                }
+
+                bones[i] = new BoneWrapper(humanBoneName, bone);
+            }
             return bones;
         }
 
-        public static void ClearAll(SerializedObject serializedObject)
+        public static void ClearAll(SerializedProperty humanBoneArray, SerializedProperty humanSkeletonArray)
         {
-            ClearHumanBoneArray(serializedObject);
-            ClearSkeletonBoneArray(serializedObject);
+            ClearHumanBoneArray(humanBoneArray);
+            ClearSkeletonBoneArray(humanSkeletonArray);
         }
 
-        public static void ClearHumanBoneArray(SerializedObject serializedObject)
+        public static void ClearHumanBoneArray(SerializedProperty humanBody)
         {
-            SerializedProperty humanBody = serializedObject.FindProperty(sHuman);
             if (humanBody != null && humanBody.isArray)
                 humanBody.ClearArray();
         }
 
-        public static void ClearSkeletonBoneArray(SerializedObject serializedObject)
+        public static void ClearSkeletonBoneArray(SerializedProperty skeleton)
         {
-            SerializedProperty skeleton = serializedObject.FindProperty(sSkeleton);
             if (skeleton != null && skeleton.isArray)
                 skeleton.ClearArray();
-        }
-
-        public static void AutoSetupOnInstance(GameObject modelPrefab, SerializedObject modelImporterSerializedObject)
-        {
-            GameObject instance = GameObject.Instantiate(modelPrefab) as GameObject;
-            instance.hideFlags = HideFlags.HideAndDontSave;
-            AvatarSetupTool.AutoSetup(modelPrefab, instance, modelImporterSerializedObject);
-            GameObject.DestroyImmediate(instance);
         }
 
         public static bool IsPoseValidOnInstance(GameObject modelPrefab, SerializedObject modelImporterSerializedObject)
@@ -546,7 +563,8 @@ namespace UnityEditor
             instance.hideFlags = HideFlags.HideAndDontSave;
 
             Dictionary<Transform, bool> modelBones = GetModelBones(instance.transform, false, null);
-            BoneWrapper[] humanBones = GetHumanBones(modelImporterSerializedObject, modelBones);
+            SerializedProperty humanBoneArray = modelImporterSerializedObject.FindProperty(sHuman);
+            BoneWrapper[] humanBones = GetHumanBones(humanBoneArray, modelBones);
 
             TransferDescriptionToPose(modelImporterSerializedObject, instance.transform);
             bool valid = IsPoseValid(humanBones);
@@ -555,19 +573,19 @@ namespace UnityEditor
             return valid;
         }
 
-        public static void AutoSetup(GameObject modelPrefab, GameObject modelInstance, SerializedObject modelImporterSerializedObject)
+        /// <summary>
+        /// Gets the human bone mappings and the skeleton.
+        ///
+        /// We need to call this method when importing humanoids, in order to have a valid avatar during the import process.
+        /// </summary>
+        [RequiredByNativeCode]
+        private static void SetupHumanSkeleton(GameObject modelPrefab, ref HumanBone[] humanBoneMappingArray, out SkeletonBone[] skeletonBones, out bool hasTranslationDoF)
         {
-            SerializedProperty humanBoneArray = modelImporterSerializedObject.FindProperty(sHuman);
-            SerializedProperty hasTranslationDoF = modelImporterSerializedObject.FindProperty(sHasTranslationDoF);
+            SimpleProfiler.Begin("MapHumanBones Total");
 
-            if (humanBoneArray == null || !humanBoneArray.isArray)
-                return;
+            hasTranslationDoF = false;
 
-            SimpleProfiler.Begin("AutoSetup Total");
-
-            SimpleProfiler.Begin("ClearHumanBoneArray");
-            ClearHumanBoneArray(modelImporterSerializedObject);
-            SimpleProfiler.End();
+            var modelInstance = GameObject.Instantiate(modelPrefab);
 
             SimpleProfiler.Begin("IsBiped");
             bool isBiped = AvatarBipedMapper.IsBiped(modelInstance.transform, null);
@@ -599,16 +617,29 @@ namespace UnityEditor
 
             // Apply mapping to SerializedObject
             SimpleProfiler.Begin("ApplyMapping");
-            BoneWrapper[] humanBones = GetHumanBones(modelImporterSerializedObject, modelBones);
-            for (int i = 0; i < humanBones.Length; i++)
+
+            Dictionary<string, string> existingMappings = null;
+            if (humanBoneMappingArray != null && humanBoneMappingArray.Length > 0)
+            {
+                existingMappings = new Dictionary<string, string>();
+                for (var i = 0; i < humanBoneMappingArray.Length; ++i)
+                    existingMappings[humanBoneMappingArray[i].humanName] = humanBoneMappingArray[i].boneName;
+            }
+            List<HumanBone> humanBoneMappings = new List<HumanBone>();
+            BoneWrapper[] humanBones = GetHumanBones(existingMappings, modelBones);
+            for (int i = 0; i < humanBones.Length; ++i)
             {
                 BoneWrapper bone = humanBones[i];
                 if (mapping.ContainsKey(i))
-                    bone.bone = mapping[i];
-                else
-                    bone.bone = null;
-                bone.Serialize(modelImporterSerializedObject);
+                    humanBoneMappings.Add(
+                        new HumanBone()
+                        {
+                            boneName = mapping[i].name,
+                            humanName = bone.humanBoneName,
+                            limit = new HumanLimit() { useDefaultValues = true }
+                        });
             }
+            humanBoneMappingArray = humanBoneMappings.ToArray();
             SimpleProfiler.End();
 
             if (!isBiped)
@@ -636,16 +667,17 @@ namespace UnityEditor
                 AvatarBipedMapper.BipedPose(modelInstance, humanBones);
                 SimpleProfiler.End();
 
-                hasTranslationDoF.boolValue = true;
+                hasTranslationDoF = true;
             }
 
             // Apply pose to SerializedObject
             SimpleProfiler.Begin("TransferPose");
-            TransferPoseToDescription(modelImporterSerializedObject, modelInstance.transform);
+            skeletonBones = GetSkeletonBones(modelInstance.transform);
             SimpleProfiler.End();
 
-            SimpleProfiler.End();
-            SimpleProfiler.PrintTimes();
+            GameObject.DestroyImmediate(modelInstance);
+
+            SimpleProfiler.End(); // MapHumanBones Total
         }
 
         public static bool TestAndValidateAutoSetup(GameObject modelAsset)
@@ -678,6 +710,8 @@ namespace UnityEditor
 
             // Get CreateAvatar property
             SerializedObject serializedObject = new SerializedObject(importer);
+            SerializedProperty humanBoneArray = serializedObject.FindProperty(sHuman);
+            SerializedProperty humanSkeletonArray = serializedObject.FindProperty(sSkeleton);
             SerializedProperty animationType = serializedObject.FindProperty("m_AnimationType");
             if (animationType == null)
             {
@@ -687,14 +721,14 @@ namespace UnityEditor
 
             // Clear avatar import settings and reimport
             animationType.intValue = 2;
-            ClearAll(serializedObject);
+            ClearAll(humanBoneArray, humanSkeletonArray);
             serializedObject.ApplyModifiedProperties();
             AssetDatabase.ImportAsset(path);
 
             // Setup avatar import settings and reimport
             animationType.intValue = 3;
-            AutoSetupOnInstance(modelAsset, serializedObject);
             serializedObject.ApplyModifiedProperties();
+            // the humanoid avatar is set up during import
             AssetDatabase.ImportAsset(path);
 
             // Check if Avatar is valid
@@ -738,7 +772,7 @@ namespace UnityEditor
 
                     // Get BoneWrapper array
                     Dictionary<Transform, bool> modelBones = GetModelBones(instance.transform, false, null);
-                    BoneWrapper[] humanBones = GetHumanBones(serializedObject, modelBones);
+                    BoneWrapper[] humanBones = GetHumanBones(humanBoneArray, modelBones);
 
                     // Test that bone mapping match the one in the reference
                     bool mismatch = false;
@@ -961,17 +995,23 @@ namespace UnityEditor
             }
         }
 
-        public static void TransferPoseToDescription(SerializedObject serializedObject, Transform root)
+        public static void TransferPoseToDescription(SerializedProperty skeletonBoneArray, Transform root)
         {
-            SkeletonBone[] skeletonBones = new SkeletonBone[0];
-            if (root)
-                TransferPoseToDescription(serializedObject, root, true, ref skeletonBones);
+            SkeletonBone[] skeletonBones = GetSkeletonBones(root);
 
-            SerializedProperty skeletonBoneArray = serializedObject.FindProperty(sSkeleton);
             ModelImporter.UpdateSkeletonPose(skeletonBones, skeletonBoneArray);
         }
 
-        private static void TransferPoseToDescription(SerializedObject serializedObject, Transform transform, bool isRoot, ref SkeletonBone[] skeletonBones)
+        public static SkeletonBone[] GetSkeletonBones(Transform root)
+        {
+            List<SkeletonBone> skeletonBones = new List<SkeletonBone>();
+            if (root)
+                TransferPoseToDescription(root, true, skeletonBones);
+
+            return skeletonBones.ToArray();
+        }
+
+        private static void TransferPoseToDescription(Transform transform, bool isRoot, List<SkeletonBone> skeletonBones)
         {
             SkeletonBone skeletonBone = new SkeletonBone();
 
@@ -981,10 +1021,10 @@ namespace UnityEditor
             skeletonBone.rotation = transform.localRotation;
             skeletonBone.scale = transform.localScale;
 
-            ArrayUtility.Add(ref skeletonBones, skeletonBone);
+            skeletonBones.Add(skeletonBone);
 
             foreach (Transform child in transform)
-                TransferPoseToDescription(serializedObject, child, false, ref skeletonBones);
+                TransferPoseToDescription(child, false, skeletonBones);
         }
 
         public static void TransferDescriptionToPose(SerializedObject serializedObject, Transform root)

@@ -64,8 +64,6 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("UnityEditor.AR")]
 [assembly: InternalsVisibleTo("UnityEditor.SpatialTracking")]
 [assembly: InternalsVisibleTo("Unity.WindowsMRAutomation")]
-[assembly: InternalsVisibleTo("Unity.VisualEffectGraph.Editor")]
-[assembly: InternalsVisibleTo("Unity.VisualEffectGraph.Editor-testable")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridge.001")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridge.002")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEditorBridge.003")]

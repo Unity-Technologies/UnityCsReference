@@ -1820,7 +1820,11 @@ namespace UnityEditor
 
                 if (foldByKind)
                 {
-                    string kindName = string.Format("{0} icons ({1}/{2})", key.m_Label, kindGroup.Key.m_SetIconSlots, kindGroup.Key.m_IconSlotCount);
+                    GUIContent kindName = new GUIContent(
+                        string.Format("{0} icons ({1}/{2})", key.m_Label, kindGroup.Key.m_SetIconSlots, kindGroup.Key.m_IconSlotCount),
+                        key.m_KindDescription
+                    );
+
                     Rect rectKindLabel = GUILayoutUtility.GetRect(kSlotSize, labelHeight);
                     rectKindLabel.x += 2;
                     key.m_State = EditorGUI.Foldout(rectKindLabel, key.m_State, kindName, EditorStyles.foldout);
@@ -2190,7 +2194,11 @@ namespace UnityEditor
             if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
                 return only_4_x_profiles;
 
-            if (activeBuildTargetGroup == BuildTargetGroup.WSA)
+            ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(activeBuildTargetGroup);
+            if (activeBuildTargetGroup == BuildTargetGroup.XboxOne && currBackend == ScriptingImplementation.Mono2x)
+                return only_2_0_profiles;
+
+            if (activeBuildTargetGroup == BuildTargetGroup.WSA || activeBuildTargetGroup == BuildTargetGroup.XboxOne)
                 return wsa_profiles;
 
             return only_2_0_profiles;

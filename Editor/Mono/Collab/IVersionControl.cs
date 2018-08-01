@@ -6,8 +6,10 @@ namespace UnityEditor.Collaboration
 {
     internal interface IVersionControl
     {
+        bool SupportsDownloads();
         bool OnEnableVersionControl();
         void OnDisableVersionControl();
         ChangeItem[] GetChanges();
+        void MergeDownloadedFiles(bool isFullDownload);
     }
 }

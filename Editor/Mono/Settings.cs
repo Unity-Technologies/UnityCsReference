@@ -181,7 +181,8 @@ namespace UnityEditor
 
         public PrefKey() { m_Loaded = true; }
 
-        public PrefKey(string name, string shortcut)
+        [Obsolete("Use the new ShortcutManager attrbiute [Shortcut]")]
+        private PrefKey(string name, string shortcut)
         {
             this.m_name = name;
             this.m_Shortcut = shortcut;

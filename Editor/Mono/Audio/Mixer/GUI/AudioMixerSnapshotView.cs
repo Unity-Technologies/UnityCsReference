@@ -60,7 +60,7 @@ namespace UnityEditor
 
             ReorderableList reorderableList = new ReorderableList(m_Snapshots, typeof(AudioMixerSnapshotController), true, false, false, false);
             reorderableList.onReorderCallback = EndDragChild;
-            reorderableList.elementHeight = 16f;
+            reorderableList.elementHeight = 18f;
             reorderableList.headerHeight = 0f;
             reorderableList.footerHeight = 0f;
             reorderableList.showDefaultBackground = false;
@@ -176,8 +176,33 @@ namespace UnityEditor
             return m_Snapshots[index].name;
         }
 
+        private string DeduplicateNewName(int index, string newName)
+        {
+            int suffix = 1;
+            string source = newName;
+            bool duplicate;
+            do
+            {
+                duplicate = false;
+                for (int i = 0; i < m_Snapshots.Count; i++)
+                {
+                    if (i != index && m_Snapshots[i].name == newName)
+                    {
+                        duplicate = true;
+                        newName = String.Format("{0} ({1:D2})", source, suffix);
+                        suffix++;
+                        break;
+                    }
+                }
+            }
+            while (duplicate);
+            return newName;
+        }
+
         public void NameChanged(int index, string newName)
         {
+            Undo.RecordObject(m_Snapshots[index], "Rename snapshot");
+            newName = DeduplicateNewName(index, newName);
             m_Snapshots[index].name = newName;
             SaveToBackend();
         }

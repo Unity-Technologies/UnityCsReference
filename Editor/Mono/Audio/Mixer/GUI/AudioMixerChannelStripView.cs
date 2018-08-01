@@ -816,6 +816,14 @@ namespace UnityEditor
             public bool isSelected;
         }
 
+        private void RecordSelectedGroupUndoState(List<AudioMixerGroupController> selection, string text)
+        {
+            foreach (var g in selection)
+            {
+                Undo.RecordObject(g, text);
+            }
+        }
+
         private bool DoSoloButton(Rect r, AudioMixerGroupController group, List<AudioMixerGroupController> allGroups, List<AudioMixerGroupController> selection)
         {
             Event evt = Event.current;
@@ -823,7 +831,7 @@ namespace UnityEditor
             // Right click toggle
             if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.solo))
             {
-                Undo.RecordObject(group, "Change solo state");
+                RecordSelectedGroupUndoState(selection, "Change solo state");
                 foreach (var g in allGroups)
                     g.solo = false;
                 evt.Use();
@@ -833,7 +841,7 @@ namespace UnityEditor
             bool newState = GUI.Toggle(r, group.solo, styles.soloGUIContent, AudioMixerDrawUtils.styles.soloToggle);
             if (newState != group.solo)
             {
-                Undo.RecordObject(group, "Change solo state");
+                RecordSelectedGroupUndoState(selection, "Change solo state");
                 group.solo = !group.solo;
                 foreach (var g in selection)
                     g.solo = group.solo;
@@ -850,7 +858,7 @@ namespace UnityEditor
             // Right click toggle
             if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.mute))
             {
-                Undo.RecordObject(group, "Change mute state");
+                RecordSelectedGroupUndoState(selection, "Change mute state");
                 if (allGroups.Any(g => g.solo))
                     return false;
                 foreach (var g in allGroups)
@@ -868,7 +876,7 @@ namespace UnityEditor
 
             if (newState != group.mute)
             {
-                Undo.RecordObject(group, "Change mute state");
+                RecordSelectedGroupUndoState(selection, "Change mute state");
                 group.mute = !group.mute;
                 foreach (var g in selection)
                     g.mute = group.mute;
@@ -884,7 +892,7 @@ namespace UnityEditor
             // Right click toggle
             if (evt.type == EventType.MouseUp && evt.button == 1 && r.Contains(evt.mousePosition) && allGroups.Any(g => g.bypassEffects))
             {
-                Undo.RecordObject(group, "Change bypass effects state");
+                RecordSelectedGroupUndoState(selection, "Change bypass state");
                 foreach (var g in allGroups)
                     g.bypassEffects = false;
                 evt.Use();
@@ -894,7 +902,7 @@ namespace UnityEditor
             bool newState = GUI.Toggle(r, group.bypassEffects, styles.bypassGUIContent, AudioMixerDrawUtils.styles.bypassToggle);
             if (newState != group.bypassEffects)
             {
-                Undo.RecordObject(group, "Change bypass effects state");
+                RecordSelectedGroupUndoState(selection, "Change bypass state");
                 group.bypassEffects = !group.bypassEffects;
                 foreach (var g in selection)
                     g.bypassEffects = group.bypassEffects;

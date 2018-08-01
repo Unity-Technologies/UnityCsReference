@@ -24,9 +24,9 @@ namespace UnityEngine.Experimental.UIElements
     {
         public new class UxmlTraits : BaseField<T>.UxmlTraits
         {
-            UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "maxLength", defaultValue = kMaxLengthNone };
+            UxmlIntAttributeDescription m_MaxLength = new UxmlIntAttributeDescription { name = "max-length", obsoleteNames = new[] { "maxLength" }, defaultValue = kMaxLengthNone };
             UxmlBoolAttributeDescription m_Password = new UxmlBoolAttributeDescription { name = "password" };
-            UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "maskCharacter", defaultValue = "*" };
+            UxmlStringAttributeDescription m_MaskCharacter = new UxmlStringAttributeDescription { name = "mask-character", obsoleteNames = new[] { "maskCharacter" }, defaultValue = "*" };
             UxmlStringAttributeDescription m_Text = new UxmlStringAttributeDescription { name = "text" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
@@ -34,14 +34,14 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 TextInputFieldBase<T> field = ((TextInputFieldBase<T>)ve);
-                field.maxLength = m_MaxLength.GetValueFromBag(bag);
-                field.isPasswordField = m_Password.GetValueFromBag(bag);
-                string maskCharacter = m_MaskCharacter.GetValueFromBag(bag);
+                field.maxLength = m_MaxLength.GetValueFromBag(bag, cc);
+                field.isPasswordField = m_Password.GetValueFromBag(bag, cc);
+                string maskCharacter = m_MaskCharacter.GetValueFromBag(bag, cc);
                 if (maskCharacter != null && maskCharacter.Length > 0)
                 {
                     field.maskChar = maskCharacter[0];
                 }
-                ((ITextElement)ve).text = m_Text.GetValueFromBag(bag);
+                ((ITextElement)ve).text = m_Text.GetValueFromBag(bag, cc);
             }
         }
 

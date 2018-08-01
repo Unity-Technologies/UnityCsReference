@@ -15,18 +15,18 @@ namespace UnityEditor.Experimental.UIElements
         public new class UxmlTraits : BaseField<Color>.UxmlTraits
         {
             UxmlColorAttributeDescription m_Value = new UxmlColorAttributeDescription { name = "value" };
-            UxmlBoolAttributeDescription m_ShowEyeDropper = new UxmlBoolAttributeDescription { name = "showEyeDropper", defaultValue = true };
-            UxmlBoolAttributeDescription m_ShowAlpha = new UxmlBoolAttributeDescription { name = "showAlpha", defaultValue = true };
+            UxmlBoolAttributeDescription m_ShowEyeDropper = new UxmlBoolAttributeDescription { name = "show-eye-dropper", obsoleteNames = new[] { "showEyeDropper" }, defaultValue = true };
+            UxmlBoolAttributeDescription m_ShowAlpha = new UxmlBoolAttributeDescription { name = "show-alpha", obsoleteNames = new[] { "showAlpha" }, defaultValue = true };
             UxmlBoolAttributeDescription m_Hdr = new UxmlBoolAttributeDescription { name = "hdr" };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
 
-                ((ColorField)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
-                ((ColorField)ve).showEyeDropper = m_ShowEyeDropper.GetValueFromBag(bag);
-                ((ColorField)ve).showAlpha = m_ShowAlpha.GetValueFromBag(bag);
-                ((ColorField)ve).hdr = m_Hdr.GetValueFromBag(bag);
+                ((ColorField)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
+                ((ColorField)ve).showEyeDropper = m_ShowEyeDropper.GetValueFromBag(bag, cc);
+                ((ColorField)ve).showAlpha = m_ShowAlpha.GetValueFromBag(bag, cc);
+                ((ColorField)ve).hdr = m_Hdr.GetValueFromBag(bag, cc);
             }
         }
 

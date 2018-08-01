@@ -88,7 +88,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                contentContainer.Add(child);
+                contentContainer?.Add(child);
             }
 
             child.m_LogicalParent = this;
@@ -102,7 +102,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                contentContainer.Insert(index, element);
+                contentContainer?.Insert(index, element);
             }
 
             element.m_LogicalParent = this;
@@ -116,7 +116,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                contentContainer.Remove(element);
+                contentContainer?.Remove(element);
             }
         }
 
@@ -128,7 +128,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                contentContainer.RemoveAt(index);
+                contentContainer?.RemoveAt(index);
             }
         }
 
@@ -140,7 +140,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                contentContainer.Clear();
+                contentContainer?.Clear();
             }
         }
 
@@ -151,7 +151,7 @@ namespace UnityEngine.Experimental.UIElements
                 return shadow.ElementAt(index);
             }
 
-            return contentContainer.ElementAt(index);
+            return contentContainer?.ElementAt(index);
         }
 
         public VisualElement this[int key]
@@ -167,7 +167,7 @@ namespace UnityEngine.Experimental.UIElements
                 {
                     return shadow.childCount;
                 }
-                return contentContainer.childCount;
+                return contentContainer?.childCount ?? 0;
             }
         }
 
@@ -177,7 +177,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return shadow.IndexOf(element);
             }
-            return contentContainer.IndexOf(element);
+            return contentContainer?.IndexOf(element) ?? -1;
         }
 
         public IEnumerable<VisualElement> Children()
@@ -186,7 +186,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return shadow.Children();
             }
-            return contentContainer.Children();
+            return contentContainer?.Children() ?? s_EmptyList;
         }
 
         public void Sort(Comparison<VisualElement> comp)
@@ -197,7 +197,7 @@ namespace UnityEngine.Experimental.UIElements
             }
             else
             {
-                contentContainer.Sort(comp);
+                contentContainer?.Sort(comp);
             }
         }
 
@@ -650,7 +650,17 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return shadow.Children().GetEnumerator();
             }
-            return contentContainer.GetEnumerator();
+
+            IEnumerator<VisualElement> result;
+            if (contentContainer != null)
+            {
+                result = contentContainer.GetEnumerator();
+            }
+            else
+            {
+                result = (IEnumerator<VisualElement>)s_EmptyList.GetEnumerator();
+            }
+            return result;
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -659,7 +669,18 @@ namespace UnityEngine.Experimental.UIElements
             {
                 return ((IEnumerable)shadow.Children()).GetEnumerator();
             }
-            return ((IEnumerable)contentContainer).GetEnumerator();
+
+            IEnumerator result;
+            if (contentContainer != null)
+            {
+                result = ((IEnumerable)contentContainer).GetEnumerator();
+            }
+            else
+            {
+                result = s_EmptyList.GetEnumerator();
+            }
+
+            return result;
         }
     }
 }

@@ -29,8 +29,8 @@ namespace UnityEditor.Experimental.UIElements
 
                 var f = (BoundsIntField)ve;
                 f.SetValueWithoutNotify(new BoundsInt(
-                    new Vector3Int(m_PositionXValue.GetValueFromBag(bag), m_PositionYValue.GetValueFromBag(bag), m_PositionZValue.GetValueFromBag(bag)),
-                    new Vector3Int(m_SizeXValue.GetValueFromBag(bag), m_SizeYValue.GetValueFromBag(bag), m_SizeZValue.GetValueFromBag(bag))));
+                    new Vector3Int(m_PositionXValue.GetValueFromBag(bag, cc), m_PositionYValue.GetValueFromBag(bag, cc), m_PositionZValue.GetValueFromBag(bag, cc)),
+                    new Vector3Int(m_SizeXValue.GetValueFromBag(bag, cc), m_SizeYValue.GetValueFromBag(bag, cc), m_SizeZValue.GetValueFromBag(bag, cc))));
             }
         }
 

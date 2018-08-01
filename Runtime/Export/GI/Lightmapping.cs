@@ -448,7 +448,7 @@ namespace UnityEngine
                         case UnityEngine.LightType.Directional: LightmapperUtils.Extract(l, ref dir); ld.Init(ref dir); break;
                         case UnityEngine.LightType.Point: LightmapperUtils.Extract(l, ref point); ld.Init(ref point); break;
                         case UnityEngine.LightType.Spot: LightmapperUtils.Extract(l, ref spot); ld.Init(ref spot); break;
-                        case UnityEngine.LightType.Area: LightmapperUtils.Extract(l, ref rect); ld.Init(ref rect); break;
+                        case UnityEngine.LightType.Rectangle: LightmapperUtils.Extract(l, ref rect); ld.Init(ref rect); break;
                         case UnityEngine.LightType.Disc: LightmapperUtils.Extract(l, ref disc); ld.Init(ref disc); break;
                         default: ld.InitNoBake(l.GetInstanceID()); break;
                     }

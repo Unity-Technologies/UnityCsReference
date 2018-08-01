@@ -1097,7 +1097,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (graphElement.IsResizable())
             {
                 graphElement.shadow.Add(new Resizer());
-                graphElement.style.borderBottom = 6;
+                graphElement.style.borderBottomWidth = 6;
             }
 
             int newLayer = graphElement.layer;

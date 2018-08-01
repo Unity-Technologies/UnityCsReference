@@ -66,17 +66,16 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static readonly GUIContent[] toolContents =
+            public static GUIContent[] toolContents =
             {
-                EditorGUIUtility.IconContent("Grid.Default", "|Select an area of the grid (S)"),
-                EditorGUIUtility.IconContent("Grid.MoveTool", "|Move selection with active brush (M)"),
-                EditorGUIUtility.IconContent("Grid.PaintTool", "|Paint with active brush (B)"),
-                EditorGUIUtility.IconContent("Grid.BoxTool", "|Paint a filled box with active brush (U)"),
-                EditorGUIUtility.IconContent("Grid.PickingTool", "|Pick or marquee select new brush (Ctrl)."),
-                EditorGUIUtility.IconContent("Grid.EraserTool", "|Erase with active brush (Shift)"),
-                EditorGUIUtility.IconContent("Grid.FillTool", "|Flood fill with active brush (G)")
+                EditorGUIUtility.IconContent("Grid.Default", "|Select an area of the grid (" + GetKeysFromToolName("Grid Painting/Select") + ")"),
+                EditorGUIUtility.IconContent("Grid.MoveTool", "|Move selection with active brush (" + GetKeysFromToolName("Grid Painting/Move") + ")"),
+                EditorGUIUtility.IconContent("Grid.PaintTool", "|Paint with active brush (" + GetKeysFromToolName("Grid Painting/Brush") + ")"),
+                EditorGUIUtility.IconContent("Grid.BoxTool", "|Paint a filled box with active brush (" + GetKeysFromToolName("Grid Painting/Rectangle") + ")"),
+                EditorGUIUtility.IconContent("Grid.PickingTool", "|Pick or marquee select new brush (" + GetKeysFromToolName("Grid Painting/Picker") + ")"),
+                EditorGUIUtility.IconContent("Grid.EraserTool", "|Erase with active brush (" + GetKeysFromToolName("Grid Painting/Erase") + ")"),
+                EditorGUIUtility.IconContent("Grid.FillTool", "|Flood fill with active brush (" + GetKeysFromToolName("Grid Painting/Fill") + ")")
             };
-
 
             public static readonly GUIContent emptyProjectInfo = EditorGUIUtility.TrTextContent("Create a new palette in the dropdown above.");
             public static readonly GUIContent emptyPaletteInfo = EditorGUIUtility.TrTextContent("Drag Tile, Sprite or Sprite Texture assets here.");
@@ -103,6 +102,23 @@ namespace UnityEditor
             {
                 GUIStyle toolbarStyle = "Command";
                 toolbarWidth = toolContents.Sum(x => toolbarStyle.CalcSize(x).x);
+            }
+
+            private static string GetKeysFromToolName(string id)
+            {
+                return ShortcutIntegration.instance.GetKeyCombinationFor(id);
+            }
+
+            public static void UpdateTooltips()
+            {
+                int i = 0;
+                toolContents[i++].tooltip = "|Select an area of the grid (" + GetKeysFromToolName("Grid Painting/Select") + ")";
+                toolContents[i++].tooltip = "|Move selection with active brush (" + GetKeysFromToolName("Grid Painting/Move") + ")";
+                toolContents[i++].tooltip = "|Paint with active brush (" + GetKeysFromToolName("Grid Painting/Brush") + ")";
+                toolContents[i++].tooltip = "|Paint a filled box with active brush (" + GetKeysFromToolName("Grid Painting/Rectangle") + ")";
+                toolContents[i++].tooltip = "|Pick or marquee select new brush (" + GetKeysFromToolName("Grid Painting/Picker") + ")";
+                toolContents[i++].tooltip = "|Erase with active brush (" + GetKeysFromToolName("Grid Painting/Erase") + ")";
+                toolContents[i++].tooltip = "|Flood fill with active brush (" + GetKeysFromToolName("Grid Painting/Fill") + ")";
             }
         }
 
@@ -613,6 +629,7 @@ namespace UnityEditor
             GridPaletteBrushes.FlushCache();
             EditMode.editModeStarted += OnEditModeStart;
             EditMode.editModeEnded += OnEditModeEnd;
+            ShortcutIntegration.instance.profileManager.shortcutsModified += UpdateTooltips;
             GridSelection.gridSelectionChanged += OnGridSelectionChanged;
             GridPaintingState.RegisterPainterInterest(this);
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
@@ -640,6 +657,11 @@ namespace UnityEditor
             Tools.onToolChanged += ToolChanged;
 
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
+        }
+
+        private static void UpdateTooltips(IShortcutProfileManager obj)
+        {
+            Styles.UpdateTooltips();
         }
 
         private void PrefabInstanceUpdated(GameObject updatedPrefab)
@@ -692,6 +714,7 @@ namespace UnityEditor
 
             EditMode.editModeStarted -= OnEditModeStart;
             EditMode.editModeEnded -= OnEditModeEnd;
+            ShortcutIntegration.instance.profileManager.shortcutsModified -= UpdateTooltips;
             Tools.onToolChanged -= ToolChanged;
             GridSelection.gridSelectionChanged -= OnGridSelectionChanged;
             SceneView.onSceneGUIDelegate -= OnSceneViewGUI;

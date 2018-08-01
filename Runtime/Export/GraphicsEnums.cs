@@ -66,7 +66,12 @@ namespace UnityEngine
         Spot = 0,
         Directional = 1,
         Point = 2,
+
+        //[System.Obsolete("Enum member LightType.Area has been deprecated. Use LightType.Rectangle instead (UnityUpgradable) -> Rectangle", true)]
+        // For now, we will have both Area and Rectangle in the source, but this will be removed once the SRP package is in.
         Area = 3,
+
+        Rectangle = 3,
         Disc = 4
     }
 

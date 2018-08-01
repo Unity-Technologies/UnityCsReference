@@ -1994,14 +1994,8 @@ namespace UnityEditor
             }
             else
             {
-                // Make sure that comma & period are interchangable.
-                str = str.Replace(',', '.');
-
-                if (!double.TryParse(str, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out value))
-                {
-                    value = ExpressionEvaluator.Evaluate<double>(str);
-                    return true;
-                }
+                if (!ExpressionEvaluator.Evaluate(str, out value))
+                    return false;
 
                 // Don't allow user to enter NaN - it opens a can of worms that can trigger many latent bugs,
                 // and is not really useful for anything.
@@ -2018,11 +2012,7 @@ namespace UnityEditor
 
         internal static bool StringToLong(string str, out long value)
         {
-            if (!long.TryParse(str, out value))
-            {
-                value = ExpressionEvaluator.Evaluate<long>(str);
-            }
-            return true;
+            return ExpressionEvaluator.Evaluate(str, out value);
         }
 
         internal static int ArraySizeField(Rect position, GUIContent label, int value, GUIStyle style)
@@ -2125,20 +2115,19 @@ namespace UnityEditor
 
         internal static float DelayedFloatFieldInternal(Rect position, GUIContent label, float value, GUIStyle style)
         {
-            float oldVal = value;
-            float newVal = oldVal;
+            bool wasChanged = GUI.changed;
 
             BeginChangeCheck();
             int id = GUIUtility.GetControlID(s_DelayedTextFieldHash, FocusType.Keyboard, position);
-            string floatStr = DelayedTextFieldInternal(position, id, label, oldVal.ToString(CultureInfo.InvariantCulture), s_AllowedCharactersForFloat, style);
+            string floatStr = DelayedTextFieldInternal(position, id, label, value.ToString(CultureInfo.InvariantCulture), s_AllowedCharactersForFloat, style);
             if (EndChangeCheck())
             {
-                if (float.TryParse(floatStr, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out newVal) && newVal != oldVal)
-                {
-                    GUI.changed = true;
-                }
+                double newValue;
+                if (StringToDouble(floatStr, out newValue) && (float)newValue != value)
+                    return (float)newValue;
+                GUI.changed = wasChanged;
             }
-            return newVal;
+            return value;
         }
 
         internal static void DelayedFloatFieldInternal(Rect position, SerializedProperty property, GUIContent label)
@@ -2155,51 +2144,37 @@ namespace UnityEditor
 
         internal static double DelayedDoubleFieldInternal(Rect position, GUIContent label, double value, GUIStyle style)
         {
-            double oldVal = value;
-            double newVal = oldVal;
-
             if (label != null)
                 position = PrefixLabel(position, label);
 
+            bool wasChanged = GUI.changed;
             BeginChangeCheck();
-            string doubleStr = DelayedTextFieldInternal(position, oldVal.ToString(CultureInfo.InvariantCulture), s_AllowedCharactersForFloat, style);
+            string doubleStr = DelayedTextFieldInternal(position, value.ToString(CultureInfo.InvariantCulture), s_AllowedCharactersForFloat, style);
             if (EndChangeCheck())
             {
-                if (double.TryParse(doubleStr, NumberStyles.Float, CultureInfo.InvariantCulture.NumberFormat, out newVal) && newVal != oldVal)
-                {
-                    GUI.changed = true;
-                }
+                double newValue;
+                if (StringToDouble(doubleStr, out newValue) && newValue != value)
+                    return newValue;
+                GUI.changed = wasChanged;
             }
-            return newVal;
+            return value;
         }
 
         internal static int DelayedIntFieldInternal(Rect position, GUIContent label, int value, GUIStyle style)
         {
-            int oldVal = value;
-            int newVal = oldVal;
+            bool wasChanged = GUI.changed;
 
             BeginChangeCheck();
             int id = GUIUtility.GetControlID(s_DelayedTextFieldHash, FocusType.Keyboard, position);
-            string intStr = DelayedTextFieldInternal(position, id, label, oldVal.ToString(), s_AllowedCharactersForInt, style);
+            string intStr = DelayedTextFieldInternal(position, id, label, value.ToString(), s_AllowedCharactersForInt, style);
             if (EndChangeCheck())
             {
-                if (int.TryParse(intStr, out newVal))
-                {
-                    if (newVal != oldVal)
-                    {
-                        GUI.changed = true;
-                    }
-                }
-                else
-                {
-                    newVal = ExpressionEvaluator.Evaluate<int>(intStr);
-                    if (newVal != oldVal)
-                    {
-                        GUI.changed = true;
-                    }
-                }
+                int newValue;
+                if (ExpressionEvaluator.Evaluate(intStr, out newValue) && newValue != value)
+                    return newValue;
+                GUI.changed = wasChanged;
             }
-            return newVal;
+            return value;
         }
 
         internal static void DelayedIntFieldInternal(Rect position, SerializedProperty property, GUIContent label)
@@ -5779,12 +5754,14 @@ This warning only shows up in development builds.", helpTopic, pageName);
             }
         }
 
-
         private static Material GetPreviewMaterial(ref Material m, string shaderPath)
         {
-            if (m != null)
-                return m;
-            return new Material(EditorGUIUtility.LoadRequired(shaderPath) as Shader) {hideFlags = HideFlags.HideAndDontSave};
+            if (m == null)
+            {
+                m = new Material(EditorGUIUtility.LoadRequired(shaderPath) as Shader);
+                m.hideFlags = HideFlags.HideAndDontSave;
+            }
+            return m;
         }
 
         private static Material s_ColorMaterial, s_AlphaMaterial, s_TransparentMaterial, s_NormalmapMaterial;

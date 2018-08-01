@@ -66,6 +66,7 @@ namespace UnityEngineInternal.Video
         extern public VideoPixelFormat GetPixelFormat();
 
         extern public bool CanNotSkipOnDrop();
+        extern public void SetSkipOnDrop(bool skipOnDrop);
         extern public bool GetTexture(Texture texture, out long outputFrameNum);
 
         public delegate void Callback();

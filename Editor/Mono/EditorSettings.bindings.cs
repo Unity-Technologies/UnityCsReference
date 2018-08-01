@@ -203,16 +203,6 @@ namespace UnityEditor
         [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
         public static extern string projectGenerationRootNamespace { get; set; }
 
-        internal static extern string Internal_UserGeneratedProjectSuffix
-        {
-            [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-            [NativeMethod("GetUserGeneratedProjectSuffix")]
-            get;
-            [StaticAccessor("GetEditorSettings()", StaticAccessorType.Dot)]
-            [NativeMethod("SetUserGeneratedProjectSuffix")]
-            set;
-        }
-
         [StaticAccessor("GetEditorUserSettings()", StaticAccessorType.Dot)]
         private static extern string GetConfigValue(string name);
 

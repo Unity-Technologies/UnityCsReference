@@ -18,11 +18,12 @@ namespace UnityEngine.Experimental.Rendering
         internal static void CleanupRenderPipeline()
         {
             if (s_CurrentPipelineAsset != null)
+            {
                 s_CurrentPipelineAsset.DestroyCreatedInstances();
-            s_CurrentPipelineAsset = null;
-            currentPipeline = null;
-
-            SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
+                s_CurrentPipelineAsset = null;
+                currentPipeline = null;
+                SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
+            }
         }
 
         [RequiredByNativeCode]

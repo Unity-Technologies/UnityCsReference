@@ -13,19 +13,19 @@ namespace UnityEngine.Experimental.UIElements
 
         public new class UxmlTraits : BaseField<Vector2>.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_MinValue = new UxmlFloatAttributeDescription { name = "minValue", defaultValue = 0 };
-            UxmlFloatAttributeDescription m_MaxValue = new UxmlFloatAttributeDescription { name = "maxValue", defaultValue = kDefaultHighValue };
-            UxmlFloatAttributeDescription m_LowLimit = new UxmlFloatAttributeDescription { name = "lowLimit", defaultValue = float.MinValue };
-            UxmlFloatAttributeDescription m_HighLimit = new UxmlFloatAttributeDescription { name = "highLimit", defaultValue = float.MaxValue };
+            UxmlFloatAttributeDescription m_MinValue = new UxmlFloatAttributeDescription { name = "min-value", defaultValue = 0 };
+            UxmlFloatAttributeDescription m_MaxValue = new UxmlFloatAttributeDescription { name = "max-value", defaultValue = kDefaultHighValue };
+            UxmlFloatAttributeDescription m_LowLimit = new UxmlFloatAttributeDescription { name = "low-limit", defaultValue = float.MinValue };
+            UxmlFloatAttributeDescription m_HighLimit = new UxmlFloatAttributeDescription { name = "high-limit", defaultValue = float.MaxValue };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
 
                 var slider = ((MinMaxSlider)ve);
-                slider.SetValueWithoutNotify(new Vector2(m_MinValue.GetValueFromBag(bag), m_MaxValue.GetValueFromBag(bag)));
-                slider.lowLimit = m_LowLimit.GetValueFromBag(bag);
-                slider.highLimit = m_HighLimit.GetValueFromBag(bag);
+                slider.SetValueWithoutNotify(new Vector2(m_MinValue.GetValueFromBag(bag, cc), m_MaxValue.GetValueFromBag(bag, cc)));
+                slider.lowLimit = m_LowLimit.GetValueFromBag(bag, cc);
+                slider.highLimit = m_HighLimit.GetValueFromBag(bag, cc);
             }
         }
 

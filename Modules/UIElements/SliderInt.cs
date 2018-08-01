@@ -13,9 +13,9 @@ namespace UnityEngine.Experimental.UIElements
 
         public new class UxmlTraits : BaseSlider<int>.UxmlTraits
         {
-            UxmlIntAttributeDescription m_LowValue = new UxmlIntAttributeDescription { name = "lowValue" };
-            UxmlIntAttributeDescription m_HighValue = new UxmlIntAttributeDescription { name = "highValue", defaultValue = kDefaultHighValue };
-            UxmlIntAttributeDescription m_PageSize = new UxmlIntAttributeDescription { name = "pageSize", defaultValue = (int)kDefaultPageSize };
+            UxmlIntAttributeDescription m_LowValue = new UxmlIntAttributeDescription { name = "low-value" };
+            UxmlIntAttributeDescription m_HighValue = new UxmlIntAttributeDescription { name = "high-value", defaultValue = kDefaultHighValue };
+            UxmlIntAttributeDescription m_PageSize = new UxmlIntAttributeDescription { name = "page-size", defaultValue = (int)kDefaultPageSize };
             UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Vertical };
             UxmlIntAttributeDescription m_Value = new UxmlIntAttributeDescription { name = "value" };
 
@@ -29,11 +29,11 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 SliderInt slider = ((SliderInt)ve);
-                slider.lowValue = m_LowValue.GetValueFromBag(bag);
-                slider.highValue = m_HighValue.GetValueFromBag(bag);
-                slider.direction = m_Direction.GetValueFromBag(bag);
-                slider.pageSize = m_PageSize.GetValueFromBag(bag);
-                slider.SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
+                slider.lowValue = m_LowValue.GetValueFromBag(bag, cc);
+                slider.highValue = m_HighValue.GetValueFromBag(bag, cc);
+                slider.direction = m_Direction.GetValueFromBag(bag, cc);
+                slider.pageSize = m_PageSize.GetValueFromBag(bag, cc);
+                slider.SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
             }
         }
 

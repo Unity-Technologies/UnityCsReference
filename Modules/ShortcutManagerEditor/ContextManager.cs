@@ -34,7 +34,7 @@ namespace UnityEditor.ShortcutManagement
 
         List<IShortcutToolContext> m_ToolContexts = new List<IShortcutToolContext>();
 
-        public int activeContextCount => 1 + ((m_FocusedWindow != null && m_FocusedWindow.IsAlive) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
+        public int activeContextCount => 1 + ((m_FocusedWindow != null && m_FocusedWindow.IsAlive && m_FocusedWindow.Target != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
 
         public void SetFocusedWindow(EditorWindow window)
         {
@@ -119,7 +119,7 @@ namespace UnityEditor.ShortcutManagement
             if (type == globalContextType)
                 return globalContext;
             if (m_FocusedWindow != null && m_FocusedWindow.IsAlive && type.IsInstanceOfType(m_FocusedWindow.Target))
-                return m_FocusedWindow;
+                return m_FocusedWindow.Target;
 
             object priorityContextType = GetPriorityContextOfType(type);
             if (priorityContextType != null)

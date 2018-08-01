@@ -56,7 +56,7 @@ namespace UnityEditor
             private static GUIContent missingPrefabAsset = EditorGUIUtility.TrTextContent("Missing", "The source Prefab or Model has been deleted.");
 
             // Matrix based on two enums:
-            // Columns correspond to PrefabTypeUtility.PrefabTypes (see comments above rows).
+            // Columns correspond to PrefabTypeUtility.PrefabAssetType (see comments above rows).
             // Rows correspond to PrefabTypeUtility.PrefabInstanceStatus (None, Connected, Disconnected, Missing).
             // If missing, both enums will be "Missing".
             public GUIContent[,] goTypeLabel =
@@ -216,35 +216,7 @@ namespace UnityEditor
             EditorGUILayout.EndVertical();
         }
 
-        public override void OnInspectorGUI()
-        {
-            if (m_IsAsset && m_AllOfSamePrefabType)
-            {
-                if (Unsupported.IsDeveloperBuild())
-                    ShowPrefabGameObjectTree();
-            }
-        }
-
-        void ShowPrefabGameObjectTree()
-        {
-            GUILayout.Space(20);
-
-            if (Selection.instanceIDs.Length > 1)
-            {
-                GUILayout.Label("Multiple Prefab Assets selected", EditorStyles.miniLabel);
-                return;
-            }
-
-            GUILayout.Label("Prefab Hierarchy", EditorStyles.boldLabel);
-            int indent = 0;
-            IterateOverGameObjects(target as GameObject, ref indent, (o, i) =>
-            {
-                EditorGUILayout.BeginHorizontal();
-                GUILayout.Space(indent * 16);
-                GUILayout.Label(o.name, EditorStyles.miniLabel);
-                EditorGUILayout.EndHorizontal();
-            });
-        }
+        public override void OnInspectorGUI() {}
 
         static void IterateOverGameObjects(GameObject obj, ref int indent, Action<GameObject, int> action)
         {
@@ -850,9 +822,7 @@ namespace UnityEditor
                         HandleUtility.ignoreRaySnapObjects = dragObject.GetComponentsInChildren<Transform>();
 
                     DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-                    object hit = null;
-                    if (!EditorSceneManager.IsPreviewScene(destinationScene))
-                        hit = HandleUtility.RaySnap(HandleUtility.GUIPointToWorldRay(evt.mousePosition)); // TODO: This only works for normal scenes because preview scene colliders are not added to the physX scene
+                    object hit = HandleUtility.RaySnap(HandleUtility.GUIPointToWorldRay(evt.mousePosition));
 
                     if (hit != null)
                     {

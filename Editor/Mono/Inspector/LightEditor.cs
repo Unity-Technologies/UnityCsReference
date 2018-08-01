@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using System;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -44,11 +45,18 @@ namespace UnityEditor
             public SerializedProperty bakedShadowRadiusProp { get; private set; }
             public SerializedProperty bakedShadowAngleProp { get; private set; }
 
-
             Texture2D m_KelvinGradientTexture;
             const float kMinKelvin = 1000f;
             const float kMaxKelvin = 20000f;
             const float kSliderPower = 2f;
+
+            // should have the same int values as corresponding shape in LightType
+            private enum AreaLightShape
+            {
+                None = 0,
+                Rectangle = 3,
+                Disc = 4
+            }
 
             public Settings(SerializedObject so)
             {
@@ -58,6 +66,7 @@ namespace UnityEditor
             private static class Styles
             {
                 public static readonly GUIContent Type = EditorGUIUtility.TrTextContent("Type", "Specifies the current type of light. Possible types are Directional, Spot, Point, and Area lights.");
+                public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape", "Specifies the shape of the Area light. Possible types are Rectangle and Disc.");
                 public static readonly GUIContent Range = EditorGUIUtility.TrTextContent("Range", "Controls how far the light is emitted from the center of the object.");
                 public static readonly GUIContent SpotAngle = EditorGUIUtility.TrTextContent("Spot Angle", "Controls the angle in degrees at the base of a Spot light's cone.");
                 public static readonly GUIContent Color = EditorGUIUtility.TrTextContent("Color", "Controls the color being emitted by the light.");
@@ -68,6 +77,7 @@ namespace UnityEditor
                 public static readonly GUIContent LightmappingMode = EditorGUIUtility.TrTextContent("Mode", "Specifies the light mode used to determine if and how a light will be baked. Possible modes are Baked, Mixed, and Realtime.");
                 public static readonly GUIContent LightBounceIntensity = EditorGUIUtility.TrTextContent("Indirect Multiplier", "Controls the intensity of indirect light being contributed to the scene. A value of 0 will cause Realtime lights to be removed from realtime global illumination and Baked and Mixed lights to no longer emit indirect lighting. Has no effect when both Realtime and Baked Global Illumination are disabled.");
                 public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadow Type", "Specifies whether Hard Shadows, Soft Shadows, or No Shadows will be cast by the light.");
+                public static readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether Soft Shadows or No Shadows will be cast by the light.");
                 //realtime
                 public static readonly GUIContent ShadowRealtimeSettings = EditorGUIUtility.TrTextContent("Realtime Shadows", "Settings for realtime direct shadows.");
                 public static readonly GUIContent ShadowStrength = EditorGUIUtility.TrTextContent("Strength", "Controls how dark the shadows cast by the light will be.");
@@ -98,12 +108,19 @@ namespace UnityEditor
 
                 public static readonly GUIContent[] LightmapBakeTypeTitles = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Mixed"), EditorGUIUtility.TrTextContent("Baked") };
                 public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
+
+                public static readonly GUIContent[] LightTypeTitles = { EditorGUIUtility.TrTextContent("Spot"), EditorGUIUtility.TrTextContent("Directional"), EditorGUIUtility.TrTextContent("Point"), EditorGUIUtility.TrTextContent("Area (baked only)") };
+                public static readonly int[] LightTypeValues = { (int)LightType.Spot, (int)LightType.Directional, (int)LightType.Point, (int)LightType.Rectangle };
+
+                public static readonly GUIContent[] AreaLightShapeTitles = { EditorGUIUtility.TrTextContent("Rectangle"), EditorGUIUtility.TrTextContent("Disc") };
+                public static readonly int[] AreaLightShapeValues = { (int)AreaLightShape.Rectangle, (int)AreaLightShape.Disc };
             }
 
             public bool isRealtime { get { return lightmapping.intValue == (int)LightmapBakeType.Realtime; } }
             public bool isMixed { get { return lightmapping.intValue == (int)LightmapBakeType.Mixed; } }
             public bool isCompletelyBaked { get { return lightmapping.intValue == (int)LightmapBakeType.Baked; } }
             public bool isBakedOrMixed { get { return !isRealtime; } }
+            public bool isAreaLightType { get { return lightType.intValue == (int)LightType.Rectangle || lightType.intValue == (int)LightType.Disc; } }
 
             internal bool typeIsSame { get { return !lightType.hasMultipleDifferentValues; } }
             internal bool shadowTypeIsSame { get { return !shadowsType.hasMultipleDifferentValues; } }
@@ -218,7 +235,47 @@ namespace UnityEditor
 
             public void DrawLightType()
             {
-                EditorGUILayout.PropertyField(lightType, Styles.Type);
+                // To the user, we will only display it as a area light, but under the hood, we have Rectangle and Disc. This is not to confuse people
+                // who still use our legacy light inspector.
+
+                int selectedLightType = lightType.intValue;
+                int selectedShape = isAreaLightType ? lightType.intValue : (int)AreaLightShape.None;
+
+                // Handle all lights that are not in the default set
+                if (!Styles.LightTypeValues.Contains(lightType.intValue))
+                {
+                    if (lightType.intValue == (int)LightType.Disc)
+                    {
+                        selectedLightType = (int)LightType.Rectangle;
+                        selectedShape = (int)AreaLightShape.Disc;
+                    }
+                }
+
+                var rect = EditorGUILayout.GetControlRect();
+                EditorGUI.BeginProperty(rect, Styles.Type, lightType);
+                EditorGUI.BeginChangeCheck();
+                int type = EditorGUI.IntPopup(rect, Styles.Type, selectedLightType, Styles.LightTypeTitles, Styles.LightTypeValues);
+
+                if (EditorGUI.EndChangeCheck())
+                {
+                    lightType.intValue = type;
+                }
+                EditorGUI.EndProperty();
+
+                if (isAreaLightType && selectedShape != (int)AreaLightShape.None)
+                {
+                    rect = EditorGUILayout.GetControlRect();
+                    EditorGUI.BeginProperty(rect, Styles.Shape, lightType);
+                    EditorGUI.BeginChangeCheck();
+                    int shape = EditorGUI.IntPopup(rect, Styles.Shape, selectedShape, Styles.AreaLightShapeTitles, Styles.AreaLightShapeValues);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(light, "Adjust Light Shape");
+                        lightType.intValue = shape;
+                    }
+                    EditorGUI.EndProperty();
+                }
             }
 
             public void DrawRange(bool showAreaOptions)
@@ -228,7 +285,7 @@ namespace UnityEditor
                 if (showAreaOptions)
                 {
                     GUI.enabled = false;
-                    string areaLightToolTip = "For area lights " + range.displayName + " is computed from Width, Height and Intensity";
+                    string areaLightToolTip = "Area light's " + range.displayName + " is computed from the calculated area and Intensity.";
                     GUIContent areaRangeWithToolTip = new GUIContent(range.displayName, areaLightToolTip);
                     EditorGUILayout.FloatField(areaRangeWithToolTip, light.range);
                     GUI.enabled = true;
@@ -244,7 +301,7 @@ namespace UnityEditor
 
             public void DrawArea()
             {
-                if (lightType.intValue == (int)LightType.Area)
+                if (lightType.intValue == (int)LightType.Rectangle)
                 {
                     EditorGUILayout.PropertyField(areaSizeX, Styles.AreaWidth);
                     EditorGUILayout.PropertyField(areaSizeY, Styles.AreaHeight);
@@ -380,7 +437,24 @@ namespace UnityEditor
             public void DrawShadowsType()
             {
                 EditorGUILayout.Space();
-                EditorGUILayout.PropertyField(shadowsType, Styles.ShadowType);
+
+                if (isAreaLightType)
+                {
+                    var rect = EditorGUILayout.GetControlRect();
+                    EditorGUI.BeginProperty(rect, Styles.CastShadows, shadowsType);
+                    EditorGUI.BeginChangeCheck();
+                    bool shadows = EditorGUI.Toggle(rect, Styles.CastShadows, shadowsType.intValue != (int)LightShadows.None);
+
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        shadowsType.intValue = shadows ? (int)LightShadows.Soft : (int)LightShadows.None;
+                    }
+                    EditorGUI.EndProperty();
+                }
+                else
+                {
+                    EditorGUILayout.PropertyField(shadowsType, Styles.ShadowType);
+                }
             }
 
             public void DrawBakedShadowRadius()
@@ -460,11 +534,11 @@ namespace UnityEditor
         bool spotOptionsValue { get { return settings.typeIsSame && settings.light.type == LightType.Spot; } }
         bool pointOptionsValue { get { return settings.typeIsSame && settings.light.type == LightType.Point; } }
         bool dirOptionsValue { get { return settings.typeIsSame && settings.light.type == LightType.Directional; } }
-        bool runtimeOptionsValue { get { return settings.typeIsSame && ((settings.light.type != LightType.Area || settings.light.type == LightType.Disc) && !settings.isCompletelyBaked); } }
+        bool areaOptionsValue { get { return settings.typeIsSame && settings.isAreaLightType; } }
+        bool runtimeOptionsValue { get { return settings.typeIsSame && ((settings.light.type != LightType.Rectangle && settings.light.type != LightType.Disc) && !settings.isCompletelyBaked); } }
         bool bakedShadowRadius { get { return settings.typeIsSame && (settings.light.type == LightType.Point || settings.light.type == LightType.Spot) && settings.isBakedOrMixed; } }
         bool bakedShadowAngle { get { return settings.typeIsSame && settings.light.type == LightType.Directional && settings.isBakedOrMixed; } }
         bool shadowOptionsValue { get { return settings.shadowTypeIsSame && settings.light.shadows != LightShadows.None; } }
-
 
         private void UpdateShowOptions(bool initialize)
         {
@@ -472,6 +546,7 @@ namespace UnityEditor
             SetOptions(m_AnimShowPointOptions, initialize, pointOptionsValue);
             SetOptions(m_AnimShowDirOptions, initialize, dirOptionsValue);
             SetOptions(m_AnimShowShadowOptions, initialize, shadowOptionsValue);
+            SetOptions(m_AnimShowAreaOptions, initialize, areaOptionsValue);
             SetOptions(m_AnimShowRuntimeOptions, initialize, runtimeOptionsValue);
             SetOptions(m_AnimBakedShadowAngleOptions, initialize, bakedShadowAngle);
             SetOptions(m_AnimBakedShadowRadiusOptions, initialize, bakedShadowRadius);
@@ -635,18 +710,20 @@ namespace UnityEditor
 
             EditorGUI.indentLevel += 1;
 
+            float show = m_AnimShowShadowOptions.faded;
+
             // Baked Shadow radius
-            if (EditorGUILayout.BeginFadeGroup(m_AnimBakedShadowRadiusOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowRadiusOptions.faded))
                 settings.DrawBakedShadowRadius();
             EditorGUILayout.EndFadeGroup();
 
             // Baked Shadow angle
-            if (EditorGUILayout.BeginFadeGroup(m_AnimBakedShadowAngleOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimBakedShadowAngleOptions.faded))
                 settings.DrawBakedShadowAngle();
             EditorGUILayout.EndFadeGroup();
 
             // Runtime shadows - shadow strength, resolution, bias
-            if (EditorGUILayout.BeginFadeGroup(m_AnimShowRuntimeOptions.faded))
+            if (EditorGUILayout.BeginFadeGroup(show * m_AnimShowRuntimeOptions.faded))
                 settings.DrawRuntimeShadow();
             EditorGUILayout.EndFadeGroup();
 
@@ -694,7 +771,7 @@ namespace UnityEditor
                         t.range = Mathf.Max(angleAndRange.y, 0.01F);
                     }
                     break;
-                case LightType.Area:
+                case LightType.Rectangle:
                     EditorGUI.BeginChangeCheck();
                     Vector2 size = Handles.DoRectHandles(t.transform.rotation, t.transform.position, t.areaSize);
                     if (EditorGUI.EndChangeCheck())

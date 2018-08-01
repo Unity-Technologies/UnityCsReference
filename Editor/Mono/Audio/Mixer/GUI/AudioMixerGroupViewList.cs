@@ -69,7 +69,7 @@ namespace UnityEditor
 
             var reorderableList = new ReorderableList(m_Views, typeof(MixerGroupView), true, false, false, false);
             reorderableList.onReorderCallback += EndDragChild;
-            reorderableList.elementHeight = 16;
+            reorderableList.elementHeight = 18;
             reorderableList.headerHeight = 0;
             reorderableList.footerHeight = 0;
             reorderableList.showDefaultBackground = false;

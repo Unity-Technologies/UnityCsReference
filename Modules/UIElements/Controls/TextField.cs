@@ -19,7 +19,7 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 TextField field = ((TextField)ve);
-                field.multiline = m_Multiline.GetValueFromBag(bag);
+                field.multiline = m_Multiline.GetValueFromBag(bag, cc);
                 field.SetValueWithoutNotify(field.text);
             }
         }

@@ -388,6 +388,14 @@ namespace UnityEditor
                 [NativeMethod("SetAndroidStartInFullscreen")]
                 set;
             }
+
+            public static extern int jvmMaxHeapSize
+            {
+                [NativeMethod("GetAndroidJvmMaxHeapSize")]
+                get;
+                [NativeMethod("SetAndroidJvmMaxHeapSize")]
+                set;
+            }
         }
     }
 }

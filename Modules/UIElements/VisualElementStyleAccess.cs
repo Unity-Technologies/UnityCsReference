@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Experimental.UIElements.StyleEnums;
@@ -320,56 +321,32 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        [Obsolete("Use borderLeftWidth instead")]
         StyleValue<float> IStyle.borderLeft
         {
-            get { return effectiveStyle.borderLeft; }
-            set
-            {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderLeft, value))
-                {
-                    IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    yogaNode.BorderLeftWidth = value.value;
-                }
-            }
+            get { return ((IStyle)this).borderLeftWidth; }
+            set { ((IStyle)this).borderLeftWidth = value; }
         }
 
+        [Obsolete("Use borderTopWidth instead")]
         StyleValue<float> IStyle.borderTop
         {
-            get { return effectiveStyle.borderTop; }
-            set
-            {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderTop, value))
-                {
-                    IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    yogaNode.BorderTopWidth = value.value;
-                }
-            }
+            get { return ((IStyle)this).borderTopWidth; }
+            set { ((IStyle)this).borderTopWidth = value; }
         }
 
+        [Obsolete("Use borderRightWidth instead")]
         StyleValue<float> IStyle.borderRight
         {
-            get { return effectiveStyle.borderRight; }
-            set
-            {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderRight, value))
-                {
-                    IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    yogaNode.BorderRightWidth = value.value;
-                }
-            }
+            get { return ((IStyle)this).borderRightWidth; }
+            set { ((IStyle)this).borderRightWidth = value; }
         }
 
+        [Obsolete("Use borderBottomWidth instead")]
         StyleValue<float> IStyle.borderBottom
         {
-            get { return effectiveStyle.borderBottom; }
-            set
-            {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.borderBottom, value))
-                {
-                    IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
-                    yogaNode.BorderBottomWidth = value.value;
-                }
-            }
+            get { return ((IStyle)this).borderBottomWidth; }
+            set { ((IStyle)this).borderBottomWidth = value; }
         }
 
         StyleValue<float> IStyle.borderLeftWidth
@@ -575,24 +552,38 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        [Obsolete("Use unityTextAlign instead")]
         StyleValue<TextAnchor> IStyle.textAlignment
         {
-            get { return new StyleValue<TextAnchor>((TextAnchor)effectiveStyle.textAlignment.value, effectiveStyle.textAlignment.specificity); }
+            get { return ((IStyle)this).unityTextAlign; }
+            set { ((IStyle)this).unityTextAlign = value; }
+        }
+
+        StyleValue<TextAnchor> IStyle.unityTextAlign
+        {
+            get { return new StyleValue<TextAnchor>((TextAnchor)effectiveStyle.unityTextAlign.value, effectiveStyle.unityTextAlign.specificity); }
             set
             {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.textAlignment, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.unityTextAlign, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
             }
         }
 
+        [Obsolete("Use fontStyleAndWeight instead")]
         StyleValue<FontStyle> IStyle.fontStyle
         {
-            get { return new StyleValue<FontStyle>((FontStyle)effectiveStyle.fontStyle.value, effectiveStyle.fontStyle.specificity); }
+            get { return ((IStyle)this).fontStyleAndWeight; }
+            set { ((IStyle)this).fontStyleAndWeight = value; }
+        }
+
+        StyleValue<FontStyle> IStyle.fontStyleAndWeight
+        {
+            get { return new StyleValue<FontStyle>((FontStyle)effectiveStyle.fontStyleAndWeight.value, effectiveStyle.fontStyleAndWeight.specificity); }
             set
             {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.fontStyle, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.fontStyleAndWeight, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     IncrementVersion(VersionChangeType.Styles | VersionChangeType.Layout);
                 }
@@ -647,12 +638,19 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        [Obsolete("Use color instead")]
         StyleValue<Color> IStyle.textColor
         {
-            get { return effectiveStyle.textColor; }
+            get { return ((IStyle)this).color; }
+            set { ((IStyle)this).color = value; }
+        }
+
+        StyleValue<Color> IStyle.color
+        {
+            get { return effectiveStyle.color; }
             set
             {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.textColor, value))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.color, value))
                 {
                     IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }
@@ -713,12 +711,19 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        [Obsolete("Use backgroundScaleMode instead")]
         StyleValue<ScaleMode> IStyle.backgroundSize
         {
-            get { return new StyleValue<ScaleMode>((ScaleMode)effectiveStyle.backgroundSize.value, effectiveStyle.backgroundSize.specificity); }
+            get { return ((IStyle)this).backgroundScaleMode; }
+            set { ((IStyle)this).backgroundScaleMode = value; }
+        }
+
+        StyleValue<ScaleMode> IStyle.backgroundScaleMode
+        {
+            get { return new StyleValue<ScaleMode>((ScaleMode)effectiveStyle.backgroundScaleMode.value, effectiveStyle.backgroundScaleMode.specificity); }
             set
             {
-                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.backgroundSize, new StyleValue<int>((int)value.value, value.specificity)))
+                if (StyleValueUtils.ApplyAndCompare(ref inlineStyle.backgroundScaleMode, new StyleValue<int>((int)value.value, value.specificity)))
                 {
                     IncrementVersion(VersionChangeType.Styles | VersionChangeType.Repaint);
                 }

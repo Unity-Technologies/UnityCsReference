@@ -243,6 +243,25 @@ namespace UnityEditor
             return false;
         }
 
+        public static string[] GetDefaultAssemblySearchPaths()
+        {
+            // Add the path to all available precompiled assemblies
+            var group = EditorUserBuildSettings.activeBuildTargetGroup;
+            var target = EditorUserBuildSettings.activeBuildTarget;
+            var precompiledAssemblies = InternalEditorUtility.GetPrecompiledAssemblies(true, group, target);
+
+            HashSet<string> searchPaths = new HashSet<string>();
+
+            foreach (var asm in precompiledAssemblies)
+                searchPaths.Add(Path.GetDirectoryName(asm.Path));
+
+            precompiledAssemblies = InternalEditorUtility.GetUnityAssemblies(true, group, target);
+            foreach (var asm in precompiledAssemblies)
+                searchPaths.Add(Path.GetDirectoryName(asm.Path));
+
+            return searchPaths.ToArray();
+        }
+
         public static void ExtractAllClassesThatAreUserExtendedScripts(string path, out string[] classNamesArray, out string[] classNameSpacesArray, out string[] originalClassNameSpacesArray)
         {
             List<string> classNames = new List<string>();
@@ -253,25 +272,12 @@ namespace UnityEditor
             // this will resolve any types in assemblies within the same directory as the type's assembly
             // or any folder which contains a currently available precompiled dll
             var assemblyResolver = new DefaultAssemblyResolver();
-            assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(path));
-
-            // Add the path to all available precompiled assemblies
-            var group = EditorUserBuildSettings.activeBuildTargetGroup;
-            var target = EditorUserBuildSettings.activeBuildTarget;
-            var precompiledAssemblies = UnityEditorInternal.InternalEditorUtility.GetPrecompiledAssemblies(true, group, target);
-
-            HashSet<string> searchPaths = new HashSet<string>();
-
-            foreach (var asm in precompiledAssemblies)
-                searchPaths.Add(Path.GetDirectoryName(asm.Path));
-
-            precompiledAssemblies = UnityEditorInternal.InternalEditorUtility.GetUnityAssemblies(true, group, target);
-            foreach (var asm in precompiledAssemblies)
-                searchPaths.Add(Path.GetDirectoryName(asm.Path));
+            var searchPaths = GetDefaultAssemblySearchPaths();
 
             foreach (var asmpath in searchPaths)
                 assemblyResolver.AddSearchDirectory(asmpath);
 
+            assemblyResolver.AddSearchDirectory(Path.GetDirectoryName(path));
             readerParameters.AssemblyResolver = assemblyResolver;
 
             AssemblyDefinition assembly = AssemblyDefinition.ReadAssembly(path, readerParameters);

@@ -133,6 +133,10 @@ namespace UnityEditor
                 set;
             }
 
+            // Xbox One override auto generated identity name in app manifest (does not work with app manifest override).
+            [NativeProperty("XboxOneOverrideIdentityName", false, TargetType.Function)]
+            extern public static string OverrideIdentityName { get; set; }
+
             // Optional override path for app manifest.
             [NativeProperty("XboxOneAppManifestOverridePath", false, TargetType.Function)]
             extern public static string AppManifestOverridePath { get; set; }

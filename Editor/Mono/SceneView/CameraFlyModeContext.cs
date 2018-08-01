@@ -38,6 +38,7 @@ namespace UnityEditor
                 if (m_Context.active)
                 {
                     ShortcutIntegration.instance.contextManager.RegisterPriorityContext(context);
+                    ForceArrowKeysUp(orthographic);
                 }
                 else
                 {
@@ -66,6 +67,17 @@ namespace UnityEditor
                 { KeyCode.RightArrow, (orthographic, args) => WalkRight(args) },
             };
             static readonly HashSet<KeyCode> s_ArrowKeysDown = new HashSet<KeyCode>();
+
+            void ForceArrowKeysUp(bool orthographic)
+            {
+                foreach (KeyCode key in s_ArrowKeysDown)
+                {
+                    var action = s_ArrowKeyBindings[key];
+                    action(orthographic, new ShortcutArguments { state = ShortcutState.End });
+                }
+
+                s_ArrowKeysDown.Clear();
+            }
 
             bool DoArrowKeys(int id, bool orthographic)
             {

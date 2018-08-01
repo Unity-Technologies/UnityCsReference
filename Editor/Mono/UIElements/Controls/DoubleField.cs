@@ -20,7 +20,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                ((DoubleField)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
+                ((DoubleField)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
             }
         }
 

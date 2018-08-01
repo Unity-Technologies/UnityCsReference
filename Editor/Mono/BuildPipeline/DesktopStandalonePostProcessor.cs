@@ -83,6 +83,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.AddKey("single-instance");
         if (IL2CPPUtils.UseIl2CppCodegenWithMonoBackend(BuildPipeline.GetBuildTargetGroup(target)))
             config.Set("mono-codegen", "il2cpp");
+        if ((options & BuildOptions.EnableHeadlessMode) != 0)
+            config.AddKey("headless");
     }
 
     private void CopyNativePlugins(BuildPostProcessArgs args, out List<string> cppPlugins)
@@ -490,6 +492,11 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
     protected bool GetDevelopment(BuildPostProcessArgs args)
     {
         return ((args.options & BuildOptions.Development) != 0);
+    }
+
+    protected bool IsHeadlessMode(BuildPostProcessArgs args)
+    {
+        return ((args.options & BuildOptions.EnableHeadlessMode) != 0);
     }
 
     protected virtual string GetVariationName(BuildPostProcessArgs args)

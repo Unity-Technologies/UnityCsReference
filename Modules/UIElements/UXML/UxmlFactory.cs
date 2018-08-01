@@ -78,7 +78,7 @@ namespace UnityEngine.Experimental.UIElements
 
         string substituteForTypeQualifiedName { get; }
 
-        bool AcceptsAttributeBag(IUxmlAttributes bag);
+        bool AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc);
 
         VisualElement Create(IUxmlAttributes bag, CreationContext cc);
 
@@ -180,7 +180,13 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        [Obsolete("Call or override AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc) instaed")]
         public virtual bool AcceptsAttributeBag(IUxmlAttributes bag)
+        {
+            return AcceptsAttributeBag(bag, new CreationContext());
+        }
+
+        public virtual bool AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc)
         {
             return true;
         }

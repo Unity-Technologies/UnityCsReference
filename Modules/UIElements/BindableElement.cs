@@ -23,7 +23,7 @@ namespace UnityEngine.Experimental.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                string propPath = m_PropertyPath.GetValueFromBag(bag);
+                string propPath = m_PropertyPath.GetValueFromBag(bag, cc);
 
                 if (!string.IsNullOrEmpty(propPath))
                 {

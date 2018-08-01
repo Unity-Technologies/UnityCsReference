@@ -12,7 +12,7 @@ using uei = UnityEngine.Internal;
 
 namespace UnityEngine
 {
-    [UsedByNativeCode]
+    [RequiredByNativeCode]
     public struct Resolution
     {
         // Keep in sync with ScreenManager::Resolution

@@ -120,7 +120,7 @@ namespace UnityEditor
 
         // Helper function to find the prefab root of an object
         [FreeFunction]
-        [Obsolete("FindPrefabRoot is deprecated, please use GetOutermostPrefabInstanceRoot if source is a Prefab instance or source.transform.root.gameObject if source is a Prefab Asset object.")]
+        [Obsolete("Use GetOutermostPrefabInstanceRoot if source is a Prefab instance or source.transform.root.gameObject if source is a Prefab Asset object.")]
         extern public static GameObject FindPrefabRoot([NotNull] GameObject source);
 
 #pragma warning disable 0618 // Type or member is obsolete

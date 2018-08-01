@@ -28,7 +28,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                ((ScrollerButton)ve).clickable = new Clickable(null, m_Delay.GetValueFromBag(bag), m_Interval.GetValueFromBag(bag));
+                ((ScrollerButton)ve).clickable = new Clickable(null, m_Delay.GetValueFromBag(bag, cc), m_Interval.GetValueFromBag(bag, cc));
             }
         }
 
@@ -49,8 +49,8 @@ namespace UnityEngine.Experimental.UIElements
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "lowValue" };
-            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "highValue" };
+            UxmlFloatAttributeDescription m_LowValue = new UxmlFloatAttributeDescription { name = "low-value", obsoleteNames = new[] { "lowValue" } };
+            UxmlFloatAttributeDescription m_HighValue = new UxmlFloatAttributeDescription { name = "high-value", obsoleteNames = new[] { "highValue" } };
             UxmlEnumAttributeDescription<SliderDirection> m_Direction = new UxmlEnumAttributeDescription<SliderDirection> { name = "direction", defaultValue = SliderDirection.Vertical};
             UxmlFloatAttributeDescription m_Value = new UxmlFloatAttributeDescription { name = "value" };
 
@@ -64,10 +64,10 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 Scroller scroller = ((Scroller)ve);
-                scroller.slider.lowValue = m_LowValue.GetValueFromBag(bag);
-                scroller.slider.highValue = m_HighValue.GetValueFromBag(bag);
-                scroller.direction = m_Direction.GetValueFromBag(bag);
-                scroller.value = m_Value.GetValueFromBag(bag);
+                scroller.slider.lowValue = m_LowValue.GetValueFromBag(bag, cc);
+                scroller.slider.highValue = m_HighValue.GetValueFromBag(bag, cc);
+                scroller.direction = m_Direction.GetValueFromBag(bag, cc);
+                scroller.value = m_Value.GetValueFromBag(bag, cc);
             }
         }
 

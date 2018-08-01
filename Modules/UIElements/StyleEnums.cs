@@ -6,6 +6,18 @@ using UnityEngine.Yoga;
 
 namespace UnityEngine.Experimental.UIElements.StyleEnums
 {
+    // enum Position represents the accepted values for
+    // the `position` property in USS files.
+    // Both `position` and `-unity-position` are stored in VisualElementStylesData.positionType
+    enum Position
+    {
+        Relative = YogaPositionType.Relative,
+        Absolute = YogaPositionType.Absolute,
+    }
+
+    // enum PositionType represents the accepted values for
+    // the `-unity-position` property in USS files.
+    // Both `position` and `-unity-position` are stored in VisualElementStylesData.positionType
     public enum PositionType
     {
         Relative = YogaPositionType.Relative,

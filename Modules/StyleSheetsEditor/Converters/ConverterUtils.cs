@@ -46,15 +46,15 @@ namespace UnityEditor.StyleSheets
 
     internal static class ConverterUtils
     {
-        public const string k_TextAlignment = "text-alignment";
-        public const string k_Border = "slice";
+        public const string k_TextAlignment = "-unity-text-align";
+        public const string k_Border = "-unity-slice";
         public const string k_Clipping = "-unity-clipping";
         public const string k_ContentOffset = "-unity-content-offset";
         public const string k_Overflow = "-unity-overflow";
         public const string k_Height = "height";
         public const string k_Width = "width";
 
-        public const string k_Font = "font";
+        public const string k_Font = "-unity-font";
         public const string k_FontSize = "font-size";
         public const string k_FontStyle = "font-style";
         public const string k_FontWeight = "font-weight";
@@ -66,7 +66,7 @@ namespace UnityEditor.StyleSheets
         public const string k_StretchHeight = "-unity-stretch-height";
         public const string k_StretchWidth = "-unity-stretch-width";
         public const string k_WordWrap = "-unity-word-wrap";
-        public const string k_TextColor = "text-color";
+        public const string k_TextColor = "color";
         public const string k_BackgroundImage = "background-image";
         public const string k_ScaledBackground = "-unity-scaled-backgrounds";
         public const string k_Name = "-unity-name";

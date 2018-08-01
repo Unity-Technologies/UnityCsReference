@@ -61,7 +61,7 @@ namespace UnityEditor
         //Set the player to try to connect to the host
         ConnectToHost = 1 << 12,
 
-        // Linux Headless Mode
+        // Headless Mode
         EnableHeadlessMode = 1 << 14,
 
         // Build scripts only
@@ -352,10 +352,6 @@ namespace UnityEditor
 
         private static BuildReport BuildPlayerInternal(string[] levels, string locationPathName, string assetBundleManifestPath, BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options)
         {
-            if (0 != (BuildOptions.EnableHeadlessMode & options) &&
-                0 != (BuildOptions.Development & options))
-                throw new Exception("Unsupported build setting: cannot build headless development player");
-
             if (!BuildPlayerWindow.DefaultBuildMethods.IsBuildPathValid(locationPathName))
                 throw new Exception("Invalid Build Path: " + locationPathName);
 

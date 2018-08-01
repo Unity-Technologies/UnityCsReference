@@ -6,6 +6,7 @@ using UnityEngine;
 using System;
 using System.Reflection;
 using UnityEditor.Experimental.UIElements.Debugger;
+using UnityEngine.Experimental.UIElements;
 
 using Unity.Experimental.EditorMode;
 
@@ -13,8 +14,8 @@ namespace UnityEditor
 {
     internal class HostView : GUIView
     {
-        internal static Color kPlayModeDarken = new Color(.8f, .8f, .8f, 1);
-
+        static string kPlayModeDarkenKey = "Playmode tint";
+        internal static PrefColor kPlayModeDarken = new PrefColor(kPlayModeDarkenKey, .8f, .8f, .8f, 1);
         internal static event Action<HostView> actualViewChanged;
 
         internal GUIStyle background;
@@ -24,6 +25,9 @@ namespace UnityEditor
         [System.NonSerialized] protected readonly RectOffset m_BorderSize = new RectOffset();
 
         private bool m_IsGameView;
+
+        // Cached version of the static color for the actual object instance...
+        Color m_PlayModeDarkenColor;
 
         internal EditorWindow actualView
         {
@@ -85,6 +89,9 @@ namespace UnityEditor
 
         protected override void OnEnable()
         {
+            m_PlayModeDarkenColor = UIElementsUtility.editorPlayModeTintColor = EditorApplication.isPlayingOrWillChangePlaymode ? kPlayModeDarken.Color : Color.white;
+            EditorApplication.playModeStateChanged += PlayModeStateChangedCallback;
+            EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
             background = null;
             RegisterSelectedPane();
@@ -92,6 +99,8 @@ namespace UnityEditor
 
         protected override void OnDisable()
         {
+            EditorApplication.playModeStateChanged -= PlayModeStateChangedCallback;
+            EditorPrefs.onValueWasUpdated -= PlayModeTintColorChangedCallback;
             base.OnDisable();
             DeregisterSelectedPane(false);
         }
@@ -277,7 +286,9 @@ namespace UnityEditor
                 GUI.Box(onGUIPosition, GUIContent.none, HostViewStyles.overlay);
 
             BeginOffsetArea(viewRect, GUIContent.none, "TabWindowBackground");
+
             EditorGUIUtility.ResetGUIState();
+
             bool isExitGUIException = false;
             try
             {
@@ -552,6 +563,57 @@ namespace UnityEditor
             }
         }
 
+        private void PlayModeTintColorChangedCallback(string key)
+        {
+            if (key == kPlayModeDarkenKey)
+            {
+                Color currentPlayModeColor = EditorApplication.isPlayingOrWillChangePlaymode ? kPlayModeDarken.Color : Color.white;
+                UpdatePlayModeColor(currentPlayModeColor);
+            }
+        }
+
+        private void PlayModeStateChangedCallback(PlayModeStateChange state)
+        {
+            Color newColorToUse = Color.white;
+            if ((state == PlayModeStateChange.ExitingEditMode) ||
+                (state == PlayModeStateChange.EnteredPlayMode))
+            {
+                newColorToUse = kPlayModeDarken.Color;
+            }
+            else if ((state == PlayModeStateChange.ExitingPlayMode) || (state == PlayModeStateChange.EnteredEditMode))
+            {
+                newColorToUse = Color.white;
+            }
+            UpdatePlayModeColor(newColorToUse);
+        }
+
+        void UpdatePlayModeColor(Color newColorToUse)
+        {
+            // Check the cached color to dirty only if needed !
+            if (m_PlayModeDarkenColor != newColorToUse)
+            {
+                m_PlayModeDarkenColor = newColorToUse;
+                UIElementsUtility.editorPlayModeTintColor = newColorToUse;
+
+                // Make sure to dirty the right imguicontainer in this HostView (and all its children / parents)
+                // The MarkDirtyRepaint() function is dirtying the element itself and its parent, but not the children explicitely.
+                // ... and in the repaint function, it check for the current rendered element, not the parent.
+                // Since the HostView "hosts" an IMGUIContainer or any VisualElement, we have to make sure to dirty everything here.
+                PropagateDirtyRepaint(visualTree);
+            }
+        }
+
+        static void PropagateDirtyRepaint(VisualElement ve)
+        {
+            ve.MarkDirtyRepaint();
+            var count = ve.shadow.childCount;
+            for (var i = 0; i < count; i++)
+            {
+                var child = ve.shadow[i];
+                PropagateDirtyRepaint(child);
+            }
+        }
+
         protected void ClearBackground()
         {
             if (Event.current.type != EventType.Repaint)
@@ -563,7 +625,7 @@ namespace UnityEditor
                     return;
             }
             GL.Clear(true, true, EditorApplication.isPlayingOrWillChangePlaymode ?
-                EditorGUIUtility.kViewBackgroundColor * kPlayModeDarken :
+                EditorGUIUtility.kViewBackgroundColor * kPlayModeDarken.Color :
                 EditorGUIUtility.kViewBackgroundColor);
             backgroundValid = true;
             m_BackgroundClearRect = position;

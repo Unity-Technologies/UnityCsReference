@@ -47,7 +47,9 @@ namespace UnityEditor
             StageNavigationManager.instance.prefabStageToBeDestroyed += OnPrefabStageBeingDestroyed;
             PrefabStage.prefabIconChanged += OnPrefabStageIconChanged;
 
-            SyncHierarchyToCurrentStage(StageNavigationManager.instance.currentItem);
+            // To support expanded state of new unsaved GameObject in Prefab Mode across domain reloading we do not load the
+            // last saved expanded state here but instead rely on the fact that the Hierarchy serializes its own expanded state already.
+            SyncHierarchyToCurrentStage(StageNavigationManager.instance.currentItem, false);
         }
 
         public void OnDisable()
@@ -78,9 +80,11 @@ namespace UnityEditor
             m_SceneHierarchy.customScenes = new[] { prefabStage.prefabStage.scene}; // This will re-init the TreeView (new scenes to show)
         }
 
-        void SyncHierarchyToCurrentStage(StageNavigationItem stage)
+        void SyncHierarchyToCurrentStage(StageNavigationItem stage, bool loadExpandedState)
         {
-            LoadHierarchyState(m_SceneHierarchyWindow, stage); // Load hierarchy state before reloading the tree so the correct rows are loaded
+            if (loadExpandedState)
+                LoadHierarchyState(m_SceneHierarchyWindow, stage);
+
             if (stage.isMainStage)
             {
                 m_SceneHierarchy.customParentForNewGameObjects = null;
@@ -142,7 +146,7 @@ namespace UnityEditor
             if (previousStage.isMainStage)
                 SaveHierarchyState(m_SceneHierarchyWindow, previousStage); // prefab stage is saved before it is destroyed
             var stage = StageNavigationManager.instance.currentItem;
-            SyncHierarchyToCurrentStage(newStage);
+            SyncHierarchyToCurrentStage(newStage, true);
             CachePrefabHeaderText(stage);
 
             if (m_SceneHierarchyWindow.hasSearchFilter)
