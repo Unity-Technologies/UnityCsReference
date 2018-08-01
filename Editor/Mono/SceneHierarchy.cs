@@ -33,6 +33,9 @@ namespace UnityEditor
 
         EditorWindow m_EditorWindow;
 
+        int m_FrameRequestID;
+        bool m_FrameRequestPing;
+
         Scene[] m_CustomScenes;
 
         public Scene[] customScenes
@@ -463,7 +466,9 @@ namespace UnityEditor
             // while it is hidden it does not receive OnHierarchyChanged callbacks (case 611409)
             // During assembly reload editor windows are recreated, at that point scene count is 0 so ignore that event
             if (SceneManager.sceneCount > 0)
+            {
                 treeViewReloadNeeded = true;
+            }
         }
 
         public virtual void OnLostFocus()
@@ -483,6 +488,8 @@ namespace UnityEditor
             EditorApplication.dirtyHierarchySorting += DirtySortingMethods;
             EditorSceneManager.newSceneCreated += OnSceneCreated;
             EditorSceneManager.sceneOpened += OnSceneOpened;
+
+            DoPingRequest();
 
             m_AllowAlphaNumericalSort = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false) || !InternalEditorUtility.isHumanControllingUs; // Always allow alphasorting when running automated tests so we can test alpha sorting
             SetUpSortMethodLists();
@@ -578,6 +585,8 @@ namespace UnityEditor
 
             float searchPathHeight = DoSearchResultPathGUI();
             DoTreeView(searchPathHeight);
+
+            DoPingRequest();
             ExecuteCommands();
         }
 
@@ -1409,14 +1418,25 @@ namespace UnityEditor
             {
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Hierarchy "), s_Debug, () => s_Debug = !s_Debug);
                 menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Prefab Scene"), s_DebugPrefabStage, () => s_DebugPrefabStage = !s_DebugPrefabStage);
-                menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Expanded State Persistance"), s_DebugPersistingExpandedState, () => s_DebugPersistingExpandedState = !s_DebugPersistingExpandedState);
+                menu.AddItem(new GUIContent("DEVELOPER/Debug Mode - Expanded State Persistence"), s_DebugPersistingExpandedState, () => s_DebugPersistingExpandedState = !s_DebugPersistingExpandedState);
+            }
+        }
+
+        private void DoPingRequest()
+        {
+            if (m_FrameRequestID != 0)
+            {
+                FrameObjectPrivate(m_FrameRequestID, true, m_FrameRequestPing, true);
+                m_FrameRequestID = 0;
             }
         }
 
         public void FrameObject(int instanceID, bool ping)
         {
-            const bool animatedFraming = true;
-            FrameObjectPrivate(instanceID, true, ping, animatedFraming);
+            m_FrameRequestID = instanceID;
+            m_FrameRequestPing = ping;
+            treeViewReloadNeeded = true;
+            Repaint();
         }
 
         private void FrameObjectPrivate(int instanceID, bool frame, bool ping, bool animatedFraming)

@@ -18,7 +18,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public new class UxmlTraits : VisualElement.UxmlTraits
         {
-            UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "itemHeight", defaultValue = k_DefaultItemHeight };
+            UxmlIntAttributeDescription m_ItemHeight = new UxmlIntAttributeDescription { name = "item-height", obsoleteNames = new[] {"itemHeight"}, defaultValue = k_DefaultItemHeight };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -28,7 +28,7 @@ namespace UnityEngine.Experimental.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((ListView)ve).itemHeight = m_ItemHeight.GetValueFromBag(bag);
+                ((ListView)ve).itemHeight = m_ItemHeight.GetValueFromBag(bag, cc);
             }
         }
 

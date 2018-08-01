@@ -62,36 +62,33 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             {"flex-grow", StylePropertyID.FlexGrow},
             {"flex-shrink", StylePropertyID.FlexShrink},
             {"overflow", StylePropertyID.Overflow},
-            {"position-left", StylePropertyID.PositionLeft},
-            {"position-top", StylePropertyID.PositionTop},
-            {"position-right", StylePropertyID.PositionRight},
-            {"position-bottom", StylePropertyID.PositionBottom},
+            {"left", StylePropertyID.PositionLeft},
+            {"top", StylePropertyID.PositionTop},
+            {"right", StylePropertyID.PositionRight},
+            {"bottom", StylePropertyID.PositionBottom},
             {"margin-left", StylePropertyID.MarginLeft},
             {"margin-top", StylePropertyID.MarginTop},
             {"margin-right", StylePropertyID.MarginRight},
             {"margin-bottom", StylePropertyID.MarginBottom},
-            {"border-left", StylePropertyID.BorderLeft},
-            {"border-top", StylePropertyID.BorderTop},
-            {"border-right", StylePropertyID.BorderRight},
-            {"border-bottom", StylePropertyID.BorderBottom},
             {"padding-left", StylePropertyID.PaddingLeft},
             {"padding-top", StylePropertyID.PaddingTop},
             {"padding-right", StylePropertyID.PaddingRight},
             {"padding-bottom", StylePropertyID.PaddingBottom},
-            {"position-type", StylePropertyID.PositionType},
+            {"position", StylePropertyID.Position},
+            {"-unity-position", StylePropertyID.PositionType},
             {"align-self", StylePropertyID.AlignSelf},
-            {"text-alignment", StylePropertyID.TextAlignment},
-            {"font-style", StylePropertyID.FontStyle},
-            {"text-clipping", StylePropertyID.TextClipping},
-            {"font", StylePropertyID.Font},
+            {"-unity-text-align", StylePropertyID.UnityTextAlign},
+            {"-unity-font-style", StylePropertyID.FontStyleAndWeight},
+            {"-unity-clipping", StylePropertyID.TextClipping},
+            {"-unity-font", StylePropertyID.Font},
             {"font-size", StylePropertyID.FontSize},
-            {"word-wrap", StylePropertyID.WordWrap},
-            {"text-color", StylePropertyID.TextColor},
+            {"-unity-word-wrap", StylePropertyID.WordWrap},
+            {"color", StylePropertyID.Color},
             {"flex-direction", StylePropertyID.FlexDirection},
             {"background-color", StylePropertyID.BackgroundColor},
             {"border-color", StylePropertyID.BorderColor},
             {"background-image", StylePropertyID.BackgroundImage},
-            {"background-size", StylePropertyID.BackgroundSize},
+            {"-unity-background-scale-mode", StylePropertyID.BackgroundScaleMode},
             {"align-items", StylePropertyID.AlignItems},
             {"align-content", StylePropertyID.AlignContent},
             {"justify-content", StylePropertyID.JustifyContent},
@@ -104,10 +101,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             {"border-top-right-radius", StylePropertyID.BorderTopRightRadius},
             {"border-bottom-right-radius", StylePropertyID.BorderBottomRightRadius},
             {"border-bottom-left-radius", StylePropertyID.BorderBottomLeftRadius},
-            {"slice-left", StylePropertyID.SliceLeft},
-            {"slice-top", StylePropertyID.SliceTop},
-            {"slice-right", StylePropertyID.SliceRight},
-            {"slice-bottom", StylePropertyID.SliceBottom},
+            {"-unity-slice-left", StylePropertyID.SliceLeft},
+            {"-unity-slice-top", StylePropertyID.SliceTop},
+            {"-unity-slice-right", StylePropertyID.SliceRight},
+            {"-unity-slice-bottom", StylePropertyID.SliceBottom},
             {"opacity", StylePropertyID.Opacity},
             {"cursor", StylePropertyID.Cursor},
             {"visibility", StylePropertyID.Visibility},
@@ -148,16 +145,52 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                 propertyIDs = new StylePropertyID[rule.properties.Length];
                 for (int i = 0; i < propertyIDs.Length; i++)
                 {
-                    propertyIDs[i] = GetPropertyID(rule.properties[i].name);
+                    propertyIDs[i] = GetPropertyID(sheet, rule, i);
                 }
                 s_RulePropertyIDsCache.Add(key, propertyIDs);
             }
             return propertyIDs;
         }
 
-        static StylePropertyID GetPropertyID(string name)
+        static Dictionary<string, string> s_DeprecatedNames = new Dictionary<string, string>()
         {
+            {"position-left", "left"},
+            {"position-top", "top"},
+            {"position-right", "right"},
+            {"position-bottom", "bottom"},
+            {"text-color", "color"},
+            {"slice-left", "-unity-slice-left" },
+            {"slice-top", "-unity-slice-top" },
+            {"slice-right", "-unity-slice-right" },
+            {"slice-bottom", "-unity-slice-bottom" },
+            {"text-alignment", "-unity-text-align" },
+            {"word-wrap", "-unity-word-wrap" },
+            {"font", "-unity-font" },
+            {"background-size", "-unity-background-scale-mode" },
+            {"font-style", "-unity-font-style" },
+            {"position-type", "-unity-position" },
+            {"text-clipping", "-unity-clipping" },
+            {"border-left", "border-left-width"},
+            {"border-top", "border-top-width"},
+            {"border-right", "border-right-width"},
+            {"border-bottom", "border-bottom-width"}
+        };
+
+        static string MapDeprecatedPropertyName(string name, string styleSheetName, int line)
+        {
+            string validName;
+            s_DeprecatedNames.TryGetValue(name, out validName);
+
+
+            return validName ?? name;
+        }
+
+        static StylePropertyID GetPropertyID(StyleSheet sheet, StyleRule rule, int index)
+        {
+            string name = rule.properties[index].name;
             StylePropertyID id;
+
+            name = MapDeprecatedPropertyName(name, sheet.name, rule.line);
             if (!s_NameToIDCache.TryGetValue(name, out id))
             {
                 id = StylePropertyID.Custom;

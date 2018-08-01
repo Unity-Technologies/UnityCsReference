@@ -211,15 +211,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_TextElement.style.width = newSize.x +
                     m_TextElement.style.marginLeft +
                     m_TextElement.style.marginRight +
-                    m_TextElement.style.borderLeft +
-                    m_TextElement.style.borderRight +
+                    m_TextElement.style.borderLeftWidth +
+                    m_TextElement.style.borderRightWidth +
                     m_TextElement.style.paddingLeft +
                     m_TextElement.style.paddingRight;
                 m_TextElement.style.height = newSize.y +
                     m_TextElement.style.marginTop +
                     m_TextElement.style.marginBottom +
-                    m_TextElement.style.borderTop +
-                    m_TextElement.style.borderBottom +
+                    m_TextElement.style.borderTopWidth +
+                    m_TextElement.style.borderBottomWidth +
                     m_TextElement.style.paddingTop +
                     m_TextElement.style.paddingBottom;
                 PerformTipLayout();

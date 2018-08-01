@@ -16,11 +16,12 @@ namespace UnityEditor
             public static readonly GUIContent Name = EditorGUIUtility.TrTextContent("Name");
             public static readonly GUIContent On = EditorGUIUtility.TrTextContent("On");
             public static readonly GUIContent Type = EditorGUIUtility.TrTextContent("Type");
+            public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape");
             public static readonly GUIContent Mode = EditorGUIUtility.TrTextContent("Mode");
             public static readonly GUIContent Color = EditorGUIUtility.TrTextContent("Color");
             public static readonly GUIContent Intensity = EditorGUIUtility.TrTextContent("Intensity");
             public static readonly GUIContent IndirectMultiplier = EditorGUIUtility.TrTextContent("Indirect Multiplier");
-            public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadow Type");
+            public static readonly GUIContent ShadowType = EditorGUIUtility.TrTextContent("Shadows");
             public static readonly GUIContent Projection = EditorGUIUtility.TrTextContent("Projection");
             public static readonly GUIContent HDR = EditorGUIUtility.TrTextContent("HDR");
             public static readonly GUIContent ShadowDistance = EditorGUIUtility.TrTextContent("Shadow Distance");
@@ -32,6 +33,12 @@ namespace UnityEditor
 
             public static readonly GUIContent[] LightmapBakeTypeTitles = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Mixed"), EditorGUIUtility.TrTextContent("Baked") };
             public static readonly int[] LightmapBakeTypeValues = { (int)LightmapBakeType.Realtime, (int)LightmapBakeType.Mixed, (int)LightmapBakeType.Baked };
+
+            public static readonly GUIContent[] LightTypeTitles = { EditorGUIUtility.TrTextContent("Spot"), EditorGUIUtility.TrTextContent("Directional"), EditorGUIUtility.TrTextContent("Point"), EditorGUIUtility.TrTextContent("Area (baked only)") };
+            public static readonly int[] LightTypeValues = { (int)LightType.Spot, (int)LightType.Directional, (int)LightType.Point, (int)LightType.Rectangle };
+
+            public static readonly GUIContent[] LightShapeTitles = { EditorGUIUtility.TrTextContent("Rectangle"), EditorGUIUtility.TrTextContent("Disc") };
+            public static readonly int[] LightShapeValues = { (int)LightType.Rectangle, (int)LightType.Disc };
         }
 
         private static SerializedPropertyTreeView.Column[] FinalizeColumns(SerializedPropertyTreeView.Column[] columns, out string[] propNames)
@@ -98,9 +105,67 @@ namespace UnityEditor
                     propertyName            = "m_Type",
                     dependencyIndices       = null,
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareEnum,
-                    drawDelegate            = SerializedPropertyTreeView.DefaultDelegates.s_DrawDefault
+                    drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
+                    {
+                        // To the user, we will only display it as a area light, but under the hood, we have Rectangle and Disc. This is not to confuse people
+                        // who still use our legacy light inspector.
+
+                        int selectedLightType = prop.intValue;
+
+                        if (!Styles.LightTypeValues.Contains(prop.intValue))
+                        {
+                            if (prop.intValue == (int)LightType.Disc)
+                            {
+                                selectedLightType = (int)LightType.Rectangle;
+                            }
+                            else
+                            {
+                                Debug.LogError("Light type is not supported by the Light Explorer.");
+                            }
+                        }
+
+                        EditorGUI.BeginProperty(r, GUIContent.none, prop);
+                        EditorGUI.BeginChangeCheck();
+                        int type = EditorGUI.IntPopup(r, selectedLightType, Styles.LightTypeTitles, Styles.LightTypeValues);
+
+                        if (EditorGUI.EndChangeCheck())
+                        {
+                            prop.intValue = type;
+                        }
+                        EditorGUI.EndProperty();
+                    }
                 },
-                new SerializedPropertyTreeView.Column // 3: Mode
+                new SerializedPropertyTreeView.Column     // 3: Shape
+                {
+                    headerContent           = Styles.Shape,
+                    headerTextAlignment     = TextAlignment.Left,
+                    sortedAscending         = true,
+                    sortingArrowAlignment   = TextAlignment.Center,
+                    width                   = 120,
+                    minWidth                = 60,
+                    autoResize              = false,
+                    allowToggleVisibility   = true,
+                    propertyName            = "m_Type",
+                    dependencyIndices       = null,
+                    compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareEnum,
+                    drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
+                    {
+                        // This is only appliable to the Area lights that have a shape. For the other lights, nothing will be shown
+                        if (Styles.LightShapeValues.Contains(prop.intValue))
+                        {
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
+                            EditorGUI.BeginChangeCheck();
+                            int type = EditorGUI.IntPopup(r, prop.intValue, Styles.LightShapeTitles, Styles.LightShapeValues);
+
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                prop.intValue = type;
+                            }
+                            EditorGUI.EndProperty();
+                        }
+                    }
+                },
+                new SerializedPropertyTreeView.Column // 4: Mode
                 {
                     headerContent           = Styles.Mode,
                     headerTextAlignment     = TextAlignment.Left,
@@ -116,20 +181,22 @@ namespace UnityEditor
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareEnum,
                     drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
                     {
-                        bool areaLight = dep.Length > 1 && (dep[0].enumValueIndex == (int)LightType.Area || dep[0].enumValueIndex == (int)LightType.Disc);
+                        bool areaLight = dep.Length > 1 && (dep[0].enumValueIndex == (int)LightType.Rectangle || dep[0].enumValueIndex == (int)LightType.Disc);
 
                         using (new EditorGUI.DisabledScope(areaLight))
                         {
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
                             EditorGUI.BeginChangeCheck();
                             int newval = EditorGUI.IntPopup(r, prop.intValue, Styles.LightmapBakeTypeTitles, Styles.LightmapBakeTypeValues);
                             if (EditorGUI.EndChangeCheck())
                             {
                                 prop.intValue = newval;
                             }
+                            EditorGUI.EndProperty();
                         }
                     }
                 },
-                new SerializedPropertyTreeView.Column // 4: Color
+                new SerializedPropertyTreeView.Column // 5: Color
                 {
                     headerContent           = Styles.Color,
                     headerTextAlignment     = TextAlignment.Left,
@@ -144,7 +211,7 @@ namespace UnityEditor
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareColor,
                     drawDelegate            = SerializedPropertyTreeView.DefaultDelegates.s_DrawDefault
                 },
-                new SerializedPropertyTreeView.Column // 5: Intensity
+                new SerializedPropertyTreeView.Column // 6: Intensity
                 {
                     headerContent           = Styles.Intensity,
                     headerTextAlignment     = TextAlignment.Left,
@@ -159,7 +226,7 @@ namespace UnityEditor
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareFloat,
                     drawDelegate            = SerializedPropertyTreeView.DefaultDelegates.s_DrawDefault
                 },
-                new SerializedPropertyTreeView.Column     // 6: Indirect Multiplier
+                new SerializedPropertyTreeView.Column     // 7: Indirect Multiplier
                 {
                     headerContent           = Styles.IndirectMultiplier,
                     headerTextAlignment     = TextAlignment.Left,
@@ -174,7 +241,7 @@ namespace UnityEditor
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareFloat,
                     drawDelegate            = SerializedPropertyTreeView.DefaultDelegates.s_DrawDefault
                 },
-                new SerializedPropertyTreeView.Column // 7: Shadow Type
+                new SerializedPropertyTreeView.Column // 8: Shadow Type
                 {
                     headerContent           = Styles.ShadowType,
                     headerTextAlignment     = TextAlignment.Left,
@@ -185,9 +252,29 @@ namespace UnityEditor
                     autoResize              = false,
                     allowToggleVisibility   = true,
                     propertyName            = "m_Shadows.m_Type",
-                    dependencyIndices       = null,
+                    dependencyIndices       = new int[] { 2 },
                     compareDelegate         = SerializedPropertyTreeView.DefaultDelegates.s_CompareEnum,
-                    drawDelegate            = SerializedPropertyTreeView.DefaultDelegates.s_DrawDefault
+                    drawDelegate            = (Rect r, SerializedProperty prop, SerializedProperty[] dep) =>
+                    {
+                        bool areaLight = dep.Length > 1 && (dep[0].enumValueIndex == (int)LightType.Rectangle || dep[0].enumValueIndex == (int)LightType.Disc);
+
+                        if (areaLight)
+                        {
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
+                            EditorGUI.BeginChangeCheck();
+                            bool shadows = EditorGUI.Toggle(r, prop.intValue != (int)LightShadows.None);
+
+                            if (EditorGUI.EndChangeCheck())
+                            {
+                                prop.intValue = shadows ? (int)LightShadows.Soft : (int)LightShadows.None;
+                            }
+                            EditorGUI.EndProperty();
+                        }
+                        else
+                        {
+                            EditorGUI.PropertyField(r, prop, GUIContent.none);
+                        }
+                    }
                 },
             };
 
@@ -440,6 +527,7 @@ namespace UnityEditor
 
                             int[] lightmapEmissiveValues = { (int)MaterialGlobalIlluminationFlags.RealtimeEmissive, (int)MaterialGlobalIlluminationFlags.BakedEmissive };
 
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
                             EditorGUI.BeginChangeCheck();
 
                             giFlags = (MaterialGlobalIlluminationFlags)EditorGUI.IntPopup(r, (int)giFlags, Styles.LightmapEmissiveStrings, lightmapEmissiveValues);
@@ -447,12 +535,11 @@ namespace UnityEditor
                             if (EditorGUI.EndChangeCheck())
                             {
                                 Material material = (Material)prop.serializedObject.targetObject;
-                                Undo.RecordObjects(new Material[] { material } , "Modify GI Settings of " + material.name);
-
                                 material.globalIlluminationFlags = giFlags;
 
                                 prop.serializedObject.Update();
                             }
+                            EditorGUI.EndProperty();
                         }
                     }
                 },
@@ -486,14 +573,15 @@ namespace UnityEditor
 
                             Color color = material.GetColor("_EmissionColor");
 
+                            EditorGUI.BeginProperty(r, GUIContent.none, prop);
                             EditorGUI.BeginChangeCheck();
                             Color newValue = EditorGUI.ColorField(r, GUIContent.Temp(""), color, true, false, true);
 
                             if (EditorGUI.EndChangeCheck())
                             {
-                                Undo.RecordObjects(new Material[] { material }, "Modify Emission Color of " + material.name);
                                 material.SetColor("_EmissionColor", newValue);
                             }
+                            EditorGUI.EndProperty();
                         }
                     },
                     copyDelegate = (SerializedProperty target, SerializedProperty source) =>

@@ -18,8 +18,8 @@ namespace UnityEngine.Experimental.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((Toggle)ve).text = m_Label.GetValueFromBag(bag);
-                ((Toggle)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
+                ((Toggle)ve).text = m_Label.GetValueFromBag(bag, cc);
+                ((Toggle)ve).SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
             }
         }
 

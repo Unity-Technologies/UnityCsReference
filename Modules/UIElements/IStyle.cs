@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine.Experimental.UIElements.StyleSheets;
 using UnityEngine.Experimental.UIElements.StyleEnums;
 
@@ -31,9 +32,13 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<float> marginTop { get; set; }
         StyleValue<float> marginRight { get; set; }
         StyleValue<float> marginBottom { get; set; }
+        [Obsolete("Use borderLeftWidth instead")]
         StyleValue<float> borderLeft { get; set; }
+        [Obsolete("Use borderTopWidth instead")]
         StyleValue<float> borderTop { get; set; }
+        [Obsolete("Use borderRightWidth instead")]
         StyleValue<float> borderRight { get; set; }
+        [Obsolete("Use borderBottomWidth instead")]
         StyleValue<float> borderBottom { get; set; }
         StyleValue<float> paddingLeft { get; set; }
         StyleValue<float> paddingTop { get; set; }
@@ -41,17 +46,25 @@ namespace UnityEngine.Experimental.UIElements
         StyleValue<float> paddingBottom { get; set; }
         StyleValue<PositionType> positionType { get; set; }
         StyleValue<Align> alignSelf { get; set; }
+        [Obsolete("Use unityTextAlign instead")]
         StyleValue<TextAnchor> textAlignment { get; set; }
+        StyleValue<TextAnchor> unityTextAlign { get; set; }
+        [Obsolete("Use fontStyleAndWeight instead")]
         StyleValue<FontStyle> fontStyle { get; set; }
+        StyleValue<FontStyle> fontStyleAndWeight { get; set; }
         StyleValue<TextClipping> textClipping { get; set; }
         StyleValue<Font> font { get; set; }
         StyleValue<int> fontSize { get; set; }
         StyleValue<bool> wordWrap { get; set; }
+        [Obsolete("Use color instead")]
         StyleValue<Color> textColor { get; set; }
+        StyleValue<Color> color { get; set; }
         StyleValue<Color> backgroundColor { get; set; }
         StyleValue<Color> borderColor { get; set; }
         StyleValue<Texture2D> backgroundImage { get; set; }
+        [Obsolete("Use backgroundScaleMode instead")]
         StyleValue<ScaleMode> backgroundSize { get; set; }
+        StyleValue<ScaleMode> backgroundScaleMode { get; set; }
         StyleValue<Align> alignItems { get; set; }
         StyleValue<Align> alignContent { get; set; }
         StyleValue<Justify> justifyContent { get; set; }

@@ -114,12 +114,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static void SetAssemblySuffix(string suffix)
-        {
-            Instance.SetAssemblySuffix(suffix);
-        }
-
-        [RequiredByNativeCode]
         public static void SetAllScripts(string[] allScripts)
         {
             Instance.SetAllScripts(allScripts);

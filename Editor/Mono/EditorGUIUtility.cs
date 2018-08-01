@@ -932,8 +932,6 @@ namespace UnityEditor
         {
             foreach (SceneHierarchyWindow shw in SceneHierarchyWindow.GetAllSceneHierarchyWindows())
             {
-                // We reload the data first so newly created GOs can be pinged (766150)
-                shw.ReloadData();
                 shw.FrameObject(targetInstanceID, true);
             }
 

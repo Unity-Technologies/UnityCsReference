@@ -523,6 +523,7 @@ namespace UnityEditor
             if (m_SerializedObject == null)
             {
                 m_SerializedObject = new SerializedObject(targets, m_Context);
+                m_SerializedObject.inspectorMode = m_InspectorMode;
                 m_EnabledProperty = m_SerializedObject.FindProperty("m_Enabled");
             }
 

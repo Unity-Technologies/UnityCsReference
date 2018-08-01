@@ -23,10 +23,10 @@ namespace UnityEditor.Experimental.UIElements
 
                 EnumField enumField = (EnumField)ve;
                 // Only works for the currently running assembly
-                enumField.m_EnumType = Type.GetType(m_Type.GetValueFromBag(bag));
+                enumField.m_EnumType = Type.GetType(m_Type.GetValueFromBag(bag, cc));
                 if (enumField.m_EnumType != null)
                 {
-                    string v = m_Value.GetValueFromBag(bag);
+                    string v = m_Value.GetValueFromBag(bag, cc);
 
                     if (!Enum.IsDefined(enumField.m_EnumType, v))
                     {

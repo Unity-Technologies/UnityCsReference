@@ -159,19 +159,19 @@ namespace UnityEditor
             public bool mixedBitrateMode;
             public bool mixedSpatialQuality;
 
-            public bool                   firstTranscoding;
-            public VideoCodec             firstCodec;
-            public VideoResizeMode        firstResizeMode;
+            public bool firstTranscoding;
+            public VideoCodec firstCodec;
+            public VideoResizeMode firstResizeMode;
             public VideoEncodeAspectRatio firstAspectRatio;
-            public int                    firstCustomWidth;
-            public int                    firstCustomHeight;
-            public VideoBitrateMode       firstBitrateMode;
-            public VideoSpatialQuality    firstSpatialQuality;
+            public int firstCustomWidth;
+            public int firstCustomHeight;
+            public VideoBitrateMode firstBitrateMode;
+            public VideoSpatialQuality firstSpatialQuality;
         }
 
         internal class InspectorTargetSettings
         {
-            public bool                        overridePlatform;
+            public bool overridePlatform;
             public VideoImporterTargetSettings settings;
         }
 
@@ -186,13 +186,14 @@ namespace UnityEditor
         SerializedProperty m_ImportAudio;
 
         // An array of settings for each platform, for every target.
-        InspectorTargetSettings[,]             m_TargetSettings;
+        InspectorTargetSettings[,] m_TargetSettings;
 
-        bool            m_IsPlaying             = false;
-        Vector2         m_Position              = Vector2.zero;
-        AnimatedBool    m_ShowResizeModeOptions = new AnimatedBool();
-        bool            m_ModifiedTargetSettings;
-        GUIContent      m_PreviewTitle;
+        bool m_IsPlaying = false;
+        Vector2 m_Position = Vector2.zero;
+        AnimatedBool m_ShowResizeModeOptions = new AnimatedBool();
+        bool m_ModifiedTargetSettings;
+        Texture m_Texture;
+        GUIContent m_PreviewTitle;
 
         class Styles
         {
@@ -245,7 +246,7 @@ namespace UnityEditor
         static Styles s_Styles;
 
         // Taken in MovieImporter.cpp.
-        static string[] s_LegacyFileTypes = {".ogg", ".ogv", ".mov", ".asf", ".mpg", ".mpeg", ".mp4"};
+        static string[] s_LegacyFileTypes = { ".ogg", ".ogv", ".mov", ".asf", ".mpg", ".mpeg", ".mp4" };
 
         const int kNarrowLabelWidth = 42;
         const int kToggleButtonWidth = 16;
@@ -320,13 +321,13 @@ namespace UnityEditor
                 s_Styles = new Styles();
 
             m_UseLegacyImporter = serializedObject.FindProperty("m_UseLegacyImporter");
-            m_Quality           = serializedObject.FindProperty("m_Quality");
-            m_IsColorLinear     = serializedObject.FindProperty("m_IsColorLinear");
-            m_EncodeAlpha       = serializedObject.FindProperty("m_EncodeAlpha");
-            m_Deinterlace       = serializedObject.FindProperty("m_Deinterlace");
-            m_FlipVertical      = serializedObject.FindProperty("m_FlipVertical");
-            m_FlipHorizontal    = serializedObject.FindProperty("m_FlipHorizontal");
-            m_ImportAudio       = serializedObject.FindProperty("m_ImportAudio");
+            m_Quality = serializedObject.FindProperty("m_Quality");
+            m_IsColorLinear = serializedObject.FindProperty("m_IsColorLinear");
+            m_EncodeAlpha = serializedObject.FindProperty("m_EncodeAlpha");
+            m_Deinterlace = serializedObject.FindProperty("m_Deinterlace");
+            m_FlipVertical = serializedObject.FindProperty("m_FlipVertical");
+            m_FlipHorizontal = serializedObject.FindProperty("m_FlipHorizontal");
+            m_ImportAudio = serializedObject.FindProperty("m_ImportAudio");
 
             ResetSettingsFromBackend();
 
@@ -828,17 +829,13 @@ namespace UnityEditor
         public override void OnPreviewSettings()
         {
             VideoClipImporter importer = (VideoClipImporter)target;
-            EditorGUI.BeginDisabledGroup(Application.isPlaying || HasModified() || importer.useLegacyImporter);
+            EditorGUI.BeginDisabledGroup(Application.isPlaying || importer.useLegacyImporter);
             m_IsPlaying = PreviewGUI.CycleButton(m_IsPlaying ? 1 : 0, s_Styles.playIcons) != 0;
             EditorGUI.EndDisabledGroup();
         }
 
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
-            var isRepainting = Event.current.type == EventType.Repaint;
-            if (isRepainting)
-                background.Draw(r, false, false, false, false);
-
             VideoClipImporter importer = (VideoClipImporter)target;
 
             if (m_IsPlaying && !importer.isPlayingPreview)
@@ -847,12 +844,18 @@ namespace UnityEditor
                 importer.StopPreview();
 
             Texture image = importer.GetPreviewTexture();
-            if (!image || image.width == 0 || image.height == 0)
+            if (image && image.width != 0 && image.height != 0)
+                m_Texture = image;
+
+            if (!m_Texture)
                 return;
 
+            if (Event.current.type == EventType.Repaint)
+                background.Draw(r, false, false, false, false);
+
             // Compensate spatial quality zooming, if any.
-            float previewWidth = image.width;
-            float previewHeight = image.height;
+            float previewWidth = m_Texture.width;
+            float previewHeight = m_Texture.height;
             var activeSettings =
                 importer.GetTargetSettings(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget).ToString());
             if (activeSettings == null)
@@ -882,11 +885,11 @@ namespace UnityEditor
             PreviewGUI.BeginScrollView(
                 r, m_Position, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
 
-            EditorGUI.DrawTextureTransparent(wantedRect, image, ScaleMode.StretchToFill);
+            EditorGUI.DrawTextureTransparent(wantedRect, m_Texture, ScaleMode.StretchToFill);
 
             m_Position = PreviewGUI.EndScrollView();
 
-            if (m_IsPlaying && isRepainting)
+            if (m_IsPlaying && Event.current.type == EventType.Repaint)
                 GUIView.current.Repaint();
         }
 

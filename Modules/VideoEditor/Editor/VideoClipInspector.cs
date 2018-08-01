@@ -16,8 +16,10 @@ namespace UnityEditor
         static readonly GUID kEmptyGUID;
 
         private VideoClip m_PlayingClip;
+        private Texture m_Texture;
         private GUID m_PreviewID;
         Vector2 m_Position = Vector2.zero;
+        private bool m_UseAssetPreview = true;
 
         override public void OnInspectorGUI()
         {
@@ -54,6 +56,7 @@ namespace UnityEditor
 
         private void StopPreview()
         {
+            m_UseAssetPreview = true;
             if (!m_PreviewID.Empty())
                 VideoUtil.StopPreview(m_PreviewID);
             m_PlayingClip = null;
@@ -94,12 +97,6 @@ namespace UnityEditor
                 return;
             }
 
-            bool useVideoTexture = true;
-
-            bool needRepaint = clip != m_PlayingClip ||
-                (!m_PreviewID.Empty() &&
-                    VideoUtil.IsPreviewPlaying(m_PreviewID));
-
             if (clip != m_PlayingClip)
             {
                 StopPreview();
@@ -108,23 +105,26 @@ namespace UnityEditor
 
             Texture image = null;
 
-            if (!m_PreviewID.Empty())
-                image = VideoUtil.GetPreviewTexture(m_PreviewID);
-
-            if (image == null || image.width == 0 || image.height == 0)
+            if (!m_PreviewID.Empty() && VideoUtil.IsPreviewPlaying(m_PreviewID))
             {
-                image = GetAssetPreviewTexture();
-                useVideoTexture = false;
+                image = VideoUtil.GetPreviewTexture(m_PreviewID);
+                if (image != null && m_UseAssetPreview)
+                    m_UseAssetPreview = false;
             }
+            else
+                image = GetAssetPreviewTexture();
 
-            if (image == null || image.width == 0 || image.height == 0)
+            if (image != null && image.width != 0 && image.height != 0)
+                m_Texture = image;
+
+            if (!m_Texture)
                 return;
 
             if (Event.current.type == EventType.Repaint)
                 background.Draw(r, false, false, false, false);
 
-            float previewWidth = image.width;
-            float previewHeight = image.height;
+            float previewWidth = m_Texture.width;
+            float previewHeight = m_Texture.height;
 
             if (m_PlayingClip.pixelAspectRatioDenominator > 0)
                 previewWidth *= (float)m_PlayingClip.pixelAspectRatioNumerator /
@@ -139,19 +139,21 @@ namespace UnityEditor
 
             zoomLevel = Mathf.Clamp01(zoomLevel);
 
-            Rect wantedRect = useVideoTexture ? new Rect(r.x, r.y, previewWidth * zoomLevel, image.height * zoomLevel) : r;
+            Rect wantedRect = !m_UseAssetPreview ? new Rect(r.x, r.y, previewWidth * zoomLevel, m_Texture.height * zoomLevel) : r;
 
             PreviewGUI.BeginScrollView(
                 r, m_Position, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
 
-            if (useVideoTexture)
-                EditorGUI.DrawTextureTransparent(wantedRect, image, ScaleMode.StretchToFill);
+            if (!m_UseAssetPreview)
+                EditorGUI.DrawTextureTransparent(wantedRect, m_Texture, ScaleMode.StretchToFill);
             else
-                GUI.DrawTexture(wantedRect, image, ScaleMode.ScaleToFit);
+                GUI.DrawTexture(wantedRect, m_Texture, ScaleMode.ScaleToFit);
 
             m_Position = PreviewGUI.EndScrollView();
 
-            if (needRepaint)
+            if (!m_PreviewID.Empty() &&
+                VideoUtil.IsPreviewPlaying(m_PreviewID) &&
+                Event.current.type == EventType.Repaint)
                 GUIView.current.Repaint();
         }
 

@@ -37,6 +37,16 @@ namespace UnityEditor
         bool m_HasChanged = true;
         bool m_NormalMapHasCorrectTextureType;
 
+        class Styles
+        {
+            public GUIContent size = EditorGUIUtility.TrTextContent("Size");
+            public GUIContent offset = EditorGUIUtility.TrTextContent("Offset");
+            public GUIContent specular = EditorGUIUtility.TrTextContent("Specular");
+            public GUIContent metallic = EditorGUIUtility.TrTextContent("Metallic");
+            public GUIContent smoothness = EditorGUIUtility.TrTextContent("Smoothness");
+        }
+        static Styles styles;
+
         void CheckIfNormalMapHasCorrectTextureType()
         {
             string assetPath = AssetDatabase.GetAssetPath(m_NormalMapTexture.objectReferenceValue);
@@ -112,6 +122,11 @@ namespace UnityEditor
             if (!target)
                 return;
 
+            if (styles == null)
+            {
+                styles = new Styles();
+            }
+
             serializedObject.Update();
 
             EditorGUI.BeginChangeCheck();
@@ -128,38 +143,14 @@ namespace UnityEditor
 
             ValidateTextures();
 
-            GUILayoutOption kWidth10 = GUILayout.Width(10);
-            GUILayoutOption kMinWidth32 = GUILayout.MinWidth(32);
-
             GUILayout.Space(6);
 
-            Vector2 tileSize = m_TileSize.vector2Value;
-            Vector2 tileOffset = m_TileOffset.vector2Value;
+            m_TileSize.vector2Value = EditorGUILayout.Vector2Field(styles.size, m_TileSize.vector2Value);
+            m_TileOffset.vector2Value = EditorGUILayout.Vector2Field(styles.offset, m_TileOffset.vector2Value);
 
-            GUILayout.BeginHorizontal();
-
-            GUILayout.BeginVertical();
-            GUILayout.Label("", EditorStyles.miniLabel, kWidth10);
-            GUILayout.Label("x", EditorStyles.miniLabel, kWidth10);
-            GUILayout.Label("y", EditorStyles.miniLabel, kWidth10);
-            GUILayout.EndVertical();
-            GUILayout.BeginVertical();
-            GUILayout.Label("Size", EditorStyles.miniLabel);
-            tileSize.x = EditorGUILayout.FloatField(tileSize.x, EditorStyles.miniTextField, kMinWidth32);
-            tileSize.y = EditorGUILayout.FloatField(tileSize.y, EditorStyles.miniTextField, kMinWidth32);
-            m_TileSize.vector2Value = tileSize;
-            GUILayout.EndVertical();
-            GUILayout.BeginVertical();
-            GUILayout.Label("Offset", EditorStyles.miniLabel);
-            tileOffset.x = EditorGUILayout.FloatField(tileOffset.x, EditorStyles.miniTextField, kMinWidth32);
-            tileOffset.y = EditorGUILayout.FloatField(tileOffset.y, EditorStyles.miniTextField, kMinWidth32);
-            m_TileOffset.vector2Value = tileOffset;
-            GUILayout.EndVertical();
-            GUILayout.EndHorizontal();
-
-            m_Specular.colorValue = EditorGUILayout.ColorField("Specular", m_Specular.colorValue);
-            m_Metallic.floatValue = EditorGUILayout.Slider("Metallic", m_Metallic.floatValue, 0.0f, 1.0f);
-            m_Smoothness.floatValue = EditorGUILayout.Slider("Smoothness", m_Smoothness.floatValue, 0.0f, 1.0f);
+            m_Specular.colorValue = EditorGUILayout.ColorField(styles.specular, m_Specular.colorValue);
+            m_Metallic.floatValue = EditorGUILayout.Slider(styles.metallic, m_Metallic.floatValue, 0.0f, 1.0f);
+            m_Smoothness.floatValue = EditorGUILayout.Slider(styles.smoothness, m_Smoothness.floatValue, 0.0f, 1.0f);
 
             m_HasChanged |= EditorGUI.EndChangeCheck();
             serializedObject.ApplyModifiedProperties();

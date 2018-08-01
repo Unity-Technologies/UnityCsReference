@@ -446,7 +446,6 @@ namespace UnityEditor
 
             DoProjectGenerationSettings();
             DoEtcTextureCompressionSettings();
-            DoInternalSettings();
             DoLineEndingsSettings();
             DoStreamingSettings();
 
@@ -467,28 +466,6 @@ namespace UnityEditor
             newvalue = EditorGUILayout.TextField(Content.rootNamespace, old);
             if (newvalue != old)
                 EditorSettings.projectGenerationRootNamespace = newvalue;
-        }
-
-        private void DoInternalSettings()
-        {
-            if (!EditorPrefs.GetBool("DeveloperMode", false))
-                return;
-
-            GUILayout.Space(10);
-            GUILayout.Label(Content.internalSettings, EditorStyles.boldLabel);
-
-            var postfix = "-testable";
-            EditorGUI.BeginChangeCheck();
-            var isEnabled = EditorSettings.Internal_UserGeneratedProjectSuffix == postfix;
-            isEnabled = EditorGUILayout.Toggle(Content.internalSettingsVisible, isEnabled);
-            if (EditorGUI.EndChangeCheck())
-            {
-                EditorSettings.Internal_UserGeneratedProjectSuffix = isEnabled ? postfix : "";
-            }
-            if (isEnabled)
-            {
-                EditorGUILayout.HelpBox("If you want this to be set for other people, remember to manually add ProjectSettings/EditorSettings.asset to the repository", MessageType.Info);
-            }
         }
 
         private void DoEtcTextureCompressionSettings()

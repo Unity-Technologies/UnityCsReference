@@ -150,6 +150,28 @@ namespace UnityEditor
                 }
             }
 
+            public static void SetTargetDeviceFamily(WSATargetFamily family, bool value)
+            {
+                InternalSetTargetDeviceFamily(family.ToString(), value.ToString());
+            }
+
+            public static bool GetTargetDeviceFamily(WSATargetFamily family)
+            {
+                string stringValue = InternalGetTargetDeviceFamily(family.ToString());
+
+                if (string.IsNullOrEmpty(stringValue)) return false;
+
+                try
+                {
+                    return (bool)System.ComponentModel.TypeDescriptor.GetConverter(typeof(bool)).ConvertFromString(stringValue);
+                }
+                catch
+                {
+                    Debug.LogError("Failed to parse value  ('" + family.ToString() + "," + stringValue + "') to bool type.");
+                    return false;
+                }
+            }
+
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileLogo80
             {

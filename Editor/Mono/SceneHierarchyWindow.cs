@@ -223,9 +223,9 @@ namespace UnityEditor
             }
         }
 
-        internal override void SetSearchFilter(string searchFilter, SearchableEditorWindow.SearchMode searchMode, bool setAll)
+        internal override void SetSearchFilter(string searchFilter, SearchableEditorWindow.SearchMode searchMode, bool setAll, bool delayed = false)
         {
-            base.SetSearchFilter(searchFilter, searchMode, setAll);
+            base.SetSearchFilter(searchFilter, searchMode, setAll, delayed);
             m_SceneHierarchy.SetSearchFilter(searchFilter, (SearchableEditorWindow.SearchModeHierarchyWindow)searchMode);
         }
 

@@ -25,7 +25,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var f = (MaskField)ve;
-                string choicesFromBag = m_MaskChoices.GetValueFromBag(bag);
+                string choicesFromBag = m_MaskChoices.GetValueFromBag(bag, cc);
                 // Here the choices is comma separated in the string...
                 string[] choices = choicesFromBag.Split(',');
 
@@ -39,7 +39,7 @@ namespace UnityEditor.Experimental.UIElements
                     f.choices = listOfChoices;
                 }
                 // The mask is simply an int
-                f.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag));
+                f.SetValueWithoutNotify(m_MaskValue.GetValueFromBag(bag, cc));
             }
         }
 

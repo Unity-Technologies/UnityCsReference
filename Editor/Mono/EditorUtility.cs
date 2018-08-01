@@ -242,19 +242,19 @@ namespace UnityEditor
             return PrefabUtility.ReconnectToLastPrefab(go);
         }
 
-        [Obsolete("Use PrefabUtility.GetPrefabType", false)]
+        [Obsolete("Use PrefabUtility.GetPrefabAssetType and PrefabUtility.GetPrefabInstanceStatus to get the full picture about Prefab types.", false)]
         public static PrefabType GetPrefabType(Object target)
         {
             return PrefabUtility.GetPrefabType(target);
         }
 
-        [Obsolete("Use PrefabUtility.GetCorrespondingObjectFromSource", false)]
+        [Obsolete("Use PrefabUtility.GetCorrespondingObjectFromSource.", false)]
         public static Object GetPrefabParent(Object source)
         {
             return PrefabUtility.GetCorrespondingObjectFromSource(source);
         }
 
-        [Obsolete("Use PrefabUtility.GetOutermostPrefabInstanceRoot", false)]
+        [Obsolete("Use PrefabUtility.GetOutermostPrefabInstanceRoot if source is a Prefab instance or source.transform.root.gameObject if source is a Prefab Asset object.", false)]
         public static GameObject FindPrefabRoot(GameObject source)
         {
             return PrefabUtility.FindPrefabRoot(source);

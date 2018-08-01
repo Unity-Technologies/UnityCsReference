@@ -7,13 +7,16 @@
 GUILayout.TextureGrid number of horiz elements doesnt work
 */
 
+using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor.AnimatedValues;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
-
+using UnityEditor.ShortcutManagement;
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
 
 namespace UnityEditor
 {
@@ -430,20 +433,21 @@ namespace UnityEditor
             return valueInPercent;
         }
 
-        // TODO LOOK INTO THESE!!!
-        internal static PrefKey[] s_ToolKeys =
+        class TerrainToolContext : IShortcutToolContext
         {
-            new PrefKey("Terrain/Raise Height", "f1"),
-            new PrefKey("Terrain/Set Height", "f2"),
-            new PrefKey("Terrain/Smooth Height", "f3"),
-            new PrefKey("Terrain/Texture Paint", "f4"),
-            new PrefKey("Terrain/Tree Brush", "f5"),
-            new PrefKey("Terrain/Detail Brush", "f6")
-        };
-        internal static PrefKey s_PrevBrush = new PrefKey("Terrain/Previous Brush", ",");
-        internal static PrefKey s_NextBrush = new PrefKey("Terrain/Next Brush", ".");
-        internal static PrefKey s_PrevTexture = new PrefKey("Terrain/Previous Detail", "#,");
-        internal static PrefKey s_NextTexture = new PrefKey("Terrain/Next Detail", "#.");
+            public TerrainToolContext(TerrainInspector editor)
+            {
+                terrainEditor = editor;
+            }
+
+            public bool active
+            {
+                get { return !(s_activeTerrainInspector != 0 && s_activeTerrainInspector != terrainEditor.GetInstanceID()); }
+            }
+
+            public TerrainInspector terrainEditor { get; }
+        }
+
         // Source terrain
         Terrain m_Terrain;
         TerrainCollider m_TerrainCollider;
@@ -499,42 +503,87 @@ namespace UnityEditor
 
         private LightingSettingsInspector m_Lighting;
 
-
-        void CheckKeys()
+        static void ChangeTool(ShortcutArguments args, Action<TerrainInspector> action)
         {
-            // If there is an active inspector, hot keys are exclusive to it.
-            if (s_activeTerrainInspector != 0 && s_activeTerrainInspector != GetInstanceID())
-                return;
+            var context = (TerrainToolContext)args.context;
+            TerrainInspector editor = context.terrainEditor;
 
-            for (int i = 0; i < s_ToolKeys.Length; i++)
-            {
-                if (s_ToolKeys[i].activated)
-                {
-                    selectedTool = (TerrainTool)i;
-                    Repaint();
-                    Event.current.Use();
-                }
-            }
+            action(editor);
+            editor.Repaint();
+        }
 
-            if (s_PrevBrush.activated)
-            {
-                brushList.SelectPrevBrush();
-                Repaint();
-                Event.current.Use();
-            }
+        [FormerlyPrefKeyAs("Terrain/Raise Height", "f1")]
+        [Shortcut("Terrain/Raise Height", typeof(TerrainToolContext), "f1")]
+        static void RaiseHeight(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.selectedTool = TerrainTool.Paint);
+        }
 
-            if (s_NextBrush.activated)
-            {
-                brushList.SelectNextBrush();
-                Repaint();
-                Event.current.Use();
-            }
-            int delta = 0;
-            if (s_NextTexture.activated)
-                delta = 1;
-            if (s_PrevTexture.activated)
-                delta = -1;
+        [FormerlyPrefKeyAs("Terrain/Set Height", "f2")]
+        [Shortcut("Terrain/Set Height", typeof(TerrainToolContext), "f2")]
+        static void SetHeight(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.selectedTool = TerrainTool.PlaceTree);
+        }
 
+        [FormerlyPrefKeyAs("Terrain/Smooth Height", "f3")]
+        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolContext), "f3")]
+        static void SmoothHeight(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.selectedTool = TerrainTool.PaintDetail);
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
+        [Shortcut("Terrain/Texture Paint", typeof(TerrainToolContext), "f4")]
+        static void TexturePaint(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.selectedTool = TerrainTool.TerrainSettings);
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
+        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolContext), "f5")]
+        static void TreeBrush(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.selectedTool = TerrainTool.TerrainToolCount);
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
+        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolContext), "f6")]
+        static void DetailBrush(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.selectedTool = (TerrainTool)5);
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Previous Brush", ",")]
+        [Shortcut("Terrain/Previous Brush", typeof(TerrainToolContext), ",")]
+        static void PreviousBrush(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.brushList.SelectPrevBrush());
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Next Brush", ".")]
+        [Shortcut("Terrain/Next Brush", typeof(TerrainToolContext), ".")]
+        static void NextBrush(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.brushList.SelectNextBrush());
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Previous Detail", "#,")]
+        [Shortcut("Terrain/Previous Detail", typeof(TerrainToolContext), "#,")]
+        static void PreviousDetail(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.DetailDelta(-1));
+        }
+
+        [FormerlyPrefKeyAs("Terrain/Next Detail", "#.")]
+        [Shortcut("Terrain/Next Detail", typeof(TerrainToolContext), "#.")]
+        static void NextDetail(ShortcutArguments args)
+        {
+            ChangeTool(args, editor => editor.DetailDelta(1));
+        }
+
+        void DetailDelta(int delta)
+        {
             if (delta != 0)
             {
                 switch (selectedTool)
@@ -551,7 +600,6 @@ namespace UnityEditor
                             TreePainter.selectedTree = m_TreeContents.Length - 1;
                         else if (delta == 1 && m_TreeContents.Length > 0)
                             TreePainter.selectedTree = 0;
-                        Event.current.Use();
                         Repaint();
                         break;
                 }
@@ -641,11 +689,14 @@ namespace UnityEditor
 
             InitializeLightingFields();
 
+            m_TerrainToolContext = new TerrainToolContext(this);
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_TerrainToolContext);
             SceneView.onSceneGUIDelegate += OnSceneGUICallback;
         }
 
         public void OnDisable()
         {
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_TerrainToolContext);
             TerrainPaintUtility.FlushAllPaints();
             SceneView.onSceneGUIDelegate -= OnSceneGUICallback;
 
@@ -661,6 +712,8 @@ namespace UnityEditor
         }
 
         SavedInt m_SelectedTool = new SavedInt("TerrainSelectedTool", (int)TerrainTool.Paint);
+        TerrainToolContext m_TerrainToolContext;
+
         TerrainTool selectedTool
         {
             get
@@ -1446,8 +1499,6 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
 
-            CheckKeys();
-
             if (tool != (int)TerrainTool.Paint)
             {
                 GUILayout.BeginVertical(EditorStyles.helpBox);
@@ -1611,8 +1662,6 @@ namespace UnityEditor
                 return;
 
             Event e = Event.current;
-
-            CheckKeys();
 
             if (selectedTool == TerrainTool.Paint)
             {

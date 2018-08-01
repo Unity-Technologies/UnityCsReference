@@ -92,11 +92,6 @@ namespace UnityEditor
                 }
             }
 
-            // Note that we do not yet support getting a fileID for new unsaved GameObjects added in PrefabMode (as they are not yet related to a file)
-            // The below section will log an error when adding a GameObject and then starting an assembly reload. So expanded state for these objects are not surviving assembly reload yet.
-            //if (fileID == 0)
-            //    Debug.LogError("GameObject does not have a fileID and it could not be generated: " + gameObject.name + " (" + gameObject.GetInstanceID() + "). Is PrefabInstance: " + PrefabUtility.IsPartOfNonAssetPrefabInstance(gameObject) + ", Prefab type: " + PrefabTypeUtility.GetType(gameObject));
-
             return fileID;
         }
 

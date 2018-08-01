@@ -23,7 +23,7 @@ namespace UnityEditor.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 var lf = (LayerField)ve;
-                lf.SetValueWithoutNotify(m_Value.GetValueFromBag(bag));
+                lf.SetValueWithoutNotify(m_Value.GetValueFromBag(bag, cc));
             }
         }
 

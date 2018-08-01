@@ -26,7 +26,7 @@ namespace UnityEditor
         static GUIView()
         {
             Panel.loadResourceFunc = StyleSheetResourceUtil.LoadResource;
-            StyleSheetApplicator.createDefaultCursorStyleFunc = UIElementsEditorUtility.CreateDefaultCursorStyle;
+            StyleSheetApplicator.getCursorIdFunc = UIElementsEditorUtility.GetCursorId;
             Panel.TimeSinceStartup = () => (long)(EditorApplication.timeSinceStartup * 1000.0f);
         }
 

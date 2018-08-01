@@ -184,6 +184,8 @@ namespace UnityEngine.Experimental.UIElements
 
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
+        internal VisualElement topElementUnderMouse { get; set; }
+
         public IPanelDebug panelDebug { get; set; }
     }
 

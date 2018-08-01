@@ -24,11 +24,11 @@ namespace UnityEngine.Experimental.UIElements
                 base.Init(ve, bag, cc);
 
                 ScrollView scrollView = (ScrollView)ve;
-                scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag);
-                scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag);
-                scrollView.stretchContentWidth = m_StretchContentWidth.GetValueFromBag(bag);
-                scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag);
-                scrollView.verticalPageSize = m_VerticalPageSize.GetValueFromBag(bag);
+                scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag, cc);
+                scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag, cc);
+                scrollView.stretchContentWidth = m_StretchContentWidth.GetValueFromBag(bag, cc);
+                scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag, cc);
+                scrollView.verticalPageSize = m_VerticalPageSize.GetValueFromBag(bag, cc);
             }
         }
 

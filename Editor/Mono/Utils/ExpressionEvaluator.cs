@@ -40,24 +40,20 @@ namespace UnityEditor
             }
         }
 
-        public static T Evaluate<T>(string expression)
+        public static bool Evaluate<T>(string expression, out T value)
         {
-            T result = default(T);
+            if (TryParse(expression, out value))
+                return true;
 
-            if (!TryParse<T>(expression, out result))
-            {
-                expression = PreFormatExpression(expression);
-                string[] infixTokens = ExpressionToTokens(expression);
-                infixTokens = FixUnaryOperators(infixTokens);
-                string[] RPNTokens = InfixToRPN(infixTokens);
-                result = Evaluate<T>(RPNTokens);
-            }
-
-            return result;
+            expression = PreFormatExpression(expression);
+            string[] infixTokens = ExpressionToTokens(expression);
+            infixTokens = FixUnaryOperators(infixTokens);
+            string[] RPNTokens = InfixToRPN(infixTokens);
+            return Evaluate(RPNTokens, out value);
         }
 
         // Evaluate RPN tokens (http://en.wikipedia.org/wiki/Reverse_Polish_notation)
-        private static T Evaluate<T>(string[] tokens)
+        private static bool Evaluate<T>(string[] tokens, out T value)
         {
             Stack<string> stack = new Stack<string>();
 
@@ -81,7 +77,10 @@ namespace UnityEditor
                     if (parsed && values.Count == oper.inputs)
                         stack.Push(Evaluate<T>(values.ToArray(), token[0]).ToString());
                     else // Can't parse values or too few values for the operator -> exit
-                        return default(T);
+                    {
+                        value = default(T);
+                        return false;
+                    }
                 }
                 else
                 {
@@ -91,12 +90,12 @@ namespace UnityEditor
 
             if (stack.Count == 1)
             {
-                T resultT;
-                if (TryParse<T>(stack.Pop(), out resultT))
-                    return resultT;
+                if (TryParse(stack.Pop(), out value))
+                    return true;
             }
 
-            return default(T);
+            value = default(T);
+            return false;
         }
 
         // Translate tokens from infix into RPN (http://en.wikipedia.org/wiki/Shunting-yard_algorithm)

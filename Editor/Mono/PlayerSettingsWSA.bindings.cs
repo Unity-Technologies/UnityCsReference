@@ -84,6 +84,18 @@ namespace UnityEditor
             UserNotificationListener = 36,
         }
 
+        // match these with the capabilities listed in MetroCapabilities.h
+        public enum WSATargetFamily
+        {
+            Desktop = 0,
+            Mobile = 1,
+            Xbox = 2,
+            Holographic = 3,
+            Team = 4,
+            IoT = 5,
+            IoTHeadless = 6,
+        }
+
         public enum WSAImageScale
         {
             _80 = 80,
@@ -337,6 +349,10 @@ namespace UnityEditor
             private static extern void InternalSetCapability(string name, string value);
 
             private static extern string InternalGetCapability(string name);
+
+            private static extern void InternalSetTargetDeviceFamily(string name, string value);
+
+            private static extern string InternalGetTargetDeviceFamily(string name);
 
             // Workaround for Case 756100 - properties (and probably functions) in nested+nested class are not correctly bound, causing MissingMethodException when calling them from C#
             internal static extern string internalProtocolName { get; set; }

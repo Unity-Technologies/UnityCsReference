@@ -527,12 +527,12 @@ namespace UnityEditor
             }
         }
 
-        internal override void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll)
+        internal override void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll, bool delayed = false)
         {
             if (m_SearchFilter == "" || searchFilter == "")
                 m_StartSearchFilterTime = EditorApplication.timeSinceStartup;
 
-            base.SetSearchFilter(searchFilter, mode, setAll);
+            base.SetSearchFilter(searchFilter, mode, setAll, delayed);
         }
 
         internal void OnLostFocus()
@@ -894,6 +894,12 @@ namespace UnityEditor
             AudioUtil.SetListenerTransform(m_AudioPlay ? m_Camera.transform : null);
 
             s_AudioSceneView = this;
+
+
+            if (m_AudioPlay)
+            {
+                AudioMixerWindow.RepaintAudioMixerWindow();
+            }
         }
 
         /// TODO: Don't repaint sceneview unless either old or new selection is a scene object

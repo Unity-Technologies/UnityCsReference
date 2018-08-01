@@ -167,6 +167,25 @@ namespace UnityEditor.Collaboration
         }
 
         [UsedByNativeCode]
+        static bool HasVersionControl()
+        {
+            return s_VersionControlInstance != null;
+        }
+
+        [UsedByNativeCode]
+        static bool SupportsDownloads()
+        {
+            if (s_VersionControlInstance != null)
+            {
+                return s_VersionControlInstance.SupportsDownloads();
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        [UsedByNativeCode]
         static bool OnEnableVersionControl()
         {
             if (s_VersionControlInstance != null)
@@ -198,6 +217,15 @@ namespace UnityEditor.Collaboration
             else
             {
                 return null;
+            }
+        }
+
+        [UsedByNativeCode]
+        static void MergeDownloadedFiles(bool isFullDownload)
+        {
+            if (s_VersionControlInstance != null)
+            {
+                s_VersionControlInstance.MergeDownloadedFiles(isFullDownload);
             }
         }
 

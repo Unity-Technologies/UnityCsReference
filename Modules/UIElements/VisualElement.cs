@@ -72,9 +72,9 @@ namespace UnityEngine.Experimental.UIElements
         public class UxmlTraits : UIElements.UxmlTraits
         {
             UxmlStringAttributeDescription m_Name = new UxmlStringAttributeDescription { name = "name" };
-            UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "pickingMode" };
+            UxmlEnumAttributeDescription<PickingMode> m_PickingMode = new UxmlEnumAttributeDescription<PickingMode> { name = "picking-mode", obsoleteNames = new[] { "pickingMode" }};
             UxmlStringAttributeDescription m_Tooltip = new UxmlStringAttributeDescription { name = "tooltip" };
-            protected UxmlIntAttributeDescription m_FocusIndex = new UxmlIntAttributeDescription { name = "focusIndex", defaultValue = VisualElement.defaultFocusIndex };
+            protected UxmlIntAttributeDescription m_FocusIndex = new UxmlIntAttributeDescription { name = "focus-index", obsoleteNames = new[] { "focusIndex" }, defaultValue = VisualElement.defaultFocusIndex };
 
             public override IEnumerable<UxmlChildElementDescription> uxmlChildElementsDescription
             {
@@ -84,10 +84,10 @@ namespace UnityEngine.Experimental.UIElements
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ve.name = m_Name.GetValueFromBag(bag);
-                ve.pickingMode = m_PickingMode.GetValueFromBag(bag);
-                ve.focusIndex = m_FocusIndex.GetValueFromBag(bag);
-                ve.tooltip = m_Tooltip.GetValueFromBag(bag);
+                ve.name = m_Name.GetValueFromBag(bag, cc);
+                ve.pickingMode = m_PickingMode.GetValueFromBag(bag, cc);
+                ve.focusIndex = m_FocusIndex.GetValueFromBag(bag, cc);
+                ve.tooltip = m_Tooltip.GetValueFromBag(bag, cc);
             }
         }
 

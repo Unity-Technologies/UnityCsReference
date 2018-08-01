@@ -223,12 +223,30 @@ namespace UnityEditor.StyleSheets
                 sb.Append(options.propertyIndent);
                 sb.Append(property.name);
                 sb.Append(":");
-                foreach (var propertyValue in property.values)
+                if (property.name == "cursor" && property.values.Length > 1)
                 {
-                    var propertyValueStr = ToUssString(sheet, options, propertyValue);
-                    sb.Append(" ");
+                    int i;
+                    string propertyValueStr;
+                    for (i = 0; i < property.values.Length - 1; i++)
+                    {
+                        propertyValueStr = ToUssString(sheet, options, property.values[i]);
+                        sb.Append(" ");
+                        sb.Append(propertyValueStr);
+                    }
+                    sb.Append(", ");
+                    propertyValueStr = ToUssString(sheet, options,  property.values[i]);
                     sb.Append(propertyValueStr);
                 }
+                else
+                {
+                    foreach (var propertyValue in property.values)
+                    {
+                        var propertyValueStr = ToUssString(sheet, options, propertyValue);
+                        sb.Append(" ");
+                        sb.Append(propertyValueStr);
+                    }
+                }
+
                 sb.Append(";\n");
             }
         }

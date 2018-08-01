@@ -161,6 +161,11 @@ namespace UnityEngine.Experimental.UIElements
             SaveGlobals();
 
             UIElementsUtility.BeginContainerGUI(cache, evt, this);
+
+            // For the IMGUI, we need to update the GUI.color with the actual play mode tint ...
+            // In fact, this is taken from EditorGUIUtility.ResetGUIState().
+            // Here, the play mode tint is either white (no tint, or not in play mode) or the right color (if in play mode)
+            GUI.color = UIElementsUtility.editorPlayModeTintColor;
             // From now on, Event.current is either evt or a copy of evt.
             // Since Event.current may change while being processed, we do not rely on evt below but use Event.current instead.
 

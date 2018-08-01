@@ -483,6 +483,7 @@ namespace UnityEditor
 
         void OnNodeToggled(AudioMixerTreeViewNode node, bool nodeWasEnabled)
         {
+            Undo.RecordObject(m_Controller, "Changed Group Visibility");
             var treeSelection = GetAudioMixerGroupsFromNodeIDs(m_AudioGroupTree.GetSelection());
             if (!treeSelection.Contains(node.group))
                 treeSelection = new List<AudioMixerGroupController> {node.group};

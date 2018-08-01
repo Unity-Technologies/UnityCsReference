@@ -16,7 +16,7 @@ namespace UnityEngine.Experimental.UIElements
         public void DrawRect(RectStylePainterParameters painterParams)
         {
             Rect screenRect = painterParams.rect;
-            Color color = painterParams.color;
+            Color color = painterParams.color * UIElementsUtility.editorPlayModeTintColor;
 
             var borderWidths = painterParams.border.GetWidths();
             var borderRadiuses = painterParams.border.GetRadiuses();
@@ -29,7 +29,7 @@ namespace UnityEngine.Experimental.UIElements
             Rect screenRect = painterParams.rect;
             Rect sourceRect = painterParams.uv != Rect.zero ? painterParams.uv : new Rect(0, 0, 1, 1);
             Texture texture = painterParams.texture;
-            Color color = painterParams.color;
+            Color color = painterParams.color * UIElementsUtility.editorPlayModeTintColor;
             ScaleMode scaleMode = painterParams.scaleMode;
             int sliceLeft = painterParams.sliceLeft;
             int sliceTop = painterParams.sliceTop;
@@ -39,8 +39,8 @@ namespace UnityEngine.Experimental.UIElements
 
             Rect textureRect = screenRect;
 
-            /// Comparing aspects ratio is error-prone because the <c>screenRect</c> may end up being scaled by the
-            /// transform and the corners will end up being pixel aligned, possibly resulting in blurriness.
+            // Comparing aspects ratio is error-prone because the <c>screenRect</c> may end up being scaled by the
+            // transform and the corners will end up being pixel aligned, possibly resulting in blurriness.
             float srcAspect = (texture.width * sourceRect.width) / (texture.height * sourceRect.height);
             float destAspect = screenRect.width / screenRect.height;
             switch (scaleMode)
@@ -90,7 +90,7 @@ namespace UnityEngine.Experimental.UIElements
             Font font = painterParams.font;
             int fontSize = painterParams.fontSize;
             FontStyle fontStyle = painterParams.fontStyle;
-            Color fontColor = painterParams.fontColor;
+            Color fontColor = painterParams.fontColor * UIElementsUtility.editorPlayModeTintColor;
             TextAnchor anchor = painterParams.anchor;
             bool wordWrap = painterParams.wordWrap;
             float wordWrapWidth = painterParams.wordWrapWidth;

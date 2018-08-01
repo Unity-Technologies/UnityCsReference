@@ -471,9 +471,12 @@ namespace UnityEditor.SceneManagement
 
         public void PlaceGameObjectInCurrentStage(GameObject go)
         {
-            // For prefab stages we want to ensure new root GameObjects are auto-parented under the prefab root
+            // For prefab stages we want to ensure new root GameObjects are auto-parented under the prefab root if possible.
+            // Note that users can get Awake and OnEnable callbacks while loading a Prefab into Prefab Mode, at this time
+            // the PrefabStage is not fully initialized as it does not have a reference to the prefabContentsRoot yet. In this case
+            // the go is not auto parented and the parenting must be handled by the client.
             var prefabStage = GetCurrentPrefabStage();
-            if (prefabStage != null && go != null && go.transform.parent == null)
+            if (prefabStage != null && prefabStage.initialized && go != null && go.transform.parent == null)
             {
                 go.transform.SetParent(prefabStage.prefabContentsRoot.transform, true);
             }

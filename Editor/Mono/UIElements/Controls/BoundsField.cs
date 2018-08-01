@@ -28,8 +28,8 @@ namespace UnityEditor.Experimental.UIElements
 
                 BoundsField f = (BoundsField)ve;
                 f.SetValueWithoutNotify(new Bounds(
-                    new Vector3(m_CenterXValue.GetValueFromBag(bag), m_CenterYValue.GetValueFromBag(bag), m_CenterZValue.GetValueFromBag(bag)),
-                    new Vector3(m_ExtentsXValue.GetValueFromBag(bag), m_ExtentsYValue.GetValueFromBag(bag), m_ExtentsZValue.GetValueFromBag(bag))));
+                    new Vector3(m_CenterXValue.GetValueFromBag(bag, cc), m_CenterYValue.GetValueFromBag(bag, cc), m_CenterZValue.GetValueFromBag(bag, cc)),
+                    new Vector3(m_ExtentsXValue.GetValueFromBag(bag, cc), m_ExtentsYValue.GetValueFromBag(bag, cc), m_ExtentsZValue.GetValueFromBag(bag, cc))));
             }
         }
 

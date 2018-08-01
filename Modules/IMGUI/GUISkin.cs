@@ -196,7 +196,18 @@ namespace UnityEngine
         public GUISettings settings { get { return m_Settings; } }
 
         internal static GUIStyle ms_Error;
-        internal static GUIStyle error { get { if (ms_Error == null) ms_Error = new GUIStyle(); return ms_Error; } }
+        internal static GUIStyle error
+        {
+            get
+            {
+                if (ms_Error == null)
+                {
+                    ms_Error = new GUIStyle();
+                    ms_Error.name = "StyleNotFoundError";
+                }
+                return ms_Error;
+            }
+        }
 
         private Dictionary<string, GUIStyle> m_Styles = null;
 
@@ -313,7 +324,7 @@ namespace UnityEngine
             GUIStyle s = FindStyle(styleName);
             if (s != null)
                 return s;
-            Debug.LogWarning("Unable to find style '" + styleName + "' in skin '" + name + "' " + Event.current.type);
+            Debug.LogWarning("Unable to find style '" + styleName + "' in skin '" + name + "' " + (Event.current != null ? Event.current.type.ToString() : "<called outside OnGUI>"));
             return error;
         }
 

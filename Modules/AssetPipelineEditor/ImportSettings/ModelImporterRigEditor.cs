@@ -32,7 +32,6 @@ namespace UnityEditor
         SerializedProperty m_AnimationCompression;
 
         SerializedProperty m_RootMotionBoneName;
-        SerializedProperty m_RootMotionBoneRotation;
 
         SerializedProperty m_SrcHasExtraRoot;
         SerializedProperty m_DstHasExtraRoot;
@@ -41,6 +40,9 @@ namespace UnityEditor
         SerializedProperty m_RigImportWarnings;
 
         SerializedProperty m_OptimizeGameObjects;
+
+        SerializedProperty m_HumanBoneArray;
+        SerializedProperty m_Skeleton;
 
         private static bool importMessageFoldout = false;
 
@@ -62,8 +64,6 @@ namespace UnityEditor
         bool m_IsBiped = false;
         List<string> m_BipedMappingReport = null;
 
-        private MappingRelevantSettings[] oldModelSettings = null;
-        private MappingRelevantSettings[] newModelSettings = null;
         bool m_ExtraExposedTransformFoldout = false;
 
         static class Styles
@@ -123,7 +123,6 @@ namespace UnityEditor
 
             // Generic bone setup
             m_RootMotionBoneName = serializedObject.FindProperty("m_HumanDescription.m_RootMotionBoneName");
-            m_RootMotionBoneRotation = serializedObject.FindProperty("m_HumanDescription.m_RootMotionBoneRotation");
 
             m_ExposeTransformEditor = new ExposeTransformEditor();
 
@@ -149,6 +148,9 @@ namespace UnityEditor
             m_RigImportErrors = serializedObject.FindProperty("m_RigImportErrors");
             m_RigImportWarnings = serializedObject.FindProperty("m_RigImportWarnings");
 
+            m_HumanBoneArray = serializedObject.FindProperty("m_HumanDescription.m_Human");
+            m_Skeleton = serializedObject.FindProperty("m_HumanDescription.m_Skeleton");
+
             m_ExposeTransformEditor.OnEnable(singleImporter.transformPaths, serializedObject);
 
             m_CanMultiEditTransformList = CanMultiEditTransformList();
@@ -159,17 +161,22 @@ namespace UnityEditor
             m_IsBiped = false;
             m_BipedMappingReport = new List<string>();
 
+            UpdateBipedMappingReport();
+
+            if (m_AnimationType.intValue == (int)ModelImporterAnimationType.Human && m_Avatar == null)
+            {
+                ResetAvatar();
+            }
+        }
+
+        private void UpdateBipedMappingReport()
+        {
             if (m_AnimationType.intValue == (int)ModelImporterAnimationType.Human)
             {
                 GameObject go = assetTarget as GameObject;
                 if (go != null)
                 {
                     m_IsBiped = AvatarBipedMapper.IsBiped(go.transform, m_BipedMappingReport);
-                }
-
-                if (m_Avatar == null)
-                {
-                    ResetAvatar();
                 }
             }
         }
@@ -407,7 +414,7 @@ With this option, this model will not create any avatar but only import animatio
             {
                 CheckAvatar(sourceAvatar);
 
-                AvatarSetupTool.ClearAll(serializedObject);
+                AvatarSetupTool.ClearAll(m_HumanBoneArray, m_Skeleton);
 
                 if (sourceAvatar != null)
                     CopyHumanDescriptionFromOtherModel(sourceAvatar);
@@ -419,7 +426,7 @@ With this option, this model will not create any avatar but only import animatio
             {
                 if (GUILayout.Button(Styles.UpdateMuscleDefinitionFromSource, EditorStyles.miniButton))
                 {
-                    AvatarSetupTool.ClearAll(serializedObject);
+                    AvatarSetupTool.ClearAll(m_HumanBoneArray, m_Skeleton);
                     CopyHumanDescriptionFromOtherModel(sourceAvatar);
                     m_AvatarCopyIsUpToDate = true;
                 }
@@ -632,144 +639,9 @@ With this option, this model will not create any avatar but only import animatio
             }
         }
 
-        private struct MappingRelevantSettings
-        {
-            public bool humanoid;
-            public bool copyAvatar;
-            public bool hasNoAnimation;
-            public bool usesOwnAvatar { get { return humanoid && !copyAvatar; } }
-        }
-
-        internal override void PreApply()
-        {
-            // Store the old mapping relevant settings for each model
-            // Note that we need to do this *before* applying the pending modified properties.
-            oldModelSettings = new MappingRelevantSettings[targets.Length];
-            for (int i = 0; i < targets.Length; i++)
-            {
-                // Find settings of individual model (doesn't include unapplied settings, so we get the "old" settings)
-                SerializedObject so = new SerializedObject(targets[i]);
-                SerializedProperty animationType = so.FindProperty("m_AnimationType");
-                SerializedProperty copyAvatar = so.FindProperty("m_CopyAvatar");
-                oldModelSettings[i].humanoid = animationType.intValue == (int)ModelImporterAnimationType.Human;
-                oldModelSettings[i].hasNoAnimation = animationType.intValue == (int)ModelImporterAnimationType.None;
-                oldModelSettings[i].copyAvatar = copyAvatar.boolValue;
-            }
-
-            // Store the new mapping relevant settings for each model
-            newModelSettings = new MappingRelevantSettings[targets.Length];
-            Array.Copy(oldModelSettings, newModelSettings, targets.Length);
-            for (int i = 0; i < targets.Length; i++)
-            {
-                // If the settings have multiple values they can't have been changed, since that causes them to have the same value.
-                // So only copy value from SerializedProperty if it does not have multiple values.
-                if (!m_AnimationType.hasMultipleDifferentValues)
-                    newModelSettings[i].humanoid = m_AnimationType.intValue == (int)ModelImporterAnimationType.Human;
-                if (!m_CopyAvatar.hasMultipleDifferentValues)
-                    newModelSettings[i].copyAvatar = m_CopyAvatar.boolValue;
-            }
-
-            for (int i = 0; i < targets.Length; i++)
-            {
-                if (!m_CopyAvatar.boolValue && !newModelSettings[i].humanoid && rootIndex > 0)
-                {
-                    ModelImporter importer = targets[i] as ModelImporter;
-                    GameObject go = AssetDatabase.LoadMainAssetAtPath(importer.assetPath) as GameObject;
-                    Transform rootMotionTransform = go.transform.Find(m_RootMotionBoneList[rootIndex].text);
-
-                    if (rootMotionTransform != null)
-                    {
-                        m_RootMotionBoneRotation.quaternionValue = rootMotionTransform.rotation;
-                    }
-                }
-            }
-        }
-
         internal override void PostApply()
         {
-            // But we might not be done yet!
-            // For all models which did not have own humanoid before but should have it now,
-            // we need to perform auto-mapping. (For the opposite case we also need to clear the mapping.)
-            // Iterate through all the models...
-            for (int i = 0; i < targets.Length; i++)
-            {
-                // If this model had its own humanoid avatar before but shouldn't have it now...
-                if (oldModelSettings[i].usesOwnAvatar && !newModelSettings[i].usesOwnAvatar && !newModelSettings[i].copyAvatar)
-                {
-                    // ...then clear auto-setup on this model.
-                    SerializedObject so = new SerializedObject(targets[i]);
-                    AvatarSetupTool.ClearAll(so);
-                    so.ApplyModifiedPropertiesWithoutUndo();
-                }
-
-                if (!m_CopyAvatar.boolValue && !newModelSettings[i].humanoid && rootIndex > 0)
-                {
-                    ModelImporter importer = targets[i] as ModelImporter;
-
-                    GameObject go = AssetDatabase.LoadMainAssetAtPath(importer.assetPath) as GameObject;
-                    // The character could be optimized right now
-                    // 'm_OptimizeGameObjects' can't be used to tell if it is optimized, because the user can change this value from UI,
-                    // and the change hasn't been applied yet.
-                    Animator animator = go.GetComponent<Animator>();
-                    bool noTransformHierarchy = animator && !animator.hasTransformHierarchy;
-                    if (noTransformHierarchy)
-                    {
-                        go = Instantiate(go) as GameObject;
-                        AnimatorUtility.DeoptimizeTransformHierarchy(go);
-                    }
-
-                    SerializedObject so = new SerializedObject(targets[i]);
-                    so.ApplyModifiedPropertiesWithoutUndo();
-
-                    if (noTransformHierarchy)
-                        DestroyImmediate(go);
-                }
-
-                // If this model should have its own humanoid avatar before and didn't have it before,
-                // then we need to perform auto-mapping.
-                if (!oldModelSettings[i].usesOwnAvatar && newModelSettings[i].usesOwnAvatar)
-                {
-                    ModelImporter importer = targets[i] as ModelImporter;
-                    // Special case if the model didn't have animation before...
-                    if (oldModelSettings[i].hasNoAnimation && assetTargets[i] != null)
-                    {
-                        // We have to do an extra import first, before the automapping works.
-                        // Because the model doesn't have any skinned meshes when it was last imported with
-                        // Animation Mode: None. And the auro-mapping relies on information in the skinned meshes.
-                        var targetAnimationType = importer.animationType;
-                        importer.animationType = ModelImporterAnimationType.Generic; // we dont want to build humanoid here, since it will generate errors.
-                        AssetDatabase.ImportAsset(importer.assetPath);
-                        importer.animationType = targetAnimationType;
-                    }
-
-                    // Perform auto-setup on this model.
-                    SerializedObject so = new SerializedObject(targets[i]);
-                    GameObject go = assetTargets[i] as GameObject;
-                    // The character could be optimized right now
-                    // 'm_OptimizeGameObjects' can't be used to tell if it is optimized, because the user can change this value from UI,
-                    // and the change hasn't been applied yet.
-                    if (go != null)
-                    {
-                        Animator animator = go.GetComponent<Animator>();
-                        bool noTransformHierarchy = animator && !animator.hasTransformHierarchy;
-                        if (noTransformHierarchy)
-                        {
-                            go = Instantiate(go) as GameObject;
-                            AnimatorUtility.DeoptimizeTransformHierarchy(go);
-                        }
-                        AvatarSetupTool.AutoSetupOnInstance(go, so);
-                        m_IsBiped = AvatarBipedMapper.IsBiped(go.transform, m_BipedMappingReport);
-
-                        if (noTransformHierarchy)
-                            DestroyImmediate(go);
-                    }
-
-                    so.ApplyModifiedPropertiesWithoutUndo();
-                }
-            }
-
-            oldModelSettings = null;
-            newModelSettings = null;
+            UpdateBipedMappingReport();
         }
     }
 }

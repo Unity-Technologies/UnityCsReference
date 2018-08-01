@@ -25,8 +25,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
-                ((Pill)ve).highlighted = m_Highlighted.GetValueFromBag(bag);
-                ((Pill)ve).text = m_Text.GetValueFromBag(bag);
+                ((Pill)ve).highlighted = m_Highlighted.GetValueFromBag(bag, cc);
+                ((Pill)ve).text = m_Text.GetValueFromBag(bag, cc);
             }
         }
 

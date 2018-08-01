@@ -25,7 +25,7 @@ namespace Unity.Experimental.EditorMode
 
             var label = new Label($"Unsupported in {EditorModes.CurrentModeName}");
             label.style.alignSelf = Align.Center;
-            label.style.textAlignment = TextAnchor.MiddleCenter;
+            label.style.unityTextAlign = TextAnchor.MiddleCenter;
             unsupported.Add(label);
             unsupported.Add(new Button(ReturnToDefault) { text = "Return to Default Mode" });
         }

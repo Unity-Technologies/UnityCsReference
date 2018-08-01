@@ -32,8 +32,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
     internal static class StyleSheetApplicator
     {
         // Strategy to create default cursor must be provided in the context of Editor or Runtime
-        internal delegate CursorStyle CreateDefaultCursorStyleFunction(StyleSheet sheet, StyleValueHandle handle);
-        internal static CreateDefaultCursorStyleFunction createDefaultCursorStyleFunc = null;
+        internal delegate int GetCursorIdFunction(StyleSheet sheet, StyleValueHandle handle);
+        internal static GetCursorIdFunction getCursorIdFunc = null;
 
         static void Apply<T>(T val, int specificity, ref StyleValue<T> property)
         {
@@ -90,33 +90,61 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             Apply(value, specificity, ref property);
         }
 
-        public static void ApplyCursor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleValue<CursorStyle> property)
+        public static void CompileCursor(StyleSheet sheet, StyleValueHandle[] handles, out float hotspotX, out float hotspotY, out int cursorId, out Texture2D texture)
         {
             var handle = handles[0];
+            int index = 0;
             bool isCustom = handle.valueType == StyleValueType.ResourcePath ||
                 handle.valueType == StyleValueType.AssetReference;
+
+            cursorId = 0;
+            texture = null;
+            hotspotX = 0f;
+            hotspotY = 0f;
+
             if (isCustom)
             {
-                Texture2D tex;
-                if (TryGetSourceFromHandle(sheet, handle, out tex))
+                if (TryGetSourceFromHandle(sheet, handles[index++], out texture))
                 {
-                    Vector2 hotspot = Vector2.zero;
-                    sheet.TryReadFloat(handles, 1, out hotspot.x);
-                    sheet.TryReadFloat(handles, 2, out hotspot.y);
+                    if (index < handles.Length && handles[index].valueType == StyleValueType.Float && sheet.TryReadFloat(handles, index++, out hotspotX))
+                    {
+                        if (!sheet.TryReadFloat(handles, index++, out hotspotY))
+                        {
+                        }
+                    }
+                }
 
-                    CursorStyle cursor = new CursorStyle() { texture = tex, hotspot = hotspot};
-                    Apply(cursor, specificity, ref property);
+                if (index < handles.Length)
+                {
+                    if (getCursorIdFunc != null)
+                    {
+                        cursorId = getCursorIdFunc(sheet, handles[index]);
+                    }
+                }
+                else
+                {
                 }
             }
             else
             {
                 // Default cursor
-                if (createDefaultCursorStyleFunc != null)
+                if (getCursorIdFunc != null)
                 {
-                    CursorStyle cursor = createDefaultCursorStyleFunc(sheet, handle);
-                    Apply(cursor, specificity, ref property);
+                    cursorId = getCursorIdFunc(sheet, handle);
                 }
             }
+        }
+
+        public static void ApplyCursor(StyleSheet sheet, StyleValueHandle[] handles, int specificity, ref StyleValue<CursorStyle> property)
+        {
+            float hotspotX;
+            float hotspotY;
+            int cursorId;
+            Texture2D texture;
+
+            CompileCursor(sheet, handles, out hotspotX, out hotspotY, out cursorId, out texture);
+            CursorStyle cursor = new CursorStyle() { texture = texture, hotspot = new Vector2(hotspotX, hotspotY), defaultCursorId = cursorId };
+            Apply(cursor, specificity, ref property);
         }
 
         public static void ApplyFont(StyleSheet sheet, StyleValueHandle[] handles, int specificity,

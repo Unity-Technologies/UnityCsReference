@@ -36,9 +36,9 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static GUIContent autoSaveGUIContent = new GUIContent("Auto Save");
-            public static GUIContent saveButtonContent = new GUIContent("Save");
-            public static GUIContent checkoutButtonContent = new GUIContent("Check Out");
+            public static GUIContent autoSaveGUIContent = EditorGUIUtility.TrTextContent("Auto Save");
+            public static GUIContent saveButtonContent = EditorGUIUtility.TrTextContent("Save");
+            public static GUIContent checkoutButtonContent = EditorGUIUtility.TrTextContent("Check Out");
             public static GUIStyle saveToggle;
             public static GUIStyle button;
 

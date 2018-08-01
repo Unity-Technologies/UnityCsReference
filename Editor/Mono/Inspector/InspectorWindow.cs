@@ -1184,6 +1184,10 @@ namespace UnityEditor
             if (editor == null)
                 return;
 
+            var genericEditor = editor as GenericInspector;
+            if (genericEditor)
+                genericEditor.m_InspectorMode = m_InspectorMode;
+
             Object target = editor.target;
 
             // Avoid drawing editor if native target object is not alive, unless it's a MonoBehaviour/ScriptableObject
@@ -1253,10 +1257,6 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(!editor.IsEnabled() || excludedClass))
             {
-                var genericEditor = editor as GenericInspector;
-                if (genericEditor)
-                    genericEditor.m_InspectorMode = m_InspectorMode;
-
                 EditorGUIUtility.hierarchyMode = true;
                 EditorGUIUtility.wideMode = position.width > Editor.k_WideModeMinWidth;
 

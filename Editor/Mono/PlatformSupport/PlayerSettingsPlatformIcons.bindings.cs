@@ -63,6 +63,8 @@ namespace UnityEditor
         public int width { get { return m_Width; } private set { m_Width = value; } }
         public int height { get { return m_Height; } private set { m_Height = value; } }
 
+        internal bool draggable { get; set; }
+
         public PlatformIconKind kind
         {
             get { return m_Kind; }
@@ -99,7 +101,7 @@ namespace UnityEditor
             return requiredIcons.Values.SelectMany(i => i).ToArray();
         }
 
-        internal PlatformIcon(int width, int height, int minLayerCount, int maxLayerCount, string iconSubKind, string description, PlatformIconKind kind)
+        internal PlatformIcon(int width, int height, int minLayerCount, int maxLayerCount, string iconSubKind, string description, PlatformIconKind kind, bool draggable = true)
         {
             this.width = width;
             this.height = height;
@@ -108,6 +110,7 @@ namespace UnityEditor
             this.minLayerCount = minLayerCount;
             this.maxLayerCount = maxLayerCount;
             this.kind = kind;
+            this.draggable = draggable;
 
             m_Textures = new List<Texture2D>();
         }
@@ -177,19 +180,22 @@ namespace UnityEditor
 
     public class PlatformIconKind
     {
-        internal static readonly PlatformIconKind Any = new PlatformIconKind(-1, "Any", BuildTargetGroup.Unknown);
+        internal static readonly PlatformIconKind Any = new PlatformIconKind(-1, "Any", "", BuildTargetGroup.Unknown);
 
         internal int kind { get; private set; }
         internal string platform { get; private set; }
         internal string[] customLayerLabels { get; private set; }
+        internal string description { get; set; }
         private string kindString { get; set; }
 
-        internal PlatformIconKind(int kind, string kindString, BuildTargetGroup platform, string[] customLayerLabels = null)
+
+        internal PlatformIconKind(int kind, string kindString, string description, BuildTargetGroup platform, string[] customLayerLabels = null)
         {
             this.kind = kind;
             this.platform = PlayerSettings.GetPlatformName(platform);
             this.kindString = kindString;
             this.customLayerLabels = customLayerLabels;
+            this.description = description;
         }
 
         public override bool Equals(object obj)
@@ -328,6 +334,12 @@ namespace UnityEditor
                 return new PlatformIconKind[] {};
 
             return platformIconProvider.GetRequiredPlatformIcons().Keys.ToArray();
+        }
+
+        internal static bool IsDefaultIconAvailable()
+        {
+            var icons = GetAllIconsForPlatform("");
+            return icons.Length > 0 && icons[0] != null;
         }
 
         internal static int GetNonEmptyPlatformIconCount(PlatformIcon[] icons)

@@ -16,9 +16,6 @@ namespace UnityEditor
             public static readonly GUIContent trimButtonLabel = EditorGUIUtility.TrTextContent("Trim", "Trims selected rectangle (T)");
         }
 
-        internal static PrefKey k_SpriteEditorTrim = new PrefKey("Sprite Editor/Trim", "#t");
-
-
         // overrides for SpriteFrameModuleBase
         public override void DoMainGUI()
         {
@@ -77,8 +74,7 @@ namespace UnityEditor
                     drawArea.width = skin.CalcSize(SpriteFrameModuleStyles.trimButtonLabel).x;
                     SpriteUtilityWindow.DrawToolBarWidget(ref drawArea, ref toolbarRect, (adjustedDrawArea) =>
                     {
-                        if (GUI.Button(adjustedDrawArea, SpriteFrameModuleStyles.trimButtonLabel, EditorStyles.toolbarButton) ||
-                            (string.IsNullOrEmpty(GUI.GetNameOfFocusedControl()) && k_SpriteEditorTrim.activated))
+                        if (GUI.Button(adjustedDrawArea, SpriteFrameModuleStyles.trimButtonLabel, EditorStyles.toolbarButton))
                         {
                             TrimAlpha();
                             Repaint();

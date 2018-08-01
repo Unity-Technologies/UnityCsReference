@@ -42,7 +42,7 @@ namespace UnityEditor
     }
 
     // The type of a prefab object as returned by PrefabUtility.GetPrefabType.
-    [Obsolete("PrefabType no longer tells everything about Prefab instance ")]
+    [Obsolete("PrefabType no longer tells everything about Prefab instance.")]
     public enum PrefabType
     {
         // The object is not a prefab nor an instance of a prefab.
@@ -948,7 +948,7 @@ namespace UnityEditor
             }
         }
 
-        [Obsolete("GetPrefabParent has been deprecated. Use GetCorrespondingObjectFromSource instead")]
+        [Obsolete("Use GetCorrespondingObjectFromSource.")]
         public static Object GetPrefabParent(Object obj)
         {
             return GetCorrespondingObjectFromSource(obj);
@@ -1239,7 +1239,7 @@ namespace UnityEditor
 
         // Given an object, returns its prefab type (None, if it's not a prefab)
 #pragma warning disable CS0618 // Type or member is obsolete
-        [Obsolete("Use PrefabTypeUtility GetType and GetPrefabInstanceStatus to get the full picture about Prefab types")]
+        [Obsolete("Use GetPrefabAssetType and GetPrefabInstanceStatus to get the full picture about Prefab types.")]
         public static PrefabType GetPrefabType(Object target)
         {
             if (!IsPartOfAnyPrefab(target))

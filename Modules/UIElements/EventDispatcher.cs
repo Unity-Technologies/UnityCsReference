@@ -91,6 +91,14 @@ namespace UnityEngine.Experimental.UIElements
 
         uint m_GateCount;
 
+        struct DispatchContext
+        {
+            public uint m_GateCount;
+            public Queue<EventRecord> m_Queue;
+        }
+
+        Stack<DispatchContext> m_DispatchContexts = new Stack<DispatchContext>();
+
         static EventDispatcher s_EventDispatcher;
 
         internal static EventDispatcher instance
@@ -119,7 +127,6 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_GateCount == 0; }
         }
 
-        VisualElement m_TopElementUnderMouse;
         Vector2 m_LastMousePosition;
 
         void DispatchEnterLeave(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, Func<EventBase> getEnterEventFunc, Func<EventBase> getLeaveEventFunc)
@@ -283,6 +290,25 @@ namespace UnityEngine.Experimental.UIElements
                 evt.Acquire();
                 m_Queue.Enqueue(new EventRecord {m_Event = evt, m_Panel = panel});
             }
+        }
+
+        internal void PushDispatcherContext()
+        {
+            m_DispatchContexts.Push(new DispatchContext() {m_GateCount = m_GateCount, m_Queue = m_Queue});
+            m_GateCount = 0;
+            m_Queue = k_EventQueuePool.Get();
+        }
+
+        internal void PopDispatcherContext()
+        {
+            Debug.Assert(m_GateCount == 0, "All gates should have been opened before popping dispatch context.");
+            Debug.Assert(m_Queue.Count == 0, "Queue should be empty when popping dispatch context.");
+
+            k_EventQueuePool.Release(m_Queue);
+
+            m_GateCount = m_DispatchContexts.Peek().m_GateCount;
+            m_Queue = m_DispatchContexts.Peek().m_Queue;
+            m_DispatchContexts.Pop();
         }
 
         internal void CloseGate()
@@ -503,27 +529,30 @@ namespace UnityEngine.Experimental.UIElements
                         // TODO when EditorWindow is docked MouseLeaveWindow is not always sent
                         // this is a problem in itself but it could leave some elements as "hover"
 
-                        if (evt.GetEventTypeId() == MouseLeaveWindowEvent.TypeId())
+                        BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
+
+                        if (basePanel != null && evt.GetEventTypeId() == MouseLeaveWindowEvent.TypeId())
                         {
-                            VisualElement currentTopElementUnderMouse = m_TopElementUnderMouse;
-                            m_TopElementUnderMouse = null;
-                            DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, mouseEvent);
-                            DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, mouseEvent);
+                            VisualElement currentTopElementUnderMouse = basePanel.topElementUnderMouse;
+                            basePanel.topElementUnderMouse = null;
+                            DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
+                            DispatchMouseOverMouseOut(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
                         }
-                        else if (evt.GetEventTypeId() == DragExitedEvent.TypeId())
+                        else if (basePanel != null && evt.GetEventTypeId() == DragExitedEvent.TypeId())
                         {
-                            VisualElement currentTopElementUnderMouse = m_TopElementUnderMouse;
-                            m_TopElementUnderMouse = null;
-                            DispatchDragEnterDragLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, mouseEvent);
+                            VisualElement currentTopElementUnderMouse = basePanel.topElementUnderMouse;
+                            basePanel.topElementUnderMouse = null;
+                            DispatchDragEnterDragLeave(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
                         }
                         // update element under mouse and fire necessary events
                         else
                         {
-                            VisualElement currentTopElementUnderMouse = m_TopElementUnderMouse;
-                            if (evt.target == null && panel != null)
+                            VisualElement currentTopElementUnderMouse = null;
+                            if (evt.target == null && basePanel != null)
                             {
-                                m_TopElementUnderMouse = panel.Pick(mouseEvent.mousePosition);
-                                evt.target = m_TopElementUnderMouse;
+                                currentTopElementUnderMouse = basePanel.topElementUnderMouse;
+                                basePanel.topElementUnderMouse = panel.Pick(mouseEvent.mousePosition);
+                                evt.target = basePanel.topElementUnderMouse;
                             }
 
                             if (evt.target != null)
@@ -532,18 +561,21 @@ namespace UnityEngine.Experimental.UIElements
                                 PropagateEvent(evt);
                             }
 
-                            if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() ||
-                                evt.GetEventTypeId() == MouseDownEvent.TypeId() ||
-                                evt.GetEventTypeId() == MouseUpEvent.TypeId() ||
-                                evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
-                                evt.GetEventTypeId() == WheelEvent.TypeId())
+                            if (basePanel != null)
                             {
-                                DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, mouseEvent);
-                                DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, mouseEvent);
-                            }
-                            else if (evt.GetEventTypeId() == DragUpdatedEvent.TypeId())
-                            {
-                                DispatchDragEnterDragLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, mouseEvent);
+                                if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() ||
+                                    evt.GetEventTypeId() == MouseDownEvent.TypeId() ||
+                                    evt.GetEventTypeId() == MouseUpEvent.TypeId() ||
+                                    evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
+                                    evt.GetEventTypeId() == WheelEvent.TypeId())
+                                {
+                                    DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
+                                    DispatchMouseOverMouseOut(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
+                                }
+                                else if (evt.GetEventTypeId() == DragUpdatedEvent.TypeId())
+                                {
+                                    DispatchDragEnterDragLeave(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
+                                }
                             }
                         }
                     }
@@ -604,13 +636,13 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        internal void UpdateElementUnderMouse(IPanel panel)
+        internal void UpdateElementUnderMouse(BaseVisualElementPanel panel)
         {
             Vector2 localMousePosition = panel.visualTree.WorldToLocal(m_LastMousePosition);
-            VisualElement currentTopElementUnderMouse = m_TopElementUnderMouse;
-            m_TopElementUnderMouse = panel.Pick(localMousePosition);
-            DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, m_TopElementUnderMouse, null);
-            DispatchMouseOverMouseOut(currentTopElementUnderMouse, m_TopElementUnderMouse, null);
+            VisualElement currentTopElementUnderMouse = panel.topElementUnderMouse;
+            panel.topElementUnderMouse = panel.Pick(localMousePosition);
+            DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, panel.topElementUnderMouse, null);
+            DispatchMouseOverMouseOut(currentTopElementUnderMouse, panel.topElementUnderMouse, null);
         }
 
         private static void PropagateToIMGUIContainer(VisualElement root, EventBase evt)

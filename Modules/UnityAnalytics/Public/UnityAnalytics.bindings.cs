@@ -57,11 +57,14 @@ namespace UnityEngine.Analytics
         private static extern AnalyticsResult SendCustomEvent(CustomEventData eventData);
 
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
-        private static extern AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo);
+        internal static extern AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo, bool notifyServer);
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        internal static extern AnalyticsResult RegisterEventsWithLimit(string[] eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo, bool notifyServer);
 
         [ThreadSafe]
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
-        private static extern AnalyticsResult SendEventWithLimit(string eventName, object parameters, int ver, string prefix);
+        internal static extern AnalyticsResult SendEventWithLimit(string eventName, object parameters, int ver, string prefix);
 
         [ThreadSafe]
         [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]

@@ -47,7 +47,7 @@ namespace UnityEditor
                 ReorderableList reorderableList = new ReorderableList(m_ControllerSerialized, exposedParams, false, false, false, false);
                 reorderableList.onReorderCallback = EndDragChild;
                 reorderableList.drawElementCallback += DrawElement;
-                reorderableList.elementHeight = 16;
+                reorderableList.elementHeight = 18;
                 reorderableList.headerHeight = 0;
                 reorderableList.footerHeight = 0;
                 reorderableList.showDefaultBackground = false;

@@ -15,6 +15,7 @@ namespace UnityEngine.StyleSheets
         StyleProperty[] m_Properties;
 
         [SerializeField]
+        [VisibleToOtherModules("UnityEngine.UIElementsModule")]
         internal int line;
 
         public StyleProperty[] properties

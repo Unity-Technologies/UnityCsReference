@@ -189,6 +189,7 @@ namespace UnityEngine.Profiling
         }
 
         [NativeMethod(Name = "ProfilerBindings::GetRuntimeMemorySizeLong", IsFreeFunction = true)]
+        [NativeConditional("ENABLE_PROFILER")]
         public extern static long GetRuntimeMemorySizeLong(Object o);
 
         [Obsolete("GetMonoHeapSize has been deprecated since it is limited to 4GB. Please use GetMonoHeapSizeLong() instead.")]
@@ -199,7 +200,6 @@ namespace UnityEngine.Profiling
 
         // Returns the size of the mono heap
         [NativeMethod(Name = "scripting_gc_get_heap_size", IsFreeFunction = true)]
-        [NativeConditional("ENABLE_PROFILER")]
         public extern static long GetMonoHeapSizeLong();
 
         [Obsolete("GetMonoUsedSize has been deprecated since it is limited to 4GB. Please use GetMonoUsedSizeLong() instead.")]
@@ -210,7 +210,6 @@ namespace UnityEngine.Profiling
 
         // Returns the used size from mono
         [NativeMethod(Name = "scripting_gc_get_used_size", IsFreeFunction = true)]
-        [NativeConditional("ENABLE_PROFILER")]
         public extern static long GetMonoUsedSizeLong();
 
         // Sets the size of the MainThread's StackAllocator which is used for temp allocs
@@ -258,7 +257,7 @@ namespace UnityEngine.Profiling
 
         [NativeMethod(Name = "GetRegisteredGFXDriverMemory")]
         [StaticAccessor("GetMemoryManager()", StaticAccessorType.Dot)]
-        [NativeConditional("ENABLE_MEMORY_MANAGER")]
+        [NativeConditional("ENABLE_PROFILER")]
         public extern static long GetAllocatedMemoryForGraphicsDriver();
     }
 }

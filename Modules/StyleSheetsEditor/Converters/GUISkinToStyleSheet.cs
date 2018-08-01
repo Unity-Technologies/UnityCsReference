@@ -53,7 +53,7 @@ namespace UnityEditor.StyleSheets
         private static void AddState(StyleSheetBuilderHelper helper, GUIStyleState state, GUIStyleState defaultStyle)
         {
             if (helper.options.exportDefaultValues || !GUISkinCompare.CompareTo(state.textColor, defaultStyle.textColor))
-                helper.AddProperty("text-color", state.textColor, "GUIState.textColor");
+                helper.AddProperty("color", state.textColor, "GUIState.textColor");
 
             if (helper.options.exportDefaultValues || state.background != defaultStyle.background)
                 AddPropertyResource(helper, ConverterUtils.k_BackgroundImage, state.background, "GUIState.background");

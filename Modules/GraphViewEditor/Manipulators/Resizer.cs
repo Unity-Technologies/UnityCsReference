@@ -37,6 +37,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             style.paddingTop = 14;
             style.width = 20;
             style.height = 20;
+            style.backgroundScaleMode = ScaleMode.ScaleAndCrop;
 
             m_Active = false;
 
@@ -48,7 +49,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             AddToClassList("resizer");
 
             var icon = new VisualElement() {
-                style = { backgroundSize = ScaleMode.ScaleAndCrop }
+                style = { backgroundScaleMode = ScaleMode.ScaleAndCrop }
             };
             icon.AddToClassList("resizer-icon");
             Add(icon);

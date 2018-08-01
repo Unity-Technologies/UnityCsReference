@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEditor.ShortcutManagement;
 using UnityEditorInternal;
 using Object = UnityEngine.Object;
 
@@ -19,6 +20,25 @@ namespace UnityEditor
         Loop = (int)WrapMode.Loop,
         ClampForever = (int)WrapMode.ClampForever,
         PingPong = (int)WrapMode.PingPong
+    }
+
+    class AnimationShortcutContex : IShortcutToolContext
+    {
+        AnimEditor m_AnimEditor;
+        public AnimationShortcutContex(AnimEditor animEditor)
+        {
+            m_AnimEditor = animEditor;
+        }
+
+        public bool active
+        {
+            get { return !animEditor.stateDisabled && !animEditor.state.animatorIsOptimized; }
+        }
+
+        public AnimEditor animEditor
+        {
+            get { return m_AnimEditor; }
+        }
     }
 
     internal class AnimEditor : ScriptableObject
@@ -82,16 +102,7 @@ namespace UnityEditor
             }
         }
 
-        internal static PrefKey kAnimationPlayToggle = new PrefKey("Animation/Play Animation", " ");
-        internal static PrefKey kAnimationPrevFrame = new PrefKey("Animation/Previous Frame", ",");
-        internal static PrefKey kAnimationNextFrame = new PrefKey("Animation/Next Frame", ".");
-        internal static PrefKey kAnimationPrevKeyframe = new PrefKey("Animation/Previous Keyframe", "&,");
-        internal static PrefKey kAnimationNextKeyframe = new PrefKey("Animation/Next Keyframe", "&.");
-        internal static PrefKey kAnimationFirstKey = new PrefKey("Animation/First Keyframe", "#,");
-        internal static PrefKey kAnimationLastKey = new PrefKey("Animation/Last Keyframe", "#.");
-        internal static PrefKey kAnimationRecordKeyframeSelected = new PrefKey("Animation/Key Selected", "k");
-        internal static PrefKey kAnimationRecordKeyframeModified = new PrefKey("Animation/Key Modified", "#k");
-        internal static PrefKey kAnimationShowCurvesToggle = new PrefKey("Animation/Show Curves", "c");
+        AnimationShortcutContex m_AnimationShortcutContex;
 
         internal const int kSliderThickness = 15;
         internal const int kLayoutRowHeight = EditorGUI.kWindowToolbarHeight + 1;
@@ -223,8 +234,6 @@ namespace UnityEditor
                 OverlayOnGUI(contentLayoutRect);
 
                 RenderEventTooltip();
-
-                HandleHotKeys();
             }
         }
 
@@ -348,7 +357,8 @@ namespace UnityEditor
             m_CurveEditor.curvesUpdated += SaveChangedCurvesFromCurveEditor;
             m_CurveEditor.OnEnable();
 
-            EditorApplication.globalEventHandler += HandleGlobalHotkeys;
+            m_AnimationShortcutContex = new AnimationShortcutContex(this);
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_AnimationShortcutContex);
         }
 
         public void OnDisable()
@@ -365,8 +375,7 @@ namespace UnityEditor
                 m_DopeSheet.OnDisable();
 
             m_State.OnDisable();
-
-            EditorApplication.globalEventHandler -= HandleGlobalHotkeys;
+            ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_AnimationShortcutContex);
         }
 
         public void OnDestroy()
@@ -494,11 +503,6 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 SwitchBetweenCurvesAndDopesheet();
-            }
-            else if (kAnimationShowCurvesToggle.activated)
-            {
-                SwitchBetweenCurvesAndDopesheet();
-                Event.current.Use();
             }
         }
 
@@ -723,110 +727,120 @@ namespace UnityEditor
             }
         }
 
-        private void HandleHotKeys()
+        static void ExecuteShortcut(ShortcutArguments args, Action<AnimEditor> exp)
         {
-            if (!GUI.enabled || m_State.disabled)
+            var animEditorContext = (AnimationShortcutContex)args.context;
+            var animEditor = animEditorContext.animEditor;
+
+            if (EditorWindow.focusedWindow != animEditor.m_OwnerWindow)
                 return;
 
-            bool keyChanged = false;
+            exp(animEditor);
 
-            if (kAnimationPrevKeyframe.activated)
-            {
-                controlInterface.GoToPreviousKeyframe();
-                keyChanged = true;
-            }
+            animEditor.Repaint();
+        }
 
-            if (kAnimationNextKeyframe.activated)
-            {
-                controlInterface.GoToNextKeyframe();
-                keyChanged = true;
-            }
+        static void ExecuteShortcut(ShortcutArguments args, Action<IAnimationWindowControl> exp)
+        {
+            ExecuteShortcut(args, animEditor => exp(animEditor.controlInterface));
+        }
 
-            if (kAnimationNextFrame.activated)
-            {
-                controlInterface.GoToNextFrame();
-                keyChanged = true;
-            }
+        [FormerlyPrefKeyAs("Animation/Show Curves", "c")]
+        [Shortcut("Animation/Show Curves", typeof(AnimationShortcutContex), "c")]
+        static void ShowCurves(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, animEditor => { animEditor.SwitchBetweenCurvesAndDopesheet(); });
+        }
 
-            if (kAnimationPrevFrame.activated)
-            {
-                controlInterface.GoToPreviousFrame();
-                keyChanged = true;
-            }
-
-            if (kAnimationFirstKey.activated)
-            {
-                controlInterface.GoToFirstKeyframe();
-                keyChanged = true;
-            }
-
-            if (kAnimationLastKey.activated)
-            {
-                controlInterface.GoToLastKeyframe();
-                keyChanged = true;
-            }
-
-            if (keyChanged)
-            {
-                Event.current.Use();
-                Repaint();
-            }
-
-            if (kAnimationPlayToggle.activated)
+        [FormerlyPrefKeyAs("Animation/Play Animation", " ")]
+        [Shortcut("Animation/Play Animation", typeof(AnimationShortcutContex), " ")]
+        static void TogglePlayAnimation(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, controlInterface =>
             {
                 if (controlInterface.playing)
                     controlInterface.StopPlayback();
                 else
                     controlInterface.StartPlayback();
-
-                Event.current.Use();
-            }
-
-            if (kAnimationRecordKeyframeSelected.activated)
-            {
-                SaveCurveEditorKeySelection();
-                AnimationWindowUtility.AddSelectedKeyframes(m_State, controlInterface.time);
-                UpdateSelectedKeysToCurveEditor();
-
-                Event.current.Use();
-            }
-
-            if (kAnimationRecordKeyframeModified.activated)
-            {
-                SaveCurveEditorKeySelection();
-                controlInterface.ProcessCandidates();
-                UpdateSelectedKeysToCurveEditor();
-
-                Event.current.Use();
-            }
+            });
         }
 
-        public void HandleGlobalHotkeys()
+        [FormerlyPrefKeyAs("Animation/Next Frame", ".")]
+        [Shortcut("Animation/Next Frame", typeof(AnimationShortcutContex), ".")]
+        static void NextFrame(ShortcutArguments args)
         {
-            if (!m_State.previewing)
+            ExecuteShortcut(args, controlInterface => controlInterface.GoToNextFrame());
+        }
+
+        [FormerlyPrefKeyAs("Animation/Previous Frame", ",")]
+        [Shortcut("Animation/Previous Frame", typeof(AnimationShortcutContex), ",")]
+        static void PreviousFrame(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, controlInterface => controlInterface.GoToPreviousFrame());
+        }
+
+        [FormerlyPrefKeyAs("Animation/Previous Keyframe", "&,")]
+        [Shortcut("Animation/Previous Keyframe", typeof(AnimationShortcutContex), "&,")]
+        static void PreviousKeyFrame(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, controlInterface => controlInterface.GoToPreviousKeyframe());
+        }
+
+        [FormerlyPrefKeyAs("Animation/Next Keyframe", "&.")]
+        [Shortcut("Animation/Next Keyframe", typeof(AnimationShortcutContex), "&.")]
+        static void NextKeyFrame(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, controlInterface => controlInterface.GoToNextKeyframe());
+        }
+
+        [FormerlyPrefKeyAs("Animation/First Keyframe", "#,")]
+        [Shortcut("Animation/First Keyframe", typeof(AnimationShortcutContex), "#,")]
+        static void FirstKeyFrame(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, controlInterface => controlInterface.GoToFirstKeyframe());
+        }
+
+        [FormerlyPrefKeyAs("Animation/Last Keyframe", "#.")]
+        [Shortcut("Animation/Last Keyframe", typeof(AnimationShortcutContex), "#.")]
+        static void LastKeyFrame(ShortcutArguments args)
+        {
+            ExecuteShortcut(args, controlInterface => controlInterface.GoToLastKeyframe());
+        }
+
+        [FormerlyPrefKeyAs("Animation/Key Selected", "k")]
+        [Shortcut("Animation/Key Selected", typeof(AnimationShortcutContex), "k")]
+        static void KeySelected(ShortcutArguments args)
+        {
+            var animEditorContext = (AnimationShortcutContex)args.context;
+            var animEditor = animEditorContext.animEditor;
+
+            if (!animEditor.m_State.previewing)
                 return;
 
-            if (!GUI.enabled || m_State.disabled)
+            animEditor.SaveCurveEditorKeySelection();
+            AnimationWindowUtility.AddSelectedKeyframes(animEditor.m_State, animEditor.controlInterface.time);
+            if (!animEditor.m_OwnerWindow.hasFocus)
+                animEditor.controlInterface.ClearCandidates();
+            animEditor.UpdateSelectedKeysToCurveEditor();
+
+            animEditor.Repaint();
+        }
+
+        [FormerlyPrefKeyAs("Animation/Key Modified", "#k")]
+        [Shortcut("Animation/Key Modified", typeof(AnimationShortcutContex), "#k")]
+        static void KeyModified(ShortcutArguments args)
+        {
+            var animEditorContext = (AnimationShortcutContex)args.context;
+            var animEditor = animEditorContext.animEditor;
+
+            if (!animEditor.m_State.previewing)
                 return;
 
-            if (kAnimationRecordKeyframeSelected.activated)
-            {
-                SaveCurveEditorKeySelection();
-                AnimationWindowUtility.AddSelectedKeyframes(m_State, controlInterface.time);
-                controlInterface.ClearCandidates();
-                UpdateSelectedKeysToCurveEditor();
+            animEditor.SaveCurveEditorKeySelection();
+            animEditor.controlInterface.ProcessCandidates();
+            animEditor.UpdateSelectedKeysToCurveEditor();
 
-                Event.current.Use();
-            }
-
-            if (kAnimationRecordKeyframeModified.activated)
-            {
-                SaveCurveEditorKeySelection();
-                controlInterface.ProcessCandidates();
-                UpdateSelectedKeysToCurveEditor();
-
-                Event.current.Use();
-            }
+            animEditor.Repaint();
         }
 
         private void PlayButtonOnGUI()

@@ -129,13 +129,17 @@ namespace UnityEditorInternal
 
         internal static string GetIl2CppFolder()
         {
-            var pathOverride = Debug.GetDiagnosticSwitch("VMIl2CppPath") as string;
+            var pathOverride = System.Environment.GetEnvironmentVariable("UNITY_IL2CPP_PATH");
             if (!string.IsNullOrEmpty(pathOverride))
                 return pathOverride;
-            else
-                return Path.GetFullPath(Path.Combine(
-                    EditorApplication.applicationContentsPath,
-                    "il2cpp"));
+
+            pathOverride = Debug.GetDiagnosticSwitch("VMIl2CppPath") as string;
+            if (!string.IsNullOrEmpty(pathOverride))
+                return pathOverride;
+
+            return Path.GetFullPath(Path.Combine(
+                EditorApplication.applicationContentsPath,
+                "il2cpp"));
         }
     }
 
@@ -394,6 +398,14 @@ namespace UnityEditorInternal
         private bool ShouldUseIl2CppCore()
         {
             if (!m_PlatformProvider.supportsUsingIl2cppCore)
+                return false;
+
+            var disableIl2CppCoreEnv = System.Environment.GetEnvironmentVariable("UNITY_IL2CPP_DISABLE_NET_CORE");
+            if (disableIl2CppCoreEnv == "1")
+                return false;
+
+            var disableIl2CppCoreDiag = (bool)(Debug.GetDiagnosticSwitch("VMIl2CppDisableNetCore") ?? false);
+            if (disableIl2CppCoreDiag)
                 return false;
 
             bool shouldUse = false;

@@ -693,7 +693,7 @@ namespace UnityEditor.Experimental.UIElements.Debugger
             cursor.width -= 2 * Styles.SizeRectBetweenSize;
             cursor.height -= 2 * Styles.SizeRectBetweenSize;
             DrawRect(cursor, Styles.SizeRectLineSize, Styles.kSizeBorderPrimaryColor, Styles.kSizeBorderSecondaryColor);
-            DrawSizeLabels(cursor, Styles.borderContent, element.style.borderTop, element.style.borderRight, element.style.borderBottom, element.style.borderLeft);
+            DrawSizeLabels(cursor, Styles.borderContent, element.style.borderTopWidth, element.style.borderRightWidth, element.style.borderBottomWidth, element.style.borderLeftWidth);
 
             cursor.x += Styles.SizeRectBetweenSize;
             cursor.y += Styles.SizeRectBetweenSize;

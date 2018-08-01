@@ -125,10 +125,10 @@ namespace UnityEditor
                     packageVersion = packageInfo.version;
                 }
             }
-            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, prefix, assemblyInfo, packageName, packageVersion);
+            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, prefix, assemblyInfo, packageName, packageVersion, true);
         }
 
-        private extern static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo, string packageName, string packageVersion);
+        private extern static AnalyticsResult RegisterEventWithLimit(string eventName, int maxEventPerHour, int maxItems, string vendorKey, int ver, string prefix, string assemblyInfo, string packageName, string packageVersion, bool notifyServer);
 
         private extern static AnalyticsResult SendEventWithLimit(string eventName, object parameters, int ver, string prefix);
     }

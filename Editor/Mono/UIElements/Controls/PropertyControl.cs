@@ -70,9 +70,9 @@ namespace UnityEditor.Experimental.UIElements
                 get { return uxmlNamespace + "." + uxmlName; }
             }
 
-            public override bool AcceptsAttributeBag(IUxmlAttributes bag)
+            public override bool AcceptsAttributeBag(IUxmlAttributes bag, CreationContext cc)
             {
-                string type = m_Traits.GetValueType(bag);
+                string type = m_Traits.GetValueType(bag, cc);
                 if (BuiltInTypeConverter.GetTypeFromName(type) == typeof(TType))
                 {
                     return true;
@@ -84,7 +84,7 @@ namespace UnityEditor.Experimental.UIElements
 
         public new class UxmlTraits : BaseField<TType>.UxmlTraits
         {
-            UxmlStringAttributeDescription m_TypeOf = new UxmlStringAttributeDescription { name = "typeOf", use = UxmlAttributeDescription.Use.Required };
+            UxmlStringAttributeDescription m_TypeOf = new UxmlStringAttributeDescription { name = "value-type", obsoleteNames = new[] {"typeOf"}, use = UxmlAttributeDescription.Use.Required };
             UxmlStringAttributeDescription m_Value = new UxmlStringAttributeDescription { name = "value" };
             UxmlStringAttributeDescription m_Label = new UxmlStringAttributeDescription { name = "label" };
 
@@ -102,15 +102,15 @@ namespace UnityEditor.Experimental.UIElements
             {
                 base.Init(ve, bag, cc);
 
-                var initValue = m_Value.GetValueFromBag(bag);
-                var text = m_Label.GetValueFromBag(bag);
+                var initValue = m_Value.GetValueFromBag(bag, cc);
+                var text = m_Label.GetValueFromBag(bag, cc);
                 ((PropertyControl<TType>)ve).SetValueWithoutNotify(((PropertyControl<TType>)ve).StringToValue(initValue));
                 ((PropertyControl<TType>)ve).label = text;
             }
 
-            public string GetValueType(IUxmlAttributes bag)
+            public string GetValueType(IUxmlAttributes bag, CreationContext cc)
             {
-                return m_TypeOf.GetValueFromBag(bag);
+                return m_TypeOf.GetValueFromBag(bag, cc);
             }
         }
 

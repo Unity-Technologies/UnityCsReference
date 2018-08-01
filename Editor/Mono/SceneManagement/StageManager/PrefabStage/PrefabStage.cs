@@ -113,7 +113,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
         internal bool initialized
         {
-            get { return !string.IsNullOrEmpty(m_PrefabAssetPath); }
+            get { return m_PrefabContentsRoot != null; }
         }
 
         internal PrefabStage()
@@ -181,17 +181,22 @@ namespace UnityEditor.Experimental.SceneManagement
 
         void Cleanup()
         {
-            if (!initialized)
-                return;
+            if (m_PreviewScene.IsValid())
+            {
+                List<GameObject> roots = new List<GameObject>();
+                m_PreviewScene.GetRootGameObjects(roots);
+                foreach (var go in roots)
+                    UnityEngine.Object.DestroyImmediate(go);
+                PrefabStageUtility.DestroyPreviewScene(m_PreviewScene);
+            }
 
-            List<GameObject> roots = new List<GameObject>();
-            m_PreviewScene.GetRootGameObjects(roots);
-            foreach (var go in roots)
-                UnityEngine.Object.DestroyImmediate(go);
-
-            PrefabStageUtility.DestroyPreviewScene(m_PreviewScene);
+            m_PrefabContentsRoot = null;
             m_HideFlagUtility = null;
             m_PrefabAssetPath = null;
+            m_InitialSceneDirtyID = 0;
+            m_LastSceneDirtyID = 0;
+            m_IgnoreNextAssetImportedEventForCurrentPrefab = false;
+            m_PrefabWasChangedOnDisk = false;
         }
 
         void ReloadStage()

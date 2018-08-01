@@ -78,17 +78,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 PrecompiledReferences = new List<PrecompiledAssembly>();
             }
 
-            public string FilenameWithSuffix(string filenameSuffix)
+            public string FullPath(string outputDirectory)
             {
-                if (!string.IsNullOrEmpty(filenameSuffix))
-                    return Filename.Replace(".dll", filenameSuffix + ".dll");
-
-                return Filename;
-            }
-
-            public string FullPath(string outputDirectory, string filenameSuffix)
-            {
-                return AssetPath.Combine(outputDirectory, FilenameWithSuffix(filenameSuffix));
+                return AssetPath.Combine(outputDirectory, Filename);
             }
 
             public EditorCompatibility editorCompatibility
@@ -378,7 +370,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (args.RunUpdaterAssemblies != null)
                 foreach (var assemblyFilename in args.RunUpdaterAssemblies)
                 {
-                    var targetAssembly = allTargetAssemblies.First(a => a.FilenameWithSuffix(args.Settings.FilenameSuffix) == assemblyFilename);
+                    var targetAssembly = allTargetAssemblies.First(a => a.Filename == assemblyFilename);
                     dirtyTargetAssemblies[targetAssembly] = new HashSet<string>();
                 }
 
@@ -550,13 +542,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 else
                     scriptAssembly.ApiCompatibilityLevel = settings.ApiCompatibilityLevel;
 
-                if (!string.IsNullOrEmpty(settings.FilenameSuffix))
-                {
-                    var basename = AssetPath.GetAssemblyNameWithoutExtension(targetAssembly.Filename);
-                    scriptAssembly.Filename = string.Concat(basename, settings.FilenameSuffix, ".dll");
-                }
-                else
-                    scriptAssembly.Filename = targetAssembly.Filename;
+                scriptAssembly.Filename = targetAssembly.Filename;
 
                 if (runUpdaterAssemblies != null && runUpdaterAssemblies.Contains(scriptAssembly.Filename))
                     scriptAssembly.RunUpdater = true;
@@ -579,7 +565,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             index = 0;
             foreach (var entry in targetAssemblies)
                 AddScriptAssemblyReferences(ref scriptAssemblies[index++], entry.Key, settings,
-                    assemblies, targetToScriptAssembly, settings.FilenameSuffix);
+                    assemblies, targetToScriptAssembly);
 
             return scriptAssemblies;
         }
@@ -600,7 +586,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal static void AddScriptAssemblyReferences(ref ScriptAssembly scriptAssembly, TargetAssembly targetAssembly, ScriptAssemblySettings settings,
             CompilationAssemblies assemblies,
-            IDictionary<TargetAssembly, ScriptAssembly> targetToScriptAssembly, string filenameSuffix)
+            IDictionary<TargetAssembly, ScriptAssembly> targetToScriptAssembly)
         {
             var scriptAssemblyReferences = new List<ScriptAssembly>();
             var references = new List<string>();
@@ -624,7 +610,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 else
                 {
                     // Add string references to other assemblies that do not need to be rebuilt.
-                    var assemblyPath = reference.FullPath(settings.OutputDirectory, filenameSuffix);
+                    var assemblyPath = reference.FullPath(settings.OutputDirectory);
 
                     if (AssetPath.Exists(assemblyPath))
                         references.Add(assemblyPath);
@@ -644,7 +630,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         scriptAssemblyReferences.Add(scriptAssemblyReference);
                     else
                     {
-                        var customTargetAssemblyPath = customTargetAssembly.FullPath(settings.OutputDirectory, filenameSuffix);
+                        var customTargetAssemblyPath = customTargetAssembly.FullPath(settings.OutputDirectory);
 
                         // File might not exist if there are no scripts in the custom target assembly folder.
                         if (AssetPath.Exists(customTargetAssemblyPath))
@@ -752,7 +738,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return references;
         }
 
-        public static List<string> GetCompiledCustomAssembliesReferences(ScriptAssembly scriptAssembly, TargetAssembly[] customTargetAssemblies, string outputDirectory, string filenameSuffix)
+        public static List<string> GetCompiledCustomAssembliesReferences(ScriptAssembly scriptAssembly, TargetAssembly[] customTargetAssemblies, string outputDirectory)
         {
             var references = new List<string>();
 
@@ -760,7 +746,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 foreach (var customTargetAssembly in customTargetAssemblies)
                 {
-                    var customTargetAssemblyPath = customTargetAssembly.FullPath(outputDirectory, filenameSuffix);
+                    var customTargetAssemblyPath = customTargetAssembly.FullPath(outputDirectory);
 
                     // File might not exist if there are no scripts in the custom target assembly folder.
                     if (AssetPath.Exists(customTargetAssemblyPath))

@@ -292,7 +292,12 @@ namespace UnityEngine.Experimental.UIElements
                         usePremultiplyAlpha = true
                     };
 
+                    // We must not reapply the editor Play Mode Tint if it was already applied !
+                    var playModeTint = UIElementsUtility.editorPlayModeTintColor;
+                    UIElementsUtility.editorPlayModeTintColor = Color.white;
+
                     m_StylePainter.DrawTexture(painterParams);
+                    UIElementsUtility.editorPlayModeTintColor = playModeTint;
                 }
                 GUIUtility.manualTex2SRGBEnabled = oldManualTex2SRGBEnabled2;
             }

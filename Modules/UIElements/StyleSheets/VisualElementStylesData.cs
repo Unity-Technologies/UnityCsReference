@@ -54,28 +54,24 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
         internal StyleValue<float> marginTop;
         internal StyleValue<float> marginRight;
         internal StyleValue<float> marginBottom;
-        internal StyleValue<float> borderLeft;
-        internal StyleValue<float> borderTop;
-        internal StyleValue<float> borderRight;
-        internal StyleValue<float> borderBottom;
         internal StyleValue<float> paddingLeft;
         internal StyleValue<float> paddingTop;
         internal StyleValue<float> paddingRight;
         internal StyleValue<float> paddingBottom;
         internal StyleValue<int> positionType;
         internal StyleValue<int> alignSelf;
-        internal StyleValue<int> textAlignment;
-        internal StyleValue<int> fontStyle;
+        internal StyleValue<int> unityTextAlign;
+        internal StyleValue<int> fontStyleAndWeight;
         internal StyleValue<int> textClipping;
         internal StyleValue<Font> font;
         internal StyleValue<int> fontSize;
         internal StyleValue<bool> wordWrap;
-        internal StyleValue<Color> textColor;
+        internal StyleValue<Color> color;
         internal StyleValue<int> flexDirection;
         internal StyleValue<Color> backgroundColor;
         internal StyleValue<Color> borderColor;
         internal StyleValue<Texture2D> backgroundImage;
-        internal StyleValue<int> backgroundSize;
+        internal StyleValue<int> backgroundScaleMode;
         internal StyleValue<int> alignItems;
         internal StyleValue<int> alignContent;
         internal StyleValue<int> justifyContent;
@@ -124,28 +120,24 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             marginTop.Apply(other.marginTop, mode);
             marginRight.Apply(other.marginRight, mode);
             marginBottom.Apply(other.marginBottom, mode);
-            borderLeft.Apply(other.borderLeft, mode);
-            borderTop.Apply(other.borderTop, mode);
-            borderRight.Apply(other.borderRight, mode);
-            borderBottom.Apply(other.borderBottom, mode);
             paddingLeft.Apply(other.paddingLeft, mode);
             paddingTop.Apply(other.paddingTop, mode);
             paddingRight.Apply(other.paddingRight, mode);
             paddingBottom.Apply(other.paddingBottom, mode);
             positionType.Apply(other.positionType, mode);
             alignSelf.Apply(other.alignSelf, mode);
-            textAlignment.Apply(other.textAlignment, mode);
-            fontStyle.Apply(other.fontStyle, mode);
+            unityTextAlign.Apply(other.unityTextAlign, mode);
+            fontStyleAndWeight.Apply(other.fontStyleAndWeight, mode);
             textClipping.Apply(other.textClipping, mode);
             fontSize.Apply(other.fontSize, mode);
             font.Apply(other.font, mode);
             wordWrap.Apply(other.wordWrap, mode);
-            textColor.Apply(other.textColor, mode);
+            color.Apply(other.color, mode);
             flexDirection.Apply(other.flexDirection, mode);
             backgroundColor.Apply(other.backgroundColor, mode);
             borderColor.Apply(other.borderColor, mode);
             backgroundImage.Apply(other.backgroundImage, mode);
-            backgroundSize.Apply(other.backgroundSize, mode);
+            backgroundScaleMode.Apply(other.backgroundScaleMode, mode);
             alignItems.Apply(other.alignItems, mode);
             alignContent.Apply(other.alignContent, mode);
             justifyContent.Apply(other.justifyContent, mode);
@@ -169,7 +161,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         public void WriteToGUIStyle(GUIStyle style)
         {
-            style.alignment = (TextAnchor)(textAlignment.GetSpecifiedValueOrDefault((int)style.alignment));
+            style.alignment = (TextAnchor)(unityTextAlign.GetSpecifiedValueOrDefault((int)style.alignment));
             style.wordWrap = wordWrap.GetSpecifiedValueOrDefault(style.wordWrap);
             style.clipping = (TextClipping)(textClipping.GetSpecifiedValueOrDefault((int)style.clipping));
             if (font.value != null)
@@ -177,7 +169,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                 style.font = font.value;
             }
             style.fontSize = fontSize.GetSpecifiedValueOrDefault(style.fontSize);
-            style.fontStyle = (FontStyle)(fontStyle.GetSpecifiedValueOrDefault((int)style.fontStyle));
+            style.fontStyle = (FontStyle)(fontStyleAndWeight.GetSpecifiedValueOrDefault((int)style.fontStyle));
 
             AssignRect(style.margin, ref marginLeft, ref marginTop, ref marginRight, ref marginBottom);
             AssignRect(style.padding, ref paddingLeft, ref paddingTop, ref paddingRight, ref paddingBottom);
@@ -194,7 +186,7 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
 
         void AssignState(GUIStyleState state)
         {
-            state.textColor = textColor.GetSpecifiedValueOrDefault(state.textColor);
+            state.textColor = color.GetSpecifiedValueOrDefault(state.textColor);
             if (backgroundImage.value != null)
             {
                 state.background = backgroundImage.value;
@@ -278,10 +270,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
             targetNode.PaddingTop = paddingTop.GetSpecifiedValueOrDefault(float.NaN);
             targetNode.PaddingRight = paddingRight.GetSpecifiedValueOrDefault(float.NaN);
             targetNode.PaddingBottom = paddingBottom.GetSpecifiedValueOrDefault(float.NaN);
-            targetNode.BorderLeftWidth = borderLeft.GetSpecifiedValueOrDefault(borderLeftWidth.GetSpecifiedValueOrDefault(float.NaN));
-            targetNode.BorderTopWidth = borderTop.GetSpecifiedValueOrDefault(borderTopWidth.GetSpecifiedValueOrDefault(float.NaN));
-            targetNode.BorderRightWidth = borderRight.GetSpecifiedValueOrDefault(borderRightWidth.GetSpecifiedValueOrDefault(float.NaN));
-            targetNode.BorderBottomWidth = borderBottom.GetSpecifiedValueOrDefault(borderBottomWidth.GetSpecifiedValueOrDefault(float.NaN));
+            targetNode.BorderLeftWidth = borderLeftWidth.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.BorderTopWidth = borderTopWidth.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.BorderRightWidth = borderRightWidth.GetSpecifiedValueOrDefault(float.NaN);
+            targetNode.BorderBottomWidth = borderBottomWidth.GetSpecifiedValueOrDefault(float.NaN);
             targetNode.Width = width.GetSpecifiedValueOrDefault(float.NaN);
             targetNode.Height = height.GetSpecifiedValueOrDefault(float.NaN);
 
@@ -339,22 +331,6 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         registry.Apply(handles, specificity, ref backgroundImage, StyleSheetApplicator.ApplyImage);
                         break;
 
-                    case StylePropertyID.BorderLeft:
-                        registry.Apply(handles, specificity, ref borderLeft, StyleSheetApplicator.ApplyFloat);
-                        break;
-
-                    case StylePropertyID.BorderTop:
-                        registry.Apply(handles, specificity, ref borderTop, StyleSheetApplicator.ApplyFloat);
-                        break;
-
-                    case StylePropertyID.BorderRight:
-                        registry.Apply(handles, specificity, ref borderRight, StyleSheetApplicator.ApplyFloat);
-                        break;
-
-                    case StylePropertyID.BorderBottom:
-                        registry.Apply(handles, specificity, ref borderBottom, StyleSheetApplicator.ApplyFloat);
-                        break;
-
                     case StylePropertyID.Flex:
                         registry.ApplyShorthand(handles, specificity, this, StyleSheetApplicator.ApplyFlexShorthand);
                         break;
@@ -379,8 +355,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         registry.Apply(handles, specificity, ref fontSize, StyleSheetApplicator.ApplyInt);
                         break;
 
-                    case StylePropertyID.FontStyle:
-                        registry.Apply(handles, specificity, ref fontStyle, StyleSheetApplicator.ApplyEnum<FontStyle>);
+                    case StylePropertyID.FontStyleAndWeight:
+                        registry.Apply(handles, specificity, ref fontStyleAndWeight, StyleSheetApplicator.ApplyEnum<FontStyle>);
                         break;
 
                     case StylePropertyID.FlexDirection:
@@ -451,6 +427,10 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         registry.Apply(handles, specificity, ref paddingBottom, StyleSheetApplicator.ApplyFloat);
                         break;
 
+                    case StylePropertyID.Position:
+                        registry.Apply(handles, specificity, ref positionType, StyleSheetApplicator.ApplyEnum<Position>);
+                        break;
+
                     case StylePropertyID.PositionType:
                         registry.Apply(handles, specificity, ref positionType, StyleSheetApplicator.ApplyEnum<PositionType>);
                         break;
@@ -471,16 +451,16 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         registry.Apply(handles, specificity, ref positionRight, StyleSheetApplicator.ApplyFloat);
                         break;
 
-                    case StylePropertyID.TextAlignment:
-                        registry.Apply(handles, specificity, ref textAlignment, StyleSheetApplicator.ApplyEnum<TextAnchor>);
+                    case StylePropertyID.UnityTextAlign:
+                        registry.Apply(handles, specificity, ref unityTextAlign, StyleSheetApplicator.ApplyEnum<TextAnchor>);
                         break;
 
                     case StylePropertyID.TextClipping:
                         registry.Apply(handles, specificity, ref textClipping, StyleSheetApplicator.ApplyEnum<TextClipping>);
                         break;
 
-                    case StylePropertyID.TextColor:
-                        registry.Apply(handles, specificity, ref textColor, StyleSheetApplicator.ApplyColor);
+                    case StylePropertyID.Color:
+                        registry.Apply(handles, specificity, ref color, StyleSheetApplicator.ApplyColor);
                         break;
 
                     case StylePropertyID.Width:
@@ -495,8 +475,8 @@ namespace UnityEngine.Experimental.UIElements.StyleSheets
                         registry.Apply(handles, specificity, ref backgroundColor, StyleSheetApplicator.ApplyColor);
                         break;
 
-                    case StylePropertyID.BackgroundSize:
-                        registry.Apply(handles, specificity, ref backgroundSize, StyleSheetApplicator.ApplyInt);
+                    case StylePropertyID.BackgroundScaleMode:
+                        registry.Apply(handles, specificity, ref backgroundScaleMode, StyleSheetApplicator.ApplyInt);
                         break;
 
                     case StylePropertyID.BorderColor:

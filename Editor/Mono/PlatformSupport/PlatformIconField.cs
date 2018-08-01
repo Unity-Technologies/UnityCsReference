@@ -22,6 +22,7 @@ namespace UnityEditor.PlatformSupport
             public bool m_State;
             public int m_SetIconSlots;
             public int m_IconSlotCount;
+            public string m_KindDescription;
 
             public override bool Equals(object obj)
             {
@@ -70,6 +71,7 @@ namespace UnityEditor.PlatformSupport
             IconFieldGroupInfo kindKey = new IconFieldGroupInfo();
             kindKey.m_Kind = kind;
             kindKey.m_Label = kind.ToString();
+            kindKey.m_KindDescription = kind.description;
 
             Dictionary<IconFieldGroupInfo, PlatformIconField[]> kindDictionary;
 
@@ -244,7 +246,7 @@ namespace UnityEditor.PlatformSupport
         {
             bool showControls = this.platformIcon.minLayerCount != this.platformIcon.maxLayerCount;
 
-            m_IconLayers = new ReorderableIconLayerList(showControls: showControls);
+            m_IconLayers = new ReorderableIconLayerList(platformIcon.draggable, showControls);
             m_IconLayers.headerString = string.Format("{0} ({1})", this.platformIcon.description, m_SizeLabel);
             m_IconLayers.minItems = this.platformIcon.minLayerCount;
             m_IconLayers.maxItems = this.platformIcon.maxLayerCount;

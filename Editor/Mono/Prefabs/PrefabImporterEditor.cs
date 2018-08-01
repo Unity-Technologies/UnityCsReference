@@ -13,7 +13,8 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class PrefabImporterEditor : AssetImporterEditor
     {
-        static GUIContent s_OpenContent = new GUIContent("Open Prefab");
+        static GUIContent s_OpenContent = EditorGUIUtility.TrTextContent("Open Prefab");
+        static GUIContent s_BaseContent = EditorGUIUtility.TrTextContent("Base");
 
         int m_HasMixedBaseVariants = -1;
 
@@ -48,8 +49,7 @@ namespace UnityEditor
                 using (new EditorGUI.DisabledScope(true))
                 {
                     CacheHasMixedBaseVariants();
-                    GUIContent variantLabel = new GUIContent("Base");
-                    GUILayout.Label(variantLabel);
+                    GUILayout.Label(s_BaseContent);
                     EditorGUI.showMixedValue = m_HasMixedBaseVariants == 1;
                     EditorGUILayout.ObjectField(variantBase, typeof(GameObject), false);
                     EditorGUI.showMixedValue = false;

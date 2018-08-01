@@ -158,7 +158,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         bool areAllScriptsDirty;
         bool areAllPrecompiledAssembliesDirty;
         string projectDirectory = string.Empty;
-        string assemblySuffix = string.Empty;
         HashSet<string> allScripts = new HashSet<string>();
         HashSet<string> dirtyScripts = new HashSet<string>();
         HashSet<EditorBuildRules.TargetAssembly> dirtyTargetAssemblies = new HashSet<EditorBuildRules.TargetAssembly>();
@@ -192,11 +191,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal void SetProjectDirectory(string projectDirectory)
         {
             this.projectDirectory = projectDirectory;
-        }
-
-        internal void SetAssemblySuffix(string assemblySuffix)
-        {
-            this.assemblySuffix = assemblySuffix;
         }
 
         public void SetAllScripts(string[] allScripts)
@@ -370,7 +364,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             foreach (var assembly in customTargetAssemblies)
             {
-                var path = assembly.FullPath(outputDirectory, assemblySuffix);
+                var path = assembly.FullPath(outputDirectory);
 
                 // Collect all assemblies that have been compiled (exist on file system)
                 if (File.Exists(path))
@@ -792,7 +786,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (customScriptAssemblies != null)
             {
-                var result = customScriptAssemblies.FirstOrDefault(a => AssemblyNameWithSuffix(a.Name) == assemblyName);
+                var result = customScriptAssemblies.FirstOrDefault(a => a.Name == assemblyName);
                 if (result != null)
                     return result;
             }
@@ -823,7 +817,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         internal CustomScriptAssembly FindCustomTargetAssemblyFromTargetAssembly(EditorBuildRules.TargetAssembly assembly)
         {
-            var assemblyName = AssemblyNameWithSuffix(AssetPath.GetAssemblyNameWithoutExtension(assembly.Filename));
+            var assemblyName = AssetPath.GetAssemblyNameWithoutExtension(assembly.Filename);
             return FindCustomScriptAssemblyFromAssemblyName(assemblyName);
         }
 
@@ -1139,7 +1133,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup),
                 CompilationOptions = options,
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
-                FilenameSuffix = assemblySuffix,
                 OptionalUnityReferences = ToOptionalUnityReferences(options),
             };
 
@@ -1283,28 +1276,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             return CompileStatus.Idle;
-        }
-
-        string AssemblyFilenameWithSuffix(string assemblyFilename)
-        {
-            if (!string.IsNullOrEmpty(assemblySuffix))
-            {
-                var basename = AssetPath.GetAssemblyNameWithoutExtension(assemblyFilename);
-                return string.Concat(basename, assemblySuffix, ".dll");
-            }
-
-            return assemblyFilename;
-        }
-
-        string AssemblyNameWithSuffix(string assemblyName)
-        {
-            if (!string.IsNullOrEmpty(assemblySuffix))
-            {
-                var basename = AssetPath.GetAssemblyNameWithoutExtension(assemblyName);
-                return string.Concat(basename, assemblySuffix);
-            }
-
-            return assemblyName;
         }
 
         public TargetAssemblyInfo[] GetTargetAssemblies()
@@ -1466,7 +1437,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             if (targetAssembly != null)
             {
-                targetAssemblyInfo.Name = AssemblyFilenameWithSuffix(targetAssembly.Filename);
+                targetAssemblyInfo.Name = targetAssembly.Filename;
                 targetAssemblyInfo.Flags = targetAssembly.Flags;
             }
             else
@@ -1552,7 +1523,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var monolithicEngineAssemblyPath = InternalEditorUtility.GetMonolithicEngineAssemblyPath();
             var unityReferences = EditorBuildRules.GetUnityReferences(scriptAssembly, unityAssemblies, options, EditorBuildRules.UnityReferencesOptions.ExcludeModules);
 
-            var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory(), assemblySuffix);
+            var customReferences = EditorBuildRules.GetCompiledCustomAssembliesReferences(scriptAssembly, customTargetAssemblies, GetCompileScriptsOutputDirectory());
             var precompiledReferences = EditorBuildRules.GetPrecompiledReferences(scriptAssembly, EditorBuildRules.TargetAssemblyType.Custom, options, EditorBuildRules.EditorCompatibility.CompatibleWithEditor, precompiledAssemblies);
             var additionalReferences = MonoLibraryHelpers.GetSystemLibraryReferences(scriptAssembly.ApiCompatibilityLevel, scriptAssembly.BuildTarget, scriptAssembly.Language, buildingForEditor, scriptAssembly.Filename);
             string[] editorReferences = buildingForEditor ? ModuleUtils.GetAdditionalReferencesForUserScripts() : new string[0];

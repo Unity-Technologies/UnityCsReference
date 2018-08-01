@@ -39,6 +39,18 @@ namespace UnityEditor.Scripting.Compilers
         }
     }
 
+    internal class PreviousSDKVersion
+    {
+        public readonly string Version;
+        public readonly bool DefaultFallback;
+
+        public PreviousSDKVersion(string version, bool defaultFallback)
+        {
+            Version = version;
+            DefaultFallback = defaultFallback;
+        }
+    }
+
     internal static class UWPReferences
     {
         private sealed class UWPExtension
@@ -113,17 +125,17 @@ namespace UnityEditor.Scripting.Compilers
             return sdkVersion;
         }
 
-        public static IEnumerable<UWPSDK> GetInstalledSDKs()
+        public static IEnumerable<KeyValuePair<UWPSDK, IEnumerable<KeyValuePair<string, PreviousSDKVersion>>>> GetInstalledSDKs()
         {
             var windowsKit10Directory = GetWindowsKit10();
             if (string.IsNullOrEmpty(windowsKit10Directory))
-                return Enumerable.Empty<UWPSDK>();
+                return Enumerable.Empty<KeyValuePair<UWPSDK, IEnumerable<KeyValuePair<string, PreviousSDKVersion>>>>();
 
             var platformsUAP = CombinePaths(windowsKit10Directory, "Platforms", "UAP");
             if (!Directory.Exists(platformsUAP))
-                return Enumerable.Empty<UWPSDK>();
+                return Enumerable.Empty<KeyValuePair<UWPSDK, IEnumerable<KeyValuePair<string, PreviousSDKVersion>>>>();
 
-            var allSDKs = new List<UWPSDK>();
+            var allSDKs = new Dictionary<UWPSDK, IEnumerable<KeyValuePair<string, PreviousSDKVersion>>>();
 
             var filesUnderPlatformsUAP = Directory.GetFiles(platformsUAP, "*", SearchOption.AllDirectories);
             var allPlatformXmlFiles = filesUnderPlatformsUAP.Where(f => string.Equals("Platform.xml", Path.GetFileName(f), StringComparison.OrdinalIgnoreCase));
@@ -141,13 +153,55 @@ namespace UnityEditor.Scripting.Compilers
                     continue;
                 }
 
-                foreach (var element in xDocument.Elements("ApplicationPlatform"))
+                foreach (var platformElement in xDocument.Elements("ApplicationPlatform"))
                 {
                     Version version;
-                    if (FindVersionInNode(element, out version))
+                    if (FindVersionInNode(platformElement, out version))
                     {
-                        var minVSVersionString = element.Elements("MinimumVisualStudioVersion").Select(e => e.Value).FirstOrDefault();
-                        allSDKs.Add(new UWPSDK(version, TryParseVersion(minVSVersionString)));
+                        var minVSVersionString = platformElement.Elements("MinimumVisualStudioVersion").Select(e => e.Value).FirstOrDefault();
+
+                        // Get supported previous versionss
+                        var previousVersionPath = Path.Combine(Path.GetDirectoryName(platformXmlFile), "PreviousPlatforms.xml");
+                        var previousVersions = new SortedList<string, PreviousSDKVersion>();
+
+                        if (File.Exists(previousVersionPath))
+                        {
+                            try
+                            {
+                                XNamespace xn = "http://microsoft.com/schemas/Windows/SDK/PreviousPlatforms";
+                                var previousPlatformsDocument = XDocument.Load(previousVersionPath);
+
+                                foreach (XElement previousPlatformElement in previousPlatformsDocument.Element(xn + "PreviousPlatforms").Elements(xn + "ApplicationPlatform"))
+                                {
+                                    var previousVersion = previousPlatformElement.Attribute("version").Value;
+                                    var isDefault = false;
+
+                                    try
+                                    {
+                                        isDefault = bool.Parse(previousPlatformElement.Attribute("IsDefaultFallback").Value);
+                                    }
+                                    catch
+                                    {
+                                        // Ignore exception. The IsDefaultFallback attribute isn't present. This is OK.
+                                    }
+
+                                    previousVersions.Add(previousVersion, new PreviousSDKVersion(previousVersion, isDefault));
+                                }
+                            }
+                            catch
+                            {
+                                // Ignore exception. We'll just use the default below.
+                            }
+                        }
+
+                        if (previousVersions.Count == 0)
+                        {
+                            // For previous versions, only support the current version if no PreviousVersions.xml was found.
+                            previousVersions.Add(version.ToString(), new PreviousSDKVersion(version.ToString(), true));
+                        }
+
+                        previousVersions.Reverse();
+                        allSDKs.Add(new UWPSDK(version, TryParseVersion(minVSVersionString)), previousVersions);
                     }
                 }
             }

@@ -16,13 +16,13 @@ namespace UnityEditor.Experimental.UIElements
 
         public new class UxmlTraits : BaseField<Object>.UxmlTraits
         {
-            UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allowSceneObjects", defaultValue = true };
+            UxmlBoolAttributeDescription m_AllowSceneObjects = new UxmlBoolAttributeDescription { name = "allow-scene-objects", obsoleteNames = new[] { "allowSceneObjects" }, defaultValue = true };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
                 base.Init(ve, bag, cc);
 
-                ((ObjectField)ve).allowSceneObjects = m_AllowSceneObjects.GetValueFromBag(bag);
+                ((ObjectField)ve).allowSceneObjects = m_AllowSceneObjects.GetValueFromBag(bag, cc);
             }
         }
 

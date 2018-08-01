@@ -206,7 +206,7 @@ namespace UnityEngine.Analytics
                 throw new ArgumentException("Cannot set event name to an empty or null string");
             if (!IsInitialized())
                 return AnalyticsResult.NotInitialized;
-            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, prefix, assemblyInfo);
+            return RegisterEventWithLimit(eventName, maxEventPerHour, maxItems, vendorKey, ver, prefix, assemblyInfo, true);
         }
 
         public static AnalyticsResult SendEvent(string eventName, object parameters, int ver = 1, string prefix = "")

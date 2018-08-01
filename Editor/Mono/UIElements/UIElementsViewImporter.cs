@@ -170,6 +170,10 @@ namespace UnityEditor.Experimental.UIElements
                         return "Slot usage has an empty name";
                     case ImportErrorCode.DuplicateContentContainer:
                         return "'contentContainer' attribute must be defined once at most";
+                    case ImportErrorCode.DeprecatedAttributeName:
+                        return "'{0}' attribute name is deprecated";
+                    case ImportErrorCode.ReplaceByAttributeName:
+                        return "Please use '{0}' instead";
                     default:
                         throw new ArgumentOutOfRangeException("Unhandled error code " + errorCode);
                 }
@@ -505,7 +509,11 @@ namespace UnityEditor.Experimental.UIElements
                     case "class":
                         res.classes = xattr.Value.Split(' ');
                         continue;
+                    case "content-container":
                     case "contentContainer":
+                        if (attrName == "contentContainer")
+                        {
+                        }
                         if (vta.contentContainerId != 0)
                         {
                             logger.LogError(ImportErrorType.Semantic, ImportErrorCode.DuplicateContentContainer, null, Error.Level.Fatal, elt);
@@ -591,7 +599,9 @@ namespace UnityEditor.Experimental.UIElements
         SlotUsageInNonTemplate,
         SlotDefinitionHasEmptyName,
         SlotUsageHasEmptyName,
-        DuplicateContentContainer
+        DuplicateContentContainer,
+        DeprecatedAttributeName,
+        ReplaceByAttributeName
     }
 
     internal enum ImportErrorType

@@ -7,6 +7,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -796,26 +797,34 @@ namespace UnityEditor
 
         // Objects to ignore when raysnapping (typically the objects being dragged by the handles)
         internal static Transform[] ignoreRaySnapObjects = null;
-
+        static RaycastHit[] s_RaySnapHits = new RaycastHit[100];
 
         // Casts /ray/ against the scene.
         public static object RaySnap(Ray ray)
         {
-            RaycastHit[] hits = Physics.RaycastAll(ray, Mathf.Infinity, Camera.current.cullingMask);
+            PhysicsScene physicsScene = Physics.defaultPhysicsScene;
+            Scene customScene = Camera.current.scene;
+
+            if (customScene.IsValid())
+            {
+                physicsScene = customScene.GetPhysicsScene();
+            }
+
+            int numHits = physicsScene.Raycast(ray.origin, ray.direction, s_RaySnapHits, Mathf.Infinity, Camera.current.cullingMask, QueryTriggerInteraction.Ignore);
 
             // We are not sure at this point if the hits returned from RaycastAll are sorted or not, so go through them all
             float nearestHitDist = Mathf.Infinity;
             int nearestHitIndex = -1;
             if (ignoreRaySnapObjects != null)
             {
-                for (int i = 0; i < hits.Length; i++)
+                for (int i = 0; i < numHits; i++)
                 {
-                    if (!hits[i].collider.isTrigger && hits[i].distance < nearestHitDist)
+                    if (s_RaySnapHits[i].distance < nearestHitDist)
                     {
                         bool ignore = false;
                         for (int j = 0; j < ignoreRaySnapObjects.Length; j++)
                         {
-                            if (hits[i].transform == ignoreRaySnapObjects[j])
+                            if (s_RaySnapHits[i].transform == ignoreRaySnapObjects[j])
                             {
                                 ignore = true;
                                 break;
@@ -823,7 +832,7 @@ namespace UnityEditor
                         }
                         if (!ignore)
                         {
-                            nearestHitDist = hits[i].distance;
+                            nearestHitDist = s_RaySnapHits[i].distance;
                             nearestHitIndex = i;
                         }
                     }
@@ -831,18 +840,18 @@ namespace UnityEditor
             }
             else
             {
-                for (int i = 0; i < hits.Length; i++)
+                for (int i = 0; i < numHits; i++)
                 {
-                    if (hits[i].distance < nearestHitDist)
+                    if (s_RaySnapHits[i].distance < nearestHitDist)
                     {
-                        nearestHitDist = hits[i].distance;
+                        nearestHitDist = s_RaySnapHits[i].distance;
                         nearestHitIndex = i;
                     }
                 }
             }
 
             if (nearestHitIndex >= 0)
-                return hits[nearestHitIndex];
+                return s_RaySnapHits[nearestHitIndex];
             return null;
         }
 

@@ -188,9 +188,7 @@ namespace UnityEditor
         /// *undocumented*
         LocalMachine = 0,
         /// *undocumented*
-        WindowsPhone = 1,
-        /// *undocumented*
-        LocalMachineAndWindowsPhone = 2
+        WindowsPhone = 1
     }
 
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
@@ -346,7 +344,7 @@ namespace UnityEditor
         // Should we compress files added to the package file
         public static extern bool compressFilesInPackage { get; set; }
 
-        // Headless Mode for Linux Players
+        // Headless Mode
         public static extern bool enableHeadlessMode { get; set; }
 
 
@@ -482,6 +480,22 @@ namespace UnityEditor
             [NativeMethod("GetSelectedWSAUWPSDK")]
             get;
             [NativeMethod("SetSelectedWSAUWPSDK")]
+            set;
+        }
+
+        public static extern string wsaMinUWPSDK
+        {
+            [NativeMethod("GetSelectedWSAMinUWPSDK")]
+            get;
+            [NativeMethod("SetSelectedWSAMinUWPSDK")]
+            set;
+        }
+
+        public static extern string wsaArchitecture
+        {
+            [NativeMethod("GetSelectedWSAArchitecture")]
+            get;
+            [NativeMethod("SetSelectedWSAArchitecture")]
             set;
         }
 

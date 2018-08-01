@@ -18,8 +18,6 @@ namespace UnityEditor.Experimental.AssetImporters
             m_AssetEditor = editor as Editor;
         }
 
-        private Editor assetEditor { get { return m_AssetEditor; } }
-
         protected internal Object[] assetTargets { get { return m_AssetEditor != null ? m_AssetEditor.targets : null; } }
         protected internal Object assetTarget { get { return m_AssetEditor != null ? m_AssetEditor.target : null; } }
         protected internal SerializedObject assetSerializedObject { get { return m_AssetEditor != null ? m_AssetEditor.serializedObject : null; } }
