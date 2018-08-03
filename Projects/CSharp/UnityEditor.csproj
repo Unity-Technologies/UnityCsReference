@@ -2981,6 +2981,9 @@
   <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\AssetPath.cs">
     <Link>Editor\Mono\Scripting\ScriptCompilation\AssetPath.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CSharpNamespaceParser.cs">
+    <Link>Editor\Mono\Scripting\ScriptCompilation\CSharpNamespaceParser.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\ScriptCompilation\CompilationPipeline.cs">
     <Link>Editor\Mono\Scripting\ScriptCompilation\CompilationPipeline.cs</Link>
   </Compile>

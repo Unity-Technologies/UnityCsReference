@@ -199,11 +199,18 @@ namespace UnityEditor
                                 // Add script components
                                 var index = 0;
                                 var addedComponents = new Component[targetComponents.Length * scripts.Count()];
-                                foreach (var targetComponent in targetComponents)
+                                for (int i = 0; i < targetComponents.Length; i++)
                                 {
+                                    var targetComponent = targetComponents[i];
                                     var gameObject = targetComponent.gameObject;
+                                    bool targetIsTransform = targetComponent is Transform;
                                     foreach (var script in scripts)
                                         addedComponents[index++] = ObjectFactory.AddComponent(gameObject, script.GetClass());
+
+                                    // If the target is a Transform, the AddComponent might have replaced it with a RectTransform.
+                                    // Handle this possibility by updating the target component.
+                                    if (targetIsTransform)
+                                        targetComponents[i] = gameObject.transform;
                                 }
 
                                 // Move added components relative to target components
