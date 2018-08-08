@@ -105,6 +105,7 @@ namespace UnityEngine
         // Animation is completly disabled when renderers are not visible.
         CullCompletely = 2,
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Enum member AnimatorCullingMode.BasedOnRenderers has been deprecated. Use AnimatorCullingMode.CullUpdateTransforms instead. (UnityUpgradable) -> CullUpdateTransforms", true)]
         BasedOnRenderers = 1,
     }
@@ -958,7 +959,7 @@ namespace UnityEngine
             get;
         }
 
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use mask and layers to control subset of transfroms in a skeleton.", true)]
         public bool IsControlled(Transform transform) {return false; }
 

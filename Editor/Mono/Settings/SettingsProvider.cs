@@ -101,7 +101,7 @@ namespace UnityEditor
 
             foreach (var searchKeyword in keywords)
             {
-                if (SearchUtils.FuzzySearch(searchContext, searchKeyword))
+                if (SearchUtils.MatchSearchGroups(searchContext, searchKeyword))
                 {
                     return true;
                 }

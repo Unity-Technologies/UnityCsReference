@@ -16,10 +16,34 @@ using UnityEngine.Bindings;
 namespace UnityEditor.RestService
 {
     [NativeHeader("Modules/RestService/Public/Request.h")]
-    internal class Request
+    [StructLayout(LayoutKind.Sequential)]
+    internal class Request : IDisposable
     {
         #pragma warning disable 169
         IntPtr m_nativeRequestPtr;
+
+        ~Request()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (m_nativeRequestPtr != IntPtr.Zero)
+            {
+                Internal_Destroy(m_nativeRequestPtr);
+                m_nativeRequestPtr = IntPtr.Zero;
+            }
+        }
+
+        [NativeMethod(Name = "RestServiceBindings::Internal_DestroyRequest", IsThreadSafe = true, IsFreeFunction = true)]
+        extern public static void Internal_Destroy(IntPtr ptr);
 
         public extern string Payload { get; }
         public extern string Url { get; }
@@ -35,13 +59,37 @@ namespace UnityEditor.RestService
 
     [NativeHeader("Modules/RestService/Public/Response.h")]
     [NativeHeader("Modules/RestService/ScriptBindings/RestService.bindings.h")]
-    internal class Response
+    [StructLayout(LayoutKind.Sequential)]
+    internal class Response : IDisposable
     {
         #pragma warning disable 169
-        IntPtr m_nativeRequestPtr;
+        IntPtr m_nativeResponseProxyPtr;
 
         public const ulong kCalcContentLength = ulong.MaxValue;
         public const ulong kChunkedContent = ulong.MaxValue - 1;
+
+        ~Response()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (m_nativeResponseProxyPtr != IntPtr.Zero)
+            {
+                Internal_Destroy();
+                m_nativeResponseProxyPtr = IntPtr.Zero;
+            }
+        }
+
+        [NativeMethod(Name = "Release", IsThreadSafe = true)]
+        extern public void Internal_Destroy();
 
         [NativeMethod(Name = "RestServiceBindings::SimpleResponse", IsThreadSafe = true, HasExplicitThis = true)]
         extern public void SimpleResponse(HttpStatusCode status, string contentType, string payload);

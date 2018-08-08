@@ -148,10 +148,13 @@ namespace UnityEngine.StyleSheets
                         break;
                     case StyleSelectorType.Type:
                     case StyleSelectorType.Wildcard:
+                        key = part.value ?? "*";
+                        tableToUse = orderedTypeSelectors;
+                        break;
                     // in this case we assume a wildcard selector
                     // since a selector such as ":selected" applies to all elements
                     case StyleSelectorType.PseudoClass:
-                        key = part.value ?? "*";
+                        key = "*";
                         tableToUse = orderedTypeSelectors;
                         break;
                     default:

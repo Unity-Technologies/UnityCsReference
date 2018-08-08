@@ -10,6 +10,7 @@ namespace UnityEngine
 {
     partial class Debug
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Assert(bool, string, params object[]) is obsolete. Use AssertFormat(bool, string, params object[]) (UnityUpgradable) -> AssertFormat(*)", true)]
         [Conditional(Assertions.Assert.UNITY_ASSERTIONS)]
         public static void Assert(bool condition, string format, params object[] args) { if (!condition) unityLogger.LogFormat(LogType.Assert, format, args); }

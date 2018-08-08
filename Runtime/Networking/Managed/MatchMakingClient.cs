@@ -124,7 +124,7 @@ namespace UnityEngine.Networking.Match
         // The specified delegate function will be called when the web request completed. For example:
         // - StartCoroutine(myMatchMaker.Create(create, OnMatchCreate));
         // - StartCoroutine(myMatchMaker.JoinMatch(myGuid, myMatch.matchId, "", OnMatchJoined));
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This function is not used any longer to interface with the matchmaker. Please set up your project by logging in through the editor connect dialog.", true)]
         public void SetProgramAppID(AppID programAppID)
         {

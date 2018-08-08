@@ -141,6 +141,7 @@ namespace UnityEngine.Experimental.UIElements
         public abstract void ValidateLayout();
 
         public abstract void UpdateBindings();
+        public abstract void ApplyStyles();
         public abstract void DirtyStyleSheets();
 
         internal float currentPixelsPerPoint { get; set; } = 1.0f;
@@ -468,6 +469,11 @@ namespace UnityEngine.Experimental.UIElements
             Profiler.BeginSample(m_ProfileBindingsName);
             m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Bindings);
             Profiler.EndSample();
+        }
+
+        public override void ApplyStyles()
+        {
+            m_VisualTreeUpdater.UpdateVisualTreePhase(VisualTreeUpdatePhase.Styles);
         }
 
         public override void DirtyStyleSheets()

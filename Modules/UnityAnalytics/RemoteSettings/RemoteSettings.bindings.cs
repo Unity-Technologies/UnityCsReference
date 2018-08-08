@@ -46,6 +46,7 @@ namespace UnityEngine
                 handler(wasLastUpdatedFromServer, settingsChanged, response);
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Calling CallOnUpdate() is not necessary any more and should be removed. Use RemoteSettingsUpdated instead", true)]
         public static void CallOnUpdate()
         {

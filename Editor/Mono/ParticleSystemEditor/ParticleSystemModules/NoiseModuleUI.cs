@@ -142,7 +142,8 @@ namespace UnityEditor
                 s_PreviewTextureDirty = false;
             }
 
-            if (!isWindowView)
+            bool singleLine = !isWindowView && EditorGUIUtility.wideMode;
+            if (singleLine)
             {
                 GUILayout.BeginHorizontal();
                 GUILayout.BeginVertical();
@@ -229,7 +230,7 @@ namespace UnityEditor
             GUIMinMaxCurve(s_Texts.rotationAmount, m_RotationAmount);
             GUIMinMaxCurve(s_Texts.sizeAmount, m_SizeAmount);
 
-            if (!isWindowView)
+            if (singleLine)
                 GUILayout.EndVertical();
 
             if (EditorGUI.EndChangeCheck() || m_ScrollSpeed.scalar.floatValue != 0.0f || remapEnabled || separateAxesChanged)
@@ -243,7 +244,7 @@ namespace UnityEditor
             else
                 GUILayout.Label(s_Texts.previewTexture, previewTextureStyle, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(false));
 
-            if (!isWindowView)
+            if (singleLine)
                 GUILayout.EndHorizontal();
         }
 

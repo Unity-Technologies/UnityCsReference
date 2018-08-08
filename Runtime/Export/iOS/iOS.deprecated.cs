@@ -17,6 +17,7 @@ namespace UnityEngine
     // iPhoneSettings
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneScreenOrientation enumeration is deprecated. Please use ScreenOrientation instead (UnityUpgradable) -> ScreenOrientation", true)]
     public enum iPhoneScreenOrientation
     {
@@ -28,7 +29,7 @@ namespace UnityEngine
         AutoRotation,
         Landscape
     }
-
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneNetworkReachability enumeration is deprecated. Please use NetworkReachability instead (UnityUpgradable) -> NetworkReachability", true)]
     public enum iPhoneNetworkReachability
     {
@@ -36,7 +37,7 @@ namespace UnityEngine
         ReachableViaCarrierDataNetwork,
         [Obsolete] ReachableViaWiFiNetwork
     }
-
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneGeneration enumeration is deprecated. Please use iOS.DeviceGeneration instead (UnityUpgradable) -> UnityEngine.iOS.DeviceGeneration", true)]
     public enum iPhoneGeneration
     {
@@ -66,27 +67,28 @@ namespace UnityEngine
 
     partial class iPhoneSettings
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("screenOrientation property is deprecated. Please use Screen.orientation instead (UnityUpgradable) -> Screen.orientation", true)]
         public static iPhoneScreenOrientation screenOrientation { get { return default(iPhoneScreenOrientation); } }
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("uniqueIdentifier property is deprecated. Please use SystemInfo.deviceUniqueIdentifier instead (UnityUpgradable) -> SystemInfo.deviceUniqueIdentifier", true)]
         public static string uniqueIdentifier { get { return string.Empty; } }
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("name property is deprecated (UnityUpgradable). Please use SystemInfo.deviceName instead (UnityUpgradable) -> SystemInfo.deviceName", true)]
         public static string name { get { return string.Empty; } }
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("model property is deprecated. Please use SystemInfo.deviceModel instead (UnityUpgradable) -> SystemInfo.deviceModel", true)]
         public static string model { get { return string.Empty; } }
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("systemName property is deprecated. Please use SystemInfo.operatingSystem instead (UnityUpgradable) -> SystemInfo.operatingSystem", true)]
         public static string systemName { get { return string.Empty; } }
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("internetReachability property is deprecated. Please use Application.internetReachability instead (UnityUpgradable) -> Application.internetReachability", true)]
         public static iPhoneNetworkReachability internetReachability { get { return default(iPhoneNetworkReachability); } }
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("systemVersion property is deprecated. Please use iOS.Device.systemVersion instead (UnityUpgradable) -> UnityEngine.iOS.Device.systemVersion", true)]
         public static string systemVersion { get { return string.Empty; } }
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("generation property is deprecated. Please use iOS.Device.generation instead (UnityUpgradable) -> UnityEngine.iOS.Device.generation", true)]
         public static iPhoneGeneration generation { get { return default(iPhoneGeneration); } }
     }
@@ -134,6 +136,7 @@ namespace UnityEngine
     // iPhoneTouch
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneTouchPhase enumeration is deprecated. Please use TouchPhase instead (UnityUpgradable) -> TouchPhase", true)]
     public enum iPhoneTouchPhase
     {
@@ -144,12 +147,15 @@ namespace UnityEngine
         Canceled
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneTouch struct is deprecated. Please use Touch instead (UnityUpgradable) -> Touch", true)]
     public struct iPhoneTouch
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("positionDelta property is deprecated. Please use Touch.deltaPosition instead (UnityUpgradable) -> Touch.deltaPosition", true)]
         public Vector2 positionDelta { get { return new Vector2(); } }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("timeDelta property is deprecated. Please use Touch.deltaTime instead (UnityUpgradable) -> Touch.deltaTime", true)]
         public float timeDelta { get {  return default(int); } }
 
@@ -165,6 +171,7 @@ namespace UnityEngine
     // iPhoneUtils
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneMovieControlMode enumeration is deprecated. Please use FullScreenMovieControlMode instead (UnityUpgradable) -> FullScreenMovieControlMode", true)]
     public enum iPhoneMovieControlMode
     {
@@ -174,7 +181,7 @@ namespace UnityEngine
         Hidden,
         [Obsolete] VolumeOnly
     }
-
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneMovieScalingMode enumeration is deprecated. Please use FullScreenMovieScalingMode instead  (UnityUpgradable) -> FullScreenMovieScalingMode", true)]
     public enum iPhoneMovieScalingMode
     {
@@ -221,6 +228,7 @@ namespace UnityEngine
     // iPhoneKeyboard
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneKeyboardType enumeration is deprecated. Please use TouchScreenKeyboardType instead (UnityUpgradable) -> TouchScreenKeyboardType", true)]
     public enum iPhoneKeyboardType
     {
@@ -233,7 +241,7 @@ namespace UnityEngine
         NamePhonePad,
         EmailAddress
     }
-
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneKeyboard class is deprecated. Please use TouchScreenKeyboard instead (UnityUpgradable) -> TouchScreenKeyboard", true)]
     public class iPhoneKeyboard
     {
@@ -249,16 +257,18 @@ namespace UnityEngine
     // iPhoneInput
     //
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneAccelerationEvent struct is deprecated. Please use AccelerationEvent instead (UnityUpgradable) -> AccelerationEvent", true)]
     public struct iPhoneAccelerationEvent
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("timeDelta property is deprecated. Please use AccelerationEvent.deltaTime instead (UnityUpgradable) -> AccelerationEvent.deltaTime", true)]
         public float timeDelta { get { return 0; } }
 
         public Vector3 acceleration { get { return default(Vector3); } }
         public float deltaTime { get { return -1.0f; } }
     }
-
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneOrientation enumeration is deprecated. Please use DeviceOrientation instead (UnityUpgradable) -> DeviceOrientation", true)]
     public enum iPhoneOrientation
     {
@@ -272,12 +282,15 @@ namespace UnityEngine
     }
 
     // The iPhoneInput class acts as the interface into the iPhone's unique Input systems.
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("iPhoneInput class is deprecated. Please use Input instead (UnityUpgradable) -> Input", true)]
     public class iPhoneInput
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("orientation property is deprecated. Please use Input.deviceOrientation instead (UnityUpgradable) -> Input.deviceOrientation", true)]
         public static iPhoneOrientation orientation { get { return default(iPhoneOrientation); } }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("lastLocation property is deprecated. Please use Input.location.lastData instead.", true)]
         public static LocationInfo lastLocation { get { return default(LocationInfo); } }
 

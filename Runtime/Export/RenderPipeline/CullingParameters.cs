@@ -156,6 +156,8 @@ namespace UnityEngine.Experimental.Rendering
 
         private CameraProperties m_CameraProperties;
 
+        private float m_AccurateoOcclusionThreshold;
+
         public Matrix4x4 cullStereoView;
         public Matrix4x4 cullStereoProj;
         public float cullStereoSeparation;
@@ -236,6 +238,12 @@ namespace UnityEngine.Experimental.Rendering
         {
             get { return m_CameraProperties; }
             set { m_CameraProperties = value; }
+        }
+
+        public float accurateOcclusionThreshold
+        {
+            get { return m_AccurateoOcclusionThreshold; }
+            set { m_AccurateoOcclusionThreshold = Mathf.Max(-1f, value); }
         }
 
         public float GetLayerCullDistance(int layerIndex)

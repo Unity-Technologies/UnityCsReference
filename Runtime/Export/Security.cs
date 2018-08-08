@@ -41,13 +41,14 @@ namespace UnityEngine
             return false;
         }
 
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This was an internal method which is no longer used", true)]
         public static Assembly LoadAndVerifyAssembly(byte[] assemblyData, string authorizationKey)
         {
             return null;
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This was an internal method which is no longer used", true)]
         public static Assembly LoadAndVerifyAssembly(byte[] assemblyData)
         {
@@ -57,6 +58,7 @@ namespace UnityEngine
 
     public static class Types
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This was an internal method which is no longer used", true)]
         public static Type GetType(string typeName, string assemblyName)
         {

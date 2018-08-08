@@ -59,6 +59,7 @@ namespace UnityEngine
             }
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);", true)]
         public Ray mouseRay { get { return new Ray(Vector3.up, Vector3.up); } set {}}
 

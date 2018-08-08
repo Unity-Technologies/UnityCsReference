@@ -16,6 +16,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Export/Light.bindings.h")]
     public sealed partial class Light : Behaviour
     {
+        extern public void Reset();
+
         // How this light casts shadows?
         extern public LightShadows shadows
         {
@@ -39,6 +41,7 @@ namespace UnityEngine
 
         // Note: do not remove (so that projects with assembly-only scritps using this will continue working),
         // just make it do nothing.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Shadow softness is removed in Unity 5.0+", true)]
         public float shadowSoftness
         {
@@ -48,6 +51,7 @@ namespace UnityEngine
 
         // Note: do not remove (so that projects with assembly-only scritps using this will continue working),
         // just make it do nothing.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Shadow softness is removed in Unity 5.0+", true)]
         public float shadowSoftnessFade
         {
@@ -77,6 +81,7 @@ namespace UnityEngine
 
         // This index was used to denote lights which contribution was baked in lightmaps and/or lightprobes.
         private int m_BakedIndex;
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("warning bakedIndex has been removed please use bakingOutput.isBaked instead.", true)]
         public int bakedIndex { get { return m_BakedIndex; } set { m_BakedIndex = value; } }
 

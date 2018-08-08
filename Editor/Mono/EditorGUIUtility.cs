@@ -991,9 +991,11 @@ namespace UnityEditor
             ScriptAttributeUtility.propertyHandlerCache = null;
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("RenderGameViewCameras is no longer supported.Consider rendering cameras manually.", true)]
         public static void RenderGameViewCameras(Rect cameraRect, bool gizmos, bool gui) {}
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("RenderGameViewCameras is no longer supported.Consider rendering cameras manually.", true)]
         public static void RenderGameViewCameras(Rect cameraRect, Rect statsRect, bool gizmos, bool gui) {}
 
@@ -1351,12 +1353,14 @@ namespace UnityEditor
         }
 
         // Convert a color from RGB to HSV color space.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("EditorGUIUtility.RGBToHSV is obsolete. Use Color.RGBToHSV instead (UnityUpgradable) -> [UnityEngine] UnityEngine.Color.RGBToHSV(*)", true)]
         public static void RGBToHSV(Color rgbColor, out float H, out float S, out float V)
         {
             Color.RGBToHSV(rgbColor, out H, out S, out V);
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("EditorGUIUtility.HSVToRGB is obsolete. Use Color.HSVToRGB instead (UnityUpgradable) -> [UnityEngine] UnityEngine.Color.HSVToRGB(*)", true)]
         public static Color HSVToRGB(float H, float S, float V)
         {
@@ -1364,6 +1368,7 @@ namespace UnityEditor
         }
 
         // Convert a set of HSV values to an RGB Color.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("EditorGUIUtility.HSVToRGB is obsolete. Use Color.HSVToRGB instead (UnityUpgradable) -> [UnityEngine] UnityEngine.Color.HSVToRGB(*)", true)]
         public static Color HSVToRGB(float H, float S, float V, bool hdr)
         {

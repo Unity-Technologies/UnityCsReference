@@ -53,10 +53,10 @@ namespace UnityEditor
         public static extern bool IsPersistent(Object target);
         public static extern string SaveFilePanel(string title, string directory, string defaultName, string extension);
         public static extern int NaturalCompare(string a, string b);
-        public static extern void SetDirty(Object target);
+        public static extern void SetDirty([NotNull] Object target);
         public static extern Object InstanceIDToObject(int instanceID);
-        public static extern void CompressTexture(Texture2D texture, TextureFormat format, int quality);
-        public static extern void CompressCubemapTexture(Cubemap texture, TextureFormat format, int quality);
+        public static extern void CompressTexture([NotNull] Texture2D texture, TextureFormat format, int quality);
+        public static extern void CompressCubemapTexture([NotNull] Cubemap texture, TextureFormat format, int quality);
 
         [FreeFunction("InvokeDiffTool")]
         public static extern string InvokeDiffTool(string leftTitle, string leftFile, string rightTitle, string rightFile, string ancestorTitle, string ancestorFile);
@@ -142,8 +142,8 @@ namespace UnityEditor
 
         internal static extern bool IsWindows10OrGreater();
 
-        public static extern void SetCameraAnimateMaterials(Camera camera, bool animate);
-        public static extern void SetCameraAnimateMaterialsTime(Camera camera, float time);
+        public static extern void SetCameraAnimateMaterials([NotNull] Camera camera, bool animate);
+        public static extern void SetCameraAnimateMaterialsTime([NotNull] Camera camera, float time);
 
         [FreeFunction("ShaderLab::UpdateGlobalShaderProperties")]
         public static extern void UpdateGlobalShaderProperties(float time);

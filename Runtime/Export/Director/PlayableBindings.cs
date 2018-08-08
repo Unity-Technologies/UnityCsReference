@@ -36,10 +36,11 @@ namespace UnityEngine.Playables
         public UnityEngine.Object sourceObject { get { return m_SourceObject; } set { m_SourceObject = value; } }
         public System.Type outputTargetType { get { return m_SourceBindingType; } }
 
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("sourceBindingType is no longer supported on PlayableBinding. Use outputBindingType instead to get the required output target type, and the appropriate binding create method (e.g. AnimationPlayableBinding.Create(name, key)) to create PlayableBindings", true)]
         public System.Type sourceBindingType { get { return m_SourceBindingType; } set {} }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("streamType is no longer supported on PlayableBinding. Use the appropriate binding create method (e.g. AnimationPlayableBinding.Create(name, key)) instead.", true)]
         public DataStreamType streamType { get { return DataStreamType.None; } set {} }
 

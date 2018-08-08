@@ -36,9 +36,11 @@ namespace UnityEngine
             get;
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("ValidateIfRetargetable is not supported anymore, please use isHumanMotion instead.", true)]
         public bool ValidateIfRetargetable(bool val) { return false; }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("isAnimatorMotion is not supported anymore, please use !legacy instead.", true)]
         public bool isAnimatorMotion { get; }
     }

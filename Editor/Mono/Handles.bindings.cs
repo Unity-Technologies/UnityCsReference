@@ -37,6 +37,9 @@ namespace UnityEditor
         [FreeFunction("handles::ClearHandles")]
         internal static extern void ClearHandles();
 
+        [FreeFunction("Internal_DrawGizmos")]
+        internal static extern void Internal_DoDrawGizmos([NotNull] Camera camera);
+
         [FreeFunction("Internal_IsCameraDrawModeEnabled")]
         internal static extern bool IsCameraDrawModeEnabled(Camera camera, DrawCameraMode drawMode);
 

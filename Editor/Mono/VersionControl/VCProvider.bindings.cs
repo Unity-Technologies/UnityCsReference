@@ -16,7 +16,11 @@ namespace UnityEditor.VersionControl
     }
 
     // Keep internal and undocumented until we expose more functionality
-    [NativeHeader("Editor/Src/VersionControl/VCProvider_bindings.h")]
+    [NativeHeader("Editor/Src/VersionControl/VC_bindings.h")]
+    [NativeHeader("Editor/Src/VersionControl/VCProvider.h")]
+    [NativeHeader("Editor/Src/VersionControl/VCPlugin.h")]
+    [NativeHeader("Editor/Src/VersionControl/VCTask.h")]
+    [NativeHeader("Editor/Src/VersionControl/VCCache.h")]
     public partial class Provider
     {
         [StaticAccessor("GetVCProvider()", StaticAccessorType.Dot)]
@@ -114,6 +118,9 @@ namespace UnityEditor.VersionControl
             [NativeMethod("GetMonoCustomCommands")]
             get;
         }
+
+        [StaticAccessor("GetVCProvider()", StaticAccessorType.Dot)]
+        internal static extern void ClearCustomCommands();
 
         [FreeFunction("VersionControlBindings::VCProvider::Internal_CacheStatus")]
         private static extern Asset Internal_CacheStatus(string assetPath);

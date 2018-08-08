@@ -371,7 +371,7 @@ namespace UnityEditor
         void ShowUserMenu(Rect dropDownRect)
         {
             var menu = new GenericMenu();
-            if (!UnityConnect.instance.online)
+            if (!UnityConnect.instance.online || UnityConnect.instance.isDisableUserLogin)
             {
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Go to account"));
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Sign in..."));
@@ -552,6 +552,9 @@ namespace UnityEditor
                 EditorGUIUtility.SetIconSize(Vector2.zero);
             }
 
+            if (m_CollabToolbarState == CollabToolbarState.Disabled)
+                return;
+
             if (showPopup)
             {
                 ShowPopup(rect);
@@ -569,7 +572,11 @@ namespace UnityEditor
             bool networkAvailable = UnityConnect.instance.connectInfo.online && UnityConnect.instance.connectInfo.loggedIn;
             m_DynamicTooltip = "";
 
-            if (networkAvailable)
+            if (UnityConnect.instance.isDisableCollabWindow)
+            {
+                currentCollabState = CollabToolbarState.Disabled;
+            }
+            else if (networkAvailable)
             {
                 Collab collab = Collab.instance;
                 CollabInfo currentInfo = collab.collabInfo;

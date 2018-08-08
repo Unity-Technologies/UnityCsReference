@@ -118,6 +118,7 @@ namespace UnityEditor
         // Send an input event into the game.
         public static extern void QueueGameViewInputEvent(Event evt);
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("RenderGameViewCameras is no longer supported.Consider rendering cameras manually.", true)]
         public static void RenderGameViewCameras(RenderTexture target, int targetDisplay, Rect screenRect, Vector2 mousePosition, bool gizmos) {}
 

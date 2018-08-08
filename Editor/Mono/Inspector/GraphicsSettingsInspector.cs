@@ -4,7 +4,7 @@
 
 using UnityEditorInternal;
 using UnityEngine;
-
+using UnityEngine.Events;
 using TierSettingsEditor            = UnityEditor.GraphicsSettingsWindow.TierSettingsEditor;
 using BuiltinShadersEditor          = UnityEditor.GraphicsSettingsWindow.BuiltinShadersEditor;
 using AlwaysIncludedShadersEditor   = UnityEditor.GraphicsSettingsWindow.AlwaysIncludedShadersEditor;
@@ -77,6 +77,7 @@ namespace UnityEditor
             m_TransparencySortMode = serializedObject.FindProperty("m_TransparencySortMode");
             m_TransparencySortAxis = serializedObject.FindProperty("m_TransparencySortAxis");
             m_ScriptableRenderLoop = serializedObject.FindProperty("m_CustomRenderPipeline");
+            tierSettingsAnimator = new AnimatedValues.AnimBool(showTierSettingsUI, Repaint);
         }
 
         private void HandleEditorWindowButton()
@@ -103,9 +104,6 @@ namespace UnityEditor
 
         private void TierSettingsGUI()
         {
-            if (tierSettingsAnimator == null)
-                tierSettingsAnimator = new UnityEditor.AnimatedValues.AnimBool(showTierSettingsUI, Repaint);
-
             bool enabled = GUI.enabled;
             GUI.enabled = true; // we don't want to disable the expand behavior
             EditorGUILayout.BeginVertical(GUI.skin.box);
@@ -173,6 +171,12 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
+        public void SetSectionOpenListener(UnityAction action)
+        {
+            tierSettingsAnimator.valueChanged.RemoveAllListeners();
+            tierSettingsAnimator.valueChanged.AddListener(action);
+        }
+
         [SettingsProvider]
         static SettingsProvider CreateProjectSettingsProvider()
         {
@@ -186,6 +190,11 @@ namespace UnityEditor
             var graphicSettings = provider.CreateEditor() as GraphicsSettingsInspector;
             SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicSettings.serializedObject, provider.keywords);
             SettingsProvider.GetSearchKeywordsFromSerializedObject(graphicSettings.alwaysIncludedShadersEditor.serializedObject, provider.keywords);
+
+            provider.onEditorCreated = editor =>
+            {
+                (editor as GraphicsSettingsInspector).SetSectionOpenListener(provider.settingsWindow.Repaint);
+            };
 
             provider.icon = EditorGUIUtility.FindTexture("UnityEngine/UI/GraphicRaycaster Icon");
             return provider;

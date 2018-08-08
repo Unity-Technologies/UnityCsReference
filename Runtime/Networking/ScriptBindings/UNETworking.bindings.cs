@@ -359,7 +359,7 @@ namespace UnityEngine.Networking
         {
             get { return IsStartedInternal(); }
         }
-        [FreeFunction("UNETManager::Get()->IsStarted")]
+        [FreeFunction("UNETManager::IsStarted")]
         extern static private bool IsStartedInternal();
 
         [FreeFunction("UNETManager::Get()->Connect")]

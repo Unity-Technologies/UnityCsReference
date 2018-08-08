@@ -6,6 +6,7 @@ using System;
 using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
+using UnityEngine.Scripting;
 
 namespace UnityEngine.XR
 {
@@ -179,6 +180,16 @@ namespace UnityEngine.XR
         extern public static TrackingOriginMode trackingOriginMode
         {
             get;
+        }
+        public static event Action<string> deviceLoaded = null;
+
+        [RequiredByNativeCode]
+        private static void InvokeDeviceLoaded(string loadedDeviceName)
+        {
+            if (deviceLoaded != null)
+            {
+                deviceLoaded(loadedDeviceName);
+            }
         }
     }
 

@@ -82,7 +82,7 @@ namespace UnityEditor
             DrawListElement(drawPos, "Animated Materials", state.showMaterialUpdate, value => state.showMaterialUpdate = value);
             drawPos.y += EditorGUI.kSingleLineHeight;
 
-            DrawListElement(drawPos, "Image Effects", state.showImageEffects, value => state.showImageEffects = value);
+            DrawListElement(drawPos, "Post Processings", state.showImageEffects, value => state.showImageEffects = value);
             drawPos.y += EditorGUI.kSingleLineHeight;
 
             DrawListElement(drawPos, "Particle Systems", state.showParticleSystems, value => state.showParticleSystems = value);

@@ -33,6 +33,11 @@ namespace UnityEngine.Experimental.UIElements
             int validateLayoutCount = 0;
             while (visualTree.yogaNode.IsDirty)
             {
+                // Doing multiples layout pass require to update the styles or else the
+                // elements may not be initialized properly and the resulting layout will be invalid.
+                if (validateLayoutCount > 0)
+                    panel.ApplyStyles();
+
                 visualTree.yogaNode.CalculateLayout();
                 using (new EventDispatcher.Gate(visualTree.panel.dispatcher))
                 {

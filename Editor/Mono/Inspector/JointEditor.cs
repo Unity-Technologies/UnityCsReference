@@ -10,6 +10,41 @@ using UnityObject = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    internal class JointCommonEditor : Editor
+    {
+        public static void CheckConnectedBody(Editor editor)
+        {
+            // Ensure that the connected body doesn't span physics scenes.
+            if (editor.targets.Length == 1)
+            {
+                var joint = editor.target as Joint;
+                if (joint.connectedBody != null &&
+                    joint.gameObject.scene.GetPhysicsScene() != joint.connectedBody.gameObject.scene.GetPhysicsScene())
+                {
+                    EditorGUILayout.HelpBox("This joint will not function because it is connected to a Rigidbody in a different physics scene. This is not supported.", MessageType.Warning);
+                }
+            }
+        }
+
+        public override void OnInspectorGUI()
+        {
+            CheckConnectedBody(this);
+            base.OnInspectorGUI();
+        }
+    }
+
+    [CustomEditor(typeof(FixedJoint))]
+    [CanEditMultipleObjects]
+    internal class FixedJointEditor : JointCommonEditor
+    {
+    }
+
+    [CustomEditor(typeof(SpringJoint))]
+    [CanEditMultipleObjects]
+    internal class SpringJointEditor : JointCommonEditor
+    {
+    }
+
     abstract class JointEditor<T> : Editor where T : Joint
     {
         protected static class Styles
@@ -38,6 +73,7 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            JointCommonEditor.CheckConnectedBody(this);
             DoInspectorEditButtons();
             base.OnInspectorGUI();
         }

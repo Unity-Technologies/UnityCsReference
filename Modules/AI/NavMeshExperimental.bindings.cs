@@ -113,6 +113,8 @@ namespace UnityEngine.Experimental.AI
 
         public void AddDependency(JobHandle job)
         {
+            if (!IsValid())
+                throw new InvalidOperationException("The NavMesh world is invalid.");
             AddDependencyInternal(world, job);
         }
     }
@@ -128,15 +130,35 @@ namespace UnityEngine.Experimental.AI
         [NativeDisableUnsafePtrRestriction]
         internal IntPtr             m_NavMeshQuery;
 
+        const string                k_NoBufferAllocatedErrorMessage = "This query has no buffer allocated for pathfinding operations. " +
+            "Create a different NavMeshQuery with an explicit node pool size.";
+        internal AtomicSafetyHandle m_Safety;
+        [NativeSetClassTypeToNullOnSchedule]
+        DisposeSentinel             m_DisposeSentinel;
 
         public NavMeshQuery(NavMeshWorld world, Allocator allocator, int pathNodePoolSize = 0)
         {
+            if (!world.IsValid())
+                throw new ArgumentNullException("world", "Invalid world");
             m_NavMeshQuery = Create(world, pathNodePoolSize);
 
+            DisposeSentinel.Create(out m_Safety, out m_DisposeSentinel, 0, allocator);
+            AddQuerySafety(m_NavMeshQuery, m_Safety);
         }
 
         public void Dispose()
         {
+
+            // When the NavMesh destroys itself it will disable read or write access.
+            // Since it has been deallocated, we shouldn't deregister the query from it...
+            // We need to extract removeQuery before disposing the handle,
+            // because the atomic safety handle stores that state.
+            var removeQuery = AtomicSafetyHandle.GetAllowReadOrWriteAccess(m_Safety);
+
+            DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
+
+            if (removeQuery)
+                RemoveQuerySafety(m_NavMeshQuery, m_Safety);
             Destroy(m_NavMeshQuery);
             m_NavMeshQuery = IntPtr.Zero;
         }
@@ -145,26 +167,76 @@ namespace UnityEngine.Experimental.AI
 
         static extern void Destroy(IntPtr navMeshQuery);
 
+        static extern void AddQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);
+        static extern void RemoveQuerySafety(IntPtr navMeshQuery, AtomicSafetyHandle handle);
+
+        [ThreadSafe]
+        static extern bool HasNodePool(IntPtr navMeshQuery);
 
         public unsafe PathQueryStatus BeginFindPath(NavMeshLocation start, NavMeshLocation end,
             int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new NativeArray<float>())
         {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+
+            if (!HasNodePool(m_NavMeshQuery))
+                throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
+
+            const int kAreaCount = 32;
+            if (costs.Length != 0)
+            {
+                if (costs.Length != kAreaCount)
+                    throw new ArgumentException(
+                        string.Format("The number of costs ({0}) must be exactly {1}, one for each possible area type.", costs.Length, kAreaCount)
+                        , "costs");
+
+                for (var i = 0; i < costs.Length; i++)
+                {
+                    if (costs[i] < 1.0f)
+                        throw new ArgumentException(
+                            string.Format("The area cost ({0}) at index ({1}) must be greater or equal to 1.", costs[i], i), "costs");
+                }
+            }
+
+            var agentTypeStart = GetAgentTypeIdForPolygon(start.polygon);
+            if (agentTypeStart < 0)
+                throw new ArgumentException("The start location doesn't belong to any active NavMesh surface.", "start");
+
+            var agentTypeEnd = GetAgentTypeIdForPolygon(end.polygon);
+            if (agentTypeEnd < 0)
+                throw new ArgumentException("The end location doesn't belong to any active NavMesh surface.", "end");
+
+            if (agentTypeStart != agentTypeEnd)
+                throw new ArgumentException(string.Format(
+                    "The start and end locations belong to different NavMesh surfaces, with agent type IDs {0} and {1}.",
+                    agentTypeStart, agentTypeEnd));
             void* costsPtr = costs.Length > 0 ? costs.GetUnsafePtr() : null;
             return BeginFindPath(m_NavMeshQuery, start, end, areaMask, costsPtr);
         }
 
         public PathQueryStatus UpdateFindPath(int iterations, out int iterationsPerformed)
         {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+
+            if (!HasNodePool(m_NavMeshQuery))
+                throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
             return UpdateFindPath(m_NavMeshQuery, iterations, out iterationsPerformed);
         }
 
         public PathQueryStatus EndFindPath(out int pathSize)
         {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+
+            if (!HasNodePool(m_NavMeshQuery))
+                throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
             return EndFindPath(m_NavMeshQuery, out pathSize);
         }
 
         public unsafe int GetPathResult(NativeSlice<PolygonId> path)
         {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
+
+            if (!HasNodePool(m_NavMeshQuery))
+                throw new InvalidOperationException(k_NoBufferAllocatedErrorMessage);
             return GetPathResult(m_NavMeshQuery, path.GetUnsafePtr(), path.Length);
         }
 
@@ -191,6 +263,7 @@ namespace UnityEngine.Experimental.AI
 
         public bool IsValid(PolygonId polygon)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return polygon.polyRef != 0 && IsValidPolygon(m_NavMeshQuery, polygon);
         }
 
@@ -203,6 +276,7 @@ namespace UnityEngine.Experimental.AI
         static extern int GetAgentTypeIdForPolygon(IntPtr navMeshQuery, PolygonId polygon);
         public int GetAgentTypeIdForPolygon(PolygonId polygon)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return GetAgentTypeIdForPolygon(m_NavMeshQuery, polygon);
         }
 
@@ -214,6 +288,7 @@ namespace UnityEngine.Experimental.AI
 
         public NavMeshLocation CreateLocation(Vector3 position, PolygonId polygon)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             Vector3 nearest;
             var status = GetClosestPointOnPoly(m_NavMeshQuery, polygon, position, out nearest);
             return (status & PathQueryStatus.Success) != 0 ? new NavMeshLocation(nearest, polygon) : new NavMeshLocation();
@@ -223,6 +298,7 @@ namespace UnityEngine.Experimental.AI
         static extern NavMeshLocation MapLocation(IntPtr navMeshQuery, Vector3 position, Vector3 extents, int agentTypeID, int areaMask = NavMesh.AllAreas);
         public NavMeshLocation MapLocation(Vector3 position, Vector3 extents, int agentTypeID, int areaMask = NavMesh.AllAreas)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return MapLocation(m_NavMeshQuery, position, extents, agentTypeID, areaMask);
         }
 
@@ -230,6 +306,10 @@ namespace UnityEngine.Experimental.AI
         static extern unsafe void MoveLocations(IntPtr navMeshQuery, void* locations, void* targets, void* areaMasks, int count);
         public unsafe void MoveLocations(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, NativeSlice<int> areaMasks)
         {
+            if (locations.Length != targets.Length || locations.Length != areaMasks.Length)
+                throw new ArgumentException("locations.Length, targets.Length and areaMasks.Length must be equal");
+
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             MoveLocations(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), areaMasks.GetUnsafeReadOnlyPtr(), locations.Length);
         }
 
@@ -237,6 +317,10 @@ namespace UnityEngine.Experimental.AI
         static extern unsafe void MoveLocationsInSameAreas(IntPtr navMeshQuery, void* locations, void* targets, int count, int areaMask);
         public unsafe void MoveLocationsInSameAreas(NativeSlice<NavMeshLocation> locations, NativeSlice<Vector3> targets, int areaMask = NavMesh.AllAreas)
         {
+            if (locations.Length != targets.Length)
+                throw new ArgumentException("locations.Length and targets.Length must be equal");
+
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             MoveLocationsInSameAreas(m_NavMeshQuery, locations.GetUnsafePtr(), targets.GetUnsafeReadOnlyPtr(), locations.Length, areaMask);
         }
 
@@ -244,6 +328,7 @@ namespace UnityEngine.Experimental.AI
         static extern NavMeshLocation MoveLocation(IntPtr navMeshQuery, NavMeshLocation location, Vector3 target, int areaMask);
         public NavMeshLocation MoveLocation(NavMeshLocation location, Vector3 target, int areaMask = NavMesh.AllAreas)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return MoveLocation(m_NavMeshQuery, location, target, areaMask);
         }
 
@@ -251,6 +336,7 @@ namespace UnityEngine.Experimental.AI
         static extern bool GetPortalPoints(IntPtr navMeshQuery, PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right);
         public bool GetPortalPoints(PolygonId polygon, PolygonId neighbourPolygon, out Vector3 left, out Vector3 right)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return GetPortalPoints(m_NavMeshQuery, polygon, neighbourPolygon, out left, out right);
         }
 
@@ -258,6 +344,7 @@ namespace UnityEngine.Experimental.AI
         static extern Matrix4x4 PolygonLocalToWorldMatrix(IntPtr navMeshQuery, PolygonId polygon);
         public Matrix4x4 PolygonLocalToWorldMatrix(PolygonId polygon)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return PolygonLocalToWorldMatrix(m_NavMeshQuery, polygon);
         }
 
@@ -265,6 +352,7 @@ namespace UnityEngine.Experimental.AI
         static extern Matrix4x4 PolygonWorldToLocalMatrix(IntPtr navMeshQuery, PolygonId polygon);
         public Matrix4x4 PolygonWorldToLocalMatrix(PolygonId polygon)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return PolygonWorldToLocalMatrix(m_NavMeshQuery, polygon);
         }
 
@@ -272,6 +360,7 @@ namespace UnityEngine.Experimental.AI
         static extern NavMeshPolyTypes GetPolygonType(IntPtr navMeshQuery, PolygonId polygon);
         public NavMeshPolyTypes GetPolygonType(PolygonId polygon)
         {
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
             return GetPolygonType(m_NavMeshQuery, polygon);
         }
 
@@ -287,6 +376,14 @@ namespace UnityEngine.Experimental.AI
             int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new NativeArray<float>())
         {
             const int kAreaCount = 32;
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+
+            if (costs.Length != 0)
+            {
+                if (costs.Length != kAreaCount)
+                    throw new ArgumentException(
+                        string.Format("The number of costs ({0}) must be exactly {1}, one for each possible area type.", costs.Length, kAreaCount), "costs");
+            }
             int pathCount;
             var costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
             var status = Raycast(m_NavMeshQuery, start, targetPosition, areaMask, costsPtr, out hit, null, out pathCount, 0);
@@ -299,6 +396,14 @@ namespace UnityEngine.Experimental.AI
             int areaMask = NavMesh.AllAreas, NativeArray<float> costs = new NativeArray<float>())
         {
             const int kAreaCount = 32;
+            AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
+
+            if (costs.Length != 0)
+            {
+                if (costs.Length != kAreaCount)
+                    throw new ArgumentException(
+                        string.Format("The number of costs ({0}) must be exactly {1}, one for each possible area type.", costs.Length, kAreaCount), "costs");
+            }
             var costsPtr = costs.Length == kAreaCount ? costs.GetUnsafePtr() : null;
             var pathPtr = path.Length > 0 ? path.GetUnsafePtr() : null;
             var maxPath = pathPtr != null ? path.Length : 0;

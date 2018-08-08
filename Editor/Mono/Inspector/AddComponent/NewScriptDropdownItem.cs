@@ -38,9 +38,9 @@ namespace UnityEditor.AdvancedDropdown
         internal bool CanCreate()
         {
             return m_ClassName.Length > 0 &&
+                !ClassNameIsInvalid() &&
                 !File.Exists(TargetPath()) &&
                 !ClassAlreadyExists() &&
-                !ClassNameIsInvalid() &&
                 !InvalidTargetPath();
         }
 
@@ -50,12 +50,12 @@ namespace UnityEditor.AdvancedDropdown
             var blockReason = string.Empty;
             if (m_ClassName != string.Empty)
             {
-                if (File.Exists(TargetPath()))
+                if (ClassNameIsInvalid())
+                    blockReason = "The script name may only consist of a-z, A-Z, 0-9, _.";
+                else if (File.Exists(TargetPath()))
                     blockReason = "A script called \"" + m_ClassName + "\" already exists at that path.";
                 else if (ClassAlreadyExists())
                     blockReason = "A class called \"" + m_ClassName + "\" already exists.";
-                else if (ClassNameIsInvalid())
-                    blockReason = "The script name may only consist of a-z, A-Z, 0-9, _.";
                 else if (InvalidTargetPath())
                     blockReason = "The folder path contains invalid characters.";
             }

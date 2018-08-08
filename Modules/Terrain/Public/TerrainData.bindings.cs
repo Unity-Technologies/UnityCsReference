@@ -179,7 +179,7 @@ namespace UnityEngine
 
         extern internal void RemoveUser(GameObject user);
 
-        extern public void UpdateDirtyRegion(int x, int y, int width, int height);
+        extern public void UpdateDirtyRegion(int x, int y, int width, int height, bool syncHeightmapTextureImmediately);
 
 
         extern public int heightmapWidth
@@ -411,6 +411,12 @@ namespace UnityEngine
 
         [NativeName(k_DetailDatabasePrefix + "SetDetailResolution")]
         extern private void Internal_SetDetailResolution(int patchCount, int resolutionPerPatch);
+
+        extern public int detailPatchCount
+        {
+            [NativeName(k_DetailDatabasePrefix + "GetPatchCount")]
+            get;
+        }
 
         extern public int detailResolution
         {

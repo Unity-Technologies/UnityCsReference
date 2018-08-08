@@ -134,7 +134,7 @@ namespace UnityEditor
             if (!platform.Equals(VideoClipImporter.defaultTargetName, StringComparison.OrdinalIgnoreCase) && platformGroup == BuildTargetGroup.Unknown)
             {
                 throw new ArgumentException("Unknown platform passed to AudioImporter.GetOverrideSampleSettings (" + platform + "), please use one of " +
-                    "'Default', 'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'XBox360', 'XboxOne', 'WP8', or 'WSA'");
+                    "'Default', 'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'XBox360', 'XboxOne', 'WP8', or 'WSA'");
             }
 
             return Internal_GetTargetSettings(platformGroup);
@@ -154,7 +154,7 @@ namespace UnityEditor
             if (!platform.Equals(VideoClipImporter.defaultTargetName, StringComparison.OrdinalIgnoreCase) && platformGroup == BuildTargetGroup.Unknown)
             {
                 throw new ArgumentException("Unknown platform passed to AudioImporter.GetOverrideSampleSettings (" + platform + "), please use one of " +
-                    "'Default', 'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'XBox360', 'XboxOne', 'WP8', or 'WSA'");
+                    "'Default', 'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'XBox360', 'XboxOne', 'WP8', or 'WSA'");
             }
 
             Internal_SetTargetSettings(platformGroup, settings);
@@ -172,7 +172,7 @@ namespace UnityEditor
             if (platformGroup == BuildTargetGroup.Unknown)
             {
                 throw new ArgumentException("Unknown platform passed to AudioImporter.GetOverrideSampleSettings (" + platform + "), please use one of " +
-                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'PSP2', 'XBox360', 'XboxOne', 'WP8', or 'WSA'");
+                    "'Web', 'Standalone', 'iOS', 'Android', 'WebGL', 'PS4', 'XBox360', 'XboxOne', 'WP8', or 'WSA'");
             }
 
             Internal_ClearTargetSettings(platformGroup);

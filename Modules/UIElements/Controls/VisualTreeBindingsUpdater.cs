@@ -108,7 +108,11 @@ namespace UnityEngine.Experimental.UIElements
         {
             foreach (var element in m_ElementsToAdd)
             {
-                m_ElementsWithBindings.Add(element);
+                var updater = GetUpdaterFromElement(element);
+                if (updater != null)
+                {
+                    m_ElementsWithBindings.Add(element);
+                }
             }
 
             m_ElementsToAdd.Clear();
@@ -139,6 +143,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        private List<IBinding> updatedBindings = new List<IBinding>();
         private void UpdateBindings()
         {
             Profiler.BeginSample("Binding.Update");
@@ -153,9 +158,21 @@ namespace UnityEngine.Experimental.UIElements
                 }
                 else
                 {
-                    updater.Update();
+                    updatedBindings.Add(updater);
                 }
             }
+
+            foreach (var u in updatedBindings)
+            {
+                u.PreUpdate();
+            }
+
+            foreach (var u in updatedBindings)
+            {
+                u.Update();
+            }
+
+            updatedBindings.Clear();
             Profiler.EndSample();
         }
     }

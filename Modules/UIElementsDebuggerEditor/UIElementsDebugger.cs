@@ -555,7 +555,6 @@ namespace UnityEditor.Experimental.UIElements.Debugger
                 m_CurPanel.Value.Panel.visualTree.IncrementVersion(VersionChangeType.Styles | VersionChangeType.StyleSheet);
                 m_CurPanel.Value.Panel.visualTree.IncrementVersion(VersionChangeType.Layout);
                 m_CurPanel.Value.Panel.visualTree.IncrementVersion(VersionChangeType.Repaint);
-                m_CurPanel.Value.View.RepaintImmediately();
             }
         }
 

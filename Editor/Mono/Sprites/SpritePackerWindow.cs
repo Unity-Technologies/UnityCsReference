@@ -135,7 +135,7 @@ namespace UnityEditor.Sprites
                 EditorGUILayout.BeginVertical();
                 GUILayout.Label(PackerWindowStyle.packingDisabledLabel);
                 if (GUILayout.Button(PackerWindowStyle.openProjectSettingButton))
-                    EditorApplication.ExecuteMenuItem("Edit/Project Settings/Editor");
+                    SettingsWindow.OpenProjectSettings("Project/Editor");
                 EditorGUILayout.EndVertical();
                 return false;
             }

@@ -37,7 +37,7 @@ namespace UnityEditor
                 {
                     if (GUILayout.Button("Execution Order...", EditorStyles.miniButton))//GUILayout.Width(150)))
                     {
-                        EditorApplication.ExecuteMenuItem("Edit/Project Settings/Script Execution Order");
+                        SettingsWindow.OpenProjectSettings("Project/Script Execution Order");
                         GUIUtility.ExitGUI();
                     }
                 }

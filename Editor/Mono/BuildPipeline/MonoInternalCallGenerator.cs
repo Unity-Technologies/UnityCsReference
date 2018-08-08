@@ -154,8 +154,8 @@ namespace UnityEditor
 
                 w.WriteLine("    void                mono_aot_register_module(gpointer *aot_info);");
 
-                w.WriteLine("#if __ORBIS__ || SN_TARGET_PSP2");
-                w.WriteLine("#define DLL_EXPORT __declspec(dllexport)"); // ps4 and psp2 need dllexport.
+                w.WriteLine("#if __ORBIS__");
+                w.WriteLine("#define DLL_EXPORT __declspec(dllexport)"); // ps4 needs dllexport.
                 w.WriteLine("#else");
                 w.WriteLine("#define DLL_EXPORT");
                 w.WriteLine("#endif");

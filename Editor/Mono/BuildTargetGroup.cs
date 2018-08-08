@@ -19,10 +19,12 @@ namespace UnityEditor
         Standalone = 1,
 
         //*undocumented*
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("WebPlayer was removed in 5.4, consider using WebGL", true)]
         WebPlayer = 2,
 
         // Apple iOS target.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use iOS instead (UnityUpgradable) -> iOS", true)]
         iPhone = 4,
 
@@ -63,6 +65,7 @@ namespace UnityEditor
         Tizen = 17,
 
         /// Sony Playstation Vita target.
+        [System.Obsolete("PSP2 is no longer supported as of Unity 2018.3")]
         PSP2 = 18,
 
         /// Sony Playstation 4 target.

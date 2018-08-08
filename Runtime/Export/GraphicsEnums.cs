@@ -402,6 +402,7 @@ namespace UnityEngine
         RG16 = 25,
         BGRA10101010_XR = 26,
         BGR101010_XR = 27,
+        R16 = 28,
     }
 
     public enum VRTextureUsage
@@ -577,10 +578,11 @@ namespace UnityEngine
                 D32_SFloat = 93,
                 D32_SFloat_S8_Uint = 94,
                 S8_Uint = 95,
-
+                [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 [Obsolete("Enum member GraphicsFormat.RGB_DXT1_SRGB has been deprecated. Use GraphicsFormat.RGBA_DXT1_SRGB instead (UnityUpgradable) -> RGBA_DXT1_SRGB", true)]
                 RGB_DXT1_SRGB = 96,
                 RGBA_DXT1_SRGB = 96,
+                [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
                 [Obsolete("Enum member GraphicsFormat.RGB_DXT1_UNorm has been deprecated. Use GraphicsFormat.RGBA_DXT1_UNorm instead (UnityUpgradable) -> RGBA_DXT1_UNorm", true)]
                 RGB_DXT1_UNorm = 97,
                 RGBA_DXT1_UNorm = 97,

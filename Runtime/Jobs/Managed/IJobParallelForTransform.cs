@@ -47,6 +47,7 @@ namespace UnityEngine.Jobs
                     int sortedIndex = i;
                     int userIndex = sortedToUserIndex[sortedIndex];
 
+                    JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), userIndex, 1);
                     jobData.Execute(userIndex, sortedTransformAccess[sortedIndex]);
                 }
             }

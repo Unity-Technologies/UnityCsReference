@@ -843,11 +843,13 @@ namespace UnityEditor
                 return;
             }
 
+            Rect position = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(position, label, prop);
             if (curve.length != 1)
             {
                 using (new EditorGUI.DisabledScope(true))
                 {
-                    EditorGUILayout.LabelField(label.text, ms_Styles.controlledByCurveLabel);
+                    EditorGUI.LabelField(position, label.text, ms_Styles.controlledByCurveLabel);
                 }
             }
             else
@@ -856,9 +858,9 @@ namespace UnityEditor
                 f = MathUtils.DiscardLeastSignificantDecimal(f);
                 EditorGUI.BeginChangeCheck();
                 if (max > min)
-                    f = EditorGUILayout.Slider(label, f, min, max);
+                    f = EditorGUI.Slider(position, label, f, min, max);
                 else
-                    f = EditorGUILayout.Slider(label, f, max, min);
+                    f = EditorGUI.Slider(position, label, f, max, min);
 
                 if (EditorGUI.EndChangeCheck())
                 {
@@ -868,6 +870,7 @@ namespace UnityEditor
                     curve.MoveKey(0, kf);
                 }
             }
+            EditorGUI.EndProperty();
 
             prop.animationCurveValue = curve;
         }

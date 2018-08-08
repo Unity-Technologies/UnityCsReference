@@ -90,6 +90,7 @@ namespace UnityEngine.Audio
             SetLoopedInternal(ref m_Handle, value);
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("IsPlaying() has been deprecated. Use IsChannelPlaying() instead (UnityUpgradable) -> IsChannelPlaying()", true)]
         public bool IsPlaying()
         {

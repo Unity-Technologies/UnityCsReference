@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
@@ -15,6 +15,8 @@ namespace UnityEditor
     {
         int m_SelectedBrush = 0;
         Brush[] m_BrushList = null;
+        UnityEngine.Object[] m_FoldoutContent = new UnityEngine.Object[1];
+        GUIContent[] m_Thumnails;
         Editor m_BrushEditor = null;
         bool m_ShowBrushSettings = false;
 
@@ -22,13 +24,11 @@ namespace UnityEditor
         Vector2 m_ScrollPos;
 
         public int selectedIndex { get { return m_SelectedBrush; } }
-        internal class Styles
+        internal static class Styles
         {
-            public GUIStyle gridList = "GridList";
-            public GUIContent brushes = EditorGUIUtility.TextContent("Brushes");
+            public static GUIStyle gridList = "GridList";
+            public static GUIContent brushes = EditorGUIUtility.TrTextContent("Brushes");
         }
-        static Styles m_Styles;
-        public Styles styles { get { if (m_Styles == null) m_Styles = new Styles(); return m_Styles; } }
 
         public BrushList()
         {
@@ -51,7 +51,7 @@ namespace UnityEditor
             {
                 t = (Texture2D)EditorGUIUtility.Load(EditorResources.brushesPath + "builtin_brush_" + idx + ".png");
                 if (t)
-                    arr.Add(Brush.Create(t, AnimationCurve.Constant(0, 1, 1), Brush.kMaxRadiusScale, true));
+                    arr.Add(Brush.CreateInstance(t, AnimationCurve.Constant(0, 1, 1), Brush.kMaxRadiusScale, true));
 
                 idx++;
             }
@@ -63,23 +63,16 @@ namespace UnityEditor
             {
                 t = EditorGUIUtility.FindTexture("brush_" + idx + ".png");
                 if (t)
-                    arr.Add(Brush.Create(t, AnimationCurve.Constant(0, 1, 1), Brush.kMaxRadiusScale, true));
+                    arr.Add(Brush.CreateInstance(t, AnimationCurve.Constant(0, 1, 1), Brush.kMaxRadiusScale, true));
                 idx++;
             }
             while (t);
 
-
             // Load .brush files
-            string[] fileEntries = Directory.GetFiles(Application.dataPath, "*.brush", SearchOption.AllDirectories);
-            string path = Application.dataPath.Remove(Application.dataPath.Length - "Assets".Length);
-            foreach (string file in fileEntries)
-            {
-                string filePath = file.Remove(0, path.Length);
-                filePath = filePath.Replace("\\", "/");
-                Brush b = AssetDatabase.LoadMainAssetAtPath(filePath) as Brush;
-                if (b)
-                    arr.Add(b);
-            }
+            arr.AddRange(
+                AssetDatabase.FindAssets($"t:{typeof(Brush).Name}")
+                    .Select(p => AssetDatabase.LoadAssetAtPath(AssetDatabase.GUIDToAssetPath(p), typeof(Brush)) as Brush)
+            );
 
             m_BrushList = arr.ToArray();
         }
@@ -115,24 +108,35 @@ namespace UnityEditor
         {
             bool repaint = false;
 
-            GUILayout.Label(styles.brushes, EditorStyles.boldLabel);
+            GUILayout.Label(Styles.brushes, EditorStyles.boldLabel);
 
             EditorGUILayout.BeginHorizontal();
             {
                 Rect brushPreviewRect = EditorGUILayout.GetControlRect(true, GUILayout.Width(128), GUILayout.Height(128));
                 if (m_BrushList != null)
                 {
-                    EditorGUI.DrawTextureAlpha(brushPreviewRect, GetActiveBrush().texture);
+                    EditorGUI.DrawTextureAlpha(brushPreviewRect, GetActiveBrush().thumbnail);
 
                     bool dummy;
                     m_ScrollPos = EditorGUILayout.BeginScrollView(m_ScrollPos, GUILayout.Height(128));
-                    int newBrush = BrushSelectionGrid(m_SelectedBrush, m_BrushList, 32, styles.gridList, "No brushes defined.", out dummy);
+                    var missingBrush = EditorGUIUtility.TrTextContent("No brushes defined.");
+                    int newBrush = BrushSelectionGrid(m_SelectedBrush, m_BrushList, 32, Styles.gridList, missingBrush, out dummy);
                     if (newBrush != m_SelectedBrush)
                     {
                         UpdateSelection(newBrush);
                         repaint = true;
                     }
                     EditorGUILayout.EndScrollView();
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            {
+                GUILayout.FlexibleSpace();
+                if (GUILayout.Button("New Brush..."))
+                {
+                    CreateBrush();
                 }
             }
             EditorGUILayout.EndHorizontal();
@@ -156,8 +160,10 @@ namespace UnityEditor
                 return;
             }
 
-            if (b.m_ReadOnly)
-                return;
+            if (b.readOnly)
+            {
+                EditorGUILayout.HelpBox(EditorGUIUtility.TrTextContent("Built-in brush"));
+            }
 
             if (m_BrushEditor)
             {
@@ -166,8 +172,8 @@ namespace UnityEditor
 
                 Rect renderRect = EditorGUI.GetInspectorTitleBarObjectFoldoutRenderRect(titleRect);
                 renderRect.y = titleRect.yMax - 17f; // align with bottom
-                UnityEngine.Object[] targets = { b };
-                bool newVisible = EditorGUI.DoObjectFoldout(m_ShowBrushSettings, titleRect, renderRect, targets, id);
+                m_FoldoutContent[0] = b;
+                bool newVisible = EditorGUI.DoObjectFoldout(m_ShowBrushSettings, titleRect, renderRect, m_FoldoutContent, id);
 
                 // Toggle visibility
                 if (newVisible != m_ShowBrushSettings)
@@ -180,7 +186,7 @@ namespace UnityEditor
             }
         }
 
-        private static int BrushSelectionGrid(int selected, Brush[] brushes, int approxSize, GUIStyle style, string emptyString, out bool doubleClick)
+        int BrushSelectionGrid(int selected, Brush[] brushes, int approxSize, GUIStyle style, GUIContent emptyString, out bool doubleClick)
         {
             GUILayout.BeginVertical("box", GUILayout.MinHeight(approxSize));
             int retval = 0;
@@ -199,13 +205,33 @@ namespace UnityEditor
                     evt.Use();
                 }
 
-                retval = GUI.SelectionGrid(r, System.Math.Min(selected, brushes.Length - 1), GUIContentFromBrush(brushes), (int)columns, style);
+                if (m_Thumnails == null || m_Thumnails.Length != brushes.Length)
+                {
+                    m_Thumnails = GUIContentFromBrush(brushes);
+                }
+                retval = GUI.SelectionGrid(r, System.Math.Min(selected, brushes.Length - 1), m_Thumnails, (int)columns, style);
             }
             else
                 GUILayout.Label(emptyString);
 
             GUILayout.EndVertical();
             return retval;
+        }
+
+        internal void CreateBrush()
+        {
+            ObjectSelector.get.Show(null, typeof(Texture2D), null, false, null,
+                selection =>
+                {
+                    if (selection == null)
+                        return;
+
+                    var brushName = AssetDatabase.GenerateUniqueAssetPath(Path.Combine(ProjectWindowUtil.GetActiveFolderPath(), "NewBrush.brush"));
+                    var newBrush = Brush.CreateInstance(null, AnimationCurve.Linear(0, 0, 1, 1), Brush.kMaxRadiusScale, false);
+                    AssetDatabase.CreateAsset(newBrush, brushName);
+                    newBrush.m_Mask = (Texture2D)selection;
+                    LoadBrushes();
+                }, null);
         }
 
         internal static GUIContent[] GUIContentFromBrush(Brush[] brushes)

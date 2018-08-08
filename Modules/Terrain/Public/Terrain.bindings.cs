@@ -74,11 +74,11 @@ namespace UnityEngine
         extern public float detailObjectDensity { get; set; }
 
         extern public float heightmapPixelError { get; set; }
-
         extern public int heightmapMaximumLOD { get; set; }
 
         extern public float basemapDistance { get; set; }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("splatmapDistance is deprecated, please use basemapDistance instead. (UnityUpgradable) -> basemapDistance", true)]
         public float splatmapDistance
         {
@@ -116,6 +116,7 @@ namespace UnityEngine
         extern public float legacyShininess { get; set; }
 
         extern public bool drawHeightmap { get; set; }
+        extern public bool allowAutoConnect { get; set; }
 
         extern public bool drawInstanced { get; set; }
 
@@ -162,8 +163,15 @@ namespace UnityEngine
         extern public bool deringLightProbesForTrees { get; set; }
 
         extern public bool preserveTreePrototypeLayers { get; set; }
+        [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
+        extern static public TextureFormat heightmapTextureFormat { get; }
+
+        [StaticAccessor("Terrain", StaticAccessorType.DoubleColon)]
+        extern static public RenderTextureFormat heightmapRenderTextureFormat { get; }
 
         extern public static Terrain activeTerrain { get; }
+        extern public static void SetConnectivityDirty();
+
 
         [NativeProperty("ActiveTerrainsScriptingArray")]
         extern public static Terrain[] activeTerrains { get; }

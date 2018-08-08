@@ -55,30 +55,43 @@ namespace UnityEngine
         // Mouse left a window
         MouseLeaveWindow = 21,
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use MouseDown instead (UnityUpgradable) -> MouseDown", true)]
         mouseDown = 0,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use MouseUp instead (UnityUpgradable) -> MouseUp", true)]
         mouseUp = 1,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use MouseMove instead (UnityUpgradable) -> MouseMove", true)]
         mouseMove = 2,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use MouseDrag instead (UnityUpgradable) -> MouseDrag", true)]
         mouseDrag = 3,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use KeyDown instead (UnityUpgradable) -> KeyDown", true)]
         keyDown = 4,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use KeyUp instead (UnityUpgradable) -> KeyUp", true)]
         keyUp = 5,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use ScrollWheel instead (UnityUpgradable) -> ScrollWheel", true)]
         scrollWheel = 6,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use Repaint instead (UnityUpgradable) -> Repaint", true)]
         repaint = 7,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use Layout instead (UnityUpgradable) -> Layout", true)]
         layout = 8,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use DragUpdated instead (UnityUpgradable) -> DragUpdated", true)]
         dragUpdated = 9,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use DragPerform instead (UnityUpgradable) -> DragPerform", true)]
         dragPerform = 10,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use Ignore instead (UnityUpgradable) -> Ignore", true)]
         ignore = 11,
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use Used instead (UnityUpgradable) -> Used", true)]
         used = 12
     }

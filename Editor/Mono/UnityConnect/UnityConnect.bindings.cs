@@ -447,11 +447,36 @@ namespace UnityEditor.Connect
             return GetConfigUrl(config);
         }
 
-        private static extern bool IsServicesWindowDisabled();
+        [NativeMethod("isDisableServicesWindow")]
+        private static extern bool isDisableServicesWindow_Internal();
         public bool isDisableServicesWindow
         {
-            get { return IsServicesWindowDisabled(); }
+            get
+            {
+                return isDisableServicesWindow_Internal();
+            }
         }
+
+        [NativeMethod("isDisableUserLogin")]
+        private static extern bool isDisableUserLogin_Internal();
+        public bool isDisableUserLogin
+        {
+            get
+            {
+                return isDisableUserLogin_Internal();
+            }
+        }
+
+        [NativeMethod("isDisableCollabWindow")]
+        private static extern bool isDisableCollabWindow_Internal();
+        public bool isDisableCollabWindow
+        {
+            get
+            {
+                return isDisableCollabWindow_Internal();
+            }
+        }
+
 
         public string GetEnvironment()
         {

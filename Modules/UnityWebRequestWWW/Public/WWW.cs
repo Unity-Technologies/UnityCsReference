@@ -149,6 +149,7 @@ namespace UnityEngine
         }
 
         // Returns a [[AudioClip]] generated from the downloaded data (RO).
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Obsolete msg (UnityUpgradable) -> * UnityEngine.WWW.GetAudioClip()", true)]
         public Object audioClip { get { return null; } }
 
@@ -168,6 +169,7 @@ namespace UnityEngine
         }
 
         // Returns a [[MovieTexture]] generated from the downloaded data (RO).
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Obsolete msg (UnityUpgradable) -> * UnityEngine.WWW.GetMovieTexture()", true)]
         public Object movie { get { return null; } }
 
@@ -235,6 +237,7 @@ namespace UnityEngine
             }
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Please use WWW.text instead. (UnityUpgradable) -> text", true)]
         public string data { get { return text; } }
 

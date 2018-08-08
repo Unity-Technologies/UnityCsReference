@@ -33,10 +33,11 @@ namespace UnityEditor
             GameObject terrain = Terrain.CreateTerrainGameObject(terrainData);
             terrain.name = "Terrain";
 
+            var theTerrain = terrain.GetComponent<Terrain>();
+            theTerrain.allowAutoConnect = true;
             if (GraphicsSettings.renderPipelineAsset != null)
             {
                 var material = GraphicsSettings.renderPipelineAsset.GetDefaultTerrainMaterial();
-                var theTerrain = terrain.GetComponent<Terrain>();
                 if (theTerrain && material != null)
                 {
                     theTerrain.materialType = Terrain.MaterialType.Custom;

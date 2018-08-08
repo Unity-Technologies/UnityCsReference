@@ -144,7 +144,7 @@ namespace UnityEditorInternal.VR
             {
                 if (EditorApplication.isPlaying)
                 {
-                    EditorGUILayout.HelpBox("Changing XRSettings in not allowed in play mode.", MessageType.Info);
+                    EditorGUILayout.HelpBox("Changing XR Settings is not allowed in play mode.", MessageType.Info);
                 }
 
                 using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching VR flags in play mode is not supported

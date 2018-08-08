@@ -75,12 +75,15 @@ namespace UnityEditor.Animations
         extern public void ResetRecording();
 
         // Obsolete
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("The GameObjectRecorder constructor now takes a root GameObject", true)]
         public GameObjectRecorder() {}
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("BindComponent() using a System::Type is obsolete, use BindComponentsOfType() instead (UnityUpgradable) -> BindComponentsOfType(*)", true)]
         public void BindComponent(GameObject target, Type componentType, bool recursive) {}
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("\"BindComponent<T>() where T : Component\" is obsolete, use BindComponentsOfType<T>() instead (UnityUpgradable) -> BindComponentsOfType<T>(*)", true)]
         public void BindComponent<T>(GameObject target, bool recursive) where T : Component {}
     }

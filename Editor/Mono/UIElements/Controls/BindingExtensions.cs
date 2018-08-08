@@ -69,7 +69,7 @@ namespace UnityEditor.Experimental.UIElements
 
         public static void Bind(this VisualElement element, SerializedObject obj)
         {
-            Bind(element, obj, null);
+            Bind(element, new SerializedObjectUpdateWrapper(obj), null);
         }
 
         public static void Unbind(this VisualElement element)
@@ -84,10 +84,15 @@ namespace UnityEditor.Experimental.UIElements
 
         public static SerializedProperty BindProperty(this IBindable field, SerializedObject obj)
         {
-            return BindPropertyWithParent(field, obj, null);
+            return BindPropertyWithParent(field, new SerializedObjectUpdateWrapper(obj), null);
         }
 
         public static void BindProperty(this IBindable field, SerializedProperty property)
+        {
+            DoBindProperty(field, new SerializedObjectUpdateWrapper(property.serializedObject), property);
+        }
+
+        private static void DoBindProperty(IBindable field, SerializedObjectUpdateWrapper obj, SerializedProperty property)
         {
             var fieldElement = field as VisualElement;
             if (property == null || fieldElement == null)
@@ -111,14 +116,14 @@ namespace UnityEditor.Experimental.UIElements
                 }
             }
 
-            CreateBindingObjectForProperty(fieldElement, property);
+            CreateBindingObjectForProperty(fieldElement, obj, property);
         }
 
-        private static void Bind(VisualElement element, SerializedObject obj, SerializedProperty parentProperty)
+        private static void Bind(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty parentProperty)
         {
             IBindable field = element as IBindable;
 
-            using (var evt = SerializedObjectBindEvent.GetPooled(obj))
+            using (var evt = SerializedObjectBindEvent.GetPooled(objWrapper.obj))
             {
                 if (SendBindingEvent(evt, element))
                 {
@@ -130,7 +135,7 @@ namespace UnityEditor.Experimental.UIElements
             {
                 if (!string.IsNullOrEmpty(field.bindingPath))
                 {
-                    var foundProperty = BindPropertyWithParent(field, obj, parentProperty);
+                    var foundProperty = BindPropertyWithParent(field, objWrapper, parentProperty);
                     if (foundProperty != null)
                     {
                         parentProperty = foundProperty;
@@ -140,20 +145,20 @@ namespace UnityEditor.Experimental.UIElements
 
             for (int i = 0; i < element.shadow.childCount; ++i)
             {
-                Bind(element.shadow[i], obj, parentProperty);
+                Bind(element.shadow[i], objWrapper, parentProperty);
             }
         }
 
-        private static SerializedProperty BindPropertyWithParent(IBindable field, SerializedObject obj, SerializedProperty parentProperty)
+        private static SerializedProperty BindPropertyWithParent(IBindable field, SerializedObjectUpdateWrapper objWrapper, SerializedProperty parentProperty)
         {
             var property = parentProperty?.FindPropertyRelative(field.bindingPath);
 
             if (property == null)
             {
-                property = obj?.FindProperty(field.bindingPath);
+                property = objWrapper.obj?.FindProperty(field.bindingPath);
             }
 
-            BindProperty(field, property);
+            DoBindProperty(field, objWrapper, property);
 
             return property;
         }
@@ -293,7 +298,7 @@ namespace UnityEditor.Experimental.UIElements
             return EqualityComparer<string>.Default.Equals(value, propVal);
         }
 
-        private static void DefaultBind<TValue>(VisualElement element, SerializedProperty prop,
+        private static void DefaultBind<TValue>(VisualElement element, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop,
             Func<SerializedProperty, TValue> propertyReadFunc, Action<SerializedProperty, TValue> propertyWriteFunc,
             Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> valueComparerFunc)
         {
@@ -301,7 +306,7 @@ namespace UnityEditor.Experimental.UIElements
 
             if (field != null)
             {
-                SerializedObjectBinding<TValue>.CreateBind(field, prop, propertyReadFunc,
+                SerializedObjectBinding<TValue>.CreateBind(field, objWrapper, prop, propertyReadFunc,
                     propertyWriteFunc, valueComparerFunc);
             }
             else
@@ -311,18 +316,18 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        private static void EnumBind(PopupField<string> popup, SerializedProperty prop)
+        private static void EnumBind(PopupField<string> popup, SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
         {
-            SerializedEnumBinding.CreateBind(popup, prop);
+            SerializedEnumBinding.CreateBind(popup, objWrapper, prop);
         }
 
-        private static void CreateBindingObjectForProperty(VisualElement element, SerializedProperty prop)
+        private static void CreateBindingObjectForProperty(VisualElement element,  SerializedObjectUpdateWrapper objWrapper, SerializedProperty prop)
         {
             if (element is Foldout)
             {
                 var foldout = element as Foldout;
                 SerializedObjectBinding<bool>.CreateBind(
-                    foldout, prop,
+                    foldout, objWrapper, prop,
                     p => p.isExpanded,
                     (p, v) => p.isExpanded = v,
                     ValueEquals<bool>);
@@ -333,109 +338,109 @@ namespace UnityEditor.Experimental.UIElements
             switch (prop.propertyType)
             {
                 case SerializedPropertyType.Integer:
-                    DefaultBind(element, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Boolean:
-                    DefaultBind(element, prop, GetBoolPropertyValue, SetBoolPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetBoolPropertyValue, SetBoolPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Float:
                     if (prop.type == "float")
                     {
                         if (element is INotifyValueChanged<double>)
                         {
-                            DefaultBind(element, prop, GetFloatPropertyValueAsDouble, SetFloatPropertyValueFromDouble, ValueEquals);
+                            DefaultBind(element, objWrapper, prop, GetFloatPropertyValueAsDouble, SetFloatPropertyValueFromDouble, ValueEquals);
                         }
                         else
                         {
-                            DefaultBind(element, prop, GetFloatPropertyValue, SetFloatPropertyValue, ValueEquals);
+                            DefaultBind(element, objWrapper, prop, GetFloatPropertyValue, SetFloatPropertyValue, ValueEquals);
                         }
                     }
                     else
                     {
                         if (element is INotifyValueChanged<float>)
                         {
-                            DefaultBind(element, prop, GetDoublePropertyValueAsFloat, SetDoublePropertyValueFromFloat, ValueEquals);
+                            DefaultBind(element, objWrapper, prop, GetDoublePropertyValueAsFloat, SetDoublePropertyValueFromFloat, ValueEquals);
                         }
                         else
                         {
-                            DefaultBind(element, prop, GetDoublePropertyValue, SetDoublePropertyValue, ValueEquals);
+                            DefaultBind(element, objWrapper, prop, GetDoublePropertyValue, SetDoublePropertyValue, ValueEquals);
                         }
                     }
 
                     break;
                 case SerializedPropertyType.String:
-                    DefaultBind(element, prop, GetStringPropertyValue, SetStringPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetStringPropertyValue, SetStringPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Color:
-                    DefaultBind(element, prop, GetColorPropertyValue, SetColorPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetColorPropertyValue, SetColorPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.ObjectReference:
-                    DefaultBind(element, prop, GetObjectRefPropertyValue, SetObjectRefPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetObjectRefPropertyValue, SetObjectRefPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.LayerMask:
-                    DefaultBind(element, prop, GetLayerMaskPropertyValue, SetLayerMaskPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetLayerMaskPropertyValue, SetLayerMaskPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Enum:
                     if (element is PopupField<string>)
                     {
-                        EnumBind((PopupField<string>)element, prop);
+                        EnumBind((PopupField<string>)element, objWrapper, prop);
                     }
                     else
                     {
-                        DefaultBind(element, prop, GetEnumPropertyValueAsString, SetEnumPropertyValueFromString, SlowEnumValueEquals);
+                        DefaultBind(element, objWrapper, prop, GetEnumPropertyValueAsString, SetEnumPropertyValueFromString, SlowEnumValueEquals);
                     }
 
                     break;
                 case SerializedPropertyType.Vector2:
-                    DefaultBind(element, prop, GetVector2PropertyValue, SetVector2PropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetVector2PropertyValue, SetVector2PropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Vector3:
-                    DefaultBind(element, prop, GetVector3PropertyValue, SetVector3PropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetVector3PropertyValue, SetVector3PropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Vector4:
-                    DefaultBind(element, prop, GetVector4PropertyValue, SetVector4PropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetVector4PropertyValue, SetVector4PropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Rect:
-                    DefaultBind(element, prop, GetRectPropertyValue, SetRectPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetRectPropertyValue, SetRectPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.ArraySize:
-                    DefaultBind(element, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.AnimationCurve:
-                    DefaultBind(element, prop, GetAnimationCurvePropertyValue, SetAnimationCurvePropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetAnimationCurvePropertyValue, SetAnimationCurvePropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Bounds:
-                    DefaultBind(element, prop, GetBoundsPropertyValue, SetBoundsPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetBoundsPropertyValue, SetBoundsPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Gradient:
-                    DefaultBind(element, prop, GetGradientPropertyValue, SetGradientPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetGradientPropertyValue, SetGradientPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Quaternion:
-                    DefaultBind(element, prop, GetQuaternionPropertyValue, SetQuaternionPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetQuaternionPropertyValue, SetQuaternionPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.FixedBufferSize:
-                    DefaultBind(element, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetIntPropertyValue, SetIntPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Vector2Int:
-                    DefaultBind(element, prop, GetVector2IntPropertyValue, SetVector2IntPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetVector2IntPropertyValue, SetVector2IntPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Vector3Int:
-                    DefaultBind(element, prop, GetVector3IntPropertyValue, SetVector3IntPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetVector3IntPropertyValue, SetVector3IntPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.RectInt:
-                    DefaultBind(element, prop, GetRectIntPropertyValue, SetRectIntPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetRectIntPropertyValue, SetRectIntPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.BoundsInt:
-                    DefaultBind(element, prop, GetBoundsIntPropertyValue, SetBoundsIntPropertyValue, ValueEquals);
+                    DefaultBind(element, objWrapper, prop, GetBoundsIntPropertyValue, SetBoundsIntPropertyValue, ValueEquals);
                     break;
                 case SerializedPropertyType.Character:
                     if (element is INotifyValueChanged<string>)
                     {
-                        DefaultBind(element, prop, GetCharacterPropertyValueAsString, SetCharacterPropertyValueFromString, ValueEquals);
+                        DefaultBind(element, objWrapper, prop, GetCharacterPropertyValueAsString, SetCharacterPropertyValueFromString, ValueEquals);
                     }
                     else
                     {
-                        DefaultBind(element, prop, GetCharacterPropertyValue, SetCharacterPropertyValue, ValueEquals);
+                        DefaultBind(element, objWrapper, prop, GetCharacterPropertyValue, SetCharacterPropertyValue, ValueEquals);
                     }
                     break;
                 case SerializedPropertyType.ExposedReference:
@@ -449,15 +454,74 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        private class SerializedObjectUpdateWrapper
+        {
+            SerializedObjectChangeTracker tracker;
+            public UInt64 LastRevision {get; private set; }
+            public SerializedObject obj {get; private set; }
+
+            public SerializedObjectUpdateWrapper(SerializedObject so)
+            {
+                tracker = new SerializedObjectChangeTracker(so);
+                obj = so;
+            }
+
+            private bool wasUpdated {get; set; }
+
+            public void UpdateRevision()
+            {
+                tracker.UpdateTrackedVersion();
+                LastRevision = tracker.CurrentRevision;
+            }
+
+            public bool IsValid()
+            {
+                if (obj == null)
+                    return false;
+
+                return obj.isValid;
+            }
+
+            public void UpdateIfNecessary()
+            {
+                if (!wasUpdated)
+                {
+                    obj.UpdateIfRequiredOrScript();
+                    obj.UpdateExpandedState();
+                    UpdateRevision();
+                    wasUpdated = true;
+                }
+            }
+
+            public void ResetUpdate()
+            {
+                wasUpdated = false;
+            }
+        }
+
         private abstract class SerializedObjectBindingBase : IBinding
         {
+            public SerializedObjectUpdateWrapper boundObject;
             public string boundPropertyPath;
-            public SerializedObject boundObject;
             public SerializedProperty boundProperty;
 
             protected bool isReleased { get; set; }
+            protected bool isUpdating { get; set; }
             public abstract void Update();
             public abstract void Release();
+
+            public void PreUpdate()
+            {
+                boundObject.UpdateIfNecessary();
+            }
+
+            public virtual void ResetUpdate()
+            {
+                if (boundObject != null)
+                {
+                    boundObject.ResetUpdate();
+                }
+            }
 
             protected static void UpdateElementStyle(VisualElement element, SerializedProperty prop)
             {
@@ -469,17 +533,11 @@ namespace UnityEditor.Experimental.UIElements
 
             protected bool IsPropertyValid()
             {
-                if (boundObject.targetObject == null || boundObject.targetObjectsCount == 0)
-                    return false;
-
-                foreach (var obj in boundObject.targetObjects)
-                    if (obj == null)
-                        return false;
-
-                using (var foundProperty = boundObject?.FindProperty(boundPropertyPath))
+                if (boundProperty != null)
                 {
-                    return foundProperty != null;
+                    return boundProperty.isValid;
                 }
+                return false;
             }
         }
 
@@ -545,13 +603,13 @@ namespace UnityEditor.Experimental.UIElements
 
             private void FieldValueChanged(ChangeEvent<TValue> evt)
             {
-                if (isReleased)
+                if (isReleased || isUpdating)
                     return;
 
                 var bindable = evt.target as IBindable;
                 var binding = bindable?.binding;
 
-                if (binding == this && boundProperty != null)
+                if (binding == this && boundProperty != null && boundObject.IsValid())
                 {
                     if (!isFieldAttached)
                     {
@@ -564,10 +622,11 @@ namespace UnityEditor.Experimental.UIElements
 
                     if (IsPropertyValid())
                     {
-                        boundProperty.m_SerializedObject.UpdateIfRequiredOrScript();
-                        boundProperty.m_SerializedObject.UpdateExpandedState();
-
-                        SyncFieldValueToProperty();
+                        if (SyncFieldValueToProperty())
+                        {
+                            boundObject.UpdateRevision(); //we make sure to Poll the ChangeTracker here
+                            boundObject.ResetUpdate();
+                        }
                         UpdateElementStyle(field as VisualElement, boundProperty);
                         return;
                     }
@@ -577,28 +636,53 @@ namespace UnityEditor.Experimental.UIElements
                 Release();
             }
 
+            private UInt64 lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+
+            public void ResetCachedValues()
+            {
+                lastUpdatedRevision = 0xFFFFFFFFFFFFFFFF;
+                UpdateLastFieldValue();
+                UpdateFieldIsAttached();
+            }
+
             public override void Update()
             {
                 if (isReleased)
                     return;
-
-                if (FieldBinding == this && boundProperty != null && IsPropertyValid())
+                try
                 {
-                    boundProperty.m_SerializedObject.UpdateIfRequiredOrScript();
-                    boundProperty.m_SerializedObject.UpdateExpandedState();
+                    ResetUpdate();
+                    isUpdating = true;
 
-                    SyncPropertyToField(field, boundProperty);
-                    return;
+                    if (FieldBinding == this && boundObject.IsValid() && IsPropertyValid())
+                    {
+                        if (lastUpdatedRevision == boundObject.LastRevision)
+                        {
+                            //nothing to do
+                            return;
+                        }
+
+                        lastUpdatedRevision = boundObject.LastRevision;
+                        SyncPropertyToField(field, boundProperty);
+                        return;
+                    }
                 }
-
+                catch (ArgumentNullException)
+                {
+                    //this can happen when serializedObject has been disposed of
+                }
+                finally
+                {
+                    isUpdating = false;
+                }
                 // We unbind here
                 Release();
             }
 
             private void OnFieldAttached(AttachToPanelEvent evt)
             {
-                UpdateLastFieldValue();
                 isFieldAttached = true;
+                ResetCachedValues();
             }
 
             private void OnFieldDetached(DetachFromPanelEvent evt)
@@ -612,19 +696,32 @@ namespace UnityEditor.Experimental.UIElements
 
                 if (ve != null)
                 {
-                    isFieldAttached = ve.panel != null;
+                    bool attached =  ve.panel != null;
+
+                    if (isFieldAttached != attached)
+                    {
+                        isFieldAttached = attached;
+                        if (attached)
+                        {
+                            ResetCachedValues();
+                        }
+                    }
                 }
                 else
                 {
                     //we're not dealing with VisualElement
-                    isFieldAttached = true;
+                    if (!isFieldAttached)
+                    {
+                        isFieldAttached = true;
+                        ResetCachedValues();
+                    }
                 }
             }
 
             // Read the value from the ui field and save it.
             protected abstract void UpdateLastFieldValue();
 
-            protected abstract void SyncFieldValueToProperty();
+            protected abstract bool SyncFieldValueToProperty();
             protected abstract void SyncPropertyToField(TField c, SerializedProperty p);
         }
 
@@ -641,6 +738,7 @@ namespace UnityEditor.Experimental.UIElements
             private TValue lastFieldValue;
 
             public static void CreateBind(INotifyValueChanged<TValue> field,
+                SerializedObjectUpdateWrapper objWrapper,
                 SerializedProperty property,
                 Func<SerializedProperty, TValue> propGetValue,
                 Action<SerializedProperty, TValue> propSetValue,
@@ -648,18 +746,20 @@ namespace UnityEditor.Experimental.UIElements
             {
                 var newBinding = s_Pool.Get();
                 newBinding.isReleased = false;
-                newBinding.SetBinding(field, property, propGetValue, propSetValue, propCompareValues);
+                newBinding.SetBinding(field, objWrapper, property, propGetValue, propSetValue, propCompareValues);
             }
 
             private void SetBinding(INotifyValueChanged<TValue> c,
+                SerializedObjectUpdateWrapper objWrapper,
                 SerializedProperty property,
                 Func<SerializedProperty, TValue> getValue,
                 Action<SerializedProperty, TValue> setValue,
                 Func<TValue, SerializedProperty, Func<SerializedProperty, TValue>, bool> compareValues)
             {
                 this.field = c;
+                property.unsafeMode = true;
                 this.boundPropertyPath = property.propertyPath;
-                this.boundObject = property.serializedObject;
+                this.boundObject = objWrapper;
                 this.boundProperty = property;
                 this.propGetValue = getValue;
                 this.propSetValue = setValue;
@@ -683,13 +783,15 @@ namespace UnityEditor.Experimental.UIElements
                 lastFieldValue = field.value;
             }
 
-            protected override void SyncFieldValueToProperty()
+            protected override bool SyncFieldValueToProperty()
             {
                 if (!propCompareValues(lastFieldValue, boundProperty, propGetValue))
                 {
                     propSetValue(boundProperty, lastFieldValue);
                     boundProperty.m_SerializedObject.ApplyModifiedProperties();
+                    return true;
                 }
+                return false;
             }
 
             public override void Release()
@@ -702,6 +804,7 @@ namespace UnityEditor.Experimental.UIElements
                     FieldBinding = null;
                 }
 
+                boundObject = null;
                 boundProperty = null;
                 field = null;
                 propGetValue = null;
@@ -725,20 +828,21 @@ namespace UnityEditor.Experimental.UIElements
             private List<string> originalChoices;
             private int originalIndex;
 
-            public static void CreateBind(PopupField<string> field,
+            public static void CreateBind(PopupField<string> field,  SerializedObjectUpdateWrapper objWrapper,
                 SerializedProperty property)
             {
                 var newBinding = s_Pool.Get();
                 newBinding.isReleased = false;
-                newBinding.SetBinding(field, property);
+                newBinding.SetBinding(field, objWrapper, property);
             }
 
-            private void SetBinding(PopupField<string> c,
+            private void SetBinding(PopupField<string> c, SerializedObjectUpdateWrapper objWrapper,
                 SerializedProperty property)
             {
                 this.field = c;
+                property.unsafeMode = true;
                 this.boundPropertyPath = property.propertyPath;
-                this.boundObject = property.serializedObject;
+                this.boundObject = objWrapper;
                 this.boundProperty = property;
                 this.originalChoices = field.choices;
                 this.originalIndex = field.index;
@@ -763,13 +867,15 @@ namespace UnityEditor.Experimental.UIElements
                 lastFieldValueIndex = field.index;
             }
 
-            protected override void SyncFieldValueToProperty()
+            protected override bool SyncFieldValueToProperty()
             {
                 if (lastFieldValueIndex != boundProperty.enumValueIndex)
                 {
                     boundProperty.enumValueIndex = lastFieldValueIndex;
                     boundProperty.m_SerializedObject.ApplyModifiedProperties();
+                    return true;
                 }
+                return false;
             }
 
             public override void Release()
@@ -795,6 +901,7 @@ namespace UnityEditor.Experimental.UIElements
                     FieldBinding = null;
                 }
 
+                boundObject = null;
                 boundProperty = null;
                 field = null;
                 lastFieldValueIndex = -1;

@@ -171,7 +171,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("Android", BuildTarget.Android),
                 new CustomScriptAssemblyPlatform("WebGL", BuildTarget.WebGL),
                 new CustomScriptAssemblyPlatform("WSA", "Universal Windows Platform", BuildTarget.WSAPlayer),
-                new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2),
                 new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4),
                 new CustomScriptAssemblyPlatform("XboxOne", BuildTarget.XboxOne),
                 new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS),
@@ -186,6 +185,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 new CustomScriptAssemblyPlatform("Tizen", BuildTarget.Tizen),
                 new CustomScriptAssemblyPlatform("WiiU", BuildTarget.WiiU),
                 new CustomScriptAssemblyPlatform("Nintendo3DS", BuildTarget.N3DS),
+                new CustomScriptAssemblyPlatform("PSVita", BuildTarget.PSP2),
             };
 #pragma warning restore 0618
 

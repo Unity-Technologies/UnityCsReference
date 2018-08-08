@@ -380,6 +380,14 @@ namespace UnityEditor
                 get;
             }
 
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetAndroidMinSupportedAPILevel")]
+            internal static extern int GetMinSupportedAPILevel();
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
+            [NativeMethod("GetAndroidMinTargetAPILevel")]
+            internal static extern int GetMinTargetAPILevel();
+
             // Start application in fullscreen mode
             public static extern bool startInFullscreen
             {

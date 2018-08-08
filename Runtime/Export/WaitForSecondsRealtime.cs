@@ -6,16 +6,31 @@ namespace UnityEngine
 {
     public class WaitForSecondsRealtime : CustomYieldInstruction
     {
-        float waitTime;
+        public float waitTime { get; set; }
+        float m_WaitUntilTime = -1;
 
         public override bool keepWaiting
         {
-            get { return Time.realtimeSinceStartup < waitTime; }
+            get
+            {
+                if (m_WaitUntilTime < 0)
+                {
+                    m_WaitUntilTime = Time.realtimeSinceStartup + waitTime;
+                }
+
+                bool wait =  Time.realtimeSinceStartup < m_WaitUntilTime;
+                if (!wait)
+                {
+                    // Reset so it can be reused.
+                    m_WaitUntilTime = -1;
+                }
+                return wait;
+            }
         }
 
         public WaitForSecondsRealtime(float time)
         {
-            waitTime = Time.realtimeSinceStartup + time;
+            waitTime = time;
         }
     }
 }

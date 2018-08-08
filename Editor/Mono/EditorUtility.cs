@@ -50,41 +50,21 @@ namespace UnityEditor
 
         public static void CompressTexture(Texture2D texture, TextureFormat format, TextureCompressionQuality quality)
         {
-            if (texture == null)
-            {
-                throw new ArgumentNullException(nameof(texture));
-            }
-
             CompressTexture(texture, format, (int)quality);
         }
 
         private static void CompressTexture(Texture2D texture, TextureFormat format)
         {
-            if (texture == null)
-            {
-                throw new ArgumentNullException(nameof(texture));
-            }
-
             CompressTexture(texture, format, TextureCompressionQuality.Normal);
         }
 
         public static void CompressCubemapTexture(Cubemap texture, TextureFormat format, TextureCompressionQuality quality)
         {
-            if (texture == null)
-            {
-                throw new ArgumentNullException(nameof(texture));
-            }
-
             CompressCubemapTexture(texture, format, (int)quality);
         }
 
         private static void CompressCubemapTexture(Cubemap texture, TextureFormat format)
         {
-            if (texture == null)
-            {
-                throw new ArgumentNullException(nameof(texture));
-            }
-
             CompressCubemapTexture(texture, format, TextureCompressionQuality.Normal);
         }
 

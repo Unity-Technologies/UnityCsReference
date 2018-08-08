@@ -384,7 +384,7 @@ namespace UnityEngine.Networking
             get { return m_UsePlatformSpecificProtocols; }
             set
             {
-                if ((value == true) && (UnityEngine.Application.platform != RuntimePlatform.PS4) && (UnityEngine.Application.platform != RuntimePlatform.PSP2))
+                if ((value == true) && (UnityEngine.Application.platform != RuntimePlatform.PS4))
                     throw new ArgumentOutOfRangeException("Platform specific protocols are not supported on this platform");
 
                 m_UsePlatformSpecificProtocols = value;

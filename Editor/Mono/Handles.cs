@@ -343,6 +343,12 @@ namespace UnityEditor
             Handles.DrawLine(points[3], points[8]);
         }
 
+        public static void DrawGizmos(Camera camera)
+        {
+            if (GameView.GetRenderingGameView() != null && GameView.GetRenderingGameView().IsShowingGizmos())
+                Internal_DoDrawGizmos(camera);
+        }
+
         public static Quaternion Disc(int id, Quaternion rotation, Vector3 position, Vector3 axis, float size, bool cutoffPlane, float snap)
         {
             return UnityEditorInternal.Disc.Do(id, rotation, position, axis, size, cutoffPlane, snap);

@@ -90,6 +90,7 @@ namespace UnityEngine
             public Color32 color { get { return startColor; } set { startColor = value; } }
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("ParticleSystem.CollisionEvent has been deprecated. Use ParticleCollisionEvent instead (UnityUpgradable)", true)]
         public struct CollisionEvent
         {

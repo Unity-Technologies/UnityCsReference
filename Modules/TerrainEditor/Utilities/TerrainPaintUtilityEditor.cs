@@ -147,7 +147,7 @@ namespace UnityEditor
             mat.SetPass(showPreviewPostBrush ? 1 : 0);
 
             Matrix4x4 matrix = Matrix4x4.identity;
-            matrix.SetTRS(new Vector3(hit.point.x, 0, hit.point.z), Quaternion.identity, new Vector3(brushSize / 2.0f, 1, brushSize / 2.0f));
+            matrix.SetTRS(new Vector3(hit.point.x, terrain.GetPosition().y, hit.point.z), Quaternion.identity, new Vector3(brushSize / 2.0f, 1, brushSize / 2.0f));
 
             Graphics.DrawMeshNow(mesh, matrix);
         }

@@ -101,13 +101,7 @@ namespace UnityEditor.Experimental
         }
 
         // Returns the editor resources absolute file system path.
-        public static string dataPath
-        {
-            get
-            {
-                return Application.dataPath;
-            }
-        }
+        public static string dataPath => Application.dataPath;
 
         // Resolve an editor resource asset path.
         public static string ExpandPath(string path)
@@ -153,7 +147,7 @@ namespace UnityEditor.Experimental
         // Creates a new style catalog from a set of USS assets.
         internal static StyleCatalog LoadCatalog(string[] ussPaths, bool useResolver = true)
         {
-            var catalog = new StyleCatalog(useResolver);
+            var catalog = new StyleCatalog();
             foreach (var path in ussPaths)
                 catalog.AddPath(path);
             catalog.Refresh();

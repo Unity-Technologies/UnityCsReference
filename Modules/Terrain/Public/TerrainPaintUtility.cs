@@ -251,7 +251,7 @@ namespace UnityEngine
 
                 DrawQuad(heightmap.width, heightmap.height, readRect, writeRect);
 
-                terrainTile.terrain.terrainData.UpdateDirtyRegion(ctx.clippedTiles[i].x, ctx.clippedTiles[i].y, ctx.clippedTiles[i].width, ctx.clippedTiles[i].height);
+                terrainTile.terrain.terrainData.UpdateDirtyRegion(ctx.clippedTiles[i].x, ctx.clippedTiles[i].y, ctx.clippedTiles[i].width, ctx.clippedTiles[i].height, !terrainTile.terrain.drawInstanced);
                 OnTerrainPainted(terrainTile, ToolAction.PaintHeightmap);
             }
 
@@ -543,77 +543,115 @@ namespace UnityEngine
 
         public static TerrainTile[] FindTerrainTiles(Terrain terrain, int width, int height, RectInt brushRect)
         {
-            TerrainTile terrainTile;
-            var arr = new List<TerrainTile>();
+            List<TerrainTile> terrainTiles = new List<TerrainTile>();
 
             Terrain left = terrain.leftNeighbor;
             Terrain right = terrain.rightNeighbor;
             Terrain top = terrain.topNeighbor;
             Terrain bottom = terrain.bottomNeighbor;
 
-            bool hasLeft = left && (brushRect.x < 0);
-            bool hasRight = right && (brushRect.xMax > (width - 1));
-            bool hasTop = top && (brushRect.yMax > (height - 1));
-            bool hasBottom = bottom && (brushRect.y < 0);
+            bool wantLeft = (brushRect.x < 0);
+            bool wantRight = (brushRect.xMax > (width - 1));
+            bool wantTop = (brushRect.yMax > (height - 1));
+            bool wantBottom = (brushRect.y < 0);
 
-            terrainTile = new TerrainTile(terrain, new RectInt(0, 0, width, height));
-            terrainTile.readOffset = Vector2Int.zero;
-            terrainTile.writeOffset = Vector2Int.zero;
-            arr.Add(terrainTile);
-
-            if (hasLeft)
+            if (wantLeft && wantRight)
             {
-                terrainTile = new TerrainTile(left, new RectInt(-width, 0, width, height));
-                terrainTile.readOffset = new Vector2Int(-1, 0);
-                terrainTile.writeOffset = new Vector2Int(1, 0);
-                arr.Add(terrainTile);
-            }
-            else if (hasRight)
-            {
-                terrainTile = new TerrainTile(right, new RectInt(width, 0, width, height));
-                terrainTile.readOffset = new Vector2Int(1, 0);
-                terrainTile.writeOffset = new Vector2Int(-1, 0);
-                arr.Add(terrainTile);
+                Debug.Log("FindTerrainTiles query rectangle too large!");
+                wantRight = false;
             }
 
-            if (hasTop)
+            if (wantTop && wantBottom)
             {
-                terrainTile = new TerrainTile(top, new RectInt(0, height, width, height));
-                terrainTile.readOffset = new Vector2Int(0, 1);
-                terrainTile.writeOffset = new Vector2Int(0, -1);
-                arr.Add(terrainTile);
-            }
-            else if (hasBottom)
-            {
-                terrainTile = new TerrainTile(bottom, new RectInt(0, -height, width, height));
-                terrainTile.readOffset = new Vector2Int(0, -1);
-                terrainTile.writeOffset = new Vector2Int(0, 1);
-                arr.Add(terrainTile);
+                Debug.Log("FindTerrainTiles query rectangle too large!");
+                wantBottom = false;
             }
 
+            // add center tile
+            TerrainTile tile = new TerrainTile(terrain, new RectInt(0, 0, width, height));
+            tile.readOffset = Vector2Int.zero;
+            tile.writeOffset = Vector2Int.zero;
+            terrainTiles.Add(tile);
+
+            // add horizontal and vertical neighbors
+            Terrain horiz = null;
+            Terrain vert = null;
             Terrain cornerTerrain = null;
 
-            if (hasTop && hasLeft && top.leftNeighbor)
-                cornerTerrain = top.leftNeighbor;
-            else if (hasTop && hasRight && top.rightNeighbor)
-                cornerTerrain = top.rightNeighbor;
-            else if (hasBottom && hasLeft && bottom.leftNeighbor)
-                cornerTerrain = bottom.leftNeighbor;
-            else if (hasBottom && hasRight && bottom.rightNeighbor)
-                cornerTerrain = bottom.rightNeighbor;
+            int xBias = 0;
+            int yBias = 0;
+            int xReadBias = 0;
+            int yReadBias = 0;
+            int xWriteBias = 0;
+            int yWriteBias = 0;
 
-            if (cornerTerrain)
+            if (wantLeft)
             {
-                TerrainTile horiz = arr[1];
-                TerrainTile vert = arr[2];
-
-                terrainTile = new TerrainTile(cornerTerrain, new RectInt(horiz.rect.x, vert.rect.y, horiz.rect.width, vert.rect.height));
-                terrainTile.readOffset = new Vector2Int(horiz.readOffset.x, vert.readOffset.y);
-                terrainTile.writeOffset = new Vector2Int(horiz.writeOffset.x, vert.writeOffset.y);
-                arr.Add(terrainTile);
+                xBias = -1;
+                xReadBias = -1;
+                xWriteBias = 1;
+                horiz = left;
+            }
+            else if (wantRight)
+            {
+                xBias = 1;
+                xReadBias = 1;
+                xWriteBias = -1;
+                horiz = right;
             }
 
-            return arr.ToArray();
+            if (wantTop)
+            {
+                yBias = 1;
+                yReadBias = 1;
+                yWriteBias = -1;
+                vert = top;
+            }
+            else if (wantBottom)
+            {
+                yBias = -1;
+                yReadBias = -1;
+                yWriteBias = 1;
+                vert = bottom;
+            }
+
+            if (horiz)
+            {
+                tile = new TerrainTile(horiz, new RectInt(xBias * width, 0, width, height));
+                tile.readOffset = new Vector2Int(xReadBias, 0);
+                tile.writeOffset = new Vector2Int(xWriteBias, 0);
+                terrainTiles.Add(tile);
+
+                // add corner, if we have a link
+                if (wantTop && horiz.topNeighbor)
+                    cornerTerrain = horiz.topNeighbor;
+                else if (wantBottom && horiz.bottomNeighbor)
+                    cornerTerrain = horiz.bottomNeighbor;
+            }
+
+            if (vert)
+            {
+                tile = new TerrainTile(vert, new RectInt(0, yBias * height, width, height));
+                tile.readOffset = new Vector2Int(0, yReadBias);
+                tile.writeOffset = new Vector2Int(0, yWriteBias);
+                terrainTiles.Add(tile);
+
+                // add corner, if we have a link
+                if (wantLeft && vert.leftNeighbor)
+                    cornerTerrain = vert.leftNeighbor;
+                else if (wantRight && vert.rightNeighbor)
+                    cornerTerrain = vert.rightNeighbor;
+            }
+
+            if (cornerTerrain != null)
+            {
+                tile = new TerrainTile(cornerTerrain, new RectInt(xBias * width, yBias * height, width, height));
+                tile.readOffset = new Vector2Int(xReadBias, yReadBias);
+                tile.writeOffset = new Vector2Int(xWriteBias, yWriteBias);
+                terrainTiles.Add(tile);
+            }
+
+            return terrainTiles.ToArray();
         }
 
         public static RectInt[] ClipTerrainTiles(TerrainTile[] terrainTiles, RectInt brushRect)

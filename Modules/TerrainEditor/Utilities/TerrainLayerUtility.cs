@@ -5,9 +5,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -81,40 +83,52 @@ namespace UnityEditor
 
             return selectedTerrainLayer;
         }
-    }
 
-    internal class TerrainLayersContextMenus
-    {
-        [MenuItem("CONTEXT/TerrainLayers/Add Layer...")]
-        static internal void AddLayer(MenuCommand item)
+        internal static int AddTerrainLayer(Terrain terrain, TerrainLayer inputLayer)
         {
-            TerrainLayerSelectionWindow.ShowTerrainLayerListEditor("Add Terrain Layer", (Terrain)item.context, -1);
+            var terrainData = terrain.terrainData;
+            var layers = terrainData.terrainLayers;
+            for (var idx = 0; idx < layers.Length; ++idx)
+            {
+                if (layers[idx] == inputLayer)
+                    return idx;
+            }
+
+            Undo.RegisterCompleteObjectUndo(terrainData, "Add terrain layer");
+
+            int newIndex = layers.Length;
+            var newarray = new TerrainLayer[newIndex + 1];
+            Array.Copy(layers, 0, newarray, 0, newIndex);
+            newarray[newIndex] = inputLayer;
+            terrainData.terrainLayers = newarray;
+            EditorUtility.SetDirty(terrain);
+            return newIndex;
         }
 
-        [MenuItem("CONTEXT/TerrainLayers/Replace Layer...")]
-        static internal void ReplaceLayer(MenuCommand item)
+        internal static int ReplaceTerrainLayer(Terrain terrain, int index, TerrainLayer inputLayer)
         {
-            TerrainLayerSelectionWindow.ShowTerrainLayerListEditor("Replace Terrain Layer", (Terrain)item.context, item.userData);
+            var layers = terrain.terrainData.terrainLayers;
+            // Make sure the selection is legit
+            if (index < 0 || index > layers.Length)
+                return index;
+            // See if they're already using this layer
+            for (var idx = 0; idx < layers.Length; ++idx)
+            {
+                if (layers[idx] == inputLayer)
+                    return idx;
+            }
+
+            Undo.RegisterCompleteObjectUndo(terrain.terrainData, "Add terrain layer");
+
+            layers[index] = inputLayer;
+            EditorUtility.SetDirty(terrain);
+            terrain.terrainData.terrainLayers = layers;
+            return index;
         }
 
-        [MenuItem("CONTEXT/TerrainLayers/Remove layer")]
-        static internal void RemoveSplat(MenuCommand item)
+        internal static void RemoveTerrainLayer(Terrain terrain, int index)
         {
-            Terrain terrain = (Terrain)item.context;
-            RemoveTerrainLayer(terrain.terrainData, item.userData);
-        }
-
-        [MenuItem("CONTEXT/TerrainLayers/Remove layer", true)]
-        static internal bool RemoveSplatCheck(MenuCommand item)
-        {
-            Terrain terrain = (Terrain)item.context;
-            return item.userData >= 0 && item.userData < terrain.terrainData.terrainLayers.Length;
-        }
-
-        //
-
-        internal static void RemoveTerrainLayer(TerrainData terrainData, int index)
-        {
+            var terrainData = terrain.terrainData;
             Undo.RegisterCompleteObjectUndo(terrainData, "Remove terrain layer");
 
             int width = terrainData.alphamapWidth;
@@ -164,8 +178,8 @@ namespace UnityEditor
             }
 
             // remove splat from terrain prototypes
-            TerrainLayer[] layers = terrainData.terrainLayers;
-            TerrainLayer[] newSplats = new TerrainLayer[layers.Length - 1];
+            var layers = terrainData.terrainLayers;
+            var newSplats = new TerrainLayer[layers.Length - 1];
             for (int a = 0; a < index; ++a)
                 newSplats[a] = layers[a];
             for (int a = index + 1; a < alphaCount; ++a)
@@ -174,6 +188,66 @@ namespace UnityEditor
 
             // set new alphamaps
             terrainData.SetAlphamaps(0, 0, newalphamap);
+        }
+    }
+
+    internal class TerrainLayersContextMenus
+    {
+        [MenuItem("CONTEXT/TerrainLayers/Create Layer...")]
+        internal static void CreateLayer(MenuCommand item)
+        {
+            ObjectSelector.get.Show(null, typeof(Texture2D), null, false, null,
+                selection =>
+                {
+                    if (selection == null)
+                        return;
+
+                    var layerName = AssetDatabase.GenerateUniqueAssetPath(
+                        Path.Combine(ProjectWindowUtil.GetActiveFolderPath(), "NewLayer.terrainlayer"));
+                    var terrain = (Terrain)item.context;
+                    var layer = new TerrainLayer();
+                    AssetDatabase.CreateAsset(layer, layerName);
+                    TerrainLayerUtility.AddTerrainLayer(terrain, layer);
+                    layer.diffuseTexture = (Texture2D)selection;
+                }, null);
+        }
+
+        [MenuItem("CONTEXT/TerrainLayers/Add Layer...")]
+        internal static void AddLayer(MenuCommand item)
+        {
+            var terrain = (Terrain)item.context;
+            ObjectSelector.get.Show(null, typeof(TerrainLayer), null, false, null,
+                selection => { TerrainLayerUtility.AddTerrainLayer(terrain, (TerrainLayer)selection); }, null);
+        }
+
+        [MenuItem("CONTEXT/TerrainLayers/Replace Layer...")]
+        internal static void ReplaceLayer(MenuCommand item)
+        {
+            var terrain = (Terrain)item.context;
+            var layer = terrain.terrainData.terrainLayers[(int)item.userData];
+            ObjectSelector.get.Show(layer, typeof(TerrainLayer), null, false, null, null,
+                selection => { TerrainLayerUtility.ReplaceTerrainLayer(terrain, (int)item.userData, (TerrainLayer)selection); });
+        }
+
+        [MenuItem("CONTEXT/TerrainLayers/Replace Layer...", true)]
+        internal static bool ReplaceLayerCheck(MenuCommand item)
+        {
+            var terrain = (Terrain)item.context;
+            return item.userData >= 0 && item.userData < terrain.terrainData.terrainLayers.Length;
+        }
+
+        [MenuItem("CONTEXT/TerrainLayers/Remove layer")]
+        internal static void RemoveSplat(MenuCommand item)
+        {
+            var terrain = (Terrain)item.context;
+            TerrainLayerUtility.RemoveTerrainLayer(terrain, item.userData);
+        }
+
+        [MenuItem("CONTEXT/TerrainLayers/Remove layer", true)]
+        internal static bool RemoveSplatCheck(MenuCommand item)
+        {
+            var terrain = (Terrain)item.context;
+            return item.userData >= 0 && item.userData < terrain.terrainData.terrainLayers.Length;
         }
     }
 }

@@ -290,6 +290,9 @@ namespace UnityEditor
         [MethodImpl(256)]
         internal void Verify(VerifyFlags verifyFlags = VerifyFlags.None)
         {
+            if (unsafeMode)
+                return;
+
             if (m_NativePropertyPtr == IntPtr.Zero || m_SerializedObject == null || m_SerializedObject.m_NativeObjectPtr == IntPtr.Zero)
                 throw new NullReferenceException("SerializedObject of SerializedProperty has been Disposed.");
 
@@ -1439,6 +1442,13 @@ namespace UnityEditor
         {
             Verify(VerifyFlags.IteratorNotAtEnd);
             return StringValueEquals(value);
+        }
+
+        internal bool unsafeMode {get; set; }
+        internal extern bool isValid
+        {
+            [NativeMethod("IsValid")]
+            get;
         }
     }
 }

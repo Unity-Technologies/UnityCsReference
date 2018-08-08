@@ -22,6 +22,7 @@ namespace UnityEngine
         [Obsolete("Property lightmapTilingOffset has been deprecated. Use lightmapScaleOffset (UnityUpgradable) -> lightmapScaleOffset", true)]
         public Vector4 lightmapTilingOffset { get { return Vector4.zero; } set {} }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use probeAnchor instead (UnityUpgradable) -> probeAnchor", true)]
         public Transform lightProbeAnchor { get { return probeAnchor; } set { probeAnchor = value; } }
     }
@@ -100,8 +101,11 @@ namespace UnityEngine
 
     partial class Shader
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SetGlobalTexGenMode is not supported anymore. Use programmable shaders to achieve the same effect.", true)]
         public static void SetGlobalTexGenMode(string propertyName, TexGenMode mode)            {}
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SetGlobalTextureMatrixName is not supported anymore. Use programmable shaders to achieve the same effect.", true)]
         public static void SetGlobalTextureMatrixName(string propertyName, string matrixName)   {}
     }
@@ -123,8 +127,10 @@ namespace UnityEngine
 
     partial class LightProbes
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use GetInterpolatedProbe instead.", true)]
         public void GetInterpolatedLightProbe(Vector3 position, Renderer renderer, float[] coefficients) {}
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use bakedProbes instead.", true)]
         public float[] coefficients { get { return new float[0]; } set {} }
     }
