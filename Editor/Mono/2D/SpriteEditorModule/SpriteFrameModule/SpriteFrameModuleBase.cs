@@ -74,6 +74,7 @@ namespace UnityEditor
                 m_RectsCache = null;
             }
             undoSystem.UnregisterUndoCallback(UndoCallback);
+            RemoveMainUI(spriteEditor.GetMainVisualContainer());
         }
 
         public override bool ApplyRevert(bool apply)
@@ -221,6 +222,8 @@ namespace UnityEditor
             get { return selected.name; }
             set
             {
+                if (selected.name == value)
+                    return;
                 undoSystem.RegisterCompleteObjectUndo(m_RectsCache, "Change Sprite Name");
                 spriteEditor.SetDataModified();
 

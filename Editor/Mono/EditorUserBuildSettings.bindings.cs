@@ -9,21 +9,6 @@ using System.ComponentModel;
 
 namespace UnityEditor
 {
-    /// Target PSP2 build platform.
-    ///
-    /// SA: EditorUserBuildSettings.psp2BuildSubtarget.
-    ///
-    [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
-    public enum PSP2BuildSubtarget
-    {
-        /// Build package that it's hosted on the PC
-        /// SA: EditorUserBuildSettings.psp2BuildSubtarget.
-        PCHosted = 0,
-        /// Build a package suited for TestKit testing
-        /// SA: EditorUserBuildSettings.psp2BuildSubtarget.
-        Package = 1,
-    }
-
     /// Target PS4 build platform.
     ///
     /// SA: EditorUserBuildSettings.ps4BuildSubtarget.
@@ -48,6 +33,7 @@ namespace UnityEditor
         BaseOnly = 0,
 
         /// Obsolete.  Use PS4ProAndBase instead.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Enum member PS4HardwareTarget.NeoAndBase has been deprecated. Use PS4HardwareTarget.ProAndBase instead (UnityUpgradable) -> ProAndBase", true)]
         NeoAndBase = 1,
 
@@ -74,6 +60,7 @@ namespace UnityEditor
         // copies files to the kit
         Push = 0,
         // run and load files from a connected PC
+        [EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Enum member XboxOneDeployMethod.Pull has been deprecated. Use XboxOneDeployMethod.RunFromPC instead (UnityUpgradable) -> RunFromPC", true)]
         Pull = 1,
         // PC network share loose files to the kit
@@ -218,8 +205,11 @@ namespace UnityEditor
     [NativeType(Header = "Editor/Src/EditorUserBuildSettings.h")]
     public enum AndroidBuildSystem
     {
+        [Obsolete("Internal build system is deprecated. Please use Gradle instead", false)]
+        [Description("Internal (deprecated)")]
         Internal = 0,
         Gradle = 1,
+        [System.ComponentModel.EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ADT/eclipse project export for Android is no longer supported - please use Gradle export instead", true)]
         ADT = 2,
         /// *undocumented*
@@ -290,15 +280,6 @@ namespace UnityEditor
         }
 
         internal static extern string facebookAccessToken { get; set; }
-
-        ///PSP2 Build Subtarget
-        public static extern PSP2BuildSubtarget psp2BuildSubtarget
-        {
-            [NativeMethod("GetSelectedPSP2BuildSubtarget")]
-            get;
-            [NativeMethod("SetSelectedPSP2BuildSubtarget")]
-            set;
-        }
 
 
         ///PS4 Build Subtarget
@@ -633,6 +614,24 @@ namespace UnityEditor
             [NativeMethod("GetNVNGraphicsDebuggerForSwitch")]
             get;
             [NativeMethod("SetNVNGraphicsDebuggerForSwitch")]
+            set;
+        }
+
+        // Enable shader debugging using NVN Graphics Debugger
+        public static extern bool switchNVNShaderDebugging
+        {
+            [NativeMethod("GetNVNShaderDebugging")]
+            get;
+            [NativeMethod("SetNVNShaderDebugging")]
+            set;
+        }
+
+        // Enable linkage of the Heap inspector tool for Nintendo Switch.
+        public static extern bool switchEnableHeapInspector
+        {
+            [NativeMethod("GetEnableHeapInspectorForSwitch")]
+            get;
+            [NativeMethod("SetEnableHeapInspectorForSwitch")]
             set;
         }
 

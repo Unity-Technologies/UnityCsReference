@@ -22,6 +22,7 @@ namespace UnityEditor
     internal class ReflectionProbeEditor : Editor
     {
         static ReflectionProbeEditor s_LastInteractedEditor;
+        static HashSet<ReflectionProbe> s_CurrentlyEditedProbes = new HashSet<ReflectionProbe>();
 
         SerializedProperty m_Mode;
         SerializedProperty m_RefreshMode;
@@ -200,6 +201,11 @@ namespace UnityEditor
 
             UpdateOldLocalSpace();
             SceneView.onPreSceneGUIDelegate += OnPreSceneGUICallback;
+
+            for (int i = 0; i < targets.Length; ++i)
+            {
+                s_CurrentlyEditedProbes.Add((ReflectionProbe)targets[i]);
+            }
         }
 
         public void OnDisable()
@@ -212,6 +218,11 @@ namespace UnityEditor
             foreach (Material mat in m_CachedGizmoMaterials.Values)
                 DestroyImmediate(mat);
             m_CachedGizmoMaterials.Clear();
+
+            for (int i = 0; i < targets.Length; ++i)
+            {
+                s_CurrentlyEditedProbes.Remove((ReflectionProbe)targets[i]);
+            }
         }
 
         private bool IsCollidingWithOtherProbes(string targetPath, ReflectionProbe targetProbe, out ReflectionProbe collidingProbe)
@@ -716,6 +727,9 @@ namespace UnityEditor
         [DrawGizmo(GizmoType.Selected)]
         static void RenderBoxOutline(ReflectionProbe reflectionProbe, GizmoType gizmoType)
         {
+            if (!s_CurrentlyEditedProbes.Contains(reflectionProbe))
+                return;
+
             Color oldColor = Gizmos.color;
             Gizmos.color = reflectionProbe.isActiveAndEnabled ? kGizmoReflectionProbe : kGizmoReflectionProbeDisabled;
 

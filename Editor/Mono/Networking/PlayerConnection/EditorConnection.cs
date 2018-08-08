@@ -37,6 +37,7 @@ namespace UnityEditor.Networking.PlayerConnection
         [SerializeField]
         private string m_PlayerName;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use playerId instead (UnityUpgradable) -> playerId", true)]
         public int PlayerId
         {

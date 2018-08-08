@@ -8,6 +8,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine.VR
 {
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("VRNodeState has been moved and renamed.  Use UnityEngine.XR.XRNodeState instead (UnityUpgradable) -> UnityEngine.XR.XRNodeState", true)]
     [StructLayout(LayoutKind.Sequential)]
     public struct VRNodeState

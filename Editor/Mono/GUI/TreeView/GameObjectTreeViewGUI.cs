@@ -35,7 +35,7 @@ namespace UnityEditor
             public static GUIStyle optionsButtonStyle = "PaneOptions";
             public static GUIStyle sceneHeaderBg = "ProjectBrowserTopBarBg";
             public static GUIStyle rightArrow = "ArrowNavigationRight";
-            public static GUIStyle hoveredItemBackgroundStyle = "WhiteBackgound";
+            public static GUIStyle hoveredItemBackgroundStyle = "WhiteBackground";
             public static Color hoveredBackgroundColor =
                 EditorGUIUtility.isProSkin
                 ? new Color(48.0f / 255.0f, 48.0f / 255.0f, 48.0f / 255.0f)

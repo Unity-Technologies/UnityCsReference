@@ -82,6 +82,7 @@ namespace UnityEngine
 
         // We cannot currently remove this obsolete API, as it is referenced in SyntaxTree.VisualStudio.Unity.Bridge.dll, which is shipped by
         // Microsoft as part of Visual Studio, in a location we cannot API update.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Application.webSecurityEnabled is no longer supported, since the Unity Web Player is no longer supported by Unity", true)]
         static public bool webSecurityEnabled
         {

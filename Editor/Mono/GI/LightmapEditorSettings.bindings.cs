@@ -18,12 +18,14 @@ namespace UnityEditor
         // Which baking backend is used.
         public enum Lightmapper
         {
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use Lightmapper.Enlighten instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.Enlighten", true)]
             Radiosity = 0,
 
             // Lightmaps are baked by Enlighten
             Enlighten = 0,
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
             PathTracer = 1,
 

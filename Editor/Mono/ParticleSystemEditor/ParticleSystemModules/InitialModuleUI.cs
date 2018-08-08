@@ -113,9 +113,7 @@ namespace UnityEditor
 
         public override bool DrawHeader(Rect rect, GUIContent label)
         {
-            label = EditorGUI.BeginProperty(rect, label, m_ModuleRootProperty);
             var toggleState = GUI.Toggle(rect, foldout, label, ParticleSystemStyles.Get().emitterHeaderStyle);
-            EditorGUI.EndProperty();
             return toggleState;
         }
 

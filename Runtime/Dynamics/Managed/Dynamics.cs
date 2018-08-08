@@ -92,6 +92,7 @@ namespace UnityEngine
         PositionAndRotation = 1,
 
         // Snap Position only
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("JointProjectionMode.PositionOnly is no longer supported", true)]
         PositionOnly = 2
     }
@@ -141,9 +142,11 @@ namespace UnityEngine
         // The limit position/angle of the joint.
         public float limit { get { return m_Limit; } set { m_Limit = value; } }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Spring has been moved to SoftJointLimitSpring class in Unity 5", true)]
         public float spring { get { return 0; } set {} }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Damper has been moved to SoftJointLimitSpring class in Unity 5", true)]
         public float damper { get { return 0; } set {} }
 
@@ -153,6 +156,7 @@ namespace UnityEngine
         /// Within the contact distance from the limit contacts will persist in order to avoid jitter.
         public float contactDistance { get { return m_ContactDistance; } set { m_ContactDistance = value; } }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use SoftJointLimit.bounciness instead", true)]
         public float bouncyness { get { return m_Bounciness; } set { m_Bounciness = value; } }
     }
@@ -253,9 +257,11 @@ namespace UnityEngine
 
         public float contactDistance { get { return m_ContactDistance; } set { m_ContactDistance = value; } }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("minBounce and maxBounce are replaced by a single JointLimits.bounciness for both limit ends.", true)]
         public float minBounce;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("minBounce and maxBounce are replaced by a single JointLimits.bounciness for both limit ends.", true)]
         public float maxBounce;
     }

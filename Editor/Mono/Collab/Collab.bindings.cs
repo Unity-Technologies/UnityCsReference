@@ -203,6 +203,9 @@ namespace UnityEditor.Collaboration
         [NativeMethod(HasExplicitThis = true, ThrowsException = true)]
         extern Change[] GetChangesToPublishInternal();
 
+        [NativeMethod(HasExplicitThis = true, ThrowsException = true, IsThreadSafe = true)]
+        extern void SetChangesToPublishInternal(ChangeItem[] changes);
+
         [NativeMethod(Name = "GetJobProgress", HasExplicitThis = true, ThrowsException = true)]
         extern bool GetJobProgressInternal([Out] ProgressInfo info, int jobId);
 

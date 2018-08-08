@@ -17,12 +17,16 @@ namespace UnityEngine.XR
     public struct HapticCapabilities : IEquatable<HapticCapabilities>
     {
         uint m_NumChannels;
-        uint m_FrequencyHz;
-        uint m_MaxBufferSize;
+        bool m_SupportsImpulse;
+        bool m_SupportsBuffer;
+        uint m_BufferFrequencyHz;
+        uint m_BufferMaxSize;
 
-        public uint numChannels { get { return m_NumChannels; } internal set { m_NumChannels = value; } }
-        public uint frequencyHz { get { return m_FrequencyHz; } internal set { m_FrequencyHz = value; } }
-        public uint maxBufferSize { get { return m_MaxBufferSize; } internal set { m_MaxBufferSize = value; } }
+        public uint numChannels             { get { return m_NumChannels; }         internal set { m_NumChannels = value; } }
+        public bool supportsImpulse         { get { return m_SupportsImpulse; }     internal set { m_SupportsImpulse = value; } }
+        public bool supportsBuffer          { get { return m_SupportsBuffer; }      internal set { m_SupportsBuffer = value; } }
+        public uint bufferFrequencyHz       { get { return m_BufferFrequencyHz; }   internal set { m_BufferFrequencyHz = value; } }
+        public uint bufferMaxSize           { get { return m_BufferMaxSize; }       internal set { m_BufferMaxSize = value; } }
 
         public override bool Equals(object obj)
         {
@@ -35,13 +39,19 @@ namespace UnityEngine.XR
         public bool Equals(HapticCapabilities other)
         {
             return numChannels == other.numChannels &&
-                frequencyHz == other.frequencyHz &&
-                maxBufferSize == other.maxBufferSize;
+                supportsImpulse == other.supportsImpulse &&
+                supportsBuffer == other.supportsBuffer &&
+                bufferFrequencyHz == other.bufferFrequencyHz &&
+                bufferMaxSize == other.bufferMaxSize;
         }
 
         public override int GetHashCode()
         {
-            return numChannels.GetHashCode() ^ (frequencyHz.GetHashCode() << 2) ^ (maxBufferSize.GetHashCode() >> 2);
+            return numChannels.GetHashCode() ^
+                (supportsImpulse.GetHashCode() << 1) ^
+                (supportsBuffer.GetHashCode() >> 1) ^
+                (bufferFrequencyHz.GetHashCode() << 2) ^
+                (bufferMaxSize.GetHashCode() >> 2);
         }
     }
 
@@ -81,12 +91,15 @@ namespace UnityEngine.XR
     public partial class InputHaptic
     {
         [NativeConditional("ENABLE_VR")]
-        [NativeMethod("LoopHapticIntensity")]
-        extern public static void LoopIntensity(XRNode node, float intensity);
+        bool SendImpulse(XRNode node, uint channel, float amplitude) { return SendImpulse(node, channel, amplitude, 1.0f); }
+
+        [NativeConditional("ENABLE_VR")]
+        [NativeMethod("SendHapticImpulse")]
+        extern public static bool SendImpulse(XRNode node, uint channel, float amplitude, [UnityEngine.Internal.DefaultValue("1.0f")] float frequency);
 
         [NativeConditional("ENABLE_VR")]
         [NativeMethod("SendHapticBuffer")]
-        extern public static void SendBuffer(XRNode node, byte[] buffer);
+        extern public static bool SendBuffer(XRNode node, uint channel, byte[] buffer);
 
         [NativeConditional("ENABLE_VR", "false")]
         [NativeMethod("TryGetHapticCapabilities")]

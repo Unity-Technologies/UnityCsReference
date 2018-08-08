@@ -3,9 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using System.Collections.Generic;
-using UnityEditor;
-using System.Collections;
 
 namespace UnityEditor
 {
@@ -13,13 +10,11 @@ namespace UnityEditor
     {
         protected string m_ModuleName;
         protected SerializedObject m_Object;
-        protected SerializedProperty m_ModuleRootProperty;
 
         public SerializedModule(SerializedObject o, string name)
         {
             m_Object = o;
             m_ModuleName = name;
-            m_ModuleRootProperty = m_Object.FindProperty(name);
         }
 
         public SerializedProperty GetProperty0(string name)

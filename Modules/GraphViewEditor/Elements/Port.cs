@@ -167,19 +167,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 m_Highlight = value;
 
-                UpdateConnectorColor();
+                UpdateConnectorColorAndEnabledState();
             }
         }
         public virtual void OnStartEdgeDragging()
         {
             highlight = false;
-            SetEnabled(false);
         }
 
         public virtual void OnStopEdgeDragging()
         {
             highlight = true;
-            SetEnabled(true);
         }
 
         private HashSet<Edge> m_Connections;
@@ -421,12 +419,13 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
-        private void UpdateConnectorColor()
+        private void UpdateConnectorColorAndEnabledState()
         {
             if (m_ConnectorBox == null)
                 return;
 
             m_ConnectorBox.style.borderColor = highlight ? m_PortColor.value : m_DisabledPortColor.value;
+            m_ConnectorBox.SetEnabled(highlight);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)
@@ -438,13 +437,17 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 return;
             }
 
-            if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+            // Only update the box cap background if the port is enabled or highlighted.
+            if (highlight)
             {
-                m_ConnectorBoxCap.style.backgroundColor = portColor;
-            }
-            else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
-            {
-                UpdateCapColor();
+                if (evt.GetEventTypeId() == MouseEnterEvent.TypeId())
+                {
+                    m_ConnectorBoxCap.style.backgroundColor = portColor;
+                }
+                else if (evt.GetEventTypeId() == MouseLeaveEvent.TypeId())
+                {
+                    UpdateCapColor();
+                }
             }
             else if (evt.GetEventTypeId() == MouseUpEvent.TypeId())
             {
@@ -464,7 +467,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             styles.ApplyCustomProperty(k_PortColorProperty, ref m_PortColor);
             styles.ApplyCustomProperty(k_DisabledPortColorProperty, ref m_DisabledPortColor);
 
-            UpdateConnectorColor();
+            UpdateConnectorColorAndEnabledState();
         }
     }
 }

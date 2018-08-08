@@ -57,9 +57,11 @@ namespace UnityEditor
         public override void OnInspectorGUI()
         {
             DrawDefaultInspector();
-            GUILayout.BeginHorizontal();
-            m_Constraints.isExpanded = EditorGUILayout.Foldout(m_Constraints.isExpanded, "Constraints", true);
-            GUILayout.EndHorizontal();
+
+            Rect position = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(position, null, m_Constraints);
+            m_Constraints.isExpanded = EditorGUI.Foldout(position, m_Constraints.isExpanded, m_Constraints.displayName, true);
+            EditorGUI.EndProperty();
 
             serializedObject.Update();
             RigidbodyConstraints constraints = (RigidbodyConstraints)m_Constraints.intValue;

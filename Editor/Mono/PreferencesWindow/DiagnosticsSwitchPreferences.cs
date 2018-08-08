@@ -28,8 +28,7 @@ namespace UnityEditor
         private static bool PassesFilter(DiagnosticSwitch diagnosticSwitch, string filterString)
         {
             return string.IsNullOrEmpty(filterString)
-                || SearchUtils.MatchSearch(filterString, diagnosticSwitch.name)
-                || SearchUtils.MatchSearch(filterString, diagnosticSwitch.description);
+                || SearchUtils.MatchSearchGroups(filterString, diagnosticSwitch.name);
         }
 
         private static bool DisplaySwitch(DiagnosticSwitch diagnosticSwitch)
@@ -161,9 +160,6 @@ namespace UnityEditor
             bool hasAnyUnappliedSwitches = false;
             for (int i = 0; i < switches.Count; ++i)
             {
-                if (!PassesFilter(switches[i], searchContext))
-                    continue;
-
                 hasAnyUnappliedSwitches |= DisplaySwitch(switches[i]);
             }
 

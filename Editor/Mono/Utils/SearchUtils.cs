@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Linq;
 
 namespace UnityEditor
 {
@@ -13,14 +14,55 @@ namespace UnityEditor
             return content != null && searchContext != null && content.IndexOf(searchContext, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
-        internal static bool FuzzySearch(string searchContext, string content)
+        internal static bool MatchSearchGroups(string searchContext, string content)
         {
             int dummyStart;
             int dummyEnd;
-            return FuzzySearch(searchContext, content, out dummyStart, out dummyEnd);
+            return MatchSearchGroups(searchContext, content, out dummyStart, out dummyEnd);
         }
 
-        internal static bool FuzzySearch(string searchContext, string content, out int startIndex, out int endIndex)
+        internal static bool MatchSearchGroups(string searchContext, string content, out int startIndex, out int endIndex)
+        {
+            startIndex = endIndex = -1;
+            if (searchContext == null || content == null)
+                return false;
+
+            if (searchContext == content)
+            {
+                endIndex = content.Length - 1;
+                return true;
+            }
+
+            // Each search group is space separated
+            // Search group must match in order and be complete.
+            var searchGroups = searchContext.Split(' ');
+            var startSearchIndex = 0;
+            foreach (var searchGroup in searchGroups)
+            {
+                if (searchGroup.Length == 0)
+                    continue;
+
+                startSearchIndex = content.IndexOf(searchGroup, startSearchIndex, StringComparison.CurrentCultureIgnoreCase);
+                if (startSearchIndex == -1)
+                {
+                    return false;
+                }
+
+                startIndex = startIndex == -1 ? startSearchIndex : startIndex;
+                startSearchIndex = endIndex = startSearchIndex + searchGroup.Length - 1;
+            }
+
+            return startIndex != -1 && endIndex != -1;
+        }
+
+        internal static bool MatchNonConsecutive(string searchContext, string content)
+        {
+            int dummyStart;
+            int dummyEnd;
+            return MatchNonConsecutive(searchContext, content, out dummyStart, out dummyEnd);
+        }
+
+        internal static bool MatchNonConsecutive(string searchContext, string content, out int startIndex, out int endIndex)
         {
             startIndex = endIndex = -1;
             if (searchContext == null || content == null || searchContext.Length > content.Length)

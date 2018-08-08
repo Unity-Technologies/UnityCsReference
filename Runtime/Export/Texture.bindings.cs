@@ -185,6 +185,7 @@ namespace UnityEngine
         extern private IntPtr GetWritableImageData(int frame);
         extern private long GetRawImageDataSize();
 
+        extern private static AtomicSafetyHandle GetSafetyHandle(Texture2D tex);
 
         [FreeFunction("Texture2DScripting::GenerateAtlas")]
         extern private static void GenerateAtlasImpl(Vector2[] sizes, int padding, int atlasSize, [Out] Rect[] rect);

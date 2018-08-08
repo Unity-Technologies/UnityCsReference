@@ -176,30 +176,6 @@ namespace UnityEditor
             m_ToolTip = "Specifies how the particles are rendered.";
         }
 
-        public override bool DrawHeader(Rect rect, GUIContent label)
-        {
-            var wasBold = EditorGUIUtility.GetBoldDefaultFont();
-            SerializedProperty itr = m_Object.GetIterator();
-            bool useBold = false;
-            if (m_Object.targetObjectsCount == 1)
-            {
-                bool validItr = itr.Next(true);
-                while (validItr)
-                {
-                    if (itr.isInstantiatedPrefab && itr.prefabOverride)
-                    {
-                        useBold = true;
-                        break;
-                    }
-                    validItr = itr.Next(false);
-                }
-            }
-            EditorGUIUtility.SetBoldDefaultFont(useBold);
-            var toggleState = GUI.Toggle(rect, foldout, label, ParticleSystemStyles.Get().moduleHeaderStyle);
-            EditorGUIUtility.SetBoldDefaultFont(wasBold);
-            return toggleState;
-        }
-
         protected override void Init()
         {
             if (m_CastShadows != null)
@@ -319,8 +295,8 @@ namespace UnityEditor
 
                     if (renderMode == RenderMode.Billboard || renderMode == RenderMode.Mesh)
                     {
-                        bool anyAligntoDirection = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => o.shape.alignToDirection) != null;
-                        if (anyAligntoDirection)
+                        bool anyAlignToDirection = m_ParticleSystemUI.m_ParticleSystems.FirstOrDefault(o => o.shape.enabled && o.shape.alignToDirection) != null;
+                        if (anyAlignToDirection)
                         {
                             using (new EditorGUI.DisabledScope(true))
                             {

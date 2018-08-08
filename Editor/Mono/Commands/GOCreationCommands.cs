@@ -114,7 +114,7 @@ namespace UnityEditor
                     string path = AssetDatabase.GetAssetPath(texture);
                     sprite = AssetDatabase.LoadAllAssetsAtPath(path)
                         .OfType<Sprite>()
-                        .First();
+                        .FirstOrDefault();
                     if (sprite == null)
                     {
                         var importer = AssetImporter.GetAtPath(path) as TextureImporter;

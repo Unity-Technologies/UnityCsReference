@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
 using Unity.Collections;
 using NativeArrayUnsafeUtility = Unity.Collections.LowLevel.Unsafe.NativeArrayUnsafeUtility;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace UnityEngine
 {
@@ -424,9 +425,10 @@ namespace UnityEngine
             public static void ResetDelegate()                          { s_RequestLightsDelegate = s_DefaultDelegate; }
 
             [UnityEngine.Scripting.UsedByNativeCode]
-            internal unsafe static void RequestLights(Light[] lights, System.IntPtr outLightsPtr, int outLightsCount)
+            internal unsafe static void RequestLights(Light[] lights, System.IntPtr outLightsPtr, int outLightsCount, AtomicSafetyHandle safetyHandle)
             {
                 var outLights = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<LightDataGI>((void*)outLightsPtr, outLightsCount, Allocator.None);
+                NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref outLights, safetyHandle);
                 s_RequestLightsDelegate(lights, outLights);
             }
 

@@ -101,6 +101,13 @@ namespace UnityEditor
             }
         }
 
+        private void RemoveMainUI(VisualElement mainView)
+        {
+            if (mainView.Contains(m_SelectedFrameInspector))
+                mainView.Remove(m_SelectedFrameInspector);
+            mainView.UnregisterCallback<SpriteSelectionChangeEvent>(SelectionChange);
+        }
+
         private void AddMainUI(VisualElement mainView)
         {
             var visualTree = EditorGUIUtility.Load("UXML/SpriteEditor/SpriteFrameModuleInspector.uxml") as VisualTreeAsset;
@@ -115,6 +122,15 @@ namespace UnityEditor
                     selectedSpriteName = evt.newValue;
                 }
             });
+
+            m_NameField.RegisterCallback<FocusOutEvent>((focus) =>
+            {
+                if (hasSelected)
+                {
+                    m_NameField.SetValueWithoutNotify(selectedSpriteName);
+                }
+            });
+
 
             m_PositionElement = m_SelectedFrameInspector.Q("position");
             m_PositionFieldX = m_PositionElement.Q<PropertyControl<long>>("positionX");
@@ -187,6 +203,7 @@ namespace UnityEditor
                     border.y = evt.newValue;
                     selectedSpriteBorder = border;
                     m_BorderFieldT.SetValueWithoutNotify((long)selectedSpriteBorder.y);
+                    evt.StopPropagation();
                 }
             });
 

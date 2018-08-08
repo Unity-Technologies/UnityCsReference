@@ -71,6 +71,8 @@ namespace UnityEngine.Jobs
     {
         IntPtr              m_TransformArray;
 
+        AtomicSafetyHandle  m_Safety;
+        DisposeSentinel     m_DisposeSentinel;
 
         public TransformAccessArray(Transform[] transforms, int desiredJobCount = -1)
         {
@@ -87,6 +89,7 @@ namespace UnityEngine.Jobs
         {
             array.m_TransformArray = Create(capacity, desiredJobCount);
 
+            DisposeSentinel.Create(out array.m_Safety, out array.m_DisposeSentinel, 1, Allocator.Persistent);
         }
 
         public bool isCreated
@@ -96,6 +99,7 @@ namespace UnityEngine.Jobs
 
         public void Dispose()
         {
+            DisposeSentinel.Dispose(ref m_Safety, ref m_DisposeSentinel);
 
             DestroyTransformAccessArray(m_TransformArray);
             m_TransformArray = IntPtr.Zero;
@@ -103,6 +107,7 @@ namespace UnityEngine.Jobs
 
         internal IntPtr GetTransformAccessArrayForSchedule()
         {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
             return m_TransformArray;
         }
@@ -111,11 +116,13 @@ namespace UnityEngine.Jobs
         {
             get
             {
+                AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 
                 return GetTransform(m_TransformArray, index);
             }
             set
             {
+                AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
                 SetTransform(m_TransformArray, index, value);
             }
@@ -125,11 +132,13 @@ namespace UnityEngine.Jobs
         {
             get
             {
+                AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 
                 return GetCapacity(m_TransformArray);
             }
             set
             {
+                AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
                 SetCapacity(m_TransformArray, value);
             }
@@ -139,6 +148,7 @@ namespace UnityEngine.Jobs
         {
             get
             {
+                AtomicSafetyHandle.CheckReadAndThrow(m_Safety);
 
                 return GetLength(m_TransformArray);
             }
@@ -146,18 +156,21 @@ namespace UnityEngine.Jobs
 
         public void Add(Transform transform)
         {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
             Add(m_TransformArray, transform);
         }
 
         public void RemoveAtSwapBack(int index)
         {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
             RemoveAtSwapBack(m_TransformArray, index);
         }
 
         public void SetTransforms(Transform[] transforms)
         {
+            AtomicSafetyHandle.CheckWriteAndThrow(m_Safety);
 
             SetTransforms(m_TransformArray, transforms);
         }

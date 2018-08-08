@@ -397,7 +397,7 @@ namespace UnityEngine.Experimental.UIElements
             m_ScrollView.verticalScroller.highValue = Mathf.Max(m_ScrollOffset, m_ScrollView.verticalScroller.highValue);
             m_ScrollView.verticalScroller.value = m_ScrollOffset;
 
-            int itemCount = (int)(height / itemHeight) + m_ExtraVisibleItems;
+            int itemCount = Math.Min((int)(height / itemHeight) + m_ExtraVisibleItems, itemsSource.Count);
 
             if (m_VisibleItemCount != itemCount)
             {

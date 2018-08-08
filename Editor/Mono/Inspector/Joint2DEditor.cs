@@ -22,6 +22,17 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
+            // Ensure that the connected body doesn't span physics scenes.
+            if (targets.Length == 1)
+            {
+                var joint = target as Joint2D;
+                if (joint.connectedBody != null &&
+                    joint.gameObject.scene.GetPhysicsScene2D() != joint.connectedBody.gameObject.scene.GetPhysicsScene2D())
+                {
+                    EditorGUILayout.HelpBox("This joint will not function because it is connected to a Rigidbody2D in a different physics scene. This is not supported.", MessageType.Warning);
+                }
+            }
+
             base.OnInspectorGUI();
 
             EditorGUILayout.PropertyField(m_BreakForce);

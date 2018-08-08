@@ -15,6 +15,7 @@ using System.Collections;
 
 namespace UnityEngine
 {
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralProcessorUsage
     {
@@ -24,6 +25,7 @@ namespace UnityEngine
         All = 3
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralCacheSize
     {
@@ -34,6 +36,7 @@ namespace UnityEngine
         None = 4
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralLoadingBehavior
     {
@@ -45,6 +48,7 @@ namespace UnityEngine
         DoNothingAndCache = 5
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralPropertyType
     {
@@ -60,6 +64,7 @@ namespace UnityEngine
         String = 9
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public enum ProceduralOutputType
     {
@@ -78,6 +83,7 @@ namespace UnityEngine
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     public sealed partial class ProceduralPropertyDescription
     {
@@ -93,6 +99,7 @@ namespace UnityEngine
         public string[] componentLabels;
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("Built-in support for Substance Designer materials has been removed from Unity. To continue using Substance Designer materials, you will need to install Allegorithmic's external importer from the Asset Store.", true)]
     [ExcludeFromPreset]
     public sealed partial class ProceduralMaterial : Material

@@ -394,6 +394,8 @@ namespace UnityEditor
             public GUIContent refresh = EditorGUIUtility.TrTextContent("Refresh", "When you save a tree asset from the modelling app, you will need to click the Refresh button (shown in the inspector when the tree painting tool is selected) in order to see the updated trees on your terrain.");
 
             // Settings
+            public GUIContent allowAutoConnect = EditorGUIUtility.TrTextContent("Auto connect", "Will automatically connect terrain tile to neighboring tiles");
+            public GUIContent attemptReconnect = EditorGUIUtility.TrTextContent("Reconnect", "Will attempt to re-run auto connection");
             public GUIContent drawTerrain = EditorGUIUtility.TrTextContent("Draw", "Toggle the rendering of terrain");
             public GUIContent drawInstancedTerrain = EditorGUIUtility.TrTextContent("Draw Instanced" , "Toggle terrain instancing rendering");
             public GUIContent pixelError = EditorGUIUtility.TrTextContent("Pixel Error", "The accuracy of the mapping between the terrain maps (heightmap, textures, etc) and the generated terrain; higher values indicate lower accuracy but lower rendering overhead.");
@@ -416,6 +418,8 @@ namespace UnityEditor
             public GUIContent wavingGrassSpeed = EditorGUIUtility.TrTextContent("Size", "The size of the 'ripples' on grassy areas as the wind blows over them.");
             public GUIContent wavingGrassAmount = EditorGUIUtility.TrTextContent("Bending", "The degree to which grass objects are bent over by the wind.");
             public GUIContent wavingGrassTint = EditorGUIUtility.TrTextContent("Grass Tint", "Overall color tint applied to grass objects.");
+
+            public static readonly GUIContent detailResolutionWarning = EditorGUIUtility.TrTextContent("You may reduce CPU draw call overhead by setting the detail resolution per patch as high as possible, relative to detail resolution.");
         }
         static Styles styles;
 
@@ -475,8 +479,8 @@ namespace UnityEditor
 
 
         internal int m_ActivePaintToolIndex = 0;
-        internal ITerrainPaintTool[] m_Tools = null;
-        internal string[] m_ToolNames = null;
+        static internal ITerrainPaintTool[] m_Tools = null;
+        static internal string[] m_ToolNames = null;
 
         ITerrainPaintTool GetActiveTool()
         {
@@ -683,7 +687,10 @@ namespace UnityEditor
                 m_ShowReflectionProbesGUI.value = terrain.materialType == Terrain.MaterialType.BuiltInStandard || terrain.materialType == Terrain.MaterialType.Custom;
             }
 
-            ResetPaintTools();
+            if (m_Tools == null)
+            {
+                ResetPaintTools();
+            }
 
             LoadInspectorSettings();
 
@@ -992,6 +999,25 @@ namespace UnityEditor
             }
         }
 
+        private int GetMaxDetailInstances(int detailResolutionPerPatch)
+        {
+            return detailResolutionPerPatch * detailResolutionPerPatch * 16; // Each resolution placement consists of up to 16 details, based on brush strength.
+        }
+
+        public void ShowDetailStats()
+        {
+            GUILayout.Space(3);
+
+            EditorGUILayout.HelpBox(Styles.detailResolutionWarning.text, MessageType.Warning);
+
+            int maxMeshes = m_Terrain.terrainData.detailPatchCount * m_Terrain.terrainData.detailPatchCount;
+            EditorGUILayout.LabelField("Detail patches currently allocated: " + maxMeshes);
+
+            int maxDetails = maxMeshes * GetMaxDetailInstances(m_Terrain.terrainData.detailResolutionPerPatch);
+            EditorGUILayout.LabelField("Detail instance density: " + maxDetails);
+            GUILayout.Space(3);
+        }
+
         public void ShowDetails()
         {
             LoadDetailIcons();
@@ -1009,6 +1035,8 @@ namespace UnityEditor
                 TerrainDetailContextMenus.EditDetail(new MenuCommand(m_Terrain, m_SelectedDetail));
                 GUIUtility.ExitGUI();
             }
+
+            ShowDetailStats();
 
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
@@ -1034,6 +1062,13 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
 
             GUILayout.Label(L10n.Tr("Base Terrain"), EditorStyles.boldLabel);
+
+            EditorGUILayout.BeginHorizontal();
+            m_Terrain.allowAutoConnect = EditorGUILayout.Toggle(styles.allowAutoConnect, m_Terrain.allowAutoConnect);
+            if (GUILayout.Button(styles.attemptReconnect, GUILayout.Width(128)))
+                Terrain.SetConnectivityDirty();
+            EditorGUILayout.EndHorizontal();
+
             m_Terrain.drawHeightmap = EditorGUILayout.Toggle(styles.drawTerrain, m_Terrain.drawHeightmap);
             m_Terrain.drawInstanced = EditorGUILayout.Toggle(styles.drawInstancedTerrain, m_Terrain.drawInstanced);
             m_Terrain.heightmapPixelError = EditorGUILayout.Slider(styles.pixelError, m_Terrain.heightmapPixelError, 1, 200); // former string formatting: ""
@@ -1189,7 +1224,7 @@ namespace UnityEditor
         {
             bool repaint = brushList.ShowGUI();
 
-            m_Size = Mathf.RoundToInt(EditorGUILayout.Slider(styles.brushSize, m_Size, 1, Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z)));
+            m_Size = Mathf.RoundToInt(EditorGUILayout.Slider(styles.brushSize, m_Size, 1, Mathf.Min(m_Terrain.terrainData.size.x - 1.0f, m_Terrain.terrainData.size.z - 1.0f)));
             m_Strength = PercentSlider(styles.opacity, m_Strength, kMinBrushStrength, 1); // former string formatting: "0.0%"
 
             brushList.ShowEditGUI();
@@ -1247,7 +1282,7 @@ namespace UnityEditor
 
             RenderTexture.active = oldRT;
 
-            m_Terrain.terrainData.UpdateDirtyRegion(0, 0, m_Terrain.terrainData.heightmapTexture.width, m_Terrain.terrainData.heightmapTexture.height);
+            m_Terrain.terrainData.UpdateDirtyRegion(0, 0, m_Terrain.terrainData.heightmapTexture.width, m_Terrain.terrainData.heightmapTexture.height, !m_Terrain.drawInstanced);
             m_Terrain.Flush();
             m_Terrain.ApplyDelayedHeightmapModification();
 
@@ -1318,6 +1353,7 @@ namespace UnityEditor
             float terrainHeight = m_Terrain.terrainData.size.y;
             float terrainLength = m_Terrain.terrainData.size.z;
             int detailResolution = m_Terrain.terrainData.detailResolution;
+            int detailPatchCount = m_Terrain.terrainData.detailPatchCount;
             int detailResolutionPerPatch = m_Terrain.terrainData.detailResolutionPerPatch;
 
             EditorGUI.BeginChangeCheck();
@@ -1336,11 +1372,13 @@ namespace UnityEditor
             if (terrainHeight <= 0) terrainHeight = 1;
             if (terrainHeight > kMaxTerrainHeight) terrainHeight = kMaxTerrainHeight;
 
-            detailResolutionPerPatch = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Patch Count (N * N)", "The terrain tile will be divided into \"patch count\" * \"patch count\". Each patch is drawn in a single draw call."), detailResolutionPerPatch);
+            detailResolutionPerPatch = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Resolution Per Patch", "The number of cells in a single patch (mesh). This value is squared to form a grid of cells, and must be a divisor of the detail resolution."), detailResolutionPerPatch);
             detailResolutionPerPatch = Mathf.Clamp(detailResolutionPerPatch, 8, 128);
 
-            detailResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Max Detail Placements / Patch", "Number of placements of details/grass per patch. Higher resolution gives smaller and more detailed patches."), detailResolution);
+            detailResolution = EditorGUILayout.DelayedIntField(EditorGUIUtility.TrTextContent("Detail Resolution", "The number of cells available for placing details onto the terrain tile. This value is squared to make a grid of cells."), detailResolution);
             detailResolution = Mathf.Clamp(detailResolution, 0, 4048);
+
+            ShowDetailStats();
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -1352,7 +1390,19 @@ namespace UnityEditor
 
                 m_Terrain.terrainData.size = new Vector3(terrainWidth, terrainHeight, terrainLength);
 
-                if (m_Terrain.terrainData.detailResolution != detailResolution || detailResolutionPerPatch != m_Terrain.terrainData.detailResolutionPerPatch)
+                bool resolutionChanged = m_Terrain.terrainData.detailResolution != detailResolution;
+                if (resolutionChanged)
+                {
+                    detailResolutionPerPatch = Mathf.Min(detailResolutionPerPatch, detailResolution);
+                }
+
+                bool resolutionPerPatchChanged = m_Terrain.terrainData.detailResolutionPerPatch != detailResolutionPerPatch;
+                if (resolutionPerPatchChanged)
+                {
+                    detailResolution = Mathf.Max(detailResolution, detailResolutionPerPatch);
+                }
+
+                if (resolutionChanged || resolutionPerPatchChanged)
                     ResizeDetailResolution(m_Terrain.terrainData, detailResolution, detailResolutionPerPatch);
 
                 m_Terrain.Flush();

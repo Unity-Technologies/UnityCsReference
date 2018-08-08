@@ -855,10 +855,10 @@ namespace UnityEditor
         }
 
         [FreeFunction("ModelImporterBindings::UpdateTransformMask")]
-        extern internal static void UpdateTransformMask(AvatarMask mask, SerializedProperty serializedProperty);
+        extern internal static void UpdateTransformMask([NotNull] AvatarMask mask, SerializedProperty serializedProperty);
 
         [FreeFunction("ModelImporterBindings::UpdateSkeletonPose")]
-        extern internal static void UpdateSkeletonPose(SkeletonBone[] skeletonBones, [NotNull] SerializedProperty serializedProperty);
+        extern internal static void UpdateSkeletonPose([NotNull] SkeletonBone[] skeletonBones, [NotNull] SerializedProperty serializedProperty);
         extern internal AnimationClip GetPreviewAnimationClipForTake(string takeName);
 
         extern internal string CalculateBestFittingPreviewGameObject();

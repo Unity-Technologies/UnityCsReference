@@ -87,8 +87,8 @@ namespace UnityEditor.Collaboration
         [Flags]
         public enum CollabStates : uint
         {
-            kCollabNone             =   0,
-            kCollabLocal            =   1,
+            kCollabNone     = 0,
+            kCollabLocal    = 1,
 
             kCollabSynced           =   1 << 1,
             kCollabOutOfSync        =   1 << 2,
@@ -115,7 +115,7 @@ namespace UnityEditor.Collaboration
             KCollabContentDeleted   =   1 << 23,
 
             // always keep most significant
-            kCollabInvalidState     =   1 << 30,
+            kCollabInvalidState     = 1 << 30,
 
             kAnyLocalChanged        = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabDeletedLocal | kCollabMovedLocal),
             kAnyLocalEdited         = (kCollabAddedLocal | kCollabCheckedOutLocal | kCollabMovedLocal),
@@ -226,6 +226,19 @@ namespace UnityEditor.Collaboration
             if (s_VersionControlInstance != null)
             {
                 s_VersionControlInstance.MergeDownloadedFiles(isFullDownload);
+            }
+        }
+
+        [UsedByNativeCode]
+        static bool SupportsAsyncChanges()
+        {
+            if (s_VersionControlInstance != null)
+            {
+                return s_VersionControlInstance.SupportsAsyncChanges();
+            }
+            else
+            {
+                return false;
             }
         }
 
@@ -345,6 +358,11 @@ namespace UnityEditor.Collaboration
                 changes = changes,
                 filter = false
             };
+        }
+
+        public void SetChangesToPublish(ChangeItem[] changes)
+        {
+            SetChangesToPublishInternal(changes);
         }
 
         public ProgressInfo GetJobProgress(int jobId)

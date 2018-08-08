@@ -172,6 +172,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileLogo80
             {
@@ -185,6 +186,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileLogo
             {
@@ -198,6 +200,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileLogo140
             {
@@ -211,6 +214,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileLogo180
             {
@@ -224,6 +228,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileWideLogo80
             {
@@ -237,6 +242,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileWideLogo
             {
@@ -250,6 +256,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileWideLogo140
             {
@@ -263,6 +270,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileWideLogo180
             {
@@ -276,6 +284,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileSmallLogo80
             {
@@ -289,6 +298,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileSmallLogo
             {
@@ -302,6 +312,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileSmallLogo140
             {
@@ -315,6 +326,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeTileSmallLogo180
             {
@@ -328,6 +340,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeSmallTile80
             {
@@ -341,6 +354,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeSmallTile
             {
@@ -354,6 +368,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeSmallTile140
             {
@@ -367,6 +382,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeSmallTile180
             {
@@ -380,6 +396,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeLargeTile80
             {
@@ -393,6 +410,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeLargeTile
             {
@@ -406,6 +424,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeLargeTile140
             {
@@ -419,6 +438,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeLargeTile180
             {
@@ -432,6 +452,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeSplashScreenImage
             {
@@ -445,6 +466,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeSplashScreenImageScale140
             {
@@ -458,6 +480,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string storeSplashScreenImageScale180
             {
@@ -471,6 +494,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneAppIcon
             {
@@ -484,6 +508,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneAppIcon140
             {
@@ -497,6 +522,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneAppIcon240
             {
@@ -510,6 +536,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneSmallTile
             {
@@ -523,6 +550,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneSmallTile140
             {
@@ -536,6 +564,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneSmallTile240
             {
@@ -549,6 +578,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneMediumTile
             {
@@ -562,6 +592,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneMediumTile140
             {
@@ -575,6 +606,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneMediumTile240
             {
@@ -588,6 +620,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneWideTile
             {
@@ -601,6 +634,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneWideTile140
             {
@@ -614,6 +648,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneWideTile240
             {
@@ -627,6 +662,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneSplashScreenImage
             {
@@ -640,6 +676,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneSplashScreenImageScale140
             {
@@ -653,6 +690,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string phoneSplashScreenImageScale240
             {
@@ -666,6 +704,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string packageLogo140
             {
@@ -679,6 +718,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string packageLogo180
             {
@@ -692,6 +732,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use GetVisualAssetsImage()/SetVisualAssetsImage()", true)]
             public static string packageLogo240
             {
@@ -705,6 +746,7 @@ namespace UnityEditor
                 }
             }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("PlayerSettings.enableLowLatencyPresentationAPI is deprecated. It is now always enabled.", true)]
             public static bool enableLowLatencyPresentationAPI
             {

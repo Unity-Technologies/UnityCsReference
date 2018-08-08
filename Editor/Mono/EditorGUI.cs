@@ -88,7 +88,7 @@ namespace UnityEditor
         internal const float kSpacingSubLabel = 2;
         internal const float kSliderMinW = 50;
         internal const float kSliderMaxW = 100;
-        internal static readonly SVC<float> kSingleLineHeight = new SVC<float>("--single-line-height", 16f);
+        internal const float kSingleLineHeight = 16f;
         internal const float kStructHeaderLineHeight = 16;
         internal const float kObjectFieldThumbnailHeight = 64;
         internal const float kObjectFieldMiniThumbnailHeight = 18f;
@@ -1671,6 +1671,8 @@ namespace UnityEditor
         {
             int id = GUIUtility.GetControlID(s_SelectableLabelHash, FocusType.Keyboard, position);
             Event e = Event.current;
+
+            var sendEventToTextEditor = true;
             if (GUIUtility.keyboardControl == id && e.GetTypeForControl(id) == EventType.KeyDown)
             {
                 switch (e.keyCode)
@@ -1689,16 +1691,14 @@ namespace UnityEditor
                         GUIUtility.keyboardControl = 0;
                         break;
                     default:
-                        // Prevent using the event if it is the tab character otherwise tabbing keyfocus will break (case 562373)
-                        if (e.character != '\t')
-                            e.Use();
+                        sendEventToTextEditor = false;
                         break;
                 }
             }
 
             if (e.type == EventType.ExecuteCommand && (e.commandName == EventCommandNames.Paste || e.commandName == EventCommandNames.Cut) && GUIUtility.keyboardControl == id)
             {
-                e.Use();
+                sendEventToTextEditor = false;
             }
 
 
@@ -1707,8 +1707,11 @@ namespace UnityEditor
 
             RecycledTextEditor.s_AllowContextCutOrPaste = false;
 
-            bool dummy;
-            DoTextField(s_RecycledEditor, id, IndentedRect(position), text, style, string.Empty, out dummy, false, true, false);
+            if (sendEventToTextEditor)
+            {
+                bool dummy;
+                DoTextField(s_RecycledEditor, id, IndentedRect(position), text, style, string.Empty, out dummy, false, true, false);
+            }
 
             GUI.skin.settings.cursorColor = tempCursorColor;
         }
@@ -2264,12 +2267,12 @@ namespace UnityEditor
             return f < 0.0f ? -result : result;
         }
 
-        private static void DoPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null)
+        internal static void DoPropertyContextMenu(SerializedProperty property, SerializedProperty linkedProperty = null, GenericMenu menu = null)
         {
             if (linkedProperty != null && linkedProperty.serializedObject != property.serializedObject)
                 linkedProperty = null;
 
-            GenericMenu pm = new GenericMenu();
+            GenericMenu pm = menu ?? new GenericMenu();
 
             // Since the menu items are invoked with delay, we can't assume a SerializedObject we don't own
             // will still be around at that time. Hence create our own copy. (case 1051734)
@@ -5262,7 +5265,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
                     labelPosition.width += 1;
 
                     int startHighlight, endHighlight;
-                    if (IsLabelHighlightEnabled() && SearchUtils.FuzzySearch(s_LabelHighlightContext, label.text, out startHighlight, out endHighlight))
+                    if (IsLabelHighlightEnabled() && SearchUtils.MatchSearchGroups(s_LabelHighlightContext, label.text, out startHighlight, out endHighlight))
                     {
                         const bool isActive = false;
                         const bool hasKeyboardFocus = true; // This ensure we draw the selection text over the label.
@@ -8086,7 +8089,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Make an enum popup selection field.
         public static Enum EnumPopup(GUIContent label, Enum selected, GUIStyle style, params GUILayoutOption[] options)
         {
-            return EnumPopup(label, selected, null, false, style);
+            return EnumPopup(label, selected, null, false, style, options);
         }
 
         public static Enum EnumPopup(GUIContent label, Enum selected, Func<Enum, bool> checkEnabled, bool includeObsolete, params GUILayoutOption[] options)

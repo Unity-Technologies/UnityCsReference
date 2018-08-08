@@ -15,7 +15,7 @@ namespace UnityEditor
             public static readonly GUIStyle DragHandle = "RL DragHandle";
         }
 
-        internal delegate SerializedPropertyTreeView.Column[] HeaderDelegate(out string[] propNames);
+        internal delegate SerializedPropertyTreeView.Column[] HeaderDelegate();
 
         SerializedPropertyDataStore.GatherDelegate  m_GatherDelegate;
         HeaderDelegate                              m_HeaderDelegate;
@@ -55,9 +55,11 @@ namespace UnityEditor
 
             if (m_MultiColumnHeaderState == null)
             {
-                string[] propNames;
+                SerializedPropertyTreeView.Column[] columns = m_HeaderDelegate();
 
-                m_MultiColumnHeaderState = new MultiColumnHeaderState(m_HeaderDelegate(out propNames));
+                string[] propNames = GetPropertyNames(columns);
+
+                m_MultiColumnHeaderState = new MultiColumnHeaderState(columns);
                 m_DataStore = new SerializedPropertyDataStore(propNames, m_GatherDelegate);
             }
 
@@ -69,6 +71,16 @@ namespace UnityEditor
             m_TreeView.Reload();
 
             m_Initialized = true;
+        }
+
+        string[] GetPropertyNames(SerializedPropertyTreeView.Column[] columns)
+        {
+            string[] propNames = new string[columns.Length];
+
+            for (int i = 0; i < columns.Length; i++)
+                propNames[i] = columns[i].propertyName;
+
+            return propNames;
         }
 
         float GetMinHeight()

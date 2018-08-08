@@ -29,15 +29,19 @@ namespace UnityEngine
         [Obsolete("Use PhysicMaterial.bounciness instead (UnityUpgradable) -> bounciness")]
         public float bouncyness { get { return bounciness; } set { bounciness = value; } }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
         public Vector3 frictionDirection2 { get { return Vector3.zero; } set {} }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
         public float dynamicFriction2 { get { return 0; } set {} }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
         public float staticFriction2 { get { return 0; } set {} }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Anisotropic friction is no longer supported since Unity 5.0.", true)]
         public Vector3 frictionDirection { get { return Vector3.zero; } set {} }
     }
@@ -755,15 +759,19 @@ namespace UnityEngine
         public const int DefaultRaycastLayers = ~IgnoreRaycastLayer;
         public const int AllLayers = ~0;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Please use Physics.IgnoreRaycastLayer instead. (UnityUpgradable) -> IgnoreRaycastLayer", true)]
         public const int kIgnoreRaycastLayer = IgnoreRaycastLayer;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Please use Physics.DefaultRaycastLayers instead. (UnityUpgradable) -> DefaultRaycastLayers", true)]
         public const int kDefaultRaycastLayers = DefaultRaycastLayers;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Please use Physics.AllLayers instead. (UnityUpgradable) -> AllLayers", true)]
         public const int kAllLayers = AllLayers;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use Physics.defaultContactOffset or Collider.contactOffset instead.", true)]
         public static float minPenetrationForPenalty { get { return 0f; } set {} }
 
@@ -785,6 +793,7 @@ namespace UnityEngine
         [Obsolete("The sleepAngularVelocity is no longer supported. Use sleepThreshold. Note that sleepThreshold is energy but not velocity.")]
         public static float sleepAngularVelocity { get { return 0f; } set {} }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use Rigidbody.maxAngularVelocity instead.", true)]
         public static float maxAngularVelocity { get { return 0f; } set {} }
 

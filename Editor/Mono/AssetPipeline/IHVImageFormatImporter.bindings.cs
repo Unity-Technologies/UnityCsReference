@@ -8,6 +8,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("DDSImporter is obsolete. Use IHVImageFormatImporter instead (UnityUpgradable) -> IHVImageFormatImporter", true)]
     [NativeClass(null)]
     public sealed class DDSImporter : AssetImporter

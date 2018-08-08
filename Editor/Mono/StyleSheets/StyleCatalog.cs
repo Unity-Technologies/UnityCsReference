@@ -330,6 +330,7 @@ namespace UnityEditor.StyleSheets
 
         public enum Keyword
         {
+            Invalid = -1,
             None = 0,
             False = 0,
             True,
@@ -706,17 +707,12 @@ namespace UnityEditor.StyleSheets
 
         private StyleBlock[] m_Blocks;
         private readonly Dictionary<int, string> m_NameCollisionTable = new Dictionary<int, string>();
-        private bool m_UseResolver;
 
         public string[] sheets { get; private set; } = {};
         internal StyleBuffers buffers { get; private set; }
 
-        public bool resolveExtend = true;
-        public bool resolveVariable = true;
-
-        public StyleCatalog(bool useResolver = true)
+        public StyleCatalog()
         {
-            m_UseResolver = useResolver;
             buffers = new StyleBuffers();
         }
 
@@ -826,27 +822,11 @@ namespace UnityEditor.StyleSheets
             m_NameCollisionTable.Clear();
             try
             {
-                if (m_UseResolver)
-                {
-                    var resolver = new StyleSheetResolver();
-                    resolver.AddStyleSheets(sheets);
-                    resolver.ResolveSheets();
-                    if (resolveExtend)
-                        resolver.ResolveExtend();
-                    Compile(resolver, numbers, colors, strings, rects, groups, blocks);
-                }
-                else
-                {
-                    for (int i = 0; i < sheets.Length; ++i)
-                    {
-                        var path = sheets[i];
-                        var styleSheet = EditorResources.Load<UnityEngine.Object>(path, false) as StyleSheet;
-                        if (!styleSheet)
-                            continue;
-
-                        CompileSheet(styleSheet, numbers, colors, strings, rects, groups, blocks);
-                    }
-                }
+                var resolver = new StyleSheetResolver();
+                resolver.AddStyleSheets(sheets);
+                resolver.ResolveSheets();
+                resolver.ResolveExtend();
+                Compile(resolver, numbers, colors, strings, rects, groups, blocks);
             }
             catch (Exception ex)
             {
@@ -863,33 +843,6 @@ namespace UnityEditor.StyleSheets
             };
 
             m_Blocks = blocks.ToArray();
-        }
-
-        #region StyleSheetCompilation
-        private void CompileSheet(StyleSheet styleSheet,
-            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups,
-            List<StyleBlock> blocks)
-        {
-            foreach (var cs in styleSheet.complexSelectors)
-            {
-                // We do not yet support block with multiple selectors.
-                if (cs.selectors.Length != 1 || cs.selectors[0].parts.Length == 0)
-                    continue;
-
-                var selector = cs.selectors[0];
-                string blockName = GetSelectorKeyName(selector);
-                StyleState stateFlags = GetSelectorStateFlags(selector);
-
-                List<StyleValue> values = new List<StyleValue>(cs.rule.properties.Length);
-                foreach (var property in cs.rule.properties)
-                {
-                    var newValue = CompileValue(styleSheet, property, stateFlags, numbers, colors, strings, rects, groups);
-                    values.Add(newValue);
-                }
-
-                if (CompileElement(blockName, blocks, values.ToArray()))
-                    blocks.Sort((l, r) => l.name.CompareTo(r.name));
-            }
         }
 
         private static StyleState GetSelectorStateFlags(StyleSelector ss)
@@ -987,149 +940,6 @@ namespace UnityEditor.StyleSheets
             return false;
         }
 
-        private StyleValue CompileRect(StyleSheet styleSheet, string propertyName, StyleState stateFlags, StyleValueHandle[] values,
-            IList<StyleRect> rects, int topIndex, int rightIndex, int bottomIndex, int leftIndex)
-        {
-            var propertyKey = GetNameKey(propertyName);
-            return new StyleValue
-            {
-                key = propertyKey,
-                state = stateFlags,
-                type = StyleValue.Type.Rect,
-                index = SetIndex(rects, new StyleRect
-                {
-                    top = styleSheet.ReadFloat(values[topIndex]),
-                    right = styleSheet.ReadFloat(values[rightIndex]),
-                    bottom = styleSheet.ReadFloat(values[bottomIndex]),
-                    left = styleSheet.ReadFloat(values[leftIndex])
-                })
-            };
-        }
-
-        private StyleValue CompileValue(StyleSheet styleSheet, StyleProperty property, StyleState stateFlags,
-            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups)
-        {
-            return CompileValue(styleSheet, property.name, property.values, stateFlags, numbers, colors, strings, rects, groups);
-        }
-
-        private StyleValue CompileValue(StyleSheet styleSheet, string propertyName, StyleValueHandle[] values, StyleState stateFlags,
-            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups)
-        {
-            if (values.Length == 1)
-                return CompileBaseValue(styleSheet, propertyName, stateFlags, values[0], numbers, colors, strings);
-
-            if (values.Length == 2 &&
-                values[0].valueType == StyleValueType.Float &&
-                values[1].valueType == StyleValueType.Float)
-                return CompileRect(styleSheet, propertyName, stateFlags, values, rects, 0, 1, 0, 1);
-
-            if (values.Length == 3 &&
-                values[0].valueType == StyleValueType.Float &&
-                values[1].valueType == StyleValueType.Float &&
-                values[2].valueType == StyleValueType.Float)
-                return CompileRect(styleSheet, propertyName, stateFlags, values, rects, 0, 1, 2, 1);
-
-            if (values.Length == 4 &&
-                values[0].valueType == StyleValueType.Float &&
-                values[1].valueType == StyleValueType.Float &&
-                values[2].valueType == StyleValueType.Float &&
-                values[3].valueType == StyleValueType.Float)
-                return CompileRect(styleSheet, propertyName, stateFlags, values, rects, 0, 1, 2, 3);
-
-            // Compile list of primitive values
-            if (values.Length >= 2 && values.Length <= 5)
-                return CompileValueGroup(styleSheet, propertyName, stateFlags, values, groups, numbers, colors, strings);
-
-            // Value form not supported, lets report it and keep a undefined value to the property.
-            Debug.LogWarning($"Failed to compile style block property {propertyName} " +
-                $"with {values.Length} values from {styleSheet.name}", styleSheet);
-            return StyleValue.Undefined(GetNameKey(propertyName), stateFlags);
-        }
-
-        private StyleValue CompileValueGroup(StyleSheet styleSheet, string propertyName, StyleState stateFlags, StyleValueHandle[] values,
-            List<StyleValueGroup> groups, List<float> numbers, List<Color> colors, List<string> strings)
-        {
-            int propertyKey = GetNameKey(propertyName);
-            StyleValueGroup vg = new StyleValueGroup(propertyKey, values.Length);
-            for (int i = 0; i < values.Length; ++i)
-                vg[i] = CompileBaseValue(styleSheet, propertyName, stateFlags, values[i], numbers, colors, strings);
-
-            return new StyleValue
-            {
-                key = propertyKey,
-                state = stateFlags,
-                type = StyleValue.Type.Group,
-                index = SetIndex(groups, vg)
-            };
-        }
-
-        private StyleValue CompileBaseValue(StyleSheet styleSheet, string propertyName, StyleState stateFlags, StyleValueHandle handle,
-            List<float> numbers, List<Color> colors, List<string> strings)
-        {
-            int propertyKey = GetNameKey(propertyName);
-            return new StyleValue
-            {
-                key = propertyKey,
-                state = stateFlags,
-                type = ReduceStyleValueType(styleSheet, handle),
-                index = MergeValue(styleSheet, handle, numbers, colors, strings)
-            };
-        }
-
-        private static StyleValue.Type ReduceStyleValueType(StyleSheet styleSheet, StyleValueHandle handle)
-        {
-            switch (handle.valueType)
-            {
-                case StyleValueType.Color:
-                case StyleValueType.Float:
-                case StyleValueType.Keyword:
-                    return (StyleValue.Type)handle.valueType;
-                case StyleValueType.Enum:
-                {
-                    Color parsedColor;
-                    var str = styleSheet.ReadEnum(handle);
-                    if (ColorUtility.TryParseHtmlString(str, out parsedColor))
-                        return StyleValue.Type.Color;
-                    return StyleValue.Type.Text;
-                }
-                case StyleValueType.AssetReference:
-                case StyleValueType.ResourcePath:
-                case StyleValueType.String:
-                    return StyleValue.Type.Text;
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
-        private static int MergeValue(StyleSheet styleSheet, StyleValueHandle handle,
-            List<float> numbers, List<Color> colors, List<string> strings)
-        {
-            switch (handle.valueType)
-            {
-                case StyleValueType.Keyword:
-                    return (int)StyleValue.ConvertKeyword(styleSheet.ReadKeyword(handle));
-                case StyleValueType.Float:
-                    return SetIndex(numbers, styleSheet.ReadFloat(handle));
-                case StyleValueType.Color:
-                    return SetIndex(colors, styleSheet.ReadColor(handle));
-                case StyleValueType.ResourcePath:
-                    return SetIndex(strings, styleSheet.ReadResourcePath(handle));
-                case StyleValueType.AssetReference:
-                    return SetIndex(strings, AssetDatabase.GetAssetPath(styleSheet.ReadAssetReference(handle)));
-                case StyleValueType.Enum:
-                    var str = styleSheet.ReadEnum(handle);
-                    Color parsedColor;
-                    if (ColorUtility.TryParseHtmlString(str, out parsedColor))
-                        return SetIndex(colors, parsedColor);
-                    return SetIndex(strings, str);
-                case StyleValueType.String:
-                    return SetIndex(strings, styleSheet.ReadString(handle));
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
         private static int SetIndex<T>(IList<T> buffer, T c)
         {
             var bufferIndex = buffer.IndexOf(c);
@@ -1142,9 +952,6 @@ namespace UnityEditor.StyleSheets
             return bufferIndex;
         }
 
-        #endregion
-
-        #region StyleResolverCompilation
         private void Compile(StyleSheetResolver resolver,
             List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups,
             List<StyleBlock> blocks)
@@ -1174,7 +981,7 @@ namespace UnityEditor.StyleSheets
         private StyleValue CompileValue(StyleSheetResolver resolver, StyleSheetResolver.Property property, StyleState stateFlags,
             List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups)
         {
-            var values = resolveVariable ? resolver.ResolveValues(property) : property.Values;
+            var values = resolver.ResolveValues(property);
             if (values.Count == 1)
             {
                 return CompileBaseValue(property.Name, stateFlags, values[0], numbers, colors, strings);
@@ -1312,10 +1119,9 @@ namespace UnityEditor.StyleSheets
             }
         }
 
-        #endregion
-
         #region ComparisonUtilities
-        public bool CompareCatalog(StyleCatalog catalog, out string msg)
+
+        internal bool CompareCatalog(StyleCatalog catalog, out string msg)
         {
             var sb = new StringBuilder();
             CompareBlocks(catalog, "Missing Styles", sb);
@@ -1376,7 +1182,7 @@ namespace UnityEditor.StyleSheets
             return msg.Length == 0;
         }
 
-        bool CompareBlocks(StyleCatalog catalog, string title, StringBuilder sb)
+        internal bool CompareBlocks(StyleCatalog catalog, string title, StringBuilder sb)
         {
             var sameStyles = true;
             foreach (var block in m_Blocks)
@@ -1395,7 +1201,7 @@ namespace UnityEditor.StyleSheets
             return sameStyles;
         }
 
-        static int GetComparableValue(StyleValue v1, StyleBlock block)
+        internal static int GetComparableValue(StyleValue v1, StyleBlock block)
         {
             for (var valueIndex = 0; valueIndex < block.values.Length; ++valueIndex)
             {
@@ -1409,7 +1215,7 @@ namespace UnityEditor.StyleSheets
             return -1;
         }
 
-        static bool CompareValue(StyleBlock b1, StyleValue value1, StyleBlock b2, StyleValue value2)
+        internal static bool CompareValue(StyleBlock b1, StyleValue value1, StyleBlock b2, StyleValue value2)
         {
             switch (value1.type)
             {

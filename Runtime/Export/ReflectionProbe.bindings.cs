@@ -12,6 +12,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Camera/ReflectionProbes.h")]
     public sealed partial class ReflectionProbe : Behaviour
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("type property has been deprecated. Starting with Unity 5.4, the only supported reflection probe type is Cube.", true)]
         [NativeName("ProbeType")]
         public extern ReflectionProbeType type { get; set; }

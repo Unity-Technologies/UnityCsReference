@@ -84,6 +84,7 @@ namespace UnityEditor
 
         /// Build a Vita Standalone
         /// SA: BuildPipeline.BuildPlayer.
+        [System.Obsolete("PSP2 is no longer supported as of Unity 2018.3")]
         PSP2 = 30,
 
         /// Build a PS4 Standalone

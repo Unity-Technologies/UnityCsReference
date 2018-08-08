@@ -239,7 +239,7 @@ namespace UnityEditor
             get
             {
                 Stage currentStage = StageUtility.GetCurrentStage();
-                return currentStage.FindComponentsOfType<Tilemap>().Select(x => x.gameObject).ToArray();
+                return currentStage.FindComponentsOfType<Tilemap>().Where(x => x.gameObject.scene.isLoaded).Select(x => x.gameObject).ToArray();
             }
         }
 

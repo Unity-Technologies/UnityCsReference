@@ -143,6 +143,11 @@ namespace UnityEditor
             get;
         }
 
+        public extern static long sessionCount
+        {
+            get;
+        }
+
         public extern static long elapsedTime
         {
             [NativeMethod("GetSessionElapsedTime")]

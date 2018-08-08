@@ -172,6 +172,7 @@ namespace UnityEditor
 
             private static extern string packageVersionRaw { get; set; }
 
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("PlayerSettings.WSA.commandLineArgsFile is deprecated", error: true)]
             public static string commandLineArgsFile { get { return string.Empty; } set {} }
 

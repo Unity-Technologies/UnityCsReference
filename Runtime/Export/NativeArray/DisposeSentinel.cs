@@ -25,3 +25,66 @@ namespace Unity.Collections
 }
 
 
+namespace Unity.Collections.LowLevel.Unsafe
+{
+    [StructLayout(LayoutKind.Sequential)]
+    public sealed class DisposeSentinel
+    {
+        int                m_IsCreated;
+        StackFrame         m_StackFrame;
+
+        private DisposeSentinel()
+        {
+        }
+
+        public static void Dispose(ref AtomicSafetyHandle safety, ref DisposeSentinel sentinel)
+        {
+            AtomicSafetyHandle.CheckDeallocateAndThrow(safety);
+            // If the safety handle is for a temp allocation, create a new safety handle for this instance which can be marked as invalid
+            // Setting it to new AtomicSafetyHandle is not enough since the handle needs a valid node pointer in order to give the correct errors
+            if (AtomicSafetyHandle.IsTempMemoryHandle(safety))
+                safety = AtomicSafetyHandle.Create();
+            AtomicSafetyHandle.Release(safety);
+            Clear(ref sentinel);
+        }
+
+        public static void Create(out AtomicSafetyHandle safety, out DisposeSentinel sentinel, int callSiteStackDepth, Allocator allocator)
+        {
+            safety = (allocator == Allocator.Temp) ? AtomicSafetyHandle.GetTempMemoryHandle() : AtomicSafetyHandle.Create();
+
+            if (NativeLeakDetection.Mode == NativeLeakDetectionMode.Enabled && allocator != Allocator.Temp)
+            {
+                sentinel = new DisposeSentinel
+                {
+                    m_StackFrame = new StackFrame(callSiteStackDepth + 2, true),
+                    m_IsCreated = 1
+                };
+            }
+            else
+            {
+                sentinel = null;
+            }
+        }
+
+        ~DisposeSentinel()
+        {
+            if (m_IsCreated != 0)
+            {
+                var fileName = m_StackFrame.GetFileName();
+                var lineNb = m_StackFrame.GetFileLineNumber();
+
+                var err = string.Format("A Native Collection has not been disposed, resulting in a memory leak. It was allocated at {0}:{1}.", fileName, lineNb);
+                UnsafeUtility.LogError(err, fileName, lineNb);
+            }
+        }
+
+        public static void Clear(ref DisposeSentinel sentinel)
+        {
+            if (sentinel != null)
+            {
+                sentinel.m_IsCreated = 0;
+                sentinel = null;
+            }
+        }
+    }
+}

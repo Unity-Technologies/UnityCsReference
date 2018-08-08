@@ -15,6 +15,7 @@ namespace UnityEngine.VR
     [System.Obsolete("VRDeviceType is deprecated. Use XRSettings.supportedDevices instead.", true)]
     public enum VRDeviceType
     {
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Enum member VRDeviceType.Morpheus has been deprecated. Use VRDeviceType.PlayStationVR instead (UnityUpgradable) -> PlayStationVR", true)]
         Morpheus = -1,
         None,
@@ -24,14 +25,14 @@ namespace UnityEngine.VR
         PlayStationVR,
         Unknown
     }
-
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Obsolete("TrackingSpaceType has been moved.  Use UnityEngine.XR.TrackingSpaceType instead (UnityUpgradable) -> UnityEngine.XR.TrackingSpaceType", true)]
     public enum TrackingSpaceType
     {
         Stationary,
         RoomScale
     }
-
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Obsolete("UserPresenceState has been moved.  Use UnityEngine.XR.UserPresenceState instead (UnityUpgradable) -> UnityEngine.XR.UserPresenceState", true)]
     public enum UserPresenceState
     {
@@ -41,6 +42,7 @@ namespace UnityEngine.VR
         Unknown = 2,
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Obsolete("VRSettings has been moved and renamed.  Use UnityEngine.XR.XRSettings instead (UnityUpgradable)", true)]
     public static partial class VRSettings
     {
@@ -168,7 +170,7 @@ namespace UnityEngine.VR
             }
         }
     }
-
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Obsolete("VRDevice has been moved and renamed.  Use UnityEngine.XR.XRDevice instead (UnityUpgradable) -> UnityEngine.XR.XRDevice", true)]
     public static partial class VRDevice
     {
@@ -228,6 +230,7 @@ namespace UnityEngine.VR
             throw new NotSupportedException("VRDevice has been moved and renamed.  Use UnityEngine.XR.XRDevice instead.");
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("DisableAutoVRCameraTracking has been moved and renamed.  Use UnityEngine.XR.XRDevice.DisableAutoXRCameraTracking instead (UnityUpgradable) -> UnityEngine.XR.XRDevice.DisableAutoXRCameraTracking(*)", true)]
         public static void DisableAutoVRCameraTracking(Camera camera, bool disabled)
         {
@@ -235,6 +238,7 @@ namespace UnityEngine.VR
         }
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Obsolete("VRStats has been moved and renamed.  Use UnityEngine.XR.XRStats instead (UnityUpgradable) -> UnityEngine.XR.XRStats", true)]
     public static partial class VRStats
     {
@@ -266,6 +270,7 @@ namespace UnityEngine.VR
         }
     }
 
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [System.Obsolete("InputTracking has been moved.  Use UnityEngine.XR.InputTracking instead (UnityUpgradable) -> UnityEngine.XR.InputTracking", true)]
     public static partial class InputTracking
     {

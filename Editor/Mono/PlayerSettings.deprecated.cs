@@ -40,6 +40,7 @@ namespace UnityEditor
         Automatic       = -1,
     }
     // deprecated in 5.3
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("Use Screen.SetResolution APIs", true)]
     public enum iOSTargetResolution
     {
@@ -84,8 +85,10 @@ namespace UnityEditor
     partial class PlayerSettings
     {
         // deprecated since forever
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("The option alwaysDisplayWatermark is deprecated and is always false", true)]
         public static bool alwaysDisplayWatermark { get { return false; } set {} }
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use AssetBundles instead for streaming data", true)]
         public static int firstStreamedLevelWithResources { get { return 0; } set {} }
 
@@ -106,6 +109,7 @@ namespace UnityEditor
         public static RenderingPath mobileRenderingPath { get { return EditorGraphicsSettings.GetCurrentTierSettings().renderingPath; } set {} }
 
         // deprecated in 5.6
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Use PlayerSettings.applicationIdentifier instead (UnityUpgradable) -> UnityEditor.PlayerSettings.applicationIdentifier", true)]
         public static string bundleIdentifier { get { return applicationIdentifier; } set { applicationIdentifier = value; } }
     }
@@ -159,6 +163,7 @@ namespace UnityEditor
             }
 
             // deprecated in 5.3
+            [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
             [Obsolete("Use Screen.SetResolution at runtime", true)]
             public static iOSTargetResolution targetResolution { get { return 0; } set {} }
 

@@ -189,7 +189,7 @@ namespace UnityEditor
             r.x = widthProbeRect.xMax + labelButton.margin.left;
             if (EditorGUI.DropdownButton(r, GUIContent.none, FocusType.Passive, labelButton))
             {
-                PopupWindow.Show(r, new PopupList(m_AssetLabels));
+                PopupWindow.Show(r, new PopupList(m_AssetLabels), null, ShowMode.PopupMenuWithKeyboardFocus);
             }
 
             EditorGUILayout.EndHorizontal();
@@ -209,7 +209,7 @@ namespace UnityEditor
                 {
                     evt.Use();
                     rt.x = xMax;
-                    PopupWindow.Show(rt, new PopupList(m_AssetLabels, content.text));
+                    PopupWindow.Show(rt, new PopupList(m_AssetLabels, content.text), null, ShowMode.PopupMenuWithKeyboardFocus);
                 }
             }
         }

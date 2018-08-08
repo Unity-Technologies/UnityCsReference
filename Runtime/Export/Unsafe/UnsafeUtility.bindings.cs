@@ -23,24 +23,30 @@ namespace Unity.Collections.LowLevel.Unsafe
 
         public static int GetFieldOffset(FieldInfo field)
         {
+            if (field == null)
+                throw new ArgumentNullException(nameof(field));
             if (field.DeclaringType.IsValueType)
                 return GetFieldOffsetInStruct(field);
             else if (field.DeclaringType.IsClass)
                 return GetFieldOffsetInClass(field);
             else
             {
-                return -1;
+                throw new ArgumentException("field.DeclaringType must be a struct or class");
             }
         }
 
         unsafe public static void* PinGCObjectAndGetAddress(System.Object target, out ulong gcHandle)
         {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
 
             return PinSystemObjectAndGetAddress(target, out gcHandle);
         }
 
         unsafe public static void* PinGCArrayAndGetDataAddress(System.Array target, out ulong gcHandle)
         {
+            if (target == null)
+                throw new ArgumentNullException(nameof(target));
 
             return PinSystemArrayAndGetAddress(target, out gcHandle);
         }

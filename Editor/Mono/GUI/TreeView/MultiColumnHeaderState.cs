@@ -42,6 +42,9 @@ namespace UnityEditor.IMGUI.Controls
             if (source.m_Columns == null || destination.m_Columns == null)
                 return false;
 
+            if (source.m_Columns.GetType() != destination.m_Columns.GetType())
+                return false;
+
             return source.m_Columns.Length == destination.m_Columns.Length;
         }
 

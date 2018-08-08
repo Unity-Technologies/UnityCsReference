@@ -175,7 +175,7 @@ namespace UnityEditor
         {
             buttonRect.x -= 400;
             buttonRect.y -= 13;
-            PopupWindow.Show(buttonRect, new EnterNamePopup(m_Tags, s => { InternalEditorUtility.AddTag(s); }));
+            PopupWindow.Show(buttonRect, new EnterNamePopup(m_Tags, s => { InternalEditorUtility.AddTag(s); }), null, ShowMode.PopupMenuWithKeyboardFocus);
         }
 
         private void RemoveFromTagsList(ReorderableList list)

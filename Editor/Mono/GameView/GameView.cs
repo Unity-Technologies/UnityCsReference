@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using System;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using UnityEditor.AnimatedValues;
@@ -109,6 +110,37 @@ namespace UnityEditor
         static List<GameView> s_GameViews = new List<GameView>();
         static GameView s_LastFocusedGameView = null;
         static double s_LastScrollTime;
+        static GameView s_RenderingGameView;
+
+        class RenderingGameView : IDisposable
+        {
+            bool disposed = false;
+
+            public RenderingGameView(GameView gameView)
+            {
+                GameView.s_RenderingGameView = gameView;
+            }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            // Protected implementation of Dispose pattern.
+            protected virtual void Dispose(bool disposing)
+            {
+                if (disposed)
+                    return;
+
+                if (disposing)
+                {
+                    GameView.s_RenderingGameView = null;
+                }
+
+                disposed = true;
+            }
+        }
 
         public GameView()
         {
@@ -301,6 +333,11 @@ namespace UnityEditor
                 s_LastFocusedGameView = s_GameViews[0];
 
             return s_LastFocusedGameView;
+        }
+
+        internal static GameView GetRenderingGameView()
+        {
+            return s_RenderingGameView;
         }
 
         public static void RepaintAll()
@@ -748,165 +785,168 @@ namespace UnityEditor
 
         private void OnGUI()
         {
-            if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
+            using (var rgv = new RenderingGameView(this))
             {
-                UpdateZoomAreaAndParent();
-            }
-
-            DoToolbarGUI();
-
-            // Setup game view dimensions, so that player loop can use it for input
-            CopyDimensionsToParentView();
-
-            // This isn't ideal. Custom Cursors set by editor extensions for other windows can leak into the game view.
-            // To fix this we should probably stop using the global custom cursor (intended for runtime) for custom editor cursors.
-            // This has been noted for Cursors tech debt.
-            EditorGUIUtility.AddCursorRect(viewInWindow, MouseCursor.CustomCursor);
-
-            EventType type = Event.current.type;
-
-            // Gain mouse lock when clicking on game view content
-            if (type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))
-            {
-                AllowCursorLockAndHide(true);
-            }
-            // Lose mouse lock when pressing escape
-            else if (type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
-            {
-                AllowCursorLockAndHide(false);
-            }
-
-            // We hide sliders when playing, and also when we are zoomed out beyond canvas edges
-            var playing = EditorApplication.isPlaying && !EditorApplication.isPaused;
-            var targetInContentCached = targetInContent;
-            m_ZoomArea.hSlider = !playing && m_ZoomArea.shownArea.width < targetInContentCached.width;
-            m_ZoomArea.vSlider = !playing && m_ZoomArea.shownArea.height < targetInContentCached.height;
-            m_ZoomArea.enableMouseInput = !playing;
-            ConfigureZoomArea();
-
-            // We don't want controls inside the GameView (e.g. the toolbar) to have keyboard focus while playing.
-            // The game should get the keyboard events.
-            if (playing)
-                EditorGUIUtility.keyboardControl = 0;
-
-            var editorMousePosition = Event.current.mousePosition;
-            var gameMousePosition = WindowToGameMousePosition(editorMousePosition);
-
-            GUI.color = Color.white; // Get rid of play mode tint
-
-            var originalEventType = Event.current.type;
-
-            m_ZoomArea.BeginViewGUI();
-
-            if (type == EventType.Repaint)
-            {
-                GUI.Box(m_ZoomArea.drawRect, GUIContent.none, Styles.gameViewBackgroundStyle);
-
-                Vector2 oldOffset = GUIUtility.s_EditorScreenPointOffset;
-                GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
-                SavedGUIState oldState = SavedGUIState.Create();
-
-                ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y);
-
-                if (m_ClearInEditMode && !EditorApplication.isPlaying)
-                    ClearTargetTexture();
-
-                var currentTargetDisplay = 0;
-                if (ModuleManager.ShouldShowMultiDisplayOption())
+                if (position.size * EditorGUIUtility.pixelsPerPoint != m_LastWindowPixelSize) // pixelsPerPoint only reliable in OnGUI()
                 {
-                    // Display Targets can have valid targets from 0 to 7.
-                    System.Diagnostics.Debug.Assert(m_TargetDisplay < 8, "Display Target is Out of Range");
-                    currentTargetDisplay = m_TargetDisplay;
+                    UpdateZoomAreaAndParent();
                 }
-                if (m_TargetTexture.IsCreated())
+
+                DoToolbarGUI();
+
+                // Setup game view dimensions, so that player loop can use it for input
+                CopyDimensionsToParentView();
+
+                // This isn't ideal. Custom Cursors set by editor extensions for other windows can leak into the game view.
+                // To fix this we should probably stop using the global custom cursor (intended for runtime) for custom editor cursors.
+                // This has been noted for Cursors tech debt.
+                EditorGUIUtility.AddCursorRect(viewInWindow, MouseCursor.CustomCursor);
+
+                EventType type = Event.current.type;
+
+                // Gain mouse lock when clicking on game view content
+                if (type == EventType.MouseDown && viewInWindow.Contains(Event.current.mousePosition))
                 {
-                    var sendInput = true;
-                    EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos, sendInput);
-                    oldState.ApplyAndForget();
-                    GUIUtility.s_EditorScreenPointOffset = oldOffset;
-
-                    GUI.BeginGroup(m_ZoomArea.drawRect);
-                    // Actually draw the game view to the screen, without alpha blending
-                    Rect drawRect = deviceFlippedTargetInView;
-                    drawRect.x = Mathf.Round(drawRect.x);
-                    drawRect.y = Mathf.Round(drawRect.y);
-                    Graphics.DrawTexture(drawRect, m_TargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
-                    GUI.EndGroup();
+                    AllowCursorLockAndHide(true);
                 }
-            }
-            else if (type != EventType.Layout && type != EventType.Used)
-            {
-                if (Event.current.isKey && (!EditorApplication.isPlaying || EditorApplication.isPaused))
-                    return;
-
-                bool mousePosInGameViewRect = viewInWindow.Contains(Event.current.mousePosition);
-
-                // MouseDown events outside game view rect are not send to scripts but MouseUp events are (see below)
-                if (Event.current.rawType == EventType.MouseDown && !mousePosInGameViewRect)
-                    return;
-
-                var originalDisplayIndex = Event.current.displayIndex;
-
-                // Transform events into local space, so the mouse position is correct
-                // Then queue it up for playback during playerloop
-                Event.current.mousePosition = gameMousePosition;
-                Event.current.displayIndex = m_TargetDisplay;
-
-                EditorGUIUtility.QueueGameViewInputEvent(Event.current);
-
-                bool useEvent = true;
-
-                // Do not use mouse UP event if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
-                // Placed after event queueing above to ensure scripts can react on mouse up events.
-                if (Event.current.rawType == EventType.MouseUp && !mousePosInGameViewRect)
-                    useEvent = false;
-
-                // Don't use command events, or they won't be sent to other views.
-                if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)
-                    useEvent = false;
-
-                if (useEvent)
-                    Event.current.Use();
-                else
-                    Event.current.mousePosition = editorMousePosition;
-
-                // Reset display index
-                Event.current.displayIndex = originalDisplayIndex;
-            }
-
-            m_ZoomArea.EndViewGUI();
-
-            if (originalEventType == EventType.ScrollWheel && Event.current.type == EventType.Used)
-            {
-                EditorApplication.update -= SnapZoomDelayed;
-                EditorApplication.update += SnapZoomDelayed;
-                s_LastScrollTime = EditorApplication.timeSinceStartup;
-            }
-
-            EnforceZoomAreaConstraints();
-
-            if (m_TargetTexture)
-            {
-                if (m_ZoomArea.scale.y < 1f)
+                // Lose mouse lock when pressing escape
+                else if (type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
                 {
-                    m_TargetTexture.filterMode = FilterMode.Bilinear;
+                    AllowCursorLockAndHide(false);
                 }
-                else
+
+                // We hide sliders when playing, and also when we are zoomed out beyond canvas edges
+                var playing = EditorApplication.isPlaying && !EditorApplication.isPaused;
+                var targetInContentCached = targetInContent;
+                m_ZoomArea.hSlider = !playing && m_ZoomArea.shownArea.width < targetInContentCached.width;
+                m_ZoomArea.vSlider = !playing && m_ZoomArea.shownArea.height < targetInContentCached.height;
+                m_ZoomArea.enableMouseInput = !playing;
+                ConfigureZoomArea();
+
+                // We don't want controls inside the GameView (e.g. the toolbar) to have keyboard focus while playing.
+                // The game should get the keyboard events.
+                if (playing)
+                    EditorGUIUtility.keyboardControl = 0;
+
+                var editorMousePosition = Event.current.mousePosition;
+                var gameMousePosition = WindowToGameMousePosition(editorMousePosition);
+
+                GUI.color = Color.white; // Get rid of play mode tint
+
+                var originalEventType = Event.current.type;
+
+                m_ZoomArea.BeginViewGUI();
+
+                if (type == EventType.Repaint)
                 {
-                    m_TargetTexture.filterMode = FilterMode.Point;
+                    GUI.Box(m_ZoomArea.drawRect, GUIContent.none, Styles.gameViewBackgroundStyle);
+
+                    Vector2 oldOffset = GUIUtility.s_EditorScreenPointOffset;
+                    GUIUtility.s_EditorScreenPointOffset = Vector2.zero;
+                    SavedGUIState oldState = SavedGUIState.Create();
+
+                    ConfigureTargetTexture((int)targetSize.x, (int)targetSize.y);
+
+                    if (m_ClearInEditMode && !EditorApplication.isPlaying)
+                        ClearTargetTexture();
+
+                    var currentTargetDisplay = 0;
+                    if (ModuleManager.ShouldShowMultiDisplayOption())
+                    {
+                        // Display Targets can have valid targets from 0 to 7.
+                        System.Diagnostics.Debug.Assert(m_TargetDisplay < 8, "Display Target is Out of Range");
+                        currentTargetDisplay = m_TargetDisplay;
+                    }
+                    if (m_TargetTexture.IsCreated())
+                    {
+                        var sendInput = true;
+                        EditorGUIUtility.RenderGameViewCamerasInternal(m_TargetTexture, currentTargetDisplay, GUIClip.Unclip(viewInWindow), gameMousePosition, m_Gizmos, sendInput);
+                        oldState.ApplyAndForget();
+                        GUIUtility.s_EditorScreenPointOffset = oldOffset;
+
+                        GUI.BeginGroup(m_ZoomArea.drawRect);
+                        // Actually draw the game view to the screen, without alpha blending
+                        Rect drawRect = deviceFlippedTargetInView;
+                        drawRect.x = Mathf.Round(drawRect.x);
+                        drawRect.y = Mathf.Round(drawRect.y);
+                        Graphics.DrawTexture(drawRect, m_TargetTexture, new Rect(0, 0, 1, 1), 0, 0, 0, 0, GUI.color, GUI.blitMaterial);
+                        GUI.EndGroup();
+                    }
                 }
-            }
+                else if (type != EventType.Layout && type != EventType.Used)
+                {
+                    if (Event.current.isKey && (!EditorApplication.isPlaying || EditorApplication.isPaused))
+                        return;
 
-            if (m_NoCameraWarning && !EditorGUIUtility.IsDisplayReferencedByCameras(m_TargetDisplay))
-            {
-                GUI.Label(warningPosition, GUIContent.none, EditorStyles.notificationBackground);
-                var displayName = ModuleManager.ShouldShowMultiDisplayOption() ? DisplayUtility.GetDisplayNames()[m_TargetDisplay].text : string.Empty;
-                var cameraWarning = string.Format("{0}\nNo cameras rendering", displayName);
-                EditorGUI.DoDropShadowLabel(warningPosition, EditorGUIUtility.TempContent(cameraWarning), EditorStyles.notificationText, .3f);
-            }
+                    bool mousePosInGameViewRect = viewInWindow.Contains(Event.current.mousePosition);
 
-            if (m_Stats)
-                GameViewGUI.GameViewStatsGUI();
+                    // MouseDown events outside game view rect are not send to scripts but MouseUp events are (see below)
+                    if (Event.current.rawType == EventType.MouseDown && !mousePosInGameViewRect)
+                        return;
+
+                    var originalDisplayIndex = Event.current.displayIndex;
+
+                    // Transform events into local space, so the mouse position is correct
+                    // Then queue it up for playback during playerloop
+                    Event.current.mousePosition = gameMousePosition;
+                    Event.current.displayIndex = m_TargetDisplay;
+
+                    EditorGUIUtility.QueueGameViewInputEvent(Event.current);
+
+                    bool useEvent = true;
+
+                    // Do not use mouse UP event if mousepos is outside game view rect (fix for case 380995: Gameview tab's context menu is not appearing on right click)
+                    // Placed after event queueing above to ensure scripts can react on mouse up events.
+                    if (Event.current.rawType == EventType.MouseUp && !mousePosInGameViewRect)
+                        useEvent = false;
+
+                    // Don't use command events, or they won't be sent to other views.
+                    if (type == EventType.ExecuteCommand || type == EventType.ValidateCommand)
+                        useEvent = false;
+
+                    if (useEvent)
+                        Event.current.Use();
+                    else
+                        Event.current.mousePosition = editorMousePosition;
+
+                    // Reset display index
+                    Event.current.displayIndex = originalDisplayIndex;
+                }
+
+                m_ZoomArea.EndViewGUI();
+
+                if (originalEventType == EventType.ScrollWheel && Event.current.type == EventType.Used)
+                {
+                    EditorApplication.update -= SnapZoomDelayed;
+                    EditorApplication.update += SnapZoomDelayed;
+                    s_LastScrollTime = EditorApplication.timeSinceStartup;
+                }
+
+                EnforceZoomAreaConstraints();
+
+                if (m_TargetTexture)
+                {
+                    if (m_ZoomArea.scale.y < 1f)
+                    {
+                        m_TargetTexture.filterMode = FilterMode.Bilinear;
+                    }
+                    else
+                    {
+                        m_TargetTexture.filterMode = FilterMode.Point;
+                    }
+                }
+
+                if (m_NoCameraWarning && !EditorGUIUtility.IsDisplayReferencedByCameras(m_TargetDisplay))
+                {
+                    GUI.Label(warningPosition, GUIContent.none, EditorStyles.notificationBackground);
+                    var displayName = ModuleManager.ShouldShowMultiDisplayOption() ? DisplayUtility.GetDisplayNames()[m_TargetDisplay].text : string.Empty;
+                    var cameraWarning = string.Format("{0}\nNo cameras rendering", displayName);
+                    EditorGUI.DoDropShadowLabel(warningPosition, EditorGUIUtility.TempContent(cameraWarning), EditorStyles.notificationText, .3f);
+                }
+
+                if (m_Stats)
+                    GameViewGUI.GameViewStatsGUI();
+            }
         }
     }
 }

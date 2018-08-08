@@ -540,7 +540,7 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Remove"), false, ModuleMenuCallback, moduleIndex);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Remove")); // Do not allow remove module when always show modules is enabled
-            menu.ShowAsContext();
+            EditorGUI.DoPropertyContextMenu(m_Modules[moduleIndex].m_Enabled, null, menu);
             Event.current.Use();
         }
 

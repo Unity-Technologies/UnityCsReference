@@ -171,50 +171,51 @@ namespace UnityEditor
 
         internal class DefaultDelegates
         {
-            public static readonly Column.DrawEntry s_DrawDefault = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) =>
+            public static readonly Column.DrawEntry DrawDefault = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) =>
             {
                 Profiler.BeginSample("PropDrawDefault");
                 EditorGUI.PropertyField(r, prop, GUIContent.none);
                 Profiler.EndSample();
             };
-            public static readonly Column.DrawEntry s_DrawCheckbox = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) =>
+            public static readonly Column.DrawEntry DrawCheckbox = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) =>
             {
                 Profiler.BeginSample("PropDrawCheckbox");
-                float off = (r.width / 2) - 8;
-                r.x += off >= 0 ? off : 0;
+                float off = System.Math.Max(0.0f, ((r.width / 2) - 8));
+                r.x += off;
+                r.width -= off;
                 EditorGUI.PropertyField(r, prop, GUIContent.none);
                 Profiler.EndSample();
             };
-            public static readonly Column.DrawEntry s_DrawName = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) => {};
+            public static readonly Column.DrawEntry DrawName = (Rect r, SerializedProperty prop, SerializedProperty[] dependencies) => {};
 
-            public static readonly Column.CompareEntry s_CompareFloat = (SerializedProperty lhs, SerializedProperty rhs) =>
+            public static readonly Column.CompareEntry CompareFloat = (SerializedProperty lhs, SerializedProperty rhs) =>
             {
                 return lhs.floatValue.CompareTo(rhs.floatValue);
             };
-            public static readonly Column.CompareEntry s_CompareCheckbox = (SerializedProperty lhs, SerializedProperty rhs) =>
+            public static readonly Column.CompareEntry CompareCheckbox = (SerializedProperty lhs, SerializedProperty rhs) =>
             {
                 return lhs.boolValue.CompareTo(rhs.boolValue);
             };
-            public static readonly Column.CompareEntry s_CompareEnum = (SerializedProperty lhs, SerializedProperty rhs) =>
+            public static readonly Column.CompareEntry CompareEnum = (SerializedProperty lhs, SerializedProperty rhs) =>
             {
                 return lhs.enumValueIndex.CompareTo(rhs.enumValueIndex);
             };
-            public static readonly Column.CompareEntry s_CompareInt = (SerializedProperty lhs, SerializedProperty rhs) =>
+            public static readonly Column.CompareEntry CompareInt = (SerializedProperty lhs, SerializedProperty rhs) =>
             {
                 return lhs.intValue.CompareTo(rhs.intValue);
             };
-            public static readonly Column.CompareEntry s_CompareColor = (SerializedProperty lhs, SerializedProperty rhs) =>
+            public static readonly Column.CompareEntry CompareColor = (SerializedProperty lhs, SerializedProperty rhs) =>
             {
                 float lh, ls, lv, rh, rs, rv;
                 Color.RGBToHSV(lhs.colorValue, out lh, out ls, out lv);
                 Color.RGBToHSV(rhs.colorValue, out rh, out rs, out rv);
                 return lh.CompareTo(rh);
             };
-            public static readonly Column.CompareEntry s_CompareName = (SerializedProperty lhs, SerializedProperty rhs) =>
+            public static readonly Column.CompareEntry CompareName = (SerializedProperty lhs, SerializedProperty rhs) =>
             {
                 return 0;
             };
-            public static readonly Column.CopyDelegate s_CopyDefault = (SerializedProperty target, SerializedProperty source) =>
+            public static readonly Column.CopyDelegate CopyDefault = (SerializedProperty target, SerializedProperty source) =>
             {
                 target.serializedObject.CopyFromSerializedProperty(source);
             };
@@ -275,6 +276,15 @@ namespace UnityEditor
         {
             m_bFilterSelection = SessionState.GetBool(uid + Styles.serializeFilterSelection, false);
 
+            MultiColumnHeaderState headerState = new MultiColumnHeaderState(multiColumnHeader.state.columns);
+            string columnHeaderState = SessionState.GetString(uid + Styles.serializeColumnHeaderState, "");
+
+            if (!string.IsNullOrEmpty(columnHeaderState))
+                JsonUtility.FromJsonOverwrite(columnHeaderState, headerState);
+
+            if (MultiColumnHeaderState.CanOverwriteSerializedFields(headerState, multiColumnHeader.state))
+                MultiColumnHeaderState.OverwriteSerializedFields(headerState, multiColumnHeader.state);
+
             for (int i = 0; i < multiColumnHeader.state.columns.Length; i++)
             {
                 var filter = Col(i).filter;
@@ -288,13 +298,10 @@ namespace UnityEditor
                 filter.DeserializeState(filterState);
             }
 
-            string treeViewState     = SessionState.GetString(uid + Styles.serializeTreeViewState, "");
-            string columnHeaderState = SessionState.GetString(uid + Styles.serializeColumnHeaderState, "");
+            string treeViewState = SessionState.GetString(uid + Styles.serializeTreeViewState, "");
 
             if (!string.IsNullOrEmpty(treeViewState))
                 JsonUtility.FromJsonOverwrite(treeViewState, state);
-            if (!string.IsNullOrEmpty(columnHeaderState))
-                JsonUtility.FromJsonOverwrite(columnHeaderState, multiColumnHeader.state);
         }
 
         public bool IsFilteredDirty()
@@ -393,7 +400,7 @@ namespace UnityEditor
             var ltd = item.GetData();
             Column column = (Column)this.multiColumnHeader.GetColumn(columnIndex);
 
-            if (column.drawDelegate == DefaultDelegates.s_DrawName)
+            if (column.drawDelegate == DefaultDelegates.DrawName)
             {
                 // default drawing
                 Profiler.BeginSample("SerializedPropertyTreeView.OnItemGUI.LabelField");
@@ -449,7 +456,7 @@ namespace UnityEditor
                             if (column.copyDelegate != null)
                                 column.copyDelegate(data.properties[columnIndex], prop);
                             else
-                                DefaultDelegates.s_CopyDefault(data.properties[columnIndex], prop);
+                                DefaultDelegates.CopyDefault(data.properties[columnIndex], prop);
 
                             data.Store();
                         }
@@ -565,7 +572,7 @@ namespace UnityEditor
             {
                 return;
             }
-            else if (comp == DefaultDelegates.s_CompareName) // special case for sorting by the object name
+            else if (comp == DefaultDelegates.CompareName) // special case for sorting by the object name
             {
                 sortAscend = (TreeViewItem lhs, TreeViewItem rhs) =>
                 {

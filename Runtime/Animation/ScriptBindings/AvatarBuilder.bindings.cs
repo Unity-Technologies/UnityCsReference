@@ -31,6 +31,7 @@ namespace UnityEngine
         [NativeName("m_Scale")]
         public Vector3    scale;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("transformModified is no longer used and has been deprecated.", true)]
         public int transformModified { get { return 0; } set {} }
     }

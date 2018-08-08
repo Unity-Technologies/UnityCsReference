@@ -2035,6 +2035,7 @@ namespace UnityEngine
     public enum CollisionDetectionMode2D
     {
         // Obsolete.  Use Discrete instead.
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Enum member CollisionDetectionMode2D.None has been deprecated. Use CollisionDetectionMode2D.Discrete instead (UnityUpgradable) -> Discrete", true)]
         None = 0,
 

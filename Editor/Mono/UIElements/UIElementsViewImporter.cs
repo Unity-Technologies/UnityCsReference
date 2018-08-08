@@ -21,66 +21,6 @@ namespace UnityEditor.Experimental.UIElements
     [ScriptedImporter(version: 4, ext: "uxml", importQueueOffset: 1000)]
     internal class UIElementsViewImporter : ScriptedImporter
     {
-        [MenuItem("Assets/Create/UIElements View")]
-        public static void CreateTemplateMenuItem()
-        {
-            UxmlSchemaGenerator.UpdateSchemaFiles();
-
-            string folder = ProjectWindowUtil.GetActiveFolderPath();
-            string[] pathComponents = folder.Split(new[] {'/'}, StringSplitOptions.RemoveEmptyEntries);
-            List<string> backDots = new List<string>();
-            foreach (var s in pathComponents)
-            {
-                if (s == ".")
-                {
-                    continue;
-                }
-                if (s == ".." && backDots.Count > 0)
-                {
-                    backDots.RemoveAt(backDots.Count - 1);
-                }
-                else
-                {
-                    backDots.Add("..");
-                }
-            }
-            backDots.Add(UxmlSchemaGenerator.k_SchemaFolder);
-            string schemaDirectory = string.Join("/", backDots.ToArray());
-
-            string xmlnsList = String.Empty;
-            string schemaLocationList = String.Empty;
-            Dictionary<string, string> namespacePrefix = UxmlSchemaGenerator.GetNamespacePrefixDictionary();
-
-            foreach (var prefix in namespacePrefix)
-            {
-                if (prefix.Key == String.Empty)
-                    continue;
-
-                if (prefix.Value != String.Empty)
-                {
-                    xmlnsList += "    xmlns:" + prefix.Value + "=\"" + prefix.Key + "\"\n";
-                }
-                schemaLocationList += "                        " + prefix.Key + " " + schemaDirectory + "/" +
-                    UxmlSchemaGenerator.GetFileNameForNamespace(prefix.Key) + "\n";
-            }
-
-            // The noNamespaceSchemaLocation attribute should be sufficient to reference all namespaces
-            // but Rider does not support it very well, so we add schemaLocation to make it happy.
-            string xmlTemplate = @"<?xml version=""1.0"" encoding=""utf-8""?>
-<engine:" + UXMLImporterImpl.k_RootNode + @"
-    xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance""
-" + xmlnsList + @"
-    xsi:noNamespaceSchemaLocation=""" + schemaDirectory + @"/UIElements.xsd""
-    xsi:schemaLocation=""
-" + schemaLocationList + @"""
->
-  <engine:Label text=""Hello World!"" />
-</engine:" + UXMLImporterImpl.k_RootNode + ">";
-
-            ProjectWindowUtil.CreateAssetWithContent("New UIElements View.uxml", xmlTemplate,
-                EditorGUIUtility.FindTexture(typeof(VisualTreeAsset)));
-        }
-
         public override void OnImportAsset(AssetImportContext args)
         {
             VisualTreeAsset vta;

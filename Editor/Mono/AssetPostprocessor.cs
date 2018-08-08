@@ -53,6 +53,7 @@ namespace UnityEditor
         // Reference to the asset importer
         public AssetImporter assetImporter { get { return AssetImporter.GetAtPath(assetPath); } }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("To set or get the preview, call EditorUtility.SetAssetPreview or AssetPreview.GetAssetPreview instead", true)]
         public Texture2D preview { get { return null; } set {} }
 

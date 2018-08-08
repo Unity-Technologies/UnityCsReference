@@ -103,6 +103,7 @@ namespace UnityEngine.Experimental.U2D
             var info = GetChannelInfo(sprite, channel);
             var buffer = (byte*)(info.buffer) + info.offset;
             var slice = NativeSliceUnsafeUtility.ConvertExistingDataToNativeSlice<T>(buffer, info.stride, info.count);
+            NativeSliceUnsafeUtility.SetAtomicSafetyHandle(ref slice, sprite.GetSafetyHandle());
             return slice;
         }
 
@@ -116,6 +117,7 @@ namespace UnityEngine.Experimental.U2D
         {
             var info = GetBindPoseInfo(sprite);
             var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Matrix4x4>(info.buffer, info.count, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, sprite.GetSafetyHandle());
             return arr;
         }
 
@@ -128,6 +130,7 @@ namespace UnityEngine.Experimental.U2D
         {
             var info = GetIndicesInfo(sprite);
             var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<ushort>(info.buffer, info.count, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, sprite.GetSafetyHandle());
             return arr;
         }
 
@@ -140,6 +143,7 @@ namespace UnityEngine.Experimental.U2D
         {
             var info = GetBoneWeightsInfo(sprite);
             var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<BoneWeight>(info.buffer, info.count, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, sprite.GetSafetyHandle());
             return arr;
         }
 
@@ -181,6 +185,7 @@ namespace UnityEngine.Experimental.U2D
         extern private static SpriteChannelInfo GetBoneWeightsInfo(Sprite sprite);
         unsafe extern private static void SetBoneWeightsData(Sprite sprite, void* src, int count);
 
+        extern private static AtomicSafetyHandle GetSafetyHandle(this Sprite sprite);
     }
 
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]
@@ -191,6 +196,7 @@ namespace UnityEngine.Experimental.U2D
         {
             var info = GetDeformableChannelInfo(spriteRenderer, VertexAttribute.Position);
             var arr = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<Vector3>(info.buffer, info.count, Allocator.Invalid);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref arr, spriteRenderer.GetSafetyHandle());
             return arr;
         }
 
@@ -200,6 +206,7 @@ namespace UnityEngine.Experimental.U2D
 
         extern private static SpriteChannelInfo GetDeformableChannelInfo(this SpriteRenderer sprite, VertexAttribute channel);
 
+        extern private static AtomicSafetyHandle GetSafetyHandle(this SpriteRenderer spriteRenderer);
 
         extern internal static void SetLocalAABB(this SpriteRenderer renderer, Bounds aabb);
     }

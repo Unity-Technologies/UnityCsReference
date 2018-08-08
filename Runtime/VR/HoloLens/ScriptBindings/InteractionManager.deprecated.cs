@@ -9,6 +9,7 @@ using UnityEngine.Scripting.APIUpdating;
 namespace UnityEngine.XR.WSA.Input
 {
     [MovedFrom("UnityEngine.VR.WSA.Input")]
+    [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
     [Obsolete("InteractionSourceLocation is deprecated, and will be removed in a future release. Use InteractionSourcePose instead. (UnityUpgradable) -> InteractionSourcePose", true)]
     public struct InteractionSourceLocation
     {
@@ -28,6 +29,7 @@ namespace UnityEngine.XR.WSA.Input
     public partial struct InteractionSourceProperties
     {
 #pragma warning disable 0618
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("InteractionSourceProperties.location is deprecated, and will be removed in a future release. Use InteractionSourceState.sourcePose instead.", true)]
         public InteractionSourceLocation location { get { return new InteractionSourceLocation(); } }
 #pragma warning disable 0618
@@ -54,18 +56,23 @@ namespace UnityEngine.XR.WSA.Input
         public delegate void SourceEventHandler(InteractionSourceState state);
 
 #pragma warning disable 0067
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SourceDetected is deprecated, and will be removed in a future release. Use InteractionSourceDetected instead. (UnityUpgradable) -> InteractionSourceDetectedLegacy", true)]
         public static event SourceEventHandler SourceDetected;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SourceLost is deprecated, and will be removed in a future release. Use InteractionSourceLost instead. (UnityUpgradable) -> InteractionSourceLostLegacy", true)]
         public static event SourceEventHandler SourceLost;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SourcePressed is deprecated, and will be removed in a future release. Use InteractionSourcePressed instead. (UnityUpgradable) -> InteractionSourcePressedLegacy", true)]
         public static event SourceEventHandler SourcePressed;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SourceReleased is deprecated, and will be removed in a future release. Use InteractionSourceReleased instead. (UnityUpgradable) -> InteractionSourceReleasedLegacy", true)]
         public static event SourceEventHandler SourceReleased;
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("SourceUpdated is deprecated, and will be removed in a future release. Use InteractionSourceUpdated instead. (UnityUpgradable) -> InteractionSourceUpdatedLegacy", true)]
         public static event SourceEventHandler SourceUpdated;
 #pragma warning disable 0067

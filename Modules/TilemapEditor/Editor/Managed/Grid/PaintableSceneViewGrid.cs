@@ -57,6 +57,11 @@ namespace UnityEditor
             SceneView.RepaintAll();
         }
 
+        private Rect GetSceneViewPositionRect(SceneView sceneView)
+        {
+            return new Rect(0, 0, sceneView.position.width, sceneView.position.height);
+        }
+
         public void OnSceneGUI(SceneView sceneView)
         {
             UpdateMouseGridPosition();
@@ -80,7 +85,7 @@ namespace UnityEditor
                         CallOnPaintSceneGUI();
                     }
                     if (Event.current.type == EventType.Repaint)
-                        EditorGUIUtility.AddCursorRect(new Rect(0, EditorGUI.kWindowToolbarHeight, sceneView.position.width, sceneView.position.height - EditorGUI.kWindowToolbarHeight), MouseCursor.CustomCursor);
+                        EditorGUIUtility.AddCursorRect(GetSceneViewPositionRect(sceneView), MouseCursor.CustomCursor);
                 }
             }
             HandleMouseEnterLeave(sceneView);
@@ -101,8 +106,9 @@ namespace UnityEditor
                 // Case 1043365: When docked, the docking area is considered part of the window and MouseEnter/LeaveWindow events are not considered when entering the docking area
                 else if (sceneView.docked)
                 {
-                    var guiPoint = GUIUtility.GUIToScreenPoint(Event.current.mousePosition);
-                    if (sceneView.position.Contains(guiPoint))
+                    var guiPoint = Event.current.mousePosition;
+                    var sceneViewPosition = GetSceneViewPositionRect(sceneView);
+                    if (sceneViewPosition.Contains(guiPoint))
                     {
                         if (GridPaintingState.activeGrid != this)
                         {

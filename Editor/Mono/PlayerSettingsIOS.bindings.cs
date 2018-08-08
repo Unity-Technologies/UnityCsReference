@@ -63,9 +63,11 @@ namespace UnityEditor
         // A light status bar, intended for use on dark backgrounds
         LightContent = 1,
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("BlackTranslucent has no effect, use LightContent instead (UnityUpgradable) -> LightContent", true)]
         BlackTranslucent = -1,
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("BlackOpaque has no effect, use LightContent instead (UnityUpgradable) -> LightContent", true)]
         BlackOpaque = -1,
     }

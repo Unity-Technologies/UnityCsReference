@@ -156,7 +156,7 @@ namespace UnityEditor
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
-            public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics (Pro Only)");
+            public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics");
             public static readonly GUIContent scriptingDefineSymbols = EditorGUIUtility.TrTextContent("Scripting Define Symbols");
             public static readonly GUIContent scriptingRuntimeVersionActive = EditorGUIUtility.TrTextContent("Active Scripting Runtime Version*", "The scripting runtime version currently in use by the Editor.");
             public static readonly GUIContent scriptingRuntimeVersionActiveWarning = EditorGUIUtility.TrTextContent("The scripting runtime version currently in use by the Editor does not match the version specified by the project. An Editor restart is required for requested changes to take effect.");
@@ -1645,7 +1645,6 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.iOS ||
                 targetGroup == BuildTargetGroup.tvOS ||
                 targetGroup == BuildTargetGroup.Android ||
-                targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.XboxOne ||
                 targetGroup == BuildTargetGroup.WSA ||
@@ -2054,7 +2053,7 @@ namespace UnityEditor
                 }
             }
 
-            using (new EditorGUI.DisabledScope(!Application.HasProLicense()))
+            //Disable HW Statistics
             {
                 bool oldDisableAnalytics = !m_SubmitAnalytics.boolValue;
                 bool newDisableAnalytics = EditorGUILayout.Toggle(SettingsContent.disableStatistics, oldDisableAnalytics);
@@ -2063,8 +2062,6 @@ namespace UnityEditor
                     m_SubmitAnalytics.boolValue = !newDisableAnalytics;
                     EditorAnalytics.SendEventServiceInfo(new HwStatsServiceState() { hwstats = !newDisableAnalytics });
                 }
-                if (!Application.HasProLicense())
-                    m_SubmitAnalytics.boolValue = true;
             }
 
             if (settingsExtension != null)
@@ -2128,8 +2125,7 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.iOS ||
                 targetGroup == BuildTargetGroup.tvOS ||
                 targetGroup == BuildTargetGroup.XboxOne ||
-                targetGroup == BuildTargetGroup.PS4 ||
-                targetGroup == BuildTargetGroup.PSP2;
+                targetGroup == BuildTargetGroup.PS4;
 
             if (platformUsesAOT)
                 EditorGUILayout.PropertyField(m_AotOptions, SettingsContent.aotOptions);
@@ -2139,7 +2135,6 @@ namespace UnityEditor
                 targetGroup == BuildTargetGroup.tvOS ||
                 targetGroup == BuildTargetGroup.Android ||
                 targetGroup == BuildTargetGroup.WebGL ||
-                targetGroup == BuildTargetGroup.PSP2 ||
                 targetGroup == BuildTargetGroup.PS4 ||
                 targetGroup == BuildTargetGroup.XboxOne ||
                 targetGroup == BuildTargetGroup.WSA ||
@@ -2542,7 +2537,6 @@ namespace UnityEditor
         public void PublishSectionGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension, int sectionIndex = 5)
         {
             if (targetGroup != BuildTargetGroup.WSA &&
-                targetGroup != BuildTargetGroup.PSP2 &&
                 !(settingsExtension != null && settingsExtension.HasPublishSection()))
                 return;
 

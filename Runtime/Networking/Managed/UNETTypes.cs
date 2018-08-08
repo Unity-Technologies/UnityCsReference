@@ -100,12 +100,13 @@ namespace UnityEngine.Networking
             return (Types.SourceID)(SystemInfo.deviceUniqueIdentifier).GetHashCode();
         }
 
-
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This function is unused and should not be referenced in code. Please sign in and setup your project in the editor instead.", true)]
         public static void SetAppID(Types.AppID newAppID)
         {
         }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("This function is unused and should not be referenced in code. Please sign in and setup your project in the editor instead.", true)]
         public static Types.AppID GetAppID()
         {

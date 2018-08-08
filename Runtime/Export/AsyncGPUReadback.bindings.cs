@@ -35,6 +35,7 @@ namespace UnityEngine.Rendering
             int stride = UnsafeUtility.SizeOf<T>();
 
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)GetDataRaw(layer), layerDataSize / stride, Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetSafetyHandle());
             return array;
         }
 
@@ -54,6 +55,8 @@ namespace UnityEngine.Rendering
         private extern int GetHeight();
         private extern int GetDepth();
 
+        internal extern void CreateSafetyHandle();
+        private extern AtomicSafetyHandle GetSafetyHandle();
         internal extern void SetScriptingCallback(Action<AsyncGPUReadbackRequest> callback);
         unsafe private extern IntPtr GetDataRaw(int layer);
     }
@@ -64,6 +67,7 @@ namespace UnityEngine.Rendering
         static private void SetUpScriptingRequest(AsyncGPUReadbackRequest request, Action<AsyncGPUReadbackRequest> callback)
         {
             request.SetScriptingCallback(callback);
+            request.CreateSafetyHandle();
         }
 
         static public AsyncGPUReadbackRequest Request(ComputeBuffer src, Action<AsyncGPUReadbackRequest> callback = null)

@@ -62,6 +62,8 @@ namespace UnityEditor
         // Alpha 8 bit texture format.
         // RGBA 32 bit texture format.
         Alpha8 = 1,
+        // Red 16 bit texture format.
+        R16 = 9,
         // Red 8 bit texture format.
         R8 = 63,
         // RG 16 bit texture format.

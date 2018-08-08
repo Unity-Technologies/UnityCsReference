@@ -38,6 +38,7 @@ namespace UnityEditor
         InstallInBuildFolder = 1 << 6,
 
         //*undocumented*
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("WebPlayer has been removed in 5.4", true)]
         WebPlayerOfflineDeployment = 1 << 7,
 
@@ -67,6 +68,7 @@ namespace UnityEditor
         // Build scripts only
         BuildScriptsOnly = 1 << 15,
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("BuildOptions.IL2CPP is deprecated and has no effect. Use PlayerSettings.SetScriptingBackend() instead.", true)]
         Il2CPP = 0,
 

@@ -44,6 +44,13 @@ namespace UnityEngine.Analytics
             get;
         }
 
+        public extern static long sessionCount
+        {
+            [NativeMethod("GetPlayerSessionCount")]
+            get;
+        }
+
+
         public extern static long sessionElapsedTime
         {
             [NativeMethod("GetPlayerSessionElapsedTime")]

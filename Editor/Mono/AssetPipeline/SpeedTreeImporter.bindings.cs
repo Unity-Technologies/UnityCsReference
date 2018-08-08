@@ -57,9 +57,11 @@ namespace UnityEditor
 
         // The below properties (specColor and shininess) were first made obsolete in 5.4, they didn't work anyway, AND SpeedTreeImporter should rarely be scripted by anyone
         // because of that I would say they can be safely removed for 5.6
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("specColor is no longer used and has been deprecated.", true)]
         public Color specColor {  get; set; }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("shininess is no longer used and has been deprecated.", true)]
         public float shininess {  get; set; }
 

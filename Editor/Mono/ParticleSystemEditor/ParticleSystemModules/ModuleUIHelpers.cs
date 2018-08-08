@@ -1040,6 +1040,10 @@ namespace UnityEditor
             {
                 curve.state = data.selectedState;
             }
+            // Get SerializedObject (through any SerializedProperty will do) and mark override dirty.
+            SerializedObject serializedObject = data.minMaxCurves[0].minScalar.serializedObject;
+            serializedObject.SetIsDifferentCacheDirty();
+            serializedObject.ApplyModifiedProperties();
         }
 
         public static void GUIMMCurveStateList(Rect rect, SerializedMinMaxCurve minMaxCurves)
@@ -1096,6 +1100,10 @@ namespace UnityEditor
         {
             GradientCallbackData data = (GradientCallbackData)obj;
             data.gradientProp.state = data.selectedState;
+            // Get SerializedObject (through any SerializedProperty will do) and mark override dirty.
+            SerializedObject serializedObject = data.gradientProp.m_MinColor.serializedObject;
+            serializedObject.SetIsDifferentCacheDirty();
+            serializedObject.ApplyModifiedProperties();
         }
 
         public static void GUIMMGradientPopUp(Rect rect, SerializedMinMaxGradient gradientProp)
@@ -1146,6 +1154,10 @@ namespace UnityEditor
         {
             ColorCallbackData data = (ColorCallbackData)obj;
             data.boolProp.boolValue = data.selectedState;
+            // Get SerializedObject (through any SerializedProperty will do) and mark override dirty.
+            SerializedObject serializedObject = data.boolProp.serializedObject;
+            serializedObject.SetIsDifferentCacheDirty();
+            serializedObject.ApplyModifiedProperties();
         }
 
         public static void GUIMMColorPopUp(Rect rect, SerializedProperty boolProp)

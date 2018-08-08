@@ -38,6 +38,7 @@ namespace Unity.Jobs
                     if (!JobsUtility.GetWorkStealingRange(ref ranges, jobIndex, out begin, out end))
                         break;
 
+                    JobsUtility.PatchBufferMinMaxRanges(bufferRangePatchData, UnsafeUtility.AddressOf(ref jobData), begin, end - begin);
 
                     for (var i = begin; i < end; ++i)
                         jobData.Execute(i);

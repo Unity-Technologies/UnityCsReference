@@ -191,5 +191,11 @@ namespace UnityEditor
             get;
             set;
         }
+
+        internal extern bool isValid
+        {
+            [NativeMethod("IsValid")]
+            get;
+        }
     }
 }

@@ -19,9 +19,7 @@ namespace UnityEditor
 
         SerializedProperty m_JobOptions;
 
-        Vector2 m_LayerCollisionMatrixScrollPos;
         bool m_ShowLayerCollisionMatrix = true;
-
         static bool s_ShowGizmoSettings;
         readonly AnimBool m_GizmoSettingsFade = new AnimBool();
         SerializedProperty m_AlwaysShowColliders;
@@ -84,7 +82,7 @@ namespace UnityEditor
             }
             serializedObject.ApplyModifiedProperties();
 
-            LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref m_ShowLayerCollisionMatrix, ref m_LayerCollisionMatrixScrollPos, GetValue, SetValue);
+            LayerMatrixGUI.DoGUI("Layer Collision Matrix", ref m_ShowLayerCollisionMatrix, GetValue, SetValue);
         }
 
         [SettingsProvider]

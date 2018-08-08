@@ -65,7 +65,6 @@ namespace UnityEditor.Rendering
         D3D             = 4, // Direct3D 11 (FL10.0 and up) and Direct3D 12, compiled with MS D3DCompiler
         GLES20          = 5, // OpenGL ES 2.0 / WebGL 1.0, compiled with hlsl2glslfork + glsl-optimizer
         GLES3x          = 9, // OpenGL ES 3.0+ / WebGL 2.0, compiled with MS D3DCompiler + HLSLcc
-        Vita            = 10, // Sony PSP2/Vita
         PS4             = 11, // Sony PS4
         XboxOneD3D11    = 12, // MS XboxOne
         Metal           = 14, // Apple Metal, compiled with MS D3DCompiler + HLSLcc

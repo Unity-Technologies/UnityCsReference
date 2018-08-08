@@ -179,7 +179,7 @@ namespace UnityEditor
         extern internal static void ReloadAllShaders();
 
         extern public static Shader CreateShaderAsset(string source);
-        extern public static void   UpdateShaderAsset(Shader shader, string source);
+        extern public static void   UpdateShaderAsset([NotNull] Shader shader, [NotNull] string source);
         [FreeFunction("GetScriptMapper().AddShader")] extern public static void RegisterShader(Shader shader);
 
 

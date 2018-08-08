@@ -45,7 +45,7 @@ namespace UnityEditor
         }
 
         public static float s_DefaultLabelWidth => Styles.window.GetFloat("-unity-label-width");
-        public static float s_DefaultLayoutMaxWidth => Styles.window.GetFloat(StyleKeyword.maxWidth);
+        public static float s_DefaultLayoutMaxWidth => Styles.window.GetFloat("-unity-max-layout-width");
 
         public SettingsWindow()
         {
@@ -56,6 +56,11 @@ namespace UnityEditor
         internal SettingsProvider[] GetProviders()
         {
             return m_Providers;
+        }
+
+        internal SettingsProvider GetCurrentProvider()
+        {
+            return m_TreeView.currentProvider;
         }
 
         public void AddItemsToMenu(GenericMenu menu)
@@ -99,7 +104,11 @@ namespace UnityEditor
             SetupUI();
             RestoreSelection();
 
+            SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             SettingsService.settingsProviderChanged += OnSettingsProviderChanged;
+
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+            Undo.undoRedoPerformed += OnUndoRedoPerformed;
         }
 
         internal void OnDisable()
@@ -117,6 +126,12 @@ namespace UnityEditor
             }
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
+            Undo.undoRedoPerformed -= OnUndoRedoPerformed;
+        }
+
+        void OnUndoRedoPerformed()
+        {
+            Repaint();
         }
 
         private void PrintProviderKeywords()
@@ -211,6 +226,8 @@ namespace UnityEditor
 
         private void SetupUI()
         {
+            minSize = new Vector2(Styles.window.GetFloat("min-width"), Styles.window.GetFloat("min-height"));
+
             var root = this.GetRootVisualContainer();
 
             root.style.flexDirection = FlexDirection.Column;
@@ -311,18 +328,33 @@ namespace UnityEditor
         [MenuItem("Edit/All Settings &F8", false, 260, true)]
         internal static void OpenAllSettings()
         {
-            Show(SettingsScopes.Any);
+            OpenAllSettings(null);
         }
 
         [MenuItem("Edit/Settings", false, 259, false)]
         internal static void OpenProjectSettings()
         {
-            Show(SettingsScopes.Project);
+            OpenProjectSettings(null);
         }
 
-        internal static void OpenUserPreferences()
+        internal static SettingsWindow OpenAllSettings(string settingsPath)
         {
-            Show(SettingsScopes.User);
+            return Show(SettingsScopes.Any, settingsPath);
+        }
+
+        internal static SettingsWindow OpenProjectSettings(string settingsPath)
+        {
+            return Show(SettingsScopes.Project, settingsPath);
+        }
+
+        internal static SettingsWindow OpenUserPreferences()
+        {
+            return OpenUserPreferences(null);
+        }
+
+        internal static SettingsWindow OpenUserPreferences(string settingsPath)
+        {
+            return Show(SettingsScopes.User, settingsPath);
         }
 
         private static SettingsWindow Create(SettingsScopes scopes)
@@ -339,14 +371,20 @@ namespace UnityEditor
             return settingsWindow;
         }
 
-        internal static SettingsWindow Show(SettingsScopes scopes)
+        internal static SettingsWindow Show(SettingsScopes scopes, string settingsPath = null)
         {
             var settingsWindow = FindWindowByScope(scopes) ?? Create(scopes);
             settingsWindow.Show();
+
+            if (settingsPath != null)
+            {
+                settingsWindow.SelectProviderByName(settingsPath);
+            }
+
             return settingsWindow;
         }
 
-        private static SettingsWindow FindWindowByScope(SettingsScopes scopes)
+        internal static SettingsWindow FindWindowByScope(SettingsScopes scopes)
         {
             var settingsWindows = Resources.FindObjectsOfTypeAll(typeof(SettingsWindow)).Cast<SettingsWindow>();
             return settingsWindows.FirstOrDefault(settingsWindow => (settingsWindow.m_Scopes & scopes) != 0);

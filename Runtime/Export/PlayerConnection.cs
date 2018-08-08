@@ -11,6 +11,7 @@ namespace UnityEngine.Diagnostics
         [Obsolete("Use UnityEngine.Networking.PlayerConnection.PlayerConnection.instance.isConnected instead.")]
         public static bool connected { get { return UnityEngine.Networking.PlayerConnection.PlayerConnection.instance.isConnected; } }
 
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("PlayerConnection.SendFile is no longer supported.", true)]
         public static void SendFile(string remoteFilePath, byte[] data)
         {

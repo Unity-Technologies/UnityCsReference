@@ -166,7 +166,7 @@ namespace UnityEditor
                     if (packmanOperationRunning)
                         return;
 
-                    RemoveRequest remove = Client.Remove(CurrentXiaomiPackageId);
+                    RemoveRequest remove = Client.Remove(xiaomiPackageName);
                     requestList.Add(new RequestQueueItem(remove, PackmanOperationType.Remove));
                     System.Console.WriteLine("Removing Xiaomi Package: " + CurrentXiaomiPackageId);
                     packmanOperationRunning = true;

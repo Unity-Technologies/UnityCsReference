@@ -470,6 +470,7 @@ namespace UnityEngine
 
             int stride = UnsafeUtility.SizeOf<T>();
             var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>((void*)GetWritableImageData(0), (int)(GetRawImageDataSize() / stride), Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, Texture2D.GetSafetyHandle(this));
             return array;
         }
 

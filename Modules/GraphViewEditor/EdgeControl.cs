@@ -493,26 +493,50 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                  (outputOrientation == Orientation.Vertical && Mathf.Abs(p1.x - p4.x) < 2 && p1.y + k_EdgeLengthFromPort < p4.y - k_EdgeLengthFromPort)))
             {
                 RenderStraightLines(p1, p2, p3, p4);
-
                 Profiler.EndSample();
                 return;
             }
 
+            bool renderBothCorners = true;
 
             EdgeCornerSweepValues corner1 = GetCornerSweepValues(p1, p2, p3, diameter, Direction.Output);
             EdgeCornerSweepValues corner2 = GetCornerSweepValues(p2, p3, p4, diameter, Direction.Input);
 
             if (!ValidateCornerSweepValues(ref corner1, ref corner2))
             {
-                RenderStraightLines(p1, p2, p3, p4);
-                Profiler.EndSample();
-                return;
+                if (sameOrientations)
+                {
+                    RenderStraightLines(p1, p2, p3, p4);
+                    Profiler.EndSample();
+                    return;
+                }
+
+                renderBothCorners = false;
+
+                //we try to do it with a single corner instead
+                Vector2 px = (outputOrientation == Orientation.Horizontal) ? new Vector2(p4.x, p1.y) : new Vector2(p1.x, p4.y);
+
+                corner1 = GetCornerSweepValues(p1, px, p4, diameter, Direction.Output);
             }
 
             m_RenderPoints.Add(p1);
 
+            if (!sameOrientations && renderBothCorners)
+            {
+                //if the 2 corners or endpoints are too close, the corner sweep angle calculations can't handle different orientations
+                float minDistance = 2 * diameter * diameter;
+                if ((p3 - p2).sqrMagnitude < minDistance ||
+                    (p4 - p1).sqrMagnitude < minDistance)
+                {
+                    Vector2 px = (p2 + p3) * 0.5f;
+                    corner1 = GetCornerSweepValues(p1, px, p4, diameter, Direction.Output);
+                    renderBothCorners = false;
+                }
+            }
+
             GetRoundedCornerPoints(m_RenderPoints, corner1, Direction.Output);
-            GetRoundedCornerPoints(m_RenderPoints, corner2, Direction.Input);
+            if (renderBothCorners)
+                GetRoundedCornerPoints(m_RenderPoints, corner2, Direction.Input);
 
             m_RenderPoints.Add(p4);
             Profiler.EndSample();
@@ -541,6 +565,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             // Calculate the maximum sweep angle so that both corner sweeps and with the tangents of the 2 circles meeting each other.
             float h = p2CenterToCirclesMid.magnitude;
             float p2AngleToMidTangent = Mathf.Acos(corner1.radius / h);
+
+            if (double.IsNaN(p2AngleToMidTangent))
+                return false;
+
             float maxSweepAngle = Mathf.Abs((float)corner1.sweepAngle) - p2AngleToMidTangent * 2;
 
             // If the angle to the circles midpoint is within the sweep angle, we need to apply our maximum sweep angle
@@ -632,6 +660,12 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             var cornerToCenterVector = new Vector2(dx, dy);
 
             float L = cornerToCenterVector.magnitude;
+
+            if (Mathf.Approximately(L, 0))
+            {
+                return cornerPoint;
+            }
+
             float d = new Vector2(segment, radius).magnitude;
             float factor = d / L;
 
@@ -680,6 +714,15 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             }
         }
 
+        private void AssignControlPoint(ref Vector2 destination, Vector2 newValue)
+        {
+            if (!Approximately(destination, newValue))
+            {
+                destination = newValue;
+                m_RenderPointsDirty = true;
+            }
+        }
+
         protected virtual void ComputeControlPoints()
         {
             if (m_ControlPointsDirty == false) return;
@@ -698,19 +741,19 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             if (m_ControlPoints == null || m_ControlPoints.Length != 4)
                 m_ControlPoints = new Vector2[4];
 
-            m_ControlPoints[0] = from;
+            AssignControlPoint(ref m_ControlPoints[0], from);
 
             if (outputOrientation == Orientation.Horizontal)
-                m_ControlPoints[1] = new Vector2(from.x + offset, from.y);
+                AssignControlPoint(ref m_ControlPoints[1], new Vector2(from.x + offset, from.y));
             else
-                m_ControlPoints[1] = new Vector2(from.x, from.y + offset);
+                AssignControlPoint(ref m_ControlPoints[1], new Vector2(from.x, from.y + offset));
 
             if (inputOrientation == Orientation.Horizontal)
-                m_ControlPoints[2] = new Vector2(to.x - offset, to.y);
+                AssignControlPoint(ref m_ControlPoints[2], new Vector2(to.x - offset, to.y));
             else
-                m_ControlPoints[2] = new Vector2(to.x, to.y - offset);
+                AssignControlPoint(ref m_ControlPoints[2], new Vector2(to.x, to.y - offset));
 
-            m_ControlPoints[3] = to;
+            AssignControlPoint(ref m_ControlPoints[3], to);
             Profiler.EndSample();
         }
 

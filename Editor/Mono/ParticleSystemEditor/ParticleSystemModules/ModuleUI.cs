@@ -13,7 +13,7 @@ namespace UnityEditor
         public ParticleSystemUI m_ParticleSystemUI; // owner
         private string m_DisplayName;
         protected string m_ToolTip = "";
-        private SerializedProperty m_Enabled;
+        public SerializedProperty m_Enabled;
         private VisibilityState m_VisibilityState;
         public List<SerializedProperty> m_ModuleCurves = new List<SerializedProperty>();
         private List<SerializedProperty> m_CurvesRemovedWhenFolded = new List<SerializedProperty>();
@@ -207,7 +207,7 @@ namespace UnityEditor
 
         public virtual bool DrawHeader(Rect rect, GUIContent label)
         {
-            label = EditorGUI.BeginProperty(rect, label, m_ModuleRootProperty);
+            label = EditorGUI.BeginProperty(rect, label, m_Enabled);
             var toggleState = GUI.Toggle(rect, foldout, label, ParticleSystemStyles.Get().moduleHeaderStyle);
             EditorGUI.EndProperty();
             return toggleState;

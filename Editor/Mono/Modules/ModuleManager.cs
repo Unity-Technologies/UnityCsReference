@@ -713,7 +713,6 @@ namespace UnityEditor.Modules
                 case BuildTarget.tvOS: return "tvOS";
                 case BuildTarget.XboxOne: return "XboxOne";
                 case BuildTarget.WSAPlayer: return "Metro";
-                case BuildTarget.PSP2: return "PSP2";
                 case BuildTarget.PS4: return "PS4";
                 case BuildTarget.WebGL: return "WebGL";
                 case BuildTarget.Lumin: return "Lumin";
@@ -747,7 +746,6 @@ namespace UnityEditor.Modules
                 case BuildTargetGroup.tvOS: return "tvOS";
                 case BuildTargetGroup.XboxOne: return "XboxOne";
                 case BuildTargetGroup.WSA: return "Metro";
-                case BuildTargetGroup.PSP2: return "PSP2";
                 case BuildTargetGroup.PS4: return "PS4";
                 case BuildTargetGroup.WebGL: return "WebGL";
                 case BuildTargetGroup.Lumin: return "Lumin";

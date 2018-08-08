@@ -3,38 +3,44 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
+using UnityEngine.Rendering;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace UnityEditor
 {
+    [System.AttributeUsage(System.AttributeTargets.Class)]
+    public class LightingExplorerExtensionAttribute : System.Attribute
+    {
+        internal System.Type renderPipelineType;
+
+        public LightingExplorerExtensionAttribute(System.Type renderPipeline)
+        {
+            renderPipelineType = renderPipeline;
+        }
+    }
+
+    public interface ILightingExplorerExtension
+    {
+        LightingExplorerTab[] GetContentTabs();
+
+        void OnEnable();
+        void OnDisable();
+    }
+
     [EditorWindowTitle(title = "Light Explorer", icon = "Lighting")]
     internal class LightingExplorerWindow : EditorWindow
     {
-        static class Styles
-        {
-            public static readonly GUIContent[] TabTypes =
-            {
-                EditorGUIUtility.TrTextContent("Lights"),
-                EditorGUIUtility.TrTextContent("Reflection Probes"),
-                EditorGUIUtility.TrTextContent("Light Probes"),
-                EditorGUIUtility.TrTextContent("Static Emissives")
-            };
-        }
-
-        List<LightingExplorerWindowTab> m_TableTabs;
+        LightingExplorerTab[] m_TableTabs;
+        GUIContent[] m_TabTitles;
 
         float m_ToolbarPadding = -1;
-        TabType m_SelectedTab = TabType.Lights;
+        int m_SelectedTab = 0;
 
-        enum TabType
-        {
-            Lights,
-            Reflections,
-            LightProbes,
-            Emissives,
-            Count
-        }
+        System.Type m_CurrentSRPType = null;
+        ILightingExplorerExtension m_CurrentLightingExplorerExtension = null;
+        static ILightingExplorerExtension s_DefaultLightingExplorerExtension = null;
 
         [MenuItem("Window/Rendering/Light Explorer", false, 2)]
         static void CreateLightingExplorerWindow()
@@ -61,25 +67,9 @@ namespace UnityEditor
         {
             titleContent = GetLocalizedTitleContent();
 
-            if (m_TableTabs == null || m_TableTabs.Count != (int)TabType.Count)
-            {
-                m_TableTabs = new List<LightingExplorerWindowTab>
-                {
-                    new LightingExplorerWindowTab(new SerializedPropertyTable("LightTable",   () => {
-                        return UnityEngine.Object.FindObjectsOfType<Light>();
-                    }, LightTableColumns.CreateLightColumns)),
-                    new LightingExplorerWindowTab(new SerializedPropertyTable("ReflectionTable", () => {
-                        return UnityEngine.Object.FindObjectsOfType<ReflectionProbe>();
-                    }, LightTableColumns.CreateReflectionColumns)),
-                    new LightingExplorerWindowTab(new SerializedPropertyTable("LightProbeTable", () => {
-                        return UnityEngine.Object.FindObjectsOfType<LightProbeGroup>();
-                    }, LightTableColumns.CreateLightProbeColumns)),
-                    new LightingExplorerWindowTab(new SerializedPropertyTable("EmissiveMaterialTable",
-                        StaticEmissivesGatherDelegate(), LightTableColumns.CreateEmissivesColumns))
-                };
-            }
+            UpdateTabs();
 
-            for (int i = 0; i < m_TableTabs.Count; i++)
+            for (int i = 0; i < m_TableTabs.Length; i++)
             {
                 m_TableTabs[i].OnEnable();
             }
@@ -92,10 +82,15 @@ namespace UnityEditor
         {
             if (m_TableTabs != null)
             {
-                for (int i = 0; i < m_TableTabs.Count; i++)
+                for (int i = 0; i < m_TableTabs.Length; i++)
                 {
                     m_TableTabs[i].OnDisable();
                 }
+            }
+
+            if (m_CurrentLightingExplorerExtension != null)
+            {
+                m_CurrentLightingExplorerExtension.OnDisable();
             }
 
             EditorApplication.searchChanged -= Repaint;
@@ -103,7 +98,7 @@ namespace UnityEditor
 
         void OnInspectorUpdate()
         {
-            if (m_TableTabs != null && (int)m_SelectedTab >= 0 && (int)m_SelectedTab < m_TableTabs.Count)
+            if (m_TableTabs != null && (int)m_SelectedTab >= 0 && (int)m_SelectedTab < m_TableTabs.Length)
             {
                 m_TableTabs[(int)m_SelectedTab].OnInspectorUpdate();
             }
@@ -113,11 +108,11 @@ namespace UnityEditor
         {
             if (m_TableTabs != null)
             {
-                for (int i = 0; i < m_TableTabs.Count; i++)
+                for (int i = 0; i < m_TableTabs.Length; i++)
                 {
-                    if (i == (m_TableTabs.Count - 1)) // last tab containing materials
+                    if (i == (m_TableTabs.Length - 1)) // last tab containing materials
                     {
-                        int[] selectedIds = Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
+                        int[] selectedIds = UnityEngine.Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
                             return Selection.instanceIDs.Contains(mr.gameObject.GetInstanceID());
                         }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
                                 return m != null && (m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0;
@@ -137,7 +132,7 @@ namespace UnityEditor
         {
             if (m_TableTabs != null)
             {
-                for (int i = 0; i < m_TableTabs.Count; i++)
+                for (int i = 0; i < m_TableTabs.Length; i++)
                 {
                     m_TableTabs[i].OnHierarchyChange();
                 }
@@ -146,20 +141,23 @@ namespace UnityEditor
 
         void OnGUI()
         {
+            UpdateTabs();
+
             EditorGUIUtility.labelWidth = 130;
 
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
 
             GUILayout.FlexibleSpace();
-            m_SelectedTab = (TabType)GUILayout.Toolbar((int)m_SelectedTab, Styles.TabTypes, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
+            if (m_TabTitles != null)
+                m_SelectedTab = GUILayout.Toolbar(m_SelectedTab, m_TabTitles, "LargeButton", GUI.ToolbarButtonSize.FitToContents);
             GUILayout.FlexibleSpace();
 
             EditorGUILayout.EndHorizontal();
             EditorGUILayout.Space();
 
             EditorGUILayout.BeginHorizontal();
-            if (m_TableTabs != null && (int)m_SelectedTab >= 0 && (int)m_SelectedTab < m_TableTabs.Count)
+            if (m_TableTabs != null && (int)m_SelectedTab >= 0 && (int)m_SelectedTab < m_TableTabs.Length)
                 m_TableTabs[(int)m_SelectedTab].OnGUI();
             EditorGUILayout.Space();
             EditorGUILayout.EndHorizontal();
@@ -167,15 +165,74 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        private SerializedPropertyDataStore.GatherDelegate StaticEmissivesGatherDelegate()
+        private System.Type GetSRPType()
         {
-            return () => {
-                return Object.FindObjectsOfType<MeshRenderer>().Where((MeshRenderer mr) => {
-                    return (GameObjectUtility.AreStaticEditorFlagsSet(mr.gameObject, StaticEditorFlags.LightmapStatic));
-                }).SelectMany(meshRenderer => meshRenderer.sharedMaterials).Where((Material m) => {
-                        return m != null && ((m.globalIlluminationFlags & MaterialGlobalIlluminationFlags.AnyEmissive) != 0) && m.HasProperty("_EmissionColor");
-                    }).Distinct().ToArray();
-            };
+            System.Type SRPType = null;
+
+            if (GraphicsSettings.renderPipelineAsset != null)
+            {
+                SRPType = GraphicsSettings.renderPipelineAsset.GetType();
+            }
+
+            return SRPType;
+        }
+
+        private void UpdateTabs()
+        {
+            var SRPType = GetSRPType();
+
+            if (m_CurrentLightingExplorerExtension == null || m_CurrentSRPType != SRPType)
+            {
+                m_CurrentSRPType = SRPType;
+
+                if (m_CurrentLightingExplorerExtension != null)
+                {
+                    m_CurrentLightingExplorerExtension.OnDisable();
+                }
+
+                m_CurrentLightingExplorerExtension = GetLightExplorerExtension(SRPType);
+                m_CurrentLightingExplorerExtension.OnEnable();
+
+                m_SelectedTab = 0;
+
+                if (m_CurrentLightingExplorerExtension.GetContentTabs() == null || m_CurrentLightingExplorerExtension.GetContentTabs().Length == 0)
+                {
+                    throw new ArgumentException("There must be atleast 1 content tab defined for the Lighting Explorer.");
+                }
+
+                m_TableTabs =  m_CurrentLightingExplorerExtension.GetContentTabs();
+                m_TabTitles = m_TableTabs != null ? m_TableTabs.Select(item => item.title).ToArray() : null;
+            }
+        }
+
+        private ILightingExplorerExtension GetDefaultLightingExplorerExtension()
+        {
+            if (s_DefaultLightingExplorerExtension == null)
+            {
+                s_DefaultLightingExplorerExtension = new DefaultLightingExplorerExtension();
+            }
+            return s_DefaultLightingExplorerExtension;
+        }
+
+        private ILightingExplorerExtension GetLightExplorerExtension(System.Type currentSRPType)
+        {
+            if (currentSRPType == null)
+                return GetDefaultLightingExplorerExtension();
+
+            var extensionTypes = EditorAssemblies.GetAllTypesWithInterface<ILightingExplorerExtension>();
+
+            foreach (System.Type extensionType in extensionTypes)
+            {
+                LightingExplorerExtensionAttribute attribute = System.Attribute.GetCustomAttribute(extensionType, typeof(LightingExplorerExtensionAttribute)) as LightingExplorerExtensionAttribute;
+                if (attribute != null && attribute.renderPipelineType == currentSRPType)
+                {
+                    ILightingExplorerExtension extension = (ILightingExplorerExtension)System.Activator.CreateInstance(extensionType);
+                    return extension;
+                }
+            }
+
+            // no light explorer extension found for current srp, return the default one
+            return GetDefaultLightingExplorerExtension();
         }
     }
 }
