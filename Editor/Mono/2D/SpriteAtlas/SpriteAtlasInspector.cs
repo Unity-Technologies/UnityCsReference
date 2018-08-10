@@ -269,6 +269,9 @@ namespace UnityEditor.U2D
         {
             s_Styles = s_Styles ?? new Styles();
 
+            // Ensure changes done through script are reflected immediately in Inspector by Syncing m_TempPlatformSettings with Actual Settings.
+            SyncPlatformSettings();
+
             serializedObject.Update();
 
             HandleCommonSettingUI();

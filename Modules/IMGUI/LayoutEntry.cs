@@ -294,6 +294,12 @@ namespace UnityEngine
             {
                 float _minWidth, _maxWidth;
                 style.CalcMinMaxWidth(m_Content, out _minWidth, out _maxWidth);
+
+                // Further layout calculations might round this value to nearest which could force the text over several lines
+                // when rounding down. Make sure to actual give enough space by always rounding up (case 1047812).
+                _minWidth = Mathf.Ceil(_minWidth);
+                _maxWidth = Mathf.Ceil(_maxWidth);
+
                 if (minWidth == 0)
                     minWidth = _minWidth;
                 if (maxWidth == 0)

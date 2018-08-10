@@ -119,11 +119,9 @@ namespace UnityEditor.Scripting.Compilers
             return true;
         }
 
-        public static ResponseFileData ParseResponseFileFromFile(string responseFileName)
+        public static ResponseFileData ParseResponseFileFromFile(string responseFilePath)
         {
-            var relativeCustomResponseFilePath = Path.Combine("Assets", responseFileName);
-
-            if (!File.Exists(relativeCustomResponseFilePath))
+            if (!File.Exists(responseFilePath))
             {
                 var empty = new ResponseFileData
                 {
@@ -136,7 +134,7 @@ namespace UnityEditor.Scripting.Compilers
                 return empty;
             }
 
-            var responseFileText = File.ReadAllText(relativeCustomResponseFilePath);
+            var responseFileText = File.ReadAllText(responseFilePath);
 
             return ParseResponseFileText(responseFileText);
         }

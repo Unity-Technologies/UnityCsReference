@@ -1119,7 +1119,10 @@ namespace UnityEditor
             }
 
             if (cp.m_IsOSColorPicker)
+            {
+                cp.SetColor(col);
                 OSColorPicker.Show(showAlpha);
+            }
             else
             {
                 cp.titleContent = hdr ? EditorGUIUtility.TrTextContent("HDR Color") : EditorGUIUtility.TrTextContent("Color");

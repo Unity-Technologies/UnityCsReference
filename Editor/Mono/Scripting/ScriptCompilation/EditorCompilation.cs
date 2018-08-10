@@ -63,7 +63,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             none = 0,
             cyclicReferences = (1 << 0),
-            loadError = (1 << 0)
+            loadError = (1 << 1)
+        }
+
+        [Flags]
+        public enum CompileScriptAssembliesOptions
+        {
+            none = 0,
+            skipSetupChecks = (1 << 0),
         }
 
         abstract class UnitySpecificCompilerMessageProcessor
@@ -421,8 +428,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        void UpdateCustomTargetAssemblies()
+        Exception[] UpdateCustomTargetAssemblies()
         {
+            var exceptions = new List<Exception>();
             var allCustomScriptAssemblies = new List<CustomScriptAssembly>();
 
             if (customScriptAssemblies != null)
@@ -486,12 +494,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 catch (Exception e)
                 {
                     SetCompilationSetupErrorFlags(CompilationSetupErrorFlags.loadError);
-                    throw e;
+                    exceptions.Add(e);
                 }
             }
 
             customTargetAssemblies = EditorBuildRules.CreateTargetAssemblies(allCustomScriptAssemblies);
             ClearCompilationSetupErrorFlags(CompilationSetupErrorFlags.cyclicReferences);
+
+            return exceptions.ToArray();
         }
 
         public Exception[] SetAllCustomScriptAssemblyJsons(string[] paths)
@@ -555,14 +565,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
             customScriptAssemblies = assemblies.ToArray();
 
-            try
-            {
-                UpdateCustomTargetAssemblies();
-            }
-            catch (Exception e)
-            {
-                exceptions.Add(e);
-            }
+            var updateCustomTargetAssembliesExceptions = UpdateCustomTargetAssemblies();
+            exceptions.AddRange(updateCustomTargetAssembliesExceptions);
 
             return exceptions.ToArray();
         }
@@ -574,11 +578,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return m_PackageAssemblies.Any(p => path.StartsWith(p.DirectoryPath, StringComparison.OrdinalIgnoreCase));
         }
 
-        public void SetAllPackageAssemblies(PackageAssembly[] packageAssemblies)
+        public Exception[] SetAllPackageAssemblies(PackageAssembly[] packageAssemblies)
         {
             m_PackageAssemblies = packageAssemblies;
             this.packageCustomScriptAssemblies = m_PackageAssemblies.Select(CreatePackageCustomScriptAssembly).ToArray();
-            UpdateCustomTargetAssemblies();
+            return UpdateCustomTargetAssemblies();
         }
 
         private static CustomScriptAssembly CreatePackageCustomScriptAssembly(PackageAssembly packageAssembly)
@@ -805,7 +809,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             if (!scriptAssemblies.Any())
                 return false;
 
-            return CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.StopOnFirstError);
+            return CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.StopOnFirstError, CompileScriptAssembliesOptions.none);
         }
 
         internal bool CompileCustomScriptAssemblies(EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
@@ -817,18 +821,31 @@ namespace UnityEditor.Scripting.ScriptCompilation
         internal bool CompileCustomScriptAssemblies(ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, EditorScriptCompilationOptions options, BuildTargetGroup platformGroup, BuildTarget platform)
         {
             var scriptAssemblies = GetAllScriptAssembliesOfType(scriptAssemblySettings, EditorBuildRules.TargetAssemblyType.Custom);
-            return CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.None);
+            return CompileScriptAssemblies(scriptAssemblies, scriptAssemblySettings, tempBuildDirectory, options, CompilationTaskOptions.None, CompileScriptAssembliesOptions.skipSetupChecks);
         }
 
-        internal bool CompileScriptAssemblies(ScriptAssembly[] scriptAssemblies, ScriptAssemblySettings scriptAssemblySettings, string tempBuildDirectory, EditorScriptCompilationOptions options, CompilationTaskOptions compilationTaskOptions)
+        internal bool CompileScriptAssemblies(ScriptAssembly[] scriptAssemblies,
+            ScriptAssemblySettings scriptAssemblySettings,
+            string tempBuildDirectory,
+            EditorScriptCompilationOptions options,
+            CompilationTaskOptions compilationTaskOptions,
+            CompileScriptAssembliesOptions compileScriptAssembliesOptions)
         {
             StopAllCompilation();
 
-            // Do no start compilation if there is an setup error.
-            if (setupErrorFlags != CompilationSetupErrorFlags.none)
-                return false;
+            bool skipSetupChecks = (compileScriptAssembliesOptions & CompileScriptAssembliesOptions.skipSetupChecks) == CompileScriptAssembliesOptions.skipSetupChecks;
 
-            CheckCyclicAssemblyReferences();
+            // Skip setup checks when compiling custom script assemblies on startup,
+            // as we only load the ones that been compiled and have all their references
+            // fully resolved.
+            if (!skipSetupChecks)
+            {
+                // Do no start compilation if there is an setup error.
+                if (setupErrorFlags != CompilationSetupErrorFlags.none)
+                    return false;
+
+                CheckCyclicAssemblyReferences();
+            }
 
             DeleteUnusedAssemblies();
 

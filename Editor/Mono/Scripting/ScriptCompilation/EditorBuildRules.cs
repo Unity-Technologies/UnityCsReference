@@ -240,7 +240,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
                     if (!nameToTargetAssembly.TryGetValue(reference, out referenceAssembly))
                     {
-                        UnityEngine.Debug.LogWarning(string.Format("Could not find reference '{0}' for assembly '{1}'", reference, customAssembly.Name));
                         continue;
                     }
 

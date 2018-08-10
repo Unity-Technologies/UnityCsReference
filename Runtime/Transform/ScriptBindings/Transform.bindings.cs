@@ -291,6 +291,8 @@ namespace UnityEngine
         // Finds a child by /name/ and returns it.
         public Transform Find(string n)
         {
+            if (n == null)
+                throw new ArgumentNullException("Name cannot be null");
             return FindRelativeTransformWithPath(this, n, false);
         }
 

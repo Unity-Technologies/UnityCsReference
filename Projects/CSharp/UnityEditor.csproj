@@ -3371,6 +3371,9 @@
   <Compile Include="..\..\Editor\Mono\Utils\AssemblyReferenceChecker.cs">
     <Link>Editor\Mono\Utils\AssemblyReferenceChecker.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Utils\DirectoryExtensions.cs">
+    <Link>Editor\Mono\Utils\DirectoryExtensions.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Utils\EditorExtensionMethods.cs">
     <Link>Editor\Mono\Utils\EditorExtensionMethods.cs</Link>
   </Compile>

@@ -189,8 +189,13 @@ namespace UnityEditor
 
             public static void GetSocketDefinition(string name, out string port, out int protocol, out int[] usages, out string templateName, out int sessionRequirment, out int[] deviceUsages)
             {
-                usages       = new int[0];
-                deviceUsages = new int[0];
+                int numUsages = GetXboxOneSocketDefinitionNumUsages(name);
+                int numDeviceUsages = GetXboxOneSocketDefinitionNumDeviceUsages(name);
+                if (numUsages < 0 || numDeviceUsages < 0)
+                    throw new ArgumentException("Could not find socket definition " + name + ".");
+
+                usages = new int[numUsages];
+                deviceUsages = new int[numDeviceUsages];
 
                 GetSocketDefinitionInternal(name, out port, out protocol, usages, out templateName, out sessionRequirment, deviceUsages);
             }
@@ -201,6 +206,14 @@ namespace UnityEditor
                 [NativeMethod("GetXboxOneSocketNames")]
                 get;
             }
+
+            [NativeMethod("GetXboxOneSocketDefinitionNumUsages")]
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            extern private static int GetXboxOneSocketDefinitionNumUsages(string name);
+
+            [NativeMethod("GetXboxOneSocketDefinitionNumDeviceUsages")]
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            extern private static int GetXboxOneSocketDefinitionNumDeviceUsages(string name);
 
             [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
             extern public static string[] AllowedProductIds

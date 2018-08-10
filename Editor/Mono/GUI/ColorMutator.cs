@@ -25,7 +25,7 @@ namespace UnityEditor
             baseLinearColor = linearColorHdr;
             var maxColorComponent = linearColorHdr.maxColorComponent;
             // replicate Photoshops's decomposition behaviour
-            if (maxColorComponent == 0f || maxColorComponent <= 1f && maxColorComponent > 1 / 255f)
+            if (maxColorComponent == 0f || maxColorComponent <= 1f && maxColorComponent >= 1 / 255f)
             {
                 exposure = 0f;
 

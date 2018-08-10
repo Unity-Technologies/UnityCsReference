@@ -126,7 +126,7 @@ namespace UnityEditor
         {
             if (PlayerSettings.virtualRealitySupported && (m_RenderMode.enumValueIndex == (int)RenderMode.ScreenSpaceOverlay))
             {
-                EditorGUILayout.HelpBox("Using a render mode of ScreenSpaceOverlay while VR is enabled is not recommended for an optimal VR experience", MessageType.Warning);
+                EditorGUILayout.HelpBox("Using a render mode of ScreenSpaceOverlay while VR is enabled will cause the Canvas to continue to incur a rendering cost, even though the Canvas will not be visible in VR.", MessageType.Warning);
             }
 
             EditorGUILayout.PropertyField(m_RenderMode);

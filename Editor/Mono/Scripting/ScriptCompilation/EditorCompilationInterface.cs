@@ -182,7 +182,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         [RequiredByNativeCode]
         public static void SetAllPackageAssemblies(EditorCompilation.PackageAssembly[] packageAssemblies)
         {
-            EmitExceptionAsError(() => Instance.SetAllPackageAssemblies(packageAssemblies));
+            EmitExceptionsAsErrors(Instance.SetAllPackageAssemblies(packageAssemblies));
         }
 
         [RequiredByNativeCode]
