@@ -11,6 +11,13 @@ namespace UnityEngine
     [NativeHeader("Runtime/Scripting/TextAsset.h")]
     public class TextAsset : Object
     {
+        // Used by MonoScript constructor to avoid creating native TextAsset object.
+        internal enum CreateOptions
+        {
+            None = 0,
+            CreateNativeObject = 1
+        }
+
         // The text contents of the .txt file as a string. (RO)
         public extern string text { get; }
 
@@ -19,14 +26,20 @@ namespace UnityEngine
 
         public override string ToString() { return text; }
 
-        public TextAsset()
+        public TextAsset() : this(CreateOptions.CreateNativeObject, null)
         {
-            Internal_CreateInstance(this, null);
         }
 
-        public TextAsset(string text)
+        public TextAsset(string text) : this(CreateOptions.CreateNativeObject, text)
         {
-            Internal_CreateInstance(this, text);
+        }
+
+        internal TextAsset(CreateOptions options, string text)
+        {
+            if (options == CreateOptions.CreateNativeObject)
+            {
+                Internal_CreateInstance(this, text);
+            }
         }
 
         extern static void Internal_CreateInstance([Writable] TextAsset self, string text);

@@ -7,7 +7,6 @@ using System.Collections.Generic;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    //TODO: rename to IMGUIAdapter or something, as it's NOT a VisualContainer
     public class IMGUIContainer : VisualElement
     {
         public class IMGUIContainerFactory : UxmlFactory<IMGUIContainer, IMGUIContainerUxmlTraits> {}
@@ -138,6 +137,8 @@ namespace UnityEngine.Experimental.UIElements
 
         private void DoOnGUI(Event evt, bool isComputingLayout = false)
         {
+            // Extra checks are needed here because client code might have changed the IMGUIContainer
+            // since we enter HandleIMGUIEvent()
             if (m_OnGUIHandler == null
                 || panel == null)
             {
@@ -355,11 +356,6 @@ namespace UnityEngine.Experimental.UIElements
                 return;
             }
 
-            if (m_OnGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(evt.imguiEvent.type) == false)
-            {
-                return;
-            }
-
             if (HandleIMGUIEvent(evt.imguiEvent))
             {
                 evt.StopPropagation();
@@ -369,7 +365,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal bool HandleIMGUIEvent(Event e)
         {
-            if (e == null)
+            if (e == null || m_OnGUIHandler == null || elementPanel == null || elementPanel.IMGUIEventInterests.WantsEvent(e.type) == false)
             {
                 return false;
             }
@@ -469,6 +465,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             float measuredWidth = float.NaN;
             float measuredHeight = float.NaN;
+
             if (widthMode != MeasureMode.Exactly || heightMode != MeasureMode.Exactly)
             {
                 DoOnGUI(new Event { type = EventType.Layout }, true);

@@ -34,7 +34,9 @@ namespace UnityEditor
         internal extern void SetScriptTypeWasJustCreatedFromComponentMenu();
 
         // *undocumented*
-        public MonoScript()
+        // Pass CreateOptions.None to TextAsset constructor so it does not create a native TextAsset object.
+        // We create MonoScript native object instead.
+        public MonoScript() : base(TextAsset.CreateOptions.None, null)
         {
             Init_Internal(this);
         }

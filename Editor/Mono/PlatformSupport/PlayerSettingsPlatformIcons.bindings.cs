@@ -331,6 +331,12 @@ namespace UnityEditor
             return platformIconProvider.GetRequiredPlatformIcons().Keys.ToArray();
         }
 
+        internal static bool IsDefaultIconAvailable()
+        {
+            var icons = GetAllIconsForPlatform("");
+            return icons.Length > 0 && icons[0] != null;
+        }
+
         internal static int GetNonEmptyPlatformIconCount(PlatformIcon[] icons)
         {
             return icons.Count(i => !i.IsEmpty());

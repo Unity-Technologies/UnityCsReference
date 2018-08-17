@@ -1557,6 +1557,11 @@ namespace UnityEditor
                 return false;
             }
 
+            if (m_LightmapSettings.targetObject == null)
+            {
+                return false;
+            }
+
             EditorGUI.BeginChangeCheck();
 
             MaterialProperty[] props = GetMaterialProperties(targets);

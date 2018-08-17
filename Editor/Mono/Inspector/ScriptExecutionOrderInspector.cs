@@ -204,8 +204,11 @@ namespace UnityEditor
             }
 
             // The user can only define the order of scripts in the assets folder.
-            if (AssetDatabase.GetAssetPath(script).IndexOf("Assets/") != 0)
+            bool isRootFolder, isReadOnly;
+            if (!AssetDatabase.GetAssetFolderInfo(AssetDatabase.GetAssetPath(script), out isRootFolder, out isReadOnly))
+            {
                 return false;
+            }
 
             return true;
         }

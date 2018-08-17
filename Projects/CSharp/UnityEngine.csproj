@@ -2216,9 +2216,6 @@
   <Compile Include="..\..\artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\UNET\UNETworkingBindings.gen.cs</Link>
   </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\VR\VRBindings.gen.cs</Link>
-  </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\VR\VRTestBindings.gen.cs</Link>
   </Compile>
