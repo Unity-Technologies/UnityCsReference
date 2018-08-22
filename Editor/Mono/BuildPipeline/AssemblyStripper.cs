@@ -157,6 +157,15 @@ namespace UnityEditorInternal
                     platform = "MacOSX";
                     architecture = "x64";
                     break;
+                case BuildTarget.WSAPlayer:
+                    platform = "WinRT";
+                    // Could be multiple values.  We don't have use of this information yet so don't bother with trying to figure out what it should be
+                    architecture = "";
+                    break;
+                case BuildTarget.iOS:
+                    platform = "iOS";
+                    architecture = "ARM64";
+                    break;
                 default:
                     throw new NotSupportedException($"Aggressive stripping is not supported for mono backend on {target}.");
             }
@@ -285,6 +294,9 @@ namespace UnityEditorInternal
                     blacklists = blacklists.Concat(new[] {file});
             }
 
+            // Generated link xml files that would have been empty will be nulled out.  Need to filter these out before running the linker
+            blacklists = blacklists.Where(b => b != null);
+
             var tempStripPath = Path.GetFullPath(Path.Combine(managedAssemblyFolderPath, "tempStrip"));
 
             bool addedMoreBlacklists;
@@ -357,8 +369,11 @@ namespace UnityEditorInternal
 
         private static string WriteMethodsToPreserveBlackList(RuntimeClassRegistry rcr, BuildTarget target)
         {
+            var contents = GetMethodPreserveBlacklistContents(rcr, target);
+            if (contents == null)
+                return null;
             var methodPerserveBlackList = Path.GetTempFileName();
-            File.WriteAllText(methodPerserveBlackList, GetMethodPreserveBlacklistContents(rcr, target));
+            File.WriteAllText(methodPerserveBlackList, contents);
             return methodPerserveBlackList;
         }
 
@@ -373,6 +388,9 @@ namespace UnityEditorInternal
 
         private static string GetMethodPreserveBlacklistContents(RuntimeClassRegistry rcr, BuildTarget target)
         {
+            if (rcr.GetMethodsToPreserve().Count == 0)
+                return null;
+
             var sb = new StringBuilder();
             sb.AppendLine("<linker>");
 

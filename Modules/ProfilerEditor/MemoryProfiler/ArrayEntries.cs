@@ -3,15 +3,12 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditorInternal;
 using System.IO;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor.MemoryProfiling;
-using UnityEditorInternal.MemoryProfiling;
-using UnityEditorInternal.MemoryProfiling.FileFormat;
+using UnityEditorInternal.Profiling.Memory.Experimental;
+using UnityEditorInternal.Profiling.Memory.Experimental.FileFormat;
 
-namespace UnityEditor.MemoryProfiling
+namespace UnityEditor.Profiling.Memory.Experimental
 {
     public class ArrayEntries<T>
     {
@@ -308,10 +305,7 @@ namespace UnityEditor.MemoryProfiling
             return symbol.GetNumEntries();
         }
     }
-}
 
-namespace UnityEditorInternal.MemoryProfiling
-{
     internal class ConversionFunctions
     {
         public static VirtualMachineInformation ToVirtualMachineInformation(byte[] data, uint startIndex, uint numBytes)

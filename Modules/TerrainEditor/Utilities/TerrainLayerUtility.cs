@@ -13,19 +13,31 @@ using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
+    public interface ITerrainLayerCustomUI
+    {
+        bool OnTerrainLayerGUI(TerrainLayer terrainLayer, Terrain terrain);
+    };
+
     public static class TerrainLayerUtility
     {
-        static bool s_ShowLayerEditor = false;
-
-        static class Styles
+        private class Styles
         {
-            public static GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
-            public static GUIContent btnEditTerrainLayers = EditorGUIUtility.TrTextContentWithIcon("Edit Terrain Layers...", "Allows adding / replacing or removing terrain layers", EditorGUIUtility.IconContent("SettingsIcon").image);
-            public static GUIContent errNoLayersFound = EditorGUIUtility.TrTextContent("No terrain layers founds. You can create a new terrain layer using the Asset/Create/Terrain Layer menu command.");
+            public readonly GUIContent terrainLayers = EditorGUIUtility.TrTextContent("Terrain Layers");
+            public readonly GUIContent btnEditTerrainLayers = EditorGUIUtility.TrTextContentWithIcon("Edit Terrain Layers...", "Allows adding / replacing or removing terrain layers", EditorGUIUtility.IconContent("SettingsIcon").image);
+            public readonly GUIContent errNoLayersFound = EditorGUIUtility.TrTextContent("No terrain layers founds. You can create a new terrain layer using the Asset/Create/Terrain Layer menu command.");
+            public readonly GUIContent textureAssign = EditorGUIUtility.TrTextContent("Assign a tiling texture", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public readonly GUIContent textureMustHaveRepeatWrapMode = EditorGUIUtility.TrTextContent("Texture wrap mode must be set to Repeat", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public readonly GUIContent textureMustHaveMips = EditorGUIUtility.TrTextContent("Texture must have mip maps", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public readonly GUIContent normalMapIncorrectTextureType = EditorGUIUtility.TrTextContent("Normal texture should be imported as Normal Map", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public readonly GUIContent tilingSettings = EditorGUIUtility.TrTextContent("Tiling Settings");
+            public readonly GUIContent tilingSize = EditorGUIUtility.TrTextContent("Size");
+            public readonly GUIContent tilingOffset = EditorGUIUtility.TrTextContent("Offset");
         }
+        private static Styles s_Styles = new Styles();
+
         public static int ShowTerrainLayersSelectionHelper(Terrain terrain, int activeTerrainLayer)
         {
-            GUILayout.Label(Styles.terrainLayers, EditorStyles.boldLabel);
+            GUILayout.Label(s_Styles.terrainLayers, EditorStyles.boldLabel);
             GUI.changed = false;
             bool doubleClick;
             int selectedTerrainLayer = activeTerrainLayer;
@@ -38,7 +50,7 @@ namespace UnityEditor
                 {
                     layerIcons[i] = (layers[i] == null || layers[i].diffuseTexture == null) ? EditorGUIUtility.whiteTexture : AssetPreview.GetAssetPreview(layers[i].diffuseTexture) ?? layers[i].diffuseTexture;
                 }
-                selectedTerrainLayer = TerrainInspector.AspectSelectionGrid(activeTerrainLayer, layerIcons, 64, new GUIStyle("GridList"), Styles.errNoLayersFound, out doubleClick);
+                selectedTerrainLayer = TerrainInspector.AspectSelectionGrid(activeTerrainLayer, layerIcons, 64, new GUIStyle("GridList"), s_Styles.errNoLayersFound, out doubleClick);
             }
             else
                 selectedTerrainLayer = -1;
@@ -47,41 +59,67 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
 
             // menu button
-            Rect r = GUILayoutUtility.GetRect(Styles.btnEditTerrainLayers, new GUIStyle("Button"));
-            if (GUI.Button(r, Styles.btnEditTerrainLayers, new GUIStyle("Button")))
+            Rect r = GUILayoutUtility.GetRect(s_Styles.btnEditTerrainLayers, new GUIStyle("Button"));
+            if (GUI.Button(r, s_Styles.btnEditTerrainLayers, new GUIStyle("Button")))
             {
                 MenuCommand context = new MenuCommand(terrain, selectedTerrainLayer);
                 EditorUtility.DisplayPopupMenu(new Rect(r.x, r.y, 0, 0), "CONTEXT /TerrainLayers", context);
             }
             GUILayout.EndHorizontal();
 
-            if (selectedTerrainLayer != -1 && terrain)
-            {
-                TerrainLayer layer = terrain.terrainData.terrainLayers[selectedTerrainLayer];
-                if (layer != null)
-                {
-                    Editor selectedTerrainLayerEditor = Editor.CreateEditor(layer);
-
-                    Rect titleRect = Editor.DrawHeaderGUI(selectedTerrainLayerEditor, layer.name, 10f);
-                    int id = GUIUtility.GetControlID(67890, FocusType.Passive);
-
-                    Rect renderRect = EditorGUI.GetInspectorTitleBarObjectFoldoutRenderRect(titleRect);
-                    renderRect.y = titleRect.yMax - 17f; // align with bottom
-                    UnityEngine.Object[] targets = { layer };
-                    bool newVisible = EditorGUI.DoObjectFoldout(s_ShowLayerEditor, titleRect, renderRect, targets, id);
-
-                    // Toggle visibility
-                    if (newVisible != s_ShowLayerEditor)
-                    {
-                        s_ShowLayerEditor = newVisible;
-                        InternalEditorUtility.SetIsInspectorExpanded(layer, newVisible);
-                    }
-                    if (s_ShowLayerEditor)
-                        selectedTerrainLayerEditor.OnInspectorGUI();
-                }
-            }
-
             return selectedTerrainLayer;
+        }
+
+        public static void ValidateDiffuseTextureUI(Texture2D texture)
+        {
+            if (texture == null)
+                EditorGUILayout.HelpBox(s_Styles.textureAssign);
+            if (texture != null && texture.wrapMode != TextureWrapMode.Repeat)
+                EditorGUILayout.HelpBox(s_Styles.textureMustHaveRepeatWrapMode);
+            if (texture != null && texture.mipmapCount <= 1)
+                EditorGUILayout.HelpBox(s_Styles.textureMustHaveMips);
+        }
+
+        public static bool CheckNormalMapTextureType(Texture2D texture)
+        {
+            string assetPath = AssetDatabase.GetAssetPath(texture);
+            if (string.IsNullOrEmpty(assetPath))
+                return true;
+
+            TextureImporter importer = AssetImporter.GetAtPath(assetPath) as TextureImporter;
+            return importer != null && importer.textureType == TextureImporterType.NormalMap;
+        }
+
+        public static void ValidateNormalMapTextureUI(Texture2D texture, bool normalMapTextureType)
+        {
+            if (texture != null && texture.wrapMode != TextureWrapMode.Repeat)
+                EditorGUILayout.HelpBox(s_Styles.textureMustHaveRepeatWrapMode);
+            if (texture != null && texture.mipmapCount <= 1)
+                EditorGUILayout.HelpBox(s_Styles.textureMustHaveMips);
+            if (!normalMapTextureType)
+                EditorGUILayout.HelpBox(s_Styles.normalMapIncorrectTextureType);
+        }
+
+        public static void ValidateMaskMapTextureUI(Texture2D texture)
+        {
+            if (texture != null && texture.wrapMode != TextureWrapMode.Repeat)
+                EditorGUILayout.HelpBox(s_Styles.textureMustHaveRepeatWrapMode);
+            if (texture != null && texture.mipmapCount <= 1)
+                EditorGUILayout.HelpBox(s_Styles.textureMustHaveMips);
+        }
+
+        public static void TilingSettingsUI(TerrainLayer terrainLayer)
+        {
+            GUILayout.Label(s_Styles.tilingSettings, EditorStyles.boldLabel);
+            terrainLayer.tileSize = EditorGUILayout.Vector2Field(s_Styles.tilingSize, terrainLayer.tileSize);
+            terrainLayer.tileOffset = EditorGUILayout.Vector2Field(s_Styles.tilingOffset, terrainLayer.tileOffset);
+        }
+
+        public static void TilingSettingsUI(SerializedProperty tileSize, SerializedProperty tileOffset)
+        {
+            GUILayout.Label(s_Styles.tilingSettings, EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(tileSize, s_Styles.tilingSize);
+            EditorGUILayout.PropertyField(tileOffset, s_Styles.tilingOffset);
         }
 
         internal static int AddTerrainLayer(Terrain terrain, TerrainLayer inputLayer)

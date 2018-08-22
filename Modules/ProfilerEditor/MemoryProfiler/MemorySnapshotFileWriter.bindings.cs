@@ -4,11 +4,9 @@
 
 using System;
 using UnityEngine.Bindings;
-using UnityEditor.MemoryProfiling;
 using System.Runtime.InteropServices;
-using UnityEngine;
 
-namespace UnityEditorInternal.MemoryProfiling
+namespace UnityEditorInternal.Profiling.Memory.Experimental
 {
     [NativeHeader("Modules/Profiler/Public/MemorySnapshot/MemorySnapshotFileWriter.h")]
     public class MemorySnapshotFileWriter : IDisposable

@@ -16,7 +16,7 @@ namespace UnityEditorInternal
 
 
         ProfilerProperty GetRootProfilerProperty(ProfilerColumn sortType);
-        FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, bool sortAscending);
+        FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, FrameViewFilteringModes filteringMode, bool sortAscending);
         int GetActiveVisibleFrameIndex();
         bool IsRecording();
         void Repaint();

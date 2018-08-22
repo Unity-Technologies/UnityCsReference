@@ -12,9 +12,14 @@ namespace UnityEditor.ShortcutManagement
 {
     class Directory : IDirectory
     {
-        readonly List<ShortcutEntry> m_ShortcutEntries;
+        List<ShortcutEntry> m_ShortcutEntries;
 
         public Directory(IEnumerable<ShortcutEntry> entries)
+        {
+            Initialize(entries);
+        }
+
+        public void Initialize(IEnumerable<ShortcutEntry> entries)
         {
             m_ShortcutEntries = new List<ShortcutEntry>(entries);
         }

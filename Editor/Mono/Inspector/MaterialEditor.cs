@@ -116,8 +116,8 @@ namespace UnityEditor
         private static readonly GUIContent  s_TilingText = EditorGUIUtility.TrTextContent("Tiling");
         private static readonly GUIContent  s_OffsetText = EditorGUIUtility.TrTextContent("Offset");
 
-        ShaderGUI   m_CustomShaderGUI;
-        string      m_CustomEditorClassName;
+        internal ShaderGUI  m_CustomShaderGUI;
+        string              m_CustomEditorClassName;
 
         bool                                m_InsidePropertiesGUI;
         Renderer[]                          m_RenderersForAnimationMode;
@@ -455,6 +455,8 @@ namespace UnityEditor
         {
             serializedObject.Update();
 
+            var oldLabelWidth = EditorGUIUtility.labelWidth;
+
             using (new EditorGUI.DisabledScope(!IsEnabled()))
             {
                 EditorGUIUtility.labelWidth = 50;
@@ -469,6 +471,8 @@ namespace UnityEditor
                         AssetDatabase.OpenAsset(m_Shader);
                 }
             }
+
+            EditorGUIUtility.labelWidth = oldLabelWidth;
         }
 
         // -------- obsolete helper functions to get/set material values

@@ -173,12 +173,6 @@ namespace UnityEngine
         [FreeFunction(k_ScriptingInterfacePrefix + "Create")]
         extern private static void Internal_Create([Writable] TerrainData terrainData);
 
-        extern internal bool HasUser(GameObject user);
-
-        extern internal void AddUser(GameObject user);
-
-        extern internal void RemoveUser(GameObject user);
-
         extern public void UpdateDirtyRegion(int x, int y, int width, int height, bool syncHeightmapTextureImmediately);
 
 
@@ -197,12 +191,6 @@ namespace UnityEngine
         extern public RenderTexture heightmapTexture
         {
             [NativeName(k_HeightmapPrefix + "GetHeightmapTexture")]
-            get;
-        }
-
-        extern public RenderTexture normalmapTexture
-        {
-            [NativeName(k_HeightmapPrefix + "GetNormalmapTexture")]
             get;
         }
 
@@ -525,7 +513,7 @@ namespace UnityEngine
 
         extern public int alphamapLayers
         {
-            [NativeName(k_SplatDatabasePrefix + "GetDepth")]
+            [NativeName(k_SplatDatabasePrefix + "GetSplatCount")]
             get;
         }
 
@@ -614,11 +602,8 @@ namespace UnityEngine
         [FreeFunction(k_ScriptingInterfacePrefix + "SetAlphamaps", HasExplicitThis = true)]
         extern private void Internal_SetAlphamaps(int x, int y, int width, int height, float[,,] map);
 
-        [NativeName(k_SplatDatabasePrefix + "RecalculateBasemapIfDirty")]
-        extern internal void RecalculateBasemapIfDirty();
-
-        [NativeName(k_SplatDatabasePrefix + "SetBasemapDirty")]
-        extern public void SetBasemapDirty(bool dirty);
+        [NativeName(k_SplatDatabasePrefix + "SetBaseMapsDirty")]
+        extern public void SetBaseMapDirty();
 
         [NativeName(k_SplatDatabasePrefix + "GetAlphaTexture")]
         extern public Texture2D GetAlphamapTexture(int index);

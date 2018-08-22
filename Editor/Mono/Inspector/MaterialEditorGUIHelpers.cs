@@ -147,6 +147,11 @@ namespace UnityEditor
             serializedObject.ApplyModifiedProperties();
         }
 
+        public bool IsInstancingEnabled()
+        {
+            return ShaderUtil.HasInstancing(m_Shader) && m_EnableInstancing.boolValue;
+        }
+
         public bool DoubleSidedGIField()
         {
             Rect r = GetControlRectForSingleLine();

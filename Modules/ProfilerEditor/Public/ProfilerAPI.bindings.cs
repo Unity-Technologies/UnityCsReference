@@ -313,10 +313,10 @@ namespace UnityEditorInternal
             }
         }
 
-
-        [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
-        [NativeMethod("SendGetMemorySnapshot")]
-        static public extern void RequestMemorySnapshot(uint captureFlags);
+        static public void RequestMemorySnapshot()
+        {
+            UnityEditor.MemoryProfiler.MemorySnapshot.RequestNewSnapshot();
+        }
 
         [StaticAccessor("EditorProfilerConnection::Get()", StaticAccessorType.Dot)]
         [NativeMethod("SendGetObjectMemoryProfile")]

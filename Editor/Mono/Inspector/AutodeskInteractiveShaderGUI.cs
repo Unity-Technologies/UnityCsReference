@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    internal class StandardRoughnessShaderGUI : ShaderGUI
+    internal class AutodeskInteractiveShaderGUI : ShaderGUI
     {
         public enum BlendMode
         {

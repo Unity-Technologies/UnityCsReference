@@ -1259,7 +1259,7 @@ namespace UnityEditor
             for (int i = 0; i < oldAlphaMaps.Length; i++)
                 RenderTexture.ReleaseTemporary(oldAlphaMaps[i]);
 
-            td.SetBasemapDirty(true);
+            td.SetBaseMapDirty();
             Repaint();
         }
 
@@ -1815,7 +1815,6 @@ namespace UnityEditor
                             {
                                 // height map modification modes
                                 m_Terrain.editorRenderFlags = TerrainRenderFlags.Heightmap;
-                                m_Terrain.terrainData.SetBasemapDirty(false);
                                 if (activeTool.Paint(m_Terrain, brushList.GetActiveBrush().texture, uv, m_Strength, m_Size))
                                     InspectorWindow.RepaintAllInspectors();
                             }

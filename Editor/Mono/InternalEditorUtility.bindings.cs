@@ -57,7 +57,7 @@ namespace UnityEditorInternal
     [NativeHeader("Editor/Src/Gizmos/GizmoUtil.h")]
     [NativeHeader("Editor/Src/HierarchyState.h")]
     [NativeHeader("Editor/Src/InspectorExpandedState.h")]
-    [NativeHeader("Modules/LicensingLegacy/Public/LicenseInfo.h")]
+    [NativeHeader("Runtime/Interfaces/ILicensing.h")]
     [NativeHeader("Editor/Src/RemoteInput/RemoteInput.h")]
     [NativeHeader("Editor/Src/ShaderMenu.h")]
     [NativeHeader("Editor/Src/Undo/ObjectUndo.h")]
@@ -253,21 +253,19 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::SetRectTransformTemporaryRect")]
         extern public static void SetRectTransformTemporaryRect([NotNull] RectTransform rectTransform, Rect rect);
 
-        [ThreadSafe]
-        [StaticAccessor("LicenseInfo", StaticAccessorType.DoubleColon)]
+        [FreeFunction("InternalEditorUtilityBindings::HasTeamLicense", IsThreadSafe = true)]
         extern public static bool HasTeamLicense();
 
-        [FreeFunction("LicenseInfo::IsPro", IsThreadSafe = true)]
+        [FreeFunction("InternalEditorUtilityBindings::HasPro", IsThreadSafe = true)]
         extern public static bool HasPro();
 
-        [FreeFunction("LicenseInfo::IsFree", IsThreadSafe = true)]
+        [FreeFunction("InternalEditorUtilityBindings::HasFreeLicense", IsThreadSafe = true)]
         extern public static bool HasFreeLicense();
 
-        [FreeFunction("LicenseInfo::IsEdu", IsThreadSafe = true)]
+        [FreeFunction("InternalEditorUtilityBindings::HasEduLicense", IsThreadSafe = true)]
         extern public static bool HasEduLicense();
 
-        [ThreadSafe]
-        [StaticAccessor("LicenseInfo", StaticAccessorType.DoubleColon)]
+        [FreeFunction("InternalEditorUtilityBindings::HasUFSTLicense", IsThreadSafe = true)]
         extern internal static bool HasUFSTLicense();
 
         [FreeFunction]
@@ -435,14 +433,13 @@ namespace UnityEditorInternal
         [FreeFunction("InternalEditorUtilityBindings::GetUnityCopyright")]
         extern public static string GetUnityCopyright();
 
-        [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
-        [NativeMethod("GetLicenseInfoText")]
+        [FreeFunction("InternalEditorUtilityBindings::GetLicenseInfoText")]
         extern public static string GetLicenseInfo();
 
         [FreeFunction("InternalEditorUtilityBindings::GetLicenseFlags")]
         extern public static int[] GetLicenseFlags();
 
-        [StaticAccessor("LicenseInfo::Get()", StaticAccessorType.Arrow)]
+        [FreeFunction("InternalEditorUtilityBindings::GetAuthToken")]
         extern public static string GetAuthToken();
 
         [FreeFunction("InternalEditorUtilityBindings::OpenEditorConsole")]

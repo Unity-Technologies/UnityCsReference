@@ -120,10 +120,21 @@ namespace UnityEngine.Profiling
         private extern static void AddFramesFromFile_Internal(string file, bool keepExistingFrames);
 
         [Conditional("ENABLE_PROFILER")]
-        [NativeMethod(Name = "ProfilerBindings::BeginThreadProfiling", IsFreeFunction = true, IsThreadSafe = true)]
-        public extern static void BeginThreadProfiling(string threadGroupName, string threadName);
+        public static void BeginThreadProfiling(string threadGroupName, string threadName)
+        {
+            if (string.IsNullOrEmpty(threadGroupName))
+                throw new ArgumentException("Argument should be a valid string", "threadGroupName");
+            if (string.IsNullOrEmpty(threadName))
+                throw new ArgumentException("Argument should be a valid string", "threadName");
 
-        [Conditional("ENABLE_PROFILER")]
+            BeginThreadProfilingInternal(threadGroupName, threadName);
+        }
+
+        [NativeConditional("ENABLE_PROFILER")]
+        [NativeMethod(Name = "ProfilerBindings::BeginThreadProfiling", IsFreeFunction = true, IsThreadSafe = true)]
+        private extern static void BeginThreadProfilingInternal(string threadGroupName, string threadName);
+
+        [NativeConditional("ENABLE_PROFILER")]
         [NativeMethod(Name = "ProfilerBindings::EndThreadProfiling", IsFreeFunction = true, IsThreadSafe = true)]
         public extern static void EndThreadProfiling();
 
@@ -151,7 +162,7 @@ namespace UnityEngine.Profiling
         // End profiling a piece of code with a custom label.
         // TODO: make obsolete
         //OBSOLETE warning Profiler.EndSample method is deprecated. Please use faster CustomSampler.End method instead.
-        [Conditional("ENABLE_PROFILER")]
+        [NativeConditional("ENABLE_PROFILER")]
         [NativeMethod(Name = "ProfilerBindings::EndSample", IsFreeFunction = true, IsThreadSafe = true)]
         public extern static void EndSample();
 

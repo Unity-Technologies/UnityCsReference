@@ -165,8 +165,6 @@ namespace UnityEditor
             BuildTargetGroup group = UnityEditor.BuildPipeline.GetBuildTargetGroup(buildTarget);
 
             // Don't strip any classes which extend the following base classes
-            AddManagedBaseClass("UnityEngine.MonoBehaviour");
-            AddManagedBaseClass("UnityEngine.ScriptableObject");
 
             if (group == BuildTargetGroup.Android)
             {

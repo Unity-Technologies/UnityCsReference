@@ -39,9 +39,10 @@ namespace UnityEditor.ShortcutManagement
     class ShortcutController
     {
         Trigger m_Trigger;
+        Directory m_Directory = new Directory(new ShortcutEntry[0]);
 
         public IShortcutProfileManager profileManager { get; }
-        public IDirectory directory { get; private set; }
+        public IDirectory directory => m_Directory;
 
         ContextManager m_ContextManager = new ContextManager();
 
@@ -56,7 +57,7 @@ namespace UnityEditor.ShortcutManagement
 
         internal void Initialize(IShortcutProfileManager sender)
         {
-            directory = new Directory(profileManager.GetAllShortcuts());
+            m_Directory.Initialize(profileManager.GetAllShortcuts());
             m_Trigger = new Trigger(directory, new ConflictResolver());
         }
 

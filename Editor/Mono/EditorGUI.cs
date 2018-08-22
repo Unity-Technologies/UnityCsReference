@@ -5615,8 +5615,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
             TagManager.GetDefinedLayers(ref s_LayerNames, ref s_LayerValues);
 
+            EditorGUI.BeginChangeCheck();
             var newValue = MaskFieldGUI.DoMaskField(position, id, unchecked((int)layers), s_LayerNames, s_LayerValues, style);
-            if (property != null)
+            if (EditorGUI.EndChangeCheck() && property != null)
                 property.intValue = newValue;
             return unchecked((uint)newValue);
         }

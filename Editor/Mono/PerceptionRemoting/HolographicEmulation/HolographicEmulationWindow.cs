@@ -112,7 +112,7 @@ namespace UnityEngine.XR.WSA
             if (m_RoomIndex == 0)
                 return;
 
-            string roomPath = EditorApplication.applicationContentsPath + "/UnityExtensions/Unity/VR/HolographicSimulation/Rooms/";
+            string roomPath = System.IO.Path.GetFullPath("Packages/com.unity.xr.windowsmr.metro") + "/Plugins/HolographicSimulation/Rooms/";
             HolographicAutomation.LoadRoom(roomPath + s_RoomStrings[m_RoomIndex].text + ".xef");
         }
 

@@ -114,7 +114,7 @@ namespace UnityEditor.Scripting.APIUpdater
         }
 
         /*
-         * Given to nodes (A & B ) in the graph
+         * Given two nodes (A & B ) in the graph
          * A > B if A -> B (direct or indirect)
          * A < B if B -> A (direct or indirect)
          */

@@ -120,7 +120,7 @@ namespace UnityEditor
 
         SceneViewStageHandling m_StageHandling;
 
-        float toolbarHeight { get { return m_StageHandling.isShowingBreadcrumbBar ? m_StageHandling.breadcrumbHeight + EditorGUI.kWindowToolbarHeight : EditorGUI.kWindowToolbarHeight; } }
+        float toolbarHeight { get { return (m_StageHandling != null && m_StageHandling.isShowingBreadcrumbBar) ? m_StageHandling.breadcrumbHeight + EditorGUI.kWindowToolbarHeight : EditorGUI.kWindowToolbarHeight; } }
         float sceneViewHeight { get { return position.height - toolbarHeight; } }
 
         // Returns the calculated rect where we render the camera in the SceneView (in window space coordinates)
@@ -550,7 +550,6 @@ namespace UnityEditor
 
         override public void OnEnable()
         {
-            m_StageHandling = new SceneViewStageHandling(this);
             if (string.IsNullOrEmpty(titleContent.text) || titleContent.text.Contains("UnityEditor"))
                 titleContent = GetLocalizedTitleContent();
             m_RectSelection = new RectSelection(this);
@@ -596,7 +595,17 @@ namespace UnityEditor
                 AddCameraMode(m_CameraMode.name, m_CameraMode.section);
 
             base.OnEnable();
-            m_StageHandling.OnEnable();
+
+            if (SupportsStageHandling())
+            {
+                m_StageHandling = new SceneViewStageHandling(this);
+                m_StageHandling.OnEnable();
+            }
+        }
+
+        protected virtual bool SupportsStageHandling()
+        {
+            return true;
         }
 
         public SceneView()
@@ -677,7 +686,8 @@ namespace UnityEditor
             }
 
             CleanupEditorDragFunctions();
-            m_StageHandling.OnDisable();
+            if (m_StageHandling != null)
+                m_StageHandling.OnDisable();
             SceneViewMotion.DeactivateFlyModeContext();
             base.OnDisable();
         }
@@ -734,7 +744,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SceneRenderModeWindow(this));
+                PopupWindow.Show(rect, new SceneRenderModeWindow(this), null, ShowMode.PopupMenuWithKeyboardFocus);
                 GUIUtility.ExitGUI();
             }
 
@@ -761,7 +771,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(fxRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SceneFXWindow(this));
+                PopupWindow.Show(rect, new SceneFXWindow(this), null, ShowMode.PopupMenuWithKeyboardFocus);
                 GUIUtility.ExitGUI();
             }
 
@@ -842,7 +852,7 @@ namespace UnityEditor
             }
             GUILayout.EndHorizontal();
 
-            if (m_StageHandling.isShowingBreadcrumbBar)
+            if (m_StageHandling != null && m_StageHandling.isShowingBreadcrumbBar)
                 m_StageHandling.BreadcrumbGUI();
         }
 
@@ -2207,7 +2217,7 @@ namespace UnityEditor
             }
             else
             {
-                if (StageNavigationManager.instance.currentItem.isPrefabStage)
+                if (m_StageHandling != null && StageNavigationManager.instance.currentItem.isPrefabStage)
                     m_Camera.backgroundColor = kSceneViewPrefabBackground;
                 else
                     m_Camera.backgroundColor = kSceneViewBackground;

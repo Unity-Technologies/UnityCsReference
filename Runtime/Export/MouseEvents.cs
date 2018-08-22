@@ -123,7 +123,7 @@ namespace UnityEngine
 
                         Vector2 pos = new Vector2(eventPosition.x / w, eventPosition.y / h);
 
-                        // If it's outside the camera's viewport, do nothing
+                        // If the mouse is outside the display bounds, do nothing
                         if (pos.x < 0f || pos.x > 1f || pos.y < 0f || pos.y > 1f)
                             continue;
                     }
@@ -132,12 +132,12 @@ namespace UnityEngine
                         // The multiple display system is not supported on all platforms, when it is not supported the returned position
                         // will be all zeros so when the returned index is 0 we will default to the mouse position to be safe.
                         eventPosition = mousePosition;
-
-                        // Is the mouse inside the cameras viewport?
-                        var rect = camera.pixelRect;
-                        if (!rect.Contains(eventPosition))
-                            continue;
                     }
+
+                    // Is the mouse inside the cameras viewport?
+                    var rect = camera.pixelRect;
+                    if (!rect.Contains(eventPosition))
+                        continue;
 
                     HitTestLegacyGUI(camera, eventPosition, ref m_CurrentHit[m_HitIndexGUI]);
 

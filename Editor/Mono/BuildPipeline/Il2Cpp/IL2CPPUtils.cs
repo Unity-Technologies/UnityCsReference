@@ -150,7 +150,6 @@ namespace UnityEditorInternal
         private readonly IIl2CppPlatformProvider m_PlatformProvider;
         private readonly Action<string> m_ModifyOutputBeforeCompile;
         private readonly RuntimeClassRegistry m_RuntimeClassRegistry;
-        private readonly LinkXmlReader m_linkXmlReader = new LinkXmlReader();
         private readonly bool m_BuildForMonoRuntime;
 
         public IL2CPPBuilder(string tempFolder, string stagingAreaData, IIl2CppPlatformProvider platformProvider, Action<string> modifyOutputBeforeCompile, RuntimeClassRegistry runtimeClassRegistry, bool buildForMonoRuntime)
@@ -186,7 +185,7 @@ namespace UnityEditorInternal
             if (m_ModifyOutputBeforeCompile != null)
                 m_ModifyOutputBeforeCompile(outputDirectory);
 
-            ConvertPlayerDlltoCpp(GetUserAssembliesToConvert(managedDir), outputDirectory, managedDir, m_PlatformProvider.supportsManagedDebugging);
+            ConvertPlayerDlltoCpp(managedDir, outputDirectory, managedDir, m_PlatformProvider.supportsManagedDebugging);
 
             var compiler = m_PlatformProvider.CreateNativeCompiler();
             if (compiler != null && m_PlatformProvider.CreateIl2CppNativeCodeBuilder() == null)
@@ -234,29 +233,6 @@ namespace UnityEditorInternal
             return nativeLibPath;
         }
 
-        internal List<string> GetUserAssembliesToConvert(string managedDir)
-        {
-            var userAssemblies = GetUserAssemblies(managedDir);
-            userAssemblies.Add(Directory.GetFiles(managedDir, "UnityEngine.dll", SearchOption.TopDirectoryOnly).Single());
-            userAssemblies.UnionWith(FilterUserAssemblies(Directory.GetFiles(managedDir, "*.dll", SearchOption.TopDirectoryOnly), m_linkXmlReader.IsDLLUsed, managedDir));
-
-            return userAssemblies.ToList();
-        }
-
-        private HashSet<string> GetUserAssemblies(string managedDir)
-        {
-            HashSet<string> userAssemblies = new HashSet<string>();
-            userAssemblies.UnionWith(FilterUserAssemblies(m_RuntimeClassRegistry.GetUserAssemblies(), m_RuntimeClassRegistry.IsDLLUsed, managedDir));
-            userAssemblies.UnionWith(FilterUserAssemblies(Directory.GetFiles(managedDir, "I18N*.dll", SearchOption.TopDirectoryOnly), (assembly) => true, managedDir));
-
-            return userAssemblies;
-        }
-
-        private IEnumerable<string> FilterUserAssemblies(IEnumerable<string> assemblies, Predicate<string> isUsed, string managedDir)
-        {
-            return assemblies.Where(assembly => isUsed(assembly)).Select(usedAssembly => Path.Combine(managedDir, usedAssembly));
-        }
-
         public string GetCppOutputDirectoryInStagingArea()
         {
             return GetCppOutputPath(m_TempFolder);
@@ -275,11 +251,8 @@ namespace UnityEditorInternal
                     Application.platform == RuntimePlatform.WindowsEditor ? @"Tools\MapFileParser\MapFileParser.exe" : @"Tools/MapFileParser/MapFileParser"));
         }
 
-        private void ConvertPlayerDlltoCpp(ICollection<string> userAssemblies, string outputDirectory, string workingDirectory, bool platformSupportsManagedDebugging)
+        private void ConvertPlayerDlltoCpp(string inputDirectory, string outputDirectory, string workingDirectory, bool platformSupportsManagedDebugging)
         {
-            if (userAssemblies.Count == 0)
-                return;
-
             var arguments = new List<string>();
 
             arguments.Add("--convert-to-cpp");
@@ -332,8 +305,7 @@ namespace UnityEditorInternal
                 arguments.Add(additionalArgs);
             }
 
-            var pathArguments = new List<string>(userAssemblies);
-            arguments.AddRange(pathArguments.Select(arg => "--assembly=\"" + Path.GetFullPath(arg) + "\""));
+            arguments.Add("--directory=\"" + Path.GetFullPath(inputDirectory) + "\"");
 
             arguments.Add(string.Format("--generatedcppdir=\"{0}\"", Path.GetFullPath(outputDirectory)));
 
@@ -561,30 +533,6 @@ namespace UnityEditorInternal
         public virtual CompilerOutputParserBase CreateIl2CppOutputParser()
         {
             return null;
-        }
-    }
-
-    internal class LinkXmlReader
-    {
-        private readonly List<string> _assembliesInALinkXmlFile = new List<string>();
-
-        public LinkXmlReader()
-        {
-            foreach (var linkXmlFile in AssemblyStripper.GetUserBlacklistFiles())
-            {
-                XPathDocument linkXml = new XPathDocument(linkXmlFile);
-                var navigator = linkXml.CreateNavigator();
-                navigator.MoveToFirstChild();
-                var iterator = navigator.SelectChildren("assembly", string.Empty);
-
-                while (iterator.MoveNext())
-                    _assembliesInALinkXmlFile.Add(iterator.Current.GetAttribute("fullname", string.Empty));
-            }
-        }
-
-        public bool IsDLLUsed(string assemblyFileName)
-        {
-            return _assembliesInALinkXmlFile.Contains(Path.GetFileNameWithoutExtension(assemblyFileName));
         }
     }
 }

@@ -66,10 +66,6 @@ namespace UnityEngine
         {
             get
             {
-                // TODO: Metal uses different internal format for RGBA texture and render texture. Need fix.
-                if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal)
-                    return false;
-
                 const CopyTextureSupport RT2TexAndTex2RT = CopyTextureSupport.RTToTexture | CopyTextureSupport.TextureToRT;
                 return (SystemInfo.copyTextureSupport & RT2TexAndTex2RT) == RT2TexAndTex2RT;
             }
@@ -140,7 +136,7 @@ namespace UnityEngine
                     var terrainData = pt.terrain.terrainData;
                     if (terrainData == null)
                         continue;
-                    terrainData.SetBasemapDirty(true);
+                    terrainData.SetBaseMapDirty();
                     if (paintTextureUsesCopyTexture)
                     {
                         // pull the data from GPU to CPU
@@ -260,7 +256,7 @@ namespace UnityEngine
 
         public static PaintContext CollectNormals(Terrain terrain, Rect bounds)
         {
-            RenderTexture rt = terrain.terrainData.normalmapTexture;
+            RenderTexture rt = terrain.normalmapTexture;
 
             RenderTextureFormat colorFormat = rt.format;
             int heightmapWidth = rt.width;
@@ -291,7 +287,7 @@ namespace UnityEngine
                     ctx.clippedTiles[i].width,
                     ctx.clippedTiles[i].height);
 
-                Texture sourceTexture = terrainTile.terrain.terrainData.normalmapTexture;
+                Texture sourceTexture = terrainTile.terrain.normalmapTexture;
                 FilterMode oldFilterMode = sourceTexture.filterMode;
 
                 sourceTexture.filterMode = FilterMode.Point;

@@ -17,6 +17,10 @@ namespace UnityEngineInternal.Input
     {
         internal static extern bool hasDeviceDiscoveredCallback { set; }
 
+        public static extern double currentTime { get; }
+
+        public static extern double currentTimeOffsetToRealtimeSinceStartup { get; }
+
         [FreeFunction("AllocateInputDeviceId")]
         public static extern int AllocateDeviceId();
 

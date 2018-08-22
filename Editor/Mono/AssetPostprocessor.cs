@@ -74,7 +74,7 @@ namespace UnityEditor
         static void PostprocessAllAssets(string[] importedAssets, string[] addedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromPathAssets)
         {
             object[] args = { importedAssets, deletedAssets, movedAssets, movedFromPathAssets };
-            foreach (var assetPostprocessorClass in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 MethodInfo method = assetPostprocessorClass.GetMethod("OnPostprocessAllAssets", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
                 if (method != null)
@@ -152,7 +152,7 @@ namespace UnityEditor
 
         private static IEnumerable<MethodInfo> AllPostProcessorMethodsNamed(string callbackName)
         {
-            return EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)).Select(assetPostprocessorClass => assetPostprocessorClass.GetMethod(callbackName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)).Where(method => method != null);
+            return GetCachedAssetPostprocessorClasses().Select(assetPostprocessorClass => assetPostprocessorClass.GetMethod(callbackName, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static)).Where(method => method != null);
         }
 
         internal class CompareAssetImportPriority : IComparer
@@ -186,18 +186,15 @@ namespace UnityEditor
 
         static ArrayList m_PostprocessStack = null;
         static ArrayList m_ImportProcessors = null;
-        static ArrayList m_PostprocessorClasses = null;
+        static Type[] m_PostprocessorClasses = null;
+        static string m_MeshProcessorsHashString = null;
+        static string m_TextureProcessorsHashString = null;
+        static string m_AudioProcessorsHashString = null;
 
-        static ArrayList GetCachedAssetPostprocessorClasses()
+        static Type[] GetCachedAssetPostprocessorClasses()
         {
             if (m_PostprocessorClasses == null)
-            {
-                m_PostprocessorClasses = new ArrayList();
-                foreach (var type in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
-                {
-                    m_PostprocessorClasses.Add(type);
-                }
-            }
+                m_PostprocessorClasses = EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)).ToArray();
             return m_PostprocessorClasses;
         }
 
@@ -254,9 +251,12 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static string GetMeshProcessorsHashString()
         {
+            if (m_MeshProcessorsHashString != null)
+                return m_MeshProcessorsHashString;
+
             var versionsByType = new SortedList<string, uint>();
 
-            foreach (var assetPostprocessorClass in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 try
                 {
@@ -280,8 +280,8 @@ namespace UnityEditor
                     Debug.LogException(e);
                 }
             }
-
-            return BuildHashString(versionsByType);
+            m_MeshProcessorsHashString = BuildHashString(versionsByType);
+            return m_MeshProcessorsHashString;
         }
 
         [RequiredByNativeCode]
@@ -408,9 +408,12 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static string GetTextureProcessorsHashString()
         {
+            if (m_TextureProcessorsHashString != null)
+                return m_TextureProcessorsHashString;
+
             var versionsByType = new SortedList<string, uint>();
 
-            foreach (var assetPostprocessorClass in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 try
                 {
@@ -435,7 +438,8 @@ namespace UnityEditor
                 }
             }
 
-            return BuildHashString(versionsByType);
+            m_TextureProcessorsHashString = BuildHashString(versionsByType);
+            return m_TextureProcessorsHashString;
         }
 
         [RequiredByNativeCode]
@@ -480,9 +484,12 @@ namespace UnityEditor
         [RequiredByNativeCode]
         static string GetAudioProcessorsHashString()
         {
+            if (m_AudioProcessorsHashString != null)
+                return m_AudioProcessorsHashString;
+
             var versionsByType = new SortedList<string, uint>();
 
-            foreach (var assetPostprocessorClass in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 try
                 {
@@ -506,7 +513,8 @@ namespace UnityEditor
                 }
             }
 
-            return BuildHashString(versionsByType);
+            m_AudioProcessorsHashString = BuildHashString(versionsByType);
+            return m_AudioProcessorsHashString;
         }
 
         [RequiredByNativeCode]
@@ -533,7 +541,7 @@ namespace UnityEditor
         {
             object[] args = { assetPAth, prevoiusAssetBundleName, newAssetBundleName };
 
-            foreach (var assetPostprocessorClass in EditorAssemblies.SubclassesOf(typeof(AssetPostprocessor)))
+            foreach (var assetPostprocessorClass in GetCachedAssetPostprocessorClasses())
             {
                 var assetPostprocessor = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                 AttributeHelper.InvokeMemberIfAvailable(assetPostprocessor, "OnPostprocessAssetbundleNameChanged", args);

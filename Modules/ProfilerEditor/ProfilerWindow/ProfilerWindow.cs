@@ -46,6 +46,8 @@ namespace UnityEditor
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrTextContent("Load", "Load binary profiling information from a file. Shift click to append to the existing data");
             public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
 
+            public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Popup", "Options");
+
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
 
             public static readonly GUIContent accessibilityModeLabel = EditorGUIUtility.TrTextContent("Color Blind Mode");
@@ -675,10 +677,9 @@ namespace UnityEditor
 
         private void DrawCPUOrGPUPane(ProfilerFrameDataHierarchyView hierarchyView, ProfilerTimelineGUI timelinePane)
         {
-            var frameDataView = GetFrameDataView(m_ViewType, hierarchyView.sortedProfilerColumn, hierarchyView.sortedProfilerColumnAscending);
-
             if (timelinePane != null && m_ViewType == ProfilerViewType.Timeline)
             {
+                var frameDataView = GetFrameDataView(m_ViewType, hierarchyView.sortedProfilerColumn, timelinePane.GetFilteringMode(), hierarchyView.sortedProfilerColumnAscending);
                 DrawCPUTimelineViewToolbar(timelinePane, frameDataView);
 
                 float lowerPaneSize = m_VertSplit.realSizes[1];
@@ -687,6 +688,7 @@ namespace UnityEditor
             }
             else
             {
+                var frameDataView = GetFrameDataView(m_ViewType, hierarchyView.sortedProfilerColumn, hierarchyView.GetFilteringMode(), hierarchyView.sortedProfilerColumnAscending);
                 hierarchyView.DoGUI(frameDataView);
             }
         }
@@ -712,12 +714,7 @@ namespace UnityEditor
             return m_CPUOrGPUProfilerProperty;
         }
 
-        public FrameViewFilteringModes GetFilteringMode()
-        {
-            return ProfilerDriver.profileEditor ? 0 : FrameViewFilteringModes.CollapseEditorBoundarySamples;
-        }
-
-        public FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, bool sortAscending)
+        public FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, FrameViewFilteringModes filteringMode, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
             if (m_FrameDataView != null && m_FrameDataView.IsValid())
@@ -726,7 +723,6 @@ namespace UnityEditor
                     return m_FrameDataView;
             }
 
-            FrameViewFilteringModes filteringMode = GetFilteringMode();
             if (m_FrameDataView != null)
             {
                 m_FrameDataView.Dispose();
@@ -1315,15 +1311,8 @@ namespace UnityEditor
             // Deep profiling
             SetProfileDeepScripts(GUILayout.Toggle(ProfilerDriver.deepProfiling, Styles.deepProfile, EditorStyles.toolbarButton));
 
-            bool wasProfilingEditor = ProfilerDriver.profileEditor;
             // Profile Editor
             ProfilerDriver.profileEditor = GUILayout.Toggle(ProfilerDriver.profileEditor, Styles.profileEditor, EditorStyles.toolbarButton);
-
-            if (wasProfilingEditor != ProfilerDriver.profileEditor)
-            {
-                // Clear the hierarchy view to force a rebuilding of the tree
-                m_CPUFrameDataHierarchyView.Clear();
-            }
 
             EditorGUI.EndDisabledGroup();
 

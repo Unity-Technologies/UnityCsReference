@@ -29,11 +29,11 @@ namespace UnityEditor.Scripting.Compilers
             return StartCompiler(target, compiler, arguments, profileDirectory, true, monoInstallation);
         }
 
-        protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments, string profileDirectory, bool setMonoEnvironmentVariables, string monodistro)
+        protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments, string profileDirectory, bool setMonoEnvironmentVariables, string monodistro, IList<string> pathMappings = null)
         {
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
 
-            RunAPIUpdaterIfRequired(responseFile);
+            RunAPIUpdaterIfRequired(responseFile, pathMappings);
 
             var program = new ManagedProgram(monodistro, profileDirectory, compiler, " @" + responseFile, setMonoEnvironmentVariables, null);
             program.Start();

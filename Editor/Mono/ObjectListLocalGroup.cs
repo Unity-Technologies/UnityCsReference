@@ -1272,7 +1272,7 @@ namespace UnityEditor
 
             public bool DoCharacterOffsetSelection()
             {
-                if (Event.current.type == EventType.KeyDown && Event.current.shift)
+                if (Event.current.type == EventType.KeyDown && Event.current.shift && Event.current.character != 0)
                 {
                     System.StringComparison ignoreCase = System.StringComparison.CurrentCultureIgnoreCase;
                     string startName = "";

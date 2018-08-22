@@ -290,7 +290,7 @@ namespace UnityEditor
                 sourcePath);
         }
 
-        internal static void CreateAssetWithContent(string filename, string content, Texture2D icon = null)
+        public static void CreateAssetWithContent(string filename, string content, Texture2D icon = null)
         {
             var action = ScriptableObject.CreateInstance<DoCreateAssetWithContent>();
             action.filecontent = content;
