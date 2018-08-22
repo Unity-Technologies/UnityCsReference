@@ -149,5 +149,10 @@ namespace UnityEditorInternal.Profiling
         public virtual void Clear()
         {
         }
+
+        public virtual FrameViewFilteringModes GetFilteringMode()
+        {
+            return 0;
+        }
     }
 }

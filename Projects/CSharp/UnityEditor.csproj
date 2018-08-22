@@ -2048,6 +2048,9 @@
   <Compile Include="..\..\Editor\Mono\Inspector\AudioSourceInspector.cs">
     <Link>Editor\Mono\Inspector\AudioSourceInspector.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\Inspector\AutodeskInteractiveShaderGUI.cs">
+    <Link>Editor\Mono\Inspector\AutodeskInteractiveShaderGUI.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\AvatarMaskInspector.cs">
     <Link>Editor\Mono\Inspector\AvatarMaskInspector.cs</Link>
   </Compile>
@@ -2506,9 +2509,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\StandardParticlesShaderGUI.cs">
     <Link>Editor\Mono\Inspector\StandardParticlesShaderGUI.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\StandardRoughnessShaderGUI.cs">
-    <Link>Editor\Mono\Inspector\StandardRoughnessShaderGUI.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\StandardShaderGUI.cs">
     <Link>Editor\Mono\Inspector\StandardShaderGUI.cs</Link>
@@ -3047,8 +3047,8 @@
   <Compile Include="..\..\Editor\Mono\ScriptAttributeGUI\UIElementsPropertyDrawer.cs">
     <Link>Editor\Mono\ScriptAttributeGUI\UIElementsPropertyDrawer.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterHelper.cs">
-    <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterHelper.cs</Link>
+  <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterAssemblyHelper.cs">
+    <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterAssemblyHelper.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\APIUpdaterLogger.cs">
     <Link>Editor\Mono\Scripting\APIUpdater\APIUpdaterLogger.cs</Link>
@@ -3059,8 +3059,8 @@
   <Compile Include="..\..\Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs">
     <Link>Editor\Mono\Scripting\APIUpdater\AssemblyDependencyGraph.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\APIUpdater.cs">
-    <Link>Editor\Mono\Scripting\Compilers\APIUpdater.cs</Link>
+  <Compile Include="..\..\Editor\Mono\Scripting\Compilers\APIUpdaterHelper.cs">
+    <Link>Editor\Mono\Scripting\Compilers\APIUpdaterHelper.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Scripting\Compilers\BooCompiler.cs">
     <Link>Editor\Mono\Scripting\Compilers\BooCompiler.cs</Link>

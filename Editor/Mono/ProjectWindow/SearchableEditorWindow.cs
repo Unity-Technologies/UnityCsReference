@@ -62,6 +62,24 @@ namespace UnityEditor
         internal const float k_SearchTimerDelaySecs = 0.250f;
         private double m_NextSearch = double.MaxValue;
 
+        [MenuItem("CONTEXT/Component/Find References In Scene")]
+        private static void OnSearchForReferencesToComponent(MenuCommand command)
+        {
+            var component = command.context as Component;
+            if (component)
+            {
+                var searchFilter = "ref:" + component.GetInstanceID() + ":";
+                foreach (SearchableEditorWindow sw in searchableWindows)
+                {
+                    if (sw.m_HierarchyType == HierarchyType.GameObjects)
+                    {
+                        sw.SetSearchFilter(searchFilter, SearchMode.All, false, false);
+                        sw.m_HasSearchFilterFocus = true;
+                        sw.Repaint();
+                    }
+                }
+            }
+        }
 
         [MenuItem("Assets/Find References In Scene", false, 25)]
         private static void OnSearchForReferences()

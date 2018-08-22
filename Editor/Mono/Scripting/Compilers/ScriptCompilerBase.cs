@@ -378,12 +378,15 @@ namespace UnityEditor.Scripting.Compilers
             }
         }
 
-        protected void RunAPIUpdaterIfRequired(string responseFile)
+        protected void RunAPIUpdaterIfRequired(string responseFile, IList<string> pathMappings)
         {
             if (!_runAPIUpdater)
                 return;
 
-            APIUpdaterHelper.UpdateScripts(responseFile, _island.GetExtensionOfSourceFiles());
+            var pathMappingsFilePath = Path.GetTempFileName();
+            File.WriteAllLines(pathMappingsFilePath, pathMappings.ToArray());
+
+            APIUpdaterHelper.UpdateScripts(responseFile, _island.GetExtensionOfSourceFiles(), PrepareFileName(pathMappingsFilePath));
         }
     }
 

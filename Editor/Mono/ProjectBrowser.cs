@@ -2266,7 +2266,7 @@ namespace UnityEditor
             Rect r = GUILayoutUtility.GetRect(s_Styles.m_FilterByLabel, EditorStyles.toolbarButton);
             if (EditorGUI.DropdownButton(r, s_Styles.m_FilterByLabel, FocusType.Passive, EditorStyles.toolbarButton))
             {
-                PopupWindow.Show(r, new PopupList(m_AssetLabels));
+                PopupWindow.Show(r, new PopupList(m_AssetLabels), null, ShowMode.PopupMenuWithKeyboardFocus);
             }
         }
 

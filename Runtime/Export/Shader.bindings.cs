@@ -324,9 +324,14 @@ namespace UnityEngine
 
 namespace UnityEngine
 {
+    // skinning/blend-shapes are implemented with compute shaders so we must be able to load them from builtins
+    [UsedByNativeCode]
     [NativeHeader("Runtime/Graphics/ShaderScriptBindings.h")]
     public sealed partial class ComputeShader : Object
     {
+        // skinning/blend-shapes are implemented with compute shaders so we must be able to load them from builtins
+        // alas marking ONLY class as used might not work if we actually use it only in cpp land, so mark "random" method too
+        [RequiredByNativeCode]
         [NativeMethod(Name = "ComputeShaderScripting::FindKernel", HasExplicitThis = true, IsFreeFunction = true, ThrowsException = true)]
         extern public int  FindKernel(string name);
         [FreeFunction(Name = "ComputeShaderScripting::HasKernel", HasExplicitThis = true)]

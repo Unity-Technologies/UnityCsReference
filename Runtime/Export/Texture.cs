@@ -153,6 +153,9 @@ namespace UnityEngine
 
         public RenderTexture(int width, int height, int depth, [uei.DefaultValue("RenderTextureFormat.Default")] RenderTextureFormat format, [uei.DefaultValue("RenderTextureReadWrite.Default")] RenderTextureReadWrite readWrite)
         {
+            if (!ValidateFormat(format))
+                return;
+
             Internal_Create(this);
             this.width = width; this.height = height; this.depth = depth; this.format = format;
 
@@ -281,6 +284,9 @@ namespace UnityEngine
         // Be careful. We can't call base constructor here because it would create the native object twice.
         public CustomRenderTexture(int width, int height, RenderTextureFormat format, RenderTextureReadWrite readWrite)
         {
+            if (!ValidateFormat(format))
+                return;
+
             Internal_CreateCustomRenderTexture(this, readWrite);
 
             this.width = width;
@@ -290,6 +296,9 @@ namespace UnityEngine
 
         public CustomRenderTexture(int width, int height, RenderTextureFormat format)
         {
+            if (!ValidateFormat(format))
+                return;
+
             Internal_CreateCustomRenderTexture(this, RenderTextureReadWrite.Default);
             this.width = width;
             this.height = height;
@@ -331,6 +340,37 @@ namespace UnityEngine
 
     public partial class Texture : Object
     {
+        internal bool ValidateFormat(RenderTextureFormat format)
+        {
+            if (SystemInfo.SupportsRenderTextureFormat(format))
+            {
+                return true;
+            }
+            else
+            {
+                Debug.LogError(String.Format("RenderTexture creation failed. '{0}' is not supported on this platform. Use 'SystemInfo.SupportsRenderTextureFormat' C# API to check format support.", format.ToString()), this);
+                return false;
+            }
+        }
+
+        internal bool ValidateFormat(TextureFormat format)
+        {
+            if (SystemInfo.SupportsTextureFormat(format))
+            {
+                return true;
+            }
+            else if (GraphicsFormatUtility.IsCompressedTextureFormat(format))
+            {
+                Debug.LogWarning(String.Format("'{0}' is not supported on this platform. Decompressing texture. Use 'SystemInfo.SupportsTextureFormat' C# API to check format support.", format.ToString()), this);
+                return true;
+            }
+            else
+            {
+                Debug.LogError(String.Format("Texture creation failed. '{0}' is not supported on this platform. Use 'SystemInfo.SupportsTextureFormat' C# API to check format support.", format.ToString()), this);
+                return false;
+            }
+        }
+
         internal bool ValidateFormat(GraphicsFormat format, FormatUsage usage)
         {
             if (SystemInfo.IsFormatSupported(format, usage))
@@ -339,7 +379,7 @@ namespace UnityEngine
             }
             else
             {
-                Debug.LogError(String.Format("'{1}' is not supported on this platform. Texture '{0}' creation failed.", name, format), this);
+                Debug.LogError(String.Format("Texture creation failed. '{0}' is not supported for {1} usage on this platform. Use 'SystemInfo.IsFormatSupported' C# API to check format support.", format.ToString(), usage.ToString()), this);
                 return false;
             }
         }
@@ -368,6 +408,9 @@ namespace UnityEngine
 
         internal Texture2D(int width, int height, TextureFormat textureFormat, bool mipChain, bool linear, IntPtr nativeTex)
         {
+            if (!ValidateFormat(textureFormat))
+                return;
+
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = TextureCreationFlags.None;
             if (mipChain)
@@ -578,6 +621,9 @@ namespace UnityEngine
 
         internal Cubemap(int width, TextureFormat textureFormat, bool mipChain, IntPtr nativeTex)
         {
+            if (!ValidateFormat(textureFormat))
+                return;
+
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
             TextureCreationFlags flags = TextureCreationFlags.None;
             if (mipChain)
@@ -631,6 +677,9 @@ namespace UnityEngine
 
         public Texture3D(int width, int height, int depth, TextureFormat textureFormat, bool mipChain)
         {
+            if (!ValidateFormat(textureFormat))
+                return;
+
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, false);
             TextureCreationFlags flags = TextureCreationFlags.None;
             if (mipChain)
@@ -661,6 +710,9 @@ namespace UnityEngine
 
         public Texture2DArray(int width, int height, int depth, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear)
         {
+            if (!ValidateFormat(textureFormat))
+                return;
+
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = TextureCreationFlags.None;
             if (mipChain)
@@ -695,6 +747,9 @@ namespace UnityEngine
 
         public CubemapArray(int width, int cubemapCount, TextureFormat textureFormat, bool mipChain, [uei.DefaultValue("false")] bool linear)
         {
+            if (!ValidateFormat(textureFormat))
+                return;
+
             GraphicsFormat format = GraphicsFormatUtility.GetGraphicsFormat(textureFormat, !linear);
             TextureCreationFlags flags = TextureCreationFlags.None;
             if (mipChain)
@@ -729,12 +784,14 @@ namespace UnityEngine
 
         public SparseTexture(int width, int height, TextureFormat format, int mipCount)
         {
-            Internal_Create(this, width, height, format, false, mipCount);
+            if (ValidateFormat(format))
+                Internal_Create(this, width, height, format, false, mipCount);
         }
 
         public SparseTexture(int width, int height, TextureFormat format, int mipCount, bool linear)
         {
-            Internal_Create(this, width, height, format, linear, mipCount);
+            if (ValidateFormat(format))
+                Internal_Create(this, width, height, format, linear, mipCount);
         }
     }
 }

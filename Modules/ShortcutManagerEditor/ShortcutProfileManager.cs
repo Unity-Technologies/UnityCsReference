@@ -58,8 +58,10 @@ namespace UnityEditor.ShortcutManagement
         {
             foreach (var entry in m_Entries)
             {
+                m_ActiveProfile.Remove(entry);
                 entry.ResetToDefault();
             }
+            m_ActiveProfile.SaveToDisk();
         }
 
         public void ApplyActiveProfile()

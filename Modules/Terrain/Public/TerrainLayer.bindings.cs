@@ -15,68 +15,25 @@ namespace UnityEngine
     [NativeHeader("Modules/Terrain/Public/TerrainLayerScriptingInterface.h")]
     public sealed partial class TerrainLayer : Object
     {
-        private const string k_ScriptingInterfaceName = "TerrainLayerScriptingInterface";
-        private const string k_ScriptingInterfacePrefix = k_ScriptingInterfaceName + "::";
-
         public TerrainLayer() { Internal_Create(this); }
 
-        [FreeFunction(k_ScriptingInterfacePrefix + "Create")]
+        [FreeFunction("TerrainLayerScriptingInterface::Create")]
         extern private static void Internal_Create([Writable] TerrainLayer layer);
 
-        extern public Texture2D diffuseTexture
-        {
-            [NativeName("GetDiffuseTexture")]
-            get;
-            [NativeName("SetDiffuseTexture")]
-            set;
-        }
+        extern public Texture2D diffuseTexture { get; set; }
+        extern public Texture2D normalMapTexture { get; set; }
+        extern public Texture2D maskMapTexture { get; set; }
+        extern public Vector2 tileSize { get; set; }
+        extern public Vector2 tileOffset { get; set; }
 
-        extern public Texture2D normalMapTexture
-        {
-            [NativeName("GetNormalMapTexture")]
-            get;
-            [NativeName("SetNormalMapTexture")]
-            set;
-        }
+        [NativeProperty("SpecularColor")] extern public Color specular { get; set; }
 
-        extern public Vector2 tileSize
-        {
-            [NativeName("GetTileSize")]
-            get;
-            [NativeName("SetTileSize")]
-            set;
-        }
-
-        extern public Vector2 tileOffset
-        {
-            [NativeName("GetTileOffset")]
-            get;
-            [NativeName("SetTileOffset")]
-            set;
-        }
-
-        extern public Color specular
-        {
-            [NativeName("GetSpecularColor")]
-            get;
-            [NativeName("SetSpecularColor")]
-            set;
-        }
-
-        extern public float metallic
-        {
-            [NativeName("GetMetallic")]
-            get;
-            [NativeName("SetMetallic")]
-            set;
-        }
-
-        extern public float smoothness
-        {
-            [NativeName("GetSmoothness")]
-            get;
-            [NativeName("SetSmoothness")]
-            set;
-        }
+        extern public float metallic { get; set; }
+        extern public float smoothness { get; set; }
+        extern public float normalScale { get; set; }
+        extern public Vector4 diffuseRemapMin { get; set; }
+        extern public Vector4 diffuseRemapMax { get; set; }
+        extern public Vector4 maskMapRemapMin { get; set; }
+        extern public Vector4 maskMapRemapMax { get; set; }
     }
 }

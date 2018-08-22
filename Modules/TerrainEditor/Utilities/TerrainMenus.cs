@@ -33,17 +33,6 @@ namespace UnityEditor
             GameObject terrain = Terrain.CreateTerrainGameObject(terrainData);
             terrain.name = "Terrain";
 
-            var theTerrain = terrain.GetComponent<Terrain>();
-            theTerrain.allowAutoConnect = true;
-            if (GraphicsSettings.renderPipelineAsset != null)
-            {
-                var material = GraphicsSettings.renderPipelineAsset.GetDefaultTerrainMaterial();
-                if (theTerrain && material != null)
-                {
-                    theTerrain.materialType = Terrain.MaterialType.Custom;
-                    theTerrain.materialTemplate = material;
-                }
-            }
             GameObjectUtility.SetParentAndAlign(terrain, parent);
             StageUtility.PlaceGameObjectInCurrentStage(terrain);
             GameObjectUtility.EnsureUniqueNameForSibling(terrain);

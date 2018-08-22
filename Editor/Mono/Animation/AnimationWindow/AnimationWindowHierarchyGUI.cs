@@ -33,7 +33,7 @@ namespace UnityEditorInternal
         private const float k_RowRightOffset = 10;
         private const float k_ValueFieldDragWidth = 15;
         private const float k_ValueFieldWidth = 80;
-        private const float k_ValueFieldOffsetFromRightSide = 90;
+        private const float k_ValueFieldOffsetFromRightSide = 100;
         private const float k_ColorIndicatorTopMargin = 3;
         public static readonly float k_DopeSheetRowHeight = EditorGUI.kSingleLineHeight;
         public static readonly float k_DopeSheetRowHeightTall = k_DopeSheetRowHeight * 2f;

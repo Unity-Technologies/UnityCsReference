@@ -551,7 +551,7 @@ namespace UnityEditor
 
             // ShowWithMode() always grabs window focus so we use ShowPopup() for popup windows so PopupWindowWithoutFocus
             // will work correctly (no focus when opened)
-            if (ContainerWindow.IsPopup(mode))
+            if (ContainerWindow.IsPopup(mode) && mode != ShowMode.PopupMenuWithKeyboardFocus)
                 ShowPopup();
             else
                 ShowWithMode(mode);

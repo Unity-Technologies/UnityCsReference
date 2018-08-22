@@ -3,40 +3,25 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine;
-using UnityEngine.Scripting.APIUpdating;
-using UnityEditorInternal;
-using UnityEditorInternal.MemoryProfiling;
-using UnityEditorInternal.MemoryProfiling.FileFormat;
+using UnityEngine.Profiling.Memory.Experimental;
+using UnityEditorInternal.Profiling.Memory.Experimental;
+using UnityEditorInternal.Profiling.Memory.Experimental.FileFormat;
 
-namespace UnityEditor.MemoryProfiling
+namespace UnityEditor.Profiling.Memory.Experimental
 {
-    public static class MemorySnapshot
+    // Note: this snapshot is completely serializable by unity's serializer.
+    // !!!!! NOTE: Keep in sync with Runtime\Profiler\MemorySnapshots.cpp
+    public class PackedMemorySnapshot : ISerializationCallbackReceiver
     {
-        [Flags]
-        public enum CaptureFlags : int
-        {
-            ManagedObjects = 0x001,
-            NativeObjects = 0x002,
-            NativeAllocations = 0x004,
-            NativeAllocationSites = 0x008,
-            NativeStackTraces = 0x010,
-        }
         private static readonly UInt64 kMinSupportedVersion = 7;
-        public static event Action<PackedMemorySnapshot> OnSnapshotReceived;
 
-        public static void RequestNewSnapshot(CaptureFlags captureflags = CaptureFlags.NativeObjects | CaptureFlags.ManagedObjects)
-        {
-            ProfilerDriver.RequestMemorySnapshot((uint)captureflags);
-        }
-
-        public static PackedMemorySnapshot LoadSnapshot(string path)
+        public static PackedMemorySnapshot Load(string path)
         {
             MemorySnapshotFileReader reader = new MemorySnapshotFileReader(path);
+
             UInt64 ver = reader.GetDataSingle(EntryType.Metadata_Version, ConversionFunctions.ToUInt32);
+
             if (ver < kMinSupportedVersion)
             {
                 throw new Exception(string.Format("Memory snapshot at {0}, is using an older format version: {1}", new object[] { reader.GetFilePath(), ver.ToString() }));
@@ -45,44 +30,18 @@ namespace UnityEditor.MemoryProfiling
             return new PackedMemorySnapshot(reader);
         }
 
-        public static void SaveSnapshot(PackedMemorySnapshot snapshot, string writePath)
+        public static void Save(PackedMemorySnapshot snapshot, string writePath)
         {
             string path = snapshot.GetReader().GetFilePath();
+
+            if (!System.IO.File.Exists(path))
+            {
+                throw new UnityException("Failed to save snapshot. Snapshot file: " + snapshot.filePath + " is missing.");
+            }
+
             FileUtil.CopyFileIfExists(path, writePath, true);
         }
 
-        static void DispatchSnapshot(PackedMemorySnapshot snapshot)
-        {
-            var onSnapshotReceived = OnSnapshotReceived;
-
-            if (onSnapshotReceived != null)
-                onSnapshotReceived(snapshot);
-        }
-
-        static void OpenSnapshotFile(string path)
-        {
-            PackedMemorySnapshot snapshot = null;
-            try
-            {
-                MemorySnapshotFileReader reader = new MemorySnapshotFileReader(path);
-                snapshot = new PackedMemorySnapshot(reader);
-            }
-            catch (Exception e)
-            {
-                Debug.LogError(e.Message);
-                return;
-            }
-            if (snapshot != null)
-            {
-                DispatchSnapshot(snapshot);
-            }
-        }
-    }
-
-    // Note: this snapshot is completely serializable by unity's serializer.
-    // !!!!! NOTE: Keep in sync with Runtime\Profiler\MemorySnapshots.cpp
-    public class PackedMemorySnapshot : ISerializationCallbackReceiver
-    {
         [SerializeField]
         MemorySnapshotFileReader m_Reader = null;
 
@@ -147,6 +106,113 @@ namespace UnityEditor.MemoryProfiling
             }
         }
 
+        public UnityEngine.Profiling.Memory.Experimental.MetaData metadata
+        {
+            get
+            {
+                byte[] array = m_Reader.GetDataSingle<byte[]>(EntryType.Metadata_UserMetadata, ConversionFunctions.ToByteArray);
+                // decoded as
+                //   content_data_length
+                //   content_data
+                //   platform_data_length
+                //   platform_data
+                //   screenshot_data_length
+                //     [opt: screenshot_data ]
+                //     [opt: screenshot_width ]
+                //     [opt: screenshot_height ]
+                //     [opt: screenshot_format ]
+
+                var metaData = new UnityEngine.Profiling.Memory.Experimental.MetaData();
+
+                int offset = 0;
+                int dataLength = 0;
+                offset = ReadIntFromByteArray(array, offset, out dataLength);
+                offset = ReadStringFromByteArray(array, offset, dataLength, out metaData.content);
+                offset = ReadIntFromByteArray(array, offset, out dataLength);
+                offset = ReadStringFromByteArray(array, offset, dataLength, out metaData.platform);
+                offset = ReadIntFromByteArray(array, offset, out dataLength);
+
+                if (dataLength > 0)
+                {
+                    int width;
+                    int height;
+                    int format;
+                    byte[] screenshot = new byte[dataLength];
+
+                    Array.Copy(array, offset, screenshot, 0, dataLength);
+                    offset += dataLength;
+
+                    offset = ReadIntFromByteArray(array, offset, out width);
+                    offset = ReadIntFromByteArray(array, offset, out height);
+                    offset = ReadIntFromByteArray(array, offset, out format);
+
+                    metaData.screenshot = new Texture2D(width, height, (TextureFormat)format, false);
+                    metaData.screenshot.LoadRawTextureData(screenshot);
+                    metaData.screenshot.Apply();
+                }
+
+                UnityEngine.Assertions.Assert.AreEqual(array.Length, offset);
+
+                return metaData;
+            }
+        }
+
+        private static int ReadIntFromByteArray(byte[] array, int offset, out int value)
+        {
+            unsafe
+            {
+                int lValue = 0;
+                byte* pi = (byte*)&lValue;
+                pi[0] = array[offset++];
+                pi[1] = array[offset++];
+                pi[2] = array[offset++];
+                pi[3] = array[offset++];
+
+                value = lValue;
+            }
+
+            return offset;
+        }
+
+        private static int ReadStringFromByteArray(byte[] array, int offset, int stringLength, out string value)
+        {
+            if (stringLength == 0)
+            {
+                value = "";
+                return offset;
+            }
+
+            unsafe
+            {
+                value = new string('\0', stringLength);
+                fixed(char* p = value)
+                {
+                    char* begin = p;
+                    char* end = p + value.Length;
+
+                    while (begin != end)
+                    {
+                        for (int i = 0; i < sizeof(char); ++i)
+                        {
+                            ((byte*)begin)[i] = array[offset++];
+                        }
+
+                        begin++;
+                    }
+                }
+            }
+
+            return offset;
+        }
+
+        public string filePath
+        {
+            get
+            {
+                return m_Reader.GetFilePath();
+            }
+        }
+
         public DateTime recordDate
         {
             get
@@ -156,12 +222,11 @@ namespace UnityEditor.MemoryProfiling
             }
         }
 
-        public MemorySnapshot.CaptureFlags captureFlags
+        public UnityEngine.Profiling.Memory.Experimental.CaptureFlags captureFlags
         {
             get
             {
-                return (MemorySnapshot.CaptureFlags)m_Reader.GetDataSingle(
-                    EntryType.Metadata_CaptureFlags, ConversionFunctions.ToUInt32);
+                return (CaptureFlags)m_Reader.GetDataSingle(EntryType.Metadata_CaptureFlags, ConversionFunctions.ToUInt32);
             }
         }
 
@@ -169,8 +234,7 @@ namespace UnityEditor.MemoryProfiling
         {
             get
             {
-                return (VirtualMachineInformation)m_Reader.GetDataSingle(
-                    EntryType.Metadata_VirtualMachineInformation, ConversionFunctions.ToVirtualMachineInformation);
+                return m_Reader.GetDataSingle(EntryType.Metadata_VirtualMachineInformation, ConversionFunctions.ToVirtualMachineInformation);
             }
         }
     }
@@ -228,25 +292,13 @@ namespace UnityEditor.MemoryProfiling
         }
     }
 
-    [Serializable, MovedFrom("UnityEditor.MemoryProfiler")]
     public struct VirtualMachineInformation
     {
-        [SerializeField]
         public int pointerSize { get; internal set; }
-
-        [SerializeField]
         public int objectHeaderSize { get; internal set; }
-
-        [SerializeField]
         public int arrayHeaderSize { get; internal set; }
-
-        [SerializeField]
         public int arrayBoundsOffsetInHeader { get; internal set; }
-
-        [SerializeField]
         public int arraySizeOffsetInHeader { get; internal set; }
-
-        [SerializeField]
         public int allocationGranularity { get; internal set; }
     }
 }

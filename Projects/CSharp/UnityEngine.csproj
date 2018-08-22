@@ -89,6 +89,9 @@
   <Compile Include="..\..\Runtime\Export\AndroidJavaImpl.cs">
     <Link>Runtime\Export\AndroidJavaImpl.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\AndroidPermissions.bindings.cs">
+    <Link>Runtime\Export\AndroidPermissions.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\AnimationCurve.bindings.cs">
     <Link>Runtime\Export\AnimationCurve.bindings.cs</Link>
   </Compile>
@@ -1075,6 +1078,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Jobs\ScriptBindings\Jobs.bindings.cs">
     <Link>Runtime\Jobs\ScriptBindings\Jobs.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Profiler\ScriptBindings\MemoryProfiling.bindings.cs">
+    <Link>Runtime\Profiler\ScriptBindings\MemoryProfiling.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Profiler\ScriptBindings\Profiler.bindings.cs">
     <Link>Runtime\Profiler\ScriptBindings\Profiler.bindings.cs</Link>

@@ -150,6 +150,10 @@ namespace UnityEditor
                 EditorGUILayout.PropertyField(m_PixelPerfect);
                 EditorGUILayout.PropertyField(m_Camera, Styles.renderCamera);
 
+                if (m_Camera.objectReferenceValue == null)
+                    EditorGUILayout.HelpBox("A Screen Space Canvas with no specified camera acts like an Overlay Canvas.",
+                        MessageType.Warning);
+
                 if (m_Camera.objectReferenceValue != null)
                     EditorGUILayout.PropertyField(m_PlaneDistance);
 
@@ -158,16 +162,17 @@ namespace UnityEditor
                 if (m_Camera.objectReferenceValue != null)
                     EditorGUILayout.SortingLayerField(Styles.m_SortingLayerStyle, m_SortingLayerID, EditorStyles.popup, EditorStyles.label);
                 EditorGUILayout.PropertyField(m_SortingOrder, Styles.m_SortingOrderStyle);
-
-                if (m_Camera.objectReferenceValue == null)
-                    EditorGUILayout.HelpBox("Screen Space - A canvas with no specified camera acts like a Overlay Canvas." +
-                        " Please assign a camera to it in the 'Render Camera' field.", MessageType.Warning);
             }
             EditorGUILayout.EndFadeGroup();
 
             if (EditorGUILayout.BeginFadeGroup(m_WorldMode.faded))
             {
                 EditorGUILayout.PropertyField(m_Camera, Styles.eventCamera);
+
+                if (m_Camera.objectReferenceValue == null)
+                    EditorGUILayout.HelpBox("A World Space Canvas with no specified Event Camera may not register UI events correctly.",
+                        MessageType.Warning);
+
                 EditorGUILayout.Space();
                 EditorGUILayout.SortingLayerField(Styles.m_SortingLayerStyle, m_SortingLayerID, EditorStyles.popup);
                 EditorGUILayout.PropertyField(m_SortingOrder, Styles.m_SortingOrderStyle);

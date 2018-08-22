@@ -421,6 +421,16 @@ namespace UnityEditor
 
             bool allowSceneObjects = !EditorUtility.IsPersistent(m_Terrain.terrainData); // sometimes user prefers saving terrainData with the scene file
             m_Tree = (GameObject)EditorGUILayout.ObjectField("Tree Prefab", m_Tree, typeof(GameObject), allowSceneObjects);
+            if (m_Tree)
+            {
+                MeshRenderer meshRenderer = m_Tree.GetComponent<MeshRenderer>();
+                if (meshRenderer)
+                {
+                    EditorGUI.BeginDisabled(true);
+                    EditorGUILayout.EnumPopup("Cast Shadows", meshRenderer.shadowCastingMode);
+                    EditorGUI.EndDisabled();
+                }
+            }
             if (!TerrainEditorUtility.IsLODTreePrototype(m_Tree))
                 m_BendFactor = EditorGUILayout.FloatField("Bend Factor", m_BendFactor);
 

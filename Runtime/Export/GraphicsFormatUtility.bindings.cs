@@ -11,6 +11,7 @@ namespace UnityEngine
     {
         namespace Rendering
         {
+            [NativeHeader("Runtime/Graphics/TextureFormat.h")]
             [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
             public class GraphicsFormatUtility
             {
@@ -50,6 +51,9 @@ namespace UnityEngine
 
                 [FreeFunction]
                 extern public static bool IsCompressedFormat(GraphicsFormat format);
+
+                [FreeFunction("IsAnyCompressedTextureFormat")]
+                extern internal static bool IsCompressedTextureFormat(TextureFormat format);
 
                 [FreeFunction]
                 extern public static bool IsPackedFormat(GraphicsFormat format);

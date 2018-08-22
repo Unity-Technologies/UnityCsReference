@@ -81,6 +81,9 @@ namespace UnityEditor
 
         void OnSelectionChange()
         {
+            if (m_RealtimeLightmapsTab == null || m_BakedLightmapsTab == null)
+                return;
+
             m_RealtimeLightmapsTab.UpdateActiveGameObjectSelection();
             m_BakedLightmapsTab.UpdateActiveGameObjectSelection();
 

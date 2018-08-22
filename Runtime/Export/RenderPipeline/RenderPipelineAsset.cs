@@ -43,6 +43,21 @@ namespace UnityEngine.Experimental.Rendering
             return null;
         }
 
+        public virtual Shader GetAutodeskInteractiveShader()
+        {
+            return null;
+        }
+
+        public virtual Shader GetAutodeskInteractiveTransparentShader()
+        {
+            return null;
+        }
+
+        public virtual Shader GetAutodeskInteractiveMaskedShader()
+        {
+            return null;
+        }
+
         public virtual Material GetDefaultParticleMaterial()
         {
             return null;

@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEditor.Utils;
-using System.Text;
 using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor.Scripting.Compilers
@@ -43,8 +42,16 @@ namespace UnityEditor.Scripting.Compilers
                 arguments.Add("-r:" + PrepareFileName(dll));
             foreach (string define in _island._defines.Distinct())
                 arguments.Add("-define:" + define);
+
+            var pathMappings = new List<string>(_island._files.Length);
             foreach (string source in _island._files)
-                arguments.Add(PrepareFileName(source));
+            {
+                var preparedFileName = PrepareFileName(source);
+                if (preparedFileName != source)
+                    pathMappings.Add(preparedFileName + " => " + source);
+
+                arguments.Add(preparedFileName);
+            }
 
             if (!AddCustomResponseFileIfPresent(arguments, ReponseFilename))
             {
@@ -53,7 +60,16 @@ namespace UnityEditor.Scripting.Compilers
                 else if (_island._api_compatibility_level == ApiCompatibilityLevel.NET_2_0 && AddCustomResponseFileIfPresent(arguments, "gmcs.rsp"))
                     Debug.LogWarning(string.Format("Using obsolete custom response file 'gmcs.rsp'. Please use '{0}' instead.", ReponseFilename));
             }
-            return StartCompiler(_island._target, GetCompilerPath(arguments), arguments, BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level), false, MonoInstallationFinder.GetMonoInstallation(MonoInstallationFinder.MonoBleedingEdgeInstallation));
+
+            return StartCompiler(
+                _island._target,
+                GetCompilerPath(arguments),
+                arguments,
+                BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level),
+                false,
+                MonoInstallationFinder.GetMonoInstallation(MonoInstallationFinder.MonoBleedingEdgeInstallation),
+                pathMappings
+            );
         }
 
         private string GetCompilerPath(List<string> arguments)

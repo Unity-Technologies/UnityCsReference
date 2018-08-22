@@ -298,7 +298,7 @@ namespace UnityEditor
                 {
                     GUIUtility.keyboardControl = 0;
                     m_DropdownWindow = new LayoutDropdownWindow(serializedObject);
-                    PopupWindow.Show(dropdownPosition, m_DropdownWindow);
+                    PopupWindow.Show(dropdownPosition, m_DropdownWindow, null, ShowMode.PopupMenuWithKeyboardFocus);
                 }
                 GUI.color = oldColor;
             }

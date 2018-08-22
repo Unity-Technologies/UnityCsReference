@@ -33,6 +33,24 @@ namespace UnityEditorInternal.Profiling
             (int)DetailedViewType.CallersAndCallees,
         };
 
+        [Flags]
+        public enum CpuProfilerOptions
+        {
+            None = 0,
+            CollapseEditorBoundarySamples = 1 << 0, // Session based override, default to off
+        };
+
+        static readonly GUIContent[] k_CpuProfilerOptions =
+        {
+            EditorGUIUtility.TrTextContent("Collapse EditorOnly Samples", "Samples that are only created due to profiling the editor are collapsed by default, renamed to EditorOnly [<FunctionName>] and any GC Alloc incurred by them will not be accumulated."),
+        };
+
+        private const string k_CpuProfilerHierarchyViewOptionsPrefKey = "CPUHierarchyView." + nameof(m_CpuProfilerOptions);
+
+        [SerializeField]
+        int m_CpuProfilerOptions = (int)CpuProfilerOptions.CollapseEditorBoundarySamples;
+
+
         [NonSerialized]
         bool m_Initialized;
 
@@ -134,6 +152,8 @@ namespace UnityEditorInternal.Profiling
             m_TreeView.selectionChanged += OnMainTreeViewSelectionChanged;
             m_TreeView.searchChanged += OnMainTreeViewSearchChanged;
             m_TreeView.Reload();
+
+            m_CpuProfilerOptions = SessionState.GetInt(k_CpuProfilerHierarchyViewOptionsPrefKey, m_CpuProfilerOptions);
 
             m_SearchField = new SearchField();
             m_SearchField.downOrUpArrowKeyPressed += m_TreeView.SetFocusAndEnsureSelectedItem;
@@ -300,6 +320,7 @@ namespace UnityEditorInternal.Profiling
                 DrawDetailedViewPopup();
                 GUILayout.FlexibleSpace();
 
+                DrawOptionsMenuPopup();
                 EditorGUILayout.EndHorizontal();
 
                 switch (m_DetailedViewType)
@@ -343,7 +364,10 @@ namespace UnityEditorInternal.Profiling
             DrawSearchBar();
 
             if (!showDetailedView)
+            {
                 DrawDetailedViewPopup();
+                DrawOptionsMenuPopup();
+            }
 
             EditorGUILayout.EndHorizontal();
         }
@@ -418,6 +442,40 @@ namespace UnityEditorInternal.Profiling
                 m_DetailedCallsView.Clear();
             if (m_TreeView != null)
                 m_TreeView.Clear();
+        }
+
+        public override FrameViewFilteringModes GetFilteringMode()
+        {
+            if (gpuView)
+                return base.GetFilteringMode();
+            return base.GetFilteringMode() | (OptionEnabled(CpuProfilerOptions.CollapseEditorBoundarySamples) ? FrameViewFilteringModes.CollapseEditorBoundarySamples : 0);
+        }
+
+        void DrawOptionsMenuPopup()
+        {
+            var position = GUILayoutUtility.GetRect(ProfilerWindow.Styles.optionsButtonContent, EditorStyles.toolbarButton);
+            if (GUI.Button(position, ProfilerWindow.Styles.optionsButtonContent, EditorStyles.toolbarButton))
+            {
+                var pm = new GenericMenu();
+                for (int i = 0; i < k_CpuProfilerOptions.Length; i++)
+                {
+                    CpuProfilerOptions option = (CpuProfilerOptions)(1 << i);
+                    pm.AddItem(k_CpuProfilerOptions[i], OptionEnabled(option), () => ToggleOption(option));
+                }
+                pm.Popup(position, -1);
+            }
+        }
+
+        bool OptionEnabled(CpuProfilerOptions option)
+        {
+            return (option & (CpuProfilerOptions)m_CpuProfilerOptions) != CpuProfilerOptions.None;
+        }
+
+        void ToggleOption(CpuProfilerOptions option)
+        {
+            m_CpuProfilerOptions = (int)((CpuProfilerOptions)m_CpuProfilerOptions ^ option);
+            SessionState.SetInt(k_CpuProfilerHierarchyViewOptionsPrefKey, m_CpuProfilerOptions);
+            treeView.Clear();
         }
     }
 }

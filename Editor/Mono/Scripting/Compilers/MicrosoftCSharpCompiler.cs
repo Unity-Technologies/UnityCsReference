@@ -75,12 +75,19 @@ namespace UnityEditor.Scripting.Compilers
             foreach (string define in _island._defines.Distinct())
                 arguments.Add("/define:" + define);
 
-            foreach (string source in _island._files)
+            var filePathMappings = new List<string>(_island._files.Length);
+            foreach (var source in _island._files)
             {
+                var f = PrepareFileName(source);
                 if (Application.platform == RuntimePlatform.WindowsEditor)
-                    arguments.Add(PrepareFileName(source).Replace('/', '\\'));
+                    f = f.Replace('/', '\\');
                 else
-                    arguments.Add(PrepareFileName(source).Replace('\\', '/'));
+                    f = f.Replace('\\', '/');
+
+                arguments.Add(f);
+
+                if (f != source)
+                    filePathMappings.Add(f + " => " + source);
             }
 
             var useNetCore = true;
@@ -115,7 +122,7 @@ namespace UnityEditor.Scripting.Compilers
 
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);
 
-            RunAPIUpdaterIfRequired(responseFile);
+            RunAPIUpdaterIfRequired(responseFile, filePathMappings);
 
             if (useNetCore)
             {

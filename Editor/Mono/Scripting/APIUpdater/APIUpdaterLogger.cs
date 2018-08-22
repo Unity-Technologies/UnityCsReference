@@ -11,7 +11,7 @@ namespace UnityEditor.Scripting
     {
         public static void WriteToFile(string msg, params object[] args)
         {
-            Console.WriteLine("[Script API Updater] {0}", string.Format(msg, args));
+            Console.WriteLine("[API Updater] {0}", string.Format(msg, args));
         }
 
         public static void WriteErrorToConsole(string msg, params object[] args)

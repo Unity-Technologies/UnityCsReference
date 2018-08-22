@@ -23,6 +23,8 @@ namespace UnityEditor
         bool m_ShowUVOverlay = true;
         [SerializeField]
         int m_SelectedPreviewTextureOptionIndex = 0;
+        [SerializeField]
+        float m_ExposureSliderValue = 0.0f;
 
         // Lightmap specifiers
         [SerializeField]
@@ -37,6 +39,8 @@ namespace UnityEditor
         GameObject[] m_CachedTextureObjects;
         int m_ActiveGameObjectLightmapIndex = -1; // the object the user selects in the scene
         Hash128 m_ActiveGameObjectTextureHash = new Hash128(); // the object the user selects in the scene
+
+        private float m_ExposureSliderMax = 10f;
 
         GITextureType[] kRealtimePreviewTextureTypes =
         {
@@ -90,6 +94,7 @@ namespace UnityEditor
             public static readonly GUIContent TextureNotAvailableBaked = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease try to rebake the current scene or turn on Auto, and make sure that this object is set to Lightmap Static if it's meant to be baked.");
             public static readonly GUIContent TextureNotAvailableBakedShadowmask = EditorGUIUtility.TrTextContent("The texture is not available at the moment.\nPlease make sure that Mixed Lights affect this GameObject and that it is set to Lightmap Static.");
             public static readonly GUIContent TextureLoading = EditorGUIUtility.TrTextContent("Loading...");
+            public static readonly GUIContent ExposureIcon = EditorGUIUtility.TrIconContent("SceneViewLighting", "Controls the number of stops to over or under expose the lightmap.");
         }
 
         public int lightmapIndex
@@ -122,6 +127,11 @@ namespace UnityEditor
                 return isIndexBased ? ((isRealtimeLightmap ? "Realtime Lightmap Index " : "Lightmap Index ") + lightmapIndex) :
                     (isRealtimeLightmap ? "Realtime Lightmap" : "Lightmap");
             }
+        }
+
+        private float exposure
+        {
+            get { return SelectedTextureNeedExposureControl() ? m_ExposureSliderValue : 0.0f; }
         }
 
         public static void CreateLightmapPreviewWindow(int lightmapId, bool realtimeLightmap, bool indexBased)
@@ -209,9 +219,25 @@ namespace UnityEditor
 
         private void PreviewSettings()
         {
-            m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, new GUIContent("W"), "preButton");
-            Rect dropRect = GUILayoutUtility.GetRect(14, 150, EditorGUI.kWindowToolbarHeight, EditorGUI.kWindowToolbarHeight);
+            using (new EditorGUI.DisabledScope(!SelectedTextureNeedExposureControl()))
+            {
+                float labelWidth = EditorGUIUtility.labelWidth;
+                EditorGUIUtility.labelWidth = 20;
+                var rect = GUILayoutUtility.GetRect(160, EditorGUI.kWindowToolbarHeight);
+                m_ExposureSliderValue = EditorGUI.Slider(rect, Styles.ExposureIcon, m_ExposureSliderValue, -m_ExposureSliderMax, m_ExposureSliderMax, float.MinValue, float.MaxValue);
 
+                // This will allow the user to set a new max value for the current session
+                if (m_ExposureSliderValue >= 0)
+                    m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue);
+                else
+                    m_ExposureSliderMax = Mathf.Max(m_ExposureSliderMax, m_ExposureSliderValue * -1);
+
+                EditorGUIUtility.labelWidth = labelWidth;
+            }
+
+            m_ShowUVOverlay = GUILayout.Toggle(m_ShowUVOverlay, new GUIContent("W"), "preButton");
+
+            Rect dropRect = GUILayoutUtility.GetRect(14, 160, EditorGUI.kWindowToolbarHeight, EditorGUI.kWindowToolbarHeight);
             GUIContent[] options = isRealtimeLightmap ? Styles.RealtimePreviewTextureOptions : Styles.BakedPreviewTextureOptions;
             GITextureType[] types = isRealtimeLightmap ? kRealtimePreviewTextureTypes : kBakedPreviewTextureTypes;
 
@@ -352,7 +378,7 @@ namespace UnityEditor
 
                         LightmapVisualizationUtility.DrawTextureWithUVOverlay(texture,
                             (m_ShowUVOverlay && (isRealtimeLightmap ? m_RealtimeTextureHash == m_ActiveGameObjectTextureHash : m_LightmapIndex == m_ActiveGameObjectLightmapIndex)) ? Selection.activeGameObject : null,
-                            m_ShowUVOverlay ? m_CachedTextureObjects : new GameObject[] {}, drawableArea, textureRect, textureType);
+                            m_ShowUVOverlay ? m_CachedTextureObjects : new GameObject[] {}, drawableArea, textureRect, textureType, exposure);
                         texture.filterMode = prevMode;
                     }
                 }
@@ -380,6 +406,15 @@ namespace UnityEditor
             }
 
             return types[m_SelectedPreviewTextureOptionIndex];
+        }
+
+        private bool SelectedTextureNeedExposureControl()
+        {
+            var textureType = GetSelectedTextureType();
+
+            // it only make sense to allow the user to adjust the exposure on these textures
+            return textureType == GITextureType.BakedEmissive || textureType == GITextureType.Baked ||
+                textureType == GITextureType.Emissive || textureType == GITextureType.Irradiance;
         }
 
         private void UpdateCachedTexture(GITextureType textureType)

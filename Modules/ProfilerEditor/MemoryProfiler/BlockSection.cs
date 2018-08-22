@@ -8,7 +8,7 @@ using UnityEngine;
 using System.IO;
 using System.Collections.Generic;
 
-namespace UnityEditorInternal.MemoryProfiling
+namespace UnityEditorInternal.Profiling.Memory.Experimental
 {
     public delegate T GetItem<T>(byte[] data, uint startIndex, uint numBytes);
 

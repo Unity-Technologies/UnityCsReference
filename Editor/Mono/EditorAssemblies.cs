@@ -35,6 +35,8 @@ namespace UnityEditor
     /// </summary>
     static partial class EditorAssemblies
     {
+        static Dictionary<Type, Type[]> m_subClasses = new Dictionary<Type, Type[]>();
+
         /// <summary>
         /// The currently loaded editor assemblies
         /// (This is kept up to date from <see cref="SetLoadedEditorAssemblies"/>)
@@ -53,7 +55,18 @@ namespace UnityEditor
         {
             return parent.IsInterface ?
                 GetAllTypesWithInterface(parent) :
-                loadedTypes.Where(klass => klass.IsSubclassOf(parent));
+                SubclassesOfClass(parent);
+        }
+
+        static internal IEnumerable<Type> SubclassesOfClass(Type parent)
+        {
+            Type[] types;
+            if (!m_subClasses.TryGetValue(parent, out types))
+            {
+                types = loadedTypes.Where(klass => klass.IsSubclassOf(parent)).ToArray();
+                m_subClasses[parent] = types;
+            }
+            return types;
         }
 
         static internal IEnumerable<Type> SubclassesOfGenericType(Type genericType)
@@ -82,6 +95,9 @@ namespace UnityEditor
         private static void SetLoadedEditorAssemblies(Assembly[] assemblies)
         {
             loadedAssemblies = assemblies;
+
+            // clear cached subtype -> types when assemblies change
+            m_subClasses.Clear();
         }
 
         [RequiredByNativeCode]

@@ -74,9 +74,14 @@ namespace UnityEditorInternal
 
         private List<GroupInfo> m_Groups = null;
 
+        // Not localizable strings - should match group names in native code.
         const string k_MainGroupName = "";
-        static readonly string k_JobSystemGroupName = L10n.Tr("Job System");
-        static readonly string k_LoadingGroupName = L10n.Tr("Loading");
+        const string k_JobSystemGroupName = "Job System";
+        const string k_LoadingGroupName = "Loading";
+        const string k_ScriptingThreadsGroupName = "Scripting Threads";
+        const string k_BackgrounfJobSystemGroupName = "Background Job System";
+        const string k_ProfilerThreadsGroupName = "Profiler";
+        const string k_OtherThreadsGroupName = "Other Threads";
 
         internal class Styles
         {
@@ -231,6 +236,10 @@ namespace UnityEditorInternal
                 new GroupInfo(k_MainGroupName, m_Window.Repaint, true, 3, 0),
                 new GroupInfo(k_JobSystemGroupName, m_Window.Repaint),
                 new GroupInfo(k_LoadingGroupName, m_Window.Repaint),
+                new GroupInfo(k_ScriptingThreadsGroupName, m_Window.Repaint),
+                new GroupInfo(k_BackgrounfJobSystemGroupName, m_Window.Repaint),
+                new GroupInfo(k_ProfilerThreadsGroupName, m_Window.Repaint),
+                new GroupInfo(k_OtherThreadsGroupName, m_Window.Repaint),
             });
 
             m_HTicks = new TickHandler();
@@ -682,11 +691,13 @@ namespace UnityEditorInternal
             {
                 Rect r = fullRect;
                 var expanded = groupInfo.expanded.value;
-                if (expanded)
+                if (expanded && groupInfo.threads.Count > 0)
                 {
                     y += groupInfo.height;
                     rangeY += groupInfo.height;
                 }
+                // When group is not expanded its header still occupies at least groupInfo.height
+                var notExpandedLeftOverY = groupInfo.height;
 
                 var groupThreadCount = groupInfo.threads.Count;
                 foreach (var threadInfo in groupInfo.threads)
@@ -708,6 +719,13 @@ namespace UnityEditorInternal
 
                     y += r.height;
                     rangeY += r.height;
+                    notExpandedLeftOverY -= r.height;
+                }
+                // Align next thread with the next group
+                if (notExpandedLeftOverY > 0)
+                {
+                    y += notExpandedLeftOverY;
+                    rangeY += notExpandedLeftOverY;
                 }
             }
         }

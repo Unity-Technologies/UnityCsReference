@@ -434,10 +434,11 @@ namespace UnityEditor.VisualStudioIntegration
                 }
 
                 //replace \ with / and \\ with /
-                fullReference = fullReference.Replace("\\", "/");
-                fullReference = fullReference.Replace("\\\\", "/");
-                projectBuilder.AppendFormat(" <Reference Include=\"{0}\">{1}", Path.GetFileNameWithoutExtension(fullReference), WindowsNewline);
-                projectBuilder.AppendFormat(" <HintPath>{0}</HintPath>{1}", fullReference, WindowsNewline);
+                var escapedFullPath = SecurityElement.Escape(fullReference);
+                escapedFullPath = escapedFullPath.Replace("\\", "/");
+                escapedFullPath = escapedFullPath.Replace("\\\\", "/");
+                projectBuilder.AppendFormat(" <Reference Include=\"{0}\">{1}", Path.GetFileNameWithoutExtension(escapedFullPath), WindowsNewline);
+                projectBuilder.AppendFormat(" <HintPath>{0}</HintPath>{1}", escapedFullPath, WindowsNewline);
                 projectBuilder.AppendFormat(" </Reference>{0}", WindowsNewline);
             }
 
@@ -488,12 +489,16 @@ namespace UnityEditor.VisualStudioIntegration
 
             if (PlayerSettingsEditor.IsLatestApiCompatibility(island._api_compatibility_level))
             {
-                targetframeworkversion = "v4.7.1";
+                if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.Rider
+                    || ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
+                {
+                    targetframeworkversion = "v4.5";
+                }
+                else
+                {
+                    targetframeworkversion = "v4.7.1";
+                }
                 targetLanguageVersion = "7.2";
-            }
-            else if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.Rider)
-            {
-                targetframeworkversion = "v4.5";
             }
             else if (_settings.VisualStudioVersion == 9)
             {

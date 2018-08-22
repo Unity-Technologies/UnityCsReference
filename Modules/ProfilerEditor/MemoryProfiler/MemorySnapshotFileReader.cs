@@ -3,12 +3,10 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEditorInternal;
 using UnityEngine;
 using System.IO;
-using System.Collections.Generic;
 
-namespace UnityEditorInternal.MemoryProfiling
+namespace UnityEditorInternal.Profiling.Memory.Experimental
 {
     // keep in sync with MemorySnapshot/FileFormat.h
     namespace FileFormat
@@ -17,6 +15,7 @@ namespace UnityEditorInternal.MemoryProfiling
         {
             Metadata_Version,
             Metadata_RecordDate,
+            Metadata_UserMetadata,
             Metadata_CaptureFlags,
             Metadata_VirtualMachineInformation,
             NativeTypes_Name,
@@ -71,8 +70,7 @@ namespace UnityEditorInternal.MemoryProfiling
             NativeAllocationSites_MemoryLabelIndex,
             NativeAllocationSites_CallstackSymbols,
             NativeCallstackSymbol_Symbol,
-            NativeCallstackSymbol_ReadableStackTrace,
-            Count
+            NativeCallstackSymbol_ReadableStackTrace
         }
     }
 

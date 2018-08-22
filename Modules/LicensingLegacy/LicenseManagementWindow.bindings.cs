@@ -6,8 +6,8 @@ using UnityEngine.Bindings;
 
 namespace UnityEditor
 {
-    [NativeHeader("Modules/LicensingLegacy/Public/LicenseInfo.h")]
-    [StaticAccessor("LicenseInfo::Get()", StaticAccessorType.Arrow)]
+    [NativeHeader("Modules/LicensingLegacy/LicenseInfo.h")]
+    [StaticAccessor("LicensingLegacy::LicenseInfo::Get()", StaticAccessorType.Arrow)]
     internal partial class LicenseManagementWindow
     {
         [NativeName("QueryLicenseUpdateChecked")]

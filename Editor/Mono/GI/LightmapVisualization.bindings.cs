@@ -60,7 +60,7 @@ namespace UnityEditor
 
         [NativeHeader("Runtime/GI/RenderOverlay.h")]
         [FreeFunction("DrawTextureWithUVOverlay")]
-        public   extern static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType);
+        public   extern static void DrawTextureWithUVOverlay(Texture2D texture, GameObject selectedGameObject, GameObject[] gameObjects, Rect drawableArea, Rect position, GITextureType textureType, float exposure = 0.0f);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         public   extern static LightmapType GetLightmapType(GITextureType textureType);

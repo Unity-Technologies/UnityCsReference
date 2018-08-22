@@ -689,7 +689,7 @@ namespace UnityEngine.Events
         [SerializeField]
         private PersistentCallGroup m_PersistentCalls;
 
-#pragma warning disable 414 //used by serialized properties
+#pragma warning disable 414, CS0169 //used by serialized properties
         [SerializeField] private string m_TypeName;
 
         // Dirtying can happen outside of MainThread, but we need to rebuild on the MainThread.

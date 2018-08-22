@@ -3,47 +3,35 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace UnityEditor.MemoryProfiler
 {
     public static class MemorySnapshot
     {
-        [Flags]
-        public enum CaptureFlags : int
-        {
-            ManagedObjects = 0x001,
-            NativeObjects = 0x002,
-            NativeAllocations = 0x004,
-            NativeAllocationSites = 0x008,
-            NativeStackTraces = 0x010,
-        }
-
         public static event Action<PackedMemorySnapshot> OnSnapshotReceived;
 
-        public static void RequestNewSnapshot(CaptureFlags captureflags = CaptureFlags.NativeObjects | CaptureFlags.NativeAllocations | CaptureFlags.NativeAllocationSites | CaptureFlags.NativeStackTraces | CaptureFlags.ManagedObjects)
+        private static void SnapshotFinished(string path, bool result)
         {
-            var onSnapshotReceived = OnSnapshotReceived;
+            if (result)
+            {
+                UnityEditor.Profiling.Memory.Experimental.PackedMemorySnapshot snapshot = UnityEditor.Profiling.Memory.Experimental.PackedMemorySnapshot.Load(path);
 
-            if (onSnapshotReceived != null)
-                MemoryProfiling.MemorySnapshot.OnSnapshotReceived += DispatchSnapshot;
-
-            ProfilerDriver.RequestMemorySnapshot((uint)captureflags);
+                OnSnapshotReceived(new PackedMemorySnapshot(snapshot));
+            }
+            else
+            {
+                OnSnapshotReceived(null);
+            }
         }
 
-        static void DispatchSnapshot(MemoryProfiling.PackedMemorySnapshot snapshot)
+        public static void RequestNewSnapshot()
         {
-            var onSnapshotReceived = OnSnapshotReceived;
+            string[] s = Application.dataPath.Split('/');
+            string projectName = s[s.Length - 2];
+            string path = Application.temporaryCachePath + "/" + projectName + ".snap";
 
-            if (onSnapshotReceived != null)
-            {
-                onSnapshotReceived(new PackedMemorySnapshot(snapshot));
-                MemoryProfiling.MemorySnapshot.OnSnapshotReceived -= DispatchSnapshot;
-            }
+            UnityEngine.Profiling.Memory.Experimental.MemoryProfiler.TakeSnapshot(path, SnapshotFinished, UnityEngine.Profiling.Memory.Experimental.CaptureFlags.NativeObjects | UnityEngine.Profiling.Memory.Experimental.CaptureFlags.ManagedObjects);
         }
     }
 
@@ -68,12 +56,15 @@ namespace UnityEditor.MemoryProfiler
         internal MemorySection[] m_ManagedHeapSections = null;
 
         [SerializeField]
+        internal MemorySection[] m_ManagedStacks = null;
+
+        [SerializeField]
         internal TypeDescription[] m_TypeDescriptions = null;
 
         [SerializeField]
-        internal MemoryProfiling.VirtualMachineInformation m_VirtualMachineInformation = default(MemoryProfiling.VirtualMachineInformation);
+        internal VirtualMachineInformation m_VirtualMachineInformation = default(VirtualMachineInformation);
 
-        public PackedMemorySnapshot(MemoryProfiling.PackedMemorySnapshot snapshot)
+        internal PackedMemorySnapshot(Profiling.Memory.Experimental.PackedMemorySnapshot snapshot)
         {
             int cacheCapacity = 128;
             string[] cacheString = new string[cacheCapacity];
@@ -103,7 +94,7 @@ namespace UnityEditor.MemoryProfiler
 
             m_NativeObjects = new PackedNativeUnityEngineObject[snapshot.nativeObjects.GetNumEntries()];
             {
-                MemoryProfiling.ObjectFlags[] cacheObjectFlags = new MemoryProfiling.ObjectFlags[cacheCapacity];
+                UnityEditor.Profiling.Memory.Experimental.ObjectFlags[] cacheObjectFlags = new UnityEditor.Profiling.Memory.Experimental.ObjectFlags[cacheCapacity];
                 UnityEngine.HideFlags[] cacheHideFlags = new UnityEngine.HideFlags[cacheCapacity];
 
                 for (int offset = 0; offset < m_NativeObjects.Length; offset += cacheCapacity)
@@ -181,7 +172,7 @@ namespace UnityEditor.MemoryProfiler
 
             m_TypeDescriptions = new TypeDescription[snapshot.typeDescriptions.GetNumEntries()];
             {
-                MemoryProfiling.TypeFlags[] cacheFlags = new MemoryProfiling.TypeFlags[cacheCapacity];
+                UnityEditor.Profiling.Memory.Experimental.TypeFlags[] cacheFlags = new UnityEditor.Profiling.Memory.Experimental.TypeFlags[cacheCapacity];
                 int[][] cacheRange = new int[cacheCapacity][];
                 string[] cacheSmallString = new string[1];
                 int[] cacheSmallInt = new int[1];
@@ -229,7 +220,7 @@ namespace UnityEditor.MemoryProfiler
                 }
             }
 
-            m_VirtualMachineInformation = snapshot.virtualMachineInformation;
+            m_VirtualMachineInformation = new VirtualMachineInformation(snapshot.virtualMachineInformation);
         }
 
         public PackedNativeType[] nativeTypes { get { return m_NativeTypes; } }
@@ -238,7 +229,7 @@ namespace UnityEditor.MemoryProfiler
         public Connection[] connections { get { return m_Connections; } }
         public MemorySection[] managedHeapSections { get { return m_ManagedHeapSections; } }
         public TypeDescription[] typeDescriptions { get { return m_TypeDescriptions; } }
-        public MemoryProfiling.VirtualMachineInformation virtualMachineInformation { get { return m_VirtualMachineInformation; } }
+        public VirtualMachineInformation virtualMachineInformation { get { return m_VirtualMachineInformation; } }
     }
 
     [Serializable]
@@ -474,4 +465,44 @@ namespace UnityEditor.MemoryProfiler
         public int typeIndex { get { return m_TypeIndex; } }
         public bool isStatic { get { return m_IsStatic; } }
     }
+
+    [Serializable]
+    public struct VirtualMachineInformation
+    {
+        [SerializeField]
+        internal int m_PointerSize;
+
+        [SerializeField]
+        internal int m_ObjectHeaderSize;
+
+        [SerializeField]
+        internal int m_ArrayHeaderSize;
+
+        [SerializeField]
+        internal int m_ArrayBoundsOffsetInHeader;
+
+        [SerializeField]
+        internal int m_ArraySizeOffsetInHeader;
+
+        [SerializeField]
+        internal int m_AllocationGranularity;
+
+        public int pointerSize { get { return m_PointerSize; } }
+        public int objectHeaderSize { get { return m_ObjectHeaderSize; } }
+        public int arrayHeaderSize { get { return m_ArrayHeaderSize; } }
+        public int arrayBoundsOffsetInHeader { get { return m_ArrayBoundsOffsetInHeader; } }
+        public int arraySizeOffsetInHeader { get { return m_ArraySizeOffsetInHeader; } }
+        public int allocationGranularity { get { return m_AllocationGranularity; } }
+        public int heapFormatVersion { get { return 0; } }
+
+        internal VirtualMachineInformation(Profiling.Memory.Experimental.VirtualMachineInformation virtualMachineInformation)
+        {
+            m_PointerSize = virtualMachineInformation.pointerSize;
+            m_ObjectHeaderSize = virtualMachineInformation.objectHeaderSize;
+            m_ArrayHeaderSize = virtualMachineInformation.arrayHeaderSize;
+            m_ArrayBoundsOffsetInHeader = virtualMachineInformation.arrayBoundsOffsetInHeader;
+            m_ArraySizeOffsetInHeader = virtualMachineInformation.arraySizeOffsetInHeader;
+            m_AllocationGranularity = virtualMachineInformation.allocationGranularity;
+        }
+    };
 }

@@ -113,7 +113,6 @@ namespace UnityEditor
             public GUIContent explicitNullChecks = EditorGUIUtility.TrTextContent("Explicit Null Checks");
             public GUIContent explicitDivideByZeroChecks = EditorGUIUtility.TrTextContent("Divide By Zero Checks");
             public GUIContent explicitArrayBoundsChecks = EditorGUIUtility.TrTextContent("Array Bounds Checks");
-            public GUIContent enableHeadlessMode = EditorGUIUtility.TrTextContent("Server Build");
             public GUIContent buildScriptsOnly = EditorGUIUtility.TrTextContent("Scripts Only Build");
             public GUIContent learnAboutUnityCloudBuild = EditorGUIUtility.TrTextContent("Learn about Unity Cloud Build");
             public GUIContent compressionMethod = EditorGUIUtility.TrTextContent("Compression Method", "Compression applied to Player data (scenes and resources).\nDefault - none or default platform compression.\nLZ4 - fast compression suitable for Development Builds.\nLZ4HC - higher compression rate variance of LZ4, causes longer build times. Works best for Release Builds.");
@@ -290,13 +289,6 @@ namespace UnityEditor
             BuildTargetGroup selectedTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
 
             GUILayout.BeginHorizontal();
-
-            GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget) && EditorUserBuildSettings.activeBuildTargetGroup != selectedTargetGroup;
-            if (GUILayout.Button(styles.switchPlatform, GUILayout.Width(Styles.kButtonWidth)))
-            {
-                EditorUserBuildSettings.SwitchActiveBuildTargetAsync(selectedTargetGroup, selectedTarget);
-                GUIUtility.ExitGUI();
-            }
 
             GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget);
             if (GUILayout.Button(EditorGUIUtility.TrTextContent("Player Settings..."), GUILayout.Width(Styles.kButtonWidth)))
@@ -765,8 +757,6 @@ namespace UnityEditor
 
                 GUI.enabled = true;
 
-                EditorUserBuildSettings.enableHeadlessMode = EditorGUILayout.Toggle(styles.enableHeadlessMode, EditorUserBuildSettings.enableHeadlessMode);
-
                 GUILayout.FlexibleSpace();
 
                 if (postprocessor != null && postprocessor.SupportsLz4Compression())
@@ -885,15 +875,35 @@ namespace UnityEditor
             buildButton = buildButton ?? styles.build;
             buildAndRunButton = buildAndRunButton ?? styles.buildAndRun;
 
-            // Build Button
-            GUI.enabled = enableBuildButton;
-            if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
+            // Switching build target in the editor
+            BuildTarget selectedTarget = EditorUserBuildSettingsUtils.CalculateSelectedBuildTarget();
+            BuildTargetGroup selectedTargetGroup = EditorUserBuildSettings.selectedBuildTargetGroup;
+
+            bool selectedTargetIsActive = EditorUserBuildSettings.activeBuildTarget == selectedTarget &&
+                EditorUserBuildSettings.activeBuildTargetGroup == selectedTargetGroup;
+
+            if (selectedTargetIsActive)
             {
-                CallBuildMethods(true, BuildOptions.ShowBuiltPlayer);
-                GUIUtility.ExitGUI();
+                // Build Button
+                GUI.enabled = enableBuildButton;
+                if (GUILayout.Button(buildButton, GUILayout.Width(Styles.kButtonWidth)))
+                {
+                    CallBuildMethods(true, BuildOptions.ShowBuiltPlayer);
+                    GUIUtility.ExitGUI();
+                }
             }
+            else
+            {
+                GUI.enabled = BuildPipeline.IsBuildTargetSupported(selectedTargetGroup, selectedTarget) && EditorUserBuildSettings.activeBuildTargetGroup != selectedTargetGroup;
+                if (GUILayout.Button(styles.switchPlatform, GUILayout.Width(Styles.kButtonWidth)))
+                {
+                    EditorUserBuildSettings.SwitchActiveBuildTargetAsync(selectedTargetGroup, selectedTarget);
+                    GUIUtility.ExitGUI();
+                }
+            }
+
             // Build and Run button
-            GUI.enabled = enableBuildAndRunButton;
+            GUI.enabled = enableBuildAndRunButton && selectedTargetIsActive;
             if (GUILayout.Button(buildAndRunButton, GUILayout.Width(Styles.kButtonWidth)))
             {
                 BuildPlayerAndRun(true);
