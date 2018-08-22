@@ -489,7 +489,7 @@ namespace UnityEditor
 
         internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocationHelper.PopupLocation[] locationPriorityOrder)
         {
-            ShowAsDropDown(buttonRect, windowSize, locationPriorityOrder, ShowMode.PopupMenu);
+            ShowAsDropDown(buttonRect, windowSize, locationPriorityOrder, ShowMode.PopupMenuWithKeyboardFocus);
         }
 
         // Show as drop down list with custom fit to screen callback

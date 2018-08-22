@@ -76,7 +76,7 @@ namespace UnityEditor
             m_CurrentlyRenderedTree = hasSearch ? dataSource.searchTree : dataSource.mainTree;
 
 
-            ShowAsDropDown(buttonRect, new Vector2(buttonRect.width, gui.WindowHeight), null, ShowMode.PopupMenuWithKeyboardFocus);
+            ShowAsDropDown(buttonRect, new Vector2(buttonRect.width, gui.WindowHeight));
 
             Focus();
 
