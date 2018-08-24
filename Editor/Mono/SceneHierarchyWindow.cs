@@ -637,9 +637,9 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
         }
 
-        internal override void SetSearchFilter(string searchFilter, SearchableEditorWindow.SearchMode searchMode, bool setAll)
+        internal override void SetSearchFilter(string searchFilter, SearchableEditorWindow.SearchMode searchMode, bool setAll, bool delayed = false)
         {
-            base.SetSearchFilter(searchFilter, searchMode, setAll);
+            base.SetSearchFilter(searchFilter, searchMode, setAll, delayed);
 
             // If the user clears the search we frame the last selection he made during the search
             if (m_DidSelectSearchResult && string.IsNullOrEmpty(searchFilter))

@@ -402,7 +402,36 @@ public enum PS4EnterButtonAssignment
             set;
         }
 
-        public extern static string SdkOverride
+        public static string SdkOverride
+            {
+                get
+                {
+                    return SdkOverrideInternal;
+                }
+                set
+                {
+                    string originalSDK = System.Environment.GetEnvironmentVariable("SCE_ORBIS_SDK_DIR_ORIGINAL");
+                    string newSDK;
+
+                    if (String.IsNullOrEmpty(originalSDK))
+                    {
+                        newSDK = value;
+                    }
+                    else
+                    {
+                        newSDK = String.IsNullOrEmpty(value) ? originalSDK : value;
+                    }
+
+                    if (newSDK != SdkOverrideInternal && !String.IsNullOrEmpty(newSDK))
+                    {
+                        System.Environment.SetEnvironmentVariable("SCE_ORBIS_SDK_DIR", newSDK);
+                        SdkOverrideInternal = newSDK;
+                    }
+                }
+            }
+        
+        
+        private extern static string SdkOverrideInternal
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

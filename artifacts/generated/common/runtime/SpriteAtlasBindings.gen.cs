@@ -15,6 +15,7 @@ public sealed partial class SpriteAtlasManager
 {
     public delegate void RequestAtlasCallback(string tag, System.Action<SpriteAtlas> action);
     public static event RequestAtlasCallback atlasRequested = null;
+    public static event System.Action<SpriteAtlas> atlasRegistered = null;
     
     
     [RequiredByNativeCode]
@@ -26,6 +27,14 @@ public sealed partial class SpriteAtlasManager
                 return true;
             }
             return false;
+        }
+    
+    
+    [RequiredByNativeCode]
+    private static void PostRegisteredAtlas(SpriteAtlas spriteAtlas)
+        {
+            if (atlasRegistered != null)
+                atlasRegistered.Invoke(spriteAtlas);
         }
     
     
@@ -64,6 +73,10 @@ public sealed partial class SpriteAtlas : Object
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         get;
     }
+
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public bool CanBindTo (Sprite sprite) ;
 
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

@@ -383,12 +383,12 @@ namespace UnityEditor
             }
         }
 
-        internal override void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll)
+        internal override void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll, bool delayed = false)
         {
             if (m_SearchFilter == "" || searchFilter == "")
                 m_StartSearchFilterTime = EditorApplication.timeSinceStartup;
 
-            base.SetSearchFilter(searchFilter, mode, setAll);
+            base.SetSearchFilter(searchFilter, mode, setAll, delayed);
         }
 
         internal void OnLostFocus()

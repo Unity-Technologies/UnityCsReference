@@ -3,9 +3,8 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
-using UnityEditorInternal;
 using System.Collections.Generic;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -60,6 +59,10 @@ namespace UnityEditor
         bool m_HasSearchFilterFocus = false;
         int m_SearchFieldControlId;
 
+        internal const float k_SearchTimerDelaySecs = 0.250f;
+        private double m_NextSearch = double.MaxValue;
+
+
         [MenuItem("Assets/Find References In Scene", false, 25)]
         private static void OnSearchForReferences()
         {
@@ -90,6 +93,17 @@ namespace UnityEditor
         virtual public void OnDisable()
         {
             searchableWindows.Remove(this);
+        }
+
+        void OnInspectorUpdate()
+        {
+            // if it's time for a search we do it
+            if (EditorApplication.timeSinceStartup > m_NextSearch)
+            {
+                m_NextSearch = double.MaxValue;
+                Repaint();
+                EditorApplication.Internal_CallSearchHasChanged();
+            }
         }
 
         internal bool hasSearchFilter
@@ -127,7 +141,7 @@ namespace UnityEditor
             {
                 if (sw.m_HierarchyType == HierarchyType.GameObjects)
                 {
-                    sw.SetSearchFilter(searchFilter, SearchMode.All, false);
+                    sw.SetSearchFilter(searchFilter, SearchMode.All, false, false);
                     sw.m_HasSearchFilterFocus = true;
                     sw.Repaint();
                 }
@@ -141,7 +155,7 @@ namespace UnityEditor
 
         internal void ClearSearchFilter()
         {
-            SetSearchFilter("", m_SearchMode, true);
+            SetSearchFilter("", m_SearchMode, true, false);
             // Reset current editor. This is needed, so if the user types into a search field, and then
             // a new object is selected, which is not in the filter, with the editor still having keyboard focus,
             // the search field gets properly cleared.
@@ -174,7 +188,7 @@ namespace UnityEditor
             }
         }
 
-        internal virtual void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll)
+        internal virtual void SetSearchFilter(string searchFilter, SearchMode mode, bool setAll, bool delayed)
         {
             m_SearchMode = mode;
             m_SearchFilter = searchFilter;
@@ -183,12 +197,21 @@ namespace UnityEditor
             {
                 foreach (SearchableEditorWindow sw in searchableWindows)
                 {
-                    if (sw != this && sw.m_HierarchyType == m_HierarchyType && sw.m_HierarchyType != HierarchyType.Assets)
-                        sw.SetSearchFilter(m_SearchFilter, m_SearchMode, false);
+                    if (sw != this && sw.m_HierarchyType == m_HierarchyType &&
+                        sw.m_HierarchyType != HierarchyType.Assets)
+                        sw.SetSearchFilter(m_SearchFilter, m_SearchMode, false, delayed);
                 }
             }
-            Repaint();
-            EditorApplication.Internal_CallSearchHasChanged();
+
+            if (delayed)
+            {
+                m_NextSearch = EditorApplication.timeSinceStartup + k_SearchTimerDelaySecs;
+            }
+            else
+            {
+                Repaint();
+                EditorApplication.Internal_CallSearchHasChanged();
+            }
         }
 
         internal virtual void ClickedSearchField()
@@ -218,7 +241,7 @@ namespace UnityEditor
             int searchMode = (int)m_SearchMode;
 
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape && GUI.GetNameOfFocusedControl() == "SearchFilter")
-                SetSearchFilter("", (SearchMode)searchMode, true);
+                SetSearchFilter("", (SearchMode)searchMode, true, true);
 
             string[] enumStrings = System.Enum.GetNames(m_HierarchyType == HierarchyType.GameObjects ? typeof(SearchModeHierarchyWindow) : typeof(SearchMode));
             m_SearchFieldControlId = GUIUtility.GetControlID(s_SearchableEditorWindowSearchField, FocusType.Keyboard, rect);
@@ -226,14 +249,14 @@ namespace UnityEditor
             EditorGUI.BeginChangeCheck();
             string searchFilter = EditorGUI.ToolbarSearchField(m_SearchFieldControlId, rect, enumStrings, ref searchMode, m_SearchFilter);
             if (EditorGUI.EndChangeCheck())
-                SetSearchFilter(searchFilter, (SearchMode)searchMode, true);
+                SetSearchFilter(searchFilter, (SearchMode)searchMode, true, true);
 
             m_HasSearchFilterFocus = GUIUtility.keyboardControl == m_SearchFieldControlId;
 
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape && m_SearchFilter != "" && GUIUtility.hotControl == 0)
             {
                 m_SearchFilter = "";
-                SetSearchFilter(searchFilter, (SearchMode)searchMode, true);
+                SetSearchFilter(searchFilter, (SearchMode)searchMode, true, true);
                 Event.current.Use();
                 m_HasSearchFilterFocus = false;
             }
