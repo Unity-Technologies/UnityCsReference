@@ -16,6 +16,26 @@ namespace UnityEditor.Experimental.UIElements
 
         public new class UxmlTraits : MaskField.UxmlTraits {}
 
+        public override Func<string, string> formatSelectedValueCallback
+        {
+            get { return null; }
+            set
+            {
+                Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the selected value."));
+                m_FormatSelectedValueCallback = null;
+            }
+        }
+
+        public override Func<string, string> formatListItemCallback
+        {
+            get { return null; }
+            set
+            {
+                Debug.LogWarning(L10n.Tr("LayerMaskField doesn't support the formatting of the list items."));
+                m_FormatListItemCallback = null;
+            }
+        }
+
         void UpdateLayersInfo()
         {
             // Get the layers : names and values

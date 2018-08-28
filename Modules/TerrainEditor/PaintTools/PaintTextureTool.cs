@@ -5,8 +5,9 @@
 using UnityEngine;
 using UnityEditor;
 using System;
+using UnityEngine.Experimental.TerrainAPI;
 
-namespace UnityEditor
+namespace UnityEditor.Experimental.TerrainAPI
 {
     [FilePathAttribute("Library/TerrainTools/PaintTexture", FilePathAttribute.Location.ProjectFolder)]
     public class PaintTextureTool : TerrainPaintTool<PaintTextureTool>
@@ -33,9 +34,9 @@ namespace UnityEditor
             return "Paints the selected material layer onto the terrain texture";
         }
 
-        public override bool Paint(Terrain terrain, Texture brushTexture, Vector2 uv, float brushStrength, int brushSize)
+        public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
-            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, uv, brushSize);
+            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, editContext.uv, editContext.brushSize);
 
             TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushRect, m_SelectedTerrainLayer);
             if (paintContext == null)
@@ -43,8 +44,8 @@ namespace UnityEditor
 
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
             // apply brush
-            Vector4 brushParams = new Vector4(brushStrength, m_SplatAlpha, 0.0f, 0.0f);
-            mat.SetTexture("_BrushTex", brushTexture);
+            Vector4 brushParams = new Vector4(editContext.brushStrength, m_SplatAlpha, 0.0f, 0.0f);
+            mat.SetTexture("_BrushTex", editContext.brushTexture);
             mat.SetVector("_BrushParams", brushParams);
             Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.PaintTexture);
 
@@ -52,9 +53,9 @@ namespace UnityEditor
             return true;
         }
 
-        public override void OnSceneGUI(SceneView sceneView, Terrain terrain, Texture brushTexture, float brushStrength, int brushSizeInTerrainUnits)
+        public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
-            TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(terrain, brushTexture, brushStrength, brushSizeInTerrainUnits, 0.0f);
+            TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(terrain, editContext.brushTexture, editContext.brushStrength, editContext.brushSize, 0.0f);
         }
 
         private void DrawFoldoutEditor(Editor editor, int controlId, ref bool visible)
@@ -83,7 +84,7 @@ namespace UnityEditor
         private const int kTemplateMaterialEditorControl = 67890;
         private const int kSelectedTerrainLayerEditorControl = 67891;
 
-        public override void OnInspectorGUI(Terrain terrain)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
             GUILayout.Label("Settings", EditorStyles.boldLabel);
 
@@ -99,7 +100,7 @@ namespace UnityEditor
             if (m_TemplateMaterialEditor == null && terrain.materialTemplate != null)
             {
                 m_TemplateMaterialEditor = Editor.CreateEditor(terrain.materialTemplate) as MaterialEditor;
-                m_TemplateMaterialEditor.forceVisible = true;
+                m_TemplateMaterialEditor.firstInspectedEditor = true;
             }
 
             if (m_TemplateMaterialEditor != null)
@@ -139,6 +140,7 @@ namespace UnityEditor
                 DrawFoldoutEditor(m_SelectedTerrainLayerInspector, kSelectedTerrainLayerEditorControl, ref m_ShowLayerEditor);
                 EditorGUILayout.Space();
             }
+            editContext.ShowBrushesGUI(5);
         }
     }
 }

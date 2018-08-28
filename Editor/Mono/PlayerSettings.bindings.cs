@@ -1096,7 +1096,7 @@ namespace UnityEditor
         [FreeFunction("GetPlayerSettings().SetLightmapStreamingPriority")]
         internal static extern void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
 
-        [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
-        internal static extern void RelaunchProjectIfScriptRuntimeVersionHasChanged();
+        [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+        internal static extern bool RelaunchProjectIfScriptRuntimeVersionHasChanged();
     }
 }

@@ -34,7 +34,9 @@ namespace UnityEditor
         GUIStyle m_SelectionMarker;
         GUIStyle m_ToolbarButtonLeftAlignText;
         GUIStyle m_ModulePadding;
+        GUIStyle m_CustomDataWindow;
         Texture2D m_WarningIcon;
+
 
         private static ParticleSystemStyles s_ParticleSystemStyles;
         public static ParticleSystemStyles Get()
@@ -63,6 +65,7 @@ namespace UnityEditor
         public GUIStyle selectionMarker { get { return m_SelectionMarker; } }
         public GUIStyle toolbarButtonLeftAlignText { get { return m_ToolbarButtonLeftAlignText; } }
         public GUIStyle modulePadding { get { return m_ModulePadding; } }
+        public GUIStyle customDataWindow { get {  return m_CustomDataWindow; } }
         public Texture2D warningIcon { get { return m_WarningIcon; } }
 
         ParticleSystemStyles()
@@ -86,6 +89,9 @@ namespace UnityEditor
             InitStyle(out m_ToggleMixed, "ShurikenToggleMixed");
             InitStyle(out m_SelectionMarker, "IN ThumbnailShadow");
             InitStyle(out m_ToolbarButtonLeftAlignText, "ToolbarButton");
+
+            m_CustomDataWindow = new GUIStyle(GUI.skin.window);
+            m_CustomDataWindow.font = EditorStyles.miniFont;
 
             // Todo: Fix in editor resources
             m_EmitterHeaderStyle.clipping = TextClipping.Clip;

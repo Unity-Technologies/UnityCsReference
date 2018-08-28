@@ -24,15 +24,7 @@ namespace UnityEditor.SceneManagement
 
         StageNavigationItem(string prefabAssetPath)
         {
-            if (string.IsNullOrEmpty(prefabAssetPath))
-                throw new ArgumentNullException("prefabAssetPath");
-
-            m_PrefabAssetPath = prefabAssetPath;
-            m_PrefabAssetGUID = AssetDatabase.AssetPathToGUID(prefabAssetPath);
-            if (string.IsNullOrEmpty(m_PrefabAssetGUID))
-                throw new ArgumentException("Prefab Asset not found when creating Stage.", prefabAssetPath);
-
-            m_PrefabIcon = (Texture2D)AssetDatabase.GetCachedIcon(prefabAssetPath);
+            SetPrefabAssetPath(prefabAssetPath);
         }
 
         public bool setSelectionAndScrollWhenBecomingCurrentStage { get; set; } = true;  // transient state since it is set every time we switch stage
@@ -75,6 +67,19 @@ namespace UnityEditor.SceneManagement
                     return "Scenes";
                 return Path.GetFileNameWithoutExtension(prefabAssetPath);
             }
+        }
+
+        public void SetPrefabAssetPath(string prefabAssetPath)
+        {
+            if (string.IsNullOrEmpty(prefabAssetPath))
+                throw new ArgumentNullException("prefabAssetPath");
+
+            m_PrefabAssetPath = prefabAssetPath;
+            m_PrefabAssetGUID = AssetDatabase.AssetPathToGUID(prefabAssetPath);
+            if (string.IsNullOrEmpty(m_PrefabAssetGUID))
+                throw new ArgumentException("Prefab Asset not found when creating Stage.", prefabAssetPath);
+
+            m_PrefabIcon = (Texture2D)AssetDatabase.GetCachedIcon(prefabAssetPath);
         }
 
         public void SyncAssetPathFromAssetGUID()

@@ -19,6 +19,41 @@ namespace UnityEngine
         public GameObject prefab { get { return m_Prefab; } set { m_Prefab = value; } }
 
         public float bendFactor { get { return m_BendFactor; } set { m_BendFactor = value; } }
+
+        public TreePrototype() {}
+
+        public TreePrototype(TreePrototype other)
+        {
+            prefab = other.prefab;
+            bendFactor = other.bendFactor;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as TreePrototype);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        private bool Equals(TreePrototype other)
+        {
+            if (ReferenceEquals(other, null))
+                return false;
+
+            if (ReferenceEquals(other, this))
+                return true;
+
+            if (GetType() != other.GetType())
+                return false;
+
+            bool equals = prefab == other.prefab &&
+                bendFactor == other.bendFactor;
+
+            return equals;
+        }
     }
 
     public enum DetailRenderMode
@@ -68,6 +103,61 @@ namespace UnityEngine
         public DetailRenderMode renderMode { get { return (DetailRenderMode)m_RenderMode; } set { m_RenderMode = (int)value; } }
 
         public bool usePrototypeMesh { get { return m_UsePrototypeMesh != 0; } set { m_UsePrototypeMesh = value ? 1 : 0; } }
+
+        public DetailPrototype() {}
+
+        public DetailPrototype(DetailPrototype other)
+        {
+            m_Prototype = other.m_Prototype;
+            m_PrototypeTexture = other.m_PrototypeTexture;
+            m_HealthyColor = other.m_HealthyColor;
+            m_DryColor = other.m_DryColor;
+            m_MinWidth = other.m_MinWidth;
+            m_MaxWidth = other.m_MaxWidth;
+            m_MinHeight = other.m_MinHeight;
+            m_MaxHeight = other.m_MaxHeight;
+            m_NoiseSpread = other.m_NoiseSpread;
+            m_BendFactor = other.m_BendFactor;
+            m_RenderMode = other.m_RenderMode;
+            m_UsePrototypeMesh = other.m_UsePrototypeMesh;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as DetailPrototype);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
+        }
+
+        private bool Equals(DetailPrototype other)
+        {
+            if (ReferenceEquals(other, null))
+                return false;
+
+            if (ReferenceEquals(other, this))
+                return true;
+
+            if (GetType() != other.GetType())
+                return false;
+
+            bool equals = m_Prototype == other.m_Prototype &&
+                m_PrototypeTexture == other.m_PrototypeTexture &&
+                m_HealthyColor == other.m_HealthyColor &&
+                m_DryColor == other.m_DryColor &&
+                m_MinWidth == other.m_MinWidth &&
+                m_MaxWidth == other.m_MaxWidth &&
+                m_MinHeight == other.m_MinHeight &&
+                m_MaxHeight == other.m_MaxHeight &&
+                m_NoiseSpread == other.m_NoiseSpread &&
+                m_BendFactor == other.m_BendFactor &&
+                m_RenderMode == other.m_RenderMode &&
+                m_UsePrototypeMesh == other.m_UsePrototypeMesh;
+
+            return equals;
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -296,6 +296,11 @@ namespace UnityEditor
             get;
         }
 
+        internal extern  ScriptingRuntimeVersion scriptingRuntimeVersion
+        {
+            get;
+        }
+
         extern public static  PluginImporter[] GetAllImporters();
     }
 }

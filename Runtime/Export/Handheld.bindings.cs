@@ -372,6 +372,8 @@ namespace UnityEngine
             }
             set
             {
+                if (value.start < 0 || value.length < 0 || value.start + value.length > text.Length)
+                    throw new ArgumentOutOfRangeException(nameof(selection), "Selection is out of range.");
                 SetSelection(value.start, value.length);
             }
         }

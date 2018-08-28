@@ -53,11 +53,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var parent = new Node { Name = "-1" };
             var builder = new StringBuilder();
             var buildingNode = false;
+            var buildingClass = false;
             var currentNode = parent;
             var level = 0;
             var resNamespace = "";
-            foreach (var s in split)
-                switch (s)
+            foreach (var token in split)
+                switch (token)
                 {
                     case "{":
                         if (buildingNode)
@@ -74,24 +75,40 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     case "}":
                         if (parent.Level > --level) parent = parent.Parent;
                         break;
-                    case "namespace":
                     case "class":
+                        buildingClass = true;
+                        buildingNode = true;
+                        break;
+                    case "namespace":
                         buildingNode = true;
                         break;
                     default:
-                        if (!buildingNode) break;
-
-                        if (s.Equals(className))
+                        if (buildingNode)
                         {
-                            buildingNode = false;
-                            resNamespace = CollectNamespace(parent);
+                            var strippedClassname = StripClassName(token);
+                            if (buildingClass && strippedClassname.Equals(className))
+                            {
+                                buildingNode = false;
+                                resNamespace = CollectNamespace(parent);
+                            }
+                            else
+                            {
+                                builder.Append(token);
+                            }
                         }
-                        else builder.Append(s);
 
                         break;
                 }
 
             return resNamespace;
+        }
+
+        static string StripClassName(string classname)
+        {
+            var strippedClassname = classname.Contains(":") ? classname.Split(':')[0] : classname;
+            strippedClassname = strippedClassname.StartsWith("@") ? strippedClassname.Split('@')[1] : strippedClassname;
+
+            return strippedClassname;
         }
 
         static string FixBraces(string sourceCode)

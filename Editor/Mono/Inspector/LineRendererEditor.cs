@@ -36,6 +36,7 @@ namespace UnityEditor
             public readonly GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
             public readonly GUIContent tolerance = EditorGUIUtility.TrTextContent("Tolerance", "Used to evaluate which points should be removed from the line. A higher value results in a simpler line (fewer points). A value of 0 results in the exact same line with little to no reduction.");
             public readonly GUIStyle richTextMiniLabel = new GUIStyle(EditorStyles.miniLabel) { richText = true };
+            public readonly GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the line width at each segment.");
             public readonly GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
             public readonly GUIContent[] toolContents =
             {
@@ -79,6 +80,7 @@ namespace UnityEditor
         private LineRendererEditor m_PointEditor;
         private SerializedProperty m_Alignment;
         private SerializedProperty m_ColorGradient;
+        private SerializedProperty m_ShadowBias;
         private SerializedProperty m_GenerateLightingData;
         private SerializedProperty m_Loop;
         private SerializedProperty m_NumCapVertices;
@@ -138,6 +140,7 @@ namespace UnityEditor
             m_Alignment = serializedObject.FindProperty("m_Parameters.alignment");
             m_TextureMode = serializedObject.FindProperty("m_Parameters.textureMode");
             m_GenerateLightingData = serializedObject.FindProperty("m_Parameters.generateLightingData");
+            m_ShadowBias = serializedObject.FindProperty("m_Parameters.shadowBias");
 
             m_PositionsView = new LineRendererPositionsView(m_Positions);
             m_PositionsView.selectionChangedCallback += PositionsViewSelectionChanged;
@@ -434,6 +437,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_NumCapVertices, s_Styles.numCapVertices);
             EditorGUILayout.PropertyField(m_Alignment, s_Styles.alignment);
             EditorGUILayout.PropertyField(m_TextureMode, s_Styles.textureMode);
+            EditorGUILayout.PropertyField(m_ShadowBias, s_Styles.shadowBias);
             EditorGUILayout.PropertyField(m_GenerateLightingData, s_Styles.generateLightingData);
 
             EditorGUILayout.Space();

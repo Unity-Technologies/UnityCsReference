@@ -105,7 +105,11 @@ namespace UnityEditor
         {
             m_SpriteDataProvider  = AssetImporter.GetAtPath(m_SelectedAssetPath) as ISpriteEditorDataProvider;
             if (m_SpriteDataProvider == null)
+            {
+                m_SelectedAssetPath = "";
                 return;
+            }
+
 
             m_SpriteDataProvider.InitSpriteEditorDataProvider();
 
@@ -125,7 +129,8 @@ namespace UnityEditor
             if (Selection.activeGameObject)
             {
                 var spriteRenderer = Selection.activeGameObject.GetComponent<SpriteRenderer>();
-                selection = spriteRenderer != null ? spriteRenderer.sprite : null;
+                if (spriteRenderer != null && spriteRenderer.sprite != null)
+                    selection = spriteRenderer.sprite;
             }
 
             return m_AssetDatabase.GetAssetPath(selection);
@@ -224,6 +229,7 @@ namespace UnityEditor
             InvalidatePropertiesCache();
             textureIsDirty = false;
             m_Zoom = -1;
+            m_ScrollPosition = Vector2.zero;
         }
 
         void OnEnable()
@@ -373,7 +379,7 @@ namespace UnityEditor
         {
             if (m_ResetOnNextRepaint || selectedProviderChanged)
             {
-                if (selectedProviderChanged)
+                if (selectedProviderChanged || m_SpriteDataProvider == null)
                     m_SelectedAssetPath = GetSelectionAssetPath();
                 RebuildCache();
             }
@@ -915,6 +921,8 @@ namespace UnityEditor
         public void SetPreviewTexture(UnityTexture2D texture, int width, int height)
         {
             m_Texture = new PreviewTexture2D(texture, width, height);
+            m_Zoom = -1;
+            m_ScrollPosition = Vector2.zero;
         }
 
         public void ApplyOrRevertModification(bool apply)
@@ -983,10 +991,11 @@ namespace UnityEditor
 
         static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths)
         {
+            foreach (var deletedAsset in deletedAssets)
+                SpriteEditorWindow.OnTextureReimport(deletedAsset);
+
             foreach (var importedAsset in importedAssets)
-            {
                 SpriteEditorWindow.OnTextureReimport(importedAsset);
-            }
         }
     }
 

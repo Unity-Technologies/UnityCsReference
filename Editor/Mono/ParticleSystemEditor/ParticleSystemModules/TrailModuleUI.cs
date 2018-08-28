@@ -25,6 +25,7 @@ namespace UnityEditor
             public GUIContent widthOverTrail = EditorGUIUtility.TrTextContent("Width over Trail", "Select a width for the trail from its start to end vertex.");
             public GUIContent colorOverTrail = EditorGUIUtility.TrTextContent("Color over Trail", "Select a color for the trail from its start to end vertex.");
             public GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
+            public GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
             public GUIContent ribbonCount = EditorGUIUtility.TrTextContent("Ribbon Count", "Select how many ribbons to render throughout the Particle System.");
             public GUIContent splitSubEmitterRibbons = EditorGUIUtility.TrTextContent("Split Sub Emitter Ribbons", "When used on a sub emitter, ribbons will connect particles from each parent particle independently.");
 
@@ -58,6 +59,7 @@ namespace UnityEditor
         SerializedMinMaxCurve m_WidthOverTrail;
         SerializedMinMaxGradient m_ColorOverTrail;
         SerializedProperty m_GenerateLightingData;
+        SerializedProperty m_ShadowBias;
         SerializedProperty m_RibbonCount;
         SerializedProperty m_SplitSubEmitterRibbons;
 
@@ -89,6 +91,7 @@ namespace UnityEditor
             m_WidthOverTrail = new SerializedMinMaxCurve(this, s_Texts.widthOverTrail, "widthOverTrail");
             m_ColorOverTrail = new SerializedMinMaxGradient(this, "colorOverTrail");
             m_GenerateLightingData = GetProperty("generateLightingData");
+            m_ShadowBias = GetProperty("shadowBias");
             m_RibbonCount = GetProperty("ribbonCount");
             m_SplitSubEmitterRibbons = GetProperty("splitSubEmitterRibbons");
         }
@@ -129,6 +132,7 @@ namespace UnityEditor
             GUIMinMaxCurve(s_Texts.widthOverTrail, m_WidthOverTrail);
             GUIMinMaxGradient(s_Texts.colorOverTrail, m_ColorOverTrail, false);
             GUIToggle(s_Texts.generateLightingData, m_GenerateLightingData);
+            GUIFloat(s_Texts.shadowBias, m_ShadowBias);
 
             // Add a warning message when no trail material is assigned, telling users where to find it
             foreach (ParticleSystem ps in m_ParticleSystemUI.m_ParticleSystems)

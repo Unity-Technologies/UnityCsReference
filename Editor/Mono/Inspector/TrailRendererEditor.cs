@@ -19,6 +19,7 @@ namespace UnityEditor
             public static GUIContent numCapVertices = EditorGUIUtility.TrTextContent("End Cap Vertices", "How many vertices to add at each end.");
             public static GUIContent alignment = EditorGUIUtility.TrTextContent("Alignment", "Trails can rotate to face their transform component or the camera. When using TransformZ mode, lines extrude along the XY plane of the Transform.");
             public static GUIContent textureMode = EditorGUIUtility.TrTextContent("Texture Mode", "Should the U coordinate be stretched or tiled?");
+            public static GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
             public static GUIContent generateLightingData = EditorGUIUtility.TrTextContent("Generate Lighting Data", "Toggle generation of normal and tangent data, for use in lit shaders.");
         }
 
@@ -30,6 +31,7 @@ namespace UnityEditor
         private SerializedProperty m_NumCapVertices;
         private SerializedProperty m_Alignment;
         private SerializedProperty m_TextureMode;
+        private SerializedProperty m_ShadowBias;
         private SerializedProperty m_GenerateLightingData;
 
         public override void OnEnable()
@@ -51,6 +53,7 @@ namespace UnityEditor
             m_NumCapVertices = serializedObject.FindProperty("m_Parameters.numCapVertices");
             m_Alignment = serializedObject.FindProperty("m_Parameters.alignment");
             m_TextureMode = serializedObject.FindProperty("m_Parameters.textureMode");
+            m_ShadowBias = serializedObject.FindProperty("m_Parameters.shadowBias");
             m_GenerateLightingData = serializedObject.FindProperty("m_Parameters.generateLightingData");
 
             InitializeProbeFields();
@@ -83,6 +86,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_Alignment, Styles.alignment);
             EditorGUILayout.PropertyField(m_TextureMode, Styles.textureMode);
             EditorGUILayout.PropertyField(m_GenerateLightingData, Styles.generateLightingData);
+            EditorGUILayout.PropertyField(m_ShadowBias, Styles.shadowBias);
 
             EditorGUILayout.Space();
 

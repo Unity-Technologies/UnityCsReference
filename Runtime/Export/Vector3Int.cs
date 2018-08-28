@@ -100,6 +100,12 @@ namespace UnityEngine
             return new Vector3(v.x, v.y, v.z);
         }
 
+        // Converts a Vector3Int to a [[Vector2Int]].
+        public static explicit operator Vector2Int(Vector3Int v)
+        {
+            return new Vector2Int(v.x, v.y);
+        }
+
         public static Vector3Int FloorToInt(Vector3 v)
         {
             return new Vector3Int(

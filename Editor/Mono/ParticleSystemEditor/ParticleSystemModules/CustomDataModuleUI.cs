@@ -66,7 +66,7 @@ namespace UnityEditor
         {
             for (int i = 0; i < k_NumCustomDataStreams; i++)
             {
-                GUILayout.BeginVertical("Custom" + (i + 1), GUI.skin.window);
+                GUILayout.BeginVertical("Custom" + (i + 1), ParticleSystemStyles.Get().customDataWindow);
 
                 Mode mode = (Mode)GUIPopup(s_Texts.mode, m_Modes[i], s_Texts.modes);
                 if (mode == Mode.Vector)

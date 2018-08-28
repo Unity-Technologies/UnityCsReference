@@ -268,6 +268,30 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        void DispatchEnterLeaveEvents(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, EventBase triggerEvent)
+        {
+            IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
+
+            if (mouseEvent == null)
+            {
+                return;
+            }
+
+            if (triggerEvent.GetEventTypeId() == MouseMoveEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == MouseDownEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == MouseUpEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == WheelEvent.TypeId())
+            {
+                DispatchMouseEnterMouseLeave(previousTopElementUnderMouse, currentTopElementUnderMouse, mouseEvent);
+                DispatchMouseOverMouseOut(previousTopElementUnderMouse, currentTopElementUnderMouse, mouseEvent);
+            }
+            else if (triggerEvent.GetEventTypeId() == DragUpdatedEvent.TypeId())
+            {
+                DispatchDragEnterDragLeave(previousTopElementUnderMouse, currentTopElementUnderMouse, mouseEvent);
+            }
+        }
+
         internal void Dispatch(EventBase evt, IPanel panel, DispatchMode dispatchMode)
         {
             evt.MarkReceivedByDispatcher();
@@ -462,6 +486,20 @@ namespace UnityEngine.Experimental.UIElements
 
                 if (sendEventToMouseCapture)
                 {
+                    BaseVisualElementPanel basePanel = panel as BaseVisualElementPanel;
+
+                    if (mouseEvent != null && basePanel != null)
+                    {
+                        VisualElement currentTopElementUnderMouse = basePanel.topElementUnderMouse;
+
+                        if (evt.target == null)
+                        {
+                            basePanel.topElementUnderMouse = basePanel.Pick(mouseEvent.mousePosition);
+                        }
+
+                        DispatchEnterLeaveEvents(currentTopElementUnderMouse, basePanel.topElementUnderMouse, evt);
+                    }
+
                     IEventHandler originalCaptureElement = MouseCaptureController.mouseCapture;
 
                     eventHandled = true;
@@ -563,19 +601,7 @@ namespace UnityEngine.Experimental.UIElements
 
                             if (basePanel != null)
                             {
-                                if (evt.GetEventTypeId() == MouseMoveEvent.TypeId() ||
-                                    evt.GetEventTypeId() == MouseDownEvent.TypeId() ||
-                                    evt.GetEventTypeId() == MouseUpEvent.TypeId() ||
-                                    evt.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
-                                    evt.GetEventTypeId() == WheelEvent.TypeId())
-                                {
-                                    DispatchMouseEnterMouseLeave(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
-                                    DispatchMouseOverMouseOut(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
-                                }
-                                else if (evt.GetEventTypeId() == DragUpdatedEvent.TypeId())
-                                {
-                                    DispatchDragEnterDragLeave(currentTopElementUnderMouse, basePanel.topElementUnderMouse, mouseEvent);
-                                }
+                                DispatchEnterLeaveEvents(currentTopElementUnderMouse, basePanel.topElementUnderMouse, evt);
                             }
                         }
                     }

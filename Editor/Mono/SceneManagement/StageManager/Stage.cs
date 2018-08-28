@@ -9,7 +9,7 @@ using UnityEngine.SceneManagement;
 
 namespace UnityEditor.SceneManagement
 {
-    public struct Stage : System.IEquatable<Stage>
+    public struct StageHandle : System.IEquatable<StageHandle>
     {
         private bool m_IsMainStage;
         private Scene m_CustomScene;
@@ -85,28 +85,28 @@ namespace UnityEditor.SceneManagement
         }
 
         // Use public API StageUtility.GetMainStage
-        internal static Stage GetMainStage()
+        internal static StageHandle GetMainStageHandle()
         {
-            return new Stage() { m_IsMainStage = true };
+            return new StageHandle() { m_IsMainStage = true };
         }
 
         // Use public API StageUtility.GetCurrentStage
-        internal static Stage GetCurrentStage()
+        internal static StageHandle GetCurrentStageHandle()
         {
             PrefabStage prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
             if (prefabStage == null)
-                return new Stage() { m_IsMainStage = true };
+                return new StageHandle() { m_IsMainStage = true };
             else
-                return new Stage() { m_CustomScene = prefabStage.scene };
+                return new StageHandle() { m_CustomScene = prefabStage.scene };
         }
 
         // Use public API StageUtility.GetStage
-        internal static Stage GetStage(Scene scene)
+        internal static StageHandle GetStageHandle(Scene scene)
         {
             if (scene.IsValid() && EditorSceneManager.IsPreviewScene(scene))
-                return new Stage() { m_CustomScene = scene };
+                return new StageHandle() { m_CustomScene = scene };
             else
-                return new Stage() { m_IsMainStage = true };
+                return new StageHandle() { m_IsMainStage = true };
         }
 
         public bool IsValid()
@@ -114,26 +114,26 @@ namespace UnityEditor.SceneManagement
             return m_IsMainStage ^ m_CustomScene.IsValid();
         }
 
-        public static bool operator==(Stage s1, Stage s2)
+        public static bool operator==(StageHandle s1, StageHandle s2)
         {
             return s1.Equals(s2);
         }
 
-        public static bool operator!=(Stage s1, Stage s2)
+        public static bool operator!=(StageHandle s1, StageHandle s2)
         {
             return !s1.Equals(s2);
         }
 
         public override bool Equals(object other)
         {
-            if (!(other is Stage))
+            if (!(other is StageHandle))
                 return false;
 
-            Stage rhs = (Stage)other;
+            StageHandle rhs = (StageHandle)other;
             return m_IsMainStage == rhs.m_IsMainStage && m_CustomScene == rhs.m_CustomScene;
         }
 
-        public bool Equals(Stage other)
+        public bool Equals(StageHandle other)
         {
             return m_IsMainStage == other.m_IsMainStage && m_CustomScene == other.m_CustomScene;
         }

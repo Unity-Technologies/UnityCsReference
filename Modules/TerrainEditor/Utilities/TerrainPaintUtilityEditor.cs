@@ -8,8 +8,9 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.Experimental.TerrainAPI;
 
-namespace UnityEditor
+namespace UnityEditor.Experimental.TerrainAPI
 {
     public static class TerrainPaintUtilityEditor
     {
@@ -22,7 +23,7 @@ namespace UnityEditor
         // This maintains the list of terrains we have touched in the current operation (and the current operation identifier, as an undo group)
         // We track this to have good cross-tile undo support: each modified tile should be added, at most, ONCE within a single operation
         private static int s_CurrentOperationUndoGroup = -1;
-        private static List<Terrain> s_CurrentOperationUndoStack = new List<Terrain>();
+        private static List<UnityEngine.Object> s_CurrentOperationUndoStack = new List<UnityEngine.Object>();
 
         static TerrainPaintUtilityEditor()
         {
@@ -50,7 +51,23 @@ namespace UnityEditor
             };
         }
 
-        public static void ShowDefaultPreviewBrush(Terrain terrain, Texture brushTexture, float brushStrength, int brushSize, float futurePreviewScale)
+        internal static void UpdateTerrainDataUndo(TerrainData terrainData, string undoName)
+        {
+            // if we are in a new undo group (new operation) then start with an empty list
+            if (Undo.GetCurrentGroup() != s_CurrentOperationUndoGroup)
+            {
+                s_CurrentOperationUndoGroup = Undo.GetCurrentGroup();
+                s_CurrentOperationUndoStack.Clear();
+            }
+
+            if (!s_CurrentOperationUndoStack.Contains(terrainData))
+            {
+                s_CurrentOperationUndoStack.Add(terrainData);
+                Undo.RegisterCompleteObjectUndo(terrainData, undoName);
+            }
+        }
+
+        public static void ShowDefaultPreviewBrush(Terrain terrain, Texture brushTexture, float brushStrength, float brushSize, float futurePreviewScale)
         {
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
             RaycastHit hit;
@@ -135,7 +152,7 @@ namespace UnityEditor
             return m;
         }
 
-        public static void DrawDefaultBrushPreviewMesh(Terrain terrain, RaycastHit hit, Texture heightmapTexture, Texture brushTexture, float brushStrength, int brushSize, Mesh mesh, bool showPreviewPostBrush, Vector4 texScaleOffset)
+        public static void DrawDefaultBrushPreviewMesh(Terrain terrain, RaycastHit hit, Texture heightmapTexture, Texture brushTexture, float brushStrength, float brushSize, Mesh mesh, bool showPreviewPostBrush, Vector4 texScaleOffset)
         {
             Vector4 brushParams = new Vector4(brushStrength, 2.0f * terrain.terrainData.heightmapScale.y, 0.0f, 0.0f);
 

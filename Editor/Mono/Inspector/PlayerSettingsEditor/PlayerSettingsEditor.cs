@@ -1929,8 +1929,13 @@ namespace UnityEditor
                 }
                 else
                 {
+                    var currentScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
                     PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
-                    PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged();
+
+                    if (!PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged())
+                    {
+                        PlayerSettings.scriptingRuntimeVersion = currentScriptingRuntimeVersions;
+                    }
                 }
             }
 

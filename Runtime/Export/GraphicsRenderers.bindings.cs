@@ -184,6 +184,8 @@ namespace UnityEngine
         extern public void SetPosition(int index, Vector3 position);
         extern public Vector3 GetPosition(int index);
 
+        extern public float shadowBias { get; set; }
+
         extern public bool generateLightingData { get; set; }
 
         extern public LineTextureMode textureMode { get; set; }
@@ -239,6 +241,8 @@ namespace UnityEngine
         [NativeProperty("PositionsCount")] extern public int positionCount { get; set; }
         extern public void SetPosition(int index, Vector3 position);
         extern public Vector3 GetPosition(int index);
+
+        extern public float shadowBias          { get; set; }
 
         extern public bool generateLightingData { get; set; }
 

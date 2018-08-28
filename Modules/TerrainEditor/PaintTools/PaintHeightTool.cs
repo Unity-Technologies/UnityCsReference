@@ -4,8 +4,9 @@
 
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Experimental.TerrainAPI;
 
-namespace UnityEditor
+namespace UnityEditor.Experimental.TerrainAPI
 {
     public class PaintHeightTool : TerrainPaintTool<PaintHeightTool>
     {
@@ -19,28 +20,32 @@ namespace UnityEditor
             return "Left click to raise.\n\nHold shift and left click to lower.";
         }
 
-        public override void OnSceneGUI(SceneView sceneView, Terrain terrain, Texture brushTexture, float brushStrength, int brushSizeInTerrainUnits)
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
         {
-            TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(terrain, brushTexture, brushStrength * 0.01f, brushSizeInTerrainUnits, brushStrength * 0.01f);
+            editContext.ShowBrushesGUI(5);
         }
 
-        public override bool Paint(Terrain terrain, Texture brushTexture, Vector2 uv, float brushStrength, int brushSize)
+        public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
-            if (Event.current.shift)
-                brushStrength = -brushStrength;
+            TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(terrain, editContext.brushTexture, editContext.brushStrength * 0.01f, editContext.brushSize, editContext.brushStrength * 0.01f);
+        }
+
+        public override bool OnPaint(Terrain terrain, IOnPaint editContext)
+        {
+            float brushStrength = Event.current.shift ? -editContext.brushStrength : editContext.brushStrength;
 
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
-            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, uv, brushSize);
+            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, editContext.uv, editContext.brushSize);
             TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushRect);
 
             // apply brush
             Vector4 brushParams = new Vector4(brushStrength * 0.01f, 0.0f, 0.0f, 0.0f);
-            mat.SetTexture("_BrushTex", brushTexture);
+            mat.SetTexture("_BrushTex", editContext.brushTexture);
             mat.SetVector("_BrushParams", brushParams);
             Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.RaiseLowerHeight);
 
             TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Raise or Lower Height");
-            return false;
+            return true;
         }
     }
 }

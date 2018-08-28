@@ -135,7 +135,7 @@ namespace UnityEngine
         private float OnRepaint()
         {
             slider.Draw(position, GUIContent.none, id);
-            if (!IsEmptySlider() && currentValue >= start && currentValue <= end)
+            if (!IsEmptySlider() && currentValue >= MinValue() && currentValue <= MaxValue())
                 thumb.Draw(ThumbRect(), GUIContent.none, id);
 
             if (GUIUtility.hotControl != id || !position.Contains(CurrentEvent().mousePosition) || IsEmptySlider())

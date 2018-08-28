@@ -131,16 +131,66 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public virtual Func<string, string> formatSelectedValueCallback
+        {
+            get { return m_FormatSelectedValueCallback; }
+            set
+            {
+                m_FormatSelectedValueCallback = value;
+                m_TextElement.text = GetValueToDisplay();
+            }
+        }
+
+        public virtual Func<string, string> formatListItemCallback
+        {
+            get { return m_FormatListItemCallback; }
+            set { m_FormatListItemCallback = value; }
+        }
+
         public override void SetValueWithoutNotify(int newValue)
         {
             base.SetValueWithoutNotify(UpdateMaskIfEverything(newValue));
         }
 
+        internal override string GetListItemToDisplay(int itemIndex)
+        {
+            string displayedValue = GetDisplayedValue(itemIndex);
+            if (ShouldFormatListItem(itemIndex))
+                displayedValue = m_FormatListItemCallback(displayedValue);
+
+            return displayedValue;
+        }
+
         internal override string GetValueToDisplay()
+        {
+            string displayedValue = GetDisplayedValue(m_Value);
+            if (ShouldFormatSelectedValue())
+                displayedValue = m_FormatSelectedValueCallback(displayedValue);
+            return displayedValue;
+        }
+
+        // Trick to get the number of selected values...
+        // A power of 2 number means only 1 selected...
+        internal bool IsPowerOf2(int itemIndex)
+        {
+            return ((itemIndex & (itemIndex - 1)) == 0);
+        }
+
+        internal bool ShouldFormatListItem(int itemIndex)
+        {
+            return itemIndex != 0 && itemIndex != -1 && m_FormatListItemCallback != null;
+        }
+
+        internal bool ShouldFormatSelectedValue()
+        {
+            return m_Value != 0 && m_Value != -1 && m_FormatSelectedValueCallback != null && IsPowerOf2(m_Value);
+        }
+
+        internal string GetDisplayedValue(int itemIndex)
         {
             var newValueToShowUser = "";
 
-            switch (m_Value)
+            switch (itemIndex)
             {
                 case 0:
                     newValueToShowUser = m_Choices[s_NothingIndex];
@@ -151,13 +201,8 @@ namespace UnityEditor.Experimental.UIElements
                     break;
 
                 default:
-
-                    // Trick to get the number of selected values...
-                    // A power of 2 number means only 1 selected...
-                    var isPowerOf2 = ((m_Value & (m_Value - 1)) == 0);
-
                     // Show up the right selected value
-                    if (isPowerOf2)
+                    if (IsPowerOf2(itemIndex))
                     {
                         var indexOfValue = 0;
                         if (m_UserChoicesMasks != null)
@@ -165,7 +210,7 @@ namespace UnityEditor.Experimental.UIElements
                             // Find the actual index of the selected choice...
                             foreach (int itemMask in m_UserChoicesMasks)
                             {
-                                if ((itemMask & m_Value) == m_Value)
+                                if ((itemMask & itemIndex) == itemIndex)
                                 {
                                     indexOfValue = m_UserChoicesMasks.IndexOf(itemMask);
                                     break;
@@ -174,7 +219,7 @@ namespace UnityEditor.Experimental.UIElements
                         }
                         else
                         {
-                            while ((1 << indexOfValue) != m_Value)
+                            while ((1 << indexOfValue) != itemIndex)
                             {
                                 indexOfValue++;
                             }
@@ -226,7 +271,7 @@ namespace UnityEditor.Experimental.UIElements
                         break;
                 }
 
-                menu.AddItem(new GUIContent(item.ToString()), isSelected, () => ChangeValueFromMenu(item));
+                menu.AddItem(new GUIContent(GetListItemToDisplay(maskOfItem)), isSelected, () => ChangeValueFromMenu(item));
             }
         }
 
@@ -268,12 +313,15 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        private MaskField(List<string> choices)
+        private MaskField(List<string> choices, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null)
         {
             this.choices = choices;
+            m_FormatListItemCallback = formatListItemCallback;
+            m_FormatSelectedValueCallback = formatSelectedValueCallback;
         }
 
-        public MaskField(List<string> choices, int defaultMask) : this(choices)
+        public MaskField(List<string> choices, int defaultMask, Func<string, string> formatSelectedValueCallback = null, Func<string, string> formatListItemCallback = null) :
+            this(choices, formatSelectedValueCallback, formatListItemCallback)
         {
             SetValueWithoutNotify(defaultMask);
         }

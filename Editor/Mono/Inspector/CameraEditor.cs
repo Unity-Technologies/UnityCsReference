@@ -642,8 +642,8 @@ namespace UnityEditor
             var c = (Camera)target;
 
             // Do not render the Camera Preview overlay if the target camera is not part of the stage the SceneView is rendering
-            var targetStage = StageUtility.GetStage(c.gameObject);
-            var sceneViewStage = StageUtility.GetStage(sceneView.customScene);
+            var targetStage = StageUtility.GetStageHandle(c.gameObject);
+            var sceneViewStage = StageUtility.GetStageHandle(sceneView.customScene);
             if (targetStage != sceneViewStage)
                 return;
 

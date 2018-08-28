@@ -25,6 +25,7 @@ namespace UnityEngine
         extern public float cameraVelocityScale { get; set; }
 
         extern public float normalDirection { get; set; }
+        extern public float shadowBias { get; set; }
         extern public float sortingFudge { get; set; }
         extern public float minParticleSize { get; set; }
         extern public float maxParticleSize { get; set; }

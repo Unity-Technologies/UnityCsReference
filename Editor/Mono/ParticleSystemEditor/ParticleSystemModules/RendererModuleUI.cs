@@ -19,6 +19,7 @@ namespace UnityEditor
         // BaseRenderer and Renderer
         SerializedProperty m_CastShadows;
         SerializedProperty m_ReceiveShadows;
+        SerializedProperty m_ShadowBias;
         SerializedProperty m_MotionVectors;
         SerializedProperty m_Material;
         SerializedProperty m_TrailMaterial;
@@ -91,6 +92,7 @@ namespace UnityEditor
             public GUIContent rotation = EditorGUIUtility.TrTextContent("Rotation", "Set whether the rotation of the particles is defined in Screen or World space.");
             public GUIContent castShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Only opaque materials cast shadows");
             public GUIContent receiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "Only opaque materials receive shadows. When using deferred rendering, all opaque objects receive shadows.");
+            public GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the particle size.");
             public GUIContent motionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Particle System renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture. Note that there is no built-in support for Per-Particle Motion.");
             public GUIContent normalDirection = EditorGUIUtility.TrTextContent("Normal Direction", "Value between 0.0 and 1.0. If 1.0 is used, normals will point towards camera. If 0.0 is used, normals will point out in the corner direction of the particle.");
             public GUIContent allowRoll = EditorGUIUtility.TrTextContent("Allow Roll", "Allows billboards to roll with the camera. It is often useful to disable this option when using VR.");
@@ -185,6 +187,7 @@ namespace UnityEditor
 
             m_CastShadows = GetProperty0("m_CastShadows");
             m_ReceiveShadows = GetProperty0("m_ReceiveShadows");
+            m_ShadowBias = GetProperty0("m_ShadowBias");
             m_MotionVectors = GetProperty0("m_MotionVectors");
             m_Material = GetProperty0("m_Materials.Array.data[0]");
             m_TrailMaterial = GetProperty0("m_Materials.Array.data[1]");
@@ -356,6 +359,9 @@ namespace UnityEditor
                     GUIToggle(s_Texts.receiveShadows, m_ReceiveShadows);
                 }
             }
+
+            if (renderMode != RenderMode.Mesh)
+                GUIFloat(s_Texts.shadowBias, m_ShadowBias);
 
             if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
                 GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);

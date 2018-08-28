@@ -11,9 +11,34 @@ namespace UnityEditor.Experimental.UIElements
 {
     public class PopupField<T> : BasePopupField<T, T>
     {
+        public virtual Func<T, string> formatSelectedValueCallback
+        {
+            get { return m_FormatSelectedValueCallback; }
+            set
+            {
+                m_FormatSelectedValueCallback = value;
+                m_TextElement.text = GetValueToDisplay();
+            }
+        }
+
+        public virtual Func<T, string> formatListItemCallback
+        {
+            get { return m_FormatListItemCallback; }
+            set { m_FormatListItemCallback = value; }
+        }
+
         internal override string GetValueToDisplay()
         {
-            return m_Value.ToString();
+            if (m_FormatSelectedValueCallback != null)
+                return m_FormatSelectedValueCallback(value);
+            return value.ToString();
+        }
+
+        internal override string GetListItemToDisplay(T value)
+        {
+            if (m_FormatListItemCallback != null)
+                return m_FormatListItemCallback(value);
+            return value.ToString();
         }
 
         public override T value
@@ -60,13 +85,15 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
-        protected PopupField(List<T> choices)
+        protected PopupField(List<T> choices, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null)
         {
             this.choices = choices;
+            m_FormatSelectedValueCallback = formatSelectedValueCallback;
+            m_FormatListItemCallback = formatListItemCallback;
         }
 
-        public PopupField(List<T> choices, T defaultValue) :
-            this(choices)
+        public PopupField(List<T> choices, T defaultValue, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null) :
+            this(choices, formatSelectedValueCallback, formatListItemCallback)
         {
             if (defaultValue == null)
                 throw new ArgumentNullException("defaultValue", "defaultValue can't be null");
@@ -78,8 +105,8 @@ namespace UnityEditor.Experimental.UIElements
             SetValueWithoutNotify(defaultValue);
         }
 
-        public PopupField(List<T> choices, int defaultIndex) :
-            this(choices)
+        public PopupField(List<T> choices, int defaultIndex, Func<T, string> formatSelectedValueCallback = null, Func<T, string> formatListItemCallback = null) :
+            this(choices, formatSelectedValueCallback, formatListItemCallback)
         {
             if (defaultIndex >= m_Choices.Count || defaultIndex < 0)
                 throw new ArgumentException(string.Format("Default Index {0} is beyond the scope of possible value", value));
@@ -93,7 +120,7 @@ namespace UnityEditor.Experimental.UIElements
             foreach (T item in m_Choices)
             {
                 bool isSelected = EqualityComparer<T>.Default.Equals(item, value);
-                menu.AddItem(new GUIContent(item.ToString()), isSelected,
+                menu.AddItem(new GUIContent(GetListItemToDisplay(item)), isSelected,
                     () => ChangeValueFromMenu(item));
             }
         }

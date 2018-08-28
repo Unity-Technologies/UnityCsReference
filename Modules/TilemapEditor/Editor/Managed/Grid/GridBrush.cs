@@ -24,6 +24,7 @@ namespace UnityEditor
 
         private static readonly Matrix4x4 s_Clockwise = new Matrix4x4(new Vector4(0f, 1f, 0f, 0f), new Vector4(-1f, 0f, 0f, 0f), new Vector4(0f, 0f, 1f, 0f), new Vector4(0f, 0f, 0f, 1f));
         private static readonly Matrix4x4 s_CounterClockwise = new Matrix4x4(new Vector4(0f, -1f, 0f, 0f), new Vector4(1f, 0f, 0f, 0f), new Vector4(0f, 0f, 1f, 0f), new Vector4(0f, 0f, 0f, 1f));
+        private static readonly Matrix4x4 s_180Rotate = new Matrix4x4(new Vector4(-1f, 0f, 0f, 0f), new Vector4(0f, -1f, 0f, 0f), new Vector4(0f, 0f, 1f, 0f), new Vector4(0f, 0f, 0f, 1f));
 
         public Vector3Int size { get { return m_Size; } set { m_Size = value; SizeUpdated(); } }
         public Vector3Int pivot { get { return m_Pivot; } set { m_Pivot = value; } }
@@ -147,10 +148,12 @@ namespace UnityEditor
                     pivot = new Vector3Int(newPivotX, newPivotY, pivot.z);
 
                     Matrix4x4 rotation = direction == RotationDirection.Clockwise ? s_Clockwise : s_CounterClockwise;
+                    Matrix4x4 counterRotation = direction != RotationDirection.Clockwise ? s_Clockwise : s_CounterClockwise;
                     foreach (BrushCell cell in m_Cells)
                     {
                         Matrix4x4 oldMatrix = cell.matrix;
-                        cell.matrix = oldMatrix * rotation;
+                        bool counter = (oldMatrix.lossyScale.x < 0) ^ (oldMatrix.lossyScale.y < 0);
+                        cell.matrix = oldMatrix * (counter ? counterRotation : rotation);
                     }
                 }
                 break;
@@ -228,9 +231,9 @@ namespace UnityEditor
         public override void Flip(FlipAxis flip, Grid.CellLayout layout)
         {
             if (flip == FlipAxis.X)
-                FlipX();
+                FlipX(layout);
             else
-                FlipY();
+                FlipY(layout);
         }
 
         public override void Pick(GridLayout gridLayout, GameObject brushTarget, BoundsInt position, Vector3Int pickStart)
@@ -284,7 +287,7 @@ namespace UnityEditor
             UpdateSizeAndPivot(Vector3Int.one, Vector3Int.zero);
         }
 
-        private void FlipX()
+        private void FlipX(Grid.CellLayout layout)
         {
             BrushCell[] oldCells = m_Cells.Clone() as BrushCell[];
             BoundsInt oldBounds = new BoundsInt(Vector3Int.zero, m_Size);
@@ -299,15 +302,10 @@ namespace UnityEditor
 
             int newPivotX = m_Size.x - pivot.x - 1;
             pivot = new Vector3Int(newPivotX, pivot.y, pivot.z);
-            Matrix4x4 flip = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(-1f, 1f, 1f));
-            foreach (BrushCell cell in m_Cells)
-            {
-                Matrix4x4 oldMatrix = cell.matrix;
-                cell.matrix = oldMatrix * flip;
-            }
+            FlipCells(ref m_Cells, new Vector3(-1f, 1f, 1f), layout == GridLayout.CellLayout.Hexagon);
         }
 
-        private void FlipY()
+        private void FlipY(Grid.CellLayout layout)
         {
             BrushCell[] oldCells = m_Cells.Clone() as BrushCell[];
             BoundsInt oldBounds = new BoundsInt(Vector3Int.zero, m_Size);
@@ -322,11 +320,19 @@ namespace UnityEditor
 
             int newPivotY = m_Size.y - pivot.y - 1;
             pivot = new Vector3Int(pivot.x, newPivotY, pivot.z);
-            Matrix4x4 flip = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(1f, -1f, 1f));
-            foreach (BrushCell cell in m_Cells)
+            FlipCells(ref m_Cells, new Vector3(1f, -1f, 1f), layout == GridLayout.CellLayout.Hexagon);
+        }
+
+        private static void FlipCells(ref BrushCell[] cells, Vector3 scale, bool skipRotation)
+        {
+            Matrix4x4 flip = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, scale);
+            foreach (BrushCell cell in cells)
             {
                 Matrix4x4 oldMatrix = cell.matrix;
-                cell.matrix = oldMatrix * flip;
+                if (skipRotation || Mathf.Approximately(oldMatrix.rotation.x + oldMatrix.rotation.y + oldMatrix.rotation.z + oldMatrix.rotation.w, 1.0f))
+                    cell.matrix = oldMatrix * flip;
+                else
+                    cell.matrix = oldMatrix * s_180Rotate * flip;
             }
         }
 

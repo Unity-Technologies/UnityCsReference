@@ -26,7 +26,10 @@ namespace UnityEditor
             public static readonly GUIContent lockColorLabel = EditorGUIUtility.TrTextContent("Lock Color", "Prevents tilemap from changing color of tile");
             public static readonly GUIContent lockTransformLabel = EditorGUIUtility.TrTextContent("Lock Transform", "Prevents tilemap from changing transform of tile");
             public static readonly GUIContent instantiateGameObjectRuntimeOnlyLabel = EditorGUIUtility.TrTextContent("Instantiate GameObject Runtime Only", "Instantiates GameObject in runtime play mode only");
+        }
 
+        class GridBrushProperties
+        {
             public static readonly GUIContent floodFillPreviewLabel = EditorGUIUtility.TrTextContent("Show Flood Fill Preview", "Whether a preview is shown while painting a Tilemap when Flood Fill mode is enabled");
             public static readonly string floodFillPreviewEditorPref = "GridBrush.EnableFloodFillPreview";
         }
@@ -238,8 +241,8 @@ namespace UnityEditor
         {
             get
             {
-                Stage currentStage = StageUtility.GetCurrentStage();
-                return currentStage.FindComponentsOfType<Tilemap>().Where(x => x.gameObject.scene.isLoaded).Select(x => x.gameObject).ToArray();
+                StageHandle currentStageHandle = StageUtility.GetCurrentStageHandle();
+                return currentStageHandle.FindComponentsOfType<Tilemap>().Where(x => x.gameObject.scene.isLoaded).Select(x => x.gameObject).ToArray();
             }
         }
 
@@ -297,7 +300,7 @@ namespace UnityEditor
         public virtual void FloodFillPreview(GridLayout gridLayout, GameObject brushTarget, Vector3Int position)
         {
             // This can be quite taxing on a large Tilemap, so users can choose whether to do this or not
-            if (!EditorPrefs.GetBool(Styles.floodFillPreviewEditorPref, true))
+            if (!EditorPrefs.GetBool(GridBrushProperties.floodFillPreviewEditorPref, true))
                 return;
 
             var bounds = new BoundsInt(position, Vector3Int.one);
@@ -323,12 +326,14 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateSettingsProvider()
         {
-            return new SettingsProvider("Preferences/Grid Brush") {
+            var settingsProvider = new SettingsProvider("Preferences/2D/Grid Brush") {
                 guiHandler = searchContext =>
                 {
                     PreferencesGUI();
                 }, scopes = SettingsScopes.User
             };
+            settingsProvider.PopulateSearchKeywordsFromGUIContentProperties<GridBrushProperties>();
+            return settingsProvider;
         }
 
         private static void PreferencesGUI()
@@ -336,10 +341,10 @@ namespace UnityEditor
             using (new SettingsWindow.GUIScope())
             {
                 EditorGUI.BeginChangeCheck();
-                var val = EditorGUILayout.Toggle(Styles.floodFillPreviewLabel, EditorPrefs.GetBool(Styles.floodFillPreviewEditorPref, true));
+                var val = EditorGUILayout.Toggle(GridBrushProperties.floodFillPreviewLabel, EditorPrefs.GetBool(GridBrushProperties.floodFillPreviewEditorPref, true));
                 if (EditorGUI.EndChangeCheck())
                 {
-                    EditorPrefs.SetBool(Styles.floodFillPreviewEditorPref, val);
+                    EditorPrefs.SetBool(GridBrushProperties.floodFillPreviewEditorPref, val);
                 }
             }
         }

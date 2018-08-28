@@ -12,6 +12,8 @@ using UnityEngine.Tilemaps;
 using Event = UnityEngine.Event;
 using Object = UnityEngine.Object;
 
+using UnityEditor.Experimental.SceneManagement;
+
 namespace UnityEditor
 {
     internal class GridPaintPaletteWindow : EditorWindow
@@ -90,7 +92,9 @@ namespace UnityEditor
             public static readonly GUIContent focusLabel = EditorGUIUtility.TrTextContent("Focus On");
             public static readonly GUIContent rendererOverlayTitleLabel = EditorGUIUtility.TrTextContent("Tilemap");
             public static readonly GUIContent activeTargetLabel = EditorGUIUtility.TrTextContent("Active Tilemap", "Specifies the currently active Tilemap used for painting in the Scene View.");
+            public static readonly GUIContent prefabWarningIcon = EditorGUIUtility.TrIconContent("console.warnicon.sml", "Editing Tilemaps in Prefabs will have better performance if edited in Prefab Mode.");
 
+            public static readonly GUIContent tilePalette = EditorGUIUtility.TrTextContent("Tile Palette");
             public static readonly GUIContent edit = EditorGUIUtility.TrTextContent("Edit");
             public static readonly GUIContent editModified = EditorGUIUtility.TrTextContent("Edit*");
             public static readonly GUIStyle ToolbarTitleStyle = "Toolbar";
@@ -122,6 +126,27 @@ namespace UnityEditor
             }
         }
 
+        class TilePaletteProperties
+        {
+            public enum PrefabEditModeSettings
+            {
+                EnableDialog = 0,
+                EditInPrefabMode = 1,
+                EditInScene = 2
+            }
+
+            public static readonly string targetEditModeDialogTitle = L10n.Tr("Open in Prefab Mode");
+            public static readonly string targetEditModeDialogMessage = L10n.Tr("Editing Tilemaps in Prefabs will have better performance if edited in Prefab Mode. Do you want to open it in Prefab Mode or edit it in the Scene?");
+            public static readonly string targetEditModeDialogYes = L10n.Tr("Prefab Mode");
+            public static readonly string targetEditModeDialogChange = L10n.Tr("Preferences");
+            public static readonly string targetEditModeDialogNo = L10n.Tr("Scene");
+
+            public static readonly string targetEditModeEditorPref = "TilePalette.TargetEditMode";
+            public static readonly string targetEditModeLookup = "Tile Palette Target Edit Mode";
+
+            public static readonly GUIContent targetEditModeDialogLabel = EditorGUIUtility.TrTextContent(targetEditModeLookup, "Controls the behaviour of editing a Prefab Instance when one is selected as the Active Target in the Tile Palette");
+        }
+
         static readonly EditMode.SceneViewEditMode[] k_SceneViewEditModes =
         {
             EditMode.SceneViewEditMode.GridSelect,
@@ -136,13 +161,13 @@ namespace UnityEditor
         private const float k_DropdownWidth = 200f;
         private const float k_ActiveTargetLabelWidth = 90f;
         private const float k_ActiveTargetDropdownWidth = 130f;
-        private const float k_TopAreaHeight = 95f;
+        private const float k_ActiveTargetWarningSize = 20f;
+        private const float k_TopAreaHeight = 100f;
         private const float k_MinBrushInspectorHeight = 50f;
         private const float k_MinClipboardHeight = 200f;
         private const float k_ToolbarHeight = 17f;
         private const float k_ResizerDragRectPadding = 10f;
-
-        public static readonly GUIContent tilePalette = EditorGUIUtility.TrTextContent("Tile Palette");
+        private static readonly Vector2 k_MinWindowSize = new Vector2(k_ActiveTargetLabelWidth + k_ActiveTargetDropdownWidth + k_ActiveTargetWarningSize, 200f);
 
         private PaintableSceneViewGrid m_PaintableSceneViewGrid;
         public PaintableGrid paintableSceneViewGrid { get { return m_PaintableSceneViewGrid; } }
@@ -255,6 +280,34 @@ namespace UnityEditor
                 FlipBrush(GridBrush.FlipAxis.Y);
         }
 
+        [SettingsProvider]
+        internal static SettingsProvider CreateSettingsProvider()
+        {
+            var settingsProvider = new SettingsProvider("Preferences/2D/Tile Palette")
+            {
+                guiHandler = searchContext =>
+                {
+                    PreferencesGUI();
+                },
+                scopes = SettingsScopes.User
+            };
+            settingsProvider.PopulateSearchKeywordsFromGUIContentProperties<TilePaletteProperties>();
+            return settingsProvider;
+        }
+
+        private static void PreferencesGUI()
+        {
+            using (new SettingsWindow.GUIScope())
+            {
+                EditorGUI.BeginChangeCheck();
+                var val = (TilePaletteProperties.PrefabEditModeSettings)EditorGUILayout.EnumPopup(TilePaletteProperties.targetEditModeDialogLabel, (TilePaletteProperties.PrefabEditModeSettings)EditorPrefs.GetInt(TilePaletteProperties.targetEditModeEditorPref, 0));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    EditorPrefs.SetInt(TilePaletteProperties.targetEditModeEditorPref, (int)val);
+                }
+            }
+        }
+
         static private List<GridPaintPaletteWindow> s_Instances;
         static public List<GridPaintPaletteWindow> instances
         {
@@ -269,10 +322,11 @@ namespace UnityEditor
         [SerializeField]
         private PreviewResizer m_PreviewResizer;
 
-        [SerializeField] private GameObject m_Palette;
-        private GameObject m_PaletteInstance;
-
         private GridPalettesDropdown m_PaletteDropdown;
+
+        [SerializeField]
+        private GameObject m_Palette;
+
         public GameObject palette
         {
             get
@@ -291,6 +345,7 @@ namespace UnityEditor
             }
         }
 
+        private GameObject m_PaletteInstance;
         public GameObject paletteInstance
         {
             get
@@ -300,9 +355,6 @@ namespace UnityEditor
         }
 
         public GridPaintPaletteClipboard clipboardView { get; private set; }
-
-        [SerializeField]
-        public GameObject m_Target;
 
         private Vector2 m_BrushScroll;
         private GridBrushEditorBase m_PreviousToolActivatedEditor;
@@ -647,7 +699,7 @@ namespace UnityEditor
                 m_PreviewResizer.Init("TilemapBrushInspector");
             }
 
-            minSize = new Vector2(240f, 200f);
+            minSize = k_MinWindowSize;
 
             if (palette == null && TilemapEditorUserSettings.lastUsedPalette != null && GridPalettes.palettes.Contains(TilemapEditorUserSettings.lastUsedPalette))
             {
@@ -803,26 +855,116 @@ namespace UnityEditor
             }
         }
 
+        private bool IsObjectPrefabInstance(Object target)
+        {
+            return target != null && PrefabUtility.IsPartOfRegularPrefab(target);
+        }
+
+        private GameObject FindPrefabInstanceEquivalent(GameObject prefabInstance, GameObject prefabTarget)
+        {
+            var prefabRoot = prefabTarget.transform.root.gameObject;
+            var currentTransform = prefabTarget.transform;
+            var reverseTransformOrder = new Stack<int>();
+            while (currentTransform != prefabRoot && currentTransform.parent != null)
+            {
+                var parentTransform = currentTransform.parent;
+                for (int i = 0; i < parentTransform.childCount; ++i)
+                {
+                    if (currentTransform == parentTransform.GetChild(i))
+                    {
+                        reverseTransformOrder.Push(i);
+                        break;
+                    }
+                }
+                currentTransform = currentTransform.parent;
+            }
+
+            currentTransform = prefabInstance.transform;
+            while (reverseTransformOrder.Count > 0)
+            {
+                var childIndex = reverseTransformOrder.Pop();
+                if (childIndex >= currentTransform.childCount)
+                    return null;
+                currentTransform = currentTransform.GetChild(childIndex);
+            }
+            return currentTransform.gameObject;
+        }
+
+        private void GoToPrefabMode(GameObject target)
+        {
+            var prefabObject = PrefabUtility.GetCorrespondingObjectFromSource(target);
+            var assetPath = AssetDatabase.GetAssetPath(prefabObject);
+            var stage = PrefabStageUtility.OpenPrefab(assetPath);
+            var prefabInstance = stage.prefabContentsRoot;
+            var prefabTarget = FindPrefabInstanceEquivalent(prefabInstance, prefabObject);
+            if (prefabTarget != null)
+            {
+                GridPaintingState.scenePaintTarget = prefabTarget;
+            }
+        }
+
         private void DoActiveTargetsGUI()
         {
             bool hasPaintTarget = GridPaintingState.scenePaintTarget != null;
+            bool needWarning = IsObjectPrefabInstance(GridPaintingState.scenePaintTarget);
+
             using (new EditorGUI.DisabledScope(!hasPaintTarget || GridPaintingState.validTargets == null))
             {
-                GUILayout.Label(Styles.activeTargetLabel, GUILayout.Width(k_ActiveTargetLabelWidth));
+                GUILayout.Label(Styles.activeTargetLabel, GUILayout.Width(k_ActiveTargetLabelWidth), GUILayout.Height(k_ActiveTargetWarningSize));
                 GUIContent content = GUIContent.Temp(hasPaintTarget ? GridPaintingState.scenePaintTarget.name : "Nothing");
-                if (EditorGUILayout.DropdownButton(content, FocusType.Passive, EditorStyles.popup, GUILayout.Width(k_ActiveTargetDropdownWidth)))
+                if (EditorGUILayout.DropdownButton(content, FocusType.Passive, EditorStyles.popup, GUILayout.Width(k_ActiveTargetDropdownWidth - (needWarning ? k_ActiveTargetWarningSize : 0f)), GUILayout.Height(k_ActiveTargetWarningSize)))
                 {
                     int index = hasPaintTarget ? Array.IndexOf(GridPaintingState.validTargets, GridPaintingState.scenePaintTarget) : 0;
                     var menuData = new GridPaintTargetsDropdown.MenuItemProvider();
                     var flexibleMenu = new GridPaintTargetsDropdown(menuData, index, null, SelectTarget, k_ActiveTargetDropdownWidth);
                     PopupWindow.Show(GUILayoutUtility.topLevel.GetLast(), flexibleMenu);
                 }
+                if (needWarning)
+                    GUILayout.Label(Styles.prefabWarningIcon, GUILayout.Width(k_ActiveTargetWarningSize), GUILayout.Height(k_ActiveTargetWarningSize));
             }
         }
 
         private void SelectTarget(int i, object o)
         {
-            GridPaintingState.scenePaintTarget = (o as GameObject);
+            var obj = o as GameObject;
+            var isPrefabInstance = IsObjectPrefabInstance(obj);
+            if (isPrefabInstance)
+            {
+                var editMode = (TilePaletteProperties.PrefabEditModeSettings)EditorPrefs.GetInt(TilePaletteProperties.targetEditModeEditorPref, 0);
+                switch (editMode)
+                {
+                    case TilePaletteProperties.PrefabEditModeSettings.EnableDialog:
+                    {
+                        var option = EditorUtility.DisplayDialogComplex(TilePaletteProperties.targetEditModeDialogTitle
+                            , TilePaletteProperties.targetEditModeDialogMessage
+                            , TilePaletteProperties.targetEditModeDialogYes
+                            , TilePaletteProperties.targetEditModeDialogChange
+                            , TilePaletteProperties.targetEditModeDialogNo);
+                        switch (option)
+                        {
+                            case 0:
+                                GoToPrefabMode(obj);
+                                return;
+                            case 1:
+                                var settingsWindow = SettingsWindow.Show(SettingsScopes.User);
+                                settingsWindow.FilterProviders(TilePaletteProperties.targetEditModeLookup);
+                                break;
+                            case 2:
+                                // Do nothing here for "No"
+                                break;
+                        }
+                    }
+                    break;
+                    case TilePaletteProperties.PrefabEditModeSettings.EditInPrefabMode:
+                        GoToPrefabMode(obj);
+                        return;
+                    case TilePaletteProperties.PrefabEditModeSettings.EditInScene:
+                    default:
+                        break;
+                }
+            }
+
+            GridPaintingState.scenePaintTarget = obj;
             if (GridPaintingState.scenePaintTarget != null)
                 EditorGUIUtility.PingObject(GridPaintingState.scenePaintTarget);
         }
@@ -1015,7 +1157,7 @@ namespace UnityEditor
         public static void OpenTilemapPalette()
         {
             GridPaintPaletteWindow w = GetWindow<GridPaintPaletteWindow>();
-            w.titleContent = tilePalette;
+            w.titleContent = Styles.tilePalette;
         }
 
         // TODO: Better way of clearing caches than AssetPostprocessor

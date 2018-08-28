@@ -183,6 +183,14 @@ namespace UnityEngine.Rendering
             Internal_GenerateMips(rt);
         }
 
+        public void ResolveAntiAliasedSurface(RenderTexture rt, RenderTexture target = null)
+        {
+            if (rt == null)
+                throw new ArgumentNullException("rt");
+
+            Internal_ResolveAntiAliasedSurface(rt, target);
+        }
+
         public void DrawMesh(Mesh mesh, Matrix4x4 matrix, Material material, int submeshIndex, int shaderPass, MaterialPropertyBlock properties)
         {
             if (mesh == null)

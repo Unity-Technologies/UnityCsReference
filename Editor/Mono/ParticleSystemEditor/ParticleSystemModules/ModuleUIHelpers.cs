@@ -176,11 +176,6 @@ namespace UnityEditor
             return vec;
         }
 
-        public static float GUIFloat(string label, SerializedProperty floatProp, params GUILayoutOption[] layoutOptions)
-        {
-            return GUIFloat(GUIContent.Temp(label), floatProp, layoutOptions);
-        }
-
         public static float GUIFloat(GUIContent guiContent, SerializedProperty floatProp, params GUILayoutOption[] layoutOptions)
         {
             return GUIFloat(guiContent, floatProp, kFormatString, layoutOptions);
@@ -189,6 +184,11 @@ namespace UnityEditor
         public static float GUIFloat(GUIContent guiContent, SerializedProperty floatProp, string formatString, params GUILayoutOption[] layoutOptions)
         {
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
+            return GUIFloat(rect, guiContent, floatProp, formatString);
+        }
+
+        public static float GUIFloat(Rect rect, GUIContent guiContent, SerializedProperty floatProp, string formatString = kFormatString)
+        {
             guiContent = EditorGUI.BeginProperty(rect, guiContent, floatProp);
             PrefixLabel(rect, guiContent);
             float val = FloatDraggable(rect, floatProp, 1f, EditorGUIUtility.labelWidth, formatString);
@@ -328,6 +328,11 @@ namespace UnityEditor
         public static void GUIObject(GUIContent label, SerializedProperty objectProp, System.Type objType, params GUILayoutOption[] layoutOptions)
         {
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
+            GUIObject(rect, label, objectProp, objType);
+        }
+
+        public static void GUIObject(Rect rect, GUIContent label, SerializedProperty objectProp, System.Type objType)
+        {
             label = EditorGUI.BeginProperty(rect, label, objectProp);
             rect = PrefixLabel(rect, label);
             EditorGUI.ObjectField(rect, objectProp, objType, GUIContent.none, ParticleSystemStyles.Get().objectField);
@@ -541,11 +546,16 @@ namespace UnityEditor
         public static void GUIMask(GUIContent label, SerializedProperty intProp, string[] options, params GUILayoutOption[] layoutOptions)
         {
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
+            GUIMask(rect, label, intProp, options);
+        }
+
+        public static void GUIMask(Rect rect, GUIContent label, SerializedProperty intProp, string[] options)
+        {
             label = EditorGUI.BeginProperty(rect, label, intProp);
             rect = PrefixLabel(rect, label);
 
             EditorGUI.BeginChangeCheck();
-            int newValue = EditorGUI.MaskField(rect, label, intProp.intValue, options, ParticleSystemStyles.Get().popup);
+            int newValue = EditorGUI.MaskField(rect, intProp.intValue, options, ParticleSystemStyles.Get().popup);
             if (EditorGUI.EndChangeCheck())
                 intProp.intValue = newValue;
 
@@ -555,6 +565,11 @@ namespace UnityEditor
         public static int GUIPopup(GUIContent label, SerializedProperty intProp, GUIContent[] options, params GUILayoutOption[] layoutOptions)
         {
             Rect rect = GetControlRect(kSingleLineHeight, layoutOptions);
+            return GUIPopup(rect, label, intProp, options);
+        }
+
+        public static int GUIPopup(Rect rect, GUIContent label, SerializedProperty intProp, GUIContent[] options)
+        {
             label = EditorGUI.BeginProperty(rect, label, intProp);
             rect = PrefixLabel(rect, label);
 

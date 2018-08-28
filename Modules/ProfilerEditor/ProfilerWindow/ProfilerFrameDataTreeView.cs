@@ -204,6 +204,9 @@ namespace UnityEditorInternal
 
         private bool PropertyPathMatchesSelectedIDs(string legacyPropertyPath, List<int> selectedIDs)
         {
+            if (m_FrameDataView == null || !m_FrameDataView.IsValid())
+                return false;
+
             if (string.IsNullOrEmpty(legacyPropertyPath) || selectedIDs == null || selectedIDs.Count == 0)
             {
                 return string.IsNullOrEmpty(legacyPropertyPath) && (selectedIDs == null || selectedIDs.Count == 0);

@@ -162,6 +162,26 @@ namespace UnityEditor
             public CompareEntry                         compareDelegate;
             public CopyDelegate                         copyDelegate;
             public SerializedPropertyFilters.IFilter    filter;
+
+            public static void OverwriteSerializedFields(MultiColumnHeaderState source, MultiColumnHeaderState destination)
+            {
+                destination.visibleColumns = source.visibleColumns;
+                destination.sortedColumns = source.sortedColumns;
+
+                for (int i = 0; i < destination.columns.Length; ++i)
+                {
+                    destination.columns[i].sortedAscending = source.columns[i].sortedAscending;
+
+                    var sourceColumn = source.columns[i] as Column;
+                    var destColumn = destination.columns[i] as Column;
+
+                    if ((sourceColumn == null || destColumn == null) || string.Equals(sourceColumn.propertyName, destColumn.propertyName))
+                    {
+                        // Only makes sense if the property is the same property name
+                        destination.columns[i].width = source.columns[i].width;
+                    }
+                }
+            }
         };
 
         private struct ColumnInternal
@@ -283,7 +303,7 @@ namespace UnityEditor
                 JsonUtility.FromJsonOverwrite(columnHeaderState, headerState);
 
             if (MultiColumnHeaderState.CanOverwriteSerializedFields(headerState, multiColumnHeader.state))
-                MultiColumnHeaderState.OverwriteSerializedFields(headerState, multiColumnHeader.state);
+                Column.OverwriteSerializedFields(headerState, multiColumnHeader.state);
 
             for (int i = 0; i < multiColumnHeader.state.columns.Length; i++)
             {

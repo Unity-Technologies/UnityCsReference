@@ -1123,7 +1123,7 @@ namespace UnityEditor.IMGUI.Controls
             Event.current.Use();
             int index = GetIndexOfID(visibleRows, state.lastClickedID);
             int newIndex = Mathf.Clamp(index + offset, 0, visibleRows.Count - 1);
-            EnsureRowIsVisible(newIndex, true);
+            EnsureRowIsVisible(newIndex, false);
             SelectionByKey(visibleRows[newIndex]);
         }
 

@@ -1703,6 +1703,9 @@
   <Compile Include="..\..\Editor\Mono\GUI\StructPropertyGUI.cs">
     <Link>Editor\Mono\GUI\StructPropertyGUI.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\GUI\SubToolbar.cs">
+    <Link>Editor\Mono\GUI\SubToolbar.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\GUI\TargetChoiceHandler.cs">
     <Link>Editor\Mono\GUI\TargetChoiceHandler.cs</Link>
   </Compile>
@@ -3829,6 +3832,9 @@
   </Compile>
   <Compile Include="..\..\External\JsonParsers\MiniJson\MiniJSON.cs">
     <Link>External\JsonParsers\MiniJson\MiniJSON.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs">
+    <Link>Modules\AIEditor\Builder\NavMeshBuilderEditor.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\AssetPipelineEditor\AssetPostprocessors\ModelImporterPostProcessor.cs">
     <Link>Modules\AssetPipelineEditor\AssetPostprocessors\ModelImporterPostProcessor.cs</Link>

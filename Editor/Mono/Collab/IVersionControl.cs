@@ -12,5 +12,6 @@ namespace UnityEditor.Collaboration
         void OnDisableVersionControl();
         ChangeItem[] GetChanges();
         void MergeDownloadedFiles(bool isFullDownload);
+        Collab.CollabStates GetAssetState(string assetGuid, string assetPath);
     }
 }

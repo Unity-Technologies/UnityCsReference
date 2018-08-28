@@ -114,7 +114,7 @@ namespace UnityEditor
             int hash = 0x7ed55d16;
             hash ^= layout.cellSize.GetHashCode();
             hash ^= layout.cellLayout.GetHashCode() << 23;
-            hash ^= layout.cellGap.GetHashCode() << 4 + 0x165667b1;
+            hash ^= (layout.cellGap.GetHashCode() << 4) + 0x165667b1;
             hash ^= layout.cellSwizzle.GetHashCode() << 7;
             hash ^= color.GetHashCode();
             return hash;

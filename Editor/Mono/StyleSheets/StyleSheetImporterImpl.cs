@@ -36,6 +36,14 @@ namespace UnityEditor.StyleSheets
             m_Errors = new StyleSheetImportErrors();
         }
 
+        internal StyleValueImporter()
+        {
+            m_Context = null;
+            m_Parser = new Parser();
+            m_Builder = new StyleSheetBuilder();
+            m_Errors = new StyleSheetImportErrors();
+        }
+
         public string assetPath
         {
             get

@@ -136,9 +136,6 @@ namespace UnityEngine
                         typeof(T), UnsafeUtility.GetReasonForGenericListNonBlittable<T>()));
             }
 
-            if (!UnsafeUtility.IsBlittable(typeof(T)))
-                throw new ArgumentException(string.Format("{0} type used in ComputeBuffer.SetData(List<>)) must be blittable", typeof(T)));
-
             InternalSetData(NoAllocHelpers.ExtractArrayFromList(data), 0, 0, NoAllocHelpers.SafeLength(data), Marshal.SizeOf(typeof(T)));
         }
 

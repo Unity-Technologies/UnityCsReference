@@ -167,7 +167,7 @@ namespace UnityEditor.Collaboration
         }
 
         [UsedByNativeCode]
-        static bool HasVersionControl()
+        internal static bool HasVersionControl()
         {
             return s_VersionControlInstance != null;
         }
@@ -239,6 +239,18 @@ namespace UnityEditor.Collaboration
             else
             {
                 return false;
+            }
+        }
+
+        internal static CollabStates GetAssetState(string assetGuid, string assetPath)
+        {
+            if (s_VersionControlInstance != null)
+            {
+                return s_VersionControlInstance.GetAssetState(assetGuid, assetPath);
+            }
+            else
+            {
+                return instance.GetAssetState(assetGuid);
             }
         }
 

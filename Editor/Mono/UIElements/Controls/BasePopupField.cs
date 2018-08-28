@@ -21,8 +21,14 @@ namespace UnityEditor.Experimental.UIElements
         internal List<TChoice> m_Choices;
         protected TextElement m_TextElement;
 
+        internal Func<TChoice, string> m_FormatSelectedValueCallback;
+        internal Func<TChoice, string> m_FormatListItemCallback;
+
         // This is the value to display to the user
         internal abstract string GetValueToDisplay();
+
+        internal abstract string GetListItemToDisplay(TValue item);
+
         // This method is used when the menu is built to fill up all the choices.
         internal abstract void AddMenuItems(GenericMenu menu);
 
