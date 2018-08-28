@@ -19,9 +19,9 @@ namespace UnityEditor
 
         public static string[] FindAssets(string filter, string[] searchInFolders)
         {
-            SearchFilter searchFilter = new SearchFilter();
+            var searchFilter = new SearchFilter { searchArea = SearchFilter.SearchArea.AllAssets };
             SearchUtility.ParseSearchString(filter, searchFilter);
-            if (searchInFolders != null)
+            if (searchInFolders != null && searchInFolders.Length > 0)
             {
                 searchFilter.folders = searchInFolders;
                 searchFilter.searchArea = SearchFilter.SearchArea.SelectedFolders;

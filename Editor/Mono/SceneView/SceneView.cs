@@ -113,7 +113,7 @@ namespace UnityEditor
                 m_CustomScene = value;
                 m_Camera.scene = m_CustomScene;
 
-                var stage = StageUtility.GetStage(m_CustomScene);
+                var stage = StageUtility.GetStageHandle(m_CustomScene);
                 StageUtility.SetSceneToRenderInStage(m_CustomLightsScene, stage);
             }
         }
@@ -155,9 +155,6 @@ namespace UnityEditor
         [SerializeField]
         public bool m_SceneLighting = true;  // Has been public for a long time (Make it private at some point now that we have the property below)
         internal bool sceneLighting { get { return m_SceneLighting; } set { m_SceneLighting = value; } }
-
-        public double lastFramingTime = 0;
-        private const double k_MaxDoubleKeypressTime = 0.5;
 
         public event Func<CameraMode, bool> onValidateCameraMode;
         public event Action<CameraMode> onCameraModeChanged;
@@ -2567,13 +2564,7 @@ namespace UnityEditor
                     break;
                 case EventCommandNames.FrameSelected:
                     if (execute)
-                    {
-                        bool useLocking = EditorApplication.timeSinceStartup - lastFramingTime < k_MaxDoubleKeypressTime;
-
-                        FrameSelected(useLocking);
-
-                        lastFramingTime = EditorApplication.timeSinceStartup;
-                    }
+                        FrameSelected(false);
                     Event.current.Use();
                     break;
                 case EventCommandNames.FrameSelectedWithLock:
@@ -2660,7 +2651,7 @@ namespace UnityEditor
             if (gameObject == null)
                 return false;
 
-            var stage = StageUtility.GetStage(customScene);
+            var stage = StageUtility.GetStageHandle(customScene);
             return stage.Contains(gameObject);
         }
 

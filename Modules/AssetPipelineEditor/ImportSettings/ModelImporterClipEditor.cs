@@ -575,7 +575,7 @@ namespace UnityEditor
             AnimationClip clip = singleImporter.GetPreviewAnimationClipForTake(info.takeName);
             if (clip != null)
             {
-                m_AnimationClipEditor = (AnimationClipEditor)Editor.CreateEditor(clip);
+                m_AnimationClipEditor = (AnimationClipEditor)Editor.CreateEditor(clip, typeof(AnimationClipEditor));
                 InitMask(info);
                 SyncClipEditor();
             }
@@ -987,7 +987,7 @@ namespace UnityEditor
                 AnimationClip clip = m_AnimationClipEditor.target as AnimationClip;
 
                 m_Mask = new AvatarMask();
-                m_MaskInspector = (AvatarMaskInspector)Editor.CreateEditor(m_Mask);
+                m_MaskInspector = (AvatarMaskInspector)Editor.CreateEditor(m_Mask, typeof(AvatarMaskInspector));
                 m_MaskInspector.canImport = false;
                 m_MaskInspector.showBody = clip.isHumanMotion;
                 m_MaskInspector.clipInfo = clipInfo;

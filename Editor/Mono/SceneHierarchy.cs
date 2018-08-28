@@ -109,8 +109,6 @@ namespace UnityEditor
         [NonSerialized]
         double m_LastUserInteractionTime;
 
-        protected bool m_AllowCreatingRootGameObjects = true;
-
         public static bool s_Debug
         {
             get { return SessionState.GetBool("HierarchyWindowDebug", false); }
@@ -265,8 +263,6 @@ namespace UnityEditor
             dataSource.sortingState = m_SortingObjects[m_CurrentSortingName];
             dragging.parentForDraggedObjectsOutsideItems = m_CustomParentForNewGameObjects;
             dragging.SetCustomDragHandler(m_CustomDragHandler);
-
-            m_AllowCreatingRootGameObjects = !IsShowingPreviewScene();
 
             m_TreeView.ReloadData();
         }
@@ -868,6 +864,17 @@ namespace UnityEditor
             return false;
         }
 
+        bool GetIsNotEditable()
+        {
+            GameObject[] selected = Selection.gameObjects;
+            for (int i = 0; i < selected.Length; i++)
+            {
+                if ((selected[i].hideFlags & HideFlags.NotEditable) != 0)
+                    return true;
+            }
+            return false;
+        }
+
         void ExecuteCommands()
         {
             Event evt = Event.current;
@@ -921,17 +928,20 @@ namespace UnityEditor
 
             menu.AddSeparator("");
             // TODO: Add this back in.
-            if (!hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1)
+            if (!hasSearchFilter && m_TreeViewState.selectedIDs.Count == 1 && !GetIsNotEditable())
                 menu.AddItem(EditorGUIUtility.TrTextContent("Rename"), false, RenameGO);
             else
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename"));
             menu.AddItem(EditorGUIUtility.TrTextContent("Duplicate"), false, DuplicateGO);
 
-            if (GetIsCustomParentSelected())
+            if (GetIsCustomParentSelected() || GetIsNotEditable())
                 menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete"));
             else
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
 
+            menu.AddSeparator("");
+
+            // Prefab menu items that only make sense if a single object is selected.
             if (m_TreeViewState.selectedIDs.Count == 1)
             {
                 GameObjectTreeViewItem item = treeView.FindItem(m_TreeViewState.selectedIDs[0]) as GameObjectTreeViewItem;
@@ -943,8 +953,6 @@ namespace UnityEditor
 
                     if (!string.IsNullOrEmpty(assetPath))
                     {
-                        menu.AddSeparator("");
-
                         menu.AddItem(EditorGUIUtility.TrTextContent("Open Prefab Asset"), false, () =>
                         {
                             PrefabStageUtility.OpenPrefab(assetPath, go, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
@@ -955,30 +963,6 @@ namespace UnityEditor
                             Selection.activeObject = prefabAsset;
                             EditorGUIUtility.PingObject(prefabAsset.GetInstanceID());
                         });
-
-                        if (PrefabUtility.IsOutermostPrefabInstanceRoot(go))
-                        {
-                            menu.AddItem(EditorGUIUtility.TrTextContent("Unpack Prefab"), false, () =>
-                            {
-                                PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.OutermostRoot, InteractionMode.UserAction);
-                            });
-
-                            menu.AddItem(EditorGUIUtility.TrTextContent("Unpack Prefab Completely"), false, () =>
-                            {
-                                PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
-                            });
-                        }
-                    }
-                    else
-                    {
-                        if (PrefabUtility.GetPrefabInstanceRootGameObject(go) == go && PrefabUtility.IsPrefabAssetMissing(go))
-                        {
-                            menu.AddSeparator("");
-                            menu.AddItem(EditorGUIUtility.TrTextContent("Unpack Prefab Completely"), false, () =>
-                            {
-                                PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
-                            });
-                        }
                     }
 
                     if (PrefabUtility.IsAddedGameObjectOverride(go))
@@ -1008,9 +992,15 @@ namespace UnityEditor
                 }
             }
 
+            if (AnyOutermostPrefabRoots())
+            {
+                menu.AddItem(EditorGUIUtility.TrTextContent("Unpack Prefab"), false, UnpackPrefab);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Unpack Prefab Completely"), false, UnpackPrefabCompletely);
+            }
+
             GameObject[] selectedGameObjects = Selection.transforms.Select(t => t.gameObject).ToArray();
 
-            if (selectedGameObjects.Length > 0 || m_AllowCreatingRootGameObjects)
+            // All Create GameObject menu items
             {
                 menu.AddSeparator("");
 
@@ -1252,6 +1242,40 @@ namespace UnityEditor
         void DeleteGO()
         {
             Unsupported.DeleteGameObjectSelection();
+        }
+
+        bool AnyOutermostPrefabRoots()
+        {
+            var gameObjects = Selection.gameObjects;
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                var go = gameObjects[i];
+                if (go != null && PrefabUtility.IsPartOfNonAssetPrefabInstance(go) && PrefabUtility.IsOutermostPrefabInstanceRoot(go))
+                    return true;
+            }
+            return false;
+        }
+
+        void UnpackPrefab()
+        {
+            var gameObjects = Selection.gameObjects;
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                var go = gameObjects[i];
+                if (go != null && PrefabUtility.IsPartOfNonAssetPrefabInstance(go) && PrefabUtility.IsOutermostPrefabInstanceRoot(go))
+                    PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.OutermostRoot, InteractionMode.UserAction);
+            }
+        }
+
+        void UnpackPrefabCompletely()
+        {
+            var gameObjects = Selection.gameObjects;
+            for (int i = 0; i < gameObjects.Length; i++)
+            {
+                var go = gameObjects[i];
+                if (go != null && PrefabUtility.IsPartOfNonAssetPrefabInstance(go) && PrefabUtility.IsOutermostPrefabInstanceRoot(go))
+                    PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.UserAction);
+            }
         }
 
         void SetSceneActive(object userData)

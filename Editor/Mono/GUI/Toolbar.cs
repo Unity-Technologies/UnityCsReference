@@ -7,11 +7,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Web;
 using UnityEditor.Connect;
 using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
-using UnityEditor.Collaboration;
-using UnityEditor.Web;
 
 namespace UnityEditor
 {
@@ -80,21 +79,6 @@ namespace UnityEditor
 
             s_CloudIcon = EditorGUIUtility.IconContent("CloudConnect");
             s_AccountContent = EditorGUIUtility.TrTextContent("Account");
-
-
-            // Must match enum CollabToolbarState
-            s_CollabIcons = new GUIContent[]
-            {
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " You need to enable collab.", "CollabNew"),
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " You are up to date.", "Collab"),
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " Please fix your conflicts prior to publishing.", "CollabConflict"),
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " Last operation failed. Please retry later.", "CollabError"),
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " Please update, there are server changes.", "CollabPull"),
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " You have files to publish.", "CollabPush"),
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " Operation in progress.", "CollabProgress"),
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " Collab is disabled.", "CollabNew"),
-                EditorGUIUtility.TrTextContentWithIcon("Collab", " Please check your network connection.", "CollabNew")
-            };
         }
 
         static GUIContent[] s_ToolIcons;
@@ -114,49 +98,6 @@ namespace UnityEditor
         static GUIContent[] s_PlayIcons;
         private static GUIContent s_AccountContent;
         static GUIContent   s_CloudIcon;
-        // Must match s_CollabIcon array
-        enum CollabToolbarState
-        {
-            NeedToEnableCollab,
-            UpToDate,
-            Conflict,
-            OperationError,
-            ServerHasChanges,
-            FilesToPush,
-            InProgress,
-            Disabled,
-            Offline
-        }
-
-        CollabToolbarState m_CollabToolbarState = CollabToolbarState.UpToDate;
-        static GUIContent[] s_CollabIcons;
-        const float kCollabButtonWidth = 78.0f;
-        ButtonWithAnimatedIconRotation m_CollabButton;
-        string m_DynamicTooltip;
-        static bool m_ShowCollabTooltip = false;
-
-        GUIContent currentCollabContent
-        {
-            get
-            {
-                GUIContent content = new GUIContent(s_CollabIcons[(int)m_CollabToolbarState]);
-                if (!m_ShowCollabTooltip)
-                {
-                    content.tooltip = null;
-                }
-                else if (m_DynamicTooltip != "")
-                {
-                    content.tooltip = m_DynamicTooltip;
-                }
-
-                if (Collab.instance.AreTestsRunning())
-                {
-                    content.text = "CTF";
-                }
-
-                return content;
-            }
-        }
 
         static class Styles
         {
@@ -179,18 +120,8 @@ namespace UnityEditor
             Undo.undoRedoPerformed += OnSelectionChange;
 
             UnityConnect.instance.StateChanged += OnUnityConnectStateChanged;
-            UnityConnect.instance.UserStateChanged += OnUnityConnectUserStateChanged;
 
             get = this;
-            Collab.instance.StateChanged += OnCollabStateChanged;
-
-            if (m_CollabButton == null)
-            {
-                const int repaintsPerSecond = 20;
-                const float animSpeed = 500f;
-                const bool mouseDownButton = true;
-                m_CollabButton = new ButtonWithAnimatedIconRotation(() => (float)EditorApplication.timeSinceStartup * animSpeed, Repaint, repaintsPerSecond, mouseDownButton);
-            }
         }
 
         protected override void OnDisable()
@@ -199,12 +130,6 @@ namespace UnityEditor
             EditorApplication.modifierKeysChanged -= Repaint;
             Undo.undoRedoPerformed -= OnSelectionChange;
             UnityConnect.instance.StateChanged -= OnUnityConnectStateChanged;
-            UnityConnect.instance.UserStateChanged -= OnUnityConnectUserStateChanged;
-
-            Collab.instance.StateChanged -= OnCollabStateChanged;
-
-            if (m_CollabButton != null)
-                m_CollabButton.Clear();
         }
 
         // The actual array we display. We build this every frame to make sure it looks correct i.r.t. selection :)
@@ -231,6 +156,7 @@ namespace UnityEditor
         }
         [SerializeField]
         private string m_LastLoadedLayoutName;
+        private static List<SubToolbar> s_SubToolbars = new List<SubToolbar>();
 
         override protected bool OnFocus()
         {
@@ -246,13 +172,7 @@ namespace UnityEditor
 
         protected void OnUnityConnectStateChanged(ConnectInfo state)
         {
-            UpdateCollabToolbarState();
             RepaintToolbar();
-        }
-
-        protected void OnUnityConnectUserStateChanged(UserInfo state)
-        {
-            UpdateCollabToolbarState();
         }
 
 
@@ -276,16 +196,6 @@ namespace UnityEditor
         {
             pos.x += pos.width;
             pos.width = width;
-        }
-
-        void ReserveRight(float width, ref Rect pos)
-        {
-            pos.x += width;
-        }
-
-        void ReserveBottom(float height, ref Rect pos)
-        {
-            pos.y += height;
         }
 
         protected override void OldOnGUI()
@@ -359,9 +269,12 @@ namespace UnityEditor
             if (GUI.Button(GetThinArea(pos), s_CloudIcon))
                 UnityConnectServiceCollection.instance.ShowService(HubAccess.kServiceName, true, "cloud_icon"); // Should show hub when it's done
 
-            ReserveWidthLeft(space, ref pos);
-            ReserveWidthLeft(kCollabButtonWidth, ref pos);
-            DoCollabDropDown(GetThinArea(pos));
+            foreach (SubToolbar subToolbar in s_SubToolbars)
+            {
+                ReserveWidthLeft(space, ref pos);
+                ReserveWidthLeft(subToolbar.Width, ref pos);
+                subToolbar.OnGUI(GetThinArea(pos));
+            }
 
 
             EditorGUI.ShowRepaints();
@@ -517,129 +430,6 @@ namespace UnityEditor
             }
         }
 
-        void ShowPopup(Rect rect)
-        {
-            // window should be centered on the button
-            ReserveRight(kCollabButtonWidth / 2, ref rect);
-            ReserveBottom(5, ref rect);
-            // calculate screen rect before saving assets since it might open the AssetSaveDialog window
-            var screenRect = GUIUtility.GUIToScreenRect(rect);
-            // save all the assets
-            AssetDatabase.SaveAssets();
-            if (Collab.ShowToolbarAtPosition != null && Collab.ShowToolbarAtPosition(screenRect))
-            {
-                GUIUtility.ExitGUI();
-            }
-        }
-
-        void DoCollabDropDown(Rect rect)
-        {
-            UpdateCollabToolbarState();
-            bool showPopup = requestShowCollabToolbar;
-            requestShowCollabToolbar = false;
-
-            bool enable = !EditorApplication.isPlaying;
-
-            using (new EditorGUI.DisabledScope(!enable))
-            {
-                bool animate = m_CollabToolbarState == CollabToolbarState.InProgress;
-
-                EditorGUIUtility.SetIconSize(new Vector2(12, 12));
-                if (m_CollabButton.OnGUI(rect, currentCollabContent, animate, Styles.collabButtonStyle))
-                {
-                    showPopup = true;
-                }
-                EditorGUIUtility.SetIconSize(Vector2.zero);
-            }
-
-            if (m_CollabToolbarState == CollabToolbarState.Disabled)
-                return;
-
-            if (showPopup)
-            {
-                ShowPopup(rect);
-            }
-        }
-
-        public void OnCollabStateChanged(CollabInfo info)
-        {
-            UpdateCollabToolbarState();
-        }
-
-        public void UpdateCollabToolbarState()
-        {
-            var currentCollabState = CollabToolbarState.UpToDate;
-            bool networkAvailable = UnityConnect.instance.connectInfo.online && UnityConnect.instance.connectInfo.loggedIn;
-            m_DynamicTooltip = "";
-
-            if (UnityConnect.instance.isDisableCollabWindow)
-            {
-                currentCollabState = CollabToolbarState.Disabled;
-            }
-            else if (networkAvailable)
-            {
-                Collab collab = Collab.instance;
-                CollabInfo currentInfo = collab.collabInfo;
-                UnityErrorInfo errInfo;
-                bool error = false;
-                if (collab.GetError((UnityConnect.UnityErrorFilter.ByContext | UnityConnect.UnityErrorFilter.ByChild), out errInfo))
-                {
-                    error = (errInfo.priority <= (int)UnityConnect.UnityErrorPriority.Error);
-                    m_DynamicTooltip = errInfo.shortMsg;
-                }
-
-                if (!currentInfo.ready)
-                {
-                    currentCollabState = CollabToolbarState.InProgress;
-                }
-                else if (error)
-                {
-                    currentCollabState = CollabToolbarState.OperationError;
-                }
-                else if (currentInfo.inProgress)
-                {
-                    currentCollabState = CollabToolbarState.InProgress;
-                }
-                else
-                {
-                    bool collabEnable = Collab.instance.IsCollabEnabledForCurrentProject();
-
-                    if (UnityConnect.instance.projectInfo.projectBound == false || !collabEnable)
-                    {
-                        currentCollabState = CollabToolbarState.NeedToEnableCollab;
-                    }
-                    else if (currentInfo.update)
-                    {
-                        currentCollabState = CollabToolbarState.ServerHasChanges;
-                    }
-                    else if (currentInfo.conflict)
-                    {
-                        currentCollabState = CollabToolbarState.Conflict;
-                    }
-                    else if (currentInfo.publish)
-                    {
-                        currentCollabState = CollabToolbarState.FilesToPush;
-                    }
-                }
-            }
-            else
-            {
-                currentCollabState = CollabToolbarState.Offline;
-            }
-
-            if (Collab.IsToolbarVisible != null)
-            {
-                if (currentCollabState != m_CollabToolbarState ||
-                    Collab.IsToolbarVisible() == m_ShowCollabTooltip)
-                {
-                    m_CollabToolbarState = currentCollabState;
-                    m_ShowCollabTooltip = !Collab.IsToolbarVisible();
-                    RepaintToolbar();
-                }
-            }
-        }
-
-
         // Repaints all views, called from C++ when playmode entering is aborted
         // and when the user clicks on the playmode button.
         static void InternalWillTogglePlaymode()
@@ -653,6 +443,11 @@ namespace UnityEditor
             EditorApplication.isPlaying = willPlay;
 
             InternalWillTogglePlaymode();
+        }
+
+        static internal void AddSubToolbar(SubToolbar subToolbar)
+        {
+            s_SubToolbars.Add(subToolbar);
         }
 
         static internal void RepaintToolbar()

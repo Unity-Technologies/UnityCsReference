@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.Rendering;
 
-namespace UnityEngine
+namespace UnityEngine.Experimental.TerrainAPI
 {
     public static class TerrainPaintUtility
     {

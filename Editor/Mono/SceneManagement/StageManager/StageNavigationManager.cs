@@ -68,16 +68,19 @@ namespace UnityEditor.SceneManagement
             PrefabUtility.savingPrefab += OnSavingPrefab;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             EditorApplication.editorApplicationQuit += OnQuit;
+            PrefabStage.prefabStageSavedAsNewPrefab += OnPrefabStageSavedAsNewPrefab;
         }
 
         void OnDisable()
         {
             EditorApplication.update -= Update;
             EditorSceneManager.sceneOpened -= OnSceneOpened;
-            EditorSceneManager.newSceneCreated += OnNewSceneCreated;
+            EditorSceneManager.newSceneCreated -= OnNewSceneCreated;
             AssetEvents.assetsChangedOnHDD -= OnAssetsChangedOnHDD;
             PrefabUtility.savingPrefab -= OnSavingPrefab;
-            EditorApplication.editorApplicationQuit += OnQuit;
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
+            EditorApplication.editorApplicationQuit -= OnQuit;
+            PrefabStage.prefabStageSavedAsNewPrefab -= OnPrefabStageSavedAsNewPrefab;
         }
 
         void OnQuit()
@@ -110,6 +113,12 @@ namespace UnityEditor.SceneManagement
         {
             foreach (var prefabStage in m_PrefabStages)
                 prefabStage.OnSavingPrefab(gameObject, path);
+        }
+
+        void OnPrefabStageSavedAsNewPrefab(PrefabStage prefabStage)
+        {
+            // Current open path has changed: update state in breadcrumbs
+            currentItem.SetPrefabAssetPath(prefabStage.prefabAssetPath);
         }
 
         void OnSceneOpened(Scene scene, OpenSceneMode mode)
@@ -489,12 +498,26 @@ namespace UnityEditor.SceneManagement
         }
 
         [RequiredByNativeCode]
-        internal static void Internal_SaveAllPrefabStages()
+        internal static bool Internal_HasCurrentPrefabStage()
         {
-            foreach (var prefabStage in instance.m_PrefabStages)
+            return instance.GetCurrentPrefabStage() != null;
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_SaveCurrentPrefabStage()
+        {
+            var prefabStage = instance.GetCurrentPrefabStage();
+            if (prefabStage != null && prefabStage.HasSceneBeenModified())
+                prefabStage.SavePrefabWithVersionControlDialogAndRenameDialog();
+        }
+
+        [RequiredByNativeCode]
+        internal static void Internal_SaveCurrentPrefabStageWithSavePanel()
+        {
+            var prefabStage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (prefabStage != null)
             {
-                if (prefabStage.HasSceneBeenModified())
-                    prefabStage.SavePrefabWithVersionControlDialogAndRenameDialog();
+                prefabStage.SaveAsNewPrefabWithSavePanel();
             }
         }
 

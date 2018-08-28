@@ -83,6 +83,7 @@ namespace UnityEditor.Build.Reporting
         {
             dependencies = new Dictionary<string, HashSet<string>>();
             icons = new Dictionary<string, string>();
+            sizes = new Dictionary<string, int>();
             for (int i = 0; i < serializedDependencies.Count; i++)
             {
                 HashSet<string> depends = new HashSet<string>();
@@ -92,7 +93,6 @@ namespace UnityEditor.Build.Reporting
                 icons[serializedDependencies[i].key] = serializedDependencies[i].icon;
                 sizes[serializedDependencies[i].key] = serializedDependencies[i].size;
             }
-            sizes = new Dictionary<string, int>();
             for (int i = 0; i < serializedSizes.Count; i++)
                 sizes[modules[i]] = serializedSizes[i];
         }

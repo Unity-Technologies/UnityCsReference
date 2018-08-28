@@ -54,6 +54,26 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public override Func<string, string> formatSelectedValueCallback
+        {
+            get { return null; }
+            set
+            {
+                Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the selected value."));
+                m_FormatSelectedValueCallback = null;
+            }
+        }
+
+        public override Func<string, string> formatListItemCallback
+        {
+            get { return null; }
+            set
+            {
+                Debug.LogWarning(L10n.Tr("TagField doesn't support the formatting of the list items."));
+                m_FormatListItemCallback = null;
+            }
+        }
+
         static List<string> InitializeTags()
         {
             return new List<string>(InternalEditorUtility.tags);

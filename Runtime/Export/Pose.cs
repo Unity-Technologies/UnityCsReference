@@ -8,7 +8,7 @@ using System;
 namespace UnityEngine
 {
     [Serializable]
-    public partial struct Pose
+    public partial struct Pose : IEquatable<Pose>
     {
         public Vector3 position;
         public Quaternion rotation;
@@ -66,6 +66,34 @@ namespace UnityEngine
             {
                 return k_Identity;
             }
+        }
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Pose))
+                return false;
+
+            return Equals((Pose)obj);
+        }
+
+        public bool Equals(Pose other)
+        {
+            return position == other.position &&
+                rotation == other.rotation;
+        }
+
+        public override int GetHashCode()
+        {
+            return position.GetHashCode() ^ (rotation.GetHashCode() << 1);
+        }
+
+        public static bool operator==(Pose a, Pose b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(Pose a, Pose b)
+        {
+            return !(a == b);
         }
     }
 }

@@ -133,6 +133,9 @@ namespace UnityEngine.Rendering
         [NativeMethod("AddGenerateMips")]
         extern private void Internal_GenerateMips(RenderTexture rt);
 
+        [NativeMethod("AddResolveAntiAliasedSurface")]
+        extern private void Internal_ResolveAntiAliasedSurface(RenderTexture rt, RenderTexture target);
+
         [NativeMethod("AddCopyCounterValue")]
         extern public void CopyCounterValue(ComputeBuffer src, ComputeBuffer dst, uint dstOffsetBytes);
 

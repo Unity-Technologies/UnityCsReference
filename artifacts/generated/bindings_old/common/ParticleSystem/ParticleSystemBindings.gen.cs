@@ -2532,12 +2532,15 @@ public sealed partial class ParticleSystem : Component
                     public int subEmittersCount { get { return GetSubEmittersCount(m_ParticleSystem); } }
         
         public void AddSubEmitter(ParticleSystem subEmitter, ParticleSystemSubEmitterType type, ParticleSystemSubEmitterProperties properties) { AddSubEmitter(m_ParticleSystem, subEmitter, (int)type, (int)properties); }
+        public void AddSubEmitter(ParticleSystem subEmitter, ParticleSystemSubEmitterType type, ParticleSystemSubEmitterProperties properties, float emitProbability) { AddSubEmitter(m_ParticleSystem, subEmitter, (int)type, (int)properties, emitProbability); }
         public void RemoveSubEmitter(int index) { RemoveSubEmitter(m_ParticleSystem, index); }
         public void SetSubEmitterSystem(int index, ParticleSystem subEmitter) { SetSubEmitterSystem(m_ParticleSystem, index, subEmitter); }
         public void SetSubEmitterType(int index, ParticleSystemSubEmitterType type) { SetSubEmitterType(m_ParticleSystem, index, (int)type); }
+        public void SetSubEmitterEmitProbability(int index, float emitProbability) { SetSubEmitterEmitProbability(m_ParticleSystem, index, emitProbability); }
         public void SetSubEmitterProperties(int index, ParticleSystemSubEmitterProperties properties) { SetSubEmitterProperties(m_ParticleSystem, index, (int)properties); }
         public ParticleSystem GetSubEmitterSystem(int index) { return GetSubEmitterSystem(m_ParticleSystem, index); }
         public ParticleSystemSubEmitterType GetSubEmitterType(int index) { return (ParticleSystemSubEmitterType)GetSubEmitterType(m_ParticleSystem, index); }
+        public float GetSubEmitterEmitProbability(int index) { return GetSubEmitterEmitProbability(m_ParticleSystem, index); }
         public ParticleSystemSubEmitterProperties GetSubEmitterProperties(int index) { return (ParticleSystemSubEmitterProperties)GetSubEmitterProperties(m_ParticleSystem, index); }
         
         
@@ -2579,7 +2582,13 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-        extern private static  void AddSubEmitter (ParticleSystem system, ParticleSystem subEmitter, int type, int properties) ;
+        extern private static  void AddSubEmitter (ParticleSystem system, ParticleSystem subEmitter, int type, int properties, [uei.DefaultValue("1")]  float emitProbability ) ;
+
+        [uei.ExcludeFromDocs]
+        private static void AddSubEmitter (ParticleSystem system, ParticleSystem subEmitter, int type, int properties) {
+            float emitProbability = 1;
+            AddSubEmitter ( system, subEmitter, type, properties, emitProbability );
+        }
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2595,6 +2604,10 @@ public sealed partial class ParticleSystem : Component
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetSubEmitterEmitProbability (ParticleSystem system, int index, float emitProbability) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  void SetSubEmitterProperties (ParticleSystem system, int index, int properties) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -2604,6 +2617,10 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  int GetSubEmitterType (ParticleSystem system, int index) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetSubEmitterEmitProbability (ParticleSystem system, int index) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -2944,6 +2961,7 @@ public sealed partial class ParticleSystem : Component
                     public MinMaxGradient colorOverTrail { set { SetColorOverTrail(m_ParticleSystem, ref value); } get { var r = new ParticleSystem.MinMaxGradient(); GetColorOverTrail(m_ParticleSystem, ref r); return r; } }
                     public bool generateLightingData { set { SetGenerateLightingData(m_ParticleSystem, value); } get { return GetGenerateLightingData(m_ParticleSystem); } }
                     public int ribbonCount { get { return GetRibbonCount(m_ParticleSystem); } set { SetRibbonCount(m_ParticleSystem, value); } }
+                    public float shadowBias { set { SetShadowBias(m_ParticleSystem, value); } get { return GetShadowBias(m_ParticleSystem); } }
         
         
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -3089,6 +3107,14 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  int GetRibbonCount (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetShadowBias (ParticleSystem system, float value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  float GetShadowBias (ParticleSystem system) ;
 
     }
 

@@ -213,6 +213,10 @@ namespace UnityEditor.Experimental.UIElements
         const string k_SlotDefinitionAttr = "slot-name";
         const string k_SlotUsageAttr = "slot";
 
+        internal UXMLImporterImpl()
+        {
+        }
+
         public UXMLImporterImpl(AssetImportContext context) : base(context)
         {
         }
@@ -238,6 +242,32 @@ namespace UnityEditor.Experimental.UIElements
             try
             {
                 doc = XDocument.Load(xmlPath, LoadOptions.SetLineInfo);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(ImportErrorType.Syntax, ImportErrorCode.InvalidXml, e, Error.Level.Fatal, null);
+                return;
+            }
+
+            LoadXmlRoot(doc, vta);
+
+            StyleSheet inlineSheet = ScriptableObject.CreateInstance<StyleSheet>();
+            inlineSheet.name = "inlineStyle";
+            m_Builder.BuildTo(inlineSheet);
+            vta.inlineSheet = inlineSheet;
+        }
+
+        internal void ImportXmlFromString(string xml, out VisualTreeAsset vta)
+        {
+            vta = ScriptableObject.CreateInstance<VisualTreeAsset>();
+            vta.visualElementAssets = new List<VisualElementAsset>();
+            vta.templateAssets = new List<TemplateAsset>();
+
+            XDocument doc;
+
+            try
+            {
+                doc = XDocument.Parse(xml, LoadOptions.SetLineInfo);
             }
             catch (Exception e)
             {

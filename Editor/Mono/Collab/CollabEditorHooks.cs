@@ -42,7 +42,7 @@ namespace UnityEditor.Collaboration
                 return Collab.CollabStates.kCollabNone;
             }
 
-            Collab.CollabStates assetState = Collab.instance.GetAssetState(assetGuid);
+            Collab.CollabStates assetState = Collab.GetAssetState(assetGuid, AssetDatabase.GUIDToAssetPath(assetGuid));
             return assetState;
         }
     }

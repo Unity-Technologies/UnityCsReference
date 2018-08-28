@@ -381,8 +381,6 @@ namespace UnityEngine.XR.WSA.Input
     [NativeHeader("Runtime/VR/HoloLens/Gestures/GestureSource.h")]
     public partial class InteractionManager
     {
-        private delegate void InternalSourceEventHandler(EventType eventType, ref InteractionSourceState state, InteractionSourcePressType pressType);
-
         static InteractionManager()
         {
         }
@@ -428,8 +426,10 @@ namespace UnityEngine.XR.WSA.Input
 
 #pragma warning disable 0618
         [RequiredByNativeCode]
-        private static void OnSourceEvent(EventType eventType, ref InteractionSourceState state, InteractionSourcePressType pressType)
+
+        unsafe private static void OnSourceEvent(EventType eventType, IntPtr statePtr, InteractionSourcePressType pressType)
         {
+            InteractionSourceState state = *(InteractionSourceState*)statePtr;
             switch (eventType)
             {
                 case EventType.SourceDetected:

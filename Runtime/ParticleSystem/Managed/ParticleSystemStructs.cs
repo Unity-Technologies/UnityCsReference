@@ -182,6 +182,13 @@ namespace UnityEngine
         [StructLayout(LayoutKind.Sequential)]
         public partial struct Particle
         {
+            [Flags]
+            private enum Flags
+            {
+                Size3D = 1 << 0,
+                Rotation3D = 1 << 1
+            }
+
             public Vector3 position { get { return m_Position; } set { m_Position = value; } }
             public Vector3 velocity { get { return m_Velocity; } set { m_Velocity = value; } }
             public Vector3 animatedVelocity { get { return m_AnimatedVelocity; } }
@@ -193,13 +200,13 @@ namespace UnityEngine
             public Vector3 axisOfRotation { get { return m_AxisOfRotation; } set { m_AxisOfRotation = value; } }
 
             public float startSize { get { return m_StartSize.x; } set { m_StartSize = new Vector3(value, value, value); } }
-            public Vector3 startSize3D { get { return m_StartSize; } set { m_StartSize = value; } }
+            public Vector3 startSize3D { get { return m_StartSize; } set { m_StartSize = value; m_Flags |= (UInt32)Flags.Size3D; } }
 
             public float rotation { get { return m_Rotation.z * Mathf.Rad2Deg; } set { m_Rotation = new Vector3(0.0f, 0.0f, value * Mathf.Deg2Rad); } }
-            public Vector3 rotation3D { get { return m_Rotation * Mathf.Rad2Deg; } set { m_Rotation = value * Mathf.Deg2Rad; } }
+            public Vector3 rotation3D { get { return m_Rotation * Mathf.Rad2Deg; } set { m_Rotation = value * Mathf.Deg2Rad; m_Flags |= (UInt32)Flags.Rotation3D; } }
 
             public float angularVelocity { get { return m_AngularVelocity.z * Mathf.Rad2Deg; } set { m_AngularVelocity = new Vector3(0.0f, 0.0f, value * Mathf.Deg2Rad); } }
-            public Vector3 angularVelocity3D { get { return m_AngularVelocity * Mathf.Rad2Deg; } set { m_AngularVelocity = value * Mathf.Deg2Rad; } }
+            public Vector3 angularVelocity3D { get { return m_AngularVelocity * Mathf.Rad2Deg; } set { m_AngularVelocity = value * Mathf.Deg2Rad; m_Flags |= (UInt32)Flags.Rotation3D; } }
 
             public float GetCurrentSize(ParticleSystem system) { return system.GetParticleCurrentSize(ref this); }              // The current (curve-corrected) size of the particle.
             public Vector3 GetCurrentSize3D(ParticleSystem system) { return system.GetParticleCurrentSize3D(ref this); }        // The current (curve-corrected) 3D size of the particle.
@@ -219,6 +226,7 @@ namespace UnityEngine
             private float m_StartLifetime;
             private float m_EmitAccumulator0;
             private float m_EmitAccumulator1;
+            private UInt32 m_Flags;
         }
 
         // Script interface for emitting Particles, whilst allowing for overriding of some/all properties

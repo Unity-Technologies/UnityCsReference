@@ -4,7 +4,8 @@
 
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
+using UnityEditorInternal;
+using Object = UnityEngine.Object;
 
 namespace UnityEditor
 {
@@ -28,8 +29,9 @@ namespace UnityEditor
 
         class Texts
         {
-            public GUIContent create = EditorGUIUtility.TrTextContent("", "Create and assign a Particle System as sub emitter");
-            public GUIContent inherit = EditorGUIUtility.TrTextContent("Inherit");
+            public GUIContent create = EditorGUIUtility.TrTextContent("", "Create and assign a Particle System as sub-emitter.");
+            public GUIContent inherit = EditorGUIUtility.TrTextContent("Inherit", "Determines what properties to inherit from the parent system.");
+            public GUIContent emitProbability = EditorGUIUtility.TrTextContent("Emit Probability", "Determines the proportion of sub-emitter spawn events that successfully triggers the associated sub-emitter.");
 
             public GUIContent[] subEmitterTypes = new GUIContent[]
             {
@@ -51,6 +53,7 @@ namespace UnityEditor
         }
         private static Texts s_Texts;
 
+        ReorderableList m_EmittersList;
 
         public SubModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "SubModule", displayName)
@@ -68,6 +71,56 @@ namespace UnityEditor
                 s_Texts = new Texts();
 
             m_SubEmitters = GetProperty("subEmitters");
+            m_EmittersList = new ReorderableList(m_SubEmitters.m_SerializedObject, m_SubEmitters, true, false, true, true);
+            m_EmittersList.headerHeight = 0;
+            m_EmittersList.drawElementCallback = DrawSubEmitterElementCallback;
+            m_EmittersList.elementHeight = EditorGUIUtility.singleLineHeight * 3 + EditorGUIUtility.standardVerticalSpacing * 4;
+            m_EmittersList.drawElementBackgroundCallback = DrawSubEmitterElementBackgroundCallback;
+            m_EmittersList.onAddCallback = OnAddSubEmitterElementCallback;
+        }
+
+        void OnAddSubEmitterElementCallback(ReorderableList list)
+        {
+            m_SubEmitters.InsertArrayElementAtIndex(m_SubEmitters.arraySize);
+            SerializedProperty newSubEmitterData = m_SubEmitters.GetArrayElementAtIndex(m_SubEmitters.arraySize - 1);
+            SerializedProperty newSubEmitter = newSubEmitterData.FindPropertyRelative("emitter");
+            newSubEmitter.objectReferenceValue = null;
+        }
+
+        static void DrawSubEmitterElementBackgroundCallback(Rect rect, int index, bool isActive, bool isFocused)
+        {
+            GUI.Label(rect, GUIContent.none, EditorStyles.helpBox);
+            ReorderableList.defaultBehaviours.DrawElementBackground(rect, index, isActive, isFocused, true);
+        }
+
+        void DrawSubEmitterElementCallback(Rect rect, int index, bool isActive, bool isFocused)
+        {
+            var subEmitterData = m_SubEmitters.GetArrayElementAtIndex(index);
+            var subEmitter = subEmitterData.FindPropertyRelative("emitter");
+            var type = subEmitterData.FindPropertyRelative("type");
+            var properties = subEmitterData.FindPropertyRelative("properties");
+            var emitProbability = subEmitterData.FindPropertyRelative("emitProbability");
+
+            rect.height = EditorGUIUtility.singleLineHeight;
+            rect.y += EditorGUIUtility.standardVerticalSpacing * 2;
+
+            Rect typeRect = new Rect(rect.x, rect.y, EditorGUIUtility.labelWidth - EditorGUI.kSpacing, rect.height);
+            Rect objectRect = new Rect(rect.x + EditorGUIUtility.labelWidth, rect.y, rect.width - EditorGUIUtility.labelWidth - EditorGUI.kSpacing * 3, rect.height);
+            GUIPopup(typeRect, GUIContent.none, type, s_Texts.subEmitterTypes);
+            GUIObject(objectRect, GUIContent.none, subEmitter, null);
+            if (subEmitter.objectReferenceValue == null)
+            {
+                Rect buttonRect = new Rect(objectRect.xMax + EditorGUI.kSpacing, rect.y + 4 , ParticleSystemStyles.Get().plus.fixedWidth, rect.height);
+                if (GUI.Button(buttonRect, s_Texts.create, ParticleSystemStyles.Get().plus))
+                {
+                    CreateSubEmitter(subEmitter, index, (SubEmitterType)type.intValue);
+                }
+            }
+
+            rect.y += EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight;
+            GUIMask(rect, s_Texts.inherit, properties, s_Texts.propertyTypes);
+            rect.y += EditorGUIUtility.standardVerticalSpacing + EditorGUIUtility.singleLineHeight;
+            GUIFloat(rect, s_Texts.emitProbability, emitProbability);
         }
 
         void CreateSubEmitter(SerializedProperty objectRefProp, int index, SubEmitterType type)
@@ -233,15 +286,7 @@ namespace UnityEditor
             // get array of subemitters
             List<Object> props = GetSubEmitterProperties();
 
-            // update gui
-            GUILayout.BeginHorizontal(GUILayout.Height(EditorGUI.kSingleLineHeight));
-            GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.ExpandWidth(true));
-            GUILayout.Label(s_Texts.inherit, ParticleSystemStyles.Get().label, GUILayout.Width(120));
-            GUILayout.EndHorizontal();
-            for (int i = 0; i < m_SubEmitters.arraySize; i++)
-            {
-                ShowSubEmitter(i);
-            }
+            m_EmittersList.DoLayoutList();
 
             // get new list of subemitters, so we can check for changes
             List<Object> props2 = GetSubEmitterProperties();
@@ -263,59 +308,6 @@ namespace UnityEditor
                         ps.Clear(true);
                 }
             }
-        }
-
-        private void ShowSubEmitter(int index)
-        {
-            GUILayout.BeginHorizontal(GUILayout.Height(EditorGUI.kSingleLineHeight));
-
-            SerializedProperty subEmitterData = m_SubEmitters.GetArrayElementAtIndex(index);
-            SerializedProperty subEmitter = subEmitterData.FindPropertyRelative("emitter");
-            SerializedProperty type = subEmitterData.FindPropertyRelative("type");
-            SerializedProperty properties = subEmitterData.FindPropertyRelative("properties");
-
-            GUIPopup(GUIContent.none, type, s_Texts.subEmitterTypes, GUILayout.MaxWidth(80));
-            GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(4));
-            GUIObject(GUIContent.none, subEmitter);
-            GUIStyle olPlusStyle = "OL Plus";
-            if (subEmitter.objectReferenceValue == null)
-            {
-                GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(8));
-                GUILayout.BeginVertical(GUILayout.Width(16), GUILayout.Height(olPlusStyle.fixedHeight));
-                GUILayout.FlexibleSpace();
-                if (GUILayout.Button(GUIContent.none, ParticleSystemStyles.Get().plus))
-                {
-                    CreateSubEmitter(subEmitter, index, (SubEmitterType)type.intValue);
-                }
-                GUILayout.FlexibleSpace();
-                GUILayout.EndVertical();
-            }
-            else
-            {
-                GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(24));
-            }
-            GUIMask(GUIContent.none, properties, s_Texts.propertyTypes, GUILayout.Width(100));
-            GUILayout.Label("", ParticleSystemStyles.Get().label, GUILayout.Width(8));
-
-            // add plus button to first element
-            if (index == 0)
-            {
-                if (GUILayout.Button(GUIContent.none, olPlusStyle, GUILayout.Width(16)))
-                {
-                    m_SubEmitters.InsertArrayElementAtIndex(m_SubEmitters.arraySize);
-                    SerializedProperty newSubEmitterData = m_SubEmitters.GetArrayElementAtIndex(m_SubEmitters.arraySize - 1);
-                    SerializedProperty newSubEmitter = newSubEmitterData.FindPropertyRelative("emitter");
-                    newSubEmitter.objectReferenceValue = null;
-                }
-            }
-            // add minus button to all other elements
-            else
-            {
-                if (GUILayout.Button(GUIContent.none, "OL Minus", GUILayout.Width(16)))
-                    m_SubEmitters.DeleteArrayElementAtIndex(index);
-            }
-
-            GUILayout.EndHorizontal();
         }
 
         override public void UpdateCullingSupportedString(ref string text)

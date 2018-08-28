@@ -1496,6 +1496,9 @@
   <Compile Include="..\..\Modules\Terrain\Public\TerrainPaintUtility.cs">
     <Link>Modules\Terrain\Public\TerrainPaintUtility.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\TerrainUtility.cs">
+    <Link>Modules\Terrain\Public\TerrainUtility.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\TextCore\Managed\AssemblyInfo.cs">
     <Link>Modules\TextCore\Managed\AssemblyInfo.cs</Link>
   </Compile>

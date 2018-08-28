@@ -44,6 +44,26 @@ namespace UnityEditor.Experimental.UIElements
             }
         }
 
+        public override Func<int, string> formatSelectedValueCallback
+        {
+            get { return null; }
+            set
+            {
+                Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the selected value."));
+                m_FormatSelectedValueCallback = null;
+            }
+        }
+
+        public override Func<int, string> formatListItemCallback
+        {
+            get { return null; }
+            set
+            {
+                Debug.LogWarning(L10n.Tr("LayerField doesn't support the formatting of the list items."));
+                m_FormatListItemCallback = null;
+            }
+        }
+
         public override void SetValueWithoutNotify(int newValue)
         {
             if (m_Choices.Contains(newValue))

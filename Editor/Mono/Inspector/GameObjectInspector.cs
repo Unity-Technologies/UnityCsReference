@@ -387,20 +387,20 @@ namespace UnityEditor
 
                             EditorGUIUtility.PingObject(Selection.activeObject);
                         }
-                    }
 
-                    // Should be EditorGUILayout.Space, except it does not have ExpandWidth set to false.
-                    // Maybe we can change that?
-                    GUILayoutUtility.GetRect(6, 6, GUILayout.ExpandWidth(false));
+                        // Should be EditorGUILayout.Space, except it does not have ExpandWidth set to false.
+                        // Maybe we can change that?
+                        GUILayoutUtility.GetRect(6, 6, GUILayout.ExpandWidth(false));
 
-                    // Reserve space regardless of whether the button is there or not to avoid jumps in button sizes.
-                    Rect rect = GUILayoutUtility.GetRect(s_Styles.overridesContent, "MiniPullDown");
-                    if (m_IsPrefabInstanceOutermostRoot)
-                    {
-                        if (EditorGUI.DropdownButton(rect, s_Styles.overridesContent, FocusType.Passive))
+                        // Reserve space regardless of whether the button is there or not to avoid jumps in button sizes.
+                        Rect rect = GUILayoutUtility.GetRect(s_Styles.overridesContent, "MiniPullDown");
+                        if (m_IsPrefabInstanceOutermostRoot)
                         {
-                            PopupWindow.Show(rect, new PrefabOverridesWindow(go));
-                            GUIUtility.ExitGUI();
+                            if (EditorGUI.DropdownButton(rect, s_Styles.overridesContent, FocusType.Passive))
+                            {
+                                PopupWindow.Show(rect, new PrefabOverridesWindow(go));
+                                GUIUtility.ExitGUI();
+                            }
                         }
                     }
                 }

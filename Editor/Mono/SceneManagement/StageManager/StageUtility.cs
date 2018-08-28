@@ -17,34 +17,34 @@ namespace UnityEditor.SceneManagement
             return IsGameObjectRenderedByCameraInternal(gameObject, camera);
         }
 
-        internal static void SetSceneToRenderInStage(Scene scene, Stage stage)
+        internal static void SetSceneToRenderInStage(Scene scene, StageHandle stageHandle)
         {
-            if (!stage.IsValid())
-                throw new System.ArgumentException("Stage is not valid.", nameof(stage));
-            if (stage.isMainStage)
+            if (!stageHandle.IsValid())
+                throw new System.ArgumentException("Stage is not valid.", nameof(stageHandle));
+            if (stageHandle.isMainStage)
                 SetSceneToRenderInMainStageInternal(scene.handle);
             else
-                SetSceneToRenderInSameStageAsOtherSceneInternal(scene.handle, stage.customScene.handle);
+                SetSceneToRenderInSameStageAsOtherSceneInternal(scene.handle, stageHandle.customScene.handle);
         }
 
-        public static Stage GetCurrentStage()
+        public static StageHandle GetCurrentStageHandle()
         {
-            return Stage.GetCurrentStage();
+            return StageHandle.GetCurrentStageHandle();
         }
 
-        public static Stage GetMainStage()
+        public static StageHandle GetMainStageHandle()
         {
-            return Stage.GetMainStage();
+            return StageHandle.GetMainStageHandle();
         }
 
-        public static Stage GetStage(GameObject gameObject)
+        public static StageHandle GetStageHandle(GameObject gameObject)
         {
-            return Stage.GetStage(gameObject.scene);
+            return StageHandle.GetStageHandle(gameObject.scene);
         }
 
-        public static Stage GetStage(Scene scene)
+        public static StageHandle GetStageHandle(Scene scene)
         {
-            return Stage.GetStage(scene);
+            return StageHandle.GetStageHandle(scene);
         }
 
         public static void GoToMainStage()

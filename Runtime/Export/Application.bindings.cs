@@ -108,6 +108,9 @@ namespace UnityEngine
             get;
         }
 
+        [FreeFunction]
+        public extern static bool IsPlaying(UnityEngine.Object obj);
+
         public extern static bool isFocused
         {
             [FreeFunction("IsPlayerFocused")]

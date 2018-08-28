@@ -117,6 +117,7 @@ namespace UnityEngine
 
         extern public bool drawHeightmap { get; set; }
         extern public bool allowAutoConnect { get; set; }
+        extern public int groupingID { get; set; }
 
         extern public bool drawInstanced { get; set; }
 

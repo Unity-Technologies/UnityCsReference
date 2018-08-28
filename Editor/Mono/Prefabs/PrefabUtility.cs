@@ -896,35 +896,8 @@ namespace UnityEditor
 
         public static bool IsOutermostPrefabInstanceRoot(GameObject gameObject)
         {
-            Assert.IsNotNull(gameObject);
-
-            // Not part of a prefab instance at all.
-            var initialCorrespondingObject = (GameObject)GetCorrespondingObjectFromSource(gameObject);
-            if (initialCorrespondingObject == null)
-                return false;
-
-            Object initialPrefabInstance = GetPrefabObject(gameObject);
-            Object initialPrefabAsset = GetPrefabObject(initialCorrespondingObject.transform.root);
-
-            // See if any ancestor is part of a prefab, in which case
-            // the passed parameter object is not outermost.
-            // We cannot only check the immediate parent, since there could be
-            // an added GameObject under a prefab, and an added prefab under that,
-            // in which case the parent would not be part of a prefab,
-            // but ancestors further up would.
-            Transform current = gameObject.transform.parent;
-            while (current != null && initialPrefabInstance == GetPrefabObject(current))
-            {
-                var currentGo = current.gameObject;
-                var currentCorrespondingObject = (GameObject)GetCorrespondingObjectFromSource(currentGo);
-                if (currentCorrespondingObject == null)
-                    return true;
-                var currentPrefabAsset = GetPrefabObject(currentCorrespondingObject.transform.root);
-                if (currentCorrespondingObject != null && currentPrefabAsset == initialPrefabAsset)
-                    return false;
-                current = current.parent;
-            }
-            return true;
+            GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(gameObject);
+            return (gameObject == prefabInstanceRoot);
         }
 
         public static string GetPrefabAssetPathOfNearestInstanceRoot(Object instanceComponentOrGameObject)

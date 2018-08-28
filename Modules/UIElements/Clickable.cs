@@ -118,6 +118,16 @@ namespace UnityEngine.Experimental.UIElements
             if (m_Active)
             {
                 lastMousePosition = evt.localMousePosition;
+
+                if (target.ContainsPoint(evt.localMousePosition))
+                {
+                    target.pseudoStates |= PseudoStates.Active;
+                }
+                else
+                {
+                    target.pseudoStates &= ~PseudoStates.Active;
+                }
+
                 evt.StopPropagation();
             }
         }

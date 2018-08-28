@@ -26,6 +26,7 @@ namespace UnityEditor.Experimental.SceneManagement
         public static event Action<GameObject> prefabSaving;
         public static event Action<GameObject> prefabSaved;
         internal static event Action<PrefabStage> prefabIconChanged;
+        internal static event Action<PrefabStage> prefabStageSavedAsNewPrefab;
 
         GameObject m_PrefabContentsRoot; // Prefab asset being edited
         Scene m_PreviewScene;
@@ -65,9 +66,9 @@ namespace UnityEditor.Experimental.SceneManagement
             }
         }
 
-        public Stage stageHandle
+        public StageHandle stageHandle
         {
-            get { return Stage.GetStage(scene); }
+            get { return StageHandle.GetStageHandle(scene); }
         }
 
         public bool IsPartOfPrefabContents(GameObject gameObject)
@@ -320,6 +321,73 @@ namespace UnityEditor.Experimental.SceneManagement
 
             if (SceneHierarchy.s_DebugPrefabStage)
                 Debug.Log("SAVE PREFAB ended");
+        }
+
+        internal bool SaveAsNewPrefab(string newPath, bool asCopy)
+        {
+            if (!initialized)
+                return false;
+
+            if (newPath == m_PrefabAssetPath)
+            {
+                throw new ArgumentException("Cannot save as new prefab using the same path");
+            }
+
+            if (asCopy)
+            {
+                // Keep current open prefab and save copy at newPath
+                string oldName = m_PrefabContentsRoot.name;
+                m_PrefabContentsRoot.name = Path.GetFileNameWithoutExtension(newPath);
+                PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, newPath);
+                m_PrefabContentsRoot.name = oldName;
+            }
+            else
+            {
+                // Change the current open prefab and save
+                m_PrefabContentsRoot.name = Path.GetFileNameWithoutExtension(newPath);
+                m_PrefabAssetPath = newPath;
+                ClearDirtiness();
+                PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, newPath);
+
+                if (prefabStageSavedAsNewPrefab != null)
+                    prefabStageSavedAsNewPrefab(this);
+            }
+
+            return true;
+        }
+
+        internal bool SaveAsNewPrefabWithSavePanel()
+        {
+            Assert.IsTrue(m_PrefabContentsRoot != null, "We should have a valid m_PrefabContentsRoot when saving to prefab asset");
+            bool editablePrefab = !AnimationMode.InAnimationMode();
+            if (!editablePrefab)
+            {
+                EditorUtility.DisplayDialog(L10n.Tr("Cannot Save Prefab"), L10n.Tr("Cannot save prefab in Animation Preview Mode"), L10n.Tr("OK"));
+                return false;
+            }
+
+            string directoryOfCurrentPrefab = Path.GetDirectoryName(m_PrefabAssetPath);
+            string nameOfCurrentPrefab = Path.GetFileNameWithoutExtension(m_PrefabAssetPath);
+            string relativePath;
+            while (true)
+            {
+                relativePath = EditorUtility.SaveFilePanelInProject("Save Prefab", nameOfCurrentPrefab + " Copy", "prefab", "", directoryOfCurrentPrefab);
+
+                // Cancel pressed
+                if (string.IsNullOrEmpty(relativePath))
+                    return false;
+
+                if (relativePath == m_PrefabAssetPath)
+                {
+                    if (EditorUtility.DisplayDialog(L10n.Tr("Save Prefab has failed"), L10n.Tr("Overwriting the same path as another open prefab is not allowed."), L10n.Tr("Try Again"), L10n.Tr("Cancel")))
+                        continue;
+
+                    return false;
+                }
+                break;
+            }
+
+            return SaveAsNewPrefab(relativePath, false);
         }
 
         // Returns true if prefab was saved.

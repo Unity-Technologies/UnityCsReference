@@ -340,6 +340,13 @@ namespace UnityEditor
 
         internal static bool m_AllowMultiObjectAccess = true;
 
+        // used internally to know if this the first editor in the inspector window
+        internal bool firstInspectedEditor { get; set; }
+
+        internal virtual bool HasLargeHeader()
+        {
+            return AssetDatabase.IsMainAsset(target) || AssetDatabase.IsSubAsset(target);
+        }
 
         internal bool canEditMultipleObjects
         {
