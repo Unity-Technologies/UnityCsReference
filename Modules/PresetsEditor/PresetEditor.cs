@@ -164,6 +164,7 @@ namespace UnityEditor.Presets
                 objs[index] = reference.reference;
             }
             m_InternalEditor = CreateEditor(objs);
+            m_InternalEditor.firstInspectedEditor = true;
         }
 
         void DestroyInternalEditor()
@@ -210,7 +211,7 @@ namespace UnityEditor.Presets
                 {
                     m_InternalEditor.DrawHeader();
                 }
-                if (InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target))
+                if (InternalEditorUtility.GetIsInspectorExpanded(m_InternalEditor.target) || m_InternalEditor.HasLargeHeader())
                 {
                     EditorGUI.indentLevel++;
                     m_InternalEditor.OnInspectorGUI();

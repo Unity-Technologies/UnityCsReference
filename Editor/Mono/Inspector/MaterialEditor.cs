@@ -65,7 +65,7 @@ namespace UnityEditor
         private static readonly List<MaterialEditor> s_MaterialEditors = new List<MaterialEditor>(4);
         private bool m_IsVisible;
         private bool m_CheckSetup;
-        internal bool forceVisible { get; set; }
+
         private static int s_ControlHash = "EditorTextField".GetHashCode();
         const float kSpacingUnderTexture = 6f;
         const float kMiniWarningMessageHeight = 27f;
@@ -98,7 +98,7 @@ namespace UnityEditor
             return type != PreviewType.Plane;
         }
 
-        public bool isVisible { get { return forceVisible || m_IsVisible; } }
+        public bool isVisible { get { return firstInspectedEditor || m_IsVisible; } }
 
         private Shader m_Shader;
         private SerializedProperty m_EnableInstancing;
@@ -433,10 +433,10 @@ namespace UnityEditor
         protected override void OnHeaderGUI()
         {
             const float spaceForFoldoutArrow = 10f;
-            Rect titleRect = DrawHeaderGUI(this, targetTitle, forceVisible ? 0 : spaceForFoldoutArrow);
+            Rect titleRect = DrawHeaderGUI(this, targetTitle, firstInspectedEditor ? 0 : spaceForFoldoutArrow);
             int id = GUIUtility.GetControlID(45678, FocusType.Passive);
 
-            if (!forceVisible)
+            if (!firstInspectedEditor)
             {
                 Rect renderRect = EditorGUI.GetInspectorTitleBarObjectFoldoutRenderRect(titleRect);
                 renderRect.y = titleRect.yMax - 17f; // align with bottom
@@ -2061,6 +2061,11 @@ namespace UnityEditor
                 r.sharedMaterials = materials;
                 evt.Use();
             }
+        }
+
+        internal override bool HasLargeHeader()
+        {
+            return true;
         }
     }
 } // namespace UnityEditor

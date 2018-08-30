@@ -51,21 +51,11 @@ namespace UnityEditor.Presets
             m_List.drawElementCallback = DrawElementCallback;
             m_List.onAddDropdownCallback = OnAddDropdownCallback;
             m_List.onRemoveCallback = OnRemoveCallback;
-
-            RefreshAddList();
-
-            m_List.onCanAddCallback = (list => m_AddingMenu.GetItemCount() > 0);
         }
 
         void OnRemoveCallback(ReorderableList list)
         {
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
-            RefreshAddList();
-        }
-
-        void OnFocus()
-        {
-            RefreshAddList();
         }
 
         void RefreshAddList()
@@ -102,10 +92,16 @@ namespace UnityEditor.Presets
                     }
                 }
             }
+
+            if (m_AddingMenu.GetItemCount() == 0)
+            {
+                m_AddingMenu.AddDisabledItem(EditorGUIUtility.TrTextContent("No Preset to add"));
+            }
         }
 
         void OnAddDropdownCallback(Rect buttonRect, ReorderableList list)
         {
+            RefreshAddList();
             m_AddingMenu.DropDown(buttonRect);
         }
 
@@ -115,7 +111,6 @@ namespace UnityEditor.Presets
             Undo.RecordObject(target, "Inspector");
             target.SetAsDefaultInternal((Preset)userData);
             serializedObject.Update();
-            RefreshAddList();
         }
 
         static string FullTypeNameToFriendlyName(string fullTypeName)
@@ -198,12 +193,6 @@ namespace UnityEditor.Presets
 
         public override void OnInspectorGUI()
         {
-            if (Event.current.type == EventType.MouseEnterWindow)
-            {
-                RefreshAddList();
-                return;
-            }
-
             serializedObject.Update();
 
             m_List.DoLayoutList();

@@ -1046,21 +1046,6 @@ namespace UnityEditor
             // Force header to be flush with the top of the window
             GUILayout.Space(0);
 
-            // When inspecting a material asset force visible properties (MaterialEditor can be collapsed when shown on a GameObject)
-            if (inspectedObject is Material)
-            {
-                // Find material editor. MaterialEditor is in either index 0 or 1.
-                for (int i = 0; i <= 1 && i < editors.Length; i++)
-                {
-                    MaterialEditor me = editors[i] as MaterialEditor;
-                    if (me != null)
-                    {
-                        me.forceVisible = true;
-                        break;
-                    }
-                }
-            }
-
             bool rebuildOptimizedGUIBlocks = false;
             if (Event.current.type == EventType.Repaint)
             {
@@ -1150,8 +1135,16 @@ namespace UnityEditor
 
             if (wasVisibleState == -1)
             {
+                // Some inspectors (MaterialEditor) needs to be told when they are the main visible asset.
+                if (editorIndex == 0 || (editorIndex == 1 && ShouldCullEditor(editors, 0)))
+                {
+                    editor.firstInspectedEditor = true;
+                }
+
                 // Init our state with last state
-                wasVisible = InternalEditorUtility.GetIsInspectorExpanded(target);
+                // Large headers should always be considered visible
+                // because they need to at least update their Icons when they have a static preview (Material for exemple)
+                wasVisible = InternalEditorUtility.GetIsInspectorExpanded(target) || EditorHasLargeHeader(editorIndex, editors);
                 tracker.SetVisible(editorIndex, wasVisible ? 1 : 0);
             }
             else
@@ -1380,8 +1373,7 @@ namespace UnityEditor
 
         internal bool EditorHasLargeHeader(int editorIndex, Editor[] trackerActiveEditors)
         {
-            var target = trackerActiveEditors[editorIndex].target;
-            return AssetDatabase.IsMainAsset(target) || AssetDatabase.IsSubAsset(target) || editorIndex == 0 || target is Material;
+            return trackerActiveEditors[editorIndex].firstInspectedEditor || trackerActiveEditors[editorIndex].HasLargeHeader();
         }
 
         private void DisplayDeprecationMessageIfNecessary(Editor editor)
