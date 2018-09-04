@@ -9,6 +9,5 @@ namespace UnityEditor
         void SizeSelectionCallback(int indexClicked, object objectSelected);
         bool lowResolutionForAspectRatios { get; set; }
         bool forceLowResolutionAspectRatios { get; }
-        bool showLowResolutionToggle { get; }
     }
 }

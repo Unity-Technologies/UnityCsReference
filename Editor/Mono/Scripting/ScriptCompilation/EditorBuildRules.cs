@@ -12,6 +12,7 @@ using UnityEditor.Compilation;
 using UnityEditor.Scripting.Compilers;
 using UnityEditor.VersionControl;
 using UnityEditor.Utils;
+using UnityEditorInternal;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -46,10 +47,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
             public AssemblyFlags Flags { get; private set; }
             public string PathPrefix { get; private set; }
             public Func<string, int> PathFilter { get; private set; }
-            public Func<ScriptAssemblySettings, bool> IsCompatibleFunc { get; private set; }
+            public Func<ScriptAssemblySettings, string[], bool> IsCompatibleFunc { get; private set; }
             public List<TargetAssembly> References { get; private set; }
             public List<PrecompiledAssembly> PrecompiledReferences { get; set; }
             public TargetAssemblyType Type { get; private set; }
+            public string[] Defines { get; set; }
             public OptionalUnityReferences OptionalUnityReferences { get; set; }
             public ScriptCompilerOptions CompilerOptions { get; set; }
 
@@ -64,7 +66,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                   TargetAssemblyType type,
                                   string pathPrefix,
                                   Func<string, int> pathFilter,
-                                  Func<ScriptAssemblySettings, bool> compatFunc,
+                                  Func<ScriptAssemblySettings, string[], bool> compatFunc,
                                   ScriptCompilerOptions compilerOptions) : this()
             {
                 Language = language;
@@ -88,7 +90,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 get
                 {
                     bool isCompatibleWithEditor = IsCompatibleFunc == null ||
-                        IsCompatibleFunc(new ScriptAssemblySettings { BuildTarget = BuildTarget.NoTarget, CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor });
+                        IsCompatibleFunc(new ScriptAssemblySettings { BuildTarget = BuildTarget.NoTarget, CompilationOptions = EditorScriptCompilationOptions.BuildingForEditor }, null);
 
                     return isCompatibleWithEditor
                         ? EditorCompatibility.CompatibleWithEditor
@@ -226,7 +228,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     TargetAssemblyType.Custom,
                     customAssembly.PathPrefix,
                     path => FastStartsWith(path, customAssembly.PathPrefix, lowerPathPrefix) ? customAssembly.PathPrefix.Length : -1,
-                    (settings) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, settings.Defines),
+                    (settings, defines) => customAssembly.IsCompatibleWith(settings.BuildTarget, settings.CompilationOptions, defines),
                     customAssembly.CompilerOptions)
                 {
                     OptionalUnityReferences = customAssembly.OptionalUnityReferences,
@@ -548,7 +550,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     scriptAssembly.RunUpdater = true;
 
                 scriptAssembly.OutputDirectory = settings.OutputDirectory;
-                scriptAssembly.Defines = settings.Defines;
+                scriptAssembly.Defines = targetAssembly.Defines;
                 scriptAssembly.Files = sourceFiles.ToArray();
 
                 if (targetAssembly.Type == TargetAssemblyType.Predefined)
@@ -764,7 +766,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static bool IsCompatibleWithPlatformAndDefines(TargetAssembly assembly, ScriptAssemblySettings settings)
         {
-            return assembly.IsCompatibleFunc == null || assembly.IsCompatibleFunc(settings);
+            return assembly.IsCompatibleFunc == null || assembly.IsCompatibleFunc(settings, assembly.Defines);
         }
 
         internal static TargetAssembly[] CreatePredefinedTargetAssemblies()
@@ -808,7 +810,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     TargetAssemblyType.Predefined,
                     null,
                     FilterAssemblyInFirstpassEditorFolder,
-                    IsCompatibleWithEditor,
+                    (settings, defines) => IsCompatibleWithEditor(settings),
                     scriptCompilerOptions)
                 {
                     OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,
@@ -820,7 +822,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     TargetAssemblyType.Predefined,
                     null,
                     FilterAssemblyInEditorFolder,
-                    IsCompatibleWithEditor,
+                    (settings, defines) => IsCompatibleWithEditor(settings),
                     scriptCompilerOptions)
                 {
                     OptionalUnityReferences = OptionalUnityReferences.TestAssemblies,

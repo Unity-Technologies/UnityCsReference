@@ -29,8 +29,14 @@ namespace UnityEditor.ShortcutManagement
 
         static void InitializeController()
         {
-            var discoveryIdentifierConflictHandler = new DiscoveryIdentifierConflictHandler();
-            var discovery = new Discovery(new IDiscoveryShortcutProvider[] { new ShortcutAttributeDiscoveryProvider(), new ShortcutMenuItemDiscoveryProvider() }, discoveryIdentifierConflictHandler);
+            var shortcutProviders = new IDiscoveryShortcutProvider[]
+            {
+                new ShortcutAttributeDiscoveryProvider(),
+                new ShortcutMenuItemDiscoveryProvider(),
+            };
+            var identifierConflictHandler = new DiscoveryIdentifierConflictHandler();
+            var invalidContextReporter = new DiscoveryInvalidContextReporter();
+            var discovery = new Discovery(shortcutProviders, identifierConflictHandler, invalidContextReporter);
             instance = new ShortcutController(discovery);
             instance.Initialize(instance.profileManager);
         }

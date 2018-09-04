@@ -281,6 +281,7 @@ namespace UnityEngine
     {
         extern public SkinQuality quality { get; set; }
         extern public bool updateWhenOffscreen  { get; set; }
+        extern public bool forceMatrixRecalculationPerRender  { get; set; }
 
         extern public Transform rootBone { get; set; }
         extern internal Transform actualRootBone { get; }

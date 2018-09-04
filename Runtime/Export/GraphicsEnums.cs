@@ -1080,6 +1080,7 @@ namespace UnityEngine.Rendering
         Xbox360 = 6,
         OpenGLES2 = 8,
         OpenGLES3 = 11,
+        [System.Obsolete("PVita is no longer supported as of Unity 2018")]
         PlayStationVita = 12,
         PlayStation4 = 13,
         XboxOne = 14,

@@ -9,30 +9,33 @@ namespace UnityEditor
 {
     public sealed partial class Handles
     {
-        internal static Vector2 DoRectHandles(Quaternion rotation, Vector3 position, Vector2 size)
+        internal static Vector2 DoRectHandles(Quaternion rotation, Vector3 position, Vector2 size, bool handlesOnly)
         {
-            Vector3 forward = rotation * Vector3.forward;
             Vector3 up = rotation * Vector3.up;
             Vector3 right = rotation * Vector3.right;
 
             float halfWidth = 0.5f * size.x;
             float halfHeight = 0.5f * size.y;
 
-            Vector3 topRight =      position + up * halfHeight + right * halfWidth;
-            Vector3 bottomRight =   position - up * halfHeight + right * halfWidth;
-            Vector3 bottomLeft =    position - up * halfHeight - right * halfWidth;
-            Vector3 topLeft =       position + up * halfHeight - right * halfWidth;
+            if (!handlesOnly)
+            {
+                Vector3 topRight = position + up * halfHeight + right * halfWidth;
+                Vector3 bottomRight = position - up * halfHeight + right * halfWidth;
+                Vector3 bottomLeft = position - up * halfHeight - right * halfWidth;
+                Vector3 topLeft = position + up * halfHeight - right * halfWidth;
 
-            // Draw rectangle
-            DrawLine(topRight, bottomRight);
-            DrawLine(bottomRight, bottomLeft);
-            DrawLine(bottomLeft, topLeft);
-            DrawLine(topLeft, topRight);
+                // Draw rectangle
+                DrawLine(topRight, bottomRight);
+                DrawLine(bottomRight, bottomLeft);
+                DrawLine(bottomLeft, topLeft);
+                DrawLine(topLeft, topRight);
+            }
 
             // Give handles twice the alpha of the lines
-            Color col = Handles.color;
-            col.a = Mathf.Clamp01(col.a * 2);
-            Handles.color = col;
+            Color origCol = color;
+            Color col = color;
+            col.a = Mathf.Clamp01(color.a * 2);
+            color = ToActiveColorSpace(col);
 
             // Draw handles
             halfHeight = SizeSlider(position, up, halfHeight);
@@ -40,12 +43,10 @@ namespace UnityEditor
             halfWidth = SizeSlider(position, right, halfWidth);
             halfWidth = SizeSlider(position, -right, halfWidth);
 
-            // Draw the area light's normal only if it will not overlap with the current tool
-            if (!((Tools.current == Tool.Move || Tools.current == Tool.Scale) && Tools.pivotRotation == PivotRotation.Local))
-                DrawLine(position, position + forward);
+            size.x = Mathf.Max(0f, 2.0f * halfWidth);
+            size.y = Mathf.Max(0f, 2.0f * halfHeight);
 
-            size.x = 2.0f * halfWidth;
-            size.y = 2.0f * halfHeight;
+            color = origCol;
 
             return size;
         }

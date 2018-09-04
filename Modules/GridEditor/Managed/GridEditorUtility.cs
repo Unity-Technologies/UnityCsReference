@@ -467,17 +467,25 @@ namespace UnityEditorInternal
             var uvs = new Vector2[vertex];
             var indices = new int[vertex];
             var colors = new Color[vertex];
+            var normals = new Vector3[totalVertices];     // Normal channel stores the position of the other end point of the line.
+            var uvs3 = new Vector2[totalVertices];        // UV3 channel stores the UV2 value of the other end point of the line.
+
             for (int i = 0; i < vertex; i++)
             {
                 uvs[i] = uv0;
                 indices[i] = i;
                 colors[i] = color;
+                var alternate = i + ((i % 2) == 0 ? 1 : -1);
+                normals[i] = vertices[alternate];
+                uvs3[i] = uvs2[alternate];
             }
 
             mesh.vertices = vertices;
             mesh.uv = uvs;
             mesh.uv2 = uvs2;
+            mesh.uv3 = uvs3;
             mesh.colors = colors;
+            mesh.normals = normals;
             mesh.SetIndices(indices, topology, 0);
 
             return mesh;
@@ -548,16 +556,25 @@ namespace UnityEditorInternal
             var indices = new int[totalVertices];
             var uvs = new Vector2[totalVertices];
             var colors = new Color[totalVertices];
+            var normals = new Vector3[totalVertices];     // Normal channel stores the position of the other end point of the line.
+            var uvs3 = new Vector2[totalVertices];        // UV3 channel stores the UV2 value of the other end point of the line.
+
             for (int i = 0; i < totalVertices; i++)
             {
                 uvs[i] = uv0;
                 indices[i] = i;
                 colors[i] = color;
+                var alternate = i + ((i % 2) == 0 ? 1 : -1);
+                normals[i] = vertices[alternate];
+                uvs3[i] = uvs2[alternate];
             }
+
             mesh.vertices = vertices;
             mesh.uv = uvs;
             mesh.uv2 = uvs2;
+            mesh.uv3 = uvs3;
             mesh.colors = colors;
+            mesh.normals = normals;
             mesh.SetIndices(indices, MeshTopology.Lines, 0);
             return mesh;
         }

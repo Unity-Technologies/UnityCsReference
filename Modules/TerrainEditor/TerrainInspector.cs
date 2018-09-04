@@ -2034,7 +2034,7 @@ namespace UnityEditor
                     else
                     {
                         ITerrainPaintTool activeTool = GetActiveTool();
-                        if (activeTool.OnPaint(m_Terrain, onPaintEditContext.Set(brushList.GetActiveBrush().texture, uv, m_Strength, 0.0f, m_Size)))
+                        if (activeTool.OnPaint(terrain, onPaintEditContext.Set(brushList.GetActiveBrush().texture, uv, m_Strength, 0.0f, m_Size)))
                         {
                             // height map modification modes
                             terrain.editorRenderFlags = TerrainRenderFlags.Heightmap;

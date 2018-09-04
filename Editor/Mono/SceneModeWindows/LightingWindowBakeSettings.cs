@@ -331,7 +331,6 @@ namespace UnityEditor
                         if (m_MixedBakeMode.intValue == (int)MixedLightingMode.Subtractive)
                         {
                             EditorGUILayout.PropertyField(m_SubtractiveShadowColor, Styles.SubtractiveShadowColor);
-                            m_RenderSettingsSO.ApplyModifiedProperties();
                             EditorGUILayout.Space();
                         }
                     }
@@ -579,12 +578,14 @@ namespace UnityEditor
             }
 
             m_LightmapSettingsSO.UpdateIfRequiredOrScript();
+            m_RenderSettingsSO.UpdateIfRequiredOrScript();
 
             RealtimeLightingGUI();
             MixedLightingGUI();
             GeneralLightmapSettingsGUI();
 
             m_LightmapSettingsSO.ApplyModifiedProperties();
+            m_RenderSettingsSO.ApplyModifiedProperties();
         }
 
         static class Styles

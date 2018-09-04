@@ -278,9 +278,6 @@ namespace UnityEditor
 
         SerializedProperty m_AllowUnsafeCode;
 
-        // vita
-        SerializedProperty m_VideoMemoryForVertexBuffers;
-
         // General
         SerializedProperty m_CompanyName;
         SerializedProperty m_ProductName;

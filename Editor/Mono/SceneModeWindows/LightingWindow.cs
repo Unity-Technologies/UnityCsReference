@@ -33,21 +33,6 @@ namespace UnityEditor
         LightingWindowLightmapPreviewTab    m_RealtimeLightmapsTab;
         LightingWindowLightmapPreviewTab    m_BakedLightmapsTab;
 
-        float m_ToolbarPadding = -1;
-
-        private float toolbarPadding
-        {
-            get
-            {
-                if (m_ToolbarPadding == -1)
-                {
-                    var iconsSize = EditorStyles.iconButton.CalcSize(EditorGUI.GUIContents.helpIcon);
-                    m_ToolbarPadding = (iconsSize.x * 2) + (EditorGUI.kControlVerticalSpacing * 3);
-                }
-                return m_ToolbarPadding;
-            }
-        }
-
         void OnEnable()
         {
             titleContent = GetLocalizedTitleContent();
@@ -101,7 +86,6 @@ namespace UnityEditor
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
 
-            GUILayout.Space(toolbarPadding);
             ModeToggle();
             DrawHelpGUI();
             if (m_SelectedMode == Mode.LightingSettings)
@@ -173,7 +157,7 @@ namespace UnityEditor
         static void CreateLightingWindow()
         {
             LightingWindow window = EditorWindow.GetWindow<LightingWindow>();
-            window.minSize = new Vector2(370, 390);
+            window.minSize = new Vector2(390, 390);
             window.Show();
         }
 

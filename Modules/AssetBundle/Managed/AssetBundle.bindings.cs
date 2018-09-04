@@ -45,6 +45,7 @@ namespace UnityEngine
     {
         private AssetBundle() {}
 
+        [Obsolete("mainAsset has been made obsolete. Please use the new AssetBundle build system introduced in 5.0 and check BuildAssetBundles documentation for details.")]
         public Object mainAsset
         {
             get { return returnMainAsset(this); }

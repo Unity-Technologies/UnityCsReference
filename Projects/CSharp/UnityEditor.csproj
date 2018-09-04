@@ -12,6 +12,7 @@
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <LangVersion>6</LangVersion>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -4442,6 +4443,9 @@
   <Compile Include="..\..\Modules\ShortcutManagerEditor\DiscoveryIdentifierConflictHandler.cs">
     <Link>Modules\ShortcutManagerEditor\DiscoveryIdentifierConflictHandler.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\DiscoveryInvalidContextReporter.cs">
+    <Link>Modules\ShortcutManagerEditor\DiscoveryInvalidContextReporter.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs">
     <Link>Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs</Link>
   </Compile>
@@ -4456,6 +4460,9 @@
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\IShortcutPriorityContext.cs">
     <Link>Modules\ShortcutManagerEditor\IShortcutPriorityContext.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\PriorityContextAttribute.cs">
+    <Link>Modules\ShortcutManagerEditor\PriorityContextAttribute.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ReserveModifiersAttribute.cs">
     <Link>Modules\ShortcutManagerEditor\ReserveModifiersAttribute.cs</Link>

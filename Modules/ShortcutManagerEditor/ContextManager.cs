@@ -11,8 +11,6 @@ namespace UnityEditor.ShortcutManagement
     interface IContextManager
     {
         void SetFocusedWindow(EditorWindow window);
-        void RegisterPriorityContext(IShortcutToolContext context);
-        void DeregisterPriorityContext(IShortcutToolContext context);
         void RegisterToolContext(IShortcutToolContext context);
         void DeregisterToolContext(IShortcutToolContext context);
         bool HasAnyPriorityContext();
@@ -21,7 +19,7 @@ namespace UnityEditor.ShortcutManagement
         object GetContextInstanceOfType(Type type);
     }
 
-    internal class ContextManager : IContextManager
+    class ContextManager : IContextManager
     {
         internal class GlobalContext {}
 
@@ -41,7 +39,12 @@ namespace UnityEditor.ShortcutManagement
             m_FocusedWindow = new WeakReference(window);
         }
 
-        public void RegisterPriorityContext(IShortcutToolContext context)
+        static bool IsPriorityContext(IShortcutToolContext context)
+        {
+            return Attribute.GetCustomAttribute(context.GetType(), typeof(PriorityContextAttribute)) != null;
+        }
+
+        void RegisterPriorityContext(IShortcutToolContext context)
         {
             if (!m_PriorityContexts.Contains(context))
             {
@@ -49,7 +52,7 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public void DeregisterPriorityContext(IShortcutToolContext context)
+        void DeregisterPriorityContext(IShortcutToolContext context)
         {
             m_PriorityContexts.Remove(context);
         }
@@ -58,16 +61,28 @@ namespace UnityEditor.ShortcutManagement
         {
             if (context == null)
                 return;
-            if (!m_ToolContexts.Contains(context))
-                m_ToolContexts.Add(context);
+
+            if (IsPriorityContext(context))
+                RegisterPriorityContext(context);
+            else
+            {
+                if (!m_ToolContexts.Contains(context))
+                    m_ToolContexts.Add(context);
+            }
         }
 
         public void DeregisterToolContext(IShortcutToolContext context)
         {
             if (context == null)
                 return;
-            if (m_ToolContexts.Contains(context))
-                m_ToolContexts.Remove(context);
+
+            if (IsPriorityContext(context))
+                DeregisterPriorityContext(context);
+            else
+            {
+                if (m_ToolContexts.Contains(context))
+                    m_ToolContexts.Remove(context);
+            }
         }
 
         public bool HasAnyPriorityContext()

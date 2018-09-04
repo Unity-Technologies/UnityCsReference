@@ -97,8 +97,6 @@ namespace UnityEditor
                 editorApplicationQuit();
         }
 
-        internal static bool supportsHiDPI { get { return Application.platform == RuntimePlatform.OSXEditor || Application.platform == RuntimePlatform.WindowsEditor; } }
-
         // Delegate to be called for every visible list item in the ProjectWindow on every OnGUI event.
         public delegate void ProjectWindowItemCallback(string guid, Rect selectionRect);
 

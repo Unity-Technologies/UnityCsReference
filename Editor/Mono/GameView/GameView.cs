@@ -168,7 +168,6 @@ namespace UnityEditor
         }
 
         public bool forceLowResolutionAspectRatios { get { return EditorGUIUtility.pixelsPerPoint == 1f; } }
-        public bool showLowResolutionToggle { get { return EditorApplication.supportsHiDPI; } }
 
         public bool maximizeOnPlay
         {

@@ -83,11 +83,7 @@ namespace UnityEditor
         AnimBool m_ShowWidePreview = new AnimBool();
         AnimBool m_ShowOverlapPreview = new AnimBool();
 
-        static HashSet<Event> s_GridAreaPriorityKeyboardEvents = new HashSet<Event>
-        {
-            Event.KeyboardEvent("up"),
-            Event.KeyboardEvent("down"),
-        };
+        static HashSet<Event> s_GridAreaPriorityKeyboardEvents;
 
         Rect listPosition
         {
@@ -135,6 +131,8 @@ namespace UnityEditor
 
         int GetSelectedInstanceID()
         {
+            if (m_ListArea == null)
+                InitIfNeeded();
             int[] selection = IsUsingTreeView() ? m_ObjectTreeWithSearch.GetSelection() : m_ListArea.GetSelection();
             if (selection.Length >= 1)
                 return selection[0];
@@ -151,6 +149,15 @@ namespace UnityEditor
 
             m_PreviewResizer.Init("ObjectPickerPreview");
             m_PreviewSize = m_PreviewResizer.GetPreviewSize(); // Init size
+
+            if (s_GridAreaPriorityKeyboardEvents == null)
+            {
+                s_GridAreaPriorityKeyboardEvents = new HashSet<Event>
+                {
+                    Event.KeyboardEvent("up"),
+                    Event.KeyboardEvent("down"),
+                };
+            }
 
             AssetPreview.ClearTemporaryAssetPreviews();
 

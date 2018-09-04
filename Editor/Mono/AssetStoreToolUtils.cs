@@ -17,7 +17,9 @@ namespace UnityEditorInternal
         public static bool PreviewAssetStoreAssetBundleInInspector(AssetBundle bundle, AssetStoreAsset info)
         {
             info.id = 0; // make sure the id is zero when previewing
+#pragma warning disable 618
             info.previewAsset = bundle.mainAsset;
+#pragma warning restore 618
             AssetStoreAssetSelection.Clear();
             AssetStoreAssetSelection.AddAssetInternal(info);
 

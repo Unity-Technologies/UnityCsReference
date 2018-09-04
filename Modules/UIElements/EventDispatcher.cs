@@ -127,6 +127,7 @@ namespace UnityEngine.Experimental.UIElements
             get { return m_GateCount == 0; }
         }
 
+        IPanel m_LastMousePositionPanel;
         Vector2 m_LastMousePosition;
 
         void DispatchEnterLeave(VisualElement previousTopElementUnderMouse, VisualElement currentTopElementUnderMouse, Func<EventBase> getEnterEventFunc, Func<EventBase> getLeaveEventFunc)
@@ -431,6 +432,7 @@ namespace UnityEngine.Experimental.UIElements
                 IMouseEventInternal mouseEventInternal = evt as IMouseEventInternal;
                 if (mouseEvent != null && mouseEventInternal != null && mouseEventInternal.hasUnderlyingPhysicalEvent)
                 {
+                    m_LastMousePositionPanel = panel;
                     m_LastMousePosition = mouseEvent.mousePosition;
                 }
 
@@ -664,6 +666,11 @@ namespace UnityEngine.Experimental.UIElements
 
         internal void UpdateElementUnderMouse(BaseVisualElementPanel panel)
         {
+            if (panel != m_LastMousePositionPanel)
+            {
+                return;
+            }
+
             Vector2 localMousePosition = panel.visualTree.WorldToLocal(m_LastMousePosition);
             VisualElement currentTopElementUnderMouse = panel.topElementUnderMouse;
             panel.topElementUnderMouse = panel.Pick(localMousePosition);

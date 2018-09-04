@@ -511,7 +511,7 @@ namespace UnityEditor.VisualStudioIntegration
                 toolsversion, productversion, ProjectGuid(island._output),
                 _settings.EngineAssemblyPath,
                 _settings.EditorAssemblyPath,
-                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(_settings.Defines).Concat(island._defines).Concat(responseFileData.Defines).Distinct().ToArray()),
+                string.Join(";", new[] { "DEBUG", "TRACE"}.Concat(island._defines).Concat(responseFileData.Defines).Distinct().ToArray()),
                 MSBuildNamespaceUri,
                 Path.GetFileNameWithoutExtension(island._output),
                 EditorSettings.projectGenerationRootNamespace,

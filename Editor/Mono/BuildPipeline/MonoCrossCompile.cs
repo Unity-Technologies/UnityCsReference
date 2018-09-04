@@ -294,10 +294,6 @@ namespace UnityEditor
             process.StartInfo.CreateNoWindow = true;
             process.StartInfo.RedirectStandardOutput = true;
 
-
-            // todo: move this out of this file ... it needs to be initialised in the per-platform extension
-            //        ArtifactsPath = Environment.ExpandEnvironmentVariables("%tmp%\\UnityPSVitaArtifacts\\");
-
             if (ArtifactsPath != null)
             {
                 if (!Directory.Exists(ArtifactsPath)) Directory.CreateDirectory(ArtifactsPath);

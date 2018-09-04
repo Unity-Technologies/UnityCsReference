@@ -876,13 +876,15 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 runScriptUpdaterAssemblies.Count == 0)
                 return CompileStatus.Idle;
 
+            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), scriptAssemblySettings);
+
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
                 UnityAssemblies = unityAssemblies,
                 PrecompiledAssemblies = precompiledAssemblies,
                 CustomTargetAssemblies = customTargetAssemblies,
                 PredefinedAssembliesCustomTargetReferences = GetPredefinedAssemblyReferences(customTargetAssemblies),
-                EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts()
+                EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts(),
             };
 
             var allDirtyScripts = (areAllScriptsDirty || areAllPrecompiledAssembliesDirty) ? allScripts.ToArray() : dirtyScripts.ToArray();
@@ -1117,8 +1119,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         ScriptAssemblySettings CreateScriptAssemblySettings(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, EditorScriptCompilationOptions options)
         {
-            var defines = InternalEditorUtility.GetCompilationDefines(options, buildTargetGroup, buildTarget);
-
             var predefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
 
             if ((options & EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode) == EditorScriptCompilationOptions.BuildingPredefinedAssembliesAllowUnsafeCode)
@@ -1129,7 +1129,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 BuildTarget = buildTarget,
                 BuildTargetGroup = buildTargetGroup,
                 OutputDirectory = GetCompileScriptsOutputDirectory(),
-                Defines = defines,
                 ApiCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup),
                 CompilationOptions = options,
                 PredefinedAssembliesCompilerOptions = predefinedAssembliesCompilerOptions,
@@ -1371,6 +1370,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
         {
             ScriptAssemblySettings settings = CreateEditorScriptAssemblySettings(options);
 
+            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), settings);
+
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
                 UnityAssemblies = unityAssembliesArg,
@@ -1383,15 +1384,42 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies);
         }
 
+        private static void UpdateAllTargetAssemblyDefines(EditorBuildRules.TargetAssembly[] customScriptAssemblies, EditorBuildRules.TargetAssembly[] predefinedTargetAssemblies, ScriptAssemblySettings settings)
+        {
+            var allTargetAssemblies = (customScriptAssemblies ?? new EditorBuildRules.TargetAssembly[0])
+                .Concat(predefinedTargetAssemblies ?? new EditorBuildRules.TargetAssembly[0]);
+
+            foreach (var targetAssembly in allTargetAssemblies)
+            {
+                SetTargetAssemblyDefines(targetAssembly, settings);
+            }
+        }
+
+        private static void SetTargetAssemblyDefines(EditorBuildRules.TargetAssembly targetAssembly, ScriptAssemblySettings settings)
+        {
+            var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
+            ApiCompatibilityLevel apiCompatibilityLevel;
+
+            if (editorOnlyTargetAssembly || (settings.BuildingForEditor && settings.ApiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6))
+                apiCompatibilityLevel = (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest) ? ApiCompatibilityLevel.NET_4_6 : ApiCompatibilityLevel.NET_2_0;
+            else
+                apiCompatibilityLevel = settings.ApiCompatibilityLevel;
+
+            var defines = InternalEditorUtility.GetCompilationDefines(settings.CompilationOptions, settings.BuildTargetGroup, settings.BuildTarget, apiCompatibilityLevel).Concat(settings.ExtraGeneralDefines);
+            targetAssembly.Defines = defines.ToArray();
+        }
+
         ScriptAssembly[] GetAllScriptAssembliesOfType(ScriptAssemblySettings settings, EditorBuildRules.TargetAssemblyType type)
         {
+            UpdateAllTargetAssemblyDefines(customTargetAssemblies, EditorBuildRules.GetPredefinedTargetAssemblies(), settings);
+
             var assemblies = new EditorBuildRules.CompilationAssemblies
             {
                 UnityAssemblies = unityAssemblies,
                 PrecompiledAssemblies = precompiledAssemblies,
                 CustomTargetAssemblies = customTargetAssemblies,
                 PredefinedAssembliesCustomTargetReferences = GetPredefinedAssemblyReferences(customTargetAssemblies),
-                EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts()
+                EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts(),
             };
 
             return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, type);

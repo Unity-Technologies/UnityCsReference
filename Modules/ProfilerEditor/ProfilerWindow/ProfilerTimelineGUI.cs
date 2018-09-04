@@ -76,10 +76,10 @@ namespace UnityEditorInternal
 
         // Not localizable strings - should match group names in native code.
         const string k_MainGroupName = "";
-        const string k_JobSystemGroupName = "Job System";
+        const string k_JobSystemGroupName = "Job";
         const string k_LoadingGroupName = "Loading";
         const string k_ScriptingThreadsGroupName = "Scripting Threads";
-        const string k_BackgrounfJobSystemGroupName = "Background Job System";
+        const string k_BackgroundJobSystemGroupName = "Background Job";
         const string k_ProfilerThreadsGroupName = "Profiler";
         const string k_OtherThreadsGroupName = "Other Threads";
 
@@ -237,7 +237,7 @@ namespace UnityEditorInternal
                 new GroupInfo(k_JobSystemGroupName, m_Window.Repaint),
                 new GroupInfo(k_LoadingGroupName, m_Window.Repaint),
                 new GroupInfo(k_ScriptingThreadsGroupName, m_Window.Repaint),
-                new GroupInfo(k_BackgrounfJobSystemGroupName, m_Window.Repaint),
+                new GroupInfo(k_BackgroundJobSystemGroupName, m_Window.Repaint),
                 new GroupInfo(k_ProfilerThreadsGroupName, m_Window.Repaint),
                 new GroupInfo(k_OtherThreadsGroupName, m_Window.Repaint),
             });

@@ -87,6 +87,7 @@ namespace UnityEngine
                             RuntimeUndo.RecordObject(m_Tracked[i], "Driving RectTransform");
 
                         m_Tracked[i].drivenByObject = null;
+                        m_Tracked[i].drivenProperties = DrivenTransformProperties.None;
                     }
                 }
                 m_Tracked.Clear();
@@ -155,8 +156,8 @@ namespace UnityEngine
             }
         }
 
-        internal Object drivenByObject { get; set; }
-        internal DrivenTransformProperties drivenProperties { get; set; }
+        extern internal Object drivenByObject { get; set; }
+        extern internal DrivenTransformProperties drivenProperties { get; set; }
 
         [NativeMethod("UpdateIfTransformDispatchIsDirty")] public extern void ForceUpdateRectTransforms();
 

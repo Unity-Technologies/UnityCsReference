@@ -54,7 +54,7 @@ namespace UnityEditor
             Flash, // removed
             D3D11_9x, // removed
             OpenGLES30,
-            PSVita,
+            PSVita, // removed
             PS4,
             XboxOne,
             PSM, // removed

@@ -204,15 +204,8 @@ namespace UnityEditor
                 }
             }
 
-            // we need to pass through the property setter to trigger a canvasHierarchyChanged event and so on
-            // see case 787195
-            EditorGUI.BeginChangeCheck();
             EditorGUILayout.PropertyField(m_OverrideSorting);
-            if (EditorGUI.EndChangeCheck())
-            {
-                ((Canvas)serializedObject.targetObject).overrideSorting = m_OverrideSorting.boolValue;
-                m_SortingOverride.target = m_OverrideSorting.boolValue;
-            }
+            m_SortingOverride.target = m_OverrideSorting.boolValue;
 
             if (EditorGUILayout.BeginFadeGroup(m_SortingOverride.faded))
             {
@@ -228,10 +221,7 @@ namespace UnityEditor
                 }
                 if (sortingOrderStyle != null)
                 {
-                    EditorGUI.BeginChangeCheck();
                     EditorGUILayout.PropertyField(m_SortingOrder, sortingOrderStyle);
-                    if (EditorGUI.EndChangeCheck())
-                        ((Canvas)serializedObject.targetObject).sortingOrder = m_SortingOrder.intValue;
                 }
             }
             EditorGUILayout.EndFadeGroup();

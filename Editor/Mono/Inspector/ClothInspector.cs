@@ -10,6 +10,7 @@ using UnityEditorInternal;
 using UnityEditor.IMGUI.Controls;
 
 using UnityObject = UnityEngine.Object;
+using UnityEngine.Assertions;
 
 
 namespace UnityEditor
@@ -87,6 +88,8 @@ namespace UnityEditor
         int m_NumSelection = 0;
 
         SkinnedMeshRenderer m_SkinnedMeshRenderer;
+        const HideFlags kMeshColliderHideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector | HideFlags.DontSaveInEditor | HideFlags.NotEditable;
+        const HideFlags kRequiredHideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector;
 
         private static class Styles
         {
@@ -529,18 +532,10 @@ namespace UnityEditor
             if (cloth != null)
             {
                 GameObject go = cloth.gameObject;
-                MeshCollider oldMeshCollider = go.GetComponent<MeshCollider>();
-                if (oldMeshCollider != null)
-                {
-                    if (((oldMeshCollider.hideFlags & HideFlags.HideInHierarchy) != 0) || ((oldMeshCollider.hideFlags & HideFlags.HideInInspector) != 0))
-                    {
-                        DestroyImmediate(oldMeshCollider, true);
-                    }
-                }
+                MeshCollider colliderToUse = GetMeshCollidersChecked(go);
 
-                MeshCollider meshCollider = go.AddComponent<MeshCollider>();
-                meshCollider.hideFlags = HideFlags.HideInHierarchy | HideFlags.HideInInspector |
-                    HideFlags.DontSaveInEditor | HideFlags.NotEditable;
+                MeshCollider meshCollider = (colliderToUse != null) ? colliderToUse : Undo.AddComponent<MeshCollider>(go);
+                meshCollider.hideFlags = kMeshColliderHideFlags;
 
                 meshCollider.sharedMesh = m_SkinnedMeshRenderer.sharedMesh;
 
@@ -557,17 +552,37 @@ namespace UnityEditor
                 if (cloth != null)
                 {
                     GameObject go = cloth.gameObject;
-                    MeshCollider meshCollider = go.GetComponent<MeshCollider>();
-                    if (meshCollider != null)
+
+                    MeshCollider meshCollider = GetMeshCollidersChecked(go);
+                    if (meshCollider)
                     {
-                        if (((meshCollider.hideFlags & HideFlags.HideInHierarchy) != 0) || ((meshCollider.hideFlags & HideFlags.HideInInspector) != 0))
-                        {
-                            DestroyImmediate(meshCollider, true);
-                        }
+                        Undo.DestroyObjectImmediate(meshCollider);
                     }
+
                     s_BrushCreated = false;
                 }
             }
+        }
+
+        private MeshCollider GetMeshCollidersChecked(GameObject go)
+        {
+            MeshCollider[] meshColliders = go.GetComponents<MeshCollider>();
+            MeshCollider targetCollider = null;
+
+            int colliderCount = 0;
+            for (int i = 0; i < meshColliders.Length; ++i)
+            {
+                MeshCollider meshCollider = meshColliders[i];
+
+                if ((meshCollider.hideFlags & kRequiredHideFlags) != 0)
+                {
+                    colliderCount++;
+                    targetCollider = meshCollider;
+                }
+            }
+
+            Assert.IsTrue(colliderCount < 2, "There should never be more than 1 mesh collider in this Cloth component");
+            return targetCollider;
         }
 
         float GetCoefficient(ClothSkinningCoefficient coefficient)
@@ -720,6 +735,11 @@ namespace UnityEditor
 
         void SelectionGUI()
         {
+            if (m_ParticleSelection == null)
+            {
+                return;
+            }
+
             ClothSkinningCoefficient[] coefficients = cloth.coefficients;
 
             float maxDistance = 0;
@@ -1612,8 +1632,14 @@ namespace UnityEditor
                     break;
             }
 
-            if (!IsConstrained())
+            if (m_SkinnedMeshRenderer.sharedMesh == null)
+            {
+                EditorGUILayout.HelpBox("No mesh has been selected to use with cloth, please select a mesh for the skinned mesh renderer.", MessageType.Info);
+            }
+            else if (!IsConstrained())
+            {
                 EditorGUILayout.HelpBox("No constraints have been set up, so the cloth will move freely. Set up vertex constraints here to restrict it.", MessageType.Info);
+            }
 
             GUILayout.EndVertical();
         }
@@ -1633,6 +1659,11 @@ namespace UnityEditor
 
         void ResetParticleSelection()
         {
+            if (m_ParticleRectSelection == null)
+            {
+                return;
+            }
+
             int lengthSelection = m_ParticleRectSelection.Length;
             for (int i = 0; i < lengthSelection; i++)
             {
@@ -1710,6 +1741,11 @@ namespace UnityEditor
                 }
 
                 cloth.SetSelfAndInterCollisionIndices(selfAndInterCollisionIndices);
+            }
+
+            if (m_SkinnedMeshRenderer.sharedMesh == null)
+            {
+                EditorGUILayout.HelpBox("No mesh has been selected to use with cloth, please select a mesh for the skinned mesh renderer.", MessageType.Info);
             }
 
             GUILayout.EndVertical();

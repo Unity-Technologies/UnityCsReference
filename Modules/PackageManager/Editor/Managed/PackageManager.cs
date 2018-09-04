@@ -28,6 +28,27 @@ namespace UnityEditor.PackageManager
             return null;
         }
 
+        private static string GetPathForPackageAssemblyName(string assemblyPath)
+        {
+            if (assemblyPath == null)
+                throw new ArgumentNullException("assemblyName");
+
+            if (assemblyPath == string.Empty)
+                throw new ArgumentException("Assembly path cannot be empty.", "assemblyPath");
+
+            var assemblyName = FileUtil.UnityGetFileNameWithoutExtension(assemblyPath);
+
+            var assets = AssetDatabase.FindAssets("a:packages " + assemblyName);
+            foreach (var guid in assets)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                    return path;
+            }
+
+            return null;
+        }
+
         private static string GetRelativePathForAssemblyFilePath(string fullPath)
         {
             if (fullPath == null)
@@ -42,6 +63,11 @@ namespace UnityEditor.PackageManager
                 var asmdefPath = CompilationPipeline.GetAssemblyDefinitionFilePathFromAssemblyName(fullPath);
                 if (asmdefPath != null)
                     relativePath = asmdefPath;
+
+                // See if this is a prebuilt package assembly - use it if so
+                var packagePath = GetPathForPackageAssemblyName(relativePath);
+                if (packagePath != null)
+                    relativePath = packagePath;
 
                 // If we don't have a valid path, or it's inside the Assets folder, it's not part of a package
                 if (string.IsNullOrEmpty(relativePath) || relativePath.StartsWith("Assets/", StringComparison.OrdinalIgnoreCase))

@@ -12,7 +12,7 @@ internal abstract class DesktopStandaloneBuildWindowExtension : DefaultBuildWind
 {
     private GUIContent m_StandaloneTarget = EditorGUIUtility.TrTextContent("Target Platform", "Destination platform for standalone build");
     private GUIContent m_Architecture = EditorGUIUtility.TrTextContent("Architecture", "Build m_Architecture for standalone");
-    private GUIContent m_HeadlessMode = EditorGUIUtility.TrTextContent("Server Build");
+    private GUIContent m_HeadlessMode = EditorGUIUtility.TrTextContent("Server Build", "Headless player build tailored for server environments");
     private BuildTarget[] m_StandaloneSubtargets;
     private GUIContent[] m_StandaloneSubtargetStrings;
 

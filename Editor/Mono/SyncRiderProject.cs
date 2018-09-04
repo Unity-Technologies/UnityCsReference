@@ -43,13 +43,36 @@ namespace UnityEditor
             var home = Environment.GetEnvironmentVariable("HOME");
             if (string.IsNullOrEmpty(home))
                 return new RiderInfo[0];
-            var pathToBuildTxt = "../../build.txt";
+            const string pathToBuildTxt = "../../build.txt";
             //$Home/.local/share/JetBrains/Toolbox/apps/Rider/ch-0/173.3994.1125/bin/rider.sh
             //$Home/.local/share/JetBrains/Toolbox/apps/Rider/ch-0/.channel.settings.json
             var toolboxRiderRootPath = Path.Combine(home, @".local/share/JetBrains/Toolbox/apps/Rider");
             var paths = CollectPathsFromToolbox(toolboxRiderRootPath, "bin", "rider.sh", false)
-                .Select(a => new RiderInfo(GetBuildNumber(Path.Combine(a, pathToBuildTxt)), a, true)).ToArray();
-            return paths;
+                .Select(a => new RiderInfo(GetBuildNumber(Path.Combine(a, pathToBuildTxt)), a, true)).ToList();
+
+
+            // $Home/.local/share/applications/jetbrains-rider.desktop
+            var shortcut = new FileInfo(Path.Combine(home, @".local/share/applications/jetbrains-rider.desktop"));
+
+            if (shortcut.Exists)
+            {
+                var lines = File.ReadAllLines(shortcut.FullName);
+                foreach (var line in lines)
+                {
+                    if (line.StartsWith("Exec=\""))
+                    {
+                        var path = line.Split('"').Where((item, index) => index == 1).SingleOrDefault();
+                        if (!string.IsNullOrEmpty(path))
+                        {
+                            var buildTxtPath = Path.Combine(path, pathToBuildTxt);
+                            var buildNumber = GetBuildNumber(buildTxtPath);
+                            paths.Add(new RiderInfo(buildNumber, path, false));
+                        }
+                    }
+                }
+            }
+
+            return paths.ToArray();
         }
 
         static RiderInfo[] CollectRiderInfosMac()
@@ -157,8 +180,11 @@ namespace UnityEditor
             return new RiderInfo[0];
         }
 
-        static string[] CollectPathsFromToolbox(string toolboxRiderRootPath, string dirName,
-            string searchPattern, bool isMac)
+        static string[] CollectPathsFromToolbox(
+            string toolboxRiderRootPath,
+            string dirName,
+            string searchPattern,
+            bool isMac)
         {
             if (!Directory.Exists(toolboxRiderRootPath))
                 return new string[0];

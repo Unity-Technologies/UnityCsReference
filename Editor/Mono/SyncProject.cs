@@ -117,11 +117,6 @@ namespace UnityEditor
                 get { return UnityEditorInternal.InternalEditorUtility.GetEngineAssemblyPath(); }
             }
 
-            public override string[] Defines
-            {
-                get { return EditorUserBuildSettings.activeScriptCompilationDefines; }
-            }
-
             protected override string FrameworksPath()
             {
                 return EditorApplication.applicationContentsPath;
