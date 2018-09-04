@@ -200,7 +200,7 @@ namespace UnityEngine
                 }
             }
             while (found);
-            string subStr = key.Substring(startIdx, key.Length - startIdx).ToLower();
+            string subStr = key.Substring(startIdx, key.Length - startIdx).ToLowerInvariant();
             switch (subStr)
             {
                 case "[0]":         evt.character = '0'; evt.keyCode = KeyCode.Keypad0; break;

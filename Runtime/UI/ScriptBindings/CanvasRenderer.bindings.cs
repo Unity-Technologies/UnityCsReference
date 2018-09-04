@@ -51,6 +51,8 @@ namespace UnityEngine
             SetColor(color);
         }
 
+        public extern float GetInheritedAlpha();
+
         public void SetMaterial(Material material, Texture texture)
         {
             materialCount = Math.Max(1, materialCount);

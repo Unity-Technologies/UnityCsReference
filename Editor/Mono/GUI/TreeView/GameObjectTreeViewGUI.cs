@@ -4,6 +4,7 @@
 
 using System.Linq;
 using System.Collections.Generic;
+using UnityEditor.Experimental;
 using UnityEditor.Experimental.SceneManagement;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
@@ -37,9 +38,7 @@ namespace UnityEditor
             public static GUIStyle rightArrow = "ArrowNavigationRight";
             public static GUIStyle hoveredItemBackgroundStyle = "WhiteBackground";
             public static Color hoveredBackgroundColor =
-                EditorGUIUtility.isProSkin
-                ? new Color(48.0f / 255.0f, 48.0f / 255.0f, 48.0f / 255.0f)
-                : new Color(170.0f / 255.0f, 170.0f / 255.0f, 170.0f / 255.0f);
+                EditorResources.GetStyle("game-object-tree-view").GetColor("-unity-object-tree-hovered-color");
 
             public static Texture2D sceneAssetIcon = EditorGUIUtility.FindTexture(typeof(SceneAsset));
             public static Texture2D prefabIcon = EditorGUIUtility.FindTexture("Prefab Icon");

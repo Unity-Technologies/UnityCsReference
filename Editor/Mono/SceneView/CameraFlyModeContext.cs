@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace UnityEditor
 {
-    [ReserveModifiers(ShortcutModifiers.Shift)]
+    [PriorityContext, ReserveModifiers(ShortcutModifiers.Shift)]
     class CameraFlyModeContext : IShortcutToolContext
     {
         public struct InputSamplingScope : IDisposable
@@ -37,12 +37,12 @@ namespace UnityEditor
 
                 if (m_Context.active)
                 {
-                    ShortcutIntegration.instance.contextManager.RegisterPriorityContext(context);
+                    ShortcutIntegration.instance.contextManager.RegisterToolContext(context);
                     ForceArrowKeysUp(orthographic);
                 }
                 else
                 {
-                    ShortcutIntegration.instance.contextManager.DeregisterPriorityContext(context);
+                    ShortcutIntegration.instance.contextManager.DeregisterToolContext(context);
                     m_ArrowKeysActive = DoArrowKeys(controlID, orthographic);
                 }
 

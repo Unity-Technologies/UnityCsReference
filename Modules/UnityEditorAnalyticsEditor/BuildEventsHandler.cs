@@ -42,7 +42,7 @@ namespace UnityEditor
         private static bool s_EventSent = false;
         private static int s_NumOfSceneViews = 0;
         private static int s_NumOf2dSceneViews = 0;
-        private const string s_GradlePath = "Temp/gradleOut/build/intermediates/manifests/full";
+        private const string s_GradlePath = "Temp/gradleOut/build/intermediates/merged_manifests";
         private const string s_StagingArea = "Temp/StagingArea";
         private const string s_AndroidManifest = "AndroidManifest.xml";
 
@@ -57,6 +57,13 @@ namespace UnityEditor
             }
         }
 
+        private string SanitizePackageId(UnityEditor.PackageManager.PackageInfo packageInfo)
+        {
+            if (packageInfo.source == UnityEditor.PackageManager.PackageSource.Registry)
+                return packageInfo.packageId;
+            return packageInfo.name + "@" + Enum.GetName(typeof(UnityEditor.PackageManager.PackageSource), packageInfo.source).ToLower();
+        }
+
         private void ReportBuildPackageIds(BuildFile[] buildFiles)
         {
             List<string> managedLibraries = new List<string>();
@@ -67,7 +74,7 @@ namespace UnityEditor
             }
 
             var matchingPackages = Packages.GetForAssemblyFilePaths(managedLibraries);
-            var packageIds = matchingPackages.Select(item => item.packageId).ToArray();
+            var packageIds = matchingPackages.Select(item => SanitizePackageId(item)).ToArray();
             if (packageIds.Length > 0)
                 EditorAnalytics.SendEventBuildPackageList(new BuildPackageIds() { package_ids = packageIds });
         }
@@ -102,8 +109,8 @@ namespace UnityEditor
             if (EditorUserBuildSettings.androidBuildSystem == AndroidBuildSystem.Gradle)
             {
                 manifestFilePath = (EditorUserBuildSettings.androidBuildType == AndroidBuildType.Release)
-                    ? Paths.Combine(s_GradlePath, "release", s_AndroidManifest)
-                    : Paths.Combine(s_GradlePath, "debug", s_AndroidManifest);
+                    ? Paths.Combine(s_GradlePath, "release/processReleaseManifest/merged", s_AndroidManifest)
+                    : Paths.Combine(s_GradlePath, "debug/processDebugManifest/merged", s_AndroidManifest);
             }
 
             XmlDocument manifestFile = new XmlDocument();

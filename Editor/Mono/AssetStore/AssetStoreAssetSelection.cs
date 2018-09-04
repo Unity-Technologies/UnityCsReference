@@ -116,6 +116,7 @@ namespace UnityEditor
                             else
                             {
                                 searchResult.previewBundle = cr.assetBundle;
+#pragma warning disable 618
                                 if (cr.assetBundle == null ||  cr.assetBundle.mainAsset == null)
                                 {
                                     // Failed downloading live preview. Fallback to static
@@ -124,6 +125,7 @@ namespace UnityEditor
                                 }
                                 else
                                     searchResult.previewAsset = searchResult.previewBundle.mainAsset;
+#pragma warning restore 618
                             }
                         };
 

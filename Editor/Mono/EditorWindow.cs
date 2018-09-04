@@ -40,7 +40,7 @@ namespace UnityEditor
 
         [SerializeField]
         [HideInInspector]
-        internal Rect m_Pos = new Rect(0, 0, 320, 240);
+        internal Rect m_Pos = new Rect(0, 0, 320, 550);
 
         private readonly Dictionary<Type, VisualElement> m_RootElementPerEditorMode = new Dictionary<Type, VisualElement>();
 

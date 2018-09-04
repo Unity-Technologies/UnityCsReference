@@ -8,6 +8,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Experimental.Rendering;
 using System;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace UnityEditor
 {
@@ -514,9 +515,20 @@ namespace UnityEditor
 
         private bool m_CommandBuffersShown = true;
 
-        // Should match same colors in GizmoDrawers.cpp!
-        internal static Color kGizmoLight = new Color(254 / 255f, 253 / 255f, 136 / 255f, 128 / 255f);
-        internal static Color kGizmoDisabledLight = new Color(135 / 255f, 116 / 255f, 50 / 255f, 128 / 255f);
+        protected static readonly Color kGizmoLight = new Color(254 / 255f, 253 / 255f, 136 / 255f, 128 / 255f);
+        protected static readonly Color kGizmoDisabledLight = new Color(135 / 255f, 116 / 255f, 50 / 255f, 128 / 255f);
+
+        static readonly Vector3[] directionalLightHandlesRayPositions = new Vector3[]
+        {
+            new Vector3(1, 0, 0),
+            new Vector3(-1, 0, 0),
+            new Vector3(0, 1, 0),
+            new Vector3(0, -1, 0),
+            new Vector3(1, 1, 0).normalized,
+            new Vector3(1, -1, 0).normalized,
+            new Vector3(-1, 1, 0).normalized,
+            new Vector3(-1, -1, 0).normalized
+        };
 
         private void SetOptions(AnimBool animBool, bool initialize, bool targetValue)
         {
@@ -745,23 +757,43 @@ namespace UnityEditor
             float thisRange = t.range;
             switch (t.type)
             {
+                case LightType.Directional:
+                    Vector3 lightPos = t.transform.position;
+                    float lightSize;
+                    using (new Handles.DrawingScope(Matrix4x4.identity))    //be sure no matrix affect the size computation
+                    {
+                        lightSize = HandleUtility.GetHandleSize(lightPos);
+                    }
+                    float radius = lightSize * 0.2f;
+                    using (new Handles.DrawingScope(Matrix4x4.TRS(lightPos, t.transform.rotation, Vector3.one)))
+                    {
+                        Handles.DrawWireDisc(Vector3.zero, Vector3.forward, radius);
+                        foreach (Vector3 normalizedPos in directionalLightHandlesRayPositions)
+                        {
+                            Vector3 pos = normalizedPos * radius;
+                            Handles.DrawLine(pos, pos + new Vector3(0, 0, lightSize));
+                        }
+                    }
+                    break;
                 case LightType.Point:
-                    thisRange = Handles.RadiusHandle(Quaternion.identity, t.transform.position, thisRange, true);
-
+                    thisRange = Handles.RadiusHandle(Quaternion.identity, t.transform.position, thisRange);
                     if (GUI.changed)
                     {
                         Undo.RecordObject(t, "Adjust Point Light");
                         t.range = thisRange;
                     }
-
                     break;
-
                 case LightType.Spot:
-                    // Give handles twice the alpha of the lines
-                    Color col = Handles.color;
-                    col.a = Mathf.Clamp01(temp.a * 2);
-                    Handles.color = col;
-
+                    Transform tr = t.transform;
+                    Vector3 circleCenter = tr.position;
+                    Vector3 arrivalCenter = circleCenter + tr.forward * t.range;
+                    float lightDisc = t.range * Mathf.Tan(Mathf.Deg2Rad * t.spotAngle / 2.0f);
+                    Handles.DrawLine(circleCenter, arrivalCenter + tr.up * lightDisc);
+                    Handles.DrawLine(circleCenter, arrivalCenter - tr.up * lightDisc);
+                    Handles.DrawLine(circleCenter, arrivalCenter + tr.right * lightDisc);
+                    Handles.DrawLine(circleCenter, arrivalCenter - tr.right * lightDisc);
+                    Handles.DrawWireDisc(arrivalCenter, tr.forward, lightDisc);
+                    Handles.color = GetLightHandleColor(Handles.color);
                     Vector2 angleAndRange = new Vector2(t.spotAngle, t.range);
                     angleAndRange = Handles.ConeHandle(t.transform.rotation, t.transform.position, angleAndRange, 1.0f, 1.0f, true);
                     if (GUI.changed)
@@ -773,20 +805,26 @@ namespace UnityEditor
                     break;
                 case LightType.Rectangle:
                     EditorGUI.BeginChangeCheck();
-                    Vector2 size = Handles.DoRectHandles(t.transform.rotation, t.transform.position, t.areaSize);
+                    Vector2 size = Handles.DoRectHandles(t.transform.rotation, t.transform.position, t.areaSize, false);
                     if (EditorGUI.EndChangeCheck())
                     {
                         Undo.RecordObject(t, "Adjust Rect Light");
                         t.areaSize = size;
                     }
+                    // Draw the area light's normal only if it will not overlap with the current tool
+                    if (!((Tools.current == Tool.Move || Tools.current == Tool.Scale) && Tools.pivotRotation == PivotRotation.Local))
+                        Handles.DrawLine(t.transform.position, t.transform.position + t.transform.forward);
                     break;
                 case LightType.Disc:
                     m_BoundsHandle.radius = t.areaSize.x;
                     m_BoundsHandle.axes = IMGUI.Controls.PrimitiveBoundsHandle.Axes.X | IMGUI.Controls.PrimitiveBoundsHandle.Axes.Y;
-                    EditorGUI.BeginChangeCheck();
+                    m_BoundsHandle.center = Vector3.zero;
+                    m_BoundsHandle.wireframeColor = Handles.color;
+                    m_BoundsHandle.handleColor = GetLightHandleColor(Handles.color);
                     Matrix4x4 mat = new Matrix4x4();
                     mat.SetTRS(t.transform.position, t.transform.rotation, new Vector3(1, 1, 1));
-                    using (new Handles.DrawingScope(mat))
+                    EditorGUI.BeginChangeCheck();
+                    using (new Handles.DrawingScope(Color.white, mat))
                         m_BoundsHandle.DrawHandle();
                     if (EditorGUI.EndChangeCheck())
                     {
@@ -796,6 +834,13 @@ namespace UnityEditor
                     break;
             }
             Handles.color = temp;
+        }
+
+        private Color GetLightHandleColor(Color wireframeColor)
+        {
+            Color color = wireframeColor;
+            color.a = Mathf.Clamp01(color.a * 2);
+            return Handles.ToActiveColorSpace(color);
         }
     }
 }

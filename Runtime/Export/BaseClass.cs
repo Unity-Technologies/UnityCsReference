@@ -103,6 +103,7 @@ namespace UnityEngine
         [System.Obsolete("TizenPlayer export is no longer supported in Unity 2017.3+.")]
         TizenPlayer = 23,
         // In the player on PS Vita
+        [System.Obsolete("PSP2 is no longer supported as of Unity 2018.3")]
         PSP2 = 24,
         // In the player on PS4
         PS4 = 25,

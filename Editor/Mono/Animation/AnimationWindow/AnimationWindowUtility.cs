@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 using System.Linq;
 using System.IO;
 using System.Collections.Generic;
@@ -588,7 +589,7 @@ namespace UnityEditorInternal
                             if (isObject)
                                 objectReference = singleProperty.objectReferenceValue;
                             else if (isFloat)
-                                value = singleProperty.floatValue.ToString();
+                                value = singleProperty.floatValue.ToString(CultureInfo.InvariantCulture);
                             else if (isInt)
                                 value = singleProperty.intValue.ToString();
                             else if (isEnum)
@@ -614,7 +615,7 @@ namespace UnityEditorInternal
                         if (isObject)
                             objectReference = propertyIter.objectReferenceValue;
                         else if (isFloat)
-                            value = propertyIter.floatValue.ToString();
+                            value = propertyIter.floatValue.ToString(CultureInfo.InvariantCulture);
                         else if (isInt)
                             value = propertyIter.intValue.ToString();
                         else // if (isBool)

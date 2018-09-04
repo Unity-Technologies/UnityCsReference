@@ -194,6 +194,8 @@ namespace UnityEditor
                         }
                         if (previewRenderMode != Styles.RenderMode.Standard)
                             break;
+
+                        UnityEngine.Object.DestroyImmediate(image);
                     }
                 }
             }

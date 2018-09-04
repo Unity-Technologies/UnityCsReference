@@ -41,6 +41,12 @@ namespace UnityEditor
 
             public GUIStyle staticDropdown = "StaticDropdown";
             public GUIStyle layerPopup = new GUIStyle(EditorStyles.popup);
+            public GUIStyle overridesDropdown = new GUIStyle("MiniPullDown");
+            public GUIStyle prefabButtonsHorizontalLayout = new GUIStyle
+            {
+                margin = new RectOffset { top = 1 },
+                padding = new RectOffset { bottom = 1 }
+            };
 
             public GUIStyle instanceManagementInfo = new GUIStyle(EditorStyles.helpBox);
             public GUIStyle inspectorBig = new GUIStyle(EditorStyles.inspectorBig);
@@ -83,9 +89,7 @@ namespace UnityEditor
 
                 // Seems to be a bug in the way controls with margin internal to layout groups with padding calculate position. We'll work around it here.
                 layerPopup.margin.right = 0;
-
-                // match modification in Editor.Styles
-                inspectorBig.padding.bottom -= 1;
+                overridesDropdown.margin.right = 0;
             }
         }
         static Styles s_Styles;
@@ -274,6 +278,8 @@ namespace UnityEditor
 
                 EditorGUILayout.EndHorizontal();
 
+                GUILayout.Space(EditorGUIUtility.standardVerticalSpacing);
+
                 EditorGUILayout.BeginHorizontal();
 
                 // Tag
@@ -288,9 +294,6 @@ namespace UnityEditor
             }
 
             EditorGUILayout.EndHorizontal();
-
-            // Seems to be a bug in margin not being applied consistently as tag/layer line, account for it here
-            GUILayout.Space(2f);
 
             // Prefab Toolbar
             if (EditorGUIUtility.comparisonViewMode == EditorGUIUtility.ComparisonViewMode.None)
@@ -311,7 +314,7 @@ namespace UnityEditor
 
             using (new EditorGUI.DisabledScope(EditorApplication.isPlayingOrWillChangePlaymode && PrefabStageUtility.GetPrefabStage(go) == null))
             {
-                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.BeginHorizontal(s_Styles.prefabButtonsHorizontalLayout);
 
                 // Prefab information
                 PrefabAssetType prefabType = PrefabUtility.GetPrefabAssetType(go);
@@ -393,7 +396,7 @@ namespace UnityEditor
                         GUILayoutUtility.GetRect(6, 6, GUILayout.ExpandWidth(false));
 
                         // Reserve space regardless of whether the button is there or not to avoid jumps in button sizes.
-                        Rect rect = GUILayoutUtility.GetRect(s_Styles.overridesContent, "MiniPullDown");
+                        Rect rect = GUILayoutUtility.GetRect(s_Styles.overridesContent, s_Styles.overridesDropdown);
                         if (m_IsPrefabInstanceOutermostRoot)
                         {
                             if (EditorGUI.DropdownButton(rect, s_Styles.overridesContent, FocusType.Passive))

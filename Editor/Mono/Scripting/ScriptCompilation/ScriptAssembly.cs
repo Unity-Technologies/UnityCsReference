@@ -14,10 +14,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public BuildTarget BuildTarget { get; set; }
         public BuildTargetGroup BuildTargetGroup { get; set; }
         public string OutputDirectory { get; set; }
-        public string[] Defines { get; set; }
         public ApiCompatibilityLevel ApiCompatibilityLevel { get; set; }
         public EditorScriptCompilationOptions CompilationOptions { get; set; }
         public ScriptCompilerOptions PredefinedAssembliesCompilerOptions { get; set; }
+
+        public string[] ExtraGeneralDefines { get; set; }
 
         public OptionalUnityReferences OptionalUnityReferences { get; set; }
 
@@ -26,6 +27,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             BuildTarget = BuildTarget.NoTarget;
             BuildTargetGroup = BuildTargetGroup.Unknown;
             PredefinedAssembliesCompilerOptions = new ScriptCompilerOptions();
+            ExtraGeneralDefines = new string[0];
         }
 
         public bool BuildingForEditor

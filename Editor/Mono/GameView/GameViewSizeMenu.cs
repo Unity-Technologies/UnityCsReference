@@ -26,20 +26,12 @@ namespace UnityEditor
         public override Vector2 GetWindowSize()
         {
             var size = CalcSize();
-            if (!m_GameView.showLowResolutionToggle)
-                return size;
             size.y += frameHeight + EditorGUI.kControlVerticalSpacing;
             return size;
         }
 
         public override void OnGUI(Rect rect)
         {
-            if (!m_GameView.showLowResolutionToggle)
-            {
-                base.OnGUI(rect);
-                return;
-            }
-
             var frameRect = new Rect(rect.x, rect.y, rect.width, frameHeight);
             GUI.Label(frameRect, "", EditorStyles.inspectorBig);
 
