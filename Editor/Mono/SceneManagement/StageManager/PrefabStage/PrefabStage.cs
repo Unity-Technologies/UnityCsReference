@@ -61,7 +61,7 @@ namespace UnityEditor.Experimental.SceneManagement
             get
             {
                 if (m_PrefabContentsRoot == null)
-                    throw new InvalidOperationException("Requesting 'prefabContentsRoot' from Awake and OnEnable are not supported"); // The preview scene is not fully loaded when we call Awake and OnEnable on user scripts
+                    throw new InvalidOperationException("Requesting 'prefabContentsRoot' from Awake and OnEnable are not supported"); // The prefab stage's m_PrefabContentsRoot is not yet set when we call Awake and OnEnable on user scripts when loading a prefab
                 return m_PrefabContentsRoot;
             }
         }
@@ -261,7 +261,7 @@ namespace UnityEditor.Experimental.SceneManagement
 
         bool readyToAutoSave
         {
-            get { return m_PrefabContentsRoot != null && HasSceneBeenModified() && GUIUtility.hotControl == 0 && !isTextFieldCaretShowing; }
+            get { return m_PrefabContentsRoot != null && HasSceneBeenModified() && GUIUtility.hotControl == 0 && !isTextFieldCaretShowing && !EditorApplication.isCompiling; }
         }
 
         void HandleAutoSave()
@@ -313,11 +313,15 @@ namespace UnityEditor.Experimental.SceneManagement
             if (prefabSaving != null)
                 prefabSaving(m_PrefabContentsRoot);
 
-            ClearDirtiness();
-            PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, m_PrefabAssetPath);
+            var prefabAssetRoot = PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, m_PrefabAssetPath);
 
-            if (prefabSaved != null)
-                prefabSaved(m_PrefabContentsRoot);
+            if (prefabAssetRoot != null)
+            {
+                ClearDirtiness();
+
+                if (prefabSaved != null)
+                    prefabSaved(m_PrefabContentsRoot);
+            }
 
             if (SceneHierarchy.s_DebugPrefabStage)
                 Debug.Log("SAVE PREFAB ended");
@@ -393,32 +397,26 @@ namespace UnityEditor.Experimental.SceneManagement
         // Returns true if prefab was saved.
         internal bool SavePrefabWithVersionControlDialogAndRenameDialog()
         {
-            Assert.IsTrue(m_PrefabContentsRoot != null, "We should have a valid m_PrefabContentsRoot when saving to prefab asset");
-            bool editablePrefab = !AnimationMode.InAnimationMode();
-
-            //bool editablePrefab = UnityEditor.VersionControl.Provider.PromptAndCheckoutIfNeeded(
-            //        new string[] {context.assetPath},
-            //        "The version control requires you to check out the prefab before applying changes.");
-
-            if (editablePrefab)
+            if (m_PrefabContentsRoot == null)
             {
-                if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(m_PrefabAssetPath, PrefabUtility.SaveVerb.Save))
-                {
-                    // If user doesn't want to check out prefab asset, or it cannot be,
-                    // it doesn't make sense to keep auto save on.
-                    m_TemporarilyDisableAutoSave = true;
-                    return false;
-                }
-
-                bool showCancelButton = !autoSave;
-                if (!CheckRenamedPrefabRootWhenSaving(showCancelButton))
-                    return false;
-
-                SavePrefab();
-                return true;
+                Debug.LogError("We should have a valid m_PrefabContentsRoot when saving to prefab asset");
+                return false;
             }
 
-            return false;
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(m_PrefabAssetPath, PrefabUtility.SaveVerb.Save))
+            {
+                // If user doesn't want to check out prefab asset, or it cannot be,
+                // it doesn't make sense to keep auto save on.
+                m_TemporarilyDisableAutoSave = true;
+                return false;
+            }
+
+            bool showCancelButton = !autoSave;
+            if (!CheckRenamedPrefabRootWhenSaving(showCancelButton))
+                return false;
+
+            SavePrefab();
+            return true;
         }
 
         // Returns true if we should continue saving

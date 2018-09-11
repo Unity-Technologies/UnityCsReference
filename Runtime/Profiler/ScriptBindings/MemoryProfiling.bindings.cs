@@ -61,6 +61,7 @@ namespace UnityEngine.Profiling.Memory.Experimental
             TakeSnapshot(path, finishCallback, captureFlags);
         }
 
+        [RequiredByNativeCode]
         static byte[] PrepareMetadata()
         {
             if (createMetaData == null)
@@ -70,6 +71,9 @@ namespace UnityEngine.Profiling.Memory.Experimental
 
             MetaData data = new MetaData();
             createMetaData(data);
+
+            if (data.content == null) data.content = "";
+            if (data.platform == null) data.platform = "";
 
             int contentLength = sizeof(char) * data.content.Length;
             int platformLength = sizeof(char) * data.platform.Length;
@@ -164,6 +168,7 @@ namespace UnityEngine.Profiling.Memory.Experimental
             return offset;
         }
 
+        [RequiredByNativeCode]
         static void FinalizeSnapshot(string path, bool result)
         {
             if (snapshotFinished != null)

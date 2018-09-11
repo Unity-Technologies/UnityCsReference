@@ -122,8 +122,8 @@ namespace UnityEditor.IMGUI.Controls
 
             // handles
             int prevHotControl = GUIUtility.hotControl;
-            Vector3 cameraLocalPos = Handles.inverseMatrix.MultiplyPoint(Camera.current.transform.position);
-            bool isCameraInsideBox = m_Bounds.Contains(cameraLocalPos);
+            bool isCameraInsideBox = Camera.current != null
+                && m_Bounds.Contains(Handles.inverseMatrix.MultiplyPoint(Camera.current.transform.position));
             EditorGUI.BeginChangeCheck();
             using (new Handles.DrawingScope(Handles.color * handleColor))
                 MidpointHandles(ref minPos, ref maxPos, isCameraInsideBox);

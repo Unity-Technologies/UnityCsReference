@@ -19,6 +19,7 @@ namespace UnityEngine.Networking
     [NativeHeader("Runtime/Networking/UNetTypes.h")]
     [NativeHeader("Runtime/Networking/UNETConfiguration.h")]
     [NativeConditional("ENABLE_NETWORK && ENABLE_UNET", true)]
+    [Obsolete("The UNET transport will be removed in the future as soon a replacement is ready.")]
     public sealed partial class NetworkTransport
     {
         private NetworkTransport() {}

@@ -59,14 +59,24 @@ namespace UnityEditor
 
         internal static bool IsPopup(ShowMode mode)
         {
-            return (ShowMode.PopupMenu == mode || ShowMode.PopupMenuWithKeyboardFocus == mode);
+            return (ShowMode.PopupMenu == mode);
         }
 
         internal bool isPopup { get { return IsPopup((ShowMode)m_ShowMode); } }
 
         internal void ShowPopup()
         {
-            m_ShowMode = (int)ShowMode.PopupMenu;
+            ShowPopupWithMode(ShowMode.PopupMenu);
+        }
+
+        internal void ShowTooltip()
+        {
+            ShowPopupWithMode(ShowMode.Tooltip);
+        }
+
+        internal void ShowPopupWithMode(ShowMode mode)
+        {
+            m_ShowMode = (int)mode;
             Internal_Show(m_PixelRect, m_ShowMode, m_MinSize, m_MaxSize);
             if (m_RootView)
                 m_RootView.SetWindowRecurse(this);

@@ -53,11 +53,13 @@ namespace UnityEditor
         private MarqueeType m_MarqueeType = MarqueeType.None;
         private bool m_IsExecuting;
         private EditMode.SceneViewEditMode m_ModeBeforePicking;
+        private int m_ZPosition;
 
         public Vector2Int mouseGridPosition { get { return m_MouseGridPosition; } }
         public bool isPicking { get { return m_MarqueeType == MarqueeType.Pick; } }
         public bool isBoxing { get { return m_MarqueeType == MarqueeType.Box; } }
         public Grid.CellLayout cellLayout { get { return CellLayout(); } }
+        public int zPosition { get { return m_ZPosition; } set { m_ZPosition = value; } }
 
         protected bool executing { get { return m_IsExecuting; } set { m_IsExecuting = value && isHotControl; } }
 
@@ -118,10 +120,15 @@ namespace UnityEditor
                         newGridPosition.y = m_MouseGridPosition.y + Math.Sign(delta.y) * k_MaxMouseCellDelta;
                     m_PreviousMouseGridPosition = m_MouseGridPosition;
                     m_MouseGridPosition = newGridPosition;
-                    m_MouseGridPositionChanged = true;
-                    m_PositionChangeRepaintDone = false;
+                    MouseGridPositionChanged();
                 }
             }
+        }
+
+        private void MouseGridPositionChanged()
+        {
+            m_MouseGridPositionChanged = true;
+            m_PositionChangeRepaintDone = false;
         }
 
         private void HandleEditModeChange()
@@ -178,7 +185,7 @@ namespace UnityEditor
             if (evt.type == EventType.MouseDrag && isHotControl && m_MarqueeStart.HasValue && m_MarqueeType == MarqueeType.Pick && IsPickingEvent(evt))
             {
                 RectInt rect = GridEditorUtility.GetMarqueeRect(m_MarqueeStart.Value, mouseGridPosition);
-                OnBrushPickDragged(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, 0), new Vector3Int(rect.size.x, rect.size.y, 1)));
+                OnBrushPickDragged(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, zPosition), new Vector3Int(rect.size.x, rect.size.y, 1)));
                 Event.current.Use();
                 GUI.changed = true;
             }
@@ -189,7 +196,7 @@ namespace UnityEditor
                 {
                     RectInt rect = GridEditorUtility.GetMarqueeRect(m_MarqueeStart.Value, mouseGridPosition);
                     Vector2Int pivot = GetMarqueePivot(m_MarqueeStart.Value, mouseGridPosition);
-                    PickBrush(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, 0), new Vector3Int(rect.size.x, rect.size.y, 1)), new Vector3Int(pivot.x, pivot.y, 0));
+                    PickBrush(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, zPosition), new Vector3Int(rect.size.x, rect.size.y, 1)), new Vector3Int(pivot.x, pivot.y, 0));
 
                     if (inEditMode && EditMode.editMode != m_ModeBeforePicking)
                     {
@@ -245,7 +252,7 @@ namespace UnityEditor
                 if (evt.type == EventType.MouseUp && m_MarqueeType == MarqueeType.Select)
                 {
                     RectInt rect = GridEditorUtility.GetMarqueeRect(m_MarqueeStart.Value, mouseGridPosition);
-                    Select(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, 0), new Vector3Int(rect.size.x, rect.size.y, 1)));
+                    Select(new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, zPosition), new Vector3Int(rect.size.x, rect.size.y, 1)));
                     Event.current.Use();
                 }
                 if (evt.control)
@@ -288,7 +295,7 @@ namespace UnityEditor
                 {
                     executing = true;
                     BoundsInt previousRect = GridSelection.position;
-                    BoundsInt previousBounds = new BoundsInt(new Vector3Int(previousRect.xMin, previousRect.yMin, 0), new Vector3Int(previousRect.size.x, previousRect.size.y, 1));
+                    BoundsInt previousBounds = new BoundsInt(new Vector3Int(previousRect.xMin, previousRect.yMin, GridSelection.position.zMin), new Vector3Int(previousRect.size.x, previousRect.size.y, 1));
 
                     Vector2Int direction = mouseGridPosition - m_PreviousMove.Value;
                     BoundsInt pos = GridSelection.position;
@@ -326,13 +333,13 @@ namespace UnityEditor
                     {
                         if (EditMode.editMode != EditMode.SceneViewEditMode.GridEraser)
                             EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridEraser, GridPaintingState.instance);
-                        Erase(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, 0));
+                        Erase(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, zPosition));
                     }
                     else
                     {
                         if (EditMode.editMode != EditMode.SceneViewEditMode.GridPainting)
                             EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridPainting, GridPaintingState.instance);
-                        Paint(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, 0));
+                        Paint(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, zPosition));
                     }
 
                     Event.current.Use();
@@ -350,9 +357,9 @@ namespace UnityEditor
                         for (int i = 1; i < points.Count; i++)
                         {
                             if (IsErasingEvent(evt))
-                                Erase(new Vector3Int(points[i].x, points[i].y, 0));
+                                Erase(new Vector3Int(points[i].x, points[i].y, zPosition));
                             else
-                                Paint(new Vector3Int(points[i].x, points[i].y, 0));
+                                Paint(new Vector3Int(points[i].x, points[i].y, zPosition));
                         }
                         Event.current.Use();
                         GUI.changed = true;
@@ -405,7 +412,7 @@ namespace UnityEditor
                 {
                     executing = false;
                     RegisterUndo();
-                    FloodFill(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, 0));
+                    FloodFill(new Vector3Int(mouseGridPosition.x, mouseGridPosition.y, zPosition));
                     GUI.changed = true;
                     Event.current.Use();
                     GUIUtility.hotControl = 0;
@@ -442,9 +449,9 @@ namespace UnityEditor
                     RegisterUndo();
                     RectInt rect = GridEditorUtility.GetMarqueeRect(m_MarqueeStart.Value, mouseGridPosition);
                     if (evt.shift)
-                        BoxErase(new BoundsInt(rect.x, rect.y, 0, rect.size.x, rect.size.y, 1));
+                        BoxErase(new BoundsInt(rect.x, rect.y, zPosition, rect.size.x, rect.size.y, 1));
                     else
-                        BoxFill(new BoundsInt(rect.x, rect.y, 0, rect.size.x, rect.size.y, 1));
+                        BoxFill(new BoundsInt(rect.x, rect.y, zPosition, rect.size.x, rect.size.y, 1));
                     Event.current.Use();
                     executing = false;
                     GUI.changed = true;
@@ -462,6 +469,23 @@ namespace UnityEditor
                 Math.Max(end.y - start.y, 0)
             );
             return pivot;
+        }
+
+        public void ChangeZPosition(int change)
+        {
+            m_ZPosition += change;
+            MouseGridPositionChanged();
+            Repaint();
+        }
+
+        public void ResetZPosition()
+        {
+            if (m_ZPosition == 0)
+                return;
+
+            m_ZPosition = 0;
+            MouseGridPositionChanged();
+            Repaint();
         }
 
         public static bool InGridEditMode()

@@ -18,6 +18,7 @@ using Event = UnityEngine.Event;
 using UnityEditor.Build;
 using UnityEditor.StyleSheets;
 using UnityEngine.Internal;
+using UnityEngine.Rendering;
 using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 
 namespace UnityEditor
@@ -1050,6 +1051,7 @@ namespace UnityEditor
                             // Note, OS X send characters for the following keys that we need to eat:
                             // ASCII 25: "End Of Medium" on pressing shift tab
                             // ASCII 27: "Escape" on pressing ESC
+                            nonPrintableTab = true;
                         }
                         else if (editor.IsEditingControl(id))
                         {
@@ -4337,6 +4339,14 @@ namespace UnityEditor
                     break;
 
                 case EventType.ExecuteCommand:
+
+                    // Cancel EyeDropper if we change focus.
+                    if (showEyedropper && Event.current.commandName == EventCommandNames.NewKeyboardFocus)
+                    {
+                        EyeDropper.End();
+                        s_ColorPickID = 0;
+                    }
+
                     // when ColorPicker sends an event back to this control's GUIView, it someties retains keyboardControl
                     if (GUIUtility.keyboardControl == id || ColorPicker.originalKeyboardControl == id)
                     {
@@ -5639,11 +5649,11 @@ This warning only shows up in development builds.", helpTopic, pageName);
         // Draws the alpha channel of a texture within a rectangle.
         internal static void DrawTextureAlphaInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel)
         {
-            DrawPreviewTextureInternal(position, image, alphaMaterial, scaleMode, imageAspect, mipLevel);
+            DrawPreviewTextureInternal(position, image, alphaMaterial, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
         }
 
         // Draws texture transparently using the alpha channel.
-        internal static void DrawTextureTransparentInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel)
+        internal static void DrawTextureTransparentInternal(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
         {
             if (imageAspect == 0f && image == null)
             {
@@ -5656,7 +5666,7 @@ This warning only shows up in development builds.", helpTopic, pageName);
 
             DrawTransparencyCheckerTexture(position, scaleMode, imageAspect);
             if (image != null)
-                DrawPreviewTexture(position, image, transparentMaterial, scaleMode, imageAspect, mipLevel);
+                DrawPreviewTexture(position, image, transparentMaterial, scaleMode, imageAspect, mipLevel, colorWriteMask);
         }
 
         internal static void DrawTransparencyCheckerTexture(Rect position, ScaleMode scaleMode, float imageAspect)
@@ -5678,15 +5688,27 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         // Draws the texture within a rectangle.
-        internal static void DrawPreviewTextureInternal(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel)
+        internal static void DrawPreviewTextureInternal(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel, ColorWriteMask colorWriteMask)
         {
             if (Event.current.type == EventType.Repaint)
             {
                 if (imageAspect == 0)
                     imageAspect = image.width / (float)image.height;
 
+                Color colorMask = new Color(1, 1, 1, 1);
+
+                if ((colorWriteMask & ColorWriteMask.Red) == 0)
+                    colorMask.r = 0;
+                if ((colorWriteMask & ColorWriteMask.Green) == 0)
+                    colorMask.g = 0;
+                if ((colorWriteMask & ColorWriteMask.Blue) == 0)
+                    colorMask.b = 0;
+                if ((colorWriteMask & ColorWriteMask.Alpha) == 0)
+                    colorMask.a = 0;
+
                 if (mat == null)
                     mat = GetMaterialForSpecialTexture(image, colorMaterial);
+                mat.SetColor("_ColorMask", colorMask);
                 mat.SetFloat("_Mip", mipLevel);
 
                 RenderTexture rt = image as RenderTexture;
@@ -6343,9 +6365,9 @@ This warning only shows up in development builds.", helpTopic, pageName);
         }
 
         // Draws texture transparently using the alpha channel.
-        public static void DrawTextureTransparent(Rect position, Texture image, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode, [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel)
+        public static void DrawTextureTransparent(Rect position, Texture image, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode, [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask)
         {
-            DrawTextureTransparentInternal(position, image, scaleMode, imageAspect, mipLevel);
+            DrawTextureTransparentInternal(position, image, scaleMode, imageAspect, mipLevel, colorWriteMask);
         }
 
         [ExcludeFromDocs]
@@ -6360,16 +6382,35 @@ This warning only shows up in development builds.", helpTopic, pageName);
             DrawTextureTransparent(position, image, ScaleMode.StretchToFill, 0);
         }
 
+        [ExcludeFromDocs]
         public static void DrawTextureTransparent(Rect position, Texture image, ScaleMode scaleMode, float imageAspect)
         {
-            DrawTextureTransparentInternal(position, image, scaleMode, imageAspect, -1);
+            DrawTextureTransparent(position, image, scaleMode, imageAspect, -1);
+        }
+
+        [ExcludeFromDocs]
+        public static void DrawTextureTransparent(Rect position, Texture image, ScaleMode scaleMode, float imageAspect, float mipLevel)
+        {
+            DrawTextureTransparent(position, image, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
         }
 
         // Draws the texture within a rectangle.
         public static void DrawPreviewTexture(Rect position, Texture image, [DefaultValue("null")] Material mat, [DefaultValue("ScaleMode.StretchToFill")] ScaleMode scaleMode,
-            [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel)
+            [DefaultValue("0")] float imageAspect, [DefaultValue("-1")] float mipLevel, [DefaultValue("ColorWriteMask.All")] ColorWriteMask colorWriteMask)
         {
-            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel);
+            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, mipLevel, colorWriteMask);
+        }
+
+        [ExcludeFromDocs]
+        public static void DrawPreviewTexture(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect, float mipLevel)
+        {
+            DrawPreviewTexture(position, image, mat, scaleMode, imageAspect, mipLevel, ColorWriteMask.All);
+        }
+
+        [ExcludeFromDocs]
+        public static void DrawPreviewTexture(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect)
+        {
+            DrawPreviewTexture(position, image, mat, scaleMode, imageAspect, -1);
         }
 
         [ExcludeFromDocs]
@@ -6388,12 +6429,6 @@ This warning only shows up in development builds.", helpTopic, pageName);
         public static void DrawPreviewTexture(Rect position, Texture image)
         {
             DrawPreviewTexture(position, image, null, ScaleMode.StretchToFill, 0);
-        }
-
-        [ExcludeFromDocs]
-        public static void DrawPreviewTexture(Rect position, Texture image, Material mat, ScaleMode scaleMode, float imageAspect)
-        {
-            DrawPreviewTextureInternal(position, image, mat, scaleMode, imageAspect, -1);
         }
 
         [ExcludeFromDocs]

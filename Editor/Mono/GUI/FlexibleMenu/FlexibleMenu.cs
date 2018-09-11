@@ -243,7 +243,7 @@ namespace UnityEditor
                         SelectItem(newIndex);
                         EditorApplication.RequestRepaintAllViews(); // We want to repaint the flexible menu (currently in modifyItemUI)
                     });
-                PopupWindow.Show(plusRect, m_ModifyItemUI, null, ShowMode.PopupMenuWithKeyboardFocus);
+                PopupWindow.Show(plusRect, m_ModifyItemUI);
             }
         }
 
@@ -261,7 +261,7 @@ namespace UnityEditor
                     m_ItemProvider.Replace(index, obj);
                     EditorApplication.RequestRepaintAllViews(); // We want to repaint the flexible menu (currently in modifyItemUI)
                 });
-            PopupWindow.Show(itemRect, m_ModifyItemUI, null, ShowMode.PopupMenuWithKeyboardFocus);
+            PopupWindow.Show(itemRect, m_ModifyItemUI);
         }
 
         void DeleteItem(int index)

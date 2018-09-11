@@ -26,7 +26,7 @@ namespace UnityEditor
             // The constrained direction is facing towards the camera, THATS BAD when the handle is close to the camera
             // The srcPosition  goes through to the other side of the camera
             float invert = 1.0F;
-            Vector3 cameraForward = Camera.current.transform.forward;
+            Vector3 cameraForward = Camera.current == null ? Vector3.forward : Camera.current.transform.forward;
             if (Vector3.Dot(constraintDir, cameraForward) < 0.0F)
                 invert = -1.0F;
 
@@ -36,8 +36,13 @@ namespace UnityEditor
             Vector3 cd = constraintDir;
             cd.y = -cd.y;
             Camera cam = Camera.current;
-            Vector2 p1 = EditorGUIUtility.PixelsToPoints(cam.WorldToScreenPoint(srcPosition));
-            Vector2 p2 = EditorGUIUtility.PixelsToPoints(cam.WorldToScreenPoint(srcPosition + constraintDir * invert));
+            // if camera is null, then we are drawing in OnGUI, where y-coordinate goes top-to-bottom
+            Vector2 p1 = cam == null
+                ? Vector2.Scale(srcPosition, new Vector2(1f, -1f))
+                : EditorGUIUtility.PixelsToPoints(cam.WorldToScreenPoint(srcPosition));
+            Vector2 p2 = cam == null
+                ? Vector2.Scale(srcPosition + constraintDir * invert, new Vector2(1f, -1f))
+                : EditorGUIUtility.PixelsToPoints(cam.WorldToScreenPoint(srcPosition + constraintDir * invert));
             Vector2 p3 = dest;
             Vector2 p4 = src;
 

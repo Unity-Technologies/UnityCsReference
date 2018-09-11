@@ -20,13 +20,11 @@ namespace UnityEngine.XR
         bool m_SupportsImpulse;
         bool m_SupportsBuffer;
         uint m_BufferFrequencyHz;
-        uint m_BufferMaxSize;
 
         public uint numChannels             { get { return m_NumChannels; }         internal set { m_NumChannels = value; } }
         public bool supportsImpulse         { get { return m_SupportsImpulse; }     internal set { m_SupportsImpulse = value; } }
         public bool supportsBuffer          { get { return m_SupportsBuffer; }      internal set { m_SupportsBuffer = value; } }
         public uint bufferFrequencyHz       { get { return m_BufferFrequencyHz; }   internal set { m_BufferFrequencyHz = value; } }
-        public uint bufferMaxSize           { get { return m_BufferMaxSize; }       internal set { m_BufferMaxSize = value; } }
 
         public override bool Equals(object obj)
         {
@@ -41,8 +39,7 @@ namespace UnityEngine.XR
             return numChannels == other.numChannels &&
                 supportsImpulse == other.supportsImpulse &&
                 supportsBuffer == other.supportsBuffer &&
-                bufferFrequencyHz == other.bufferFrequencyHz &&
-                bufferMaxSize == other.bufferMaxSize;
+                bufferFrequencyHz == other.bufferFrequencyHz;
         }
 
         public override int GetHashCode()
@@ -50,68 +47,78 @@ namespace UnityEngine.XR
             return numChannels.GetHashCode() ^
                 (supportsImpulse.GetHashCode() << 1) ^
                 (supportsBuffer.GetHashCode() >> 1) ^
-                (bufferFrequencyHz.GetHashCode() << 2) ^
-                (bufferMaxSize.GetHashCode() >> 2);
+                (bufferFrequencyHz.GetHashCode() << 2);
+        }
+
+        public static bool operator==(HapticCapabilities a, HapticCapabilities b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(HapticCapabilities a, HapticCapabilities b)
+        {
+            return !(a == b);
         }
     }
 
+    [UsedByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
     [NativeConditional("ENABLE_VR")]
-    public struct HapticState : IEquatable<HapticState>
+    [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputTrackingFacade.h")]
+    public struct InputDevice : IEquatable<InputDevice>
     {
-        uint m_SamplesQueued;
-        uint m_SamplesAvailable;
+        private UInt64 m_DeviceId;
 
-        public uint samplesQueued { get { return m_SamplesQueued; } internal set { m_SamplesQueued = value; } }
-        public uint samplesAvailable { get { return m_SamplesAvailable; } internal set { m_SamplesAvailable = value; } }
+        internal InputDevice(UInt64 deviceId) { m_DeviceId = deviceId; }
+
+        public bool IsValid { get { return InputTracking.IsDeviceValid(m_DeviceId); } }
+
+        // Haptics
+        public bool SendHapticImpulse(uint channel, float amplitude, float duration = 1.0f)     { return InputTracking.SendHapticImpulse(m_DeviceId, channel, amplitude, duration); }
+        public bool SendHapticBuffer(uint channel, byte[] buffer)                               { return InputTracking.SendHapticBuffer(m_DeviceId, channel, buffer); }
+        public bool TryGetHapticCapabilities(out HapticCapabilities capabilities)               { return InputTracking.TryGetHapticCapabilities(m_DeviceId, out capabilities); }
+        public void StopHaptics()                                                               { InputTracking.StopHaptics(m_DeviceId); }
 
         public override bool Equals(object obj)
         {
-            if (!(obj is HapticState))
+            if (!(obj is InputDevice))
                 return false;
 
-            return Equals((HapticState)obj);
+            return Equals((InputDevice)obj);
         }
 
-        public bool Equals(HapticState other)
+        public bool Equals(InputDevice other)
         {
-            return samplesQueued == other.samplesQueued &&
-                samplesAvailable == other.samplesAvailable;
+            return m_DeviceId == other.m_DeviceId;
         }
 
         public override int GetHashCode()
         {
-            return samplesQueued.GetHashCode() ^ (samplesAvailable.GetHashCode() << 2);
+            return m_DeviceId.GetHashCode();
+        }
+
+        public static bool operator==(InputDevice a, InputDevice b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(InputDevice a, InputDevice b)
+        {
+            return !(a == b);
         }
     }
 
     [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputTrackingFacade.h")]
     [NativeConditional("ENABLE_VR")]
     [StaticAccessor("XRInputTrackingFacade::Get()", StaticAccessorType.Dot)]
-    public partial class InputHaptic
+    public partial class InputDevices
     {
-        [NativeConditional("ENABLE_VR")]
-        bool SendImpulse(XRNode node, uint channel, float amplitude) { return SendImpulse(node, channel, amplitude, 1.0f); }
-
-        [NativeConditional("ENABLE_VR")]
-        [NativeMethod("SendHapticImpulse")]
-        extern public static bool SendImpulse(XRNode node, uint channel, float amplitude, [UnityEngine.Internal.DefaultValue("1.0f")] float frequency);
-
-        [NativeConditional("ENABLE_VR")]
-        [NativeMethod("SendHapticBuffer")]
-        extern public static bool SendBuffer(XRNode node, uint channel, byte[] buffer);
-
-        [NativeConditional("ENABLE_VR", "false")]
-        [NativeMethod("TryGetHapticCapabilities")]
-        extern public static bool TryGetCapabilities(XRNode node, out HapticCapabilities capabilities);
-
-        [NativeConditional("ENABLE_VR", "false")]
-        [NativeMethod("TryGetHapticState")]
-        extern public static bool TryGetState(XRNode node, out HapticState state);
-
-        [NativeConditional("ENABLE_VR")]
-        [NativeMethod("StopHaptics")]
-        extern public static void Stop(XRNode node);
+        [NativeConditional("ENABLE_VR", "InputDevice::Identity")]
+        public static InputDevice GetDeviceAtXRNode(XRNode node)
+        {
+            UInt64 deviceId = InputTracking.GetDeviceIdAtXRNode(node);
+            return new InputDevice(deviceId);
+        }
     }
 
     [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputTrackingFacade.h")]
@@ -156,5 +163,13 @@ namespace UnityEngine.XR
             [NativeName("SetPositionalTrackingDisabled")]
             set;
         }
+
+        internal static extern bool SendHapticImpulse(UInt64 deviceId, uint channel, float amplitude, float duration);
+        internal static extern bool SendHapticBuffer(UInt64 deviceId, uint channel, byte[] buffer);
+        internal static extern bool TryGetHapticCapabilities(UInt64 deviceId, out HapticCapabilities capabilities);
+        internal static extern void StopHaptics(UInt64 deviceId);
+
+        internal static extern bool IsDeviceValid(UInt64 deviceId);
+        internal static extern UInt64 GetDeviceIdAtXRNode(XRNode node);
     }
 }

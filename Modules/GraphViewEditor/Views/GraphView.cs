@@ -44,6 +44,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         // Operations Completed
         public List<GraphElement> movedElements;
+        public Vector2 moveDelta;
     }
 
     public struct NodeCreationContext

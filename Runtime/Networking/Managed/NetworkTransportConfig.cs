@@ -68,6 +68,7 @@ namespace UnityEngine.Networking
     };
 
     [Serializable]
+    [Obsolete("The UNET transport will be removed in the future as soon a replacement is ready.")]
     public class ChannelQOS
     {
         [SerializeField]
@@ -105,6 +106,7 @@ namespace UnityEngine.Networking
     //to allow user manipulate channel info via property with parameter (using array interface)
     //all fields are defined for direct access from HLAPI (it it needed)
     [Serializable]
+    [Obsolete("The UNET transport will be removed in the future as soon a replacement is ready.")]
     public class ConnectionConfig
     {
         private  const int g_MinPacketSize = 128;
@@ -502,6 +504,7 @@ namespace UnityEngine.Networking
     //and array of special connection (with special configuration)
     //AddSpecialConnection will return connection id which user should use when he call connect to identify special configuration for this connection
     [Serializable]
+    [Obsolete("The UNET transport will be removed in the future as soon a replacement is ready.")]
     public class HostTopology
     {
         [SerializeField]
@@ -589,6 +592,7 @@ namespace UnityEngine.Networking
     }
 
     [Serializable]
+    [Obsolete("The UNET transport will be removed in the future as soon a replacement is ready.")]
     public class GlobalConfig
     {
         private const uint g_MaxTimerTimeout = 12000;         //before changing check UNETConfiguration.h file
@@ -753,6 +757,7 @@ namespace UnityEngine.Networking
         }
     }
 
+    [Obsolete("The UNET transport will be removed in the future as soon a replacement is ready.")]
     public class ConnectionSimulatorConfig : IDisposable
     {
         internal int m_OutMinDelay;

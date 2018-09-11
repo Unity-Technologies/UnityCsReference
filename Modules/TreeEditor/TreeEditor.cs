@@ -310,8 +310,6 @@ namespace TreeEditor
             AssetDatabase.AddObjectToAsset(materialCutoutAsset, prefabAsset);
             AssetDatabase.AddObjectToAsset(data, prefabAsset);
 
-            PrefabUtility.ApplyPrefabInstance(prefabInstance);
-
             GameObjectUtility.SetParentAndAlign(prefabInstance, menuCommand.context as GameObject);
 
             // Store Creation undo

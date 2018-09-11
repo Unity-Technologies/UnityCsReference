@@ -56,7 +56,6 @@ namespace UnityEditor
             public static readonly GUIContent CastShadows = EditorGUIUtility.TrTextContent("Cast Shadows", "Specifies whether a geometry creates shadows or not when a shadow-casting Light shines on it.");
             public static readonly GUIContent ReceiveShadows = EditorGUIUtility.TrTextContent("Receive Shadows", "When enabled, any shadows cast from other objects are drawn on the geometry.");
             public static readonly GUIContent MotionVectors = EditorGUIUtility.TrTextContent("Motion Vectors", "Specifies whether the Mesh renders 'Per Object Motion', 'Camera Motion', or 'No Motion' vectors to the Camera Motion Vector Texture.");
-
             public static readonly GUIContent LightmapInfoBox = EditorGUIUtility.TrTextContent("To enable generation of lightmaps for this Mesh Renderer, please enable the 'Lightmap Static' property.");
             public static readonly GUIContent TerrainLightmapInfoBox = EditorGUIUtility.TrTextContent("To enable generation of lightmaps for this Mesh Renderer, please enable the 'Lightmap Static' property.");
             public static readonly GUIContent ResolutionTooHighWarning = EditorGUIUtility.TrTextContent("Precompute/indirect resolution for this terrain is probably too high. Use a lower realtime/indirect resolution setting in the Lighting window or assign LightmapParameters that use a lower resolution setting. Otherwise it may take a very long time to bake and memory consumption during and after the bake may be very high.");
@@ -157,13 +156,20 @@ namespace UnityEditor
             m_GameObjectsSerializedObject.Update();
             m_LightmapSettings.Update();
 
-            EditorGUILayout.PropertyField(m_CastShadows, Styles.CastShadows, true);
+            // TODO(RadeonRays): remove if GPU lightmapper once the feature has been implemented.
+            if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                EditorGUILayout.PropertyField(m_CastShadows, Styles.CastShadows, true);
+
             bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
 
             if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
             {
                 using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
-                    EditorGUILayout.PropertyField(m_ReceiveShadows, Styles.ReceiveShadows, true);
+                {
+                    // TODO(RadeonRays): remove if GPU lightmapper once the feature has been implemented.
+                    if (LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                        EditorGUILayout.PropertyField(m_ReceiveShadows, Styles.ReceiveShadows, true);
+                }
             }
 
             if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)

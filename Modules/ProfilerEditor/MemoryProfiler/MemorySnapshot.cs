@@ -121,15 +121,21 @@ namespace UnityEditor.Profiling.Memory.Experimental
                 //     [opt: screenshot_width ]
                 //     [opt: screenshot_height ]
                 //     [opt: screenshot_format ]
+                var data = new UnityEngine.Profiling.Memory.Experimental.MetaData();
 
-                var metaData = new UnityEngine.Profiling.Memory.Experimental.MetaData();
+                if (array.Length == 0)
+                {
+                    data.content = "";
+                    data.platform = "";
+                    return data;
+                }
 
                 int offset = 0;
                 int dataLength = 0;
                 offset = ReadIntFromByteArray(array, offset, out dataLength);
-                offset = ReadStringFromByteArray(array, offset, dataLength, out metaData.content);
+                offset = ReadStringFromByteArray(array, offset, dataLength, out data.content);
                 offset = ReadIntFromByteArray(array, offset, out dataLength);
-                offset = ReadStringFromByteArray(array, offset, dataLength, out metaData.platform);
+                offset = ReadStringFromByteArray(array, offset, dataLength, out data.platform);
                 offset = ReadIntFromByteArray(array, offset, out dataLength);
 
                 if (dataLength > 0)
@@ -146,14 +152,14 @@ namespace UnityEditor.Profiling.Memory.Experimental
                     offset = ReadIntFromByteArray(array, offset, out height);
                     offset = ReadIntFromByteArray(array, offset, out format);
 
-                    metaData.screenshot = new Texture2D(width, height, (TextureFormat)format, false);
-                    metaData.screenshot.LoadRawTextureData(screenshot);
-                    metaData.screenshot.Apply();
+                    data.screenshot = new Texture2D(width, height, (TextureFormat)format, false);
+                    data.screenshot.LoadRawTextureData(screenshot);
+                    data.screenshot.Apply();
                 }
 
                 UnityEngine.Assertions.Assert.AreEqual(array.Length, offset);
 
-                return metaData;
+                return data;
             }
         }
 

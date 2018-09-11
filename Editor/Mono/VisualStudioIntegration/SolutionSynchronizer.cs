@@ -205,6 +205,12 @@ namespace UnityEditor.VisualStudioIntegration
 
         public void Sync()
         {
+            // Do not sync solution until all Unity extensions are registered and initialized.
+            // Otherwise Unity might emit errors when VSTU tries to generate the solution and
+            // get all managed extensions, which not yet initialized.
+            if (!InternalEditorUtility.IsUnityExtensionsInitialized())
+                return;
+
             SetupProjectSupportedExtensions();
 
             bool externalCodeAlreadyGeneratedProjects = AssetPostprocessingInternal.OnPreGeneratingCSProjectFiles();

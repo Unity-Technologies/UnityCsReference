@@ -105,8 +105,30 @@ namespace UnityEditor
         {
             if (stage.isPrefabStage && GetStoredHierarchyState(m_SceneHierarchyWindow, stage) == null)
             {
-                var visibleRootID = stage.prefabStage.prefabContentsRoot.GetInstanceID();
-                m_SceneHierarchy.SetExpandedRecursive(visibleRootID, true);
+                SetDefaultExpandedStateForOpenedPrefab(stage.prefabStage.prefabContentsRoot);
+            }
+        }
+
+        void SetDefaultExpandedStateForOpenedPrefab(GameObject root)
+        {
+            var expandedIDs = new List<int>();
+            AddParentsBelowButIgnoreNestedPrefabsRecursive(root.transform, expandedIDs);
+            expandedIDs.Sort();
+            m_SceneHierarchy.treeViewState.expandedIDs = expandedIDs;
+        }
+
+        void AddParentsBelowButIgnoreNestedPrefabsRecursive(Transform transform, List<int> gameObjectInstanceIDs)
+        {
+            gameObjectInstanceIDs.Add(transform.gameObject.GetInstanceID());
+
+            int count = transform.childCount;
+            for (int i = 0; i < count; ++i)
+            {
+                var child = transform.GetChild(i);
+                if (child.childCount > 0 && !PrefabUtility.IsAnyPrefabInstanceRoot(child.gameObject))
+                {
+                    AddParentsBelowButIgnoreNestedPrefabsRecursive(child, gameObjectInstanceIDs);
+                }
             }
         }
 
