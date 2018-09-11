@@ -12,6 +12,7 @@ namespace UnityEngine.Networking.Match
 {
     // returned when you create or join a match (private info)
     //[Serializable] //TODO: enabled this when 64 bit enum issue is resolved
+    [Obsolete("The matchmaker and relay feature will be removed in the future, minimal support will continue until this can be safely done.")]
     public class MatchInfo
     {
         public string address { get; private set; }
@@ -53,6 +54,7 @@ namespace UnityEngine.Networking.Match
         }
     }
 
+    [Obsolete("The matchmaker and relay feature will be removed in the future, minimal support will continue until this can be safely done.")]
     public class MatchInfoSnapshot
     {
         public NetworkID networkId { get; private set; }
@@ -109,6 +111,7 @@ namespace UnityEngine.Networking.Match
         }
     }
 
+    [Obsolete("The matchmaker and relay feature will be removed in the future, minimal support will continue until this can be safely done.")]
     public class NetworkMatch : MonoBehaviour
     {
         public delegate void BasicResponseDelegate(bool success, string extendedInfo);
@@ -137,11 +140,9 @@ namespace UnityEngine.Networking.Match
                 Debug.LogError("Matchmaking is not supported on WebGL player.");
                 return null;
             }
-            else
-                return CreateMatch(new CreateMatchRequest { name = matchName, size = matchSize, advertise = matchAdvertise, password = matchPassword, publicAddress = publicClientAddress, privateAddress = privateClientAddress, eloScore = eloScoreForMatch, domain = requestDomain }, callback);
+            return CreateMatch(new CreateMatchRequest { name = matchName, size = matchSize, advertise = matchAdvertise, password = matchPassword, publicAddress = publicClientAddress, privateAddress = privateClientAddress, eloScore = eloScoreForMatch, domain = requestDomain }, callback);
         }
 
-        // Begin Create a match
         internal Coroutine CreateMatch(CreateMatchRequest req, DataResponseDelegate<MatchInfo> callback)
         {
             if (callback == null)

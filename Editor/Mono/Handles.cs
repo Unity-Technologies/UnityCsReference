@@ -550,8 +550,8 @@ namespace UnityEditor
                     // Only apply matrix to the position because DotCap is camera facing
                     position = matrix.MultiplyPoint(position);
 
-                    Vector3 sideways = Camera.current.transform.right * size;
-                    Vector3 up = Camera.current.transform.up * size;
+                    Vector3 sideways = (Camera.current == null ? Vector3.right : Camera.current.transform.right) * size;
+                    Vector3 up = (Camera.current == null ? Vector3.up : Camera.current.transform.up) * size;
 
                     Color col = color * new Color(1, 1, 1, 0.99f);
                     HandleUtility.ApplyWireMaterial(Handles.zTest);

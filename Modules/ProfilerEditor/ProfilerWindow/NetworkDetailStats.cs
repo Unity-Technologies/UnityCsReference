@@ -119,8 +119,10 @@ namespace UnityEditor
                 {
                     entry.NewProfilerTick(tickId);
                 }
+#pragma warning disable 618
                 NetworkTransport.SetPacketStat(0, MsgId, (int)totalIn, 1);
                 NetworkTransport.SetPacketStat(1, MsgId, (int)totalOut, 1);
+#pragma warning restore 618
                 totalIn = 0;
                 totalOut = 0;
             }
@@ -253,8 +255,10 @@ namespace UnityEditor
         {
             foreach (var detail in m_NetworkOperations.Values)
             {
+#pragma warning disable 618
                 NetworkTransport.SetPacketStat(0, detail.MsgId, 0, 1);
                 NetworkTransport.SetPacketStat(1, detail.MsgId, 0, 1);
+#pragma warning restore 618
             }
             m_NetworkOperations.Clear();
         }

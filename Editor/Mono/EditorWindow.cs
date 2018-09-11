@@ -478,8 +478,18 @@ namespace UnityEditor
             ShowWithMode(ShowMode.Utility);
         }
 
-        // Used for popup style windows.
+        internal void ShowTooltip()
+        {
+            ShowPopupWithMode(ShowMode.Tooltip);
+        }
+
         public void ShowPopup()
+        {
+            ShowPopupWithMode(ShowMode.PopupMenu);
+        }
+
+        // Used for popup style windows.
+        internal void ShowPopupWithMode(ShowMode mode)
         {
             if (m_Parent == null)
             {
@@ -494,7 +504,7 @@ namespace UnityEditor
                 cw.position = r;
                 cw.rootView = host;
                 MakeParentsSettingsMatchMe();
-                cw.ShowPopup();
+                cw.ShowPopupWithMode(mode);
             }
         }
 
@@ -531,7 +541,7 @@ namespace UnityEditor
 
         internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder)
         {
-            ShowAsDropDown(buttonRect, windowSize, locationPriorityOrder, ShowMode.PopupMenuWithKeyboardFocus);
+            ShowAsDropDown(buttonRect, windowSize, locationPriorityOrder, ShowMode.PopupMenu);
         }
 
         internal void ShowAsDropDown(Rect buttonRect, Vector2 windowSize, PopupLocation[] locationPriorityOrder, ShowMode mode)
@@ -550,9 +560,9 @@ namespace UnityEditor
             position = ShowAsDropDownFitToScreen(buttonRect, windowSize, locationPriorityOrder);
 
             // ShowWithMode() always grabs window focus so we use ShowPopup() for popup windows so PopupWindowWithoutFocus
-            // will work correctly (no focus when opened)
-            if (ContainerWindow.IsPopup(mode) && mode != ShowMode.PopupMenuWithKeyboardFocus)
-                ShowPopup();
+            // will work correctly (no focus when opened).
+            if (ContainerWindow.IsPopup(mode))
+                ShowPopupWithMode(mode);
             else
                 ShowWithMode(mode);
 

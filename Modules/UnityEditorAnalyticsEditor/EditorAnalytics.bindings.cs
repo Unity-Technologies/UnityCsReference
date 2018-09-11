@@ -83,6 +83,8 @@ namespace UnityEditor
             return EditorAnalytics.SendEvent("collabOperation", parameters);
         }
 
+        internal extern static bool SendAssetDownloadEvent(object parameters);
+
         public extern static bool enabled
         {
             get;

@@ -29,8 +29,11 @@ namespace UnityEditor
             [Obsolete("Use Lightmapper.ProgressiveCPU instead. (UnityUpgradable) -> UnityEditor.LightmapEditorSettings/Lightmapper.ProgressiveCPU", true)]
             PathTracer = 1,
 
-            // Lightmaps are baked by the Progressive lightmapper (Wintermute + OpenRL based).
-            ProgressiveCPU = 1
+            // Lightmaps are baked by the CPU Progressive lightmapper (Wintermute + OpenRL based).
+            ProgressiveCPU = 1,
+
+            // Lightmaps are baked by the GPU Progressive lightmapper (RadeonRays + OpenCL based).
+            ProgressiveGPU = 2
         }
 
         // Which path tracer sampling scheme is used.

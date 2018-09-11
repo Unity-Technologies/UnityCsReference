@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using Unity.Profiling;
 
 namespace UnityEditorInternal.Profiling
 {
@@ -110,6 +111,8 @@ namespace UnityEditorInternal.Profiling
 
         public delegate void SearchChangedCallback(string newSearch);
         public event SearchChangedCallback searchChanged;
+
+        static readonly ProfilerMarker m_DoGUIMarker = new ProfilerMarker(nameof(ProfilerFrameDataHierarchyView) + ".DoGUI");
 
         public ProfilerFrameDataHierarchyView()
         {
@@ -275,70 +278,73 @@ namespace UnityEditorInternal.Profiling
 
         public void DoGUI(FrameDataView frameDataView)
         {
-            InitIfNeeded();
-
-            var collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
-            var isSearchAllowed = string.IsNullOrEmpty(treeView.searchString) || !(collectingSamples && ProfilerDriver.deepProfiling);
-
-            var isDataAvailable = frameDataView != null && frameDataView.IsValid();
-            if (isDataAvailable && isSearchAllowed)
-                if (isDataAvailable)
-                    m_TreeView.SetFrameDataView(frameDataView);
-
-            var showDetailedView = isDataAvailable && m_DetailedViewType != DetailedViewType.None;
-            if (showDetailedView)
-                SplitterGUILayout.BeginHorizontalSplit(m_DetailedViewSpliterState);
-
-            // Hierarchy view area
-            GUILayout.BeginVertical();
-
-            DrawToolbar(frameDataView, showDetailedView);
-
-            if (!isDataAvailable)
+            using (m_DoGUIMarker.Auto())
             {
-                GUILayout.Label(BaseStyles.noData, BaseStyles.label);
-            }
-            else if (!isSearchAllowed)
-            {
-                GUILayout.Label(BaseStyles.disabledSearchText, BaseStyles.label);
-            }
-            else
-            {
-                var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true), GUILayout.ExpandHeight(true));
-                m_TreeView.OnGUI(rect);
-            }
+                InitIfNeeded();
 
-            GUILayout.EndVertical();
+                var collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
+                var isSearchAllowed = string.IsNullOrEmpty(treeView.searchString) || !(collectingSamples && ProfilerDriver.deepProfiling);
 
-            if (showDetailedView)
-            {
+                var isDataAvailable = frameDataView != null && frameDataView.IsValid();
+                if (isDataAvailable && isSearchAllowed)
+                    if (isDataAvailable)
+                        m_TreeView.SetFrameDataView(frameDataView);
+
+                var showDetailedView = isDataAvailable && m_DetailedViewType != DetailedViewType.None;
+                if (showDetailedView)
+                    SplitterGUILayout.BeginHorizontalSplit(m_DetailedViewSpliterState);
+
+                // Hierarchy view area
                 GUILayout.BeginVertical();
 
-                // Detailed view area
-                EditorGUILayout.BeginHorizontal(BaseStyles.toolbar);
+                DrawToolbar(frameDataView, showDetailedView);
 
-                DrawDetailedViewPopup();
-                GUILayout.FlexibleSpace();
-
-                DrawOptionsMenuPopup();
-                EditorGUILayout.EndHorizontal();
-
-                switch (m_DetailedViewType)
+                if (!isDataAvailable)
                 {
-                    case DetailedViewType.Objects:
-                        detailedObjectsView.DoGUI(BaseStyles.header, frameDataView, m_TreeView.GetSelection());
-                        break;
-                    case DetailedViewType.CallersAndCallees:
-                        detailedCallsView.DoGUI(BaseStyles.header, frameDataView, m_TreeView.GetSelection());
-                        break;
+                    GUILayout.Label(BaseStyles.noData, BaseStyles.label);
+                }
+                else if (!isSearchAllowed)
+                {
+                    GUILayout.Label(BaseStyles.disabledSearchText, BaseStyles.label);
+                }
+                else
+                {
+                    var rect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true), GUILayout.ExpandHeight(true));
+                    m_TreeView.OnGUI(rect);
                 }
 
                 GUILayout.EndVertical();
 
-                SplitterGUILayout.EndHorizontalSplit();
-            }
+                if (showDetailedView)
+                {
+                    GUILayout.BeginVertical();
 
-            HandleKeyboardEvents();
+                    // Detailed view area
+                    EditorGUILayout.BeginHorizontal(BaseStyles.toolbar);
+
+                    DrawDetailedViewPopup();
+                    GUILayout.FlexibleSpace();
+
+                    DrawOptionsMenuPopup();
+                    EditorGUILayout.EndHorizontal();
+
+                    switch (m_DetailedViewType)
+                    {
+                        case DetailedViewType.Objects:
+                            detailedObjectsView.DoGUI(BaseStyles.header, frameDataView, m_TreeView.GetSelection());
+                            break;
+                        case DetailedViewType.CallersAndCallees:
+                            detailedCallsView.DoGUI(BaseStyles.header, frameDataView, m_TreeView.GetSelection());
+                            break;
+                    }
+
+                    GUILayout.EndVertical();
+
+                    SplitterGUILayout.EndHorizontalSplit();
+                }
+
+                HandleKeyboardEvents();
+            }
         }
 
         void DrawSearchBar()

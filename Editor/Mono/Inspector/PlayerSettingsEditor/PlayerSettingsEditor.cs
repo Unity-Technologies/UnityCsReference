@@ -168,6 +168,7 @@ namespace UnityEditor
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
+            public static readonly GUIContent scriptingMono2xDeprecated = EditorGUIUtility.TrTextContent("Mono (Deprecated)");
             public static readonly GUIContent scriptingWinRTDotNET = EditorGUIUtility.TrTextContent(".NET");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
@@ -1697,10 +1698,10 @@ namespace UnityEditor
                     EditorGUI.BeginChangeCheck();
                     LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(targetGroup);
                     LightmapEncodingQuality[] lightmapEncodingValues = {LightmapEncodingQuality.Normal, LightmapEncodingQuality.High};
-                    encodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
-                    if (EditorGUI.EndChangeCheck())
+                    LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
+                    if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                     {
-                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, encodingQuality);
+                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, newEncodingQuality);
 
                         Lightmapping.OnUpdateLightmapEncoding(targetGroup);
 
@@ -1961,6 +1962,7 @@ namespace UnityEditor
                 ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
                 currentBackendIsIl2Cpp = currBackend == ScriptingImplementation.IL2CPP;
                 ScriptingImplementation newBackend;
+                var mono2xDeprecated = targetGroup == BuildTargetGroup.iOS;
 
                 if (targetGroup == BuildTargetGroup.tvOS)
                 {
@@ -1970,11 +1972,11 @@ namespace UnityEditor
                 else if (backends.Length == 1)
                 {
                     newBackend = backends[0];
-                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0]), SettingsContent.scriptingBackend);
+                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0], mono2xDeprecated), SettingsContent.scriptingBackend);
                 }
                 else
                 {
-                    newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
+                    newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends, mono2xDeprecated));
                 }
 
                 if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
@@ -2313,7 +2315,6 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        private static Dictionary<ScriptingImplementation, GUIContent> m_NiceScriptingBackendNames;
         private static Dictionary<ApiCompatibilityLevel, GUIContent> m_NiceApiCompatibilityLevelNames;
         private static Dictionary<ManagedStrippingLevel, GUIContent> m_NiceManagedStrippingLevelNames;
 
@@ -2331,29 +2332,24 @@ namespace UnityEditor
             return names;
         }
 
-        private static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends)
+        static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends, bool mono2xDeprecated)
         {
-            InitializeNiceScriptingBackendNames();
-            return GetGUIContentsForValues(m_NiceScriptingBackendNames, scriptingBackends);
+            return scriptingBackends.Select(s => GetNiceScriptingBackendName(s, mono2xDeprecated)).ToArray();
         }
 
-        static void InitializeNiceScriptingBackendNames()
+        static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend, bool mono2xDeprecated)
         {
-            if (m_NiceScriptingBackendNames == null)
+            switch (scriptingBackend)
             {
-                m_NiceScriptingBackendNames = new Dictionary<ScriptingImplementation, GUIContent>
-                {
-                    { ScriptingImplementation.Mono2x, SettingsContent.scriptingMono2x },
-                    { ScriptingImplementation.WinRTDotNET, SettingsContent.scriptingWinRTDotNET },
-                    { ScriptingImplementation.IL2CPP, SettingsContent.scriptingIL2CPP }
-                };
+                case ScriptingImplementation.Mono2x:
+                    return mono2xDeprecated ? SettingsContent.scriptingMono2xDeprecated : SettingsContent.scriptingMono2x;
+                case ScriptingImplementation.IL2CPP:
+                    return SettingsContent.scriptingIL2CPP;
+                case ScriptingImplementation.WinRTDotNET:
+                    return SettingsContent.scriptingWinRTDotNET;
+                default:
+                    throw new ArgumentException($"Scripting backend value {scriptingBackend} is not supported.", nameof(scriptingBackend));
             }
-        }
-
-        private static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend)
-        {
-            InitializeNiceScriptingBackendNames();
-            return GetGUIContentsForValues(m_NiceScriptingBackendNames, new[] { scriptingBackend }).First();
         }
 
         private static GUIContent[] GetNiceApiCompatibilityLevelNames(ApiCompatibilityLevel[] apiCompatibilityLevels)

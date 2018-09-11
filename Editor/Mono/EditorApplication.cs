@@ -187,6 +187,9 @@ namespace UnityEditor
         // Global key up/down event that was not handled by anyone
         internal static CallbackFunction globalEventHandler;
 
+        // Returns true when the pressed keys are defined in the Trigger
+        internal static Func<bool> doPressedKeysTriggerAnyShortcut;
+
         // Windows were reordered
         internal static CallbackFunction windowsReordered;
 
@@ -311,6 +314,14 @@ namespace UnityEditor
         {
             if (windowsReordered != null)
                 windowsReordered();
+        }
+
+        [RequiredByNativeCode]
+        static bool DoPressedKeysTriggerAnyShortcutHandler()
+        {
+            if (doPressedKeysTriggerAnyShortcut != null)
+                return doPressedKeysTriggerAnyShortcut();
+            return false;
         }
 
         [RequiredByNativeCode]

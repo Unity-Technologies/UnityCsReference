@@ -97,6 +97,8 @@ namespace UnityEditor
             public static readonly GUIContent tilePalette = EditorGUIUtility.TrTextContent("Tile Palette");
             public static readonly GUIContent edit = EditorGUIUtility.TrTextContent("Edit");
             public static readonly GUIContent editModified = EditorGUIUtility.TrTextContent("Edit*");
+            public static readonly GUIContent zPosition = EditorGUIUtility.TrTextContent("Z Position");
+            public static readonly GUIContent resetZPosition = EditorGUIUtility.TrTextContent("Reset");
             public static readonly GUIStyle ToolbarTitleStyle = "Toolbar";
             public static readonly GUIStyle dragHandle = "RL DragHandle";
             public static readonly float dragPadding = 3f;
@@ -278,6 +280,31 @@ namespace UnityEditor
         {
             if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
                 FlipBrush(GridBrush.FlipAxis.Y);
+        }
+
+        static void ChangeBrushZ(int change)
+        {
+            GridPaintingState.gridBrush.ChangeZPosition(change);
+            GridPaintingState.activeGrid.ChangeZPosition(change);
+            GridPaintingState.activeGrid.Repaint();
+            foreach (var window in GridPaintPaletteWindow.instances)
+            {
+                window.Repaint();
+            }
+        }
+
+        [Shortcut("Grid Painting/Increase Z", typeof(ShortcutContext), "-")]
+        static void IncreaseBrushZ()
+        {
+            if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
+                ChangeBrushZ(1);
+        }
+
+        [Shortcut("Grid Painting/Decrease Z", typeof(ShortcutContext), "=")]
+        static void DecreaseBrushZ()
+        {
+            if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
+                ChangeBrushZ(-1);
         }
 
         [SettingsProvider]
@@ -556,7 +583,9 @@ namespace UnityEditor
                 GridPaintingState.savingPalette = true;
                 SetHideFlagsRecursivelyIgnoringTilemapChildren(paletteInstance, HideFlags.HideInHierarchy);
                 string path = AssetDatabase.GetAssetPath(palette);
+                #pragma warning disable CS0618 // Type or member is obsolete
                 PrefabUtility.ReplacePrefabAssetNameBased(paletteInstance, path, true);
+                #pragma warning restore CS0618 // Type or member is obsolete
                 SetHideFlagsRecursivelyIgnoringTilemapChildren(paletteInstance, HideFlags.HideAndDontSave);
                 GridPaintingState.savingPalette = false;
             }
@@ -688,6 +717,7 @@ namespace UnityEditor
             GridPaintingState.brushChanged += OnBrushChanged;
             SceneView.onSceneGUIDelegate += OnSceneViewGUI;
             PrefabUtility.prefabInstanceUpdated += PrefabInstanceUpdated;
+            EditorApplication.projectWasLoaded += OnProjectLoaded;
 
             AssetPreview.SetPreviewTextureCacheSize(256, GetInstanceID());
             wantsMouseMove = true;
@@ -724,6 +754,12 @@ namespace UnityEditor
                 ResetPreviewInstance();
                 Repaint();
             }
+        }
+
+        private void OnProjectLoaded()
+        {
+            // ShortcutIntegration instance is recreated after LoadLayout which wipes the OnEnable registration
+            ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
         }
 
         private void OnBrushChanged(GridBrushBase brush)
@@ -774,6 +810,7 @@ namespace UnityEditor
             GridPaintingState.brushChanged -= OnBrushChanged;
             GridPaintingState.UnregisterPainterInterest(this);
             PrefabUtility.prefabInstanceUpdated -= PrefabInstanceUpdated;
+            EditorApplication.projectWasLoaded -= OnProjectLoaded;
 
             ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_ShortcutContext);
         }
@@ -787,7 +824,7 @@ namespace UnityEditor
 
         public void ChangeToTool(GridBrushBase.Tool tool)
         {
-            EditMode.ChangeEditMode(PaintableGrid.BrushToolToEditMode(tool), new Bounds(Vector3.zero, Vector3.positiveInfinity), GridPaintingState.instance);
+            EditMode.ChangeEditMode(PaintableGrid.BrushToolToEditMode(tool), GridPaintingState.instance);
             Repaint();
         }
 
@@ -838,12 +875,18 @@ namespace UnityEditor
             }
         }
 
+        internal void ResetZPosition()
+        {
+            GridPaintingState.gridBrush.ResetZPosition();
+            GridPaintingState.lastActiveGrid.ResetZPosition();
+        }
+
         private void OnBrushInspectorGUI()
         {
-            var brush = GridPaintingState.gridBrush;
-            if (brush == null)
+            if (GridPaintingState.gridBrush == null)
                 return;
 
+            // Brush Inspector GUI
             EditorGUI.BeginChangeCheck();
             if (GridPaintingState.activeBrushEditor != null)
                 GridPaintingState.activeBrushEditor.OnPaintInspectorGUI();
@@ -852,6 +895,25 @@ namespace UnityEditor
             if (EditorGUI.EndChangeCheck())
             {
                 GridPaletteBrushes.ActiveGridBrushAssetChanged();
+            }
+
+            // Z Position Inspector
+            var hasLastActiveGrid = GridPaintingState.lastActiveGrid != null;
+            using (new EditorGUI.DisabledScope(!hasLastActiveGrid))
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUI.BeginChangeCheck();
+                var zPosition = EditorGUILayout.DelayedIntField(Styles.zPosition, hasLastActiveGrid ? GridPaintingState.lastActiveGrid.zPosition : 0);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    GridPaintingState.gridBrush.ChangeZPosition(zPosition - GridPaintingState.lastActiveGrid.zPosition);
+                    GridPaintingState.lastActiveGrid.zPosition = zPosition;
+                }
+                if (GUILayout.Button(Styles.resetZPosition))
+                {
+                    ResetZPosition();
+                }
+                EditorGUILayout.EndHorizontal();
             }
         }
 
@@ -938,19 +1000,19 @@ namespace UnityEditor
                         var option = EditorUtility.DisplayDialogComplex(TilePaletteProperties.targetEditModeDialogTitle
                             , TilePaletteProperties.targetEditModeDialogMessage
                             , TilePaletteProperties.targetEditModeDialogYes
-                            , TilePaletteProperties.targetEditModeDialogChange
-                            , TilePaletteProperties.targetEditModeDialogNo);
+                            , TilePaletteProperties.targetEditModeDialogNo
+                            , TilePaletteProperties.targetEditModeDialogChange);
                         switch (option)
                         {
                             case 0:
                                 GoToPrefabMode(obj);
                                 return;
                             case 1:
-                                var settingsWindow = SettingsWindow.Show(SettingsScopes.User);
-                                settingsWindow.FilterProviders(TilePaletteProperties.targetEditModeLookup);
+                                // Do nothing here for "No"
                                 break;
                             case 2:
-                                // Do nothing here for "No"
+                                var settingsWindow = SettingsWindow.Show(SettingsScopes.User);
+                                settingsWindow.FilterProviders(TilePaletteProperties.targetEditModeLookup);
                                 break;
                         }
                     }
@@ -1037,7 +1099,7 @@ namespace UnityEditor
 
         private void OnClipboardGUI(Rect position)
         {
-            if (Event.current.type != EventType.Layout && position.Contains(Event.current.mousePosition) && GridPaintingState.activeGrid != clipboardView)
+            if (Event.current.type != EventType.Layout && position.Contains(Event.current.mousePosition) && GridPaintingState.activeGrid != clipboardView && clipboardView.unlocked)
             {
                 GridPaintingState.activeGrid = clipboardView;
                 SceneView.RepaintAll();

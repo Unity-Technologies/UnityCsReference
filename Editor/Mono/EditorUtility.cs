@@ -198,25 +198,25 @@ namespace UnityEditor
             return PrefabUtility.InstantiatePrefab(target);
         }
 
-        [Obsolete("Use PrefabUtility.ReplacePrefab", false)]
+        [Obsolete("Use PrefabUtility.SaveAsPrefabAsset with a path instead.", false)]
         public static GameObject ReplacePrefab(GameObject go, Object targetPrefab, ReplacePrefabOptions options)
         {
             return PrefabUtility.ReplacePrefab(go, targetPrefab, options);
         }
 
-        [Obsolete("Use PrefabUtility.ReplacePrefab", false)]
+        [Obsolete("Use PrefabUtility.SaveAsPrefabAsset or PrefabUtility.SaveAsPrefabAssetAndConnect with a path instead.", false)]
         public static GameObject ReplacePrefab(GameObject go, Object targetPrefab)
         {
             return PrefabUtility.ReplacePrefab(go, targetPrefab, ReplacePrefabOptions.Default);
         }
 
-        [Obsolete("Use PrefabUtility.CreateEmptyPrefab", false)]
+        [Obsolete("The concept of creating a completely empty Prefab has been discontinued. You can however use PrefabUtility.SaveAsPrefabAsset with an empty GameObject.", false)]
         public static Object CreateEmptyPrefab(string path)
         {
             return PrefabUtility.CreateEmptyPrefab(path);
         }
 
-        [Obsolete("Use PrefabUtility.RevertPrefabInstance", false)]
+        [Obsolete("Use PrefabUtility.RevertPrefabInstance.", false)]
         public static bool ReconnectToLastPrefab(GameObject go)
         {
             return PrefabUtility.ReconnectToLastPrefab(go);
@@ -240,7 +240,7 @@ namespace UnityEditor
             return PrefabUtility.FindPrefabRoot(source);
         }
 
-        [Obsolete("Use PrefabUtility.ResetToPrefabState", false)]
+        [Obsolete("Use PrefabUtility.RevertObjectOverride.", false)]
         public static bool ResetToPrefabState(Object source)
         {
             return PrefabUtility.ResetToPrefabState(source);

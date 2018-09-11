@@ -353,7 +353,7 @@ namespace UnityEditor
 
         public override void OnGUI()
         {
-            if (guiRect.width == 0f || guiRect.height == 0f)
+            if (Mathf.Approximately(guiRect.width, 0f) || Mathf.Approximately(guiRect.height, 0f))
                 return;
 
             UpdateMouseGridPosition();
@@ -389,7 +389,7 @@ namespace UnityEditor
 
         public void OnViewSizeChanged(Rect oldSize, Rect newSize)
         {
-            if (oldSize.height * oldSize.width * newSize.height * newSize.width == 0f)
+            if (Mathf.Approximately(oldSize.height * oldSize.width * newSize.height * newSize.width, 0f))
                 return;
 
             Camera cam = previewUtility.camera;
@@ -625,13 +625,13 @@ namespace UnityEditor
             RectInt rect = TileDragAndDrop.GetMinMaxRect(m_HoverData.Keys.ToList());
             rect.position += mouseGridPosition;
             DragAndDrop.visualMode = DragAndDropVisualMode.Copy;
-            GridEditorUtility.DrawGridMarquee(grid, new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, 0), new Vector3Int(rect.width, rect.height, 1)), Color.white);
+            GridEditorUtility.DrawGridMarquee(grid, new BoundsInt(new Vector3Int(rect.xMin, rect.yMin, zPosition), new Vector3Int(rect.width, rect.height, 1)), Color.white);
         }
 
         private void RenderGrid()
         {
             // MeshTopology.Lines doesn't give nice pixel perfect grid so we have to have separate codepath with MeshTopology.Quads specially for palette window here
-            if (m_GridMesh == null && grid.cellLayout == Grid.CellLayout.Rectangle)
+            if (m_GridMesh == null && grid.cellLayout == GridLayout.CellLayout.Rectangle)
                 m_GridMesh = GridEditorUtility.GenerateCachedGridMesh(grid, k_GridColor, 1f / LocalToScreenRatio(), paddedBoundsInt, MeshTopology.Quads);
 
             GridEditorUtility.DrawGridGizmo(grid, grid.transform, k_GridColor, ref m_GridMesh, ref m_GridMaterial);
@@ -750,7 +750,7 @@ namespace UnityEditor
 
         public void SetTile(Tilemap tilemap, Vector2Int position, TileBase tile, Color color, Matrix4x4 matrix)
         {
-            Vector3Int pos3 = new Vector3Int(position.x, position.y, 0);
+            Vector3Int pos3 = new Vector3Int(position.x, position.y, zPosition);
             tilemap.SetTile(pos3, tile);
             tilemap.SetColor(pos3, color);
             tilemap.SetTransformMatrix(pos3, matrix);
@@ -809,7 +809,7 @@ namespace UnityEditor
             gridBrush.Pick(grid, brushTarget, position, pickingStart);
 
             if (!PaintableGrid.InGridEditMode())
-                EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridPainting, new Bounds(), GridPaintingState.instance);
+                EditMode.ChangeEditMode(EditMode.SceneViewEditMode.GridPainting, GridPaintingState.instance);
 
             m_ActivePick = new RectInt(position.min.x, position.min.y, position.size.x, position.size.y);
         }
@@ -873,7 +873,7 @@ namespace UnityEditor
             // Only able to ping asset if only one asset is selected
             if (rect.size == Vector2Int.zero && tilemap != null)
             {
-                TileBase tile = tilemap.GetTile(new Vector3Int(rect.xMin, rect.yMin, 0));
+                TileBase tile = tilemap.GetTile(new Vector3Int(rect.xMin, rect.yMin, zPosition));
                 EditorGUIUtility.PingObject(tile);
                 Selection.activeObject = tile;
             }
@@ -931,29 +931,6 @@ namespace UnityEditor
 
         private void HandleMouseEnterLeave()
         {
-            if (Event.current.type == EventType.MouseEnterWindow)
-            {
-                if (PaintableGrid.InGridEditMode())
-                {
-                    GridPaintingState.activeGrid = this;
-                    Event.current.Use();
-                }
-            }
-            else if (Event.current.type == EventType.MouseLeaveWindow)
-            {
-                if (m_PreviousMousePosition.HasValue && guiRect.Contains(m_PreviousMousePosition.Value) && GridPaintingState.activeBrushEditor != null)
-                {
-                    GridPaintingState.activeBrushEditor.OnMouseLeave();
-                }
-                m_PreviousMousePosition = null;
-                if (PaintableGrid.InGridEditMode())
-                {
-                    GridPaintingState.activeGrid = null;
-                    Event.current.Use();
-                    Repaint();
-                }
-            }
-
             if (guiRect.Contains(Event.current.mousePosition))
             {
                 if (m_PreviousMousePosition.HasValue && !guiRect.Contains(m_PreviousMousePosition.Value) || !m_PreviousMousePosition.HasValue)
@@ -998,7 +975,7 @@ namespace UnityEditor
                 rect = new RectInt(GridSelection.position.xMin, GridSelection.position.yMin, GridSelection.position.size.x, GridSelection.position.size.y);
 
             var gridLayout = tilemap != null ? tilemap as GridLayout : grid as GridLayout;
-            BoundsInt brushBounds = new BoundsInt(new Vector3Int(rect.x, rect.y, 0), new Vector3Int(rect.width, rect.height, 1));
+            BoundsInt brushBounds = new BoundsInt(new Vector3Int(rect.x, rect.y, zPosition), new Vector3Int(rect.width, rect.height, 1));
 
             if (GridPaintingState.activeBrushEditor != null)
                 GridPaintingState.activeBrushEditor.OnPaintSceneGUI(gridLayout, brushTarget, brushBounds, EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || executing);

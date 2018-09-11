@@ -174,15 +174,11 @@ namespace UnityEditor.Scripting.Compilers
                                 foreach (XElement previousPlatformElement in previousPlatformsDocument.Element(xn + "PreviousPlatforms").Elements(xn + "ApplicationPlatform"))
                                 {
                                     var previousVersion = previousPlatformElement.Attribute("version").Value;
-                                    var isDefault = false;
+                                    bool isDefault;
 
-                                    try
+                                    if (!bool.TryParse(previousPlatformElement.Attribute("IsDefaultFallback").Value, out isDefault))
                                     {
-                                        isDefault = bool.Parse(previousPlatformElement.Attribute("IsDefaultFallback").Value);
-                                    }
-                                    catch
-                                    {
-                                        // Ignore exception. The IsDefaultFallback attribute isn't present. This is OK.
+                                        isDefault = false;
                                     }
 
                                     previousVersions.Add(previousVersion, new PreviousSDKVersion(previousVersion, isDefault));

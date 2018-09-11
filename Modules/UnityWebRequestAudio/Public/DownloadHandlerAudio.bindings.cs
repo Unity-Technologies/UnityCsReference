@@ -40,6 +40,7 @@ namespace UnityEngine.Networking
             throw new System.NotSupportedException("String access is not supported for audio clips");
         }
 
+        [NativeThrows]
         public extern AudioClip audioClip { get; }
 
         public extern bool streamAudio { get; set; }

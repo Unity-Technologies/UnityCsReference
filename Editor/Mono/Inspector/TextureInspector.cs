@@ -2,8 +2,10 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEngine.Rendering;
 
 
 namespace UnityEditor
@@ -48,8 +50,9 @@ namespace UnityEditor
     {
         class Styles
         {
-            public GUIContent smallZoom, largeZoom, alphaIcon, RGBIcon;
+            public GUIContent smallZoom, largeZoom;
             public GUIStyle previewButton, previewSlider, previewSliderThumb, previewLabel;
+            public GUIStyle previewButtonRed, previewButtonGreen, previewButtonBlue;
 
             public readonly GUIContent wrapModeLabel = EditorGUIUtility.TrTextContent("Wrap Mode");
             public readonly GUIContent wrapU = EditorGUIUtility.TrTextContent("U axis");
@@ -77,9 +80,11 @@ namespace UnityEditor
             {
                 smallZoom = EditorGUIUtility.IconContent("PreTextureMipMapLow");
                 largeZoom = EditorGUIUtility.IconContent("PreTextureMipMapHigh");
-                alphaIcon = EditorGUIUtility.IconContent("PreTextureAlpha");
-                RGBIcon = EditorGUIUtility.IconContent("PreTextureRGB");
+
                 previewButton = "preButton";
+                previewButtonRed = "preButtonRed";
+                previewButtonGreen = "preButtonGreen";
+                previewButtonBlue = "preButtonBlue";
                 previewSlider = "preSlider";
                 previewSliderThumb = "preSliderThumb";
                 previewLabel = "preLabelUpper";
@@ -87,8 +92,20 @@ namespace UnityEditor
         }
         static Styles s_Styles;
 
-        private bool m_ShowAlpha;
-        public bool showAlpha {  get { return m_ShowAlpha; } }
+        enum PreviewMode
+        {
+            RGB,
+            R,
+            G,
+            B,
+            A,
+        };
+
+        private PreviewMode m_PreviewMode = PreviewMode.RGB;
+        public bool showAlpha
+        {
+            get { return m_PreviewMode == PreviewMode.A; }
+        }
 
         // Plain Texture
         protected SerializedProperty m_WrapU;
@@ -410,7 +427,6 @@ namespace UnityEditor
             // and while it's being shown the actual texture object might disappear --
             // make sure to handle null targets.
             Texture tex = target as Texture;
-            bool showMode = true;
             bool alphaOnly = false;
             bool hasAlpha = true;
             int mipCount = 1;
@@ -448,19 +464,53 @@ namespace UnityEditor
                 mipCount = Mathf.Max(mipCount, TextureUtil.GetMipmapCount(t));
             }
 
+
+            List<PreviewMode> previewCandidates = new List<PreviewMode>(5);
+            previewCandidates.Add(PreviewMode.RGB);
+            previewCandidates.Add(PreviewMode.R);
+            previewCandidates.Add(PreviewMode.G);
+            previewCandidates.Add(PreviewMode.B);
+            previewCandidates.Add(PreviewMode.A);
+
             if (alphaOnly)
             {
-                m_ShowAlpha = true;
-                showMode = false;
+                previewCandidates.Clear();
+                previewCandidates.Add(PreviewMode.A);
+                m_PreviewMode = PreviewMode.A;
             }
             else if (!hasAlpha)
             {
-                m_ShowAlpha = false;
-                showMode = false;
+                previewCandidates.Remove(PreviewMode.A);
             }
 
-            if (showMode && tex != null && !IsNormalMap(tex))
-                m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? s_Styles.alphaIcon : s_Styles.RGBIcon, s_Styles.previewButton);
+
+            if (previewCandidates.Count > 1 && tex != null && !IsNormalMap(tex))
+            {
+                int selectedIndex = previewCandidates.IndexOf(m_PreviewMode);
+                if (selectedIndex == -1)
+                    selectedIndex = 0;
+
+                if (previewCandidates.Contains(PreviewMode.RGB))
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.RGB, "RGB", s_Styles.previewButton)
+                        ? PreviewMode.RGB
+                        : m_PreviewMode;
+                if (previewCandidates.Contains(PreviewMode.R))
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.R, "R", s_Styles.previewButtonRed)
+                        ? PreviewMode.R
+                        : m_PreviewMode;
+                if (previewCandidates.Contains(PreviewMode.G))
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.G, "G", s_Styles.previewButtonGreen)
+                        ? PreviewMode.G
+                        : m_PreviewMode;
+                if (previewCandidates.Contains(PreviewMode.B))
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.B, "B", s_Styles.previewButtonBlue)
+                        ? PreviewMode.B
+                        : m_PreviewMode;
+                if (previewCandidates.Contains(PreviewMode.A))
+                    m_PreviewMode = GUILayout.Toggle(m_PreviewMode == PreviewMode.A, "A", s_Styles.previewButton)
+                        ? PreviewMode.A
+                        : m_PreviewMode;
+            }
 
             if (mipCount > 1)
             {
@@ -512,14 +562,33 @@ namespace UnityEditor
             PreviewGUI.BeginScrollView(r, m_Pos, wantedRect, "PreHorizontalScrollbar", "PreHorizontalScrollbarThumb");
             FilterMode oldFilter = t.filterMode;
             TextureUtil.SetFilterModeNoDirty(t, FilterMode.Point);
-
             Texture2D t2d = t as Texture2D;
-            if (m_ShowAlpha)
+            ColorWriteMask colorWriteMask = ColorWriteMask.All;
+
+            switch (m_PreviewMode)
+            {
+                case PreviewMode.R:
+                    colorWriteMask = ColorWriteMask.Red | ColorWriteMask.Alpha;
+                    break;
+                case PreviewMode.G:
+                    colorWriteMask = ColorWriteMask.Green | ColorWriteMask.Alpha;
+                    break;
+                case PreviewMode.B:
+                    colorWriteMask = ColorWriteMask.Blue | ColorWriteMask.Alpha;
+                    break;
+            }
+
+            if (m_PreviewMode == PreviewMode.A)
+            {
                 EditorGUI.DrawTextureAlpha(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel);
-            else if (t2d != null && t2d.alphaIsTransparency)
-                EditorGUI.DrawTextureTransparent(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel);
+            }
             else
-                EditorGUI.DrawPreviewTexture(wantedRect, t, null, ScaleMode.StretchToFill, 0, mipLevel);
+            {
+                if (t2d != null && t2d.alphaIsTransparency)
+                    EditorGUI.DrawTextureTransparent(wantedRect, t, ScaleMode.StretchToFill, 0, mipLevel, colorWriteMask);
+                else
+                    EditorGUI.DrawPreviewTexture(wantedRect, t, null, ScaleMode.StretchToFill, 0, mipLevel, colorWriteMask);
+            }
 
             // TODO: Less hacky way to prevent sprite rects to not appear in smaller previews like icons.
             if (wantedRect.width > 32 && wantedRect.height > 32)

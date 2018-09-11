@@ -208,10 +208,6 @@ namespace UnityEditor
                 // All game objects
                 m_RootItem = new GameObjectTreeViewItem(m_RootInstanceID, rootDepth, null, "RootOfAll");
             }
-
-            // Ensure root is expanded if not shown
-            if (!showRootItem)
-                SetExpanded(m_RootItem, true);
         }
 
         void ClearSearchFilter()

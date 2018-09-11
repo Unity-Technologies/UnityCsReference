@@ -52,7 +52,12 @@ namespace UnityEditor
         {
             var parent = menuCommand.context as GameObject;
             if (parent == null)
-                parent = Selection.activeGameObject;
+            {
+                var activeGO = Selection.activeGameObject;
+                if (activeGO != null && !EditorUtility.IsPersistent(activeGO))
+                    parent = activeGO;
+            }
+
             var go = ObjectFactory.CreateGameObject("GameObject");
             Place(go, parent);
         }

@@ -66,7 +66,7 @@ namespace UnityEditor
 
             position = new Rect(0, 0, m_optimalSize.x, m_optimalSize.y);
 
-            window.ShowPopup();
+            window.ShowTooltip();
             window.SetAlpha(1.0f);
             s_guiView.mouseRayInvisible = true;
 

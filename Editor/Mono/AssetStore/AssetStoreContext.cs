@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using System.Linq;
 using System.IO;
 using UnityEditor.Web;
+using UnityEditor.Analytics;
 
 namespace UnityEditor
 {
@@ -163,6 +164,15 @@ namespace UnityEditor
             Application.OpenURL(url);
         }
 
+        [Serializable]
+        public struct DownloadAssetInfo
+        {
+            public string package_id;
+            public string package_name;
+            public string publisher_name;
+            public string category_name;
+        }
+
         public void Download(Package package, DownloadInfo downloadInfo)
         {
             Download(
@@ -205,6 +215,13 @@ namespace UnityEditor
             parameters["download"] = download;
 
             AssetStoreUtils.Download(package_id, url, dest, key, parameters.ToString(), resumeOK, doneCallback);
+            EditorAnalytics.SendAssetDownloadEvent(new DownloadAssetInfo()
+            {
+                package_id = package_id,
+                package_name = package_name,
+                publisher_name = publisher_name,
+                category_name = category_name
+            });
         }
 
         /// <summary>

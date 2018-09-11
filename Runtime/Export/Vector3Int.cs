@@ -177,7 +177,9 @@ namespace UnityEngine
 
         public override int GetHashCode()
         {
-            return x.GetHashCode() ^ (y.GetHashCode() << 2) ^ (z.GetHashCode() >> 2);
+            var yHash = y.GetHashCode();
+            var zHash = z.GetHashCode();
+            return x.GetHashCode() ^ (yHash << 4) ^ (yHash >> 28) ^ (zHash >> 4) ^ (zHash << 28);
         }
 
         public override string ToString()

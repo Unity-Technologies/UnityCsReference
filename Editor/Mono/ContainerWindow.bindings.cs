@@ -12,7 +12,7 @@ namespace UnityEditor
     {
         // Show as a normal window with max, min & close buttons.
         NormalWindow = 0,
-        // Used for a popup menu and tooltip. On mac this means light shadow and no titlebar.
+        // Used for a popup menu. On mac this means light shadow and no titlebar.
         PopupMenu = 1,
         // Utility window - floats above the app. Disappears when app loses focus.
         Utility = 2,
@@ -22,8 +22,8 @@ namespace UnityEditor
         MainWindow = 4,
         // Aux windows. The ones that close the moment you move the mouse out of them.
         AuxWindow = 5,
-        // Like PopupMenu, but allows keyboard focus (e.g. AddComponentWindow)
-        PopupMenuWithKeyboardFocus = 6
+        // Like PopupMenu, but without keyboard focus
+        Tooltip = 6
     }
 
     //[StaticAccessor("ContainerWindowBindings", StaticAccessorType.DoubleColon)]

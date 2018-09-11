@@ -453,6 +453,7 @@ namespace UnityEditor
                 {
                     hash = tile != null ? tile.GetInstanceID() : 0;
                     hash = hash * 33 + matrix.GetHashCode();
+                    hash = hash * 33 + matrix.rotation.GetHashCode();
                     hash = hash * 33 + color.GetHashCode();
                 }
                 return hash;

@@ -453,6 +453,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                         var graphView = target as GraphView;
                         if (graphView != null && graphView.graphViewChanged != null)
                         {
+                            KeyValuePair<GraphElement, OriginalPos> firstPos = m_OriginalPos.First();
+                            m_GraphViewChange.moveDelta = firstPos.Key.GetPosition().position - firstPos.Value.pos.position;
                             graphView.graphViewChanged(m_GraphViewChange);
                         }
                     }

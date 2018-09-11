@@ -356,10 +356,13 @@ namespace UnityEditor
 
             var mouseOverWindow = EditorWindow.mouseOverWindow;
 
-            if (IsMaximized(mouseOverWindow))
-                Unmaximize(mouseOverWindow);
-            else
-                Maximize(mouseOverWindow);
+            if (mouseOverWindow != null)
+            {
+                if (IsMaximized(mouseOverWindow))
+                    Unmaximize(mouseOverWindow);
+                else
+                    Maximize(mouseOverWindow);
+            }
         }
 
         public static void AddSplitViewAndChildrenRecurse(View splitview, ArrayList list)

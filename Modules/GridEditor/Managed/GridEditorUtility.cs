@@ -216,10 +216,10 @@ namespace UnityEditorInternal
 
                     Vector3[] cellLocals =
                     {
-                        gridLayout.CellToLocal(new Vector3Int(area.xMin, area.yMin, 0)),
-                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMax - 1 + cellGap.x, area.yMin, 0)),
-                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMax - 1 + cellGap.x, area.yMax - 1  + cellGap.y, 0)),
-                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMin, area.yMax - 1 + cellGap.y, 0))
+                        gridLayout.CellToLocal(new Vector3Int(area.xMin, area.yMin, area.zMin)),
+                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMax - 1 + cellGap.x, area.yMin, area.zMin)),
+                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMax - 1 + cellGap.x, area.yMax - 1  + cellGap.y, area.zMin)),
+                        gridLayout.CellToLocalInterpolated(new Vector3(area.xMin, area.yMax - 1 + cellGap.y, area.zMin))
                     };
 
                     HandleUtility.ApplyWireMaterial();
@@ -252,34 +252,34 @@ namespace UnityEditorInternal
             int right = horizontalCount;
             Vector3[] cellOffset =
             {
-                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(0, gridLayout.cellSize.y / 2, 0)),
-                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(gridLayout.cellSize.x / 2, gridLayout.cellSize.y / 4, 0)),
-                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(gridLayout.cellSize.x / 2, -gridLayout.cellSize.y / 4, 0)),
-                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(0, -gridLayout.cellSize.y / 2, 0)),
-                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(-gridLayout.cellSize.x / 2, -gridLayout.cellSize.y / 4, 0)),
-                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(-gridLayout.cellSize.x / 2, gridLayout.cellSize.y / 4, 0))
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(0, gridLayout.cellSize.y / 2, area.zMin)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(gridLayout.cellSize.x / 2, gridLayout.cellSize.y / 4, area.zMin)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(gridLayout.cellSize.x / 2, -gridLayout.cellSize.y / 4, area.zMin)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(0, -gridLayout.cellSize.y / 2, area.zMin)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(-gridLayout.cellSize.x / 2, -gridLayout.cellSize.y / 4, area.zMin)),
+                Grid.Swizzle(gridLayout.cellSwizzle, new Vector3(-gridLayout.cellSize.x / 2, gridLayout.cellSize.y / 4, area.zMin))
             };
             // Fill Top and Bottom Vertices
             for (int x = area.min.x; x < area.max.x; x++)
             {
-                cellLocals[bottom++] = gridLayout.CellToLocal(new Vector3Int(x, area.min.y, 0)) + cellOffset[4];
-                cellLocals[bottom++] = gridLayout.CellToLocal(new Vector3Int(x, area.min.y, 0)) + cellOffset[3];
-                cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(x, area.max.y - 1, 0)) + cellOffset[0];
-                cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(x, area.max.y - 1, 0)) + cellOffset[1];
+                cellLocals[bottom++] = gridLayout.CellToLocal(new Vector3Int(x, area.min.y, area.zMin)) + cellOffset[4];
+                cellLocals[bottom++] = gridLayout.CellToLocal(new Vector3Int(x, area.min.y, area.zMin)) + cellOffset[3];
+                cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(x, area.max.y - 1, area.zMin)) + cellOffset[0];
+                cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(x, area.max.y - 1, area.zMin)) + cellOffset[1];
             }
             // Fill first Left and Right Vertices
-            cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, area.min.y, 0)) + cellOffset[5];
-            cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, area.max.y - 1, 0)) + cellOffset[2];
+            cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, area.min.y, area.zMin)) + cellOffset[5];
+            cellLocals[top--] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, area.max.y - 1, area.zMin)) + cellOffset[2];
             // Fill Left and Right Vertices
             for (int y = area.min.y + 1; y < area.max.y; y++)
             {
-                cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, y, 0)) + cellOffset[4];
-                cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, y, 0)) + cellOffset[5];
+                cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, y, area.zMin)) + cellOffset[4];
+                cellLocals[left--] = gridLayout.CellToLocal(new Vector3Int(area.min.x, y, area.zMin)) + cellOffset[5];
             }
             for (int y = area.min.y; y < (area.max.y - 1); y++)
             {
-                cellLocals[right++] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, y, 0)) + cellOffset[2];
-                cellLocals[right++] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, y, 0)) + cellOffset[1];
+                cellLocals[right++] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, y, area.zMin)) + cellOffset[2];
+                cellLocals[right++] = gridLayout.CellToLocal(new Vector3Int(area.max.x - 1, y, area.zMin)) + cellOffset[1];
             }
             HandleUtility.ApplyWireMaterial();
             GL.PushMatrix();

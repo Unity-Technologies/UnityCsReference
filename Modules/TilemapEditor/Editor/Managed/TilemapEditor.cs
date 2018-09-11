@@ -30,8 +30,10 @@ namespace UnityEditor
             public static readonly GUIContent tilemapColorLabel = EditorGUIUtility.TrTextContent("Color", "Color tinting all Sprites from tiles in the tilemap");
             public static readonly GUIContent tileAnchorLabel = EditorGUIUtility.TrTextContent("Tile Anchor", "Anchoring position for Sprites from tiles in the tilemap");
             public static readonly GUIContent orientationLabel = EditorGUIUtility.TrTextContent("Orientation", "Orientation for tiles in the tilemap");
-            public static readonly GUIContent pointTopHexagonCreateUndo = EditorGUIUtility.TrTextContent("Hexagonal Point Top Tilemap");
-            public static readonly GUIContent flatTopHexagonCreateUndo = EditorGUIUtility.TrTextContent("Hexagonal Flat Top Tilemap");
+            public static readonly string pointTopHexagonCreateUndo = L10n.Tr("Hexagonal Point Top Tilemap");
+            public static readonly string flatTopHexagonCreateUndo = L10n.Tr("Hexagonal Flat Top Tilemap");
+            public static readonly string isometricCreateUndo = L10n.Tr("Isometric Tilemap");
+            public static readonly string isometricZAsYCreateUndo = L10n.Tr("Isometric Z As Y Tilemap");
         }
 
         private void OnEnable()
@@ -89,17 +91,28 @@ namespace UnityEditor
         [MenuItem("GameObject/2D Object/Hexagonal Point Top Tilemap")]
         internal static void CreateHexagonalPointTopTilemap()
         {
-            CreateHexagonalTilemap(GridLayout.CellSwizzle.XYZ, Styles.pointTopHexagonCreateUndo.text);
+            CreateHexagonalTilemap(GridLayout.CellSwizzle.XYZ, Styles.pointTopHexagonCreateUndo);
         }
 
         [MenuItem("GameObject/2D Object/Hexagonal Flat Top Tilemap")]
         internal static void CreateHexagonalFlatTopTilemap()
         {
-            CreateHexagonalTilemap(GridLayout.CellSwizzle.YXZ, Styles.flatTopHexagonCreateUndo.text);
+            CreateHexagonalTilemap(GridLayout.CellSwizzle.YXZ, Styles.flatTopHexagonCreateUndo);
         }
 
         [MenuItem("GameObject/2D Object/Isometric Tilemap")]
         internal static void CreateIsometricTilemap()
+        {
+            CreateIsometricTilemap(GridLayout.CellLayout.Isometric, Styles.isometricCreateUndo);
+        }
+
+        [MenuItem("GameObject/2D Object/Isometric Z As Y Tilemap")]
+        internal static void CreateIsometricZAsYTilemap()
+        {
+            CreateIsometricTilemap(GridLayout.CellLayout.IsometricZAsY, Styles.isometricZAsYCreateUndo);
+        }
+
+        private static void CreateIsometricTilemap(GridLayout.CellLayout isometricLayout, string undoMessage)
         {
             var root = FindOrCreateRootGrid();
             var uniqueName = GameObjectUtility.GetUniqueNameForSibling(root.transform, "Tilemap");
@@ -108,12 +121,16 @@ namespace UnityEditor
             tilemapGO.transform.position = Vector3.zero;
 
             var grid = root.GetComponent<Grid>();
-            grid.cellLayout = Grid.CellLayout.Isometric;
-            grid.cellSize = new Vector3(1.0f, 0.5f, 0.0f);
+            // Case 1071703: Do not reset cell size if adding a new Tilemap to an existing Grid of the same layout
+            if (isometricLayout != grid.cellLayout)
+            {
+                grid.cellLayout = isometricLayout;
+                grid.cellSize = new Vector3(1.0f, 0.5f, 0.0f);
+            }
 
             var tilemapRenderer = tilemapGO.GetComponent<TilemapRenderer>();
             tilemapRenderer.sortOrder = TilemapRenderer.SortOrder.TopRight;
-            Undo.RegisterCreatedObjectUndo(tilemapGO, "Create Isometric Tilemap");
+            Undo.RegisterCreatedObjectUndo(tilemapGO, undoMessage);
         }
 
         private static void CreateHexagonalTilemap(GridLayout.CellSwizzle swizzle, string undoMessage)

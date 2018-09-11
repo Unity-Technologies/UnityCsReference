@@ -16,9 +16,15 @@ namespace UnityEditor.ShortcutManagement
         {
             InitializeController();
             EditorApplication.globalEventHandler += EventHandler;
+            EditorApplication.doPressedKeysTriggerAnyShortcut += HasAnyEntriesHandler;
 
             // Need to reinitialize after project load if we want menu items
             EditorApplication.projectWasLoaded += InitializeController;
+        }
+
+        static bool HasAnyEntriesHandler()
+        {
+            return instance.HasAnyEntries(Event.current);
         }
 
         static void EventHandler()
@@ -65,6 +71,11 @@ namespace UnityEditor.ShortcutManagement
         {
             m_Directory.Initialize(profileManager.GetAllShortcuts());
             m_Trigger = new Trigger(directory, new ConflictResolver());
+        }
+
+        internal bool HasAnyEntries(Event evt)
+        {
+            return m_Trigger.HasAnyEntries();
         }
 
         internal void HandleKeyEvent(Event evt)

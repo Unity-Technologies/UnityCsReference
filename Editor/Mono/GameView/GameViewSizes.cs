@@ -239,9 +239,10 @@ namespace UnityEditor
                 k_4_3_Landscape, k_4_3_Portrait,
                 k_iPhone4_Portrait, k_iPhone4_Landscape,
                 k_iPhone5_Portrait, k_iPhone5_Landscape,
-                k_iPad_768p_Landscape, k_iPad_768p_Portrait);
+                k_iPad_768p_Landscape, k_iPad_768p_Portrait,
+                m_Remote);
 
-            m_Android.AddBuiltinSizes(kFree, m_Remote,
+            m_Android.AddBuiltinSizes(kFree,
                 k_800x480_Portrait, k_800x480_Landscape,
                 k_720p_Portrait, k_720p_Landscape,
                 k_1080p_Portrait, k_1080p_Landscape,
@@ -249,7 +250,8 @@ namespace UnityEditor
                 k_2560x1440_Portrait, k_2560x1440_Landscape,
                 k_2960x1440_Portrait, k_2960x1440_Landscape,
                 k_16_9_Portrait, k_16_9_Landscape,
-                k_18_9_Portrait, k_18_9_Landscape);
+                k_18_9_Portrait, k_18_9_Landscape,
+                m_Remote);
 
             m_HMD.AddBuiltinSizes(kFree, m_Remote);
         }

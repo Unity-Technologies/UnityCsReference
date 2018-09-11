@@ -49,5 +49,8 @@ namespace UnityEngine
         public virtual void Move(GridLayout gridLayout, GameObject brushTarget, BoundsInt from, BoundsInt to) {}
         public virtual void MoveStart(GridLayout gridLayout, GameObject brushTarget, BoundsInt position) {}
         public virtual void MoveEnd(GridLayout gridLayout, GameObject brushTarget, BoundsInt position) {}
+
+        public virtual void ChangeZPosition(int change) {}
+        public virtual void ResetZPosition() {}
     }
 }

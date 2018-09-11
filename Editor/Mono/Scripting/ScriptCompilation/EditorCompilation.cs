@@ -487,7 +487,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
         }
 
-        Exception[] UpdateCustomTargetAssemblies()
+        public static Exception[] UpdateCustomScriptAssemblies(CustomScriptAssembly[] customScriptAssemblies,
+            PackageAssembly[] packageAssemblies)
         {
             var exceptions = new List<Exception>();
 
@@ -495,14 +496,14 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 try
                 {
-                    if (m_PackageAssemblies != null && !assembly.PackageAssembly.HasValue)
+                    if (packageAssemblies != null && !assembly.PackageAssembly.HasValue)
                     {
                         var pathPrefix = assembly.PathPrefix.ToLowerInvariant();
 
-                        foreach (var packageAssembly in m_PackageAssemblies)
+                        foreach (var packageAssembly in packageAssemblies)
                         {
-                            var lower = AssetPath.ReplaceSeparators(packageAssembly.DirectoryPath).ToLowerInvariant();
-                            if (pathPrefix.StartsWith(lower))
+                            var lower = AssetPath.ReplaceSeparators(packageAssembly.DirectoryPath + AssetPath.Separator).ToLowerInvariant();
+                            if (pathPrefix.StartsWith(lower, StringComparison.Ordinal))
                             {
                                 assembly.PackageAssembly = packageAssembly;
                                 break;
@@ -521,9 +522,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 }
                 catch (Exception e)
                 {
-                    SetCompilationSetupErrorFlags(CompilationSetupErrorFlags.loadError);
                     exceptions.Add(e);
                 }
+            }
+
+            return exceptions.ToArray();
+        }
+
+        Exception[] UpdateCustomTargetAssemblies()
+        {
+            var exceptions = UpdateCustomScriptAssemblies(customScriptAssemblies, m_PackageAssemblies);
+
+            if (exceptions.Length > 0)
+            {
+                SetCompilationSetupErrorFlags(CompilationSetupErrorFlags.loadError);
             }
 
             customTargetAssemblies = EditorBuildRules.CreateTargetAssemblies(customScriptAssemblies, precompiledAssemblies);
@@ -533,7 +545,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // customTargetAssemblies being updated.
             UpdateDirtyTargetAssemblies();
 
-            return exceptions.ToArray();
+            return exceptions;
         }
 
         void UpdateDirtyTargetAssemblies()

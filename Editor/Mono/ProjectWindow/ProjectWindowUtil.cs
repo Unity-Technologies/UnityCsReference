@@ -107,15 +107,6 @@ namespace UnityEditor
             }
         }
 
-        internal class DoCreatePrefab : EndNameEditAction
-        {
-            public override void Action(int instanceId, string pathName, string resourceFile)
-            {
-                Object o = PrefabUtility.CreateEmptyPrefab(pathName);
-                ProjectWindowUtil.ShowCreatedAsset(o);
-            }
-        }
-
         internal class DoCreatePrefabVariant : EndNameEditAction
         {
             public override void Action(int instanceId, string pathName, string resourceFile)
@@ -255,12 +246,6 @@ namespace UnityEditor
         public static void CreateScene()
         {
             StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreateScene>(), "New Scene.unity", EditorGUIUtility.FindTexture(typeof(SceneAsset)), null);
-        }
-
-        // Create a prefab
-        public static void CreatePrefab()
-        {
-            StartNameEditingIfProjectWindowExists(0, ScriptableObject.CreateInstance<DoCreatePrefab>(), "New Prefab.prefab", EditorGUIUtility.IconContent("Prefab Icon").image as Texture2D, null);
         }
 
         [MenuItem("Assets/Create/Prefab Variant", true)]

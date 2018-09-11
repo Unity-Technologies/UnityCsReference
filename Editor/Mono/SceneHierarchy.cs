@@ -485,8 +485,6 @@ namespace UnityEditor
             EditorSceneManager.newSceneCreated += OnSceneCreated;
             EditorSceneManager.sceneOpened += OnSceneOpened;
 
-            DoPingRequest();
-
             m_AllowAlphaNumericalSort = EditorPrefs.GetBool("AllowAlphaNumericHierarchy", false) || !InternalEditorUtility.isHumanControllingUs; // Always allow alphasorting when running automated tests so we can test alpha sorting
             SetUpSortMethodLists();
 
@@ -495,6 +493,8 @@ namespace UnityEditor
 
             if (m_TreeViewKeyboardControlID == 0)
                 m_TreeViewKeyboardControlID = EditorGUIUtility.GetPermanentControlID();
+
+            DoPingRequest();
         }
 
         public virtual void OnDisable()

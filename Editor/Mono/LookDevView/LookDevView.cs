@@ -1676,7 +1676,7 @@ namespace UnityEditor
                         }
 
                         GameObject go = o as GameObject;
-                        if (go && EditorUtility.IsPersistent(go) && PrefabUtility.GetPrefabObject(go) != null)
+                        if (go && EditorUtility.IsPersistent(go) && PrefabUtility.IsPartOfPrefabAsset(go))
                         {
                             if (GameObjectInspector.HasRenderableParts(go))
                             {

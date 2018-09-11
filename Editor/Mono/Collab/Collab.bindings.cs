@@ -206,12 +206,17 @@ namespace UnityEditor.Collaboration
         [NativeMethod(HasExplicitThis = true, ThrowsException = true, IsThreadSafe = true)]
         extern void SetChangesToPublishInternal(ChangeItem[] changes);
 
+        [NativeMethod(HasExplicitThis = true, ThrowsException = true, IsThreadSafe = true)]
+        extern Change[] GetSelectedChangesInternal();
+
         [NativeMethod(Name = "GetJobProgress", HasExplicitThis = true, ThrowsException = true)]
         extern bool GetJobProgressInternal([Out] ProgressInfo info, int jobId);
 
         [NativeMethod(HasExplicitThis = true, ThrowsException = true)]
         public extern void Publish(string comment, bool useSelectedAssets, bool confirmMatchesPrevious);
 
+        [NativeMethod(HasExplicitThis = true, ThrowsException = true, IsThreadSafe = true)]
+        public extern void ClearSelectedChangesToPublish();
 
         [NativeMethod(HasExplicitThis = true, ThrowsException = true)]
         public extern SoftLock[] GetSoftLocks(string assetGuid);

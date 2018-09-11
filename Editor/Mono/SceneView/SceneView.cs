@@ -741,7 +741,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SceneRenderModeWindow(this), null, ShowMode.PopupMenuWithKeyboardFocus);
+                PopupWindow.Show(rect, new SceneRenderModeWindow(this));
                 GUIUtility.ExitGUI();
             }
 
@@ -768,7 +768,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(fxRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SceneFXWindow(this), null, ShowMode.PopupMenuWithKeyboardFocus);
+                PopupWindow.Show(rect, new SceneFXWindow(this));
                 GUIUtility.ExitGUI();
             }
 

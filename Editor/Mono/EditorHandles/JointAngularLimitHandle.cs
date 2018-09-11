@@ -26,10 +26,12 @@ namespace UnityEditor.IMGUI.Controls
             Vector3 worldPosition = Handles.matrix.MultiplyPoint3x4(
                 Quaternion.AngleAxis(handle.angle, Vector3.up) * Vector3.forward * handle.radius
             );
-            Vector3 toHandle = worldPosition - Camera.current.transform.position;
-            if (Camera.current.orthographic)
+            Vector3 toHandle = Camera.current == null
+                ? worldPosition
+                : worldPosition - Camera.current.transform.position;
+            if (Camera.current == null || Camera.current.orthographic)
             {
-                Vector3 lookVector = Camera.current.transform.forward;
+                Vector3 lookVector = Camera.current == null ? Vector3.forward : Camera.current.transform.forward;
                 toHandle = lookVector * Vector3.Dot(lookVector, toHandle);
             }
             return toHandle.sqrMagnitude;

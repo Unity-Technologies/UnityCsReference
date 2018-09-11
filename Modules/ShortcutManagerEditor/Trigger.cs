@@ -130,6 +130,11 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
+        public bool HasAnyEntries()
+        {
+            return m_Entries.Any();
+        }
+
         // filtered entries are expected to all be in the same context and/or null context and they all are known to share the prefix
         bool HasConflicts(List<ShortcutEntry> filteredEntries, List<KeyCombination> prefix)
         {

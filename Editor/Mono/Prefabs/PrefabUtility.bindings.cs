@@ -30,6 +30,7 @@ namespace UnityEditor
         extern private static Object GetCorrespondingObjectFromSourceAtPath_internal([NotNull] Object obj, string prefabAssetPath);
 
         // Retrieves the prefab object representation.
+        [Obsolete("Use GetPrefabInstanceHandle for Prefab instances. Handles for Prefab Assets has been discontinued.")]
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern public static Object GetPrefabObject(Object targetObject);
 
@@ -72,6 +73,7 @@ namespace UnityEditor
         extern public static void MergeAllPrefabInstances(Object targetObject);
 
         // Disconnects the prefab instance from its parent prefab.
+        [Obsolete("The concept of disconnecting Prefab instances has been deprecated.")]
         [FreeFunction]
         extern public static void DisconnectPrefabInstance(Object targetObject);
 
@@ -88,6 +90,7 @@ namespace UnityEditor
         extern public static void LoadPrefabContentsIntoPreviewScene(string prefabPath, Scene scene);
 
         // Connect the source prefab to the game object, which replaces the instance content with the content of the prefab
+        [Obsolete("Use RevertPrefabInstance. Prefabs instances can no longer be connected to Prefab Assets they are not an instance of to begin with.")]
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
         extern public static GameObject ConnectGameObjectToPrefab([NotNull] GameObject go, [NotNull] GameObject sourcePrefab);
@@ -105,25 +108,34 @@ namespace UnityEditor
 
         // Connects the game object to the prefab that it was last connected to.
         [FreeFunction]
+        [Obsolete("Use RevertPrefabInstance.")]
         extern public static bool ReconnectToLastPrefab(GameObject go);
 
         // Resets the properties of the component or game object to the parent prefab state
+        [Obsolete("Use RevertObjectOverride.")]
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern public static bool ResetToPrefabState(Object obj);
+
+        // Resets the properties of the component or game object to the parent prefab state
+        [NativeMethod("PrefabUtilityBindings::ResetToPrefabState", IsFreeFunction = true)]
+        extern private static bool RevertObjectOverride_Internal(Object obj);
 
         [FreeFunction]
         extern public static bool IsAddedComponentOverride([NotNull] Object component);
 
         // Resets the properties of all objects in the prefab, including child game objects and components that were added to the prefab instance
+        [Obsolete("Use the overload that takes an InteractionMode parameter.")]
         [FreeFunction]
         extern public static bool RevertPrefabInstance([NotNull] GameObject go);
+
+        // Resets the properties of all objects in the prefab, including child game objects and components that were added to the prefab instance
+        [NativeMethod("RevertPrefabInstance", IsFreeFunction = true)]
+        extern private static bool RevertPrefabInstance_Internal([NotNull] GameObject go);
 
         // Helper function to find the prefab root of an object
         [FreeFunction]
         [Obsolete("Use GetOutermostPrefabInstanceRoot if source is a Prefab instance or source.transform.root.gameObject if source is a Prefab Asset object.")]
         extern public static GameObject FindPrefabRoot([NotNull] GameObject source);
-
-#pragma warning disable 0618 // Type or member is obsolete
 
         internal static GameObject CreateVariant(GameObject assetRoot, string path)
         {
@@ -146,11 +158,16 @@ namespace UnityEditor
             if (!Paths.IsValidAssetPath(path, ".prefab"))
                 throw new ArgumentException("Given path is not valid: '" + path + "'");
 
+#pragma warning disable 0618 // Type or member is obsolete
             return CreateVariant_Internal(assetRoot, path, ReplacePrefabOptions.Default);
+#pragma warning restore 0618 // Type or member is obsolete
         }
 
+        // TODO: Having an non-obsolete method that takes an obsolete enum types as parameter is no good.
         [NativeMethod("CreateVariant", IsFreeFunction = true)]
+#pragma warning disable 0618 // Type or member is obsolete
         extern private static GameObject CreateVariant_Internal([NotNull] GameObject original, string path, ReplacePrefabOptions replaceOptions);
+#pragma warning restore 0618 // Type or member is obsolete
 
         private enum PrefabCreationFlags
         {
@@ -158,6 +175,8 @@ namespace UnityEditor
             CreateVariant = 1,
         }
 
+        // TODO: Having an non-obsolete method that takes an obsolete enum types as parameter is no good.
+#pragma warning disable 0618 // Type or member is obsolete
         private static GameObject SavePrefab(GameObject inputObject, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags creationFlags)
         {
             if (inputObject == null)
@@ -175,13 +194,17 @@ namespace UnityEditor
                 throw new ArgumentException("Given path does not exist: '" + path + "'");
 
             string prefabGUID = AssetDatabase.AssetPathToGUID(path);
-            if (!VerifyNestingFromScript(new GameObject[] {inputObject}, prefabGUID, PrefabUtility.GetPrefabObject(inputObject)))
+            if (!VerifyNestingFromScript(new GameObject[] {inputObject}, prefabGUID, PrefabUtility.GetPrefabInstanceHandle(inputObject)))
                 throw new ArgumentException("Cyclic nesting detected");
 
             return SavePrefab_Internal(inputObject, path, replaceOptions, creationFlags);
         }
 
+#pragma warning restore 0618 // Type or member is obsolete
+
+        // TODO: Having an non-obsolete method that takes an obsolete enum types as parameter is no good.
         [NativeMethod("SavePrefab", IsFreeFunction = true)]
+#pragma warning disable 0618 // Type or member is obsolete
         extern private static GameObject SavePrefab_Internal([NotNull] GameObject root, string path, ReplacePrefabOptions replaceOptions, PrefabCreationFlags createOptions);
 #pragma warning restore 0618 // Type or member is obsolete
 
@@ -201,7 +224,7 @@ namespace UnityEditor
 
             Object targetPrefabInstance = null;
 
-            var targetPrefabObject = PrefabUtility.GetPrefabObject(targetPrefab);
+            var targetPrefabObject = PrefabUtility.GetPrefabAssetHandle(targetPrefab);
 
             foreach (GameObject go in gameObjects)
             {
@@ -232,7 +255,7 @@ namespace UnityEditor
                 if (PrefabUtility.IsPartOfNonAssetPrefabInstance(go))
                 {
                     var correspondingGO = PrefabUtility.GetCorrespondingObjectFromSource(go);
-                    var correspondingGOPrefabObject = PrefabUtility.GetPrefabObject(correspondingGO);
+                    var correspondingGOPrefabObject = PrefabUtility.GetPrefabAssetHandle(correspondingGO);
                     if (targetPrefabObject == correspondingGOPrefabObject)
                         throw new ArgumentException("GameObject is already part of target prefab");
                 }
@@ -298,6 +321,11 @@ namespace UnityEditor
         // Return true if the object is part of a Variant no matter if the object is an instance or asset object
         [FreeFunction]
         extern public static bool IsPartOfVariantPrefab([NotNull] Object componentOrGameObject);
+
+        // Returns true if the object is from a Prefab Asset which is not editable, or an instance of such a Prefab
+        // Examples are Model Prefabs and Prefabs in read-only folders.
+        [FreeFunction]
+        extern public static bool IsPartOfImmutablePrefab([NotNull] Object componentOrGameObject);
 
         [FreeFunction]
         extern public static bool IsDisconnectedFromPrefabAsset([NotNull] Object componentOrGameObject);

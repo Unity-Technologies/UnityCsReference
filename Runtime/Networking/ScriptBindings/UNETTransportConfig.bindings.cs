@@ -13,6 +13,7 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.Networking
 {
+#pragma warning disable 618
 
     [NativeHeader("Runtime/Networking/UNETManager.h")]
     [NativeHeader("Runtime/Networking/UNetTypes.h")]
@@ -308,4 +309,5 @@ namespace UnityEngine.Networking
         [NativeProperty("m_MaxNetSimulatorTimeout", TargetType.Field)] private extern uint MaxNetSimulatorTimeout { set; }
     }
 
+#pragma warning restore 618
 }

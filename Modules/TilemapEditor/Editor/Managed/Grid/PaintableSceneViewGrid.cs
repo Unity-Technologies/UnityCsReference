@@ -320,16 +320,16 @@ namespace UnityEditor
                 rect = new RectInt(GridSelection.position.xMin, GridSelection.position.yMin, GridSelection.position.size.x, GridSelection.position.size.y);
 
             var layoutGrid = tilemap != null ? tilemap as GridLayout : grid as GridLayout;
-
+            BoundsInt brushBounds = new BoundsInt(new Vector3Int(rect.x, rect.y, zPosition), new Vector3Int(rect.width, rect.height, 1));
             if (GridPaintingState.activeBrushEditor != null)
             {
-                GridPaintingState.activeBrushEditor.OnPaintSceneGUI(layoutGrid, brushTarget,
-                    new BoundsInt(new Vector3Int(rect.x, rect.y, 0), new Vector3Int(rect.width, rect.height, 1)),
-                    EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || executing);
+                GridPaintingState.activeBrushEditor.OnPaintSceneGUI(layoutGrid, brushTarget, brushBounds
+                    , EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || executing);
             }
             else // Fallback when user hasn't defined custom editor
             {
-                GridBrushEditorBase.OnPaintSceneGUIInternal(layoutGrid, brushTarget, new BoundsInt(new Vector3Int(rect.x, rect.y, 0), new Vector3Int(rect.width, rect.height, 1)), EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || executing);
+                GridBrushEditorBase.OnPaintSceneGUIInternal(layoutGrid, brushTarget, brushBounds
+                    , EditModeToBrushTool(EditMode.editMode), m_MarqueeStart.HasValue || executing);
             }
         }
 

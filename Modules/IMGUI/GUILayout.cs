@@ -242,6 +242,11 @@ namespace UnityEngine
 
             op.value = 10000;
             GUILayoutUtility.GetRect(0, 0, GUILayoutUtility.spaceStyle, op);
+
+            if (Event.current.type == EventType.Layout)
+            {
+                GUILayoutUtility.current.topLevel.entries[GUILayoutUtility.current.topLevel.entries.Count - 1].consideredForMargin = false;
+            }
         }
 
         public static void BeginHorizontal(params GUILayoutOption[] options) { BeginHorizontal(GUIContent.none, GUIStyle.none, options); }

@@ -251,15 +251,27 @@ namespace UnityEditor
 
         Vector2 m_FoldoutScroll = Vector2.zero;
 
-        public override void OnInspectorGUI()
+        private void SetupInternalProperties()
+        {
+            m_HumanBoneArray = serializedObject.FindProperty("m_HumanDescription.m_Human");
+            m_Skeleton = serializedObject.FindProperty("m_HumanDescription.m_Skeleton");
+        }
+
+        private void HandleUndoPerformed()
         {
             if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == EventCommandNames.UndoRedoPerformed)
             {
+                SetupInternalProperties();
+
                 AvatarSetupTool.TransferPoseToDescription(m_Skeleton, root);
                 for (int i = 0; i < m_Bones.Length; i++)
                     m_Bones[i].Serialize(m_HumanBoneArray);
             }
+        }
 
+        public override void OnInspectorGUI()
+        {
+            HandleUndoPerformed();
             UpdateSelectedBone();
 
             // case 837655.  GUI.keyboardControl is overriden when changing scene selection.
