@@ -1657,7 +1657,8 @@ namespace UnityEditor
             if (!UseSceneFiltering())
             {
                 // Blit to final target RT in deferred mode
-                Handles.DrawCameraStep2(m_Camera, m_RenderMode);
+                if (m_Camera.gameObject.activeInHierarchy)
+                    Handles.DrawCameraStep2(m_Camera, m_RenderMode);
 
                 // Give editors a chance to kick in. Disable in search mode, editors rendering to the scene
                 // view won't be able to properly render to the rendertexture as needed.

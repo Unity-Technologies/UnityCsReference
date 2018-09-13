@@ -58,5 +58,15 @@ namespace UnityEditor.U2D.Common
         {
             return TextureImporterInspector.IsFormatRequireCompressionSetting(format);
         }
+
+        public bool IsETC1SupportedByBuildTarget(BuildTarget buildTarget)
+        {
+            return TextureImporter.IsETC1SupportedByBuildTarget(buildTarget);
+        }
+
+        public bool IsTextureFormatETC1Compression(TextureFormat format)
+        {
+            return TextureImporter.IsTextureFormatETC1Compression(format);
+        }
     }
 }

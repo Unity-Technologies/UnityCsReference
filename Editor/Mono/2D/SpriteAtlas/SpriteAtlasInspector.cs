@@ -125,6 +125,7 @@ namespace UnityEditor.U2D
         private int[] m_OptionValues = null;
         private string[] m_OptionDisplays = null;
         private Texture2D[] m_PreviewTextures = null;
+        private Texture2D[] m_PreviewAlphaTextures = null;
 
         private bool m_PackableListExpanded = true;
         private ReorderableList m_PackableList;
@@ -575,6 +576,7 @@ namespace UnityEditor.U2D
             if (m_PreviewTextures == null || m_Hash != spriteAtlas.GetHashString())
             {
                 m_PreviewTextures = spriteAtlas.GetPreviewTextures();
+                m_PreviewAlphaTextures = spriteAtlas.GetPreviewAlphaTextures();
                 m_Hash = spriteAtlas.GetHashString();
 
                 if (m_PreviewTextures != null
@@ -623,7 +625,7 @@ namespace UnityEditor.U2D
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 
-                if (TextureUtil.HasAlphaTextureFormat(t.format))
+                if (TextureUtil.HasAlphaTextureFormat(t.format) || (m_PreviewAlphaTextures != null && m_PreviewAlphaTextures.Length > 0))
                     m_ShowAlpha = GUILayout.Toggle(m_ShowAlpha, m_ShowAlpha ? s_Styles.alphaIcon : s_Styles.RGBIcon, s_Styles.previewButton);
 
                 int mipCount = Mathf.Max(1, TextureUtil.GetMipmapCount(t));
@@ -639,7 +641,13 @@ namespace UnityEditor.U2D
         public override void OnPreviewGUI(Rect r, GUIStyle background)
         {
             CachePreviewTexture();
-            if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
+
+            if (m_ShowAlpha && m_PreviewAlphaTextures != null && m_PreviewPage < m_PreviewAlphaTextures.Length)
+            {
+                var at = m_PreviewAlphaTextures[m_PreviewPage];
+                EditorGUI.DrawTextureTransparent(r, at, ScaleMode.ScaleToFit);
+            }
+            else if (m_PreviewTextures != null && m_PreviewPage < m_PreviewTextures.Length)
             {
                 Texture2D t = m_PreviewTextures[m_PreviewPage];
 

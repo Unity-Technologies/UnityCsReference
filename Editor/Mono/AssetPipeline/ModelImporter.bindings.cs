@@ -816,7 +816,7 @@ namespace UnityEditor
         }
 
         [FreeFunction("ModelImporterBindings::UpdateTransformMask")]
-        extern internal static void UpdateTransformMask(AvatarMask mask, SerializedProperty serializedProperty);
+        extern internal static void UpdateTransformMask([NotNull] AvatarMask mask, [NotNull] SerializedProperty serializedProperty);
 
         extern internal AnimationClip GetPreviewAnimationClipForTake(string takeName);
 

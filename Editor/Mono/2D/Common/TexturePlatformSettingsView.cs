@@ -15,6 +15,7 @@ namespace UnityEditor.U2D.Common
             public readonly GUIContent maxTextureSizeLabel = EditorGUIUtility.TextContent("Max Texture Size|Maximum size of the packed texture.");
             public readonly GUIContent compressionLabel = EditorGUIUtility.TextContent("Compression|How will this texture be compressed?");
             public readonly GUIContent useCrunchedCompressionLabel = EditorGUIUtility.TextContent("Use Crunch Compression|Texture is crunch-compressed to save space on disk when applicable.");
+            public readonly GUIContent useAlphaSplitLabel = EditorGUIUtility.TrTextContent("Split Alpha Channel", "Alpha for this texture will be preserved by splitting the alpha channel to another texture, and both resulting textures will be compressed using ETC1.");
             public readonly GUIContent compressionQualityLabel = EditorGUIUtility.TextContent("Compressor Quality");
             public readonly GUIContent compressionQualitySliderLabel = EditorGUIUtility.TextContent("Compressor Quality|Use the slider to adjust compression quality from 0 (Fastest) to 100 (Best)");
 
@@ -132,6 +133,19 @@ namespace UnityEditor.U2D.Common
             EditorGUI.showMixedValue = false;
             changed = EditorGUI.EndChangeCheck();
             return defaultValue;
+        }
+
+        public virtual bool DrawAlphaSplit(bool defaultValue, bool isMixedValue, bool isDisabled, out bool changed)
+        {
+            using (new EditorGUI.DisabledScope(isDisabled))
+            {
+                EditorGUI.BeginChangeCheck();
+                EditorGUI.showMixedValue = isMixedValue;
+                defaultValue = EditorGUILayout.Toggle(s_Styles.useAlphaSplitLabel, defaultValue);
+                EditorGUI.showMixedValue = false;
+                changed = EditorGUI.EndChangeCheck();
+                return defaultValue;
+            }
         }
     }
 }

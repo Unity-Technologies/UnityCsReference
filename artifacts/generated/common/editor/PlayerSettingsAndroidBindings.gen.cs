@@ -227,7 +227,7 @@ public sealed partial class PlayerSettings : UnityEngine.Object
             set;
         }
 
-        internal extern static bool androidTangoEnabled
+        public extern static bool ARCoreEnabled
         {
             [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
             [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
