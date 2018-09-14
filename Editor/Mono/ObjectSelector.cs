@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.SceneManagement;
+using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
@@ -241,9 +242,9 @@ namespace UnityEditor
 
         void FilterSettingsChanged()
         {
-            SearchFilter filter = new SearchFilter();
+            var filter = new SearchFilter();
             filter.SearchFieldStringToFilter(m_SearchFilter);
-            if (!String.IsNullOrEmpty(m_RequiredType) && filter.classNames.Length == 0)
+            if (!string.IsNullOrEmpty(m_RequiredType) && filter.classNames.Length == 0)
             {
                 filter.classNames = new[] { m_RequiredType };
             }
@@ -264,7 +265,14 @@ namespace UnityEditor
             if (hierarchyType == HierarchyType.Assets)
             {
                 filter.searchArea = SearchFilter.SearchArea.InAssetsOnly;
+
+                // When AssemblyDefinitionAsset is the required type, search in all assets (Assets and Packages folder)
+                if (!string.IsNullOrEmpty(m_RequiredType) && m_RequiredType == typeof(AssemblyDefinitionAsset).Name)
+                {
+                    filter.searchArea = SearchFilter.SearchArea.AllAssets;
+                }
             }
+
             m_ListArea.Init(listPosition, hierarchyType, filter, true);
         }
 
