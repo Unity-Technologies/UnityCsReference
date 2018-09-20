@@ -427,7 +427,7 @@ namespace UnityEditor
                 if (supportsCullingText != m_SupportsCullingText || m_SupportsCullingTextLabel == null)
                 {
                     m_SupportsCullingText = supportsCullingText;
-                    m_SupportsCullingTextLabel = "Automatic culling is disabled because: " + supportsCullingText.Replace("\n", "\n" + s_Texts.bulletPoint);
+                    m_SupportsCullingTextLabel = "Procedural simulation is not supported because: " + supportsCullingText.Replace("\n", "\n" + s_Texts.bulletPoint);
                 }
             }
             else

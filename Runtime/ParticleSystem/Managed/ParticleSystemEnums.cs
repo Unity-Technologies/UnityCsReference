@@ -188,6 +188,15 @@ namespace UnityEngine
         Callback = 3                // Calls OnParticleSystemStopped.
     }
 
+    // The action to perform when a particle system is offscreen
+    public enum ParticleSystemCullingMode
+    {
+        Automatic = 0,
+        PauseAndCatchup = 1,
+        Pause = 2,
+        AlwaysSimulate = 3
+    }
+
     // The emitter velocity mode for particle systems
     public enum ParticleSystemEmitterVelocityMode
     {

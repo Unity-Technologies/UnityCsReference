@@ -143,8 +143,14 @@ namespace UnityEditor
             return Internal_GetScriptableObjectAnimatableBindings(scriptableObject);
         }
 
+        internal static EditorCurveBinding[] GetAdditionalAnimatorBindings(GameObject targetObject)
+        {
+            return Internal_GetAdditionalAnimatorBindings(targetObject);
+        }
+
         extern private static EditorCurveBinding[] Internal_GetGameObjectAnimatableBindings([NotNull] GameObject targetObject, [NotNull] GameObject root);
         extern private static EditorCurveBinding[] Internal_GetScriptableObjectAnimatableBindings([NotNull] ScriptableObject scriptableObject);
+        extern private static EditorCurveBinding[] Internal_GetAdditionalAnimatorBindings([NotNull] GameObject targetObject);
 
         // Binds the property and returns the type of the bound value (Can be used to display special UI for it and to enforce correct drag and drop)
         // null if it can't be bound.

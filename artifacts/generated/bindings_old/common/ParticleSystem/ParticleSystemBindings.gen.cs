@@ -63,6 +63,7 @@ public sealed partial class ParticleSystem : Component
                     public int maxParticles { get { return GetMaxParticles(m_ParticleSystem); } set { SetMaxParticles(m_ParticleSystem, value); } }
                     public ParticleSystemEmitterVelocityMode emitterVelocityMode { get { return GetUseRigidbodyForVelocity(m_ParticleSystem) ? ParticleSystemEmitterVelocityMode.Rigidbody : ParticleSystemEmitterVelocityMode.Transform; } set { SetUseRigidbodyForVelocity(m_ParticleSystem, value == ParticleSystemEmitterVelocityMode.Rigidbody); } }
                     public ParticleSystemStopAction stopAction { get { return GetStopAction(m_ParticleSystem); } set { SetStopAction(m_ParticleSystem, value); } }
+                    public ParticleSystemCullingMode cullingMode { get { return GetCullingMode(m_ParticleSystem); } set { SetCullingMode(m_ParticleSystem, value); } }
                     public ParticleSystemRingBufferMode ringBufferMode { get { return GetRingBufferMode(m_ParticleSystem); } set { SetRingBufferMode(m_ParticleSystem, value); } }
                     public Vector2 ringBufferLoopRange { get { return GetRingBufferLoopRange(m_ParticleSystem); } set { SetRingBufferLoopRange(m_ParticleSystem, value); } }
         
@@ -362,6 +363,14 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  ParticleSystemStopAction GetStopAction (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetCullingMode (ParticleSystem system, ParticleSystemCullingMode value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  ParticleSystemCullingMode GetCullingMode (ParticleSystem system) ;
 
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]

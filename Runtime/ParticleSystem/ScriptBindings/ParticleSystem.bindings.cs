@@ -64,7 +64,7 @@ namespace UnityEngine
             set;
         }
 
-        extern public bool automaticCullingEnabled
+        extern public bool proceduralSimulationSupported
         {
             get;
         }

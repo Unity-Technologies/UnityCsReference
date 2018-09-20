@@ -31,6 +31,7 @@ namespace UnityEditorInternal
 
         public override void FetchData()
         {
+            m_RootItem = null;
             if (AddCurvesPopup.s_State.selection.canAddCurves)
             {
                 GameObject rootGameObject = AddCurvesPopup.s_State.activeRootGameObject;

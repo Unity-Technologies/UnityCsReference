@@ -147,6 +147,9 @@ namespace UnityEditor
         extern public static void AddPropertyModification(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
 
         [NativeThrows]
+        extern public static void AddEditorCurveBinding([NotNull] GameObject gameObject, EditorCurveBinding binding);
+
+        [NativeThrows]
         extern internal static void AddTransformTR([NotNull] GameObject root, string path);
 
         [NativeThrows]

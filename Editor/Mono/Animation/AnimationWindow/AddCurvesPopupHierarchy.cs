@@ -14,9 +14,16 @@ namespace UnityEditorInternal
         private TreeViewState m_TreeViewState;
         private AddCurvesPopupHierarchyDataSource m_TreeViewDataSource;
 
+        private float m_ContentWidth = 0f;
+
+        public float GetContentWidth()
+        {
+            return m_ContentWidth;
+        }
+
         public void OnGUI(Rect position, EditorWindow owner)
         {
-            InitIfNeeded(owner, position);
+            m_TreeView.SetTotalRect(position);
             m_TreeView.OnEvent();
             m_TreeView.OnGUI(position, GUIUtility.GetControlID(FocusType.Keyboard));
         }
@@ -33,7 +40,7 @@ namespace UnityEditorInternal
             m_TreeView.deselectOnUnhandledMouseDown = true;
 
             m_TreeViewDataSource = new AddCurvesPopupHierarchyDataSource(m_TreeView);
-            TreeViewGUI gui = new AddCurvesPopupHierarchyGUI(m_TreeView, owner);
+            AddCurvesPopupHierarchyGUI gui = new AddCurvesPopupHierarchyGUI(m_TreeView, owner);
 
             m_TreeView.Init(rect,
                 m_TreeViewDataSource,
@@ -42,6 +49,8 @@ namespace UnityEditorInternal
             );
 
             m_TreeViewDataSource.UpdateData();
+
+            m_ContentWidth = gui.GetContentWidth();
         }
 
         internal virtual bool IsRenamingNodeAllowed(TreeViewItem node)

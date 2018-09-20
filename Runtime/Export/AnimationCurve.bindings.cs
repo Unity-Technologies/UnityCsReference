@@ -227,6 +227,12 @@ namespace UnityEngine
         // A straight Line starting at /timeStart/, /valueStart/ and ending at /timeEnd/, /valueEnd/
         public static AnimationCurve Linear(float timeStart, float valueStart, float timeEnd, float valueEnd)
         {
+            if (timeStart == timeEnd)
+            {
+                Keyframe key = new Keyframe(timeStart, valueStart);
+                return new AnimationCurve(new Keyframe[] {key});
+            }
+
             float tangent = (valueEnd - valueStart) / (timeEnd - timeStart);
             Keyframe[] keys = { new Keyframe(timeStart, valueStart, 0.0F, tangent), new Keyframe(timeEnd, valueEnd, tangent, 0.0F) };
             return new AnimationCurve(keys);
@@ -235,6 +241,12 @@ namespace UnityEngine
         // An ease-in and out curve starting at /timeStart/, /valueStart/ and ending at /timeEnd/, /valueEnd/.
         public static AnimationCurve EaseInOut(float timeStart, float valueStart, float timeEnd, float valueEnd)
         {
+            if (timeStart == timeEnd)
+            {
+                Keyframe key = new Keyframe(timeStart, valueStart);
+                return new AnimationCurve(new Keyframe[] {key});
+            }
+
             Keyframe[] keys = { new Keyframe(timeStart, valueStart, 0.0F, 0.0F), new Keyframe(timeEnd, valueEnd, 0.0F, 0.0F) };
             return new AnimationCurve(keys);
         }
