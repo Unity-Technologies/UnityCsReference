@@ -103,8 +103,8 @@ namespace UnityEditor
 
         public void RefreshPropertiesCache()
         {
-            m_SpriteDataProvider  = AssetImporter.GetAtPath(m_SelectedAssetPath) as ISpriteEditorDataProvider;
-            if (m_SpriteDataProvider == null)
+            m_SpriteDataProvider = AssetImporter.GetAtPath(m_SelectedAssetPath) as ISpriteEditorDataProvider;
+            if (!IsSpriteDataProviderValid())
             {
                 m_SelectedAssetPath = "";
                 return;
@@ -156,7 +156,7 @@ namespace UnityEditor
 
         public SpriteImportMode spriteImportMode
         {
-            get { return m_SpriteDataProvider == null ? SpriteImportMode.None : m_SpriteDataProvider.spriteImportMode; }
+            get { return !IsSpriteDataProviderValid() ? SpriteImportMode.None : m_SpriteDataProvider.spriteImportMode; }
         }
 
         bool activeDataProviderSelected
@@ -352,7 +352,7 @@ namespace UnityEditor
 
         void HandleApplyRevertDialog(string dialogTitle, string dialogContent)
         {
-            if (textureIsDirty && m_SpriteDataProvider != null)
+            if (textureIsDirty && IsSpriteDataProviderValid())
             {
                 if (EditorUtility.DisplayDialog(dialogTitle, dialogContent,
                     SpriteEditorWindowStyles.applyButtonLabel.text, SpriteEditorWindowStyles.revertButtonLabel.text))
@@ -364,10 +364,15 @@ namespace UnityEditor
             }
         }
 
+        bool IsSpriteDataProviderValid()
+        {
+            return m_SpriteDataProvider != null && !m_SpriteDataProvider.Equals(null);
+        }
+
         void RefreshRects()
         {
             m_RectsCache = null;
-            if (m_SpriteDataProvider != null)
+            if (IsSpriteDataProviderValid())
             {
                 m_RectsCache = m_SpriteDataProvider.GetSpriteRects().ToList();
             }
@@ -379,7 +384,7 @@ namespace UnityEditor
         {
             if (m_ResetOnNextRepaint || selectedProviderChanged)
             {
-                if (selectedProviderChanged || m_SpriteDataProvider == null)
+                if (selectedProviderChanged || !IsSpriteDataProviderValid())
                     m_SelectedAssetPath = GetSelectionAssetPath();
                 RebuildCache();
             }
@@ -393,7 +398,6 @@ namespace UnityEditor
             RefreshPropertiesCache();
             RefreshRects();
             UpdateAvailableModules();
-            SetupModule(m_CurrentModuleIndex);
         }
 
         private void DoTextureAndModulesGUI()
@@ -735,7 +739,7 @@ namespace UnityEditor
             }
 
             m_RegisteredModuleNames = new GUIContent[m_RegisteredModules.Count];
-            int lastUsedModuleIndex = -1;
+            int lastUsedModuleIndex = 0;
             for (int i = 0; i < m_RegisteredModules.Count; i++)
             {
                 m_RegisteredModuleNames[i] = new GUIContent(m_RegisteredModules[i].moduleName);
@@ -745,10 +749,7 @@ namespace UnityEditor
                 }
             }
 
-            if (lastUsedModuleIndex >= 0)
-                SetupModule(lastUsedModuleIndex);
-            else
-                SetupModule(0);
+            SetupModule(lastUsedModuleIndex);
         }
 
         void InitModules()

@@ -14,7 +14,7 @@ namespace UnityEngine
     public struct jvalue
     {
         [FieldOffset(0)]    public bool    z;
-        [FieldOffset(0)]    public byte    b;
+        [FieldOffset(0)]    public sbyte   b;
         [FieldOffset(0)]    public char    c;
         [FieldOffset(0)]    public short   s;
         [FieldOffset(0)]    public int     i;
@@ -95,6 +95,7 @@ namespace UnityEngine
         public static bool CallBooleanMethod(IntPtr obj, IntPtr methodID, jvalue[] args) { return false; }
         public static Int16 CallShortMethod(IntPtr obj, IntPtr methodID, jvalue[] args) { return 0; }
         public static Byte CallByteMethod(IntPtr obj, IntPtr methodID, jvalue[] args) { return 0; }
+        public static SByte CallSByteMethod(IntPtr obj, IntPtr methodID, jvalue[] args) { return 0; }
         public static Char CallCharMethod(IntPtr obj, IntPtr methodID, jvalue[] args) { return '0'; }
         public static float CallFloatMethod(IntPtr obj, IntPtr methodID, jvalue[] args) { return 0; }
         public static double CallDoubleMethod(IntPtr obj, IntPtr methodID, jvalue[] args) { return 0; }
@@ -104,6 +105,7 @@ namespace UnityEngine
         public static IntPtr GetObjectField(IntPtr obj, IntPtr fieldID) { return IntPtr.Zero; }
         public static bool GetBooleanField(IntPtr obj, IntPtr fieldID) { return false; }
         public static Byte GetByteField(IntPtr obj, IntPtr fieldID) { return 0; }
+        public static SByte GetSByteField(IntPtr obj, IntPtr fieldID) { return 0; }
         public static Char GetCharField(IntPtr obj, IntPtr fieldID) { return '0'; }
         public static Int16 GetShortField(IntPtr obj, IntPtr fieldID) { return 0; }
         public static Int32 GetIntField(IntPtr obj, IntPtr fieldID) { return 0; }
@@ -114,6 +116,7 @@ namespace UnityEngine
         public static void SetObjectField(IntPtr obj, IntPtr fieldID, IntPtr val) {}
         public static void SetBooleanField(IntPtr obj, IntPtr fieldID, bool val) {}
         public static void SetByteField(IntPtr obj, IntPtr fieldID, Byte val) {}
+        public static void SetSByteField(IntPtr obj, IntPtr fieldID, SByte val) {}
         public static void SetCharField(IntPtr obj, IntPtr fieldID, Char val) {}
         public static void SetShortField(IntPtr obj, IntPtr fieldID, Int16 val) {}
         public static void SetIntField(IntPtr obj, IntPtr fieldID, Int32 val) {}
@@ -126,6 +129,7 @@ namespace UnityEngine
         public static bool CallStaticBooleanMethod(IntPtr clazz, IntPtr methodID, jvalue[] args) { return false; }
         public static Int16 CallStaticShortMethod(IntPtr clazz, IntPtr methodID, jvalue[] args) { return 0; }
         public static Byte CallStaticByteMethod(IntPtr clazz, IntPtr methodID, jvalue[] args) { return 0; }
+        public static SByte CallStaticSByteMethod(IntPtr clazz, IntPtr methodID, jvalue[] args) { return 0; }
         public static Char CallStaticCharMethod(IntPtr clazz, IntPtr methodID, jvalue[] args) { return '0'; }
         public static float CallStaticFloatMethod(IntPtr clazz, IntPtr methodID, jvalue[] args) { return 0; }
         public static double CallStaticDoubleMethod(IntPtr clazz, IntPtr methodID, jvalue[] args) { return 0; }
@@ -135,6 +139,7 @@ namespace UnityEngine
         public static IntPtr GetStaticObjectField(IntPtr clazz, IntPtr fieldID) { return IntPtr.Zero; }
         public static bool GetStaticBooleanField(IntPtr clazz, IntPtr fieldID) { return false; }
         public static Byte GetStaticByteField(IntPtr clazz, IntPtr fieldID) { return 0; }
+        public static SByte GetStaticSByteField(IntPtr clazz, IntPtr fieldID) { return 0; }
         public static Char GetStaticCharField(IntPtr clazz, IntPtr fieldID) { return '0'; }
         public static Int16 GetStaticShortField(IntPtr clazz, IntPtr fieldID) { return 0; }
         public static Int32 GetStaticIntField(IntPtr clazz, IntPtr fieldID) { return 0; }
@@ -145,6 +150,7 @@ namespace UnityEngine
         public static void SetStaticObjectField(IntPtr clazz, IntPtr fieldID, IntPtr val) {}
         public static void SetStaticBooleanField(IntPtr clazz, IntPtr fieldID, bool val) {}
         public static void SetStaticByteField(IntPtr clazz, IntPtr fieldID, Byte val) {}
+        public static void SetStaticSByteField(IntPtr clazz, IntPtr fieldID, SByte val) {}
         public static void SetStaticCharField(IntPtr clazz, IntPtr fieldID, Char val) {}
         public static void SetStaticShortField(IntPtr clazz, IntPtr fieldID, Int16 val) {}
         public static void SetStaticIntField(IntPtr clazz, IntPtr fieldID, Int32 val) {}
@@ -153,6 +159,7 @@ namespace UnityEngine
         public static void SetStaticDoubleField(IntPtr clazz, IntPtr fieldID, double val) {}
         public static IntPtr ToBooleanArray(Boolean[] array)  { return IntPtr.Zero; }
         public static IntPtr ToByteArray(Byte[] array) { return IntPtr.Zero; }
+        public static IntPtr ToSByteArray(SByte[] array) { return IntPtr.Zero; }
         public static IntPtr ToCharArray(Char[] array) { return IntPtr.Zero; }
         public static IntPtr ToShortArray(Int16[] array) { return IntPtr.Zero; }
         public static IntPtr ToIntArray(Int32[] array) { return IntPtr.Zero; }
@@ -163,6 +170,7 @@ namespace UnityEngine
         public static IntPtr ToObjectArray(IntPtr[] array) { return IntPtr.Zero; }
         public static Boolean[] FromBooleanArray(IntPtr array) { return null; }
         public static Byte[] FromByteArray(IntPtr array) { return null; }
+        public static SByte[] FromSByteArray(IntPtr array) { return null; }
         public static Char[] FromCharArray(IntPtr array) { return null; }
         public static Int16[] FromShortArray(IntPtr array) { return null; }
         public static Int32[] FromIntArray(IntPtr array) { return null; }
@@ -173,6 +181,7 @@ namespace UnityEngine
         public static int GetArrayLength(IntPtr array) { return 0; }
         public static IntPtr NewBooleanArray(int size) { return IntPtr.Zero; }
         public static IntPtr NewByteArray(int size) { return IntPtr.Zero; }
+        public static IntPtr NewSByteArray(int size) { return IntPtr.Zero; }
         public static IntPtr NewCharArray(int size) { return IntPtr.Zero; }
         public static IntPtr NewShortArray(int size) { return IntPtr.Zero; }
         public static IntPtr NewIntArray(int size) { return IntPtr.Zero; }
@@ -182,6 +191,7 @@ namespace UnityEngine
         public static IntPtr NewObjectArray(int size, IntPtr clazz, IntPtr obj) { return IntPtr.Zero; }
         public static bool GetBooleanArrayElement(IntPtr array, int index) { return false; }
         public static Byte GetByteArrayElement(IntPtr array, int index) { return 0; }
+        public static SByte GetSByteArrayElement(IntPtr array, int index) { return 0; }
         public static Char GetCharArrayElement(IntPtr array, int index) { return '0'; }
         public static Int16 GetShortArrayElement(IntPtr array, int index) { return 0; }
         public static Int32 GetIntArrayElement(IntPtr array, int index) { return 0; }
@@ -190,7 +200,9 @@ namespace UnityEngine
         public static double GetDoubleArrayElement(IntPtr array, int index) { return 0; }
         public static IntPtr GetObjectArrayElement(IntPtr array, int index) { return IntPtr.Zero; }
         public static void SetBooleanArrayElement(IntPtr array, int index, byte val) {}
+        public static void SetBooleanArrayElement(IntPtr array, int index, bool val) {}
         public static void SetByteArrayElement(IntPtr array, int index, sbyte val) {}
+        public static void SetSByteArrayElement(IntPtr array, int index, sbyte val) {}
         public static void SetCharArrayElement(IntPtr array, int index, Char val) {}
         public static void SetShortArrayElement(IntPtr array, int index, Int16 val) {}
         public static void SetIntArrayElement(IntPtr array, int index, Int32 val) {}

@@ -13,19 +13,11 @@ namespace UnityEditor.PackageManager
     {
         public static PackageInfo GetForAssetPath(string assetPath)
         {
-            if (assetPath == null)
-                throw new ArgumentNullException("assetPath");
+            if (string.IsNullOrEmpty(assetPath))
+                throw new ArgumentException("Asset path cannot be null or empty.", "assetPath");
 
-            if (assetPath == string.Empty)
-                throw new ArgumentException("Asset path cannot be empty.", "assetPath");
-
-            foreach (var package in Packages.GetAll())
-            {
-                if (assetPath == package.assetPath || assetPath.StartsWith(package.assetPath + '/'))
-                    return package;
-            }
-
-            return null;
+            var result = new PackageInfo();
+            return GetPackageByAssetPath(assetPath, result) ? result : null;
         }
 
         private static string GetPathForPackageAssemblyName(string assemblyPath)

@@ -65,5 +65,8 @@ namespace UnityEditor.PackageManager
     {
         [StaticAccessor("PackageManager::Packages::GetInstance()", StaticAccessorType.Arrow)]
         extern public static PackageInfo[] GetAll();
+
+        [StaticAccessor("PackageManager::Packages::GetInstance()", StaticAccessorType.Arrow)]
+        extern private static bool GetPackageByAssetPath(string assetPath, [Out][NotNull] PackageInfo packageInfo);
     }
 }

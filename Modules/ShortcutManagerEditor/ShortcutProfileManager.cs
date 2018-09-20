@@ -4,36 +4,192 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
+    enum CanCreateProfileResult
+    {
+        Success,
+        InvalidProfileId,
+        DuplicateProfileId,
+        MissingParentProfile,
+    }
+
+    enum CanDeleteProfileResult
+    {
+        Success,
+        ProfileNotFound,
+        ProfileHasDependencies,
+    }
+
     interface IShortcutProfileManager
     {
-        // Preferences UI relies on this order being stable
-        IEnumerable<ShortcutEntry> GetAllShortcuts();
-        void ModifyShortcutEntry(Identifier identifier, List<KeyCombination> combinationSequence);
-        void ApplyActiveProfile();
         event Action<IShortcutProfileManager> shortcutsModified;
-        void ResetToDefault();
-        void PersistChanges();
+        event Action<IShortcutProfileManager> activeProfileChanged;
+
+        ShortcutProfile activeProfile { get; set; }
+
+        void ReloadProfiles();
+        void GetProfiles(List<ShortcutProfile> profiles);
+        ShortcutProfile GetProfileById(string profileId);
+        CanCreateProfileResult CanCreateProfile(string profileId, ShortcutProfile parentProfile = null);
+        ShortcutProfile CreateProfile(string profileId, ShortcutProfile parentProfile = null);
+        CanDeleteProfileResult CanDeleteProfile(ShortcutProfile profileId);
+        void DeleteProfile(ShortcutProfile profileId);
+
+        IEnumerable<ShortcutEntry> GetAllShortcuts(); // Preferences UI relies on this order being stable
+        void ModifyShortcutEntry(Identifier identifier, List<KeyCombination> combinationSequence);
+        void ResetToDefault(); // TODO: Remove this when current UI is replaced. Set activeProfile to null instead.
     }
 
     class ShortcutProfileManager : IShortcutProfileManager
     {
-        const string k_UserProfileId = "UserProfile";
         readonly List<ShortcutEntry> m_Entries;
-        ShortcutProfile m_ActiveProfile = new ShortcutProfile();
+        IShortcutProfileStore m_ProfileStore;
+
+        ShortcutProfile m_ActiveProfile;
+        Dictionary<string, ShortcutProfile> m_LoadedProfiles = new Dictionary<string, ShortcutProfile>();
+
         public event Action<IShortcutProfileManager> shortcutsModified;
+        public event Action<IShortcutProfileManager> activeProfileChanged;
 
-        internal ShortcutProfile activeProfile { get { return m_ActiveProfile; } }
-
-
-        public ShortcutProfileManager(IEnumerable<ShortcutEntry> baseProfile)
+        public ShortcutProfileManager(IEnumerable<ShortcutEntry> baseProfile, IShortcutProfileStore profileStore)
         {
+            m_ProfileStore = profileStore;
             m_Entries = baseProfile.ToList();
+        }
+
+        public ShortcutProfile activeProfile
+        {
+            get { return m_ActiveProfile; }
+            set
+            {
+                var lastActiveProfile = m_ActiveProfile;
+
+                if (value == null)
+                {
+                    if (m_ActiveProfile != null)
+                    {
+                        ResetShortcutEntries();
+                        m_ActiveProfile = null;
+                    }
+                }
+                else
+                {
+                    ShortcutProfile profile;
+                    if (m_LoadedProfiles.TryGetValue(value.id, out profile))
+                        SwitchActiveProfileTo(profile);
+                    else
+                        throw new ArgumentException("Profile not loaded", nameof(value));
+                }
+
+                if (m_ActiveProfile != lastActiveProfile)
+                    activeProfileChanged?.Invoke(this);
+            }
+        }
+
+        public void ReloadProfiles()
+        {
+            InitializeLoadedProfilesDictionary();
+
+            // Update active profile from store (it might be changed or deleted)
+            if (activeProfile != null)
+                activeProfile = GetProfileById(activeProfile.id);
+        }
+
+        public void GetProfiles(List<ShortcutProfile> profiles)
+        {
+            profiles.Clear();
+            profiles.AddRange(m_LoadedProfiles.Values);
+        }
+
+        public ShortcutProfile GetProfileById(string profileId)
+        {
+            ShortcutProfile profile;
+            m_LoadedProfiles.TryGetValue(profileId, out profile);
+            return profile;
+        }
+
+        public CanCreateProfileResult CanCreateProfile(string profileId, ShortcutProfile parentProfile = null)
+        {
+            // Profile id must be valid
+            if (!m_ProfileStore.ValidateProfileId(profileId))
+                return CanCreateProfileResult.InvalidProfileId;
+
+            // Profile id must be unique
+            if (m_LoadedProfiles.ContainsKey(profileId))
+                return CanCreateProfileResult.DuplicateProfileId;
+
+            // Parent profile must exist, if given
+            if (parentProfile != null && !m_LoadedProfiles.ContainsKey(parentProfile.id))
+                return CanCreateProfileResult.MissingParentProfile;
+
+            return CanCreateProfileResult.Success;
+        }
+
+        public ShortcutProfile CreateProfile(string profileId, ShortcutProfile parentProfile = null)
+        {
+            switch (CanCreateProfile(profileId, parentProfile))
+            {
+                case CanCreateProfileResult.Success:
+                    var profile = new ShortcutProfile(profileId, parentProfile?.id ?? "");
+                    m_LoadedProfiles.Add(profileId, profile);
+                    ResolveProfileParentReference(profile);
+                    m_ProfileStore.SaveShortcutProfileJson(profile.id, JsonUtility.ToJson(profile));
+                    return profile;
+
+                case CanCreateProfileResult.InvalidProfileId:
+                    throw new ArgumentException("Invalid profile id", nameof(profileId));
+
+                case CanCreateProfileResult.DuplicateProfileId:
+                    throw new ArgumentException("Duplicate profile id", nameof(profileId));
+
+                case CanCreateProfileResult.MissingParentProfile:
+                    throw new ArgumentException("Missing parent profile", nameof(parentProfile));
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public CanDeleteProfileResult CanDeleteProfile(ShortcutProfile profile)
+        {
+            // Profile must exist
+            if (!m_LoadedProfiles.ContainsKey(profile.id))
+                return CanDeleteProfileResult.ProfileNotFound;
+
+            // Profile cannot have any dependent profiles
+            if (m_LoadedProfiles.Values.Any(p => p.parentId == profile.id))
+                return CanDeleteProfileResult.ProfileHasDependencies;
+
+            return CanDeleteProfileResult.Success;
+        }
+
+        public void DeleteProfile(ShortcutProfile profile)
+        {
+            switch (CanDeleteProfile(profile))
+            {
+                case CanDeleteProfileResult.Success:
+                    profile = m_LoadedProfiles[profile.id];
+                    if (activeProfile == profile)
+                        activeProfile = null;
+                    m_LoadedProfiles.Remove(profile.id);
+                    m_ProfileStore.DeleteShortcutProfile(profile.id);
+                    break;
+
+                case CanDeleteProfileResult.ProfileNotFound:
+                    throw new ArgumentException("Profile not found", nameof(profile));
+
+                case CanDeleteProfileResult.ProfileHasDependencies:
+                    throw new ArgumentException("Profile has dependencies", nameof(profile));
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         public IEnumerable<ShortcutEntry> GetAllShortcuts()
@@ -41,7 +197,122 @@ namespace UnityEditor.ShortcutManagement
             return m_Entries;
         }
 
-        internal void ApplyProfile(ShortcutProfile shortcutProfile)
+        public void ModifyShortcutEntry(Identifier identifier, List<KeyCombination> combinationSequence)
+        {
+            if (activeProfile == null)
+                throw new InvalidOperationException("No active profile");
+
+            var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
+            shortcutEntry.SetOverride(combinationSequence);
+
+            SerializableShortcutEntry profileEntry = null;
+            foreach (var activeProfileEntry in m_ActiveProfile.entries)
+            {
+                if (activeProfileEntry.identifier.Equals(identifier))
+                {
+                    profileEntry = activeProfileEntry;
+                    profileEntry.combinations = new List<KeyCombination>(combinationSequence);
+                    break;
+                }
+            }
+
+            if (profileEntry == null)
+            {
+                m_ActiveProfile.Add(shortcutEntry);
+            }
+
+            SaveShortcutProfile(m_ActiveProfile);
+
+            shortcutsModified?.Invoke(this);
+        }
+
+        // TODO: Make this private when current UI is replaced. Set activeProfile to null instead.
+        public void ResetToDefault()
+        {
+            ResetShortcutEntries();
+            ResetActiveProfile();
+            SaveShortcutProfile(m_ActiveProfile);
+        }
+
+        void ResetShortcutEntries()
+        {
+            foreach (var entry in m_Entries)
+            {
+                entry.ResetToDefault();
+            }
+        }
+
+        void ResetActiveProfile()
+        {
+            var newProfile = new ShortcutProfile(m_ActiveProfile.id, m_ActiveProfile.parentId)
+            {
+                parent = m_ActiveProfile.parent
+            };
+
+            m_LoadedProfiles.Remove(m_ActiveProfile.id);
+            m_LoadedProfiles.Add(newProfile.id, newProfile);
+            activeProfile = newProfile;
+
+            SaveShortcutProfile(m_ActiveProfile);
+        }
+
+        void SwitchActiveProfileTo(ShortcutProfile shortcutProfile)
+        {
+            ResetShortcutEntries();
+            var profileParents = GetAncestorProfiles(shortcutProfile);
+
+            if (profileParents != null)
+            {
+                for (int i = profileParents.Count - 1; i >= 0; --i)
+                {
+                    ApplySingleProfile(profileParents[i]);
+                }
+            }
+
+            ApplySingleProfile(shortcutProfile);
+            MigrateUserSpecifiedPrefKeys(EditorAssemblies.GetAllMethodsWithAttribute<FormerlyPrefKeyAsAttribute>(), m_Entries);
+        }
+
+        static List<ShortcutProfile> GetAncestorProfiles(ShortcutProfile profile)
+        {
+            var ancestors = new List<ShortcutProfile>();
+            profile = profile.parent;
+            while (profile != null)
+            {
+                ancestors.Add(profile);
+                profile = profile.parent;
+            }
+            return ancestors;
+        }
+
+        static void MigrateUserSpecifiedPrefKeys(IEnumerable<MethodInfo> methodsWithFormerlyPrefKeyAs, List<ShortcutEntry> entries)
+        {
+            foreach (var method in methodsWithFormerlyPrefKeyAs)
+            {
+                var shortcutAttr = Attribute.GetCustomAttribute(method, typeof(ShortcutAttribute), true) as ShortcutAttribute;
+                if (shortcutAttr == null)
+                    continue;
+
+                var entry = entries.Find(e => string.Equals(e.identifier.path, shortcutAttr.identifier));
+                // Ignore former PrefKeys if the shortcut profile has already loaded and applied an override
+                if (entry == null || entry.overridden)
+                    continue;
+
+                var prefKeyAttr = (FormerlyPrefKeyAsAttribute)Attribute.GetCustomAttribute(method, typeof(FormerlyPrefKeyAsAttribute));
+                var prefKeyDefaultValue = new KeyCombination(Event.KeyboardEvent(prefKeyAttr.defaultValue));
+                string name;
+                Event keyboardEvent;
+                var parsed = PrefKey.TryParseUniquePrefString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent);
+                if (!parsed)
+                    continue;
+                var prefKeyCurrentValue = new KeyCombination(keyboardEvent);
+                // only migrate pref keys that the user actually overwrote
+                if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
+                    entry.SetOverride(new List<KeyCombination> { prefKeyCurrentValue });
+            }
+        }
+
+        void ApplySingleProfile(ShortcutProfile shortcutProfile)
         {
             foreach (var shortcutOverride in shortcutProfile.entries)
             {
@@ -54,86 +325,128 @@ namespace UnityEditor.ShortcutManagement
             m_ActiveProfile = shortcutProfile;
         }
 
-        public void ResetToDefault()
+        void InitializeLoadedProfilesDictionary()
         {
-            foreach (var entry in m_Entries)
+            var foundShortcutProfiles = LoadProfiles();
+            m_LoadedProfiles.Clear();
+
+            foreach (var profile in foundShortcutProfiles)
             {
-                m_ActiveProfile.Remove(entry);
-                entry.ResetToDefault();
-            }
-            m_ActiveProfile.SaveToDisk();
-        }
-
-        public void ApplyActiveProfile()
-        {
-            m_ActiveProfile = new ShortcutProfile(k_UserProfileId);
-            ApplyProfile(m_ActiveProfile);
-            MigrateUserSpecifiedPrefKeys(
-                EditorAssemblies.GetAllMethodsWithAttribute<FormerlyPrefKeyAsAttribute>(), m_Entries
-            );
-        }
-
-        internal static void MigrateUserSpecifiedPrefKeys(
-            IEnumerable<MethodInfo> methodsWithFormerlyPrefKeyAs, List<ShortcutEntry> entries
-        )
-        {
-            foreach (var method in methodsWithFormerlyPrefKeyAs)
-            {
-                var shortcutAttr =
-                    Attribute.GetCustomAttribute(method, typeof(ShortcutAttribute), true) as ShortcutAttribute;
-                if (shortcutAttr == null)
-                    continue;
-
-                var entry = entries.Find(e => string.Equals(e.identifier.path, shortcutAttr.identifier));
-                // ignore former PrefKeys if the shortcut profile has already loaded and applied an override
-                if (entry == null || entry.overridden)
-                    continue;
-
-                var prefKeyAttr =
-                    (FormerlyPrefKeyAsAttribute)Attribute.GetCustomAttribute(method, typeof(FormerlyPrefKeyAsAttribute));
-                var prefKeyDefaultValue = new KeyCombination(Event.KeyboardEvent(prefKeyAttr.defaultValue));
-                string name;
-                Event keyboardEvent;
-                var parsed = PrefKey.TryParseUniquePrefString(
-                    EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent
-                );
-                if (!parsed)
-                    continue;
-                var prefKeyCurrentValue = new KeyCombination(keyboardEvent);
-                // only migrate pref keys that the user actually overwrote
-                if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
-                    entry.SetOverride(new List<KeyCombination> { prefKeyCurrentValue });
-            }
-        }
-
-        public void ModifyShortcutEntry(Identifier identifier, List<KeyCombination> combinationSequence)
-        {
-            var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
-            shortcutEntry.SetOverride(combinationSequence);
-
-            SerializableShortcutEntry profileEntry = null;
-            foreach (var activeProfileEntry in m_ActiveProfile.entries)
-            {
-                if (activeProfileEntry.identifier.Equals(identifier))
+                if (m_LoadedProfiles.ContainsKey(profile.id))
                 {
-                    profileEntry = activeProfileEntry;
-                    profileEntry.keyCombination = new List<KeyCombination>(combinationSequence);
-                    break;
+                    Debug.LogWarning($"Found multiple shortcut profiles that share the id '{profile.id}'!");
+                }
+                else
+                {
+                    m_LoadedProfiles.Add(profile.id, profile);
                 }
             }
 
-            if (profileEntry == null)
-            {
-                m_ActiveProfile.Add(shortcutEntry);
-            }
-
-            if (shortcutsModified != null)
-                shortcutsModified(this);
+            ResolveProfileParentReferences();
         }
 
-        public void PersistChanges()
+        void ResolveProfileParentReferences()
         {
-            m_ActiveProfile.SaveToDisk();
+            foreach (var profile in m_LoadedProfiles.Values)
+            {
+                ResolveProfileParentReference(profile);
+            }
+
+            BreakProfileParentCyclicDependencies();
+        }
+
+        void ResolveProfileParentReference(ShortcutProfile profile)
+        {
+            if (string.IsNullOrEmpty(profile.parentId))
+                return;
+
+            if (m_LoadedProfiles.ContainsKey(profile.parentId))
+                profile.parent = m_LoadedProfiles[profile.parentId];
+            else
+            {
+                Debug.LogWarning($"Shortcut profile with id '{profile.id}' references unknown parent profile with id '{profile.parentId}'. Breaking parent link.");
+                profile.BreakParentLink();
+            }
+        }
+
+        void BreakProfileParentCyclicDependencies()
+        {
+            foreach (var profile in m_LoadedProfiles.Values)
+            {
+                BreakProfileParentCyclicDependency(profile);
+            }
+        }
+
+        static void BreakProfileParentCyclicDependency(ShortcutProfile profile)
+        {
+            if (profile.parent == null)
+                return;
+
+            var seenProfiles = new List<ShortcutProfile>();
+
+            do
+            {
+                seenProfiles.Add(profile);
+
+                if (seenProfiles.Contains(profile.parent))
+                {
+                    Debug.LogWarning($"Cyclic dependency between shortcut profiles found! Breaking parent link at '{profile.id}'.");
+                    profile.BreakParentLink();
+                    return;
+                }
+
+                profile = profile.parent;
+            }
+            while (profile.parent != null);
+        }
+
+        void SaveShortcutProfile(ShortcutProfile profile)
+        {
+            if (profile.id == profile.parentId)
+            {
+                Debug.LogWarning(string.Format("A profile cannot inherit from itself! ({0})", profile.id));
+            }
+            else
+            {
+                m_ProfileStore.SaveShortcutProfileJson(profile.id, JsonUtility.ToJson(profile));
+            }
+        }
+
+        ShortcutProfile LoadProfile(string id)
+        {
+            if (m_ProfileStore.ProfileExists(id))
+            {
+                ShortcutProfile tmpProfile = new ShortcutProfile();
+                LoadAndApplyJsonFile(id, tmpProfile);
+                return tmpProfile;
+            }
+            throw new FileNotFoundException(string.Format("'{0}.shortcut' does not exist!", id));
+        }
+
+        List<ShortcutProfile> LoadProfiles()
+        {
+            var shortcutIds = m_ProfileStore.GetAllProfileIds();
+            var shortcutProfiles = new List<ShortcutProfile>();
+            foreach (var id in shortcutIds)
+            {
+                shortcutProfiles.Add(LoadProfile(id));
+            }
+            return shortcutProfiles;
+        }
+
+        void LoadAndApplyJsonFile(string id, ShortcutProfile instance)
+        {
+            if (!m_ProfileStore.ProfileExists(id))
+            {
+                return;
+            }
+
+            var json = m_ProfileStore.LoadShortcutProfileJson(id);
+            JsonUtility.FromJsonOverwrite(json, instance);
+            if (id != instance.id)
+            {
+                Debug.LogWarning(string.Format("The identifier '{0}' doesn't match the filename of '{1}.shortcut'!", id, instance.id));
+            }
         }
     }
 }

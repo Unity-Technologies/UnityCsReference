@@ -670,6 +670,11 @@ namespace UnityEditor
             previewUtility.camera.transform.position = camPos;
             previewUtility.camera.transform.rotation = camRot;
 
+
+            SetPreviewCharacterEnabled(true, m_ShowReference);
+            previewUtility.Render(m_Option != PreviewPopupOptions.DefaultModel);
+            SetPreviewCharacterEnabled(false, false);
+
             // Texture offset - negative in order to compensate the floor movement.
             Vector2 textureOffset = -new Vector2(floorPos.x, is2D ? floorPos.y : floorPos.z);
 
@@ -705,10 +710,10 @@ namespace UnityEditor
                 Graphics.DrawMesh(m_FloorPlane, matrix, mat, Camera.PreviewCullingLayer, previewUtility.camera, 0);
             }
 
-            SetPreviewCharacterEnabled(true, m_ShowReference);
-            previewUtility.Render(m_Option != PreviewPopupOptions.DefaultModel);
-            SetPreviewCharacterEnabled(false, false);
-
+            var clearMode = previewUtility.camera.clearFlags;
+            previewUtility.camera.clearFlags = CameraClearFlags.Nothing;
+            previewUtility.Render(false);
+            previewUtility.camera.clearFlags = clearMode;
             RenderTexture.ReleaseTemporary(shadowMap);
         }
 

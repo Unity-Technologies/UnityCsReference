@@ -213,7 +213,7 @@ namespace UnityEditor
                         GUIContent content = EditorGUI.BeginProperty(EditorGUILayout.BeginHorizontal(), Styles.fieldOfView, fieldOfView);
                         EditorGUI.BeginDisabled(projectionMatrixMode.hasMultipleDifferentValues || isPhysicalCamera && (focalLength.hasMultipleDifferentValues || sensorSize.hasMultipleDifferentValues));
                         EditorGUI.BeginChangeCheck();
-                        float fovNewValue = EditorGUILayout.Slider(content, fieldOfView.floatValue, 1f, 179f);
+                        float fovNewValue = EditorGUILayout.Slider(content, fieldOfView.floatValue, 0.00001f, 179f);
                         bool fovChanged = EditorGUI.EndChangeCheck();
                         EditorGUI.EndDisabled();
                         EditorGUILayout.EndHorizontal();

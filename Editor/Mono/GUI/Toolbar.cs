@@ -137,6 +137,7 @@ namespace UnityEditor
 
         public static Toolbar get = null;
         public static bool requestShowCollabToolbar = false;
+        public static bool isLastShowRequestPartial = true;
 
         internal static string lastLoadedLayoutName
         {

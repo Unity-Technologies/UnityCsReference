@@ -205,6 +205,12 @@ namespace UnityEditor.VisualStudioIntegration
 
         public void Sync()
         {
+            // Do not sync solution until all Unity extensions are registered and initialized.
+            // Otherwise Unity might emit errors when VSTU tries to generate the solution and
+            // get all managed extensions, which not yet initialized.
+            if (!InternalEditorUtility.IsUnityExtensionsInitialized())
+                return;
+
             SetupProjectSupportedExtensions();
 
             bool externalCodeAlreadyGeneratedProjects = AssetPostprocessingInternal.OnPreGeneratingCSProjectFiles();
@@ -323,13 +329,75 @@ namespace UnityEditor.VisualStudioIntegration
             SyncFileIfNotChanged(path, newContents);
         }
 
+        static void LogDifference(string path, string currentContents, string newContents)
+        {
+            Console.WriteLine("[C# Project] Writing {0} because it has changed", path);
+
+            var currentReader = new StringReader(currentContents);
+            var newReader = new StringReader(newContents);
+
+            string currentLine = null;
+            string newLine = null;
+            int lineNumber = 1;
+
+            do
+            {
+                currentLine = currentReader.ReadLine();
+                newLine = newReader.ReadLine();
+
+                if (currentLine != null && newLine != null && currentLine != newLine)
+                {
+                    Console.WriteLine("[C# Project] First difference on line {0}", lineNumber);
+
+                    Console.WriteLine("\n[C# Project] Current {0}:", path);
+
+                    for (int i = 0;
+                         i < 5 && currentLine != null;
+                         i++, currentLine = currentReader.ReadLine())
+                    {
+                        Console.WriteLine("[C# Project]   {0:D3}: {1}", lineNumber + i, currentLine);
+                    }
+
+                    Console.WriteLine("\n[C# Project] New {0}:", path);
+
+                    for (int i = 0;
+                         i < 5 && newLine != null;
+                         i++, newLine = newReader.ReadLine())
+                    {
+                        Console.WriteLine("[C# Project]   {0:D3}: {1}", lineNumber + i, newLine);
+                    }
+
+                    currentLine = null;
+                    newLine = null;
+                }
+
+                lineNumber++;
+            }
+            while (currentLine != null && newLine != null);
+        }
+
         private static void SyncFileIfNotChanged(string filename, string newContents)
         {
-            if (File.Exists(filename) &&
-                newContents == File.ReadAllText(filename))
+            if (File.Exists(filename))
             {
-                return;
+                var currentContents = File.ReadAllText(filename);
+
+                if (currentContents == newContents)
+                {
+                    return;
+                }
+
+                try
+                {
+                    LogDifference(filename, currentContents, newContents);
+                }
+                catch (Exception exception)
+                {
+                    Console.WriteLine("Failed to log difference of {0}\n{1}",
+                        filename, exception);
+                }
             }
+
             File.WriteAllText(filename, newContents, Encoding.UTF8);
         }
 

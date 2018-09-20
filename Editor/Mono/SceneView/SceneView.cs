@@ -573,7 +573,7 @@ namespace UnityEditor
             m_Fx = EditorGUIUtility.TrIconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.");
             m_AudioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
             m_GizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle the visibility of different Gizmos in the Scene view.");
-            m_2DModeContent = EditorGUIUtility.TrTextContent("2D", "When togggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
+            m_2DModeContent = EditorGUIUtility.TrTextContent("2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
             m_RenderDocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc.");
 
             m_SceneViewOverlay = new SceneViewOverlay(this);
@@ -741,7 +741,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(modeRect, modeContent, FocusType.Passive, EditorStyles.toolbarDropDown))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SceneRenderModeWindow(this), null, ShowMode.PopupMenuWithKeyboardFocus);
+                PopupWindow.Show(rect, new SceneRenderModeWindow(this));
                 GUIUtility.ExitGUI();
             }
 
@@ -768,7 +768,7 @@ namespace UnityEditor
             if (EditorGUI.DropdownButton(fxRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
-                PopupWindow.Show(rect, new SceneFXWindow(this), null, ShowMode.PopupMenuWithKeyboardFocus);
+                PopupWindow.Show(rect, new SceneFXWindow(this));
                 GUIUtility.ExitGUI();
             }
 
@@ -1134,7 +1134,7 @@ namespace UnityEditor
 
         private void CreateCameraTargetTexture(Rect cameraRect, bool hdr)
         {
-            // make sure we actually support ARGBHalf (ShaderModel20 emulation doesn't)
+            // make sure we actually support ARGBHalf
             RenderTextureFormat format = (hdr && SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBHalf)) ? RenderTextureFormat.ARGBHalf : RenderTextureFormat.ARGB32;
             if (m_SceneTargetTexture != null)
             {

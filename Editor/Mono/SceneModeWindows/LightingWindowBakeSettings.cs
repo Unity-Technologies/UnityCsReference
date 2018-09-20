@@ -71,7 +71,6 @@ namespace UnityEditor
         SerializedProperty m_PVRFilteringAtrousPositionSigmaAO;
 
         SerializedProperty  m_BounceScale;
-        SerializedProperty  m_UpdateThreshold;
 
         static bool PlayerHasSM20Support()
         {
@@ -131,7 +130,6 @@ namespace UnityEditor
 
             //dev debug properties
             m_BounceScale = so.FindProperty("m_GISettings.m_BounceScale");
-            m_UpdateThreshold = so.FindProperty("m_GISettings.m_TemporalCoherenceThreshold");
         }
 
         public void OnEnable()
@@ -351,7 +349,6 @@ namespace UnityEditor
             Lightmapping.filterMode = (FilterMode)EditorGUILayout.EnumPopup(EditorGUIUtility.TempContent("Filter Mode"), Lightmapping.filterMode);
 
             EditorGUILayout.Slider(m_BounceScale, 0.0f, 10.0f, Styles.BounceScale);
-            EditorGUILayout.Slider(m_UpdateThreshold, 0.0f, 1.0f, Styles.UpdateThreshold);
 
             if (GUILayout.Button("Clear disk cache", GUILayout.Width(LightingWindow.kButtonWidth)))
             {
@@ -369,6 +366,16 @@ namespace UnityEditor
 
             if (GUILayout.Button("Reset environment", GUILayout.Width(LightingWindow.kButtonWidth)))
                 DynamicGI.UpdateEnvironment();
+        }
+
+        private void ClampFilterType(SerializedProperty filter)
+        {
+            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+            {
+                // Force unsupported A-Trous filter back to Gaussian.
+                if (filter.intValue == (int)LightmapEditorSettings.FilterType.ATrous)
+                    filter.intValue = (int)LightmapEditorSettings.FilterType.Gaussian;
+            }
         }
 
         void GeneralLightmapSettingsGUI()
@@ -453,7 +460,15 @@ namespace UnityEditor
                                 {
                                     EditorGUI.indentLevel++;
 
-                                    EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.PVRFilterTypeDirect);
+                                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                                        EditorGUILayout.HelpBox(Styles.ProgressiveGPUWarning.text, MessageType.Info);
+
+                                    ClampFilterType(m_PVRFilterTypeDirect);
+                                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                                        EditorGUILayout.IntPopup(m_PVRFilterTypeDirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeDirect);
+                                    else
+                                        EditorGUILayout.PropertyField(m_PVRFilterTypeDirect, Styles.PVRFilterTypeDirect);
+
                                     DrawFilterSettingField(m_PVRFilteringGaussRadiusDirect,
                                         m_PVRFilteringAtrousPositionSigmaDirect,
                                         Styles.PVRFilteringGaussRadiusDirect,
@@ -462,7 +477,11 @@ namespace UnityEditor
 
                                     EditorGUILayout.Space();
 
-                                    EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.PVRFilterTypeIndirect);
+                                    if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                                        EditorGUILayout.IntPopup(m_PVRFilterTypeIndirect, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeIndirect);
+                                    else
+                                        EditorGUILayout.PropertyField(m_PVRFilterTypeIndirect, Styles.PVRFilterTypeIndirect);
+                                    ClampFilterType(m_PVRFilterTypeIndirect);
                                     DrawFilterSettingField(m_PVRFilteringGaussRadiusIndirect,
                                         m_PVRFilteringAtrousPositionSigmaIndirect,
                                         Styles.PVRFilteringGaussRadiusIndirect,
@@ -472,8 +491,11 @@ namespace UnityEditor
                                     using (new EditorGUI.DisabledScope(!m_AmbientOcclusion.boolValue))
                                     {
                                         EditorGUILayout.Space();
-
-                                        EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.PVRFilterTypeAO);
+                                        if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                                            EditorGUILayout.IntPopup(m_PVRFilterTypeAO, Styles.GPUFilterOptions, Styles.GPUFilterInts, Styles.PVRFilterTypeAO);
+                                        else
+                                            EditorGUILayout.PropertyField(m_PVRFilterTypeAO, Styles.PVRFilterTypeAO);
+                                        ClampFilterType(m_PVRFilterTypeAO);
                                         DrawFilterSettingField(m_PVRFilteringGaussRadiusAO,
                                             m_PVRFilteringAtrousPositionSigmaAO,
                                             Styles.PVRFilteringGaussRadiusAO, Styles.PVRFilteringAtrousPositionSigmaAO,
@@ -688,6 +710,10 @@ namespace UnityEditor
             public static readonly GUIContent PVRFilteringAtrousPositionSigmaIndirect = EditorGUIUtility.TrTextContent("Indirect Sigma", "Controls the threshold of the filter for indirect light stored in the lightmap. A higher value will increase the threshold, reducing noise in the indirect layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
             public static readonly GUIContent PVRFilteringAtrousPositionSigmaAO = EditorGUIUtility.TrTextContent("Ambient Occlusion Sigma", "Controls the threshold of the filter for ambient occlusion stored in the lightmap. A higher value will increase the threshold, reducing noise in the ambient occlusion layer of the lightmap. Too high of a value can cause a loss of detail in the lightmap.");
             public static readonly GUIContent PVRCulling = EditorGUIUtility.TrTextContent("Prioritize View", "Specifies whether the lightmapper should prioritize baking texels within the scene view. When disabled, objects outside the scene view will have the same priority as those in the scene view.");
+            // TODO(RadeonRays): Used for hiding A-trous filtering option until it is implemented.
+            public static readonly GUIContent[] GPUFilterOptions = new[] { EditorGUIUtility.TrTextContent("Gaussian"), EditorGUIUtility.TrTextContent("None") };
+            public static readonly int[] GPUFilterInts = new[] { (int)LightmapEditorSettings.FilterType.Gaussian, (int)LightmapEditorSettings.FilterType.None };
+            public static readonly GUIContent ProgressiveGPUWarning = EditorGUIUtility.TrTextContent("A-Trous filtering is not implemented in the Progressive GPU lightmapper yet. Use the CPU lightmapper instead if you need this functionality.");
         }
     }
 } // namespace

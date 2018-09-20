@@ -8,6 +8,42 @@ using UnityEngine.Bindings;
 
 namespace UnityEngine.XR.WSA
 {
+    internal class SimulatedSpatialController
+    {
+        public Handedness m_ControllerHandednss;
+
+        internal SimulatedSpatialController(Handedness controller)
+        {
+            m_ControllerHandednss = controller;
+        }
+
+        public Vector3 position
+        {
+            get { return HolographicAutomation.GetControllerPosition(m_ControllerHandednss); }
+            set { HolographicAutomation.TrySetControllerPosition(m_ControllerHandednss, value); }
+        }
+
+        public bool activated
+        {
+            get { return HolographicAutomation.GetControllerActivated(m_ControllerHandednss); }
+            set { HolographicAutomation.TrySetControllerActivated(m_ControllerHandednss, value); }
+        }
+
+        public bool visible
+        {
+            get { return HolographicAutomation.GetControllerVisible(m_ControllerHandednss); }
+        }
+
+        public void EnsureVisible()
+        {
+            HolographicAutomation.TryEnsureControllerVisible(m_ControllerHandednss);
+        }
+
+        public void PerformControllerPress(SimulatedControllerPress button)
+        {
+            HolographicAutomation.PerformButtonPress(m_ControllerHandednss, button);
+        }
+    }
     internal class SimulatedBody
     {
         // Require use of HolographicEmulation.simulatedBody to get instance
@@ -52,10 +88,10 @@ namespace UnityEngine.XR.WSA
 
     internal class SimulatedHand
     {
-        public GestureHand m_Hand;
+        public Handedness m_Hand;
 
         // Require use of HolographicEmulation.simulatedLeftHand or HolographicEmulation.simulatedRightHand to get instance
-        internal SimulatedHand(GestureHand hand)
+        internal SimulatedHand(Handedness hand)
         {
             m_Hand = hand;
         }
@@ -92,13 +128,18 @@ namespace UnityEngine.XR.WSA
     {
         static SimulatedBody s_Body = new SimulatedBody();
         static SimulatedHead s_Head = new SimulatedHead();
-        static SimulatedHand s_LeftHand = new SimulatedHand(GestureHand.Left);
-        static SimulatedHand s_RightHand = new SimulatedHand(GestureHand.Right);
+        static SimulatedHand s_LeftHand = new SimulatedHand(Handedness.Left);
+        static SimulatedHand s_RightHand = new SimulatedHand(Handedness.Right);
+        static SimulatedSpatialController s_LeftController = new SimulatedSpatialController(Handedness.Left);
+        static SimulatedSpatialController s_RightController = new SimulatedSpatialController(Handedness.Right);
 
         public static SimulatedBody simulatedBody { get { return s_Body; } }
         public static SimulatedHead simulatedHead { get { return s_Head; } }
         public static SimulatedHand simulatedLeftHand { get { return s_LeftHand; } }
         public static SimulatedHand simulatedRightHand { get { return s_RightHand; } }
+
+        public static SimulatedSpatialController simulatedLeftController { get { return s_LeftController; } }
+        public static SimulatedSpatialController simulatedRightController { get { return s_RightController; } }
     }
 
     internal static class HolographicEmulationHelpers

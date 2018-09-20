@@ -85,6 +85,8 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
             config.Set("mono-codegen", "il2cpp");
         if ((options & BuildOptions.EnableHeadlessMode) != 0)
             config.AddKey("headless");
+        if (PlayerSettings.gcWBarrierValidation)
+            config.AddKey("validate-write-barriers");
     }
 
     private void CopyNativePlugins(BuildPostProcessArgs args, out List<string> cppPlugins)

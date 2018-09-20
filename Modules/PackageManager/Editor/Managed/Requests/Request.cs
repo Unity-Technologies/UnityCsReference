@@ -142,7 +142,7 @@ namespace UnityEditor.PackageManager.Requests
         {
             m_Id = operationId;
             m_Status = initialStatus;
-            Debug.AssertFormat(m_Id > 0, "Expected operation id to be a positive integer but got [{0}]", m_Id);
+            Debug.AssertFormat(m_Status == NativeStatusCode.Error ? m_Id == 0 : m_Id > 0, "Invalid operation id [status: {0}, id: {1}]", m_Status, m_Id);
         }
     }
 

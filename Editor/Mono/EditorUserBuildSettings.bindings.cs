@@ -626,6 +626,15 @@ namespace UnityEditor
             set;
         }
 
+        // Enable debug validation of NVN drawcalls
+        public static extern bool switchNVNDrawValidation
+        {
+            [NativeMethod("GetNVNDrawValidation")]
+            get;
+            [NativeMethod("SetNVNDrawValidation")]
+            set;
+        }
+
         // Enable linkage of the Heap inspector tool for Nintendo Switch.
         public static extern bool switchEnableHeapInspector
         {

@@ -113,13 +113,13 @@ namespace UnityEditor.Experimental.TerrainAPI
 
                 Vector3 pos = t.transform.position + 0.5f * new Vector3(size.x, 0, size.z);
 
-                if ((bottom == null) && Handles.Button(pos + new Vector3(0, 0, -size.z), rot, 0.5f * size.x, 0.5f * size.x, Handles.RectangleHandleCap))
+                if ((bottom == null) && Handles.Button(pos + new Vector3(0, 0, -size.z), rot, 0.5f * size.x, 0.5f * size.x, Handles.RectangleHandleCapWorldSpace))
                     CreateNeighbor(terrain, t.transform.position + Vector3.back * size.z);
-                if ((top == null) && Handles.Button(pos + new Vector3(0, 0, size.z), rot, 0.5f * size.x, 0.5f * size.x, Handles.RectangleHandleCap))
+                if ((top == null) && Handles.Button(pos + new Vector3(0, 0, size.z), rot, 0.5f * size.x, 0.5f * size.x, Handles.RectangleHandleCapWorldSpace))
                     CreateNeighbor(terrain, t.transform.position + Vector3.forward * size.z);
-                if ((right == null) && Handles.Button(pos + new Vector3(size.x, 0, 0), rot, 0.5f * size.x, 0.5f * size.x, Handles.RectangleHandleCap))
+                if ((right == null) && Handles.Button(pos + new Vector3(size.x, 0, 0), rot, 0.5f * size.x, 0.5f * size.x, Handles.RectangleHandleCapWorldSpace))
                     CreateNeighbor(terrain, t.transform.position + Vector3.right * size.x);
-                if ((left == null) && Handles.Button(pos + new Vector3(-size.x, 0, 0), rot, 0.5f * size.x, 0.5f * size.x, Handles.RectangleHandleCap))
+                if ((left == null) && Handles.Button(pos + new Vector3(-size.x, 0, 0), rot, 0.5f * size.x, 0.5f * size.x, Handles.RectangleHandleCapWorldSpace))
                     CreateNeighbor(terrain, t.transform.position + Vector3.left * size.x);
             }
         }

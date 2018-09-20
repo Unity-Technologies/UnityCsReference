@@ -61,7 +61,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                     if (m_ScrollView == null)
                     {
                         m_ScrollView = new ScrollView();
-                        m_ScrollView.stretchContentWidth = true;
                     }
 
                     // Remove the sections container from the content item and add it to the scrollview

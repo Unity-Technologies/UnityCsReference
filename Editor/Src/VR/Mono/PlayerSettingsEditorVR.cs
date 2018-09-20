@@ -101,6 +101,7 @@ namespace UnityEditorInternal.VR
                         customOptions = new VRCustomOptionsNone();
                     }
                     customOptions.Initialize(m_Settings.serializedObject);
+                    customOptions.IsExpanded = true;
                     m_CustomOptions.Add(deviceInfo.deviceNameKey, customOptions);
                 }
             }
@@ -134,7 +135,10 @@ namespace UnityEditorInternal.VR
             if (m_VRDeviceActiveUI.ContainsKey(targetGroup) && VREditor.IsDeviceListDirty(targetGroup))
             {
                 VREditor.ClearDeviceListDirty(targetGroup);
-                m_VRDeviceActiveUI[targetGroup].list = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup);
+                if (m_VRDeviceActiveUI.ContainsKey(targetGroup))
+                {
+                    m_VRDeviceActiveUI[targetGroup].list = VREditor.GetVREnabledDevicesOnTargetGroup(targetGroup);
+                }
             }
 
             // Check to see if any devices require an install and need their GUI hidden
@@ -244,7 +248,6 @@ namespace UnityEditorInternal.VR
                 case BuildTargetGroup.WSA:
                 case BuildTargetGroup.Android:
                 case BuildTargetGroup.iOS:
-                case BuildTargetGroup.Lumin:
                     return true;
                 default:
                     return false;
@@ -390,7 +393,16 @@ namespace UnityEditorInternal.VR
         private void RemoveVRDeviceElement(BuildTargetGroup target, ReorderableList list)
         {
             var devices = VREditor.GetVREnabledDevicesOnTargetGroup(target).ToList();
+            var device = devices[list.index];
             devices.RemoveAt(list.index);
+
+            VRCustomOptions customOptions;
+            if (m_CustomOptions.TryGetValue(device, out customOptions))
+            {
+                customOptions.IsExpanded = true;
+            }
+
+
             ApplyChangedVRDeviceList(target, devices.ToArray());
         }
 

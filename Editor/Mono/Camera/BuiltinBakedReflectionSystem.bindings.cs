@@ -64,6 +64,14 @@ namespace UnityEditor.Experimental.Rendering
             Internal_Clear();
         }
 
+        public bool BakeAllReflectionProbes()
+        {
+            if (disposed)
+                throw new ObjectDisposedException("BuiltinBakedReflectionSystem");
+
+            return Internal_BakeAllReflectionProbes();
+        }
+
         public void Cancel()
         {
             // Cancel is empty on purpose
@@ -120,5 +128,6 @@ namespace UnityEditor.Experimental.Rendering
         extern void Internal_SynchronizeReflectionProbes();
         extern void Internal_Clear();
         extern void Internal_SetPtr(BuiltinBakedReflectionSystem ptr);
+        extern bool Internal_BakeAllReflectionProbes();
     }
 }

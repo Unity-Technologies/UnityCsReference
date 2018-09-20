@@ -273,8 +273,8 @@ namespace UnityEngine.Playables
         extern internal void SetTraversalMode(PlayableTraversalMode mode);
 
         [VisibleToOtherModules]
-        [FreeFunction("PlayableHandleBindings::GetAdditionalPayload", HasExplicitThis = true, ThrowsException = true)]
-        extern internal IntPtr GetAdditionalPayload();
+        [FreeFunction("PlayableHandleBindings::GetJobData", HasExplicitThis = true, ThrowsException = true)]
+        extern internal IntPtr GetJobData();
 
         [VisibleToOtherModules]
         [FreeFunction("PlayableHandleBindings::GetTimeWrapMode", HasExplicitThis = true, ThrowsException = true)]

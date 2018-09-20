@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -15,9 +16,8 @@ namespace UnityEngine.Experimental.UIElements
             UxmlBoolAttributeDescription m_ShowHorizontal = new UxmlBoolAttributeDescription { name = "show-horizontal-scroller" };
             UxmlBoolAttributeDescription m_ShowVertical = new UxmlBoolAttributeDescription { name = "show-vertical-scroller" };
 
-            UxmlFloatAttributeDescription m_HorizontalPageSize = new UxmlFloatAttributeDescription { name = "horizontal-page-size", defaultValue = Scroller.kDefaultPageSize};
-            UxmlFloatAttributeDescription m_VerticalPageSize = new UxmlFloatAttributeDescription { name = "vertical-page-size", defaultValue = Scroller.kDefaultPageSize};
-            UxmlBoolAttributeDescription m_StretchContentWidth = new UxmlBoolAttributeDescription { name = "stretch-content-width" };
+            UxmlFloatAttributeDescription m_HorizontalPageSize = new UxmlFloatAttributeDescription { name = "horizontal-page-size", defaultValue = Scroller.kDefaultPageSize };
+            UxmlFloatAttributeDescription m_VerticalPageSize = new UxmlFloatAttributeDescription { name = "vertical-page-size", defaultValue = Scroller.kDefaultPageSize };
 
             public override void Init(VisualElement ve, IUxmlAttributes bag, CreationContext cc)
             {
@@ -26,50 +26,23 @@ namespace UnityEngine.Experimental.UIElements
                 ScrollView scrollView = (ScrollView)ve;
                 scrollView.showHorizontal = m_ShowHorizontal.GetValueFromBag(bag, cc);
                 scrollView.showVertical = m_ShowVertical.GetValueFromBag(bag, cc);
-                scrollView.stretchContentWidth = m_StretchContentWidth.GetValueFromBag(bag, cc);
                 scrollView.horizontalPageSize = m_HorizontalPageSize.GetValueFromBag(bag, cc);
                 scrollView.verticalPageSize = m_VerticalPageSize.GetValueFromBag(bag, cc);
-            }
-        }
-
-        bool m_StretchContentWidth = false;
-
-        public bool stretchContentWidth
-        {
-            get { return m_StretchContentWidth; }
-            set
-            {
-                if (m_StretchContentWidth == value)
-                {
-                    return;
-                }
-                m_StretchContentWidth = value;
-
-                if (m_StretchContentWidth)
-                {
-                    AddToClassList("stretchContentWidth");
-                }
-                else
-                {
-                    RemoveFromClassList("stretchContentWidth");
-                }
             }
         }
 
         public bool showHorizontal { get; set; }
         public bool showVertical { get; set; }
 
-        public bool needsHorizontal
+        internal bool needsHorizontal
         {
             get { return showHorizontal || (contentContainer.layout.width - layout.width > 0); }
         }
 
-        public bool needsVertical
+        internal bool needsVertical
         {
             get { return showVertical || (contentContainer.layout.height - layout.height > 0); }
         }
-
-        private VisualElement m_ContentContainer;
 
         public Vector2 scrollOffset
         {
@@ -97,8 +70,15 @@ namespace UnityEngine.Experimental.UIElements
             set { verticalScroller.slider.pageSize = value; }
         }
 
-        private float scrollableWidth { get { return contentContainer.layout.width - contentViewport.layout.width; } }
-        private float scrollableHeight { get { return contentContainer.layout.height - contentViewport.layout.height; } }
+        private float scrollableWidth
+        {
+            get { return contentContainer.layout.width - contentViewport.layout.width; }
+        }
+
+        private float scrollableHeight
+        {
+            get { return contentContainer.layout.height - contentViewport.layout.height; }
+        }
 
         void UpdateContentViewTransform()
         {
@@ -119,15 +99,13 @@ namespace UnityEngine.Experimental.UIElements
             if (!contentContainer.Contains(child))
                 throw new ArgumentException("Cannot scroll to null child");
 
-            float scrollableHeight = contentContainer.layout.height - contentViewport.layout.height;
-
             float yTransform = contentContainer.transform.position.y * -1;
             float viewMin = contentViewport.layout.yMin + yTransform;
             float viewMax = contentViewport.layout.yMax + yTransform;
 
             float childBoundaryMin = child.layout.yMin;
             float childBoundaryMax = child.layout.yMax;
-            if (childBoundaryMin >= viewMin && childBoundaryMax <= viewMax || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
+            if ((childBoundaryMin >= viewMin && childBoundaryMax <= viewMax) || float.IsNaN(childBoundaryMin) || float.IsNaN(childBoundaryMax))
                 return;
 
             bool scrollUpward = false;
@@ -145,26 +123,49 @@ namespace UnityEngine.Experimental.UIElements
             UpdateContentViewTransform();
         }
 
-        public VisualElement contentViewport { get; private set; }    // Represents the visible part of contentContainer
+        public VisualElement contentViewport { get; private set; } // Represents the visible part of contentContainer
 
-        [Obsolete("Please use contentContainer instead", false)]
-        public VisualElement contentView { get { return contentContainer; } }
         public Scroller horizontalScroller { get; private set; }
         public Scroller verticalScroller { get; private set; }
 
+        private VisualElement m_ContentContainer;
         public override VisualElement contentContainer // Contains full content, potentially partially visible
         {
             get { return m_ContentContainer; }
         }
 
-        public ScrollView()
+        public ScrollView() : this(FlexDirection.Column) {}
+
+        public ScrollView(FlexDirection contentDirection)
         {
-            contentViewport = new VisualElement() { name = "ContentViewport" };
-            contentViewport.style.overflow = StyleEnums.Overflow.Hidden;
+            RegisterCallback<GeometryChangedEvent>(OnFirstLayout);
+
+            contentViewport = new VisualElement();
+            contentViewport.AddToClassList("unity-scrollview-content-viewport");
+            contentViewport.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
             shadow.Add(contentViewport);
 
             // Basic content container; its constraints should be defined in the USS file
-            AssignContentContainer(new VisualElement { name = "ContentView" });
+            m_ContentContainer = new VisualElement();
+            m_ContentContainer.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
+            switch (contentDirection)
+            {
+                case FlexDirection.Column:
+                    m_ContentContainer.AddToClassList("unity-scrollview-vertical");
+                    break;
+                case FlexDirection.ColumnReverse:
+                    m_ContentContainer.AddToClassList("unity-scrollview-vertical-reverse");
+                    break;
+                case FlexDirection.Row:
+                    m_ContentContainer.AddToClassList("unity-scrollview-horizontal");
+                    break;
+                case FlexDirection.RowReverse:
+                    m_ContentContainer.AddToClassList("unity-scrollview-horizontal-reverse");
+                    break;
+            }
+
+            m_ContentContainer.AddToClassList("unity-scrollview-content-container");
+            contentViewport.Add(m_ContentContainer);
 
             const int defaultMinScrollValue = 0;
             const int defaultMaxScrollValue = 100;
@@ -175,7 +176,8 @@ namespace UnityEngine.Experimental.UIElements
                     scrollOffset = new Vector2(value, scrollOffset.y);
                     UpdateContentViewTransform();
                 }, SliderDirection.Horizontal)
-            {name = "HorizontalScroller", persistenceKey = "HorizontalScroller", visible = false};
+            { persistenceKey = "HorizontalScroller", visible = false };
+            horizontalScroller.AddToClassList("unity-scrollview-horizontal-scroller");
             shadow.Add(horizontalScroller);
 
             verticalScroller = new Scroller(defaultMinScrollValue, defaultMaxScrollValue,
@@ -184,50 +186,25 @@ namespace UnityEngine.Experimental.UIElements
                     scrollOffset = new Vector2(scrollOffset.x, value);
                     UpdateContentViewTransform();
                 }, SliderDirection.Vertical)
-            {name = "VerticalScroller", persistenceKey = "VerticalScroller", visible = false};
+            { persistenceKey = "VerticalScroller", visible = false };
+            verticalScroller.AddToClassList("unity-scrollview-vertical-scroller");
             shadow.Add(verticalScroller);
 
             RegisterCallback<WheelEvent>(OnScrollWheel);
             scrollOffset = Vector2.zero;
         }
 
-        private static readonly string contentViewClass = "content-view";
-
-        private void AssignContentContainer(VisualElement contents)
+        private void OnFirstLayout(GeometryChangedEvent evt)
         {
-            contents.RegisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-            contents.AddToClassList(contentViewClass);
-            contentViewport.Add(contents);
-            m_ContentContainer = contents;
-        }
-
-        public void SetContents(VisualElement contents)
-        {
-            if (contents != null && contents != m_ContentContainer)
+            // If the ScrollView is collapsed (no height/width set) automatically adds flex-grow for the user
+            // This way it behave almost like if the ScrollView content was relative and will always take space
+            if (layout.height <= 0f || layout.width <= 0f)
             {
-                if (m_ContentContainer != null)
-                {
-                    m_ContentContainer.RemoveFromHierarchy();
-                    m_ContentContainer.UnregisterCallback<GeometryChangedEvent>(OnGeometryChanged);
-                    m_ContentContainer.RemoveFromClassList(contentViewClass);
-                }
-                AssignContentContainer(contents);
-                scrollOffset = Vector2.zero;
+                AddToClassList("unity-flex-grow");
             }
+            UnregisterCallback<GeometryChangedEvent>(OnFirstLayout);
         }
 
-        protected internal override void ExecuteDefaultAction(EventBase evt)
-        {
-            base.ExecuteDefaultAction(evt);
-
-            if (evt.GetEventTypeId() == GeometryChangedEvent.TypeId())
-            {
-                OnGeometryChanged((GeometryChangedEvent)evt);
-            }
-        }
-
-        private static readonly string horizontalScrollClass = "horizontal-scroll-visible";
-        private static readonly string verticalScrollClass = "vertical-scroll-visible";
         private void OnGeometryChanged(GeometryChangedEvent evt)
         {
             // Only affected by dimension changes
@@ -242,14 +219,18 @@ namespace UnityEngine.Experimental.UIElements
                 verticalScroller.Adjust(contentViewport.layout.height / contentContainer.layout.height);
 
             // Set availability
-            horizontalScroller.SetEnabled(contentContainer.layout.width - layout.width > 0);
-            verticalScroller.SetEnabled(contentContainer.layout.height - layout.height > 0);
+            horizontalScroller.SetEnabled(contentContainer.layout.width - contentViewport.layout.width > 0);
+            verticalScroller.SetEnabled(contentContainer.layout.height - contentViewport.layout.height > 0);
 
             // Expand content if scrollbars are hidden
-            contentViewport.style.positionRight = needsVertical ? verticalScroller.layout.width : 0;
+            contentViewport.style.marginRight = needsVertical ? verticalScroller.layout.width : 0;
             horizontalScroller.style.positionRight = needsVertical ? verticalScroller.layout.width : 0;
-            contentViewport.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
+            contentViewport.style.marginBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
             verticalScroller.style.positionBottom = needsHorizontal ? horizontalScroller.layout.height : 0;
+
+            // Set min width/height on the content container to make its items stretch by default
+            contentContainer.style.minWidth = contentViewport.layout.width;
+            contentContainer.style.minHeight = contentViewport.layout.height;
 
             if (needsHorizontal && scrollableWidth > 0f)
             {
@@ -275,29 +256,12 @@ namespace UnityEngine.Experimental.UIElements
             if (horizontalScroller.visible != needsHorizontal)
             {
                 horizontalScroller.visible = needsHorizontal;
-                if (needsHorizontal)
-                {
-                    contentViewport.AddToClassList(horizontalScrollClass);
-                }
-                else
-                {
-                    contentViewport.RemoveFromClassList(horizontalScrollClass);
-                }
             }
 
             if (verticalScroller.visible != needsVertical)
             {
                 verticalScroller.visible = needsVertical;
-                if (needsVertical)
-                {
-                    contentViewport.AddToClassList(verticalScrollClass);
-                }
-                else
-                {
-                    contentViewport.RemoveFromClassList(verticalScrollClass);
-                }
             }
-
 
             UpdateContentViewTransform();
         }

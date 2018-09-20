@@ -13,6 +13,9 @@ using UnityEditorInternal;
 using System.Runtime.InteropServices;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEngine.Experimental.Networking.PlayerConnection;
+using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
+using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
 
 namespace UnityEditorInternal
 {
@@ -340,7 +343,7 @@ namespace UnityEditor
 
         static List<FrameDebuggerWindow> s_FrameDebuggers = new List<FrameDebuggerWindow>();
 
-        private AttachProfilerUI m_AttachProfilerUI = new AttachProfilerUI();
+        private IConnectionState m_AttachToPlayerState;
 
         [MenuItem("Window/Analysis/Frame Debugger", false, 10)]
         public static FrameDebuggerWindow ShowFrameDebuggerWindow()
@@ -414,6 +417,9 @@ namespace UnityEditor
 
         internal void OnEnable()
         {
+            if (m_AttachToPlayerState == null)
+                m_AttachToPlayerState = ConnectionUtility.GetAttachToPlayerState(this);
+
             autoRepaintOnSceneChange = true;
             s_FrameDebuggers.Add(this);
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
@@ -432,6 +438,9 @@ namespace UnityEditor
                 m_PreviewUtility.Cleanup();
                 m_PreviewUtility = null;
             }
+
+            m_AttachToPlayerState?.Dispose();
+            m_AttachToPlayerState = null;
 
             s_FrameDebuggers.Remove(this);
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;
@@ -456,7 +465,7 @@ namespace UnityEditor
         {
             bool isEnabled = FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled();
 
-            bool enablingLocally = !isEnabled && m_AttachProfilerUI.IsEditor();
+            bool enablingLocally = !isEnabled && m_AttachToPlayerState.connectedToTarget == ConnectionTarget.Editor;
 
             if (enablingLocally && !FrameDebuggerUtility.locallySupported)
                 return;
@@ -598,7 +607,7 @@ namespace UnityEditor
         {
             bool repaint = false;
 
-            bool isSupported = !m_AttachProfilerUI.IsEditor() || FrameDebuggerUtility.locallySupported;
+            bool isSupported = m_AttachToPlayerState.connectedToTarget != ConnectionTarget.Editor || FrameDebuggerUtility.locallySupported;
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             // enable toggle
@@ -613,7 +622,7 @@ namespace UnityEditor
                 repaint = true;
             }
 
-            m_AttachProfilerUI.OnGUILayout(this);
+            ConnectionGUILayout.AttachToPlayerDropdown(m_AttachToPlayerState, EditorStyles.toolbarDropDown);
 
             bool isAnyEnabled = FrameDebuggerUtility.IsLocalEnabled() || FrameDebuggerUtility.IsRemoteEnabled();
             if (isAnyEnabled && ProfilerDriver.connectedProfiler != FrameDebuggerUtility.GetRemotePlayerGUID())
@@ -1338,7 +1347,7 @@ namespace UnityEditor
             int oldLimit = FrameDebuggerUtility.limit;
             bool repaint = DrawToolbar(descs);
 
-            if (!FrameDebuggerUtility.IsLocalEnabled() && !FrameDebuggerUtility.IsRemoteEnabled() && m_AttachProfilerUI.IsEditor())
+            if (!FrameDebuggerUtility.IsLocalEnabled() && !FrameDebuggerUtility.IsRemoteEnabled() && m_AttachToPlayerState.connectedToTarget == ConnectionTarget.Editor)
             {
                 GUI.enabled = true;
 

@@ -538,6 +538,31 @@ namespace UnityEditor
             }
         }
 
+        internal static void RectangleHandleCapWorldSpace(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
+        {
+            RectangleHandleCapWorldSpace(controlID, position, rotation, new Vector2(size, size), eventType);
+        }
+
+        internal static void RectangleHandleCapWorldSpace(int controlID, Vector3 position, Quaternion rotation, Vector2 size, EventType eventType)
+        {
+            switch (eventType)
+            {
+                case (EventType.Layout):
+                    HandleUtility.AddControl(controlID, HandleUtility.DistanceToRectangleInternalWorldSpace(position, rotation, size));
+                    break;
+                case (EventType.Repaint):
+                    Vector3 sideways = rotation * new Vector3(size.x, 0, 0);
+                    Vector3 up = rotation * new Vector3(0, size.y, 0);
+                    s_RectangleHandlePointsCache[0] = position + sideways + up;
+                    s_RectangleHandlePointsCache[1] = position + sideways - up;
+                    s_RectangleHandlePointsCache[2] = position - sideways - up;
+                    s_RectangleHandlePointsCache[3] = position - sideways + up;
+                    s_RectangleHandlePointsCache[4] = position + sideways + up;
+                    Handles.DrawPolyLine(s_RectangleHandlePointsCache);
+                    break;
+            }
+        }
+
         // Draw a camera-facing dot. Pass this into handle functions.
         public static void DotHandleCap(int controlID, Vector3 position, Quaternion rotation, float size, EventType eventType)
         {
@@ -550,8 +575,8 @@ namespace UnityEditor
                     // Only apply matrix to the position because DotCap is camera facing
                     position = matrix.MultiplyPoint(position);
 
-                    Vector3 sideways = Camera.current.transform.right * size;
-                    Vector3 up = Camera.current.transform.up * size;
+                    Vector3 sideways = (Camera.current == null ? Vector3.right : Camera.current.transform.right) * size;
+                    Vector3 up = (Camera.current == null ? Vector3.up : Camera.current.transform.up) * size;
 
                     Color col = color * new Color(1, 1, 1, 0.99f);
                     HandleUtility.ApplyWireMaterial(Handles.zTest);

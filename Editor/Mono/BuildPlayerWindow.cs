@@ -26,6 +26,7 @@ namespace UnityEditor
         class Styles
         {
             public GUIContent invalidColorSpaceMessage = EditorGUIUtility.TrTextContent("In order to build a player go to 'Player Settings...' to resolve the incompatibility between the Color Space and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
+            public GUIContent invalidLightmapEncodingMessage = EditorGUIUtility.TrTextContent("In order to build a player go to 'Player Settings...' to resolve the incompatibility between the selected Lightmap Encoding and the current settings.", EditorGUIUtility.GetHelpIcon(MessageType.Warning));
             public GUIStyle selected = "OL SelectedRow";
             public GUIStyle box = "OL Box";
             public GUIStyle title = EditorStyles.boldLabel;
@@ -76,6 +77,7 @@ namespace UnityEditor
                 { EditorGUIUtility.TrTextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Facebook Publishing"), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
                 { EditorGUIUtility.TrTextContent("Your license does not cover Nintendo Switch Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
+                { EditorGUIUtility.TrTextContent("Your license does not cover Lumin OS Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
             };
 
             // ADD_NEW_PLATFORM_HERE
@@ -91,6 +93,7 @@ namespace UnityEditor
                 { EditorGUIUtility.TrTextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Facebook is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
                 { EditorGUIUtility.TrTextContent("Nintendo Switch is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
+                { EditorGUIUtility.TrTextContent("Lumin OS is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
             };
             public GUIContent GetTargetNotInstalled(int index, int item)
             {
@@ -465,6 +468,41 @@ namespace UnityEditor
                 {
                     var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
                     hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                }
+
+                return hasMinGraphicsAPI && hasMinOSVersion;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        static bool IsLightmapEncodingValid(BuildPlatform platform)
+        {
+            if (PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(platform.targetGroup) != LightmapEncodingQuality.Low)
+            {
+                var hasMinGraphicsAPI = true;
+                var hasMinOSVersion = true;
+
+                if (platform.targetGroup == BuildTargetGroup.iOS)
+                {
+                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
+                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+
+                    Version requiredVersion = new Version(8, 0);
+                    hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
+                }
+                else if (platform.targetGroup == BuildTargetGroup.tvOS)
+                {
+                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.tvOS);
+                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                }
+                else if (platform.targetGroup == BuildTargetGroup.Android)
+                {
+                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                    hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
                 }
 
                 return hasMinGraphicsAPI && hasMinOSVersion;
@@ -851,6 +889,12 @@ namespace UnityEditor
                 enableBuildAndRunButton = false;
                 enableBuildButton = false;
                 EditorGUILayout.HelpBox(styles.invalidColorSpaceMessage);
+            }
+            else if (!IsLightmapEncodingValid(platform) && enableBuildButton && enableBuildAndRunButton)
+            {
+                enableBuildAndRunButton = false;
+                enableBuildButton = false;
+                EditorGUILayout.HelpBox(styles.invalidLightmapEncodingMessage);
             }
 
             GUILayout.BeginHorizontal();

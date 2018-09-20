@@ -274,7 +274,7 @@ namespace UnityEngine
 
         public void AddCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
-            if (!Enum.IsDefined(typeof(CameraEvent), evt))
+            if (!Rendering.CameraEventUtils.IsValid(evt))
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             AddCommandBufferImpl(evt, buffer);
@@ -282,7 +282,7 @@ namespace UnityEngine
 
         public void AddCommandBufferAsync(CameraEvent evt, CommandBuffer buffer, ComputeQueueType queueType)
         {
-            if (!Enum.IsDefined(typeof(CameraEvent), evt))
+            if (!Rendering.CameraEventUtils.IsValid(evt))
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             AddCommandBufferAsyncImpl(evt, buffer, queueType);
@@ -290,7 +290,7 @@ namespace UnityEngine
 
         public void RemoveCommandBuffer(CameraEvent evt, CommandBuffer buffer)
         {
-            if (!Enum.IsDefined(typeof(CameraEvent), evt))
+            if (!Rendering.CameraEventUtils.IsValid(evt))
                 throw new ArgumentException(string.Format(@"Invalid CameraEvent value ""{0}"".", (int)evt), "evt");
             if (buffer == null) throw new NullReferenceException("buffer is null");
             RemoveCommandBufferImpl(evt, buffer);

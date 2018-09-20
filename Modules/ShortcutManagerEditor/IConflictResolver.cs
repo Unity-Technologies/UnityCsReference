@@ -8,5 +8,5 @@ using UnityEditor.ShortcutManagement;
 
 interface IConflictResolver
 {
-    void ResolveConflict(List<KeyCombination> keyCombinationSequence, List<ShortcutEntry> entries);
+    void ResolveConflict(IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries);
 }

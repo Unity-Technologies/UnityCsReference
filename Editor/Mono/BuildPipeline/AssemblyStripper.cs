@@ -77,7 +77,7 @@ namespace UnityEditorInternal
             args.AddRange(additionalBlacklist.Select(path => "-x \"" + path + "\""));
 
             args.AddRange(searchDirs.Select(d => "-d \"" + d + "\""));
-            args.AddRange(assemblies.Select(assembly => "-a  \"" + Path.GetFullPath(assembly) + "\""));
+            args.AddRange(assemblies.Select(assembly => "--include-unity-root-assembly=\"" + Path.GetFullPath(assembly) + "\""));
             args.Add($"--dotnetruntime={GetRuntimeArgumentValueForLinker(buildTargetGroup)}");
             args.Add($"--dotnetprofile={GetProfileArgumentValueForLinker(buildTargetGroup)}");
             args.Add("--use-editor-options");

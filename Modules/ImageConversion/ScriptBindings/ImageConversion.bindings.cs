@@ -32,7 +32,7 @@ namespace UnityEngine
         }
 
         [NativeMethod(Name = "ImageConversionBindings::LoadImage", IsFreeFunction = true)]
-        extern public static bool LoadImage(this Texture2D tex, byte[] data, bool markNonReadable);
+        extern public static bool LoadImage([NotNull] this Texture2D tex, byte[] data, bool markNonReadable);
         public static bool LoadImage(this Texture2D tex, byte[] data)
         {
             return LoadImage(tex, data, false);

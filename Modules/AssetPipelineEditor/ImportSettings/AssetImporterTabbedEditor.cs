@@ -88,6 +88,8 @@ namespace UnityEditor
             // the activeTab can get destroyed when opening particular sub-editors (such as the Avatar configuration editor on the Rig tab)
             if (activeTab != null)
             {
+                GUILayout.Space(EditorGUI.kSpacing);
+
                 activeTab.OnInspectorGUI();
             }
 

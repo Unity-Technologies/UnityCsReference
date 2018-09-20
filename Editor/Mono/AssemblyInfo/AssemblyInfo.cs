@@ -19,6 +19,7 @@ using UnityEngine;
 [assembly: InternalsVisibleTo("Unity.PackageManagerStandalone")]
 [assembly: InternalsVisibleTo("Unity.AndroidBuildPipeline")]
 [assembly: InternalsVisibleTo("Unity.Automation")]
+[assembly: InternalsVisibleTo("UnityEngine.Common")]
 [assembly: InternalsVisibleTo("Unity.PureCSharpTests")]
 [assembly: InternalsVisibleTo("Unity.IntegrationTests")]
 [assembly: InternalsVisibleTo("Unity.DeploymentTests.Services")]

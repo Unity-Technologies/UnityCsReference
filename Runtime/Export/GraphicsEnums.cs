@@ -961,6 +961,17 @@ namespace UnityEngine.Rendering
         AfterHaloAndLensFlares
     }
 
+    internal static class CameraEventUtils
+    {
+        const CameraEvent k_MinimumValue = CameraEvent.BeforeDepthTexture;
+        const CameraEvent k_MaximumValue = CameraEvent.AfterHaloAndLensFlares;
+
+        public static bool IsValid(CameraEvent value)
+        {
+            return value >= k_MinimumValue && value <= k_MaximumValue;
+        }
+    }
+
     // Keep in sync with RenderLightEventType in Runtime/Graphics/CommandBuffer/RenderingEvents.h
     public enum LightEvent
     {

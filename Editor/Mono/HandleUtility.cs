@@ -26,7 +26,7 @@ namespace UnityEditor
             // The constrained direction is facing towards the camera, THATS BAD when the handle is close to the camera
             // The srcPosition  goes through to the other side of the camera
             float invert = 1.0F;
-            Vector3 cameraForward = Camera.current.transform.forward;
+            Vector3 cameraForward = Camera.current == null ? Vector3.forward : Camera.current.transform.forward;
             if (Vector3.Dot(constraintDir, cameraForward) < 0.0F)
                 invert = -1.0F;
 
@@ -36,8 +36,13 @@ namespace UnityEditor
             Vector3 cd = constraintDir;
             cd.y = -cd.y;
             Camera cam = Camera.current;
-            Vector2 p1 = EditorGUIUtility.PixelsToPoints(cam.WorldToScreenPoint(srcPosition));
-            Vector2 p2 = EditorGUIUtility.PixelsToPoints(cam.WorldToScreenPoint(srcPosition + constraintDir * invert));
+            // if camera is null, then we are drawing in OnGUI, where y-coordinate goes top-to-bottom
+            Vector2 p1 = cam == null
+                ? Vector2.Scale(srcPosition, new Vector2(1f, -1f))
+                : EditorGUIUtility.PixelsToPoints(cam.WorldToScreenPoint(srcPosition));
+            Vector2 p2 = cam == null
+                ? Vector2.Scale(srcPosition + constraintDir * invert, new Vector2(1f, -1f))
+                : EditorGUIUtility.PixelsToPoints(cam.WorldToScreenPoint(srcPosition + constraintDir * invert));
             Vector2 p3 = dest;
             Vector2 p4 = src;
 
@@ -155,7 +160,8 @@ namespace UnityEditor
             return DistanceToRectangleInternal(position, rotation, new Vector2(size, size));
         }
 
-        // Pixel distance from mouse pointer to a rectangle on screen
+        // Pixel distance from mouse pointer to a rectangle on screen.
+        // The method is stable in pixel space but fails when one or more corners of the rectangle is behind the camera.
         internal static float DistanceToRectangleInternal(Vector3 position, Quaternion rotation, Vector2 size)
         {
             Vector3 sideways = rotation * new Vector3(size.x, 0, 0);
@@ -194,6 +200,42 @@ namespace UnityEditor
                 return closestDist;
             }
             return 0;
+        }
+
+        // Pixel distance from mouse pointer to a rectangle on screen.
+        // Tests if mouse ray intersects the rectangle performed in world space first,
+        // then the distance between nearest point on the rectangle and mouse position calculated in pixel space.
+        // This method is more stable than DistanceToRectangleInternal for cases when one or more corners of the rectangle is behind the camera.
+        // But at the same time it is less stable than DistanceToRectangleInternal in pixel space when the rectangle plane is parallel to cameras forward direction.
+        internal static float DistanceToRectangleInternalWorldSpace(Vector3 position, Quaternion rotation, Vector2 size)
+        {
+            Quaternion invRotation = Quaternion.Inverse(rotation);
+
+            Ray ray = GUIPointToWorldRay(Event.current.mousePosition);
+            ray.origin = invRotation * (ray.origin - position);
+            ray.direction = invRotation * ray.direction;
+
+            Plane plane = new Plane(Vector3.forward, Vector3.zero);
+
+            float enter;
+            if (plane.Raycast(ray, out enter))
+            {
+                Vector3 hitPoint = ray.GetPoint(enter);
+
+                Vector3 d = new Vector3(
+                    Mathf.Max(Mathf.Abs(hitPoint.x) - size.x, 0.0f) * Mathf.Sign(hitPoint.x),
+                    Mathf.Max(Mathf.Abs(hitPoint.y) - size.y, 0.0f) * Mathf.Sign(hitPoint.y),
+                    0.0f);
+
+                Vector3 nearestPoint = hitPoint - d;
+
+                hitPoint = rotation * hitPoint + position;
+                nearestPoint = rotation * nearestPoint + position;
+
+                return Vector2.Distance(WorldToGUIPoint(hitPoint), WorldToGUIPoint(nearestPoint));
+            }
+
+            return float.PositiveInfinity;
         }
 
         internal static float DistanceToDiamond(Vector3 position, Quaternion rotation, float size)

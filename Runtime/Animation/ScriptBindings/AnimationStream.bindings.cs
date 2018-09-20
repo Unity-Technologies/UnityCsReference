@@ -113,6 +113,12 @@ namespace UnityEngine.Experimental.Animations
             return InternalGetInputStream(index);
         }
 
+        public float GetInputWeight(int index)
+        {
+            CheckIsValid();
+            return InternalGetInputWeight(index);
+        }
+
         private void ReadSceneTransforms() { CheckIsValid(); InternalReadSceneTransforms(); }
         private void WriteSceneTransforms() { CheckIsValid(); InternalWriteSceneTransforms(); }
 
@@ -146,6 +152,9 @@ namespace UnityEngine.Experimental.Animations
 
         [NativeMethod(Name = "GetInputStream", IsThreadSafe = true)]
         private extern AnimationStream InternalGetInputStream(int index);
+
+        [NativeMethod(Name = "GetInputWeight", IsThreadSafe = true)]
+        private extern float InternalGetInputWeight(int index);
 
         [NativeMethod(IsThreadSafe = true)]
         private extern AnimationHumanStream GetHumanStream();

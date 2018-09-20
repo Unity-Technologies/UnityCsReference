@@ -54,7 +54,7 @@ namespace UnityEditorInternal
 
     public enum ProfilerAudioView
     {
-        Stats = 0,
+        [Obsolete("This has been made obsolete. Audio stats are now shown on every subpane.", true)] Stats = 0,
         Channels = 1,
         Groups = 2,
         ChannelsAndGroups = 3,

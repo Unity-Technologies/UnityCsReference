@@ -163,8 +163,13 @@ namespace UnityEditor
             }
             else
             {
+                // TODO(RadeonRays): change this to (lightmapper == Enlighten) once Double Sided GI works with GPU lightmapper.
                 using (new EditorGUI.DisabledScope(LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.ProgressiveCPU))
                     EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
+                if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
+                {
+                    EditorGUILayout.HelpBox(Styles.ProgressiveGPUWarning.text, MessageType.Info);
+                }
             }
             return false;
         }

@@ -734,7 +734,6 @@ namespace UnityEditor
                             // TODO: Don't clobber secondary+ combinations
                             var newCombination = new List<KeyCombination> { new KeyCombination(e) };
                             shortcutController.profileManager.ModifyShortcutEntry(selectedShortcut.identifier, newCombination);
-                            shortcutController.profileManager.PersistChanges();
                         }
                     }
                     else if (GUIUtility.keyboardControl == controlID && Event.current.type == EventType.KeyDown)

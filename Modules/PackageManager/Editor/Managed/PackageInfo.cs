@@ -91,7 +91,7 @@ namespace UnityEditor.PackageManager
         [NativeName("author")]
         private AuthorInfo m_Author = new AuthorInfo();
 
-        private PackageInfo() {}
+        internal PackageInfo() {}
 
         public string packageId { get { return m_PackageId;  } }
         internal bool isRootDependency { get { return m_IsRootDependency;  } }

@@ -570,7 +570,7 @@ namespace UnityEditor
             if (GUILayout.Button(Styles.eyeDropper, GUIStyle.none, GUILayout.Width(40), GUILayout.ExpandWidth(false)))
             {
                 GUIUtility.keyboardControl = 0;
-                EyeDropper.Start(m_Parent, false);
+                EyeDropper.Start(m_Parent);
                 m_ColorBoxMode = ColorBoxMode.EyeDropper;
                 GUIUtility.ExitGUI();
             }
@@ -958,6 +958,15 @@ namespace UnityEditor
                 }
             }
 
+            // Cancel EyeDropper if we change focus.
+            if (m_ColorBoxMode == ColorBoxMode.EyeDropper &&
+                Event.current.type == EventType.ExecuteCommand &&
+                Event.current.commandName == EventCommandNames.NewKeyboardFocus)
+            {
+                EyeDropper.End();
+                OnEyedropperCancelled();
+            }
+
             // Remove keyfocus when clicked outside any control
             if ((Event.current.type == EventType.MouseDown && Event.current.button != 1) || Event.current.type == EventType.ContextClick)
             {
@@ -1229,17 +1238,17 @@ namespace UnityEditor
         private bool m_Focused = false;
         private Action<Color> m_ColorPickedCallback;
 
-        public static void Start(GUIView viewToUpdate, bool stealFocus = true)
+        public static void Start(GUIView viewToUpdate)
         {
-            Start(viewToUpdate, null, stealFocus);
+            Start(viewToUpdate, null);
         }
 
-        public static void Start(Action<Color> colorPickedCallback, bool stealFocus = true)
+        public static void Start(Action<Color> colorPickedCallback)
         {
-            Start(null, colorPickedCallback, stealFocus);
+            Start(null, colorPickedCallback);
         }
 
-        static void Start(GUIView viewToUpdate, Action<Color> colorPickedCallback, bool stealFocus)
+        static void Start(GUIView viewToUpdate, Action<Color> colorPickedCallback)
         {
             instance.m_DelegateView = viewToUpdate;
             instance.m_ColorPickedCallback = colorPickedCallback;
@@ -1255,8 +1264,6 @@ namespace UnityEditor
             win.position = new Rect(-kDummyWindowSize / 2, -kDummyWindowSize / 2, kDummyWindowSize, kDummyWindowSize);
             instance.wantsMouseMove = true;
             instance.StealMouseCapture();
-            if (stealFocus)
-                instance.Focus();
         }
 
         public static void End()

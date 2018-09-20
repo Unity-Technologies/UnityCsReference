@@ -63,6 +63,14 @@ namespace UnityEditorInternal
             get;
         }
 
+        /// <summary>
+        /// The maximal depth of the stacked samples. This count includes the thread root as well as counters.
+        /// </summary>
+        public extern int maxDepth
+        {
+            get;
+        }
+
         public extern string path
         {
             [NativeMethod("GetFunctionPath")]

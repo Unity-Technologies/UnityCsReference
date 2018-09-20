@@ -14,6 +14,9 @@ using UnityEditorInternal.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
+using UnityEngine.Experimental.Networking.PlayerConnection;
+using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
+using ConnectionGUILayout = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUILayout;
 
 
 namespace UnityEditor
@@ -46,6 +49,8 @@ namespace UnityEditor
             public static readonly GUIContent loadProfilingData = EditorGUIUtility.TrTextContent("Load", "Load binary profiling information from a file. Shift click to append to the existing data");
             public static readonly string[] loadProfilingDataFileFilters = new string[] { L10n.Tr("Profiler files"), "data,raw", L10n.Tr("All files"), "*" };
 
+            public static readonly GUIContent takeSample = EditorGUIUtility.TrTextContent("Take Sample {0}", "Warning: this may freeze the Editor and the connected Player for a moment!");
+            public static readonly GUIContent memoryUsageInEditorDisclaimer = EditorGUIUtility.TrTextContent("Memory usage in the Editor is not the same as it would be in a Player.");
             public static readonly GUIContent optionsButtonContent = EditorGUIUtility.TrIconContent("_Popup", "Options");
 
             public static readonly GUIContent[] reasons = GetLocalizedReasons();
@@ -102,12 +107,13 @@ namespace UnityEditor
         [SerializeField]
         private bool m_Recording;
 
-        private AttachProfilerUI m_AttachProfilerUI = new AttachProfilerUI();
+        private IConnectionState m_AttachProfilerState;
 
         private Vector2 m_GraphPos = Vector2.zero;
         private Vector2[] m_PaneScroll = new Vector2[Profiler.areaCount];
         private Vector2 m_PaneScroll_AudioChannels = Vector2.zero;
-        private Vector2 m_PaneScroll_AudioDSP = Vector2.zero;
+        private Vector2 m_PaneScroll_AudioDSPLeft = Vector2.zero;
+        private Vector2 m_PaneScroll_AudioDSPRight = Vector2.zero;
         private Vector2 m_PaneScroll_AudioClips = Vector2.zero;
 
         [SerializeField]
@@ -122,7 +128,7 @@ namespace UnityEditor
         ProfilerArea? m_CurrentArea = ProfilerArea.CPU;
 
         ProfilerMemoryView m_ShowDetailedMemoryPane = ProfilerMemoryView.Simple;
-        ProfilerAudioView m_ShowDetailedAudioPane = ProfilerAudioView.Stats;
+        ProfilerAudioView m_ShowDetailedAudioPane = ProfilerAudioView.Channels;
 
         [SerializeField]
         bool m_ShowInactiveDSPChains = false;
@@ -335,7 +341,6 @@ namespace UnityEditor
             InitializeIfNeeded();
 
             titleContent = GetLocalizedTitleContent();
-            m_AttachProfilerUI.OnProfilerTargetChanged = ClearFramesCallback;
             m_ProfilerWindows.Add(this);
             EditorApplication.playModeStateChanged += OnPlaymodeStateChanged;
             UserAccessiblitySettings.colorBlindConditionChanged += Initialize;
@@ -351,6 +356,8 @@ namespace UnityEditor
 
         void Initialize()
         {
+            m_AttachProfilerState = ConnectionUtility.GetAttachToPlayerState(this, (player) => ClearFramesCallback());
+
             int historySize = ProfilerDriver.maxHistoryLength - 1;
 
             m_Charts = new ProfilerChart[Profiler.areaCount];
@@ -500,6 +507,8 @@ namespace UnityEditor
 
         void OnDisable()
         {
+            m_AttachProfilerState.Dispose();
+            m_AttachProfilerState = null;
             m_ProfilerWindows.Remove(this);
             m_UISystemProfiler.CurrentAreaChanged(null);
             EditorApplication.playModeStateChanged -= OnPlaymodeStateChanged;
@@ -837,194 +846,192 @@ namespace UnityEditor
         }
 
 
-        private void AudioProfilerToggle(ProfilerCaptureFlags toggleFlag)
+        private enum ProfilerAudioPopupItems
         {
-            bool oldState = (AudioSettings.profilerCaptureFlags & (int)toggleFlag) != 0;
-            bool newState = GUILayout.Toggle(oldState, "Record", EditorStyles.toolbarButton);
-            if (oldState != newState)
-                ProfilerDriver.SetAudioCaptureFlags((AudioSettings.profilerCaptureFlags & ~(int)toggleFlag) | (newState
-                    ? (int)toggleFlag
-                    : 0));
+            Simple = 0,
+            Detailed = 1
+        }
+
+        private bool AudioDeepProfileToggle()
+        {
+            int toggleFlags = (int)ProfilerCaptureFlags.Channels;
+            if (Unsupported.IsDeveloperMode())
+                toggleFlags |= (int)ProfilerCaptureFlags.Clips | (int)ProfilerCaptureFlags.DSPNodes;
+            ProfilerAudioPopupItems oldShowDetailedAudioPane = (AudioSettings.profilerCaptureFlags & toggleFlags) != 0 ? ProfilerAudioPopupItems.Detailed : ProfilerAudioPopupItems.Simple;
+            ProfilerAudioPopupItems newShowDetailedAudioPane = (ProfilerAudioPopupItems)EditorGUILayout.EnumPopup(oldShowDetailedAudioPane, EditorStyles.toolbarDropDown, GUILayout.Width(70f));
+            if (oldShowDetailedAudioPane != newShowDetailedAudioPane)
+                ProfilerDriver.SetAudioCaptureFlags((AudioSettings.profilerCaptureFlags & ~toggleFlags) | (newShowDetailedAudioPane == ProfilerAudioPopupItems.Detailed ? toggleFlags : 0));
+            return (AudioSettings.profilerCaptureFlags & toggleFlags) != 0;
+        }
+
+        private Rect DrawAudioStatsPane(ref Vector2 scrollPos)
+        {
+            var totalRect = GUILayoutUtility.GetRect(20f, 20000f, 10, 10000f);
+            var statsRect = new Rect(totalRect.x, totalRect.y, 230f, totalRect.height);
+            var rightRect = new Rect(statsRect.xMax, totalRect.y, totalRect.width - statsRect.width, totalRect.height);
+
+            // STATS
+            var content = ProfilerDriver.GetOverviewText(m_CurrentArea.Value, GetActiveVisibleFrameIndex());
+            var textSize = EditorStyles.wordWrappedLabel.CalcSize(GUIContent.Temp(content));
+            scrollPos = GUI.BeginScrollView(statsRect, scrollPos, new Rect(0, 0, textSize.x, textSize.y));
+            GUI.Label(new Rect(3, 3, textSize.x, textSize.y), content, EditorStyles.wordWrappedLabel);
+            GUI.EndScrollView();
+            EditorGUI.DrawRect(new Rect(statsRect.xMax - 1, statsRect.y, 1, statsRect.height), Color.black);
+
+            return rightRect;
         }
 
         private void DrawAudioPane()
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             ProfilerAudioView newShowDetailedAudioPane = m_ShowDetailedAudioPane;
-            if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Stats, "Stats", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Stats;
-            if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Channels, "Channels", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Channels;
-            if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Groups, "Groups", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Groups;
-            if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.ChannelsAndGroups, "Channels and groups", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.ChannelsAndGroups;
-            if (Unsupported.IsDeveloperMode() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.DSPGraph, "DSP Graph", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.DSPGraph;
-            if (Unsupported.IsDeveloperMode() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Clips, "Clips", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Clips;
-            if (newShowDetailedAudioPane != m_ShowDetailedAudioPane)
+            if (AudioDeepProfileToggle())
             {
-                m_ShowDetailedAudioPane = newShowDetailedAudioPane;
-                m_LastAudioProfilerFrame = -1; // force update
-            }
-            if (m_ShowDetailedAudioPane == ProfilerAudioView.Stats)
-            {
-                GUILayout.Space(5);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-                DrawOverviewText(m_CurrentArea);
-            }
-            else if (m_ShowDetailedAudioPane == ProfilerAudioView.DSPGraph)
-            {
-                GUILayout.Space(5);
-                AudioProfilerToggle(ProfilerCaptureFlags.DSPNodes);
-                GUILayout.Space(5);
-                m_ShowInactiveDSPChains = GUILayout.Toggle(m_ShowInactiveDSPChains, "Show inactive", EditorStyles.toolbarButton);
-                if (m_ShowInactiveDSPChains)
-                    m_HighlightAudibleDSPChains = GUILayout.Toggle(m_HighlightAudibleDSPChains, "Highlight audible", EditorStyles.toolbarButton);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-
-                var totalRect = GUILayoutUtility.GetRect(20f, 10000f, 10, 20000f);
-
-                m_PaneScroll_AudioDSP = GUI.BeginScrollView(totalRect, m_PaneScroll_AudioDSP, new Rect(0, 0, 10000, 20000));
-
-                var clippingRect = new Rect(m_PaneScroll_AudioDSP.x, m_PaneScroll_AudioDSP.y, totalRect.width, totalRect.height);
-
-                if (m_AudioProfilerDSPView == null)
-                    m_AudioProfilerDSPView = new AudioProfilerDSPView();
-
-                ProfilerProperty property = CreateProperty();
-                if (CheckFrameData(property))
+                if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Channels, "Channels", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Channels;
+                if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Groups, "Groups", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Groups;
+                if (GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.ChannelsAndGroups, "Channels and groups", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.ChannelsAndGroups;
+                if (Unsupported.IsDeveloperMode() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.DSPGraph, "DSP Graph", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.DSPGraph;
+                if (Unsupported.IsDeveloperMode() && GUILayout.Toggle(newShowDetailedAudioPane == ProfilerAudioView.Clips, "Clips", EditorStyles.toolbarButton)) newShowDetailedAudioPane = ProfilerAudioView.Clips;
+                if (newShowDetailedAudioPane != m_ShowDetailedAudioPane)
                 {
-                    m_AudioProfilerDSPView.OnGUI(clippingRect, property, m_ShowInactiveDSPChains, m_HighlightAudibleDSPChains, ref m_DSPGraphZoomFactor, ref m_PaneScroll_AudioDSP);
+                    m_ShowDetailedAudioPane = newShowDetailedAudioPane;
+                    m_LastAudioProfilerFrame = -1; // force update
                 }
-                if (property != null)
-                    property.Dispose();
-
-                GUI.EndScrollView();
-
-                Repaint();
-            }
-            else if (m_ShowDetailedAudioPane == ProfilerAudioView.Clips)
-            {
-                GUILayout.Space(5);
-                AudioProfilerToggle(ProfilerCaptureFlags.Clips);
-                GUILayout.FlexibleSpace();
-                EditorGUILayout.EndHorizontal();
-
-                var totalRect = GUILayoutUtility.GetRect(20f, 20000f, 10, 10000f);
-                var statsRect = new Rect(totalRect.x, totalRect.y, 230f, totalRect.height);
-                var treeRect = new Rect(statsRect.xMax, totalRect.y, totalRect.width - statsRect.width, totalRect.height);
-
-                // STATS
-                var content = ProfilerDriver.GetOverviewText(m_CurrentArea.Value, GetActiveVisibleFrameIndex());
-                var textSize = EditorStyles.wordWrappedLabel.CalcSize(GUIContent.Temp(content));
-                m_PaneScroll_AudioClips = GUI.BeginScrollView(statsRect, m_PaneScroll_AudioClips, new Rect(0, 0, textSize.x, textSize.y));
-                GUI.Label(new Rect(3, 3, textSize.x, textSize.y), content, EditorStyles.wordWrappedLabel);
-                GUI.EndScrollView();
-                EditorGUI.DrawRect(new Rect(statsRect.xMax - 1, statsRect.y, 1, statsRect.height), Color.black);
-
-                // TREE
-                if (m_AudioProfilerClipTreeViewState == null)
-                    m_AudioProfilerClipTreeViewState = new AudioProfilerClipTreeViewState();
-
-                if (m_AudioProfilerClipViewBackend == null)
-                    m_AudioProfilerClipViewBackend = new AudioProfilerClipViewBackend(m_AudioProfilerClipTreeViewState);
-
-                ProfilerProperty property = CreateProperty();
-                if (CheckFrameData(property))
+                if (m_ShowDetailedAudioPane == ProfilerAudioView.DSPGraph)
                 {
-                    if (m_CurrentFrame == -1 || m_LastAudioProfilerFrame != m_CurrentFrame)
+                    m_ShowInactiveDSPChains = GUILayout.Toggle(m_ShowInactiveDSPChains, "Show inactive", EditorStyles.toolbarButton);
+                    if (m_ShowInactiveDSPChains)
+                        m_HighlightAudibleDSPChains = GUILayout.Toggle(m_HighlightAudibleDSPChains, "Highlight audible", EditorStyles.toolbarButton);
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
+
+                    var graphRect = DrawAudioStatsPane(ref m_PaneScroll_AudioDSPLeft);
+
+                    m_PaneScroll_AudioDSPRight = GUI.BeginScrollView(graphRect, m_PaneScroll_AudioDSPRight, new Rect(0, 0, 10000, 20000));
+
+                    var clippingRect = new Rect(m_PaneScroll_AudioDSPRight.x, m_PaneScroll_AudioDSPRight.y, graphRect.width, graphRect.height);
+
+                    if (m_AudioProfilerDSPView == null)
+                        m_AudioProfilerDSPView = new AudioProfilerDSPView();
+
+                    ProfilerProperty property = CreateProperty();
+                    if (CheckFrameData(property))
                     {
-                        m_LastAudioProfilerFrame = m_CurrentFrame;
-                        var sourceItems = property.GetAudioProfilerClipInfo();
-                        if (sourceItems != null && sourceItems.Length > 0)
+                        m_AudioProfilerDSPView.OnGUI(clippingRect, property, m_ShowInactiveDSPChains, m_HighlightAudibleDSPChains, ref m_DSPGraphZoomFactor, ref m_PaneScroll_AudioDSPRight);
+                    }
+                    if (property != null)
+                        property.Dispose();
+
+                    GUI.EndScrollView();
+
+                    Repaint();
+                }
+                else if (m_ShowDetailedAudioPane == ProfilerAudioView.Clips)
+                {
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
+
+                    var treeRect = DrawAudioStatsPane(ref m_PaneScroll_AudioClips);
+
+                    // TREE
+                    if (m_AudioProfilerClipTreeViewState == null)
+                        m_AudioProfilerClipTreeViewState = new AudioProfilerClipTreeViewState();
+
+                    if (m_AudioProfilerClipViewBackend == null)
+                        m_AudioProfilerClipViewBackend = new AudioProfilerClipViewBackend(m_AudioProfilerClipTreeViewState);
+
+                    ProfilerProperty property = CreateProperty();
+                    if (CheckFrameData(property))
+                    {
+                        if (m_CurrentFrame == -1 || m_LastAudioProfilerFrame != m_CurrentFrame)
                         {
-                            var items = new List<AudioProfilerClipInfoWrapper>();
-                            foreach (var s in sourceItems)
+                            m_LastAudioProfilerFrame = m_CurrentFrame;
+                            var sourceItems = property.GetAudioProfilerClipInfo();
+                            if (sourceItems != null && sourceItems.Length > 0)
                             {
-                                items.Add(new AudioProfilerClipInfoWrapper(s, property.GetAudioProfilerNameByOffset(s.assetNameOffset)));
-                            }
-                            m_AudioProfilerClipViewBackend.SetData(items);
-                            if (m_AudioProfilerClipView == null)
-                            {
-                                m_AudioProfilerClipView = new AudioProfilerClipView(this, m_AudioProfilerClipTreeViewState);
-                                m_AudioProfilerClipView.Init(treeRect, m_AudioProfilerClipViewBackend);
+                                var items = new List<AudioProfilerClipInfoWrapper>();
+                                foreach (var s in sourceItems)
+                                {
+                                    items.Add(new AudioProfilerClipInfoWrapper(s, property.GetAudioProfilerNameByOffset(s.assetNameOffset)));
+                                }
+                                m_AudioProfilerClipViewBackend.SetData(items);
+                                if (m_AudioProfilerClipView == null)
+                                {
+                                    m_AudioProfilerClipView = new AudioProfilerClipView(this, m_AudioProfilerClipTreeViewState);
+                                    m_AudioProfilerClipView.Init(treeRect, m_AudioProfilerClipViewBackend);
+                                }
                             }
                         }
+                        if (m_AudioProfilerClipView != null)
+                            m_AudioProfilerClipView.OnGUI(treeRect);
                     }
-                    if (m_AudioProfilerClipView != null)
-                        m_AudioProfilerClipView.OnGUI(treeRect);
+                    if (property != null)
+                        property.Dispose();
                 }
-                if (property != null)
-                    property.Dispose();
+                else
+                {
+                    bool resetAllAudioClipPlayCountsOnPlay = GUILayout.Toggle(AudioUtil.resetAllAudioClipPlayCountsOnPlay, "Reset play count on play", EditorStyles.toolbarButton);
+                    if (resetAllAudioClipPlayCountsOnPlay != AudioUtil.resetAllAudioClipPlayCountsOnPlay)
+                        AudioUtil.resetAllAudioClipPlayCountsOnPlay = resetAllAudioClipPlayCountsOnPlay;
+                    if (Unsupported.IsDeveloperMode())
+                    {
+                        GUILayout.Space(5);
+                        bool showAllGroups = EditorPrefs.GetBool("AudioProfilerShowAllGroups");
+                        bool newShowAllGroups = GUILayout.Toggle(showAllGroups, "Show all groups (dev mode only)", EditorStyles.toolbarButton);
+                        if (showAllGroups != newShowAllGroups)
+                            EditorPrefs.SetBool("AudioProfilerShowAllGroups", newShowAllGroups);
+                    }
+                    GUILayout.FlexibleSpace();
+                    EditorGUILayout.EndHorizontal();
+
+                    var treeRect = DrawAudioStatsPane(ref m_PaneScroll_AudioChannels);
+
+                    // TREE
+                    if (m_AudioProfilerGroupTreeViewState == null)
+                        m_AudioProfilerGroupTreeViewState = new AudioProfilerGroupTreeViewState();
+
+                    if (m_AudioProfilerGroupViewBackend == null)
+                        m_AudioProfilerGroupViewBackend = new AudioProfilerGroupViewBackend(m_AudioProfilerGroupTreeViewState);
+
+                    ProfilerProperty property = CreateProperty();
+                    if (CheckFrameData(property))
+                    {
+                        if (m_CurrentFrame == -1 || m_LastAudioProfilerFrame != m_CurrentFrame)
+                        {
+                            m_LastAudioProfilerFrame = m_CurrentFrame;
+                            var sourceItems = property.GetAudioProfilerGroupInfo();
+                            if (sourceItems != null && sourceItems.Length > 0)
+                            {
+                                var items = new List<AudioProfilerGroupInfoWrapper>();
+                                foreach (var s in sourceItems)
+                                {
+                                    bool isGroup = (s.flags & AudioProfilerGroupInfoHelper.AUDIOPROFILER_FLAGS_GROUP) != 0;
+                                    if (m_ShowDetailedAudioPane == ProfilerAudioView.Channels && isGroup)
+                                        continue;
+                                    if (m_ShowDetailedAudioPane == ProfilerAudioView.Groups && !isGroup)
+                                        continue;
+                                    items.Add(new AudioProfilerGroupInfoWrapper(s, property.GetAudioProfilerNameByOffset(s.assetNameOffset), property.GetAudioProfilerNameByOffset(s.objectNameOffset), m_ShowDetailedAudioPane == ProfilerAudioView.Channels));
+                                }
+                                m_AudioProfilerGroupViewBackend.SetData(items);
+                                if (m_AudioProfilerGroupView == null)
+                                {
+                                    m_AudioProfilerGroupView = new AudioProfilerGroupView(this, m_AudioProfilerGroupTreeViewState);
+                                    m_AudioProfilerGroupView.Init(treeRect, m_AudioProfilerGroupViewBackend);
+                                }
+                            }
+                        }
+                        if (m_AudioProfilerGroupView != null)
+                            m_AudioProfilerGroupView.OnGUI(treeRect, m_ShowDetailedAudioPane == ProfilerAudioView.Channels);
+                    }
+                    if (property != null)
+                        property.Dispose();
+                }
             }
             else
             {
-                GUILayout.Space(5);
-                AudioProfilerToggle(ProfilerCaptureFlags.Channels);
-                GUILayout.Space(5);
-                bool resetAllAudioClipPlayCountsOnPlay = GUILayout.Toggle(AudioUtil.resetAllAudioClipPlayCountsOnPlay, "Reset play count on play", EditorStyles.toolbarButton);
-                if (resetAllAudioClipPlayCountsOnPlay != AudioUtil.resetAllAudioClipPlayCountsOnPlay)
-                    AudioUtil.resetAllAudioClipPlayCountsOnPlay = resetAllAudioClipPlayCountsOnPlay;
-                if (Unsupported.IsDeveloperMode())
-                {
-                    GUILayout.Space(5);
-                    bool showAllGroups = EditorPrefs.GetBool("AudioProfilerShowAllGroups");
-                    bool newShowAllGroups = GUILayout.Toggle(showAllGroups, "Show all groups (dev mode only)", EditorStyles.toolbarButton);
-                    if (showAllGroups != newShowAllGroups)
-                        EditorPrefs.SetBool("AudioProfilerShowAllGroups", newShowAllGroups);
-                }
                 GUILayout.FlexibleSpace();
                 EditorGUILayout.EndHorizontal();
-
-                var totalRect = GUILayoutUtility.GetRect(20f, 20000f, 10, 10000f);
-                var statsRect = new Rect(totalRect.x, totalRect.y, 230f, totalRect.height);
-                var treeRect = new Rect(statsRect.xMax, totalRect.y, totalRect.width - statsRect.width, totalRect.height);
-
-                // STATS
-                var content = ProfilerDriver.GetOverviewText(m_CurrentArea.Value, GetActiveVisibleFrameIndex());
-                var textSize = EditorStyles.wordWrappedLabel.CalcSize(GUIContent.Temp(content));
-                m_PaneScroll_AudioChannels = GUI.BeginScrollView(statsRect, m_PaneScroll_AudioChannels, new Rect(0, 0, textSize.x, textSize.y));
-                GUI.Label(new Rect(3, 3, textSize.x, textSize.y), content, EditorStyles.wordWrappedLabel);
-                GUI.EndScrollView();
-                EditorGUI.DrawRect(new Rect(statsRect.xMax - 1, statsRect.y, 1, statsRect.height), Color.black);
-
-                // TREE
-                if (m_AudioProfilerGroupTreeViewState == null)
-                    m_AudioProfilerGroupTreeViewState = new AudioProfilerGroupTreeViewState();
-
-                if (m_AudioProfilerGroupViewBackend == null)
-                    m_AudioProfilerGroupViewBackend = new AudioProfilerGroupViewBackend(m_AudioProfilerGroupTreeViewState);
-
-                ProfilerProperty property = CreateProperty();
-                if (CheckFrameData(property))
-                {
-                    if (m_CurrentFrame == -1 || m_LastAudioProfilerFrame != m_CurrentFrame)
-                    {
-                        m_LastAudioProfilerFrame = m_CurrentFrame;
-                        var sourceItems = property.GetAudioProfilerGroupInfo();
-                        if (sourceItems != null && sourceItems.Length > 0)
-                        {
-                            var items = new List<AudioProfilerGroupInfoWrapper>();
-                            foreach (var s in sourceItems)
-                            {
-                                bool isGroup = (s.flags & AudioProfilerGroupInfoHelper.AUDIOPROFILER_FLAGS_GROUP) != 0;
-                                if (m_ShowDetailedAudioPane == ProfilerAudioView.Channels && isGroup)
-                                    continue;
-                                if (m_ShowDetailedAudioPane == ProfilerAudioView.Groups && !isGroup)
-                                    continue;
-                                items.Add(new AudioProfilerGroupInfoWrapper(s, property.GetAudioProfilerNameByOffset(s.assetNameOffset), property.GetAudioProfilerNameByOffset(s.objectNameOffset), m_ShowDetailedAudioPane == ProfilerAudioView.Channels));
-                            }
-                            m_AudioProfilerGroupViewBackend.SetData(items);
-                            if (m_AudioProfilerGroupView == null)
-                            {
-                                m_AudioProfilerGroupView = new AudioProfilerGroupView(this, m_AudioProfilerGroupTreeViewState);
-                                m_AudioProfilerGroupView.Init(treeRect, m_AudioProfilerGroupViewBackend);
-                            }
-                        }
-                    }
-                    if (m_AudioProfilerGroupView != null)
-                        m_AudioProfilerGroupView.OnGUI(treeRect, m_ShowDetailedAudioPane == ProfilerAudioView.Channels);
-                }
-                if (property != null)
-                    property.Dispose();
+                DrawOverviewText(m_CurrentArea);
             }
         }
 
@@ -1049,13 +1056,13 @@ namespace UnityEditor
 
             if (m_ShowDetailedMemoryPane == ProfilerMemoryView.Detailed)
             {
-                if (GUILayout.Button("Take Sample: " + m_AttachProfilerUI.GetConnectedProfiler(), EditorStyles.toolbarButton))
+                if (GUILayout.Button(GUIContent.Temp(string.Format(Styles.takeSample.text, m_AttachProfilerState.connectionName), Styles.takeSample.tooltip), EditorStyles.toolbarButton))
                     RefreshMemoryData();
 
                 m_GatherObjectReferences = GUILayout.Toggle(m_GatherObjectReferences, Styles.gatherObjectReferences, EditorStyles.toolbarButton);
 
-                if (m_AttachProfilerUI.IsEditor())
-                    GUILayout.Label("Memory usage in editor is not as it would be in a player", EditorStyles.toolbarButton);
+                if (m_AttachProfilerState.connectedToTarget == ConnectionTarget.Editor)
+                    GUILayout.Label(Styles.memoryUsageInEditorDisclaimer, EditorStyles.toolbarButton);
             }
 
             GUILayout.FlexibleSpace();
@@ -1306,7 +1313,7 @@ namespace UnityEditor
                 SessionState.SetBool(kProfilerEnabledSessionKey, profilerEnabled);
             }
 
-            EditorGUI.BeginDisabledGroup(!m_AttachProfilerUI.IsEditor());
+            EditorGUI.BeginDisabledGroup(m_AttachProfilerState.connectedToTarget != ConnectionTarget.Editor);
 
             // Deep profiling
             SetProfileDeepScripts(GUILayout.Toggle(ProfilerDriver.deepProfiling, Styles.deepProfile, EditorStyles.toolbarButton));
@@ -1317,7 +1324,7 @@ namespace UnityEditor
             EditorGUI.EndDisabledGroup();
 
             // Engine attach
-            m_AttachProfilerUI.OnGUILayout(this);
+            ConnectionGUILayout.AttachToPlayerDropdown(m_AttachProfilerState, EditorStyles.toolbarDropDown);
 
             // Allocation callstacks
             AllocationCallstacksToolbarItem();

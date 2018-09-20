@@ -14,7 +14,7 @@ namespace UnityEditor
             public static readonly GUIContent[] ProjectionStrings = { EditorGUIUtility.TrTextContent("Infinite"), EditorGUIUtility.TrTextContent("Box") };
             public static readonly GUIContent[] LightmapEmissiveStrings = { EditorGUIUtility.TrTextContent("Realtime"), EditorGUIUtility.TrTextContent("Baked") };
             public static readonly GUIContent Name = EditorGUIUtility.TrTextContent("Name");
-            public static readonly GUIContent On = EditorGUIUtility.TrTextContent("On");
+            public static readonly GUIContent Enabled = EditorGUIUtility.TrTextContent("Enabled");
             public static readonly GUIContent Type = EditorGUIUtility.TrTextContent("Type");
             public static readonly GUIContent Shape = EditorGUIUtility.TrTextContent("Shape");
             public static readonly GUIContent Mode = EditorGUIUtility.TrTextContent("Mode");
@@ -69,8 +69,8 @@ namespace UnityEditor
         {
             return new[]
             {
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200), // 0: Name
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Checkbox, Styles.On, "m_Enabled", 25), // 1: Enabled
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Checkbox, Styles.Enabled, "m_Enabled", 50), // 0: Enabled
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200), // 1: Name
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Enum, Styles.Type, "m_Type", 120, (r, prop, dep) =>
                 {
                     // To the user, we will only display it as a area light, but under the hood, we have Rectangle and Disc. This is not to confuse people
@@ -168,8 +168,8 @@ namespace UnityEditor
         {
             return new[]
             {
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200),  // 0: Name
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Checkbox, Styles.On, "m_Enabled", 25), // 1: Enabled
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Checkbox, Styles.Enabled, "m_Enabled", 50), // 0: Enabled
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200),  // 1: Name
                 new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Int, Styles.Mode, "m_Mode", 70, (r, prop, dep) =>
                 {
                     EditorGUI.IntPopup(r, prop, ReflectionProbeEditor.Styles.reflectionProbeMode, ReflectionProbeEditor.Styles.reflectionProbeModeValues, GUIContent.none);
@@ -195,8 +195,8 @@ namespace UnityEditor
         {
             return new[]
             {
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200), // 0: Name
-                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Checkbox, Styles.On, "m_Enabled", 25), // 1: Enabled
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Checkbox, Styles.Enabled, "m_Enabled", 50), // 0: Enabled
+                new LightingExplorerTableColumn(LightingExplorerTableColumn.DataType.Name, Styles.Name, null, 200), // 1: Name
             };
         }
 

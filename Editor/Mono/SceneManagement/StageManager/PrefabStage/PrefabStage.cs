@@ -38,6 +38,8 @@ namespace UnityEditor.Experimental.SceneManagement
         HideFlagUtility m_HideFlagUtility;
         Texture2D m_PrefabFileIcon;
         bool m_TemporarilyDisableAutoSave;
+        float m_LastSavingDuration = 0f;
+        const float kDurationBeforeShowingSavingBadge = 1.0f;
 
         bool m_AnalyticsDidUserModify;
         bool m_AnalyticsDidUserSave;
@@ -61,7 +63,7 @@ namespace UnityEditor.Experimental.SceneManagement
             get
             {
                 if (m_PrefabContentsRoot == null)
-                    throw new InvalidOperationException("Requesting 'prefabContentsRoot' from Awake and OnEnable are not supported"); // The preview scene is not fully loaded when we call Awake and OnEnable on user scripts
+                    throw new InvalidOperationException("Requesting 'prefabContentsRoot' from Awake and OnEnable are not supported"); // The prefab stage's m_PrefabContentsRoot is not yet set when we call Awake and OnEnable on user scripts when loading a prefab
                 return m_PrefabContentsRoot;
             }
         }
@@ -89,6 +91,12 @@ namespace UnityEditor.Experimental.SceneManagement
         public string prefabAssetPath
         {
             get { return m_PrefabAssetPath; }
+        }
+
+        internal bool showingSavingLabel
+        {
+            get;
+            private set;
         }
 
         internal Texture2D prefabFileIcon
@@ -261,14 +269,14 @@ namespace UnityEditor.Experimental.SceneManagement
 
         bool readyToAutoSave
         {
-            get { return m_PrefabContentsRoot != null && HasSceneBeenModified() && GUIUtility.hotControl == 0 && !isTextFieldCaretShowing; }
+            get { return m_PrefabContentsRoot != null && HasSceneBeenModified() && GUIUtility.hotControl == 0 && !isTextFieldCaretShowing && !EditorApplication.isCompiling; }
         }
 
         void HandleAutoSave()
         {
             if (autoSave && readyToAutoSave)
             {
-                SavePrefabWithVersionControlDialogAndRenameDialog();
+                AutoSave();
             }
         }
 
@@ -298,7 +306,7 @@ namespace UnityEditor.Experimental.SceneManagement
             m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
         }
 
-        // Not private so we use it in Tests
+        // Is internal so we can use it in Tests
         internal void SavePrefab()
         {
             if (!initialized)
@@ -313,14 +321,22 @@ namespace UnityEditor.Experimental.SceneManagement
             if (prefabSaving != null)
                 prefabSaving(m_PrefabContentsRoot);
 
-            ClearDirtiness();
-            PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, m_PrefabAssetPath);
+            var startTime = EditorApplication.timeSinceStartup;
+            var prefabAssetRoot = PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, m_PrefabAssetPath);
+            m_LastSavingDuration = (float)(EditorApplication.timeSinceStartup - startTime);
 
-            if (prefabSaved != null)
-                prefabSaved(m_PrefabContentsRoot);
+            if (prefabAssetRoot != null)
+            {
+                ClearDirtiness();
+
+                if (prefabSaved != null)
+                    prefabSaved(m_PrefabContentsRoot);
+            }
 
             if (SceneHierarchy.s_DebugPrefabStage)
                 Debug.Log("SAVE PREFAB ended");
+
+            showingSavingLabel = false;
         }
 
         internal bool SaveAsNewPrefab(string newPath, bool asCopy)
@@ -390,35 +406,53 @@ namespace UnityEditor.Experimental.SceneManagement
             return SaveAsNewPrefab(relativePath, false);
         }
 
+        void PerformDelayedAutoSave()
+        {
+            EditorApplication.update -= PerformDelayedAutoSave;
+            SavePrefabWithVersionControlDialogAndRenameDialog();
+        }
+
+        void AutoSave()
+        {
+            showingSavingLabel = m_LastSavingDuration > kDurationBeforeShowingSavingBadge;
+            if (showingSavingLabel)
+            {
+                // Save delayed if we want to show the save badge while saving.
+                foreach (SceneView sceneView in SceneView.sceneViews)
+                    sceneView.Repaint();
+
+                EditorApplication.update += PerformDelayedAutoSave;
+            }
+            else
+            {
+                // Save directly if we don't want to show the saving badge
+                SavePrefabWithVersionControlDialogAndRenameDialog();
+            }
+        }
+
         // Returns true if prefab was saved.
         internal bool SavePrefabWithVersionControlDialogAndRenameDialog()
         {
-            Assert.IsTrue(m_PrefabContentsRoot != null, "We should have a valid m_PrefabContentsRoot when saving to prefab asset");
-            bool editablePrefab = !AnimationMode.InAnimationMode();
-
-            //bool editablePrefab = UnityEditor.VersionControl.Provider.PromptAndCheckoutIfNeeded(
-            //        new string[] {context.assetPath},
-            //        "The version control requires you to check out the prefab before applying changes.");
-
-            if (editablePrefab)
+            if (m_PrefabContentsRoot == null)
             {
-                if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(m_PrefabAssetPath, PrefabUtility.SaveVerb.Save))
-                {
-                    // If user doesn't want to check out prefab asset, or it cannot be,
-                    // it doesn't make sense to keep auto save on.
-                    m_TemporarilyDisableAutoSave = true;
-                    return false;
-                }
-
-                bool showCancelButton = !autoSave;
-                if (!CheckRenamedPrefabRootWhenSaving(showCancelButton))
-                    return false;
-
-                SavePrefab();
-                return true;
+                Debug.LogError("We should have a valid m_PrefabContentsRoot when saving to prefab asset");
+                return false;
             }
 
-            return false;
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(m_PrefabAssetPath, PrefabUtility.SaveVerb.Save))
+            {
+                // If user doesn't want to check out prefab asset, or it cannot be,
+                // it doesn't make sense to keep auto save on.
+                m_TemporarilyDisableAutoSave = true;
+                return false;
+            }
+
+            bool showCancelButton = !autoSave;
+            if (!CheckRenamedPrefabRootWhenSaving(showCancelButton))
+                return false;
+
+            SavePrefab();
+            return true;
         }
 
         // Returns true if we should continue saving

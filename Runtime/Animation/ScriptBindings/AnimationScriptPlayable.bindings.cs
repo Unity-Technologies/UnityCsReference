@@ -75,7 +75,7 @@ namespace UnityEngine.Experimental.Animations
             CheckJobTypeValidity<T>();
 
             T data;
-            UnsafeUtility.CopyPtrToStructure<T>((void*)GetHandle().GetAdditionalPayload(), out data);
+            UnsafeUtility.CopyPtrToStructure<T>((void*)GetHandle().GetJobData(), out data);
             return data;
         }
 
@@ -84,7 +84,7 @@ namespace UnityEngine.Experimental.Animations
         {
             CheckJobTypeValidity<T>();
 
-            UnsafeUtility.CopyStructureToPtr(ref jobData, (void*)GetHandle().GetAdditionalPayload());
+            UnsafeUtility.CopyStructureToPtr(ref jobData, (void*)GetHandle().GetJobData());
         }
 
         public static implicit operator Playable(AnimationScriptPlayable playable)

@@ -168,6 +168,7 @@ namespace UnityEditor
             public static readonly GUIContent managedStrippingLevel = EditorGUIUtility.TrTextContent("Managed Stripping Level", "If scripting backend is IL2CPP, managed stripping can't be disabled.");
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
+            public static readonly GUIContent scriptingMono2xDeprecated = EditorGUIUtility.TrTextContent("Mono (Deprecated)");
             public static readonly GUIContent scriptingWinRTDotNET = EditorGUIUtility.TrTextContent(".NET");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
@@ -183,9 +184,12 @@ namespace UnityEditor
             public static readonly GUIContent activeInputHandling = EditorGUIUtility.TrTextContent("Active Input Handling*");
             public static readonly GUIContent[] activeInputHandlingOptions = new GUIContent[] { EditorGUIUtility.TrTextContent("Input Manager"), EditorGUIUtility.TrTextContent("Input System (Preview)"), EditorGUIUtility.TrTextContent("Both") };
             public static readonly GUIContent lightmapEncodingLabel = EditorGUIUtility.TrTextContent("Lightmap Encoding", "Affects the encoding scheme and compression format of the lightmaps.");
-            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
+            public static readonly GUIContent[] lightmapEncodingNames = { EditorGUIUtility.TrTextContent("Low Quality"), EditorGUIUtility.TrTextContent("Normal Quality"), EditorGUIUtility.TrTextContent("High Quality")};
             public static readonly GUIContent lightmapStreamingEnabled = EditorGUIUtility.TrTextContent("Lightmap Streaming Enabled", "Only load larger lightmap mip maps as needed to render the current game cameras. Requires texture streaming to be enabled in quality settings. This value is applied to the light map textures as they are generated.");
             public static readonly GUIContent lightmapStreamingPriority = EditorGUIUtility.TrTextContent("Streaming Priority", "Lightmap mip map streaming priority when there's contention for resources. Positive numbers represent higher priority. Valid range is -128 to 127. This value is applied to the light map textures as they are generated.");
+            public static readonly GUIContent lightmapQualityAndroidWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires OpenGL ES 3.0 or Vulkan. Uncheck 'Automatic Graphics API' and remove OpenGL ES 2 API. Additionally, 'Minimum API Level' must be at least Android 4.3");
+            public static readonly GUIContent lightmapQualityIOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs. Additionally, 'minimum iOS version' must be at least 8.0");
+            public static readonly GUIContent lightmapQualityTVOSWarning = EditorGUIUtility.TrTextContent("The selected Lightmap Encoding requires Metal API only. Uncheck 'Automatic Graphics API' and remove OpenGL ES APIs.");
             public static readonly GUIContent monoNotSupportediOS11WarningGUIContent = EditorGUIUtility.TrTextContent("Mono is not supported on iOS11 and above.");
             public static readonly GUIContent legacyClampBlendShapeWeights = EditorGUIUtility.TrTextContent("Clamp BlendShapes (Deprecated)*", "If set, the range of BlendShape weights in SkinnedMeshRenderers will be clamped.");
             public static string undoChangedBundleIdentifierString { get { return LocalizationDatabase.GetLocalizedString("Changed macOS bundleIdentifier"); } }
@@ -1696,17 +1700,45 @@ namespace UnityEditor
                 {
                     EditorGUI.BeginChangeCheck();
                     LightmapEncodingQuality encodingQuality = PlayerSettings.GetLightmapEncodingQualityForPlatformGroup(targetGroup);
-                    LightmapEncodingQuality[] lightmapEncodingValues = {LightmapEncodingQuality.Normal, LightmapEncodingQuality.High};
-                    encodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
-                    if (EditorGUI.EndChangeCheck())
+                    LightmapEncodingQuality[] lightmapEncodingValues = {LightmapEncodingQuality.Low, LightmapEncodingQuality.Normal, LightmapEncodingQuality.High};
+                    LightmapEncodingQuality newEncodingQuality = BuildEnumPopup(SettingsContent.lightmapEncodingLabel, encodingQuality, lightmapEncodingValues, SettingsContent.lightmapEncodingNames);
+                    if (EditorGUI.EndChangeCheck() && encodingQuality != newEncodingQuality)
                     {
-                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, encodingQuality);
+                        PlayerSettings.SetLightmapEncodingQualityForPlatformGroup(targetGroup, newEncodingQuality);
 
                         Lightmapping.OnUpdateLightmapEncoding(targetGroup);
 
                         serializedObject.ApplyModifiedProperties();
 
                         GUIUtility.ExitGUI();
+                    }
+
+                    if (encodingQuality != LightmapEncodingQuality.Low)
+                    {
+                        if (targetGroup == BuildTargetGroup.iOS)
+                        {
+                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
+                            var hasMinAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                            Version requiredVersion = new Version(8, 0);
+                            bool hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
+                            if (!hasMinAPI || !hasMinOSVersion)
+                                EditorGUILayout.HelpBox(SettingsContent.lightmapQualityIOSWarning.text, MessageType.Warning);
+                        }
+                        else if (targetGroup == BuildTargetGroup.tvOS)
+                        {
+                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.tvOS);
+                            var hasMinAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                            if (!hasMinAPI)
+                                EditorGUILayout.HelpBox(SettingsContent.lightmapQualityTVOSWarning.text, MessageType.Warning);
+                        }
+                        else if (targetGroup == BuildTargetGroup.Android)
+                        {
+                            var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
+                            var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                            bool hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
+                            if (!hasMinAPI || !hasMinOSVersion)
+                                EditorGUILayout.HelpBox(SettingsContent.lightmapQualityAndroidWarning.text, MessageType.Warning);
+                        }
                     }
                 }
             }
@@ -1961,6 +1993,7 @@ namespace UnityEditor
                 ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
                 currentBackendIsIl2Cpp = currBackend == ScriptingImplementation.IL2CPP;
                 ScriptingImplementation newBackend;
+                var mono2xDeprecated = targetGroup == BuildTargetGroup.iOS;
 
                 if (targetGroup == BuildTargetGroup.tvOS)
                 {
@@ -1970,11 +2003,11 @@ namespace UnityEditor
                 else if (backends.Length == 1)
                 {
                     newBackend = backends[0];
-                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0]), SettingsContent.scriptingBackend);
+                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0], mono2xDeprecated), SettingsContent.scriptingBackend);
                 }
                 else
                 {
-                    newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends));
+                    newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends, mono2xDeprecated));
                 }
 
                 if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
@@ -2313,7 +2346,6 @@ namespace UnityEditor
             EditorGUILayout.Space();
         }
 
-        private static Dictionary<ScriptingImplementation, GUIContent> m_NiceScriptingBackendNames;
         private static Dictionary<ApiCompatibilityLevel, GUIContent> m_NiceApiCompatibilityLevelNames;
         private static Dictionary<ManagedStrippingLevel, GUIContent> m_NiceManagedStrippingLevelNames;
 
@@ -2331,29 +2363,24 @@ namespace UnityEditor
             return names;
         }
 
-        private static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends)
+        static GUIContent[] GetNiceScriptingBackendNames(ScriptingImplementation[] scriptingBackends, bool mono2xDeprecated)
         {
-            InitializeNiceScriptingBackendNames();
-            return GetGUIContentsForValues(m_NiceScriptingBackendNames, scriptingBackends);
+            return scriptingBackends.Select(s => GetNiceScriptingBackendName(s, mono2xDeprecated)).ToArray();
         }
 
-        static void InitializeNiceScriptingBackendNames()
+        static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend, bool mono2xDeprecated)
         {
-            if (m_NiceScriptingBackendNames == null)
+            switch (scriptingBackend)
             {
-                m_NiceScriptingBackendNames = new Dictionary<ScriptingImplementation, GUIContent>
-                {
-                    { ScriptingImplementation.Mono2x, SettingsContent.scriptingMono2x },
-                    { ScriptingImplementation.WinRTDotNET, SettingsContent.scriptingWinRTDotNET },
-                    { ScriptingImplementation.IL2CPP, SettingsContent.scriptingIL2CPP }
-                };
+                case ScriptingImplementation.Mono2x:
+                    return mono2xDeprecated ? SettingsContent.scriptingMono2xDeprecated : SettingsContent.scriptingMono2x;
+                case ScriptingImplementation.IL2CPP:
+                    return SettingsContent.scriptingIL2CPP;
+                case ScriptingImplementation.WinRTDotNET:
+                    return SettingsContent.scriptingWinRTDotNET;
+                default:
+                    throw new ArgumentException($"Scripting backend value {scriptingBackend} is not supported.", nameof(scriptingBackend));
             }
-        }
-
-        private static GUIContent GetNiceScriptingBackendName(ScriptingImplementation scriptingBackend)
-        {
-            InitializeNiceScriptingBackendNames();
-            return GetGUIContentsForValues(m_NiceScriptingBackendNames, new[] { scriptingBackend }).First();
         }
 
         private static GUIContent[] GetNiceApiCompatibilityLevelNames(ApiCompatibilityLevel[] apiCompatibilityLevels)

@@ -56,6 +56,12 @@ namespace UnityEditor
             }
 
             GridEditorUtility.DrawGridMarquee(gridLayout, position, color);
+            if (position.zMin != 0)
+            {
+                var zeroBounds = position;
+                zeroBounds.zMin = 0;
+                GridEditorUtility.DrawGridMarquee(gridLayout, zeroBounds, Color.blue);
+            }
         }
     }
 }

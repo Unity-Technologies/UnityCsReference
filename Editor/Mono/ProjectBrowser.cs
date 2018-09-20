@@ -1277,6 +1277,13 @@ namespace UnityEditor
                             OpenAssetSelection(Selection.instanceIDs);
                         }
                         break;
+                    case KeyCode.Delete:
+                        if (Event.current.shift)
+                        {
+                            DeleteSelectedAssets(false);
+                            Event.current.Use();
+                        }
+                        break;
                 }
             }
         }
@@ -2266,7 +2273,7 @@ namespace UnityEditor
             Rect r = GUILayoutUtility.GetRect(s_Styles.m_FilterByLabel, EditorStyles.toolbarButton);
             if (EditorGUI.DropdownButton(r, s_Styles.m_FilterByLabel, FocusType.Passive, EditorStyles.toolbarButton))
             {
-                PopupWindow.Show(r, new PopupList(m_AssetLabels), null, ShowMode.PopupMenuWithKeyboardFocus);
+                PopupWindow.Show(r, new PopupList(m_AssetLabels));
             }
         }
 
@@ -2794,9 +2801,12 @@ namespace UnityEditor
                 {
                     ob.m_FolderTree.BeginNameEditing(0f);
                 }
-                else if (ob.m_ViewMode == ViewMode.OneColumn && ob.m_AssetTree != null)
+                else if (ob.m_ViewMode == ViewMode.OneColumn)
                 {
-                    ob.m_AssetTree.BeginNameEditing(0f);
+                    if (ob.m_AssetTree != null && ob.m_AssetTree.HasFocus())
+                        ob.m_AssetTree.BeginNameEditing(0f);
+                    else if (ob.m_ListArea != null)
+                        ob.m_ListArea.BeginRename(0f);
                 }
                 else if (ob.m_ViewMode == ViewMode.TwoColumns && ob.m_ListArea != null)
                 {

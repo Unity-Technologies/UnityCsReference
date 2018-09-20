@@ -9,11 +9,21 @@ using UnityEngine.XR.WSA;
 namespace UnityEngine.XR.WSA
 {
     [NativeHeader("Runtime/VR/HoloLens/HolographicEmulation/HolographicEmulationManager.h")]
-    internal enum GestureHand
+    internal enum PlaymodeInputType
     {
-        Left,
-        Right
+        LeftHand,
+        RightHand,
+        LeftController,
+        RightController,
     };
+
+    [NativeHeader("Runtime/VR/HoloLens/HolographicEmulation/HolographicEmulationManager.h")]
+    internal enum Handedness
+    {
+        Unknown,
+        Left,
+        Right,
+    }
 
     [NativeHeader("Runtime/VR/HoloLens/HolographicEmulation/HolographicEmulationManager.h")]
     internal enum SimulatedGesture
@@ -21,6 +31,18 @@ namespace UnityEngine.XR.WSA
         FingerPressed,
         FingerReleased
     }
+
+    [NativeHeader("Runtime/VR/HoloLens/HolographicEmulation/HolographicEmulationManager.h")]
+    internal enum SimulatedControllerPress
+    {
+        PressButton,
+        ReleaseButton,
+        Grip,
+        TouchPadPress,
+        Select,
+        TouchPadTouch,
+        ThumbStick,
+    };
 
     [NativeHeader("Runtime/VR/HoloLens/HolographicEmulation/HolographicEmulationManager.h")]
     [StaticAccessor("HolographicEmulation::HolographicEmulationManager::Get()", StaticAccessorType.Dot)]
@@ -35,12 +57,14 @@ namespace UnityEngine.XR.WSA
 
         internal static extern void SetEmulationMode(EmulationMode mode);
 
-        internal static extern void SetGestureHand(GestureHand hand);
+        internal static extern void SetPlaymodeInputType(PlaymodeInputType inputType);
 
         [NativeName("ResetEmulationState")]
         internal static extern void Reset();
 
-        internal static extern void PerformGesture(GestureHand hand, SimulatedGesture gesture);
+        internal static extern void PerformGesture(Handedness hand, SimulatedGesture gesture);
+
+        internal static extern void PerformButtonPress(Handedness hand, SimulatedControllerPress buttonPress);
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE", StubReturnStatement = "Vector3f::zero")]
         internal static extern Vector3 GetBodyPosition();
@@ -65,16 +89,29 @@ namespace UnityEngine.XR.WSA
         internal static extern void SetHeadDiameter(float degrees);
 
         [NativeConditional("ENABLE_HOLOLENS_MODULE", StubReturnStatement = "Vector3f::zero")]
-        internal static extern Vector3 GetHandPosition(GestureHand hand);
+        internal static extern Vector3 GetHandPosition(Handedness hand);
 
-        internal static extern void SetHandPosition(GestureHand hand, Vector3 position);
+        internal static extern void SetHandPosition(Handedness hand, Vector3 position);
 
-        internal static extern bool GetHandActivated(GestureHand hand);
+        internal static extern bool GetHandActivated(Handedness hand);
 
-        internal static extern void SetHandActivated(GestureHand hand, bool activated);
+        internal static extern void SetHandActivated(Handedness hand, bool activated);
 
-        internal static extern bool GetHandVisible(GestureHand hand);
+        internal static extern bool GetHandVisible(Handedness hand);
 
-        internal static extern void EnsureHandVisible(GestureHand hand);
+        internal static extern void EnsureHandVisible(Handedness hand);
+
+        [NativeConditional("ENABLE_HOLOLENS_MODULE", StubReturnStatement = "Vector3f::zero")]
+        internal static extern Vector3 GetControllerPosition(Handedness hand);
+
+        internal static extern bool TrySetControllerPosition(Handedness hand, Vector3 position);
+
+        internal static extern bool GetControllerActivated(Handedness hand);
+
+        internal static extern bool TrySetControllerActivated(Handedness hand, bool activated);
+
+        internal static extern bool GetControllerVisible(Handedness hand);
+
+        internal static extern bool TryEnsureControllerVisible(Handedness hand);
     }
 }

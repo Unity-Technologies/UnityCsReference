@@ -296,10 +296,7 @@ namespace UnityEditor
 
             CheckInstanceIsNotPersistent(instanceRoot);
 
-            // The concept of disconnecting are being deprecated. For now use FindRootGameObjectWithSameParentPrefab
-            // to re-connect existing disconnected prefabs.
-            #pragma warning disable 0618 // Type or member is obsolete
-            GameObject prefabInstanceRoot = FindRootGameObjectWithSameParentPrefab(instanceRoot);
+            GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
 
             var actionName = "Revert Prefab Instance";
             HashSet<int> hierarchy = null;
@@ -313,13 +310,13 @@ namespace UnityEditor
 
             if (isDisconnected)
             {
-                ReconnectToLastPrefab(prefabInstanceRoot);
+                RevertPrefabInstance_Internal(prefabInstanceRoot);
 
                 if (action == InteractionMode.UserAction)
                     Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
             }
 
-            RevertPrefabInstance(prefabInstanceRoot);
+            RevertPrefabInstance_Internal(prefabInstanceRoot);
 
             if (action == InteractionMode.UserAction)
             {
@@ -333,10 +330,7 @@ namespace UnityEditor
 
             CheckInstanceIsNotPersistent(instanceRoot);
 
-            // The concept of disconnecting are being deprecated. For now use FindRootGameObjectWithSameParentPrefab
-            // to re-connect existing disconnected prefabs.
-            #pragma warning disable 0618 // Type or member is obsolete
-            GameObject prefabInstanceRoot = FindRootGameObjectWithSameParentPrefab(instanceRoot);
+            GameObject prefabInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
 
             var actionName = "Apply instance to prefab";
             Object correspondingSourceObject = GetCorrespondingObjectFromSource(prefabInstanceRoot);
@@ -525,7 +519,7 @@ namespace UnityEditor
 
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(instanceComponentOrGameObject, "Revert component property overrides");
-            PrefabUtility.ResetToPrefabState(instanceComponentOrGameObject);
+            PrefabUtility.RevertObjectOverride_Internal(instanceComponentOrGameObject);
         }
 
         public static void ApplyAddedComponent(Component component, string assetPath, InteractionMode action)
@@ -598,7 +592,7 @@ namespace UnityEditor
                     return true;
                 }
 
-                if (GetPrefabObject(o) == source)
+                if (GetPrefabAssetHandle(o) == source)
                 {
                     return true;
                 }
@@ -641,7 +635,7 @@ namespace UnityEditor
                 SavePrefabAsset(prefabAsset);
             }
 
-            var prefabInstanceObject = PrefabUtility.GetPrefabObject(instanceGameObject);
+            var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
 
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(prefabInstanceObject, actionName);
@@ -682,7 +676,7 @@ namespace UnityEditor
             CheckInstanceIsNotPersistent(instanceGameObject);
 
             var actionName = "Revert Prefab removed component";
-            var prefabInstanceObject = PrefabUtility.GetPrefabObject(instanceGameObject);
+            var prefabInstanceObject = PrefabUtility.GetPrefabInstanceHandle(instanceGameObject);
 
             if (action == InteractionMode.UserAction)
                 Undo.RegisterCompleteObjectUndo(instanceGameObject, actionName);
@@ -928,7 +922,7 @@ namespace UnityEditor
         }
 
         // Creates an empty prefab at given path.
-        // TODO Steen Lund 2017 11 28 This needs to be marked OBSOLETE
+        [Obsolete("The concept of creating a completely empty Prefab has been discontinued. You can however use SaveAsPrefabAsset with an empty GameObject.")]
         public static Object CreateEmptyPrefab(string path)
         {
             // This is here to simulate previous behaviour
@@ -943,8 +937,6 @@ namespace UnityEditor
             Object.DestroyImmediate(empty);
             return PrefabUtility.GetPrefabObject(assetObject);
         }
-
-#pragma warning disable CS0618 // Type or member is obsolete
 
         public static GameObject SavePrefabAsset(GameObject asset)
         {
@@ -966,7 +958,9 @@ namespace UnityEditor
             if (root != asset)
                 throw new ArgumentException("GameObject to save Prefab from must be a Prefab root");
 
+#pragma warning disable CS0618 // Type or member is obsolete
             return SavePrefab(root, path, ReplacePrefabOptions.Default, PrefabCreationFlags.None);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         private static void SaveAsPrefabAssetArgumentCheck(GameObject root)
@@ -1002,7 +996,9 @@ namespace UnityEditor
             if (IsPrefabInstanceRoot(root))
                 creationFlags = PrefabCreationFlags.CreateVariant;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             return SavePrefab(root, assetPath, ReplacePrefabOptions.Default, creationFlags);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
         public static GameObject SaveAsPrefabAssetAndConnect(GameObject root, string assetPath, InteractionMode action)
@@ -1020,7 +1016,9 @@ namespace UnityEditor
             if (IsPrefabInstanceRoot(root))
                 creationFlags = PrefabCreationFlags.CreateVariant;
 
+#pragma warning disable CS0618 // Type or member is obsolete
             var assetRoot = SavePrefab(root, assetPath, ReplacePrefabOptions.ConnectToPrefab, creationFlags);
+#pragma warning restore CS0618 // Type or member is obsolete
 
             if (action == InteractionMode.UserAction)
             {
@@ -1049,7 +1047,7 @@ namespace UnityEditor
             {
                 // The concept of disconnecting are being deprecated. For now use FindRootGameObjectWithSameParentPrefab
                 // to re-connect existing disconnected prefabs.
-                var validRoot = PrefabUtility.FindValidUploadPrefabInstanceRoot(instance);
+                var validRoot = PrefabUtility.GetOutermostPrefabInstanceRoot(instance);
                 var ok = validRoot == instance;
                 if (!ok && PrefabUtility.GetCorrespondingObjectFromOriginalSource(instance) != PrefabUtility.GetCorrespondingObjectFromSource(instance))
                     throw new ArgumentException("Can't save Prefab from an object that originates from a nested Prefab");
@@ -1063,11 +1061,17 @@ namespace UnityEditor
 
             var assetObject = GetCorrespondingObjectFromSource(instance);
             string path = AssetDatabase.GetAssetPath(assetObject);
+
+#pragma warning disable CS0618 // Type or member is obsolete
             SavePrefab(instance, path, ReplacePrefabOptions.ConnectToPrefab, PrefabCreationFlags.None);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
+        // TOOO: Remove entirely once regular methods handle merging
+        // based on both ids and names on a smarter and more granular level.
         internal static GameObject ReplacePrefabAssetNameBased(GameObject root, string targetPrefab, bool connectToInstance)
         {
+#pragma warning disable CS0618 // Type or member is obsolete
             var options = ReplacePrefabOptions.ReplaceNameBased;
             if (connectToInstance)
                 options |= ReplacePrefabOptions.ConnectToPrefab;
@@ -1076,8 +1080,7 @@ namespace UnityEditor
 
             if (IsPartOfNonAssetPrefabInstance(root))
             {
-                var instanceRoot = PrefabUtility.GetPrefabInstanceRootGameObject(root);
-                if (root != instanceRoot)
+                if (!IsOutermostPrefabInstanceRoot(root))
                     throw new ArgumentException("Can't replace with part of Prefab instance. Please specify instance root object or a non-instance object.");
 
                 createOptions = PrefabCreationFlags.CreateVariant;
@@ -1087,22 +1090,26 @@ namespace UnityEditor
                 throw new ArgumentException("Argument connectToInstance is true but root object is an asset not an instance");
 
             return SavePrefab(root, targetPrefab, options, createOptions);
+#pragma warning restore CS0618 // Type or member is obsolete
         }
 
-#pragma warning restore CS0618 // Type or member is obsolete
-
-        //[Obsolete("CreatePrefab() has been deprecated. Use SavePrefab() instead (UnityUpgradable) -> SavePrefab(go, path, ReplacePrefabOptions.Default)")]
+        // Can't use UnityUpgradable since it doesn't currently support swapping parameter order.
+        [Obsolete("Use SaveAsPrefabAsset instead.")]
         public static GameObject CreatePrefab(string path, GameObject go)
         {
             return SaveAsPrefabAsset(go, path);
         }
 
-        //[Obsolete("CreatePrefab() has been deprecated. Use SavePrefab() instead (UnityUpgradable) -> SavePrefab(go, path, options)")]
-#pragma warning disable CS0618 // Type or member is obsolete
+        [Obsolete("Use SaveAsPrefabAsset or SaveAsPrefabAssetAndConnect instead.")]
         public static GameObject CreatePrefab(string path, GameObject go, ReplacePrefabOptions options)
         {
             if (options == ReplacePrefabOptions.ConnectToPrefab)
                 return SaveAsPrefabAssetAndConnect(go, path, InteractionMode.AutomatedAction);
+            else if ((options & ReplacePrefabOptions.ReplaceNameBased) != 0)
+            {
+                bool connectToPrefab = (options & ReplacePrefabOptions.ConnectToPrefab) != 0;
+                return ReplacePrefabAssetNameBased(go, path, connectToPrefab);
+            }
             else
                 return SaveAsPrefabAsset(go, path);
         }
@@ -1119,11 +1126,13 @@ namespace UnityEditor
             return InstantiatePrefab_internal(assetComponentOrGameObject, destinationScene);
         }
 
+        [Obsolete("Use SaveAsPrefabAsset with a path instead.")]
         public static GameObject ReplacePrefab(GameObject go, Object targetPrefab)
         {
             return ReplacePrefab(go, targetPrefab, ReplacePrefabOptions.Default);
         }
 
+        [Obsolete("Use SaveAsPrefabAsset or SaveAsPrefabAssetAndConnect with a path instead.")]
         public static GameObject ReplacePrefab(GameObject go, Object targetPrefab, ReplacePrefabOptions replaceOptions)
         {
             var targetPrefabObject = PrefabUtility.GetPrefabObject(targetPrefab);
@@ -1162,8 +1171,6 @@ namespace UnityEditor
             var assetPath = AssetDatabase.GetAssetPath(targetPrefabObject);
             return SavePrefab(go, assetPath, replaceOptions, PrefabCreationFlags.None);
         }
-
-#pragma warning restore CS0618 // Type or member is obsolete
 
         // Returns the corresponding object from its immediate source, or null if it can't be found.
         public static TObject GetCorrespondingObjectFromSource<TObject>(TObject componentOrGameObject) where TObject : Object
@@ -1211,7 +1218,6 @@ namespace UnityEditor
         }
 
         // Given an object, returns its prefab type (None, if it's not a prefab)
-#pragma warning disable CS0618 // Type or member is obsolete
         [Obsolete("Use GetPrefabAssetType and GetPrefabInstanceStatus to get the full picture about Prefab types.")]
         public static PrefabType GetPrefabType(Object target)
         {
@@ -1250,8 +1256,6 @@ namespace UnityEditor
 
             return PrefabType.PrefabInstance;
         }
-
-#pragma warning restore CS0618 // Type or member is obsolete
 
         // Called after prefab instances in the scene have been updated
         public delegate void PrefabInstanceUpdated(GameObject instance);
@@ -1328,7 +1332,7 @@ namespace UnityEditor
             if (!IsPartOfNonAssetPrefabInstance(root))
                 throw new ArgumentException("UnpackPrefabInstance must be called with a Prefab instance.");
 
-            if (GetPrefabInstanceRootGameObject(root) != root)
+            if (!IsOutermostPrefabInstanceRoot(root))
                 throw new ArgumentException("UnpackPrefabInstance must be called with a root Prefab instance GameObject.");
 
             if (action == InteractionMode.UserAction)
@@ -1349,24 +1353,6 @@ namespace UnityEditor
             {
                 UnpackPrefabInstanceAndReturnNewOutermostRoots(root, unpackMode);
             }
-        }
-
-        public static bool IsPartOfImmutablePrefab(Object gameObjectOrComponent)
-        {
-            if (IsPartOfModelPrefab(gameObjectOrComponent))
-                return true;
-
-            // If prefab instance, get the prefab asset.
-            if (!EditorUtility.IsPersistent(gameObjectOrComponent))
-                gameObjectOrComponent = GetCorrespondingObjectFromSource(gameObjectOrComponent);
-
-            string prefabAssetPath = AssetDatabase.GetAssetPath(gameObjectOrComponent);
-            bool isRootFolder, isReadonly;
-            bool validPath = AssetDatabase.GetAssetFolderInfo(prefabAssetPath, out isRootFolder, out isReadonly);
-            if (validPath && isReadonly)
-                return true;
-
-            return false;
         }
 
         internal static bool HasInvalidComponent(Object gameObjectOrComponent)

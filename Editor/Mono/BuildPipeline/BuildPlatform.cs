@@ -100,6 +100,7 @@ namespace UnityEditor.Build
             buildPlatformsList.Add(new BuildPlatform("WebGL", "BuildSettings.WebGL", BuildTargetGroup.WebGL, true));
             buildPlatformsList.Add(new BuildPlatform("Facebook", "BuildSettings.Facebook", BuildTargetGroup.Facebook, true));
             buildPlatformsList.Add(new BuildPlatform("Nintendo Switch", "BuildSettings.Switch", BuildTargetGroup.Switch, false));
+            buildPlatformsList.Add(new BuildPlatform("Lumin", "BuildSettings.Lumin", BuildTargetGroup.Lumin, false));
 
             foreach (var buildPlatform in buildPlatformsList)
             {

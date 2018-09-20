@@ -1517,19 +1517,6 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("LookDevView/Frame", typeof(LookDevView), "f")]
-        static void RefreshWindow(ShortcutArguments args)
-        {
-            if (GUIUtility.keyboardControl != 0)
-                return;
-            var window = (args.context as LookDevView);
-            if (window.m_CameraController.currentViewTool != ViewTool.None)
-                return;
-            if (EditorGUIUtility.editingTextField)
-                return;
-            window.Frame(window.m_LookDevConfig.currentEditionContext, true);
-        }
-
         public void HandleKeyboardShortcut()
         {
             // Only query camera when no in Layout event
@@ -1550,6 +1537,16 @@ namespace UnityEditor
             if (Event.current.type == EventType.KeyUp && Event.current.keyCode == KeyCode.R)
             {
                 m_LookDevConfig.ResynchronizeObjects();
+                Event.current.Use();
+            }
+
+            if (Event.current.type == EventType.ValidateCommand)
+            {
+                Event.current.Use();
+            }
+            if (Event.current.type == EventType.ExecuteCommand && Event.current.commandName == EventCommandNames.FrameSelected)
+            {
+                Frame(m_LookDevConfig.currentEditionContext, true);
                 Event.current.Use();
             }
         }
@@ -1676,7 +1673,7 @@ namespace UnityEditor
                         }
 
                         GameObject go = o as GameObject;
-                        if (go && EditorUtility.IsPersistent(go) && PrefabUtility.GetPrefabObject(go) != null)
+                        if (go && EditorUtility.IsPersistent(go) && PrefabUtility.IsPartOfPrefabAsset(go))
                         {
                             if (GameObjectInspector.HasRenderableParts(go))
                             {

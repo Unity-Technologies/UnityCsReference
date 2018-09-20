@@ -5,9 +5,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using UnityEditor;
+using UnityEditor.PackageManager;
 using UnityEditorInternal.VR;
 using UnityEngine;
 using UnityEngine.XR;
@@ -27,7 +29,7 @@ namespace UnityEngine.XR.WSA
         [SerializeField]
         private int m_RoomIndex = 0;
         [SerializeField]
-        private GestureHand m_Hand = GestureHand.Right;
+        private PlaymodeInputType m_InputType = PlaymodeInputType.LeftController;
         [SerializeField]
         private string m_RemoteMachineAddress = "";
         [SerializeField]
@@ -37,6 +39,7 @@ namespace UnityEngine.XR.WSA
         [SerializeField]
         private int m_MaxBitrateKbps = 99999;
 
+
         // history is saved in editor prefs so it is usable across projects
         private string[] m_RemoteMachineHistory;
         private static int s_MaxHistoryLength = 4;
@@ -44,7 +47,7 @@ namespace UnityEngine.XR.WSA
         private static GUIContent s_ConnectionStatusText = EditorGUIUtility.TrTextContent("Connection Status");
         private static GUIContent s_EmulationModeText = EditorGUIUtility.TrTextContent("Emulation Mode");
         private static GUIContent s_RoomText = EditorGUIUtility.TrTextContent("Room");
-        private static GUIContent s_HandText = EditorGUIUtility.TrTextContent("Gesture Hand");
+        private static GUIContent s_InputText = EditorGUIUtility.TrTextContent("Simulated Input");
         private static GUIContent s_RemoteMachineText = EditorGUIUtility.TrTextContent("Remote Machine");
         private static GUIContent s_EnableVideoText = EditorGUIUtility.TrTextContent("Enable Video");
         private static GUIContent s_EnableAudioText = EditorGUIUtility.TrTextContent("Enable Audio");
@@ -74,10 +77,12 @@ namespace UnityEngine.XR.WSA
             EditorGUIUtility.TrTextContent("LivingRoom")
         };
 
-        private static GUIContent[] s_HandStrings = new GUIContent[]
+        private static GUIContent[] s_InputStrings = new GUIContent[]
         {
             EditorGUIUtility.TrTextContent("Left Hand"),
             EditorGUIUtility.TrTextContent("Right Hand"),
+            EditorGUIUtility.TrTextContent("Left Controller"),
+            EditorGUIUtility.TrTextContent("Right Controller"),
         };
 
         internal EmulationMode emulationMode
@@ -378,10 +383,12 @@ namespace UnityEngine.XR.WSA
 
 
                     EditorGUI.BeginChangeCheck();
-                    m_Hand = (GestureHand)EditorGUILayout.Popup(s_HandText, (int)m_Hand, s_HandStrings);
+                    m_InputType = (PlaymodeInputType)EditorGUILayout.Popup(s_InputText, (int)m_InputType, s_InputStrings);
                     if (EditorGUI.EndChangeCheck())
-                        HolographicAutomation.SetGestureHand(m_Hand);
+                        HolographicAutomation.SetPlaymodeInputType(m_InputType);
+                    break;
 
+                case EmulationMode.None:
                     break;
             }
         }
@@ -390,8 +397,11 @@ namespace UnityEngine.XR.WSA
         {
             switch (m_Mode)
             {
+                case EmulationMode.None:
+                    break;
+
                 case EmulationMode.Simulated:
-                    UnityEngine.XR.WSA.HolographicAutomation.SetGestureHand(m_Hand);
+                    HolographicAutomation.SetPlaymodeInputType(m_InputType);
                     break;
 
                 case EmulationMode.RemoteDevice:

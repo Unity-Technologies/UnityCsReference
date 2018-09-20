@@ -10,6 +10,13 @@ using UnityEngine.Internal;
 
 namespace UnityEngine.Experimental.Animations
 {
+    public enum CustomStreamPropertyType
+    {
+        Float = BindType.Float,
+        Bool = BindType.Bool,
+        Int = BindType.Int
+    }
+
     [NativeHeader("Runtime/Animation/ScriptBindings/AnimatorJobExtensions.bindings.h")]
     [NativeHeader("Runtime/Animation/Animator.h")]
     [NativeHeader("Runtime/Animation/Director/AnimationStreamHandles.h")]
@@ -28,6 +35,13 @@ namespace UnityEngine.Experimental.Animations
         public static PropertyStreamHandle BindStreamProperty(this Animator animator, Transform transform, Type type, string property)
         {
             return BindStreamProperty(animator, transform, type, property, false);
+        }
+
+        public static PropertyStreamHandle BindCustomStreamProperty(this Animator animator, string property, CustomStreamPropertyType type)
+        {
+            PropertyStreamHandle propertyStreamHandle = new PropertyStreamHandle();
+            InternalBindCustomStreamProperty(animator, property, type, out propertyStreamHandle);
+            return propertyStreamHandle;
         }
 
         public static PropertyStreamHandle BindStreamProperty(this Animator animator, Transform transform, Type type, string property, [DefaultValue("false")] bool isObjectReference)
@@ -79,6 +93,8 @@ namespace UnityEngine.Experimental.Animations
         extern private static void InternalBindStreamTransform([NotNull] Animator animator, [NotNull] Transform transform, out TransformStreamHandle transformStreamHandle);
 
         extern private static void InternalBindStreamProperty([NotNull] Animator animator, [NotNull] Transform transform, [NotNull] Type type, [NotNull] string property, bool isObjectReference, out PropertyStreamHandle propertyStreamHandle);
+
+        extern private static void InternalBindCustomStreamProperty([NotNull] Animator animator, [NotNull] string property, CustomStreamPropertyType propertyType, out PropertyStreamHandle propertyStreamHandle);
 
         extern private static void InternalBindSceneTransform([NotNull] Animator animator, [NotNull] Transform transform, out TransformSceneHandle transformSceneHandle);
 

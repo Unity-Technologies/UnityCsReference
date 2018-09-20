@@ -15,6 +15,7 @@ namespace UnityEditor
         [SerializeField] private GameObject m_ScenePaintTarget; // Which GameObject in scene is considered as painting target
         [SerializeField] private GridBrushBase m_Brush; // Which brush will handle painting callbacks
         [SerializeField] private PaintableGrid m_ActiveGrid; // Grid that has painting focus (can be palette, too)
+        [SerializeField] private PaintableGrid m_LastActiveGrid; // Grid that last had painting focus (can be palette, too)
         [SerializeField] private HashSet<Object> m_InterestedPainters = new HashSet<Object>(); // A list of objects that can paint using the GridPaintingState
 
         private GameObject[] m_CachedPaintTargets = null;
@@ -145,7 +146,17 @@ namespace UnityEditor
         public static PaintableGrid activeGrid
         {
             get { return instance.m_ActiveGrid; }
-            set { instance.m_ActiveGrid = value; }
+            set
+            {
+                instance.m_ActiveGrid = value;
+                if (instance.m_ActiveGrid != null)
+                    instance.m_LastActiveGrid = value;
+            }
+        }
+
+        public static PaintableGrid lastActiveGrid
+        {
+            get { return instance.m_LastActiveGrid; }
         }
 
         public static bool ValidatePaintTarget(GameObject candidate)

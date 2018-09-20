@@ -38,6 +38,7 @@ namespace UnityEditor
         public SerializedProperty m_AutoRandomSeed;
         public SerializedProperty m_RandomSeed;
         public SerializedProperty m_StopAction;
+        public SerializedProperty m_CullingMode;
 
         public SerializedProperty m_RingBufferMode;
         public SerializedProperty m_RingBufferLoopRange;
@@ -68,6 +69,7 @@ namespace UnityEditor
             public GUIContent randomSeed = EditorGUIUtility.TrTextContent("Random Seed", "Randomize the look of the Particle System. Using the same seed will make the Particle System play identically each time. After changing this value, restart the Particle System to see the changes, or check the Resimulate box.");
             public GUIContent emitterVelocity = EditorGUIUtility.TrTextContent("Emitter Velocity", "When the Particle System is moving, should we use its Transform, or Rigidbody Component, to calculate its velocity?");
             public GUIContent stopAction = EditorGUIUtility.TrTextContent("Stop Action", "When the Particle System is stopped and all particles have died, should the GameObject automatically disable/destroy itself?");
+            public GUIContent cullingMode = EditorGUIUtility.TrTextContent("Culling Mode", "Choose whether to continue simulating the Particle System when offscreen. Catch-up mode pauses offscreen simulations, but performs a large simulation step when they become visible, giving the appearance that they were never paused. Automatic uses Pause mode for looping systems, and AlwaysSimulate if not looping.");
             public GUIContent ringBufferMode = EditorGUIUtility.TrTextContent("Ring Buffer Mode", "Rather than dying when their lifetime has elapsed, particles will remain alive until the Max Particles buffer is full, at which point new particles will replace the oldest.");
             public GUIContent ringBufferLoopRange = EditorGUIUtility.TrTextContent("Loop Range", "Particle lifetimes may loop between a fade-in and fade-out time, in order to use curves for the entire time they are alive. Values are in the 0-1 range.");
             public GUIContent x = EditorGUIUtility.TextContent("X");
@@ -94,6 +96,14 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("Disable"),
                 EditorGUIUtility.TrTextContent("Destroy"),
                 EditorGUIUtility.TrTextContent("Callback")
+            };
+
+            public GUIContent[] cullingModes = new GUIContent[]
+            {
+                EditorGUIUtility.TrTextContent("Automatic"),
+                EditorGUIUtility.TrTextContent("Pause and Catch-up"),
+                EditorGUIUtility.TrTextContent("Pause"),
+                EditorGUIUtility.TrTextContent("Always Simulate")
             };
 
             public GUIContent[] ringBufferModes = new GUIContent[]
@@ -146,6 +156,7 @@ namespace UnityEditor
             m_AutoRandomSeed = GetProperty0("autoRandomSeed");
             m_RandomSeed = GetProperty0("randomSeed");
             m_StopAction = GetProperty0("stopAction");
+            m_CullingMode = GetProperty0("cullingMode");
             m_RingBufferMode = GetProperty0("ringBufferMode");
             m_RingBufferLoopRange = GetProperty0("ringBufferLoopRange");
 
@@ -307,6 +318,7 @@ namespace UnityEditor
             }
 
             GUIPopup(s_Texts.stopAction, m_StopAction, s_Texts.stopActions);
+            GUIPopup(s_Texts.cullingMode, m_CullingMode, s_Texts.cullingModes);
 
             ParticleSystemRingBufferMode ringBufferMode = (ParticleSystemRingBufferMode)GUIPopup(s_Texts.ringBufferMode, m_RingBufferMode, s_Texts.ringBufferModes);
             if (!m_RingBufferMode.hasMultipleDifferentValues && ringBufferMode == ParticleSystemRingBufferMode.LoopUntilReplaced)

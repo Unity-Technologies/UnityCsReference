@@ -223,7 +223,7 @@ namespace UnityEditor
     // Keep in synch with LightmapEncodingQuality enum from GfxDeviceTypes.h
     internal enum LightmapEncodingQuality
     {
-        //Low = 0,
+        Low = 0,
         Normal = 1,
         High = 2
     }
@@ -778,6 +778,24 @@ namespace UnityEditor
         }
 
         public static extern bool allowUnsafeCode
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
+
+        internal static extern bool gcWBarrierValidation
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
+
+        internal static extern bool gcMaxTimeSlice
         {
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
             get;

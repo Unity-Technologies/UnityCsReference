@@ -173,7 +173,7 @@ namespace UnityEditor.ShortcutManagement
 
         public void ApplyOverride(SerializableShortcutEntry shortcutOverride)
         {
-            SetOverride(shortcutOverride.keyCombination);
+            SetOverride(shortcutOverride.combinations);
         }
     }
 

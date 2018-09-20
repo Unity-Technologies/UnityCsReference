@@ -214,6 +214,11 @@ namespace UnityEngine
             get { return GetGraphicsMultiThreaded(); }
         }
 
+        public static bool hasHiddenSurfaceRemovalOnGPU
+        {
+            get { return HasHiddenSurfaceRemovalOnGPU(); }
+        }
+
         // Are built-in shadows supported? (RO)
         public static bool supportsShadows
         {
@@ -526,6 +531,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::GetGraphicsMultiThreaded")]
         static extern bool GetGraphicsMultiThreaded();
+
+        [FreeFunction("ScriptingGraphicsCaps::HasHiddenSurfaceRemovalOnGPU")]
+        static extern bool HasHiddenSurfaceRemovalOnGPU();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsShadows")]
         static extern bool SupportsShadows();

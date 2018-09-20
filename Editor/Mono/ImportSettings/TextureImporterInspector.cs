@@ -110,7 +110,7 @@ namespace UnityEditor
 
         internal static bool IsGLESMobileTargetPlatform(BuildTarget target)
         {
-            return target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.Android;
+            return target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.Android || target == BuildTarget.Lumin;
         }
 
         // Which platforms should we display?

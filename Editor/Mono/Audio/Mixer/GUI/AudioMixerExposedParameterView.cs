@@ -106,6 +106,10 @@ namespace UnityEditor
 
         public Vector2 CalcSize()
         {
+            if (m_ReorderableListWithRenameAndScrollView.list.count != m_Controller.exposedParameters.Length)
+            {
+                RecreateListControl();
+            }
             float maxWidth = 0;
             for (int index = 0; index < m_ReorderableListWithRenameAndScrollView.list.count; index++)
             {

@@ -9,25 +9,26 @@ using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
-    class CyclicDependencyException : Exception
-    {
-    }
-
-
     [Serializable]
     class SerializableShortcutEntry
     {
         public Identifier identifier;
-        public List<KeyCombination> keyCombination;
+        public List<KeyCombination> combinations;
 
         internal SerializableShortcutEntry()
         {
         }
 
+        internal SerializableShortcutEntry(Identifier id, IEnumerable<KeyCombination> combinations)
+        {
+            identifier = id;
+            this.combinations = combinations.ToList();
+        }
+
         internal SerializableShortcutEntry(ShortcutEntry entry)
         {
             identifier = entry.identifier;
-            keyCombination = new List<KeyCombination>(entry.combinations);
+            combinations = new List<KeyCombination>(entry.combinations);
         }
     }
 
@@ -35,63 +36,52 @@ namespace UnityEditor.ShortcutManagement
     class ShortcutProfile
     {
         public string id => m_Id;
-        [SerializeField]
-        internal string m_Id;
+
+        public string parentId => m_ParentId;
 
         [SerializeField]
-        List<SerializableShortcutEntry> m_SerializableEntries = new List<SerializableShortcutEntry>();
+        string m_Id;
+        [SerializeField]
+        string m_ParentId;
 
-        [NonSerialized]
-        Dictionary<string, SerializableShortcutEntry> m_Entries = new Dictionary<string, SerializableShortcutEntry>();
+        [SerializeField]
+        List<SerializableShortcutEntry> m_Entries = new List<SerializableShortcutEntry>();
 
-        IShortcutProfileLoader m_Loader;
+        public ShortcutProfile parent { get; internal set; }
 
-        public IEnumerable<SerializableShortcutEntry> entries => m_Entries.Values;
+        public IEnumerable<SerializableShortcutEntry> entries => m_Entries;
 
         internal ShortcutProfile()
         {
         }
 
-        internal ShortcutProfile(string id, IEnumerable<SerializableShortcutEntry> entries, IShortcutProfileLoader loader = null)
+        internal ShortcutProfile(string id, IEnumerable<SerializableShortcutEntry> entries, string parentId = "")
         {
             m_Id = id;
-            m_Loader = loader ?? new ShortcutProfileLoader();
-
-            foreach (var entry in entries)
-                m_Entries.Add(entry.identifier.path, entry);
+            m_ParentId = parentId;
+            m_Entries = new List<SerializableShortcutEntry>(entries);
         }
 
-        internal ShortcutProfile(string id, IShortcutProfileLoader loader = null)
+        internal ShortcutProfile(string id, string parentId = "")
         {
-            m_Loader = loader ?? new ShortcutProfileLoader();
             m_Id = id;
-            LoadAndApplyJsonFile(id, this);
+            m_ParentId = parentId;
         }
 
-        void LoadAndApplyJsonFile(string id, ShortcutProfile instance)
+        internal void BreakParentLink()
         {
-            if (!m_Loader.ProfileExists(id))
-                return;
-            var json = m_Loader.LoadShortcutProfileJson(id);
-            JsonUtility.FromJsonOverwrite(json, instance);
-            foreach (var entry in m_SerializableEntries)
-                m_Entries.Add(entry.identifier.path, entry);
-        }
-
-        internal void SaveToDisk()
-        {
-            m_SerializableEntries = m_Entries.Values.ToList();
-            m_Loader.SaveShortcutProfileJson(id, JsonUtility.ToJson(this));
+            m_ParentId = "";
+            parent = null;
         }
 
         public void Add(ShortcutEntry profileEntry)
         {
-            m_Entries.Add(profileEntry.identifier.path, new SerializableShortcutEntry(profileEntry));
-        }
-
-        public void Remove(ShortcutEntry profileEntry)
-        {
-            m_Entries.Remove(profileEntry.identifier.path);
+            var existingEntry = m_Entries.SingleOrDefault(entry => entry.identifier.Equals(profileEntry.identifier));
+            if (existingEntry != null)
+            {
+                throw new ArgumentException("This profile already contains an existing entry with matching Identifier!", nameof(profileEntry));
+            }
+            m_Entries.Add(new SerializableShortcutEntry(profileEntry));
         }
     }
 }

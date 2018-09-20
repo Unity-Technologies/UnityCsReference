@@ -147,7 +147,6 @@ namespace UnityEngine.Experimental.UIElements
 
             m_ScrollView = new ScrollView();
             m_ScrollView.StretchToParentSize();
-            m_ScrollView.stretchContentWidth = true;
             m_ScrollView.verticalScroller.valueChanged += OnScroll;
             shadow.Add(m_ScrollView);
 
