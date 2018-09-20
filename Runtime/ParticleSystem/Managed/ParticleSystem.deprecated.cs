@@ -44,7 +44,7 @@ namespace UnityEngine
             // Scale. (Meshes)
             [Obsolete("meshScale property is deprecated.Please use scale instead.", false)]
             public float meshScale { get { return scale.x; } set { scale = new Vector3(value, value, value); } }
-            [Obsolete("randomDirection property is deprecated.Use randomDirectionAmount instead.", false)]
+            [Obsolete("randomDirection property is deprecated. Use randomDirectionAmount instead.", false)]
             public bool randomDirection { get { return (randomDirectionAmount >= 0.5f); } set { randomDirectionAmount = value ? 1.0f : 0.0f; } }
         }
 
@@ -82,11 +82,11 @@ namespace UnityEngine
         {
             [Obsolete("Please use Particle.remainingLifetime instead. (UnityUpgradable) -> UnityEngine.ParticleSystem/Particle.remainingLifetime", false)]
             public float lifetime { get { return remainingLifetime; } set { remainingLifetime = value; } }
-            [Obsolete("randomValue property is deprecated.Use randomSeed instead to control random behavior of particles.", false)]
+            [Obsolete("randomValue property is deprecated. Use randomSeed instead to control random behavior of particles.", false)]
             public float randomValue { get { return BitConverter.ToSingle(BitConverter.GetBytes(m_RandomSeed), 0); } set { m_RandomSeed = BitConverter.ToUInt32(BitConverter.GetBytes(value), 0); } }
-            [Obsolete("size property is deprecated.Use startSize or GetCurrentSize() instead.", false)]
+            [Obsolete("size property is deprecated. Use startSize or GetCurrentSize() instead.", false)]
             public float size { get { return startSize; } set { startSize = value; } }
-            [Obsolete("color property is deprecated.Use startColor or GetCurrentColor() instead.", false)]
+            [Obsolete("color property is deprecated. Use startColor or GetCurrentColor() instead.", false)]
             public Color32 color { get { return startColor; } set { startColor = value; } }
         }
 
@@ -125,56 +125,59 @@ namespace UnityEngine
             Internal_EmitOld(ref particle);
         }
 
-        [Obsolete("startDelay property is deprecated.Use main.startDelay or main.startDelayMultiplier instead.", false)]
+        [Obsolete("startDelay property is deprecated. Use main.startDelay or main.startDelayMultiplier instead.", false)]
         public float startDelay { get { return main.startDelayMultiplier; } set { var m = main; m.startDelayMultiplier = value; } }
 
-        [Obsolete("loop property is deprecated.Use main.loop instead.", false)]
+        [Obsolete("loop property is deprecated. Use main.loop instead.", false)]
         public bool loop { get { return main.loop; } set { var m = main; m.loop = value; } }
 
-        [Obsolete("playOnAwake property is deprecated.Use main.playOnAwake instead.", false)]
+        [Obsolete("playOnAwake property is deprecated. Use main.playOnAwake instead.", false)]
         public bool playOnAwake { get { return main.playOnAwake; } set { var m = main; m.playOnAwake = value; } }
 
-        [Obsolete("duration property is deprecated.Use main.duration instead.", false)]
+        [Obsolete("duration property is deprecated. Use main.duration instead.", false)]
         public float duration { get { return main.duration; } }
 
-        [Obsolete("playbackSpeed property is deprecated.Use main.simulationSpeed instead.", false)]
+        [Obsolete("playbackSpeed property is deprecated. Use main.simulationSpeed instead.", false)]
         public float playbackSpeed { get { return main.simulationSpeed; } set { var m = main; m.simulationSpeed = value; } }
 
-        [Obsolete("enableEmission property is deprecated.Use emission.enabled instead.", false)]
+        [Obsolete("enableEmission property is deprecated. Use emission.enabled instead.", false)]
         public bool enableEmission { get { return emission.enabled; } set { var em = emission; em.enabled = value; } }
 
-        [Obsolete("emissionRate property is deprecated.Use emission.rateOverTime, emission.rateOverDistance, emission.rateOverTimeMultiplier or emission.rateOverDistanceMultiplier instead.", false)]
+        [Obsolete("emissionRate property is deprecated. Use emission.rateOverTime, emission.rateOverDistance, emission.rateOverTimeMultiplier or emission.rateOverDistanceMultiplier instead.", false)]
         public float emissionRate { get { return emission.rateOverTimeMultiplier; } set { var em = emission; em.rateOverTime = value; } }
 
-        [Obsolete("startSpeed property is deprecated.Use main.startSpeed or main.startSpeedMultiplier instead.", false)]
+        [Obsolete("startSpeed property is deprecated. Use main.startSpeed or main.startSpeedMultiplier instead.", false)]
         public float startSpeed { get { return main.startSpeedMultiplier; } set { var m = main; m.startSpeedMultiplier = value; } }
 
-        [Obsolete("startSize property is deprecated.Use main.startSize or main.startSizeMultiplier instead.", false)]
+        [Obsolete("startSize property is deprecated. Use main.startSize or main.startSizeMultiplier instead.", false)]
         public float startSize { get { return main.startSizeMultiplier; } set { var m = main; m.startSizeMultiplier = value; } }
 
-        [Obsolete("startColor property is deprecated.Use main.startColor instead.", false)]
+        [Obsolete("startColor property is deprecated. Use main.startColor instead.", false)]
         public Color startColor { get { return main.startColor.color; } set { var m = main; m.startColor = value; } }
 
-        [Obsolete("startRotation property is deprecated.Use main.startRotation or main.startRotationMultiplier instead.", false)]
+        [Obsolete("startRotation property is deprecated. Use main.startRotation or main.startRotationMultiplier instead.", false)]
         public float startRotation { get { return main.startRotationMultiplier; } set { var m = main; m.startRotationMultiplier = value; } }
 
-        [Obsolete("startRotation3D property is deprecated.Use main.startRotationX, main.startRotationY and main.startRotationZ instead. (Or main.startRotationXMultiplier, main.startRotationYMultiplier and main.startRotationZMultiplier).", false)]
+        [Obsolete("startRotation3D property is deprecated. Use main.startRotationX, main.startRotationY and main.startRotationZ instead. (Or main.startRotationXMultiplier, main.startRotationYMultiplier and main.startRotationZMultiplier).", false)]
         public Vector3 startRotation3D { get { return new Vector3(main.startRotationXMultiplier, main.startRotationYMultiplier, main.startRotationZMultiplier); } set { var m = main; m.startRotationXMultiplier = value.x; m.startRotationYMultiplier = value.y; m.startRotationZMultiplier = value.z; } }
 
-        [Obsolete("startLifetime property is deprecated.Use main.startLifetime or main.startLifetimeMultiplier instead.", false)]
+        [Obsolete("startLifetime property is deprecated. Use main.startLifetime or main.startLifetimeMultiplier instead.", false)]
         public float startLifetime { get { return main.startLifetimeMultiplier; } set { var m = main; m.startLifetimeMultiplier = value; } }
 
-        [Obsolete("gravityModifier property is deprecated.Use main.gravityModifier or main.gravityModifierMultiplier instead.", false)]
+        [Obsolete("gravityModifier property is deprecated. Use main.gravityModifier or main.gravityModifierMultiplier instead.", false)]
         public float gravityModifier { get { return main.gravityModifierMultiplier; } set { var m = main; m.gravityModifierMultiplier = value; } }
 
-        [Obsolete("maxParticles property is deprecated.Use main.maxParticles instead.", false)]
+        [Obsolete("maxParticles property is deprecated. Use main.maxParticles instead.", false)]
         public int maxParticles { get { return main.maxParticles; } set { var m = main; m.maxParticles = value; } }
 
-        [Obsolete("simulationSpace property is deprecated.Use main.simulationSpace instead.", false)]
+        [Obsolete("simulationSpace property is deprecated. Use main.simulationSpace instead.", false)]
         public ParticleSystemSimulationSpace simulationSpace { get { return main.simulationSpace; } set { var m = main; m.simulationSpace = value; } }
 
-        [Obsolete("scalingMode property is deprecated.Use main.scalingMode instead.", false)]
+        [Obsolete("scalingMode property is deprecated. Use main.scalingMode instead.", false)]
         public ParticleSystemScalingMode scalingMode { get { return main.scalingMode; } set { var m = main; m.scalingMode = value; } }
+
+        [Obsolete("automaticCullingEnabled property is deprecated. Use proceduralSimulationSupported instead (UnityUpgradable) -> proceduralSimulationSupported", true)]
+        public bool automaticCullingEnabled { get { return proceduralSimulationSupported; } }
     }
 
     public static partial class ParticlePhysicsExtensions

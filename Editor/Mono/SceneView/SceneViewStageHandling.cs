@@ -36,11 +36,13 @@ namespace UnityEditor
 
         static class Styles
         {
-            public static GUIContent autoSaveGUIContent = EditorGUIUtility.TrTextContent("Auto Save");
+            public static GUIContent autoSaveGUIContent = EditorGUIUtility.TrTextContent("Auto Save", "When Auto Save is enabled, every change you make is automatically saved to the Prefab Asset. Disable Auto Save if you experience long import times.");
             public static GUIContent saveButtonContent = EditorGUIUtility.TrTextContent("Save");
             public static GUIContent checkoutButtonContent = EditorGUIUtility.TrTextContent("Check Out");
+            public static GUIContent autoSavingBadgeContent = EditorGUIUtility.TrTextContent("Auto Saving...");
             public static GUIStyle saveToggle;
             public static GUIStyle button;
+            public static GUIStyle savingBadge = "Badge";
 
             static Styles()
             {
@@ -232,16 +234,14 @@ namespace UnityEditor
             {
                 StatusQueryOptions opts = EditorUserSettings.allowAsyncStatusUpdate ? StatusQueryOptions.UseCachedAsync : StatusQueryOptions.UseCachedIfPossible;
                 bool openForEdit = AssetDatabase.IsOpenForEdit(item.prefabAssetPath, opts);
-                if (!openForEdit)
-                {
-                    if (GUILayout.Button(Styles.checkoutButtonContent, Styles.button))
-                    {
-                        Task task = Provider.Checkout(AssetDatabase.LoadAssetAtPath<GameObject>(item.prefabAssetPath), CheckoutMode.Both);
-                        task.Wait();
-                    }
-                }
 
                 PrefabStage stage = item.prefabStage;
+                if (stage.showingSavingLabel)
+                {
+                    GUILayout.Label(Styles.autoSavingBadgeContent, Styles.savingBadge);
+                    GUILayout.Space(4);
+                }
+
                 if (!stage.autoSave)
                 {
                     using (new EditorGUI.DisabledScope(!openForEdit || !PrefabStageUtility.GetCurrentPrefabStage().HasSceneBeenModified()))
@@ -258,6 +258,15 @@ namespace UnityEditor
                     autoSaveForScene = GUILayout.Toggle(autoSaveForScene, Styles.autoSaveGUIContent, Styles.saveToggle);
                     if (EditorGUI.EndChangeCheck())
                         stage.autoSave = autoSaveForScene;
+                }
+
+                if (!openForEdit)
+                {
+                    if (GUILayout.Button(Styles.checkoutButtonContent, Styles.button))
+                    {
+                        Task task = Provider.Checkout(AssetDatabase.LoadAssetAtPath<GameObject>(item.prefabAssetPath), CheckoutMode.Both);
+                        task.Wait();
+                    }
                 }
             }
         }

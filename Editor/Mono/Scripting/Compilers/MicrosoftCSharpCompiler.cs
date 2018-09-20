@@ -183,7 +183,8 @@ namespace UnityEditor.Scripting.Compilers
                 arguments.Add("/unsafe");
 
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
-            if (!_island._development_player)
+            var disableOptimizations = _island._development_player || (_island._editor && EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true));
+            if (!disableOptimizations)
             {
                 if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
                     arguments.Add("/debug:pdbonly");

@@ -38,6 +38,8 @@ namespace UnityEditor.Experimental.SceneManagement
         HideFlagUtility m_HideFlagUtility;
         Texture2D m_PrefabFileIcon;
         bool m_TemporarilyDisableAutoSave;
+        float m_LastSavingDuration = 0f;
+        const float kDurationBeforeShowingSavingBadge = 1.0f;
 
         bool m_AnalyticsDidUserModify;
         bool m_AnalyticsDidUserSave;
@@ -89,6 +91,12 @@ namespace UnityEditor.Experimental.SceneManagement
         public string prefabAssetPath
         {
             get { return m_PrefabAssetPath; }
+        }
+
+        internal bool showingSavingLabel
+        {
+            get;
+            private set;
         }
 
         internal Texture2D prefabFileIcon
@@ -268,7 +276,7 @@ namespace UnityEditor.Experimental.SceneManagement
         {
             if (autoSave && readyToAutoSave)
             {
-                SavePrefabWithVersionControlDialogAndRenameDialog();
+                AutoSave();
             }
         }
 
@@ -298,7 +306,7 @@ namespace UnityEditor.Experimental.SceneManagement
             m_InitialSceneDirtyID = m_PreviewScene.dirtyID;
         }
 
-        // Not private so we use it in Tests
+        // Is internal so we can use it in Tests
         internal void SavePrefab()
         {
             if (!initialized)
@@ -313,7 +321,9 @@ namespace UnityEditor.Experimental.SceneManagement
             if (prefabSaving != null)
                 prefabSaving(m_PrefabContentsRoot);
 
+            var startTime = EditorApplication.timeSinceStartup;
             var prefabAssetRoot = PrefabUtility.SaveAsPrefabAsset(m_PrefabContentsRoot, m_PrefabAssetPath);
+            m_LastSavingDuration = (float)(EditorApplication.timeSinceStartup - startTime);
 
             if (prefabAssetRoot != null)
             {
@@ -325,6 +335,8 @@ namespace UnityEditor.Experimental.SceneManagement
 
             if (SceneHierarchy.s_DebugPrefabStage)
                 Debug.Log("SAVE PREFAB ended");
+
+            showingSavingLabel = false;
         }
 
         internal bool SaveAsNewPrefab(string newPath, bool asCopy)
@@ -392,6 +404,30 @@ namespace UnityEditor.Experimental.SceneManagement
             }
 
             return SaveAsNewPrefab(relativePath, false);
+        }
+
+        void PerformDelayedAutoSave()
+        {
+            EditorApplication.update -= PerformDelayedAutoSave;
+            SavePrefabWithVersionControlDialogAndRenameDialog();
+        }
+
+        void AutoSave()
+        {
+            showingSavingLabel = m_LastSavingDuration > kDurationBeforeShowingSavingBadge;
+            if (showingSavingLabel)
+            {
+                // Save delayed if we want to show the save badge while saving.
+                foreach (SceneView sceneView in SceneView.sceneViews)
+                    sceneView.Repaint();
+
+                EditorApplication.update += PerformDelayedAutoSave;
+            }
+            else
+            {
+                // Save directly if we don't want to show the saving badge
+                SavePrefabWithVersionControlDialogAndRenameDialog();
+            }
         }
 
         // Returns true if prefab was saved.

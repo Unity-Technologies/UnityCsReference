@@ -377,14 +377,20 @@ namespace UnityEditor
 
         public void SetShownVRangeInsideMargins(float min, float max)
         {
+            float heightInsideMargins = drawRect.height - topmargin - bottommargin;
+            if (heightInsideMargins < kMinHeight) heightInsideMargins = kMinHeight;
+
+            float denum = max - min;
+            if (denum < kMinHeight) denum = kMinHeight;
+
             if (m_UpDirection == YDirection.Positive)
             {
-                m_Scale.y = -(drawRect.height - topmargin - bottommargin) / (max - min);
+                m_Scale.y = -heightInsideMargins / denum;
                 m_Translation.y = drawRect.height - min * m_Scale.y - topmargin;
             }
             else
             {
-                m_Scale.y = (drawRect.height - topmargin - bottommargin) / (max - min);
+                m_Scale.y = heightInsideMargins / denum;
                 m_Translation.y = -min * m_Scale.y - bottommargin;
             }
             EnforceScaleAndRange();
@@ -392,14 +398,17 @@ namespace UnityEditor
 
         public void SetShownVRange(float min, float max)
         {
+            float denum = max - min;
+            if (denum < kMinHeight) denum = kMinHeight;
+
             if (m_UpDirection == YDirection.Positive)
             {
-                m_Scale.y = -drawRect.height / (max - min);
+                m_Scale.y = -drawRect.height / denum;
                 m_Translation.y = drawRect.height - min * m_Scale.y;
             }
             else
             {
-                m_Scale.y = drawRect.height / (max - min);
+                m_Scale.y = drawRect.height / denum;
                 m_Translation.y = -min * m_Scale.y;
             }
             EnforceScaleAndRange();
