@@ -33,5 +33,11 @@ namespace UnityEditor
 
         [FreeFunction("GetPlayerSettings().SetLightmapStreamingPriority")]
         extern internal static void SetLightmapStreamingPriorityForPlatformGroup(BuildTargetGroup platformGroup, int lightmapStreamingPriority);
+
+        [StaticAccessor("GetPlayerSettings()")]
+        public static extern bool GetWsaHolographicRemotingEnabled();
+
+        [StaticAccessor("GetPlayerSettings()")]
+        public static extern void SetWsaHolographicRemotingEnabled(bool enabled);
     }
 }

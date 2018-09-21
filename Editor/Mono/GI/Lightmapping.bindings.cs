@@ -61,6 +61,12 @@ namespace UnityEditor
         public UInt64[] triCounts;
     }
 
+    internal struct TetrahedralizationData
+    {
+        public int[] indices;
+        public Vector3[] positions;
+    }
+
     [NativeHeader("Editor/Src/GI/EditorHelpers.h")]
     internal struct LightingStats
     {
@@ -298,15 +304,14 @@ namespace UnityEditor
         // Calculates a Delaunay Tetrahedralization of the 'positions' point set - the same way the lightmapper
         public static void Tetrahedralize(Vector3[] positions, out int[] outIndices, out Vector3[] outPositions)
         {
-            outIndices = new int[0];
-            outPositions = new Vector3[0];
-
-            TetrahedralizeInternal(positions, outIndices, outPositions);
+            TetrahedralizationData data = TetrahedralizeInternal(positions);
+            outIndices = data.indices;
+            outPositions = data.positions;
         }
 
-        [NativeName("Tetrahedralize")]
+        [NativeName("LightProbeUtils::Tetrahedralize")]
         [FreeFunction]
-        private static extern void TetrahedralizeInternal(Vector3[] positions, [Out] int[] outIndices, [Out] Vector3[] outPositions);
+        private static extern TetrahedralizationData TetrahedralizeInternal(Vector3[] positions);
 
         [FreeFunction]
         public static extern bool BakeReflectionProbe(ReflectionProbe probe, string path);

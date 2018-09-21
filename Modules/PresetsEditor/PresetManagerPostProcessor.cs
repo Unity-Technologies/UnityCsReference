@@ -13,7 +13,7 @@ namespace UnityEditor.Presets
 
         public void OnPreprocessAsset()
         {
-            if (assetImporter.importSettingsMissing)
+            if (assetImporter != null && assetImporter.importSettingsMissing)
             {
                 var preset = Preset.GetDefaultForObject(assetImporter);
                 if (preset != null)
