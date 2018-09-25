@@ -296,7 +296,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return targetAssemblies.ToArray();
         }
 
-        public static ScriptAssembly[] GetAllScriptAssemblies(IEnumerable<string> allSourceFiles, string projectDirectory, ScriptAssemblySettings settings, CompilationAssemblies assemblies, TargetAssemblyType onlyIncludeType = TargetAssemblyType.Undefined)
+        public static ScriptAssembly[] GetAllScriptAssemblies(IEnumerable<String> allSourceFiles,
+            String projectDirectory, ScriptAssemblySettings settings, CompilationAssemblies assemblies,
+            HashSet<String> runUpdaterAssemblies, TargetAssemblyType onlyIncludeType = TargetAssemblyType.Undefined)
         {
             if (allSourceFiles == null || allSourceFiles.Count() == 0)
                 return new ScriptAssembly[0];
@@ -334,7 +336,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 assemblySourceFiles.Add(AssetPath.Combine(projectDirectory, scriptFile));
             }
 
-            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, null);
+            return ToScriptAssemblies(targetAssemblyFiles, settings, assemblies, runUpdaterAssemblies);
         }
 
         public static ScriptAssembly[] GenerateChangedScriptAssemblies(GenerateChangedScriptAssembliesArgs args)
@@ -650,7 +652,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             List<PrecompiledAssembly> precompiledReferences = new List<PrecompiledAssembly>();
-            if ((targetAssembly.Flags & AssemblyFlags.ExplicitlyReferenced) == AssemblyFlags.ExplicitlyReferenced)
+            if ((targetAssembly.Flags & AssemblyFlags.ExplicitReferences) == AssemblyFlags.ExplicitReferences)
             {
                 var precompiledAssemblies = allPrecompiledAssemblies.Where(x => (x.Flags & AssemblyFlags.UserAssembly) != AssemblyFlags.UserAssembly).ToList();
                 precompiledAssemblies.AddRange(targetAssembly.PrecompiledReferences ?? Enumerable.Empty<PrecompiledAssembly>());

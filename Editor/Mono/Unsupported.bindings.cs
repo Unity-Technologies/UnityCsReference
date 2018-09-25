@@ -165,10 +165,10 @@ namespace UnityEditor
         [FreeFunction("ResolveSymlinks")]
         public static extern string ResolveSymlinks(string path);
 
-        [FreeFunction("AssetDatabaseDeprecated::SetApplicationSettingCompressAssetsOnImport")]
+        [FreeFunction("AssetDatabase::SetApplicationSettingCompressAssetsOnImport")]
         public static extern void SetApplicationSettingCompressAssetsOnImport(bool value);
 
-        [StaticAccessor("AssetDatabaseDeprecated", StaticAccessorType.DoubleColon)]
+        [StaticAccessor("AssetDatabase", StaticAccessorType.DoubleColon)]
         public static extern bool GetApplicationSettingCompressAssetsOnImport();
 
         // This function has always wrongly returned int but we have test data

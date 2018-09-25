@@ -4,7 +4,7 @@
 
 using System;
 using UnityEditor;
-using UnityEditorInternal.Profiling;
+using UnityEditor.Profiling;
 using UnityEngine;
 
 namespace UnityEditorInternal.Profiling
@@ -38,7 +38,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        protected FrameDataView m_FrameDataView;
+        protected HierarchyFrameDataView m_FrameDataView;
         protected int m_SelectedID = -1;
 
         protected ProfilerDetailedView()

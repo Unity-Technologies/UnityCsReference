@@ -4,10 +4,8 @@
 
 using System;
 using System.Runtime.InteropServices;
-using Mono.Cecil.Cil;
-using UnityEditorInternal;
 using UnityEngine.Bindings;
-using UnityEditorInternal.Profiling;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -121,7 +119,7 @@ namespace UnityEditorInternal
         [NativeMethod("GetNext")]
         public extern bool Next(bool enterChildren);
 
-        public extern void SetRoot(int frame, ProfilerColumn profilerSortColumn, ProfilerViewType viewType);
+        public extern void SetRoot(int frame, int profilerSortColumn, int viewType);
 
         public extern void ResetToRoot();
 
@@ -141,7 +139,7 @@ namespace UnityEditorInternal
 
         public extern int[] instanceIDs { get; }
 
-        public extern string GetTooltip(ProfilerColumn column);
+        public extern string GetTooltip(int column);
 
         public extern int depth { get; }
 
@@ -152,10 +150,10 @@ namespace UnityEditorInternal
         }
 
         [NativeMethod("GetProfilerColumn")]
-        public extern string GetColumn(ProfilerColumn column);
+        public extern string GetColumn(int column);
 
         [NativeMethod("GetProfilerColumnAsSingle")]
-        public extern float GetColumnAsSingle(ProfilerColumn colum);
+        public extern float GetColumnAsSingle(int colum);
 
         public extern string frameFPS { get; }
 

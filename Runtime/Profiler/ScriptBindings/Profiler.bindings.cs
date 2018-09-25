@@ -3,7 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
@@ -270,5 +272,48 @@ namespace UnityEngine.Profiling
         [StaticAccessor("GetMemoryManager()", StaticAccessorType.Dot)]
         [NativeConditional("ENABLE_PROFILER")]
         public extern static long GetAllocatedMemoryForGraphicsDriver();
+
+
+        [Conditional("ENABLE_PROFILER")]
+        public static void EmitFrameMetaData(Guid id, int tag, Array data)
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            var elementType = data.GetType().GetElementType();
+            if (!UnsafeUtility.IsBlittable(elementType))
+                throw new ArgumentException(string.Format("{0} type used in Profiler.ReportFrameStats must be blittable", elementType));
+
+            Internal_EmitFrameMetaData_Array(id.ToByteArray(), tag, data, data.Length, UnsafeUtility.SizeOf(elementType));
+        }
+
+        [Conditional("ENABLE_PROFILER")]
+        public static void EmitFrameMetaData<T>(Guid id, int tag, List<T> data) where T : struct
+        {
+            if (data == null)
+                throw new ArgumentNullException("data");
+
+            var elementType = typeof(T);
+            if (!UnsafeUtility.IsBlittable(typeof(T)))
+                throw new ArgumentException(string.Format("{0} type used in Profiler.ReportFrameStats must be blittable", elementType));
+
+            Internal_EmitFrameMetaData_Array(id.ToByteArray(), tag, NoAllocHelpers.ExtractArrayFromList(data), data.Count, UnsafeUtility.SizeOf(elementType));
+        }
+
+        [Conditional("ENABLE_PROFILER")]
+        unsafe public static void EmitFrameMetaData<T>(Guid id, int tag, Unity.Collections.NativeArray<T> data) where T : struct
+        {
+            Internal_EmitFrameMetaData_Native(id.ToByteArray(), tag, (IntPtr)data.GetUnsafeReadOnlyPtr(), data.Length, UnsafeUtility.SizeOf<T>());
+        }
+
+        [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Array", IsFreeFunction = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        [ThreadSafe]
+        extern static void Internal_EmitFrameMetaData_Array(byte[] id, int tag, Array data, int count, int elementSize);
+
+        [NativeMethod(Name = "ProfilerBindings::Internal_EmitFrameMetaData_Native", IsFreeFunction = true)]
+        [NativeConditional("ENABLE_PROFILER")]
+        [ThreadSafe]
+        extern static void Internal_EmitFrameMetaData_Native(byte[] id, int tag, IntPtr data, int count, int elementSize);
     }
 }

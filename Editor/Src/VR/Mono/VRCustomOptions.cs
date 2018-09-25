@@ -65,12 +65,12 @@ namespace UnityEditorInternal.VR
         }
 
         abstract public Rect Draw(BuildTargetGroup target, Rect rect);
-        abstract public float GetHeight();
+        abstract public float GetHeight(BuildTargetGroup target);
     }
 
     internal class VRCustomOptionsNone : VRCustomOptions
     {
         public override Rect Draw(BuildTargetGroup target, Rect rect) { return rect; }
-        public override float GetHeight() { return 0.0f; }
+        public override float GetHeight(BuildTargetGroup target) { return 0.0f; }
     }
 }

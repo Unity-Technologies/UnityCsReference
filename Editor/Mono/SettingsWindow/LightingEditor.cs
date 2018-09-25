@@ -84,37 +84,57 @@ namespace UnityEditor
         protected SerializedObject m_RenderSettings;
         protected SerializedObject m_LightmapSettings;
 
+        SerializedObject renderSettings
+        {
+            get
+            {
+                // if we set a new scene as the active scene, we need to make sure to respond to those changes
+                if (m_RenderSettings == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings())
+                {
+                    m_RenderSettings = new SerializedObject(RenderSettings.GetRenderSettings());
+
+                    m_Sun = m_RenderSettings.FindProperty("m_Sun");
+                    m_AmbientSource = m_RenderSettings.FindProperty("m_AmbientMode");
+                    m_AmbientSkyColor = m_RenderSettings.FindProperty("m_AmbientSkyColor");
+                    m_AmbientEquatorColor = m_RenderSettings.FindProperty("m_AmbientEquatorColor");
+                    m_AmbientGroundColor = m_RenderSettings.FindProperty("m_AmbientGroundColor");
+                    m_AmbientIntensity = m_RenderSettings.FindProperty("m_AmbientIntensity");
+                    m_ReflectionIntensity = m_RenderSettings.FindProperty("m_ReflectionIntensity");
+                    m_ReflectionBounces = m_RenderSettings.FindProperty("m_ReflectionBounces");
+                    m_SkyboxMaterial = m_RenderSettings.FindProperty("m_SkyboxMaterial");
+                    m_DefaultReflectionMode = m_RenderSettings.FindProperty("m_DefaultReflectionMode");
+                    m_DefaultReflectionResolution = m_RenderSettings.FindProperty("m_DefaultReflectionResolution");
+                    m_CustomReflection = m_RenderSettings.FindProperty("m_CustomReflection");
+                }
+
+                return m_RenderSettings;
+            }
+        }
+
+        SerializedObject lightmapSettings
+        {
+            get
+            {
+                // if we set a new scene as the active scene, we need to make sure to respond to those changes
+                if (m_LightmapSettings == null || m_LightmapSettings.targetObject != LightmapEditorSettings.GetLightmapSettings())
+                {
+                    m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
+                    m_ReflectionCompression = m_LightmapSettings.FindProperty("m_LightmapEditorSettings.m_ReflectionCompression");
+                    m_AmbientLightingMode = m_LightmapSettings.FindProperty("m_GISettings.m_EnvironmentLightingMode");
+                    m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
+                    m_EnabledRealtimeGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
+                }
+
+                return m_LightmapSettings;
+            }
+        }
+
         private bool m_bShowEnvironment;
         private const string kShowEnvironment = "ShowEnvironment";
 
-        private void InitSettings()
-        {
-            m_RenderSettings = new SerializedObject(RenderSettings.GetRenderSettings());
-            m_Sun = m_RenderSettings.FindProperty("m_Sun");
-            m_AmbientSource = m_RenderSettings.FindProperty("m_AmbientMode");
-            m_AmbientSkyColor = m_RenderSettings.FindProperty("m_AmbientSkyColor");
-            m_AmbientEquatorColor = m_RenderSettings.FindProperty("m_AmbientEquatorColor");
-            m_AmbientGroundColor = m_RenderSettings.FindProperty("m_AmbientGroundColor");
-            m_AmbientIntensity = m_RenderSettings.FindProperty("m_AmbientIntensity");
-            m_ReflectionIntensity = m_RenderSettings.FindProperty("m_ReflectionIntensity");
-            m_ReflectionBounces = m_RenderSettings.FindProperty("m_ReflectionBounces");
-            m_SkyboxMaterial = m_RenderSettings.FindProperty("m_SkyboxMaterial");
-            m_DefaultReflectionMode = m_RenderSettings.FindProperty("m_DefaultReflectionMode");
-            m_DefaultReflectionResolution = m_RenderSettings.FindProperty("m_DefaultReflectionResolution");
-            m_CustomReflection = m_RenderSettings.FindProperty("m_CustomReflection");
-
-            m_LightmapSettings = new SerializedObject(LightmapEditorSettings.GetLightmapSettings());
-            m_ReflectionCompression = m_LightmapSettings.FindProperty("m_LightmapEditorSettings.m_ReflectionCompression");
-            m_AmbientLightingMode = m_LightmapSettings.FindProperty("m_GISettings.m_EnvironmentLightingMode");
-            m_EnabledBakedGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableBakedLightmaps");
-            m_EnabledRealtimeGI = m_LightmapSettings.FindProperty("m_GISettings.m_EnableRealtimeLightmaps");
-
-            m_bShowEnvironment = SessionState.GetBool(kShowEnvironment, true);
-        }
-
         public virtual void OnEnable()
         {
-            InitSettings();
+            m_bShowEnvironment = SessionState.GetBool(kShowEnvironment, true);
         }
 
         public virtual void OnDisable()
@@ -257,18 +277,13 @@ namespace UnityEditor
 
         public override void OnInspectorGUI()
         {
-            if (m_RenderSettings == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings() || m_LightmapSettings == null || m_LightmapSettings.targetObject != LightmapEditorSettings.GetLightmapSettings())
-            {
-                InitSettings();
-            }
-
-            m_RenderSettings.Update();
-            m_LightmapSettings.Update();
+            renderSettings.Update();
+            lightmapSettings.Update();
 
             DrawGUI();
 
-            m_RenderSettings.ApplyModifiedProperties();
-            m_LightmapSettings.ApplyModifiedProperties();
+            renderSettings.ApplyModifiedProperties();
+            lightmapSettings.ApplyModifiedProperties();
         }
     }
 }

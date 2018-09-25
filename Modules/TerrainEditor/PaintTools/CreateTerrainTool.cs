@@ -13,12 +13,45 @@ namespace UnityEditor.Experimental.TerrainAPI
 {
     public class CreateTerrainTool : TerrainPaintTool<CreateTerrainTool>
     {
-        enum TerrainNeighbor
+        private class Styles
+        {
+            public GUIContent fillHeightmapUsingNeighbors = EditorGUIUtility.TrTextContent("Fill Heightmap Using Neighbors", "If selected, it will fill heightmap of the new terrain performing cross blend of heightmaps of it's neighbors.");
+            public GUIContent fillAddressMode = EditorGUIUtility.TrTextContent("Fill Heightmap Address Mode", "Type of the terrain's neighbors sampling address mode.");
+        }
+
+        private enum FillAddressMode
+        {
+            Clamp = 0,
+            Mirror = 1
+        }
+
+        private enum TerrainNeighbor
         {
             Top = 0,
             Bottom,
             Left,
             Right
+        }
+
+        private class TerrainNeighborInfo
+        {
+            public TerrainData terrainData;
+            public Texture texture;
+            public float offset;
+        }
+
+        private static Styles s_Styles;
+
+        [SerializeField] private bool m_FillHeightmapUsingNeighbors = true;
+        [SerializeField] private FillAddressMode m_FillAddressMode;
+        private Material m_CrossBlendMaterial;
+
+
+        private Material GetOrCreateCrossBlendMaterial()
+        {
+            if (m_CrossBlendMaterial == null)
+                m_CrossBlendMaterial = new Material(Shader.Find("Hidden/TerrainEngine/CrossBlendNeighbors"));
+            return m_CrossBlendMaterial;
         }
 
         public override string GetName()
@@ -29,6 +62,44 @@ namespace UnityEditor.Experimental.TerrainAPI
         public override string GetDesc()
         {
             return "Click the edges to create neighbor terrains";
+        }
+
+        public override void OnEnable()
+        {
+            LoadInspectorSettings();
+        }
+
+        public override void OnDisable()
+        {
+            SaveInspectorSettings();
+        }
+
+        private void LoadInspectorSettings()
+        {
+            m_FillHeightmapUsingNeighbors = EditorPrefs.GetBool("TerrainFillHeightmapUsingNeighbors", true);
+            m_FillAddressMode = (FillAddressMode)EditorPrefs.GetInt("TerrainFillAddressMode", 0);
+        }
+
+        private void SaveInspectorSettings()
+        {
+            EditorPrefs.SetBool("TerrainFillHeightmapUsingNeighbors", m_FillHeightmapUsingNeighbors);
+            EditorPrefs.SetInt("TerrainFillAddressMode", (int)m_FillAddressMode);
+        }
+
+        public override void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext)
+        {
+            base.OnInspectorGUI(terrain, editContext);
+
+            if (s_Styles == null)
+            {
+                s_Styles = new Styles();
+            }
+
+            m_FillHeightmapUsingNeighbors = EditorGUILayout.Toggle(s_Styles.fillHeightmapUsingNeighbors, m_FillHeightmapUsingNeighbors);
+
+            EditorGUI.BeginDisabledGroup(!m_FillHeightmapUsingNeighbors);
+            m_FillAddressMode = (FillAddressMode)EditorGUILayout.EnumPopup(s_Styles.fillAddressMode, m_FillAddressMode);
+            EditorGUI.EndDisabledGroup();
         }
 
         Terrain CreateNeighbor(Terrain parent, Vector3 position)
@@ -66,10 +137,70 @@ namespace UnityEditor.Experimental.TerrainAPI
 
             string parentTerrainDataDir = Path.GetDirectoryName(AssetDatabase.GetAssetPath(parent.terrainData));
             AssetDatabase.CreateAsset(terrainData, Path.Combine(parentTerrainDataDir, "TerrainData_" + terrainData.name + ".asset"));
+            if (m_FillHeightmapUsingNeighbors)
+                FillHeightmapUsingNeighbors(terrain);
 
             Undo.RegisterCreatedObjectUndo(terrainGO, "Add New neighbor");
 
             return terrain;
+        }
+
+        private void FillHeightmapUsingNeighbors(Terrain terrain)
+        {
+            TerrainUtility.AutoConnect();
+
+            Terrain[] nbrTerrains = new Terrain[4] { terrain.topNeighbor, terrain.bottomNeighbor, terrain.leftNeighbor, terrain.rightNeighbor };
+
+            // Position of the terrain must be lowest
+            Vector3 position = terrain.transform.position;
+            foreach (Terrain nbrTerrain in nbrTerrains)
+            {
+                if (nbrTerrain)
+                    position.y = Mathf.Min(position.y, nbrTerrain.transform.position.y);
+            }
+            terrain.transform.position = position;
+
+            TerrainNeighborInfo top = new TerrainNeighborInfo();
+            TerrainNeighborInfo bottom = new TerrainNeighborInfo();
+            TerrainNeighborInfo left = new TerrainNeighborInfo();
+            TerrainNeighborInfo right = new TerrainNeighborInfo();
+            TerrainNeighborInfo[] nbrInfos = new TerrainNeighborInfo[4] { top, bottom, left, right };
+
+            const float kNeightNormFactor = 2.0f;
+            for (int i = 0; i < 4; ++i)
+            {
+                TerrainNeighborInfo nbrInfo = nbrInfos[i];
+                Terrain nbrTerrain = nbrTerrains[i];
+                if (nbrTerrain)
+                {
+                    nbrInfo.terrainData = nbrTerrain.terrainData;
+                    if (nbrInfo.terrainData)
+                    {
+                        nbrInfo.texture = nbrInfo.terrainData.heightmapTexture;
+                        nbrInfo.offset = (nbrTerrain.transform.position.y - terrain.transform.position.y) / (nbrInfo.terrainData.size.y * kNeightNormFactor);
+                    }
+                }
+            }
+
+            RenderTexture heightmap = terrain.terrainData.heightmapTexture;
+            Vector4 texCoordOffsetScale = new Vector4(-0.5f / heightmap.width, -0.5f / heightmap.height,
+                (float)heightmap.width / (heightmap.width - 1), (float)heightmap.height / (heightmap.height - 1));
+
+            Material crossBlendMat = GetOrCreateCrossBlendMaterial();
+            Vector4 slopeEnableFlags = new Vector4(bottom.texture ? 0.0f : 1.0f, top.texture ? 0.0f : 1.0f, left.texture ? 0.0f : 1.0f, right.texture ? 0.0f : 1.0f);
+            crossBlendMat.SetVector("_SlopeEnableFlags", slopeEnableFlags);
+            crossBlendMat.SetVector("_TexCoordOffsetScale", texCoordOffsetScale);
+            crossBlendMat.SetVector("_Offsets", new Vector4(bottom.offset, top.offset, left.offset, right.offset));
+            crossBlendMat.SetFloat("_AddressMode", (float)m_FillAddressMode);
+            crossBlendMat.SetTexture("_TopTex", top.texture);
+            crossBlendMat.SetTexture("_BottomTex", bottom.texture);
+            crossBlendMat.SetTexture("_LeftTex", left.texture);
+            crossBlendMat.SetTexture("_RightTex", right.texture);
+
+            Graphics.Blit(null, heightmap, crossBlendMat);
+
+            terrain.terrainData.UpdateDirtyRegion(0, 0, heightmap.width, heightmap.height, true);
+            terrain.ApplyDelayedHeightmapModification();
         }
 
         private bool RaycastTerrain(Terrain terrain, Ray mouseRay, out RaycastHit hit, out Terrain hitTerrain)
@@ -86,6 +217,12 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
+            if ((Event.current.type == EventType.MouseUp || Event.current.type == EventType.MouseDown) &&
+                (Event.current.button == 2 || Event.current.alt))
+            {
+                return;
+            }
+
             Quaternion rot = new Quaternion();
             rot.eulerAngles = new Vector3(90, 00, 0);
 

@@ -65,10 +65,10 @@ namespace UnityEditor.ShortcutManagement
                 new ShortcutAttributeDiscoveryProvider(),
                 new ShortcutMenuItemDiscoveryProvider(),
             };
-            var identifierConflictHandler = new DiscoveryIdentifierConflictHandler();
-            var invalidContextReporter = new DiscoveryInvalidContextReporter();
-            var discovery = new Discovery(shortcutProviders, identifierConflictHandler, invalidContextReporter);
-            instance = new ShortcutController(discovery, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
+            var bindingValidator = new BindingValidator();
+            var invalidContextReporter = new DiscoveryInvalidShortcutReporter();
+            var discovery = new Discovery(shortcutProviders, bindingValidator, invalidContextReporter);
+            instance = new ShortcutController(discovery, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
             instance.Initialize(instance.profileManager);
         }
     }
@@ -82,17 +82,20 @@ namespace UnityEditor.ShortcutManagement
 
         public IShortcutProfileManager profileManager { get; }
         public IDirectory directory => m_Directory;
+        public IBindingValidator bindingValidator { get; }
 
         ContextManager m_ContextManager = new ContextManager();
 
         public IContextManager contextManager => m_ContextManager;
         ILastUsedProfileIdProvider m_LastUsedProfileIdProvider;
 
-        public ShortcutController(IDiscovery discovery, IShortcutProfileStore profileStore, ILastUsedProfileIdProvider lastUsedProfileIdProvider)
+
+        public ShortcutController(IDiscovery discovery, IBindingValidator bindingValidator, IShortcutProfileStore profileStore, ILastUsedProfileIdProvider lastUsedProfileIdProvider)
         {
+            this.bindingValidator = bindingValidator;
             m_LastUsedProfileIdProvider = lastUsedProfileIdProvider;
 
-            profileManager = new ShortcutProfileManager(discovery.GetAllShortcuts(), profileStore);
+            profileManager = new ShortcutProfileManager(discovery.GetAllShortcuts(), bindingValidator, profileStore);
             profileManager.shortcutsModified += Initialize;
             profileManager.activeProfileChanged += OnActiveProfileChanged;
             profileManager.ReloadProfiles();
@@ -103,7 +106,22 @@ namespace UnityEditor.ShortcutManagement
         internal void Initialize(IShortcutProfileManager sender)
         {
             m_Directory.Initialize(profileManager.GetAllShortcuts());
-            m_Trigger = new Trigger(directory, new ConflictResolver());
+
+            IConflictResolver conflictResolver;
+
+            //TODO: disabled while we iterate on the window UI.
+            bool enableConflictResolutionWorkflow = false;
+            if (enableConflictResolutionWorkflow)
+            {
+                var conflictResolverView = new ConflictResolverView();
+                conflictResolver = new ConflictResolver(profileManager, contextManager, conflictResolverView);
+            }
+            else
+            {
+                conflictResolver = new ConflictNotificationConsole();
+            }
+
+            m_Trigger = new Trigger(directory, conflictResolver);
         }
 
         void OnActiveProfileChanged(IShortcutProfileManager sender)

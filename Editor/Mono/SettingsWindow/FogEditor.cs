@@ -27,21 +27,32 @@ namespace UnityEditor
         protected SerializedProperty m_LinearFogStart;
         protected SerializedProperty m_LinearFogEnd;
 
-        public virtual void OnEnable()
-        {
-            m_Fog = serializedObject.FindProperty("m_Fog");
-            m_FogColor = serializedObject.FindProperty("m_FogColor");
-            m_FogMode = serializedObject.FindProperty("m_FogMode");
-            m_FogDensity = serializedObject.FindProperty("m_FogDensity");
-            m_LinearFogStart = serializedObject.FindProperty("m_LinearFogStart");
-            m_LinearFogEnd = serializedObject.FindProperty("m_LinearFogEnd");
-        }
+        protected SerializedObject m_RenderSettings;
 
-        public virtual void OnDisable() {}
+        SerializedObject renderSettings
+        {
+            get
+            {
+                // if we set a new scene as the active scene, we need to make sure to respond to those changes
+                if (m_RenderSettings == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings())
+                {
+                    m_RenderSettings = new SerializedObject(RenderSettings.GetRenderSettings());
+
+                    m_Fog = m_RenderSettings.FindProperty("m_Fog");
+                    m_FogColor = m_RenderSettings.FindProperty("m_FogColor");
+                    m_FogMode = m_RenderSettings.FindProperty("m_FogMode");
+                    m_FogDensity = m_RenderSettings.FindProperty("m_FogDensity");
+                    m_LinearFogStart = m_RenderSettings.FindProperty("m_LinearFogStart");
+                    m_LinearFogEnd = m_RenderSettings.FindProperty("m_LinearFogEnd");
+                }
+
+                return m_RenderSettings;
+            }
+        }
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
+            renderSettings.Update();
 
             EditorGUILayout.PropertyField(m_Fog, Styles.FogEnable);
             if (m_Fog.boolValue)
@@ -67,7 +78,7 @@ namespace UnityEditor
                 EditorGUILayout.Space();
             }
 
-            serializedObject.ApplyModifiedProperties();
+            renderSettings.ApplyModifiedProperties();
         }
     }
 }

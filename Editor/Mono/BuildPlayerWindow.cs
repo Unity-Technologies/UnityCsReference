@@ -17,6 +17,7 @@ using UnityEditor.VersionControl;
 using UnityEditor.Modules;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using Object = UnityEngine.Object;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 using UnityEditor.Connect;
 
 namespace UnityEditor
@@ -58,48 +59,10 @@ namespace UnityEditor
 
             public const float kButtonWidth = 110;
 
-            // List of platforms that appear in the window. To add one, add it here.
-            // Later on, we'll let the users add their own.
-            const string kShopURL = "https://store.unity3d.com/shop/";
+            public string shopURL = "https://store.unity3d.com/shop/";
             const string kDownloadURL = "http://unity3d.com/unity/download/";
             const string kMailURL = "http://unity3d.com/company/sales?type=sales";
             const string kPlatformInstallationURL = "https://unity3d.com/platform-installation";
-            // ADD_NEW_PLATFORM_HERE
-            public GUIContent[,] notLicensedMessages =
-            {
-                { EditorGUIUtility.TextContent("Your license does not cover Standalone Publishing."), new GUIContent(""), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover iOS Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Apple TV Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Android Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Xbox One Publishing. Please see the Xbox One section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover PS4 Publishing. Please see the PS4 section of the Platform Module Installation documentation for more details."), EditorGUIUtility.TrTextContent("Platform Module Installation"), new GUIContent(kPlatformInstallationURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Universal Windows Platform Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Windows Phone 8 Publishing."), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Facebook Publishing"), EditorGUIUtility.TrTextContent("Go to Our Online Store"), new GUIContent(kShopURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Nintendo Switch Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
-                { EditorGUIUtility.TrTextContent("Your license does not cover Lumin OS Publishing"), EditorGUIUtility.TrTextContent("Contact sales"), new GUIContent(kMailURL) },
-            };
-
-            // ADD_NEW_PLATFORM_HERE
-            private GUIContent[,] buildTargetNotInstalled =
-            {
-                { EditorGUIUtility.TrTextContent("Standalone Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("iOS Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Apple TV Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Android Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Xbox One Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("PS4 Player is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Universal Windows Platform Player is not supported in\nthis build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Windows Phone 8 Player is not supported\nin this build.\n\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Facebook is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Nintendo Switch is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-                { EditorGUIUtility.TrTextContent("Lumin OS is not supported in this build.\nDownload a build that supports it."), null, new GUIContent(kDownloadURL) },
-            };
-            public GUIContent GetTargetNotInstalled(int index, int item)
-            {
-                if (index >= buildTargetNotInstalled.GetLength(0)) index = 0;
-                return buildTargetNotInstalled[index, item];
-            }
 
             public GUIContent GetDownloadErrorForTarget(BuildTarget target)
             {
@@ -133,14 +96,6 @@ namespace UnityEditor
                 EditorGUIUtility.TrTextContent("LZ4"),
                 EditorGUIUtility.TrTextContent("LZ4HC"),
             };
-
-            public Styles()
-            {
-                if (Unsupported.IsSourceBuild() && (
-                    buildTargetNotInstalled.GetLength(0) != notLicensedMessages.GetLength(0) ||
-                    buildTargetNotInstalled.GetLength(0) != BuildPlatforms.instance.buildPlatforms.Length))
-                    Debug.LogErrorFormat("Build platforms and messages are desynced in BuildPlayerWindow! ({0} vs. {1} vs. {2}) DON'T SHIP THIS!", buildTargetNotInstalled.GetLength(0), notLicensedMessages.GetLength(0), BuildPlatforms.instance.buildPlatforms.Length);
-            }
         }
 
 
@@ -427,7 +382,7 @@ namespace UnityEditor
         static void RepairSelectedBuildTargetGroup()
         {
             BuildTargetGroup group = EditorUserBuildSettings.selectedBuildTargetGroup;
-            if ((int)group == 0 || BuildPlatforms.instance.BuildPlatformIndexFromTargetGroup(group) < 0)
+            if ((int)group == 0 || !BuildPlatforms.instance.ContainsBuildTarget(group))
                 EditorUserBuildSettings.selectedBuildTargetGroup = BuildTargetGroup.Standalone;
         }
 
@@ -445,29 +400,20 @@ namespace UnityEditor
                 var hasMinGraphicsAPI = true;
                 var hasMinOSVersion = true;
 
+                if (BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.OpenGLES))
+                {
+                    var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                }
+
                 if (platform.targetGroup == BuildTargetGroup.iOS)
                 {
-                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
-                    hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
                     Version requiredVersion = new Version(8, 0);
                     hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
                 }
-                else if (platform.targetGroup == BuildTargetGroup.tvOS)
-                {
-                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.tvOS);
-                    hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                }
                 else if (platform.targetGroup == BuildTargetGroup.Android)
                 {
-                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
-                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                     hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
-                }
-                else if (platform.targetGroup == BuildTargetGroup.WebGL)
-                {
-                    var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
-                    hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
 
                 return hasMinGraphicsAPI && hasMinOSVersion;
@@ -571,7 +517,7 @@ namespace UnityEditor
             return string.Format("http://{0}.unity3d.com/{1}/{2}/{3}/UnitySetup-{4}-Support-for-Editor-{5}{6}", prefix, suffix, revision, folder, moduleName, shortVersion, extension);
         }
 
-        bool IsModuleInstalled(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
+        bool IsModuleNotInstalled(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget)
         {
             bool licensed = BuildPipeline.LicenseCheck(buildTarget);
 
@@ -616,7 +562,7 @@ namespace UnityEditor
 
             string moduleName = Modules.ModuleManager.GetTargetStringFrom(buildTargetGroup, buildTarget);
 
-            if (IsModuleInstalled(buildTargetGroup, buildTarget))
+            if (IsModuleNotInstalled(buildTargetGroup, buildTarget))
             {
                 GUILayout.Label(EditorGUIUtility.TextContent(string.Format(styles.noModuleLoaded, BuildPlatforms.instance.GetModuleDisplayName(buildTargetGroup, buildTarget))));
                 if (GUILayout.Button(styles.openDownloadPage, EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
@@ -655,17 +601,33 @@ namespace UnityEditor
             // Draw not licensed buy now UI
             if (!licensed)
             {
-                int targetGroup = BuildPlatforms.instance.BuildPlatformIndexFromTargetGroup(platform.targetGroup);
+                string niceName = BuildPipeline.GetBuildTargetGroupDisplayName(buildTargetGroup);
+                string licenseMsg = "Your license does not cover {0} Publishing.";
+                string buttonMsg = "Go to Our Online Store";
+                if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsConsole))
+                {
+                    licenseMsg += "Please see the {0} section of the Platform Module Installation documentation for more details.";
+                    buttonMsg = "Platform Module Installation";
+                }
+                else if (BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsStandalonePlatform))
+                    buttonMsg = "";
 
-                GUILayout.Label(styles.notLicensedMessages[targetGroup, 0], EditorStyles.wordWrappedLabel);
+                GUIContent[] notLicensedMessage =
+                {
+                    EditorGUIUtility.TextContent(string.Format(L10n.Tr(licenseMsg), niceName)),
+                    EditorGUIUtility.TextContent(L10n.Tr(buttonMsg)),
+                    new GUIContent(styles.shopURL)
+                };
+
+                GUILayout.Label(notLicensedMessage[0], EditorStyles.wordWrappedLabel);
                 GUILayout.Space(5);
                 GUILayout.BeginHorizontal();
                 GUILayout.FlexibleSpace();
-                if (styles.notLicensedMessages[targetGroup, 1].text.Length != 0)
+                if (notLicensedMessage[1].text.Length != 0)
                 {
-                    if (GUILayout.Button(styles.notLicensedMessages[targetGroup, 1]))
+                    if (GUILayout.Button(notLicensedMessage[1]))
                     {
-                        Application.OpenURL(styles.notLicensedMessages[targetGroup, 2].text);
+                        Application.OpenURL(notLicensedMessage[2].text);
                     }
                 }
                 GUILayout.EndHorizontal();
@@ -820,12 +782,7 @@ namespace UnityEditor
 
                 GUILayout.BeginVertical(GUILayout.ExpandWidth(true));
 
-                int targetGroup = BuildPlatforms.instance.BuildPlatformIndexFromTargetGroup(platform.targetGroup);
-
-                GUILayout.Label(styles.GetTargetNotInstalled(targetGroup, 0));
-                if (styles.GetTargetNotInstalled(targetGroup, 1) != null)
-                    if (GUILayout.Button(styles.GetTargetNotInstalled(targetGroup, 1)))
-                        Application.OpenURL(styles.GetTargetNotInstalled(targetGroup, 2).text);
+                GUILayout.Label(string.Format(L10n.Tr("{0} is not supported in this build.\nDownload a build that supports it."), BuildPipeline.GetBuildTargetGroupDisplayName(buildTargetGroup)));
 
                 GUILayout.EndVertical();
                 GUILayout.FlexibleSpace();

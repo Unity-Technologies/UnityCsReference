@@ -427,7 +427,7 @@ namespace UnityEngine
                     }
                     return false;
                 case EventType.Repaint:
-                    style.Draw(position, content, id);
+                    style.Draw(position, content, id, false, position.Contains(Event.current.mousePosition));
                     return id == GUIUtility.hotControl && position.Contains(Event.current.mousePosition);
             }
             return false;
@@ -910,13 +910,13 @@ namespace UnityEngine
             return Mathf.Max(firstStyle.margin.right, midStyle.margin.left) + Mathf.Max(midStyle.margin.right, lastStyle.margin.left) + internalSpace * (xCount - 3);
         }
 
-        private static bool DoControl(Rect position, int id, bool on, GUIContent content, GUIStyle style)
+        private static bool DoControl(Rect position, int id, bool on, bool hover, GUIContent content, GUIStyle style)
         {
             var evt = Event.current;
             switch (evt.type)
             {
                 case EventType.Repaint:
-                    style.Draw(position, content, id, on);
+                    style.Draw(position, content, id, on, hover);
                     break;
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition))
@@ -967,12 +967,12 @@ namespace UnityEngine
 
         internal static bool DoToggle(Rect position, int id, bool value, GUIContent content, GUIStyle style)
         {
-            return DoControl(position, id, value, content, style);
+            return DoControl(position, id, value, position.Contains(Event.current.mousePosition), content, style);
         }
 
         internal static bool DoButton(Rect position, int id, GUIContent content, GUIStyle style)
         {
-            return DoControl(position, id, false, content, style);
+            return DoControl(position, id, false, position.Contains(Event.current.mousePosition), content, style);
         }
 
         // Make a button grid

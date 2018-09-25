@@ -3,10 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using UnityEditor;
 using UnityEngine;
 
 namespace UnityEditor.UIAutomation
@@ -219,6 +216,11 @@ namespace UnityEditor.UIAutomation
             return m_Model.FindElementsByGUIContent(guiContent);
         }
 
+        public IEnumerable<IAutomatedUIElement> FindElementsByNamedControl(string controlName)
+        {
+            return m_Model.FindElementsByNamedControl(controlName);
+        }
+
         public IAutomatedUIElement nextSibling
         {
             get { return m_Model.nextSibling; }
@@ -227,10 +229,11 @@ namespace UnityEditor.UIAutomation
 
     class IMModel : IElementFinder
     {
-        private readonly List<IMGUIInstruction>       m_Instructions     = new List<IMGUIInstruction>();
-        private readonly List<IMGUIClipInstruction>   m_ClipList         = new List<IMGUIClipInstruction>();
-        private readonly List<IMGUILayoutInstruction> m_LayoutList       = new List<IMGUILayoutInstruction>();
-        private readonly List<IMGUIDrawInstruction>   m_DrawInstructions = new List<IMGUIDrawInstruction>();
+        private readonly List<IMGUIInstruction>             m_Instructions     = new List<IMGUIInstruction>();
+        private readonly List<IMGUIClipInstruction>         m_ClipList         = new List<IMGUIClipInstruction>();
+        private readonly List<IMGUILayoutInstruction>       m_LayoutList       = new List<IMGUILayoutInstruction>();
+        private readonly List<IMGUINamedControlInstruction> m_NamedControlList = new List<IMGUINamedControlInstruction>();
+        private readonly List<IMGUIDrawInstruction>         m_DrawInstructions = new List<IMGUIDrawInstruction>();
 
         private AutomatedIMElement[] m_Elements;
         private AutomatedIMElement m_Root;
@@ -243,6 +246,7 @@ namespace UnityEditor.UIAutomation
             GUIViewDebuggerHelper.GetLayoutInstructions(m_LayoutList);
             GUIViewDebuggerHelper.GetClipInstructions(m_ClipList);
             GUIViewDebuggerHelper.GetDrawInstructions(m_DrawInstructions);
+            GUIViewDebuggerHelper.GetNamedControlInstructions(m_NamedControlList);
 
             GenerateDom();
         }
@@ -324,6 +328,13 @@ namespace UnityEditor.UIAutomation
                     element.style = layoutInstruction.style;
                     break;
                 }
+                case InstructionType.kLayoutNamedControl:
+                {
+                    var namedControlInstruction = m_NamedControlList[imguiInstruction.typeInstructionIndex];
+                    element.rect = namedControlInstruction.rect;
+                    element.controlName = namedControlInstruction.name;
+                    break;
+                }
             }
 
             return element;
@@ -337,6 +348,11 @@ namespace UnityEditor.UIAutomation
         public IEnumerable<IAutomatedUIElement> FindElementsByGUIContent(GUIContent guiContent)
         {
             return m_Root.FindElementsByGUIContent(guiContent);
+        }
+
+        public IEnumerable<IAutomatedUIElement> FindElementsByNamedControl(string controlName)
+        {
+            return m_Root.FindElementsByNamedControl(controlName);
         }
 
         public IAutomatedUIElement nextSibling
@@ -356,6 +372,7 @@ namespace UnityEditor.UIAutomation
     {
         IEnumerable<IAutomatedUIElement> FindElementsByGUIStyle(GUIStyle style);
         IEnumerable<IAutomatedUIElement> FindElementsByGUIContent(GUIContent guiContent);
+        IEnumerable<IAutomatedUIElement> FindElementsByNamedControl(string controlName);
         IAutomatedUIElement nextSibling { get; }
     }
 
@@ -368,6 +385,9 @@ namespace UnityEditor.UIAutomation
 
         bool hasRect { get; }
         Rect rect { get; }
+
+        bool hasControlName { get; }
+        string controlName { get; }
 
         bool enabled { get; }
 
@@ -448,6 +468,13 @@ namespace UnityEditor.UIAutomation
             }
         }
 
+        public bool hasControlName
+        {
+            get { return controlName != null; }
+        }
+
+        public string controlName { get; set; }
+
         public GUIStyle style { get; set; }
         public GUIContent guiContent { get; set; }
         public ArraySegment<AutomatedIMElement> descendants { get; set; }
@@ -475,6 +502,11 @@ namespace UnityEditor.UIAutomation
         public IEnumerable<IAutomatedUIElement> FindElementsByGUIStyle(GUIStyle style)
         {
             return FindElements(element => element.style == style);
+        }
+
+        public IEnumerable<IAutomatedUIElement> FindElementsByNamedControl(string controlName)
+        {
+            return FindElements(element => element.controlName == controlName);
         }
 
         private static string NullOrEmptyToNull(string input)

@@ -4,12 +4,8 @@
 
 using System;
 using System.IO;
-using System.Security;
 using System.Security.Cryptography;
 using System.Reflection;
-using System.Collections.Generic;
-using Mono.Security;
-using Mono.Security.Cryptography;
 using UnityEngine.Scripting;
 
 namespace UnityEngine

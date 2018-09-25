@@ -4,15 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using UnityEditor.Accessibility;
-using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
-using UnityEditorInternal.Profiling;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Profiling;
+using UnityEditorInternal.Profiling;
 using UnityEngine.Scripting;
 using UnityEngine.Experimental.Networking.PlayerConnection;
 using ConnectionUtility = UnityEditor.Experimental.Networking.PlayerConnection.EditorGUIUtility;
@@ -173,7 +170,7 @@ namespace UnityEditor
 
         const float kNameColumnSize = 350;
 
-        FrameDataView m_FrameDataView;
+        HierarchyFrameDataView m_FrameDataView;
 
         [SerializeField]
         ProfilerFrameDataHierarchyView m_CPUFrameDataHierarchyView;
@@ -181,16 +178,6 @@ namespace UnityEditor
         ProfilerFrameDataHierarchyView m_GPUFrameDataHierarchyView;
 
         ProfilerTimelineGUI m_CPUTimelineGUI;
-
-        struct CachedProfilerPropertyConfig
-        {
-            public int frameIndex;
-            public ProfilerArea area;
-            public ProfilerViewType viewType;
-            public ProfilerColumn sortType;
-        }
-        private CachedProfilerPropertyConfig m_CPUOrGPUProfilerPropertyConfig;
-        private ProfilerProperty m_CPUOrGPUProfilerProperty;
 
         [SerializeField]
         private UISystemProfiler m_UISystemProfiler;
@@ -218,66 +205,6 @@ namespace UnityEditor
 
         [SerializeField]
         private bool m_ClearOnPlay;
-
-        private static string[] ProfilerColumnNames(ProfilerColumn[] columns)
-        {
-            var allNames = Enum.GetNames(typeof(ProfilerColumn));
-            var names = new string[columns.Length];
-
-            for (var i = 0; i < columns.Length; i++)
-            {
-                switch (columns[i])
-                {
-                    case ProfilerColumn.FunctionName:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Overview");
-                        break;
-                    case ProfilerColumn.TotalPercent:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Total");
-                        break;
-                    case ProfilerColumn.SelfPercent:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Self");
-                        break;
-                    case ProfilerColumn.Calls:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Calls");
-                        break;
-                    case ProfilerColumn.GCMemory:
-                        names[i] = LocalizationDatabase.GetLocalizedString("GC Alloc");
-                        break;
-                    case ProfilerColumn.TotalTime:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Time ms");
-                        break;
-                    case ProfilerColumn.SelfTime:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Self ms");
-                        break;
-                    case ProfilerColumn.DrawCalls:
-                        names[i] = LocalizationDatabase.GetLocalizedString("DrawCalls");
-                        break;
-                    case ProfilerColumn.TotalGPUTime:
-                        names[i] = LocalizationDatabase.GetLocalizedString("GPU ms");
-                        break;
-                    case ProfilerColumn.SelfGPUTime:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Self ms");
-                        break;
-                    case ProfilerColumn.TotalGPUPercent:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Total");
-                        break;
-                    case ProfilerColumn.SelfGPUPercent:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Self");
-                        break;
-                    case ProfilerColumn.WarningCount:
-                        names[i] = LocalizationDatabase.GetLocalizedString("|Warnings");
-                        break;
-                    case ProfilerColumn.ObjectName:
-                        names[i] = LocalizationDatabase.GetLocalizedString("Name");
-                        break;
-                    default:
-                        names[i] = "ProfilerColumn." + allNames[(int)columns[i]];
-                        break;
-                }
-            }
-
-            return names;
-        }
 
         const string kProfilerRecentSaveLoadProfilePath = "ProfilerRecentSaveLoadProfilePath";
         const string kProfilerEnabledSessionKey = "ProfilerEnabled";
@@ -307,10 +234,10 @@ namespace UnityEditor
 
         public ProfilerProperty CreateProperty()
         {
-            return CreateProperty(ProfilerColumn.DontSort);
+            return CreateProperty(HierarchyFrameDataView.columnDontSort);
         }
 
-        public ProfilerProperty CreateProperty(ProfilerColumn sortType)
+        public ProfilerProperty CreateProperty(int sortType)
         {
             int targetedFrame = GetActiveVisibleFrameIndex();
             if (targetedFrame < ProfilerDriver.lastFrameIndex - ProfilerDriver.maxHistoryLength)
@@ -319,7 +246,7 @@ namespace UnityEditor
             }
 
             var property = new ProfilerProperty();
-            property.SetRoot(targetedFrame, sortType, m_ViewType);
+            property.SetRoot(targetedFrame, sortType, (int)m_ViewType);
             property.onlyShowGPUSamples = m_CurrentArea == ProfilerArea.GPU;
             return property;
         }
@@ -425,7 +352,7 @@ namespace UnityEditor
 
         void CPUOrGPUViewSelectionChanged(int id)
         {
-            if (m_FrameDataView == null || !m_FrameDataView.IsValid())
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return;
 
             SetSelectedPropertyPath(m_FrameDataView.GetItemPath(id));
@@ -666,7 +593,7 @@ namespace UnityEditor
                 SetCurrentFrame(nextFrame);
         }
 
-        void DrawCPUTimelineViewToolbar(ProfilerTimelineGUI timelineView, FrameDataView frameDataView)
+        void DrawCPUTimelineViewToolbar(ProfilerTimelineGUI timelineView, HierarchyFrameDataView frameDataView)
         {
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
@@ -686,9 +613,13 @@ namespace UnityEditor
 
         private void DrawCPUOrGPUPane(ProfilerFrameDataHierarchyView hierarchyView, ProfilerTimelineGUI timelinePane)
         {
+            var viewMode = HierarchyFrameDataView.ViewModes.Default;
+            if (m_ViewType == ProfilerViewType.Hierarchy)
+                viewMode |= HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName;
+
             if (timelinePane != null && m_ViewType == ProfilerViewType.Timeline)
             {
-                var frameDataView = GetFrameDataView(m_ViewType, hierarchyView.sortedProfilerColumn, timelinePane.GetFilteringMode(), hierarchyView.sortedProfilerColumnAscending);
+                var frameDataView = GetFrameDataView(viewMode | timelinePane.GetFilteringMode(), hierarchyView.sortedProfilerColumn, hierarchyView.sortedProfilerColumnAscending);
                 DrawCPUTimelineViewToolbar(timelinePane, frameDataView);
 
                 float lowerPaneSize = m_VertSplit.realSizes[1];
@@ -697,47 +628,24 @@ namespace UnityEditor
             }
             else
             {
-                var frameDataView = GetFrameDataView(m_ViewType, hierarchyView.sortedProfilerColumn, hierarchyView.GetFilteringMode(), hierarchyView.sortedProfilerColumnAscending);
+                var frameDataView = GetFrameDataView(viewMode | hierarchyView.GetFilteringMode(), hierarchyView.sortedProfilerColumn, hierarchyView.sortedProfilerColumnAscending);
                 hierarchyView.DoGUI(frameDataView);
             }
         }
 
-        [Obsolete("Not used anymore")]
-        public ProfilerProperty GetRootProfilerProperty(ProfilerColumn sortType)
-        {
-            if (m_CPUOrGPUProfilerProperty != null && m_CPUOrGPUProfilerPropertyConfig.frameIndex == GetActiveVisibleFrameIndex() && m_CPUOrGPUProfilerPropertyConfig.area == m_CurrentArea && m_CPUOrGPUProfilerPropertyConfig.viewType == m_ViewType && m_CPUOrGPUProfilerPropertyConfig.sortType == sortType)
-            {
-                m_CPUOrGPUProfilerProperty.ResetToRoot();
-                return m_CPUOrGPUProfilerProperty;
-            }
-
-            if (m_CPUOrGPUProfilerProperty != null)
-                m_CPUOrGPUProfilerProperty.Cleanup();
-            m_CPUOrGPUProfilerProperty = CreateProperty(sortType);
-
-            m_CPUOrGPUProfilerPropertyConfig.frameIndex = GetActiveVisibleFrameIndex();
-            m_CPUOrGPUProfilerPropertyConfig.area = m_CurrentArea.Value;
-            m_CPUOrGPUProfilerPropertyConfig.viewType = m_ViewType;
-            m_CPUOrGPUProfilerPropertyConfig.sortType = sortType;
-
-            return m_CPUOrGPUProfilerProperty;
-        }
-
-        public FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, FrameViewFilteringModes filteringMode, bool sortAscending)
+        public HierarchyFrameDataView GetFrameDataView(HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending)
         {
             var frameIndex = GetActiveVisibleFrameIndex();
-            if (m_FrameDataView != null && m_FrameDataView.IsValid())
+            if (m_FrameDataView != null && m_FrameDataView.valid)
             {
-                if (m_FrameDataView.frameIndex == frameIndex && m_FrameDataView.viewType == viewType)
+                if (m_FrameDataView.frameIndex == frameIndex && m_FrameDataView.viewMode == viewMode)
                     return m_FrameDataView;
             }
 
             if (m_FrameDataView != null)
-            {
                 m_FrameDataView.Dispose();
-            }
 
-            m_FrameDataView = new FrameDataView(viewType, frameIndex, 0, profilerSortColumn, sortAscending,  filteringMode);
+            m_FrameDataView = new HierarchyFrameDataView(frameIndex, 0, viewMode, profilerSortColumn, sortAscending);
             return m_FrameDataView;
         }
 

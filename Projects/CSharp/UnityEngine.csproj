@@ -42,15 +42,6 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\System.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Core" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\System.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Security" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\Mono.Security.dll</HintPath>
-    </Reference>
 
   </ItemGroup>
   <ItemGroup>
@@ -92,6 +83,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\AndroidPermissions.bindings.cs">
     <Link>Runtime\Export\AndroidPermissions.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\Android\AndroidDevice.bindings.cs">
+    <Link>Runtime\Export\Android\AndroidDevice.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\AnimationCurve.bindings.cs">
     <Link>Runtime\Export\AnimationCurve.bindings.cs</Link>
@@ -792,6 +786,9 @@
   <Compile Include="..\..\Runtime\Export\Scripting\ExtensionOfNativeClassAttribute.cs">
     <Link>Runtime\Export\Scripting\ExtensionOfNativeClassAttribute.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Scripting\GarbageCollector.bindings.cs">
+    <Link>Runtime\Export\Scripting\GarbageCollector.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Scripting\PreserveAttribute.cs">
     <Link>Runtime\Export\Scripting\PreserveAttribute.cs</Link>
   </Compile>
@@ -1260,9 +1257,6 @@
   <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioClipPlayable.bindings.cs">
     <Link>Modules\Audio\Public\ScriptBindings\AudioClipPlayable.bindings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioExtensions.cs">
-    <Link>Modules\Audio\Public\ScriptBindings\AudioExtensions.cs</Link>
-  </Compile>
   <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioMixerPlayable.bindings.cs">
     <Link>Modules\Audio\Public\ScriptBindings\AudioMixerPlayable.bindings.cs</Link>
   </Compile>
@@ -1280,6 +1274,9 @@
   </Compile>
   <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs">
     <Link>Modules\Audio\Public\ScriptBindings\AudioSampleProvider.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\DSPGraph.bindings.cs">
+    <Link>Modules\Audio\Public\ScriptBindings\DSPGraph.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\CrashReporting\CrashReporter.bindings.cs">
     <Link>Modules\CrashReporting\CrashReporter.bindings.cs</Link>

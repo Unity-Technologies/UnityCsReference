@@ -50,6 +50,7 @@ namespace UnityEditor.ShortcutManagement
     {
         readonly List<ShortcutEntry> m_Entries;
         IShortcutProfileStore m_ProfileStore;
+        IBindingValidator m_BindingValidator;
 
         ShortcutProfile m_ActiveProfile;
         Dictionary<string, ShortcutProfile> m_LoadedProfiles = new Dictionary<string, ShortcutProfile>();
@@ -57,9 +58,10 @@ namespace UnityEditor.ShortcutManagement
         public event Action<IShortcutProfileManager> shortcutsModified;
         public event Action<IShortcutProfileManager> activeProfileChanged;
 
-        public ShortcutProfileManager(IEnumerable<ShortcutEntry> baseProfile, IShortcutProfileStore profileStore)
+        public ShortcutProfileManager(IEnumerable<ShortcutEntry> baseProfile, IBindingValidator bindingValidator, IShortcutProfileStore profileStore)
         {
             m_ProfileStore = profileStore;
+            m_BindingValidator = bindingValidator;
             m_Entries = baseProfile.ToList();
         }
 
@@ -202,6 +204,10 @@ namespace UnityEditor.ShortcutManagement
             if (activeProfile == null)
                 throw new InvalidOperationException("No active profile");
 
+            string invalidBindingMessage;
+            if (!m_BindingValidator.IsBindingValid(combinationSequence, out invalidBindingMessage))
+                throw new ArgumentException(invalidBindingMessage, nameof(combinationSequence));
+
             var shortcutEntry = m_Entries.FirstOrDefault(e => e.identifier.Equals(identifier));
             shortcutEntry.SetOverride(combinationSequence);
 
@@ -319,6 +325,13 @@ namespace UnityEditor.ShortcutManagement
                 var entry = m_Entries.FirstOrDefault(e => e.identifier.Equals(shortcutOverride.identifier));
                 if (entry != null)
                 {
+                    string invalidBindingMessage;
+                    if (!m_BindingValidator.IsBindingValid(shortcutOverride.combinations, out invalidBindingMessage))
+                    {
+                        Debug.LogWarning($"Ignoring shortcut \"{entry.identifier.path}\" in profile \"{shortcutProfile.id}\" with invalid binding.\n{invalidBindingMessage}.");
+                        continue;
+                    }
+
                     entry.ApplyOverride(shortcutOverride);
                 }
             }

@@ -16,6 +16,21 @@ using UnityEngine;
 
 namespace UnityEditor
 {
+    // AppleMobile CPU architecture.
+    // Matches enum in EditorOnlyPlayerSettings.h.
+    [Flags]
+    public enum AppleMobileArchitecture : uint
+    {
+        // ARMv7
+        ARMv7 = 0,
+
+        // ARM64
+        ARM64 = 1 << 0,
+
+        // Universal
+        Universal = 1 << 1
+    }
+
     // Supported iOS SDK versions
     public enum iOSSdkVersion
     {

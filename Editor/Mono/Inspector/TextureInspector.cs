@@ -591,7 +591,7 @@ namespace UnityEditor
             }
 
             // TODO: Less hacky way to prevent sprite rects to not appear in smaller previews like icons.
-            if (wantedRect.width > 32 && wantedRect.height > 32)
+            if ((wantedRect.width > 32 && wantedRect.height > 32) && Event.current.type == EventType.Repaint)
             {
                 string path = AssetDatabase.GetAssetPath(t);
                 TextureImporter textureImporter = AssetImporter.GetAtPath(path) as TextureImporter;

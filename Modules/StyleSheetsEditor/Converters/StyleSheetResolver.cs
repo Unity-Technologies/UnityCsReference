@@ -241,6 +241,11 @@ namespace UnityEditor.StyleSheets
             return ResolvedSheet;
         }
 
+        public StyleSheet Resolve()
+        {
+            return ResolvedSheet;
+        }
+
         public void ResolveSheets()
         {
             foreach (var sheet in Sheets)

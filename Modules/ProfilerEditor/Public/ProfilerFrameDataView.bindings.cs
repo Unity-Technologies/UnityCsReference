@@ -6,103 +6,50 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Text;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
-using UnityEngine.Scripting.APIUpdating;
 
-namespace UnityEditorInternal.Profiling
+namespace UnityEditor.Profiling
 {
-    [MovedFrom("UnityEditorInternal")]
-    public enum ProfilerViewType
-    {
-        Hierarchy = 0,
-        Timeline = 1,
-        RawHierarchy = 2
-    }
-
-    [MovedFrom("UnityEditorInternal")]
-    public enum ProfilerColumn
-    {
-        DontSort = -1,
-        FunctionName = 0,
-        TotalPercent,
-        SelfPercent,
-        Calls,
-        GCMemory,
-        TotalTime,
-        SelfTime,
-        DrawCalls,
-        TotalGPUTime,
-        SelfGPUTime,
-        TotalGPUPercent,
-        SelfGPUPercent,
-        WarningCount,
-        ObjectName
-    }
-
-    [Flags]
-    public enum FrameViewFilteringModes
-    {
-        CollapseEditorBoundarySamples = 1 << 0
-    }
-
     [NativeHeader("Modules/ProfilerEditor/ProfilerHistory/FrameDataView.h")]
-    internal class FrameDataView : IDisposable
+    [StructLayout(LayoutKind.Sequential)]
+    public class HierarchyFrameDataView : IDisposable
     {
-        private IntPtr m_Ptr;
+        IntPtr m_Ptr;
 
-        public const int kInvalidSampleId = -1;
+        public const int invalidSampleId = -1;
 
-        public struct MarkerPath
+        [Flags]
+        public enum ViewModes
         {
-            public readonly List<int> markerIds;
-
-            public MarkerPath(List<int> markerIds)
-            {
-                this.markerIds = markerIds;
-            }
-
-            public override bool Equals(object obj)
-            {
-                if (ReferenceEquals(obj, null))
-                    return false;
-                if (obj.GetType() != GetType())
-                    return false;
-                var other = (MarkerPath)obj;
-
-                if (markerIds == other.markerIds)
-                    return true;
-                if (markerIds == null || other.markerIds == null)
-                    return false;
-                // Faster than SequenceEqual
-                if (markerIds.Count != other.markerIds.Count)
-                    return false;
-                var count = markerIds.Count;
-                for (var i = 0; i < count; ++i)
-                {
-                    if (markerIds[i] != other.markerIds[i])
-                        return false;
-                }
-
-                return true;
-            }
-
-            public override int GetHashCode()
-            {
-                if (markerIds == null)
-                    return 0;
-                int hash = 0;
-                for (var i = 0; i < markerIds.Count; ++i)
-                    hash ^= markerIds[i].GetHashCode();
-                return hash;
-            }
+            Default = 0,
+            MergeSamplesWithTheSameName = 1 << 0,
+            HideEditorOnlySamples = 1 << 1,
         }
 
-        public FrameDataView(ProfilerViewType viewType, int frameIndex, int threadIndex, ProfilerColumn profilerSortColumn, bool sortAscending, FrameViewFilteringModes collapseEditorSamples)
+        public const int columnDontSort = -1;
+        public const int columnName = 0;
+        public const int columnTotalPercent = 1;
+        public const int columnSelfPercent = 2;
+        public const int columnCalls = 3;
+        public const int columnGcMemory = 4;
+        public const int columnTotalTime = 5;
+        public const int columnSelfTime = 6;
+        internal const int columnDrawCalls = 7;
+        internal const int columnTotalGpuTime = 8;
+        internal const int columnSelfGpuTime = 9;
+        internal const int columnTotalGpuPercent = 10;
+        internal const int columnSelfGpuPercent = 11;
+        public const int columnWarningCount = 12;
+        public const int columnObjectName = 13;
+
+        internal HierarchyFrameDataView(int frameIndex, int threadIndex, ViewModes viewMode, int sortColumn, bool sortAscending)
         {
-            m_Ptr = Internal_Create(viewType, frameIndex, threadIndex, profilerSortColumn, sortAscending, collapseEditorSamples);
+            m_Ptr = Internal_Create(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
         }
 
-        ~FrameDataView()
+        ~HierarchyFrameDataView()
         {
             DisposeInternal();
         }
@@ -114,7 +61,7 @@ namespace UnityEditorInternal.Profiling
         }
 
         // Protected implementation of Dispose pattern.
-        private void DisposeInternal()
+        void DisposeInternal()
         {
             if (m_Ptr != IntPtr.Zero)
             {
@@ -124,19 +71,28 @@ namespace UnityEditorInternal.Profiling
         }
 
         [ThreadSafe]
-        private static extern IntPtr Internal_Create(ProfilerViewType viewType, int frameIndex, int threadIndex, ProfilerColumn profilerSortColumn, bool sortAscending, FrameViewFilteringModes collapseEditorSamples);
+        static extern IntPtr Internal_Create(int frameIndex, int threadIndex, ViewModes viewMode, int sortColumn, bool sortAscending);
 
         [ThreadSafe]
-        private static extern void Internal_Destroy(IntPtr ptr);
+        static extern void Internal_Destroy(IntPtr ptr);
 
 
-        public extern bool frameDataReady { get; }
+        public bool valid
+        {
+            get
+            {
+                if (m_Ptr == IntPtr.Zero)
+                    return false;
 
-        public extern string frameFPS { get; }
+                return GetRootItemID() != invalidSampleId;
+            }
+        }
 
-        public extern string frameTime { get; }
+        public extern float frameFps { get; }
 
-        public extern string frameGpuTime { get; }
+        public extern float frameTimeMs { get; }
+
+        public extern float frameGpuTimeMs { get; }
 
         public extern int frameIndex { get; }
 
@@ -148,11 +104,11 @@ namespace UnityEditorInternal.Profiling
 
         public extern ulong threadId { get; }
 
-        public extern ProfilerColumn sortColumn { get; }
+        public extern ViewModes viewMode { get; }
+
+        public extern int sortColumn { get; }
 
         public extern bool sortColumnAscending { get; }
-
-        public extern ProfilerViewType viewType { get; }
 
         public extern int GetRootItemID();
 
@@ -160,95 +116,128 @@ namespace UnityEditorInternal.Profiling
 
         public extern int GetItemDepth(int id);
 
-        public extern string GetItemFunctionName(int id);
+        public extern bool HasItemChildren(int id);
 
-        public extern string GetItemColumnData(int id, ProfilerColumn column);
+        internal extern int GetItemChildrenCount(int id);
 
-        public extern float GetItemColumnDataAsSingle(int id, ProfilerColumn column);
+        [NativeThrows]
+        public extern void GetItemChildren(int id, List<int> outChildren);
 
-        public extern string GetItemTooltip(int id, ProfilerColumn column);
+        [NativeThrows]
+        public extern void GetItemAncestors(int id, List<int> outAncestors);
+
+        [NativeThrows]
+        public extern void GetItemDescendantsThatHaveChildren(int id, List<int> outChildren);
+
+        public extern string GetItemName(int id);
 
         public extern int GetItemInstanceID(int id);
 
-        public extern int GetItemSamplesCount(int id);
+        public extern string GetItemColumnData(int id, int column);
 
-        public extern string[] GetItemColumnDatas(int id, ProfilerColumn column);
+        public extern float GetItemColumnDataAsSingle(int id, int column);
 
-        public extern int[] GetItemInstanceIDs(int id);
+        internal extern string GetItemTooltip(int id, int column);
 
-        public extern bool HasItemChildren(int id);
-
-        public extern int GetItemChildrenCount(int id);
-
-        public extern void GetItemChildren(int id, List<int> outChildren);
-
-        public extern int[] GetItemAncestors(int id);
-
-        public extern int[] GetItemDescendantsThatHaveChildren(int id);
-
-        public string ResolveItemCallstack(int id)
+        internal string ResolveItemCallstack(int id)
         {
             return ResolveItemCallstack(id, 0);
         }
 
-        public extern string ResolveItemCallstack(int id, int sampleIndex);
+        internal extern string ResolveItemCallstack(int id, int sampleIndex);
 
-        public extern void Sort(ProfilerColumn profilerSortColumn, bool sortAscending);
+        public extern int GetItemMergedSamplesCount(int id);
 
-        public MarkerPath GetItemMarkerIDPath(int id)
+        [NativeThrows]
+        public extern void GetItemMergedSamplesColumnData(int id, int column, List<string> outStrings);
+
+        [NativeThrows]
+        public extern void GetItemMergedSamplesInstanceID(int id, List<int> outInstanceIds);
+
+        public void GetItemMarkerIDPath(int id, List<int> outFullIdPath)
         {
-            // Get path as marker ids
-            var ancestors = GetItemAncestors(id);
-            var markerIds = new List<int>(1 + ancestors.Length);
-            for (var i = ancestors.Length - 1; i >= 0; i--)
-                markerIds.Add(GetItemMarkerID(ancestors[i]));
-            markerIds.Add(GetItemMarkerID(id));
-
-            return new MarkerPath(markerIds);
+            if (outFullIdPath == null)
+                throw new ArgumentNullException("outFullIdPath");
+            GetItemAncestors(id, outFullIdPath);
+            outFullIdPath.Reverse();
+            for (int i = 0; i < outFullIdPath.Count; ++i)
+                outFullIdPath[i] = GetItemMarkerID(outFullIdPath[i]);
+            outFullIdPath.Add(GetItemMarkerID(id));
         }
 
         public string GetItemPath(int id)
         {
-            var ancestors = GetItemAncestors(id);
+            var ancestors = new List<int>();
+            GetItemAncestors(id, ancestors);
             var propertyPathBuilder = new StringBuilder();
-            for (int i = ancestors.Length - 1; i >= 0; i--)
+            for (int i = ancestors.Count - 1; i >= 0; i--)
             {
-                propertyPathBuilder.Append(GetItemFunctionName(ancestors[i]));
+                propertyPathBuilder.Append(GetItemName(ancestors[i]));
                 propertyPathBuilder.Append('/');
             }
-            propertyPathBuilder.Append(GetItemFunctionName(id));
+            propertyPathBuilder.Append(GetItemName(id));
             return propertyPathBuilder.ToString();
         }
 
-        public static extern UnityEngine.Color32 GetMarkerCategoryColor(int category);
-
-        public bool IsValid()
+        [StructLayout(LayoutKind.Sequential)]
+        struct Data
         {
-            if (m_Ptr == IntPtr.Zero)
-                return false;
-
-            return GetRootItemID() != kInvalidSampleId;
+            public IntPtr ptr;
+            public int size;
         }
+
+        extern AtomicSafetyHandle GetSafetyHandle();
+
+        public NativeArray<T> GetFrameMetaData<T>(Guid id, int tag) where T : struct
+        {
+            return GetFrameMetaData<T>(id, tag, 0);
+        }
+
+        public unsafe NativeArray<T> GetFrameMetaData<T>(Guid id, int tag, int index) where T : struct
+        {
+            var stride = UnsafeUtility.SizeOf<T>();
+            var data = GetFrameMetaData(id.ToByteArray(), tag, index);
+            var array = NativeArrayUnsafeUtility.ConvertExistingDataToNativeArray<T>(data.ptr.ToPointer(), data.size / stride, Allocator.None);
+            NativeArrayUnsafeUtility.SetAtomicSafetyHandle(ref array, GetSafetyHandle());
+            return array;
+        }
+
+        public int GetFrameMetaDataCount(Guid id, int tag)
+        {
+            return GetFrameMetaDataCount(id.ToByteArray(), tag);
+        }
+
+        extern Data GetFrameMetaData(byte[] statsId, int tag, int index);
+
+        extern int GetFrameMetaDataCount(byte[] statsId, int tag);
+
+        public extern void Sort(int sortColumn, bool sortAscending);
+
+        internal static extern UnityEngine.Color32 GetMarkerCategoryColor(int category);
 
         public override bool Equals(object obj)
         {
-            if (m_Ptr == IntPtr.Zero)
+            var dataViewObj = obj as HierarchyFrameDataView;
+            if (dataViewObj == null)
                 return false;
 
-            var frameDataViewObj = obj as FrameDataView;
-            if (frameDataViewObj == null)
+            if (m_Ptr == dataViewObj.m_Ptr)
+                return true;
+            if (m_Ptr == IntPtr.Zero || dataViewObj.m_Ptr == IntPtr.Zero)
                 return false;
 
-            return frameIndex.Equals(frameDataViewObj.frameIndex) &&
-                threadIndex.Equals(frameDataViewObj.threadIndex) &&
-                viewType.Equals(frameDataViewObj.viewType);
+            return frameIndex.Equals(dataViewObj.frameIndex) &&
+                threadIndex.Equals(dataViewObj.threadIndex) &&
+                viewMode.Equals(dataViewObj.viewMode) &&
+                sortColumn.Equals(dataViewObj.sortColumn) &&
+                sortColumnAscending.Equals(dataViewObj.sortColumnAscending);
         }
 
         public override int GetHashCode()
         {
             return frameIndex.GetHashCode() ^
-                threadIndex.GetHashCode() ^
-                viewType.GetHashCode();
+                (threadIndex.GetHashCode() << 8) ^
+                (viewMode.GetHashCode() << 24);
         }
     }
 }

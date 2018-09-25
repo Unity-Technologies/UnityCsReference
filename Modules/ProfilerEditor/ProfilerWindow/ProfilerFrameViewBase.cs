@@ -3,14 +3,9 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEditor.SceneManagement;
-using System.Collections.Generic;
-using System.Linq;
 using System;
 using UnityEditor;
-using UnityEditor.IMGUI.Controls;
-using UnityEditorInternal;
+using UnityEditor.Profiling;
 
 
 namespace UnityEditorInternal.Profiling
@@ -95,8 +90,10 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        protected void DrawCPUGPUTime(string cpuTime, string gpuTime)
+        protected void DrawCPUGPUTime(float cpuTimeMs, float gpuTimeMs)
         {
+            var cpuTime = cpuTimeMs > 0 ? string.Format("{0:N2}", cpuTimeMs) : "--";
+            var gpuTime = gpuTimeMs > 0 ? string.Format("{0:N2}", gpuTimeMs) : "--";
             GUILayout.Label(string.Format(BaseStyles.cpuGPUTime.text, cpuTime, gpuTime), EditorStyles.miniLabel);
         }
 
@@ -150,9 +147,9 @@ namespace UnityEditorInternal.Profiling
         {
         }
 
-        public virtual FrameViewFilteringModes GetFilteringMode()
+        public virtual HierarchyFrameDataView.ViewModes GetFilteringMode()
         {
-            return 0;
+            return HierarchyFrameDataView.ViewModes.Default;
         }
     }
 }

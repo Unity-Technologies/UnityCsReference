@@ -88,6 +88,13 @@ namespace UnityEditor.Modules
                 }
             }
             config.Set("hdr-display-enabled", PlayerSettings.useHDRDisplay ? "1" : "0");
+            if (BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", target))
+            {
+                if (PlayerSettings.gcWBarrierValidation)
+                    config.AddKey("validate-write-barriers");
+                if (PlayerSettings.gcIncremental)
+                    config.Set("gc-max-time-slice", "3");
+            }
         }
 
         public virtual string GetExtension(BuildTarget target, BuildOptions options)

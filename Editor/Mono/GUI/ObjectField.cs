@@ -280,7 +280,7 @@ namespace UnityEditor
                     {
                         case ObjectFieldVisualType.IconAndText:
                             BeginHandleMixedValueContentColor();
-                            style.Draw(position, temp, id, DragAndDrop.activeControlID == id);
+                            style.Draw(position, temp, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
                             EndHandleMixedValueContentColor();
                             break;
                         case ObjectFieldVisualType.LargePreview:
@@ -303,7 +303,7 @@ namespace UnityEditor
         private static void DrawObjectFieldLargeThumb(Rect position, int id, Object obj, GUIContent content)
         {
             GUIStyle thumbStyle = EditorStyles.objectFieldThumb;
-            thumbStyle.Draw(position, GUIContent.none, id, DragAndDrop.activeControlID == id);
+            thumbStyle.Draw(position, GUIContent.none, id, DragAndDrop.activeControlID == id, position.Contains(Event.current.mousePosition));
 
             if (obj != null && !showMixedValue)
             {

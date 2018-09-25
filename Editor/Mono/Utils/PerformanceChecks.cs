@@ -4,6 +4,8 @@
 
 using UnityEngine;
 using System;
+using BuildTargetDiscovery = UnityEditor.BuildTargetDiscovery;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor.Utils
 {
@@ -22,11 +24,6 @@ namespace UnityEditor.Utils
             "RenderFX/Skybox"
         };
 
-        private static bool IsMobileBuildTarget(BuildTarget target)
-        {
-            return target == BuildTarget.iOS || target == BuildTarget.Android;
-        }
-
         private static string FormattedTextContent(string localeString, params object[] args)
         {
             var content = EditorGUIUtility.TextContent(localeString);
@@ -40,7 +37,7 @@ namespace UnityEditor.Utils
             string shaderName = mat.shader.name;
             int shaderLOD = ShaderUtil.GetLOD(mat.shader);
             bool hasMobileVariant = Array.Exists(kShadersWithMobileVariants, s => s == shaderName);
-            bool isMobileTarget = IsMobileBuildTarget(buildTarget);
+            bool isMobileTarget = BuildTargetDiscovery.PlatformHasFlag(buildTarget, TargetAttributes.IsMobile);
 
             // Skip all performance-related checks if shader explicitly indicated that via a PerformanceChecks=False tag.
             bool noPerfChecks = (mat.GetTag("PerformanceChecks", true).ToLower() == "false");

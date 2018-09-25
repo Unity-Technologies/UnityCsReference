@@ -24,20 +24,33 @@ namespace UnityEditor
         protected SerializedProperty m_HaloTexture;
         protected SerializedProperty m_SpotCookie;
 
-        public virtual void OnEnable()
+        protected SerializedObject m_RenderSettings;
+
+        SerializedObject renderSettings
         {
-            m_HaloStrength = serializedObject.FindProperty("m_HaloStrength");
-            m_FlareStrength = serializedObject.FindProperty("m_FlareStrength");
-            m_FlareFadeSpeed = serializedObject.FindProperty("m_FlareFadeSpeed");
-            m_HaloTexture = serializedObject.FindProperty("m_HaloTexture");
-            m_SpotCookie = serializedObject.FindProperty("m_SpotCookie");
+            get
+            {
+                // if we set a new scene as the active scene, we need to make sure to respond to those changes
+                if (m_RenderSettings == null || m_RenderSettings.targetObject != RenderSettings.GetRenderSettings())
+                {
+                    m_RenderSettings = new SerializedObject(RenderSettings.GetRenderSettings());
+
+                    m_HaloStrength = m_RenderSettings.FindProperty("m_HaloStrength");
+                    m_FlareStrength = m_RenderSettings.FindProperty("m_FlareStrength");
+                    m_FlareFadeSpeed = m_RenderSettings.FindProperty("m_FlareFadeSpeed");
+                    m_HaloTexture = m_RenderSettings.FindProperty("m_HaloTexture");
+                    m_SpotCookie = m_RenderSettings.FindProperty("m_SpotCookie");
+                }
+
+                return m_RenderSettings;
+            }
         }
 
         public virtual void OnDisable() {}
 
         public override void OnInspectorGUI()
         {
-            serializedObject.Update();
+            renderSettings.Update();
 
             EditorGUILayout.PropertyField(m_HaloTexture, Styles.HaloTexture);
             EditorGUILayout.Slider(m_HaloStrength, 0.0f, 1.0f, Styles.HaloStrength);
@@ -47,7 +60,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_SpotCookie, Styles.SpotCookie);
 
-            serializedObject.ApplyModifiedProperties();
+            renderSettings.ApplyModifiedProperties();
         }
     }
 }

@@ -12,6 +12,7 @@ using System.Linq;
 using System;
 using UnityEditor.Experimental.AssetImporters;
 using Object = UnityEngine.Object;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor
 {
@@ -110,7 +111,7 @@ namespace UnityEditor
 
         internal static bool IsGLESMobileTargetPlatform(BuildTarget target)
         {
-            return target == BuildTarget.iOS || target == BuildTarget.tvOS || target == BuildTarget.Android || target == BuildTarget.Lumin;
+            return BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.OpenGLES | TargetAttributes.IsMobile);
         }
 
         // Which platforms should we display?

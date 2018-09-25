@@ -549,6 +549,10 @@ namespace UnityEditor
 
         internal void Initialize()
         {
+            // initialize the necessary serialized property
+            if (m_HumanBoneArrayProperty == null)
+                m_HumanBoneArrayProperty = serializedObject.FindProperty(sHumanBoneArray);
+
             // Handle human bones
             if (m_Bones == null)
                 m_Bones = AvatarSetupTool.GetHumanBones(m_HumanBoneArrayProperty, modelBones);

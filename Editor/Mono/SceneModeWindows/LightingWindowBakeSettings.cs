@@ -397,11 +397,10 @@ namespace UnityEditor
                         {
                             EditorGUI.BeginChangeCheck();
 
-                            //TODO(RadeonRays) Remove this when GPU lightmapper is public.
-
-                            if (Unsupported.IsDeveloperMode() && (Application.platform == RuntimePlatform.WindowsEditor))
+                            //TODO(RadeonRays): Remove this when GPU lightmapper works on macOS and Linux.
+                            if (Application.platform != RuntimePlatform.WindowsEditor)
                             {
-                                var backendOptions = new[] { "Enlighten", "Progressive CPU", "Progressive GPU (Preview)" };
+                                var backendOptions = new[] { "Enlighten", "Progressive CPU" };
                                 m_BakeBackend.intValue = EditorGUILayout.Popup(Styles.BakeBackend, m_BakeBackend.intValue, backendOptions);
                             }
                             else

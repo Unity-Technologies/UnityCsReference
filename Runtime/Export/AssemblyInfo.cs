@@ -27,7 +27,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.Timeline")] // for Driven Properties
 [assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
-[assembly: InternalsVisibleTo("UnityEditor.GoogleAudioSpatializer")]
+[assembly: InternalsVisibleTo("com.unity.editor.resources-testable")]
 
 // Required for the type forwarder UnityEngine.dll
 [assembly: InternalsVisibleTo("UnityEngine")]
@@ -41,7 +41,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.Purchasing")]
 [assembly: InternalsVisibleTo("UnityEngine.Timeline")]
 [assembly: InternalsVisibleTo("UnityEngine.TestRunner")]
-[assembly: InternalsVisibleTo("UnityEngine.GoogleAudioSpatializer")]
 [assembly: InternalsVisibleTo("Unity.Automation")]
 [assembly: InternalsVisibleTo("Unity.Burst")]
 [assembly: InternalsVisibleTo("Unity.Burst.Editor")]

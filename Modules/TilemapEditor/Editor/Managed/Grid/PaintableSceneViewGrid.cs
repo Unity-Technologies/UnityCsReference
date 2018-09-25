@@ -18,6 +18,7 @@ namespace UnityEditor
         private Grid grid { get { return brushTarget != null ? brushTarget.GetComponentInParent<Grid>() : (Selection.activeGameObject != null ? Selection.activeGameObject.GetComponentInParent<Grid>() : null); } }
         private GridBrushBase gridBrush { get { return GridPaintingState.gridBrush; } }
         private SceneView activeSceneView = null;
+        private int sceneViewTransformHash;
 
         GameObject brushTarget
         {
@@ -64,7 +65,12 @@ namespace UnityEditor
 
         public void OnSceneGUI(SceneView sceneView)
         {
-            UpdateMouseGridPosition();
+            HandleMouseEnterLeave(sceneView);
+
+            // Case 1077400: SceneView camera transform changes may update the mouse grid position even though the mouse position has not changed
+            var currentSceneViewTransformHash = sceneView.camera.transform.localToWorldMatrix.GetHashCode();
+            UpdateMouseGridPosition(currentSceneViewTransformHash == sceneViewTransformHash);
+            sceneViewTransformHash = currentSceneViewTransformHash;
 
             var dot = 1.0f;
             var gridView = GetGridView();
@@ -88,7 +94,6 @@ namespace UnityEditor
                         EditorGUIUtility.AddCursorRect(GetSceneViewPositionRect(sceneView), MouseCursor.CustomCursor);
                 }
             }
-            HandleMouseEnterLeave(sceneView);
         }
 
         private void HandleMouseEnterLeave(SceneView sceneView)
@@ -132,6 +137,7 @@ namespace UnityEditor
                 GridPaintingState.activeBrushEditor.OnMouseEnter();
             GridPaintingState.activeGrid = this;
             activeSceneView = sceneView;
+            ResetPreviousMousePositionToCurrentPosition();
         }
 
         private void OnMouseLeave(SceneView sceneView)

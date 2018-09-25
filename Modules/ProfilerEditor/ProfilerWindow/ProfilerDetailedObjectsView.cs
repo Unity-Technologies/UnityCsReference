@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
-using UnityEditorInternal.Profiling;
+using UnityEditor.Profiling;
 using UnityEngine;
 
 namespace UnityEditorInternal.Profiling
@@ -178,10 +178,22 @@ namespace UnityEditorInternal.Profiling
             if (m_Initialized)
                 return;
 
-            var cpuDetailColumns = new[] { ProfilerColumn.ObjectName, ProfilerColumn.TotalPercent, ProfilerColumn.GCMemory, ProfilerColumn.TotalTime };
-            var gpuDetailColumns = new[] { ProfilerColumn.ObjectName, ProfilerColumn.TotalGPUPercent, ProfilerColumn.DrawCalls, ProfilerColumn.TotalGPUTime };
+            var cpuDetailColumns = new[]
+            {
+                HierarchyFrameDataView.columnObjectName,
+                HierarchyFrameDataView.columnTotalPercent,
+                HierarchyFrameDataView.columnGcMemory,
+                HierarchyFrameDataView.columnTotalTime
+            };
+            var gpuDetailColumns = new[]
+            {
+                HierarchyFrameDataView.columnObjectName,
+                HierarchyFrameDataView.columnTotalGpuPercent,
+                HierarchyFrameDataView.columnDrawCalls,
+                HierarchyFrameDataView.columnTotalGpuTime
+            };
             var profilerColumns = gpuView ? gpuDetailColumns : cpuDetailColumns;
-            var defaultSortColumn = gpuView ? ProfilerColumn.TotalGPUTime : ProfilerColumn.TotalTime;
+            var defaultSortColumn = gpuView ? HierarchyFrameDataView.columnTotalGpuTime : HierarchyFrameDataView.columnTotalTime;
 
             var columns = ProfilerFrameDataHierarchyView.CreateColumns(profilerColumns);
             var headerState = ProfilerFrameDataHierarchyView.CreateDefaultMultiColumnHeaderState(columns, defaultSortColumn);
@@ -209,9 +221,9 @@ namespace UnityEditorInternal.Profiling
             m_Initialized = true;
         }
 
-        public void DoGUI(GUIStyle headerStyle, FrameDataView frameDataView, IList<int> selection)
+        public void DoGUI(GUIStyle headerStyle, HierarchyFrameDataView frameDataView, IList<int> selection)
         {
-            if (frameDataView == null || !frameDataView.IsValid() || selection.Count == 0)
+            if (frameDataView == null || !frameDataView.valid || selection.Count == 0)
             {
                 DrawEmptyPane(headerStyle);
                 return;
@@ -252,7 +264,7 @@ namespace UnityEditorInternal.Profiling
             }
         }
 
-        void UpdateIfNeeded(FrameDataView frameDataView, int selectedId)
+        void UpdateIfNeeded(HierarchyFrameDataView frameDataView, int selectedId)
         {
             var needReload = m_SelectedID != selectedId || !Equals(m_FrameDataView, frameDataView);
             if (!needReload)
@@ -262,16 +274,17 @@ namespace UnityEditorInternal.Profiling
             m_SelectedID = selectedId;
             m_TreeView.SetSelection(new List<int>());
 
-            var samplesCount = m_FrameDataView.GetItemSamplesCount(selectedId);
+            var samplesCount = m_FrameDataView.GetItemMergedSamplesCount(selectedId);
             var columnsCount = m_MultiColumnHeader.columns.Length;
 
             var objectsData = new List<ObjectInformation>();
-            var objectsDatas = new string[columnsCount][];
+            var objectsDatas = new List<string>[columnsCount];
 
             // Collect all the data
-            var instanceIDs = m_FrameDataView.GetItemInstanceIDs(selectedId);
+            var instanceIDs = new List<int>();
+            m_FrameDataView.GetItemMergedSamplesInstanceID(selectedId, instanceIDs);
             for (var i = 0; i < columnsCount; i++)
-                objectsDatas[i] = m_FrameDataView.GetItemColumnDatas(selectedId, m_MultiColumnHeader.columns[i].profilerColumn);
+                m_FrameDataView.GetItemMergedSamplesColumnData(selectedId, m_MultiColumnHeader.columns[i].profilerColumn, objectsDatas[i]);
 
             // Store it per sample
             for (var i = 0; i < samplesCount; i++)
@@ -279,9 +292,9 @@ namespace UnityEditorInternal.Profiling
                 var objData = new ObjectInformation() { columnStrings = new string[columnsCount] };
                 objData.id = selectedId;
 
-                objData.instanceId = (i < instanceIDs.Length) ? instanceIDs[i] : 0;
+                objData.instanceId = (i < instanceIDs.Count) ? instanceIDs[i] : 0;
                 for (var j = 0; j < columnsCount; j++)
-                    objData.columnStrings[j] = (i < objectsDatas[j].Length) ? objectsDatas[j][i] : string.Empty;
+                    objData.columnStrings[j] = (i < objectsDatas[j].Count) ? objectsDatas[j][i] : string.Empty;
 
                 objectsData.Add(objData);
             }

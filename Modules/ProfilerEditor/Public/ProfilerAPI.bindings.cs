@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEditor.Profiling;
 using UnityEngine.Bindings;
 using UnityEngine.Profiling;
 using UnityEngine.Scripting;
@@ -194,6 +195,11 @@ namespace UnityEditorInternal
         [StaticAccessor("profiling::GetProfilerSessionPtr()->GetProfilerHistory()", StaticAccessorType.Arrow)]
         [NativeMethod("GetStatisticsValuesBatch")]
         static public extern void GetStatisticsValues(int identifier, int firstFrame, float scale, [Out] float[] buffer, out float maxValue);
+
+        static public HierarchyFrameDataView GetHierarchyFrameDataView(int frameIndex, int threadIndex, HierarchyFrameDataView.ViewModes viewMode, int sortColumn, bool sortAscending)
+        {
+            return new HierarchyFrameDataView(frameIndex, threadIndex, viewMode, sortColumn, sortAscending);
+        }
 
         [Obsolete("ResetHistory is deprecated, use ClearAllFrames instead.")]
         static public void ResetHistory()

@@ -121,7 +121,7 @@ namespace UnityEditor
             if (evt.type == EventType.Repaint)
             {
                 GUIContent buttonContent = EditorGUI.showMixedValue ? EditorGUI.mixedValueContent : EditorGUIUtility.TempContent(buttonText);
-                style.Draw(position, buttonContent, controlID, false);
+                style.Draw(position, buttonContent, controlID, false, position.Contains(evt.mousePosition));
             }
             else if ((evt.type == EventType.MouseDown && position.Contains(evt.mousePosition)) || evt.MainActionKeyForControl(controlID))
             {

@@ -40,40 +40,30 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="Mono.Posix" >
+      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Mono.Posix.dll</HintPath>
+    </Reference>
     <Reference Include="Boo.Lang" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\Boo.Lang.dll</HintPath>
+      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Boo.Lang.dll</HintPath>
     </Reference>
     <Reference Include="Boo.Lang.Parser" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\Boo.Lang.Parser.dll</HintPath>
+      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Boo.Lang.Parser.dll</HintPath>
     </Reference>
     <Reference Include="Boo.Lang.Compiler" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\Boo.Lang.Compiler.dll</HintPath>
+      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\Boo.Lang.Compiler.dll</HintPath>
     </Reference>
     <Reference Include="UnityScript" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\UnityScript.dll</HintPath>
+      <HintPath>..\..\External\MonoBleedingEdge\builds\monodistribution\lib\mono\2.0-api\UnityScript.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Cecil" >
       <HintPath>..\..\External\Unity.Cecil\builds\lib\net35\Unity.Cecil.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Legacy.NRefactory" >
       <HintPath>..\..\External\NRefactory\builds\3.2.1\net35\Unity.Legacy.NRefactory.dll</HintPath>
-    </Reference>
-    <Reference Include="Mono.Posix" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\Mono.Posix.dll</HintPath>
-    </Reference>
-    <Reference Include="System" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\System.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Core" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\System.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\System.Xml.dll</HintPath>
-    </Reference>
-    <Reference Include="System.Xml.Linq" >
-      <HintPath>..\..\External\Mono\builds\monodistribution\lib\mono\2.0\System.Xml.Linq.dll</HintPath>
     </Reference>
     <Reference Include="ExCSS.Unity" >
       <HintPath>..\..\External\ExCSS\builds\builds\lib\net35\ExCSS.Unity.dll</HintPath>
@@ -167,6 +157,9 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\BuildTarget.cs">
     <Link>Editor\Mono\BuildTarget.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Editor\Mono\BuildTargetDiscovery.bindings.cs">
+    <Link>Editor\Mono\BuildTargetDiscovery.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\BuildTargetGroup.cs">
     <Link>Editor\Mono\BuildTargetGroup.cs</Link>
@@ -2013,20 +2006,11 @@
   <Compile Include="..\..\Editor\Mono\Inspector\AudioEchoFilterInspector.cs">
     <Link>Editor\Mono\Inspector\AudioEchoFilterInspector.cs</Link>
   </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\AudioExtensionEditor.cs">
-    <Link>Editor\Mono\Inspector\AudioExtensionEditor.cs</Link>
-  </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\AudioFilterGUI.cs">
     <Link>Editor\Mono\Inspector\AudioFilterGUI.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\AudioHighPassFIlterInspector.cs">
     <Link>Editor\Mono\Inspector\AudioHighPassFIlterInspector.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\AudioListenerExtensionEditor.cs">
-    <Link>Editor\Mono\Inspector\AudioListenerExtensionEditor.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\AudioListenerInspector.cs">
-    <Link>Editor\Mono\Inspector\AudioListenerInspector.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\AudioLowPassFilterInspector.cs">
     <Link>Editor\Mono\Inspector\AudioLowPassFilterInspector.cs</Link>
@@ -2045,9 +2029,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\AudioReverbZoneEditor.cs">
     <Link>Editor\Mono\Inspector\AudioReverbZoneEditor.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\Inspector\AudioSourceExtensionEditor.cs">
-    <Link>Editor\Mono\Inspector\AudioSourceExtensionEditor.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\Inspector\AudioSourceInspector.cs">
     <Link>Editor\Mono\Inspector\AudioSourceInspector.cs</Link>
@@ -4431,8 +4412,14 @@
   <Compile Include="..\..\Modules\RestService\ScriptEditorSettings.cs">
     <Link>Modules\RestService\ScriptEditorSettings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\BindingValidator.cs">
+    <Link>Modules\ShortcutManagerEditor\BindingValidator.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ConflictResolver.cs">
     <Link>Modules\ShortcutManagerEditor\ConflictResolver.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ConflictResolverWindow.cs">
+    <Link>Modules\ShortcutManagerEditor\ConflictResolverWindow.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ContextManager.cs">
     <Link>Modules\ShortcutManagerEditor\ContextManager.cs</Link>
@@ -4443,11 +4430,8 @@
   <Compile Include="..\..\Modules\ShortcutManagerEditor\Discovery.cs">
     <Link>Modules\ShortcutManagerEditor\Discovery.cs</Link>
   </Compile>
-  <Compile Include="..\..\Modules\ShortcutManagerEditor\DiscoveryIdentifierConflictHandler.cs">
-    <Link>Modules\ShortcutManagerEditor\DiscoveryIdentifierConflictHandler.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Modules\ShortcutManagerEditor\DiscoveryInvalidContextReporter.cs">
-    <Link>Modules\ShortcutManagerEditor\DiscoveryInvalidContextReporter.cs</Link>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\DiscoveryInvalidShortcutReporter.cs">
+    <Link>Modules\ShortcutManagerEditor\DiscoveryInvalidShortcutReporter.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs">
     <Link>Modules\ShortcutManagerEditor\FormerlyPrefKeyAsAttribute.cs</Link>
@@ -4807,7 +4791,7 @@
       <Project>{F0499708-3EB6-4026-8362-97E6FFC4E7C8}</Project>
       <Name>UnityEngine</Name>
     </ProjectReference>
-    <ProjectReference Include="..\..\Tools\PackageManager\DataContract\DataContract.csproj" >
+    <ProjectReference Include="..\..\Tools\PackageManager\DataContract\Unity.DataContract.gen.csproj" >
       <Project>{A15E35A9-22E8-4A79-B6CE-C0984062DAC6}</Project>
       <Name>Unity.DataContract</Name>
     </ProjectReference>

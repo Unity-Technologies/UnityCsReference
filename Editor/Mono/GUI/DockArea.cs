@@ -21,9 +21,7 @@ namespace UnityEditor
     {
         private static class Styles
         {
-            public static readonly GUIContent closeIcon = new GUIContent(EditorGUIUtility.IconContent("LookDevClose"));
             public static readonly StyleBlock tabHighlight = EditorResources.GetStyle("tab-highlight");
-            public static readonly StyleBlock tabCloseButton = EditorResources.GetStyle("tab-close-button");
 
             private static readonly StyleBlock tab = EditorResources.GetStyle("tab");
             public static readonly float tabMinWidth = tab.GetFloat(StyleKeyword.minWidth, 50.0f);
@@ -82,14 +80,16 @@ namespace UnityEditor
         public int selected
         {
             get { return m_Selected; }
-            set
-            {
-                if (m_Selected != value)
-                    m_LastSelected = m_Selected;
-                m_Selected = value;
-                if (m_Selected >= 0 && m_Selected < m_Panes.Count)
-                    actualView = m_Panes[m_Selected];
-            }
+            set { SetSelectedPrivate(value, sendEvents: true); }
+        }
+
+        private void SetSelectedPrivate(int value, bool sendEvents)
+        {
+            if (m_Selected != value)
+                m_LastSelected = m_Selected;
+            m_Selected = value;
+            if (m_Selected >= 0 && m_Selected < m_Panes.Count)
+                SetActualViewInternal(m_Panes[m_Selected], sendEvents);
         }
 
         public DockArea()
@@ -173,16 +173,16 @@ namespace UnityEditor
             style.positionType = PositionType.Absolute;
         }
 
-        public void AddTab(EditorWindow pane)
+        public void AddTab(EditorWindow pane, bool sendPaneEvents = true)
         {
-            AddTab(m_Panes.Count, pane);
+            AddTab(m_Panes.Count, pane, sendPaneEvents);
         }
 
-        public void AddTab(int idx, EditorWindow pane)
+        public void AddTab(int idx, EditorWindow pane, bool sendPaneEvents = true)
         {
-            DeregisterSelectedPane(true);
+            DeregisterSelectedPane(clearActualView: true, sendEvents: true);
             m_Panes.Insert(idx, pane);
-            selected = idx;
+            SetSelectedPrivate(idx, sendPaneEvents);
             s_GUIContents.Clear();
 
             var sp = parent as SplitView;
@@ -192,11 +192,11 @@ namespace UnityEditor
             Repaint();
         }
 
-        public void RemoveTab(EditorWindow pane) { RemoveTab(pane, true); }
-        public void RemoveTab(EditorWindow pane, bool killIfEmpty)
+        public void RemoveTab(EditorWindow pane) { RemoveTab(pane, killIfEmpty: true); }
+        public void RemoveTab(EditorWindow pane, bool killIfEmpty, bool sendEvents = true)
         {
             if (actualView == pane)
-                DeregisterSelectedPane(true);
+                DeregisterSelectedPane(clearActualView: true, sendEvents: sendEvents);
             int idx = m_Panes.IndexOf(pane);
             if (idx == -1)
                 return; // Pane is not in the window
@@ -222,7 +222,7 @@ namespace UnityEditor
             pane.m_Parent = null;
             if (killIfEmpty)
                 KillIfEmpty();
-            RegisterSelectedPane();
+            RegisterSelectedPane(sendEvents: true);
         }
 
         private void KillIfEmpty()
@@ -279,9 +279,10 @@ namespace UnityEditor
 
         public bool PerformDrop(EditorWindow w, DropInfo info, Vector2 screenPos)
         {
-            s_OriginalDragSource.RemoveTab(w, s_OriginalDragSource != this);
+            // Don't send focus events to the tab being moved
+            s_OriginalDragSource.RemoveTab(w, killIfEmpty: s_OriginalDragSource != this, sendEvents: false);
             int tabInsertIndex = s_PlaceholderPos == -1 || s_PlaceholderPos > m_Panes.Count ? m_Panes.Count : s_PlaceholderPos;
-            AddTab(tabInsertIndex, w);
+            AddTab(tabInsertIndex, w, sendPaneEvents: false);
             selected = tabInsertIndex;
             return true;
         }
@@ -891,7 +892,9 @@ namespace UnityEditor
 
                                 ResetDragVars();
 
-                                RemoveTab(w);
+                                // The active tab that we're moving to the new window stays focused at all times.
+                                // Do not remove focus from the tab being detached.
+                                RemoveTab(w, killIfEmpty: true, sendEvents: false);
                                 Rect wPos = w.position;
                                 wPos.x = screenMousePos.x - wPos.width * .5f;
                                 wPos.y = screenMousePos.y - wPos.height * .5f;
@@ -900,7 +903,8 @@ namespace UnityEditor
                                 if (Application.platform == RuntimePlatform.WindowsEditor)
                                     wPos.y = Mathf.Max(InternalEditorUtility.GetBoundsOfDesktopAtPoint(screenMousePos).y, wPos.y);
 
-                                EditorWindow.CreateNewWindowForEditorWindow(w, false, false);
+                                // Don't call OnFocus on the tab when it is moved to the new window
+                                EditorWindow.CreateNewWindowForEditorWindow(w, loadPosition: false, showImmediately: false, setFocus: false);
 
                                 w.position = w.m_Parent.window.FitWindowRectToScreen(wPos, true, true);
 
@@ -909,10 +913,7 @@ namespace UnityEditor
                             }
                             ResetDragVars();
                         }
-                        else
-                        {
-                            HandleTabCloseButton(tabStyle, tabAreaRect, Event.current.mousePosition, scrollOffset);
-                        }
+
                         GUIUtility.hotControl = 0;
                         evt.Use();
                     }
@@ -994,38 +995,8 @@ namespace UnityEditor
             hotTabContentRect.xMin += 2f;
             hotTabContentRect.xMax -= 2f;
             MarkHotRegion(GUIClip.UnclipToWindow(hotTabContentRect));
-            DrawCloseButton(tabContentRect);
 
             return tabWidth;
-        }
-
-        private void HandleTabCloseButton(GUIStyle tabStyle, Rect dockAreaRect, Vector2 mousePos, float scrollOffset)
-        {
-            Rect tabRect = Rect.zero;
-            int tabIndex = GetTabAtMousePos(tabStyle, mousePos, dockAreaRect, scrollOffset, ref tabRect);
-            if (tabIndex == -1)
-                return;
-
-            if (GetTabCloseButtonRect(tabRect).Contains(mousePos))
-                Close(m_Panes[tabIndex]);
-        }
-
-        private Rect GetTabCloseButtonRect(Rect tabContentRect)
-        {
-            float buttonSize = Styles.tabCloseButton.GetFloat(StyleKeyword.width);
-            float buttonRightMargin = Styles.tabCloseButton.GetFloat(StyleKeyword.marginRight);
-            float buttonBottomMargin = Styles.tabCloseButton.GetFloat(StyleKeyword.marginBottom);
-            float buttonTop = tabContentRect.yMax - buttonBottomMargin - buttonSize;
-            float buttonLeft = tabContentRect.xMax - buttonSize - buttonRightMargin;
-            return new Rect(buttonLeft, buttonTop, buttonSize, buttonSize);
-        }
-
-        private void DrawCloseButton(Rect tabContentRect)
-        {
-            if (s_DragMode != 0 || !tabContentRect.Contains(Event.current.mousePosition))
-                return;
-            var closeButtonRect = GetTabCloseButtonRect(tabContentRect);
-            GUI.DrawTexture(closeButtonRect, Styles.closeIcon.image, ScaleMode.ScaleToFit);
         }
 
         private void DrawTabHighlight(Rect tabHighlightRect)

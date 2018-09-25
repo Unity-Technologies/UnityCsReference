@@ -114,9 +114,7 @@ namespace UnityEngine.Experimental.UIElements
             {
                 rect = GUIUtility.AlignRectToDevice(ve.rect),
                 uv = new Rect(0, 0, 1, 1),
-                // When the background color is not clear, we have to embed it into the texture...
-                //  whereas if the color is clear, the white color is used...
-                color = (style.backgroundColor != Color.clear) ? (Color)style.backgroundColor : (Color)Color.white,
+                color = (Color)Color.white,
                 texture = style.backgroundImage,
                 scaleMode = style.backgroundScaleMode,
                 sliceLeft = style.sliceLeft,
@@ -124,6 +122,7 @@ namespace UnityEngine.Experimental.UIElements
                 sliceRight = style.sliceRight,
                 sliceBottom = style.sliceBottom
             };
+
             BorderParameters.SetFromStyle(ref painterParams.border, style);
             return painterParams;
         }

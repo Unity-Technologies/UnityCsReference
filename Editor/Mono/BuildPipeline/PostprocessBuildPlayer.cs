@@ -137,14 +137,7 @@ namespace UnityEditor
                 return postprocessor.SupportsInstallInBuildFolder();
             }
 
-            switch (target)
-            {
-                case BuildTarget.Android:
-                case BuildTarget.WSAPlayer:
-                    return true;
-                default:
-                    return false;
-            }
+            return false;
         }
 
         static public bool SupportsLz4Compression(BuildTargetGroup targetGroup, BuildTarget target)

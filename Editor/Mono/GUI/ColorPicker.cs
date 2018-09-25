@@ -472,7 +472,7 @@ namespace UnityEditor
             public static readonly GUIStyle currentColorSwatch = "ColorPickerCurrentColor";
             public static readonly GUIStyle colorBoxThumb = "ColorPicker2DThumb";
             public static readonly GUIStyle hueDialBackground = "ColorPickerHueRing";
-            public static readonly GUIStyle hueDialBackgroundHDR = "ColorPickerHueRing-HDR";
+            public static readonly GUIStyle hueDialBackgroundHDR = "ColorPickerHueRing HDR";
             public static readonly GUIStyle hueDialThumb = "ColorPickerHueRingThumb";
             public static readonly GUIStyle sliderBackground = "ColorPickerSliderBackground";
             public static readonly GUIStyle sliderThumb = "ColorPickerHorizThumb";
@@ -1257,7 +1257,7 @@ namespace UnityEditor
             win.title = "EyeDropper";
             win.hideFlags = HideFlags.DontSave;
             win.rootView = instance;
-            win.Show(ShowMode.PopupMenu, true, false);
+            win.Show(ShowMode.PopupMenu, loadPosition: true, displayImmediately: false, setFocus: true);
             instance.AddToAuxWindowList();
             win.SetInvisible();
             instance.SetMinMaxSizes(new Vector2(0, 0), new Vector2(kDummyWindowSize, kDummyWindowSize));

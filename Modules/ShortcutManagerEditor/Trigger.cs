@@ -116,7 +116,7 @@ namespace UnityEditor.ShortcutManagement
                                 break;
                             case ShortcutType.Menu:
                                 args.state = ShortcutState.End;
-                                EditorApplication.ExecuteMenuItem(shortcutEntry.identifier.path);
+                                shortcutEntry.action(args);
                                 evt.Use();
                                 Reset();
                                 break;

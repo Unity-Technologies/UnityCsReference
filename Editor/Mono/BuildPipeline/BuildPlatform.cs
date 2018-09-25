@@ -5,6 +5,8 @@
 using UnityEditor;
 using UnityEngine;
 using System.Collections.Generic;
+using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor.Build
 {
@@ -18,13 +20,14 @@ namespace UnityEditor.Build
         public BuildTargetGroup targetGroup;
         public bool forceShowTarget;
         public string tooltip;
+        public BuildTarget defaultTarget;
 
-        public BuildPlatform(string locTitle, string iconId, BuildTargetGroup targetGroup, bool forceShowTarget)
-            : this(locTitle, "", iconId, targetGroup, forceShowTarget)
+        public BuildPlatform(string locTitle, string iconId, BuildTargetGroup targetGroup, BuildTarget defaultTarget, bool forceShowTarget)
+            : this(locTitle, "", iconId, targetGroup, defaultTarget, forceShowTarget)
         {
         }
 
-        public BuildPlatform(string locTitle, string tooltip, string iconId, BuildTargetGroup targetGroup, bool forceShowTarget)
+        public BuildPlatform(string locTitle, string tooltip, string iconId, BuildTargetGroup targetGroup, BuildTarget defaultTarget, bool forceShowTarget)
         {
             this.targetGroup = targetGroup;
             name = targetGroup != BuildTargetGroup.Unknown ? BuildPipeline.GetBuildTargetGroupName(defaultTarget) : "";
@@ -32,41 +35,7 @@ namespace UnityEditor.Build
             smallIcon = EditorGUIUtility.IconContent(iconId + ".Small").image as Texture2D;
             this.tooltip = tooltip;
             this.forceShowTarget = forceShowTarget;
-        }
-
-        // ADD_NEW_PLATFORM_HERE
-        public BuildTarget defaultTarget
-        {
-            get
-            {
-                switch (targetGroup)
-                {
-                    case BuildTargetGroup.Standalone:
-                        return BuildTarget.StandaloneWindows;
-                    case BuildTargetGroup.iOS:
-                        return BuildTarget.iOS;
-                    case BuildTargetGroup.tvOS:
-                        return BuildTarget.tvOS;
-                    case BuildTargetGroup.PS4:
-                        return BuildTarget.PS4;
-                    case BuildTargetGroup.XboxOne:
-                        return BuildTarget.XboxOne;
-                    case BuildTargetGroup.Android:
-                        return BuildTarget.Android;
-                    case BuildTargetGroup.Switch:
-                        return BuildTarget.Switch;
-                    case BuildTargetGroup.WebGL:
-                        return BuildTarget.WebGL;
-                    case BuildTargetGroup.WSA:
-                        return BuildTarget.WSAPlayer;
-                    case BuildTargetGroup.Facebook:
-                        return BuildTarget.StandaloneWindows64;
-                    case BuildTargetGroup.Lumin:
-                        return BuildTarget.Lumin;
-                    default:
-                        return (BuildTarget)(-1);
-                }
-            }
+            this.defaultTarget = defaultTarget;
         }
     };
 
@@ -84,27 +53,32 @@ namespace UnityEditor.Build
 
         internal BuildPlatforms()
         {
-            // This is pretty brittle, notLicensedMessages and buildTargetNotInstalled below must match the order here
-            // and since NaCl isn't listed in the build settings like the other platforms you must not add anything after it, if it
-            // must also be added in the license/notinstalled arrays.
-            // ADD_NEW_PLATFORM_HERE
             List<BuildPlatform> buildPlatformsList = new List<BuildPlatform>();
-            buildPlatformsList.Add(new BuildPlatform("PC, Mac & Linux Standalone", "BuildSettings.Standalone", BuildTargetGroup.Standalone, true));
-            buildPlatformsList.Add(new BuildPlatform("iOS", "BuildSettings.iPhone", BuildTargetGroup.iOS, true));
-            // TVOS TODO change the icon when it's ready
-            buildPlatformsList.Add(new BuildPlatform("tvOS", "BuildSettings.tvOS", BuildTargetGroup.tvOS, true));
-            buildPlatformsList.Add(new BuildPlatform("Android", "BuildSettings.Android", BuildTargetGroup.Android, true));
-            buildPlatformsList.Add(new BuildPlatform("Xbox One", "BuildSettings.XboxOne", BuildTargetGroup.XboxOne, true));
-            buildPlatformsList.Add(new BuildPlatform("PS4", "BuildSettings.PS4", BuildTargetGroup.PS4, true));
-            buildPlatformsList.Add(new BuildPlatform("Universal Windows Platform", "BuildSettings.Metro", BuildTargetGroup.WSA, true));
-            buildPlatformsList.Add(new BuildPlatform("WebGL", "BuildSettings.WebGL", BuildTargetGroup.WebGL, true));
-            buildPlatformsList.Add(new BuildPlatform("Facebook", "BuildSettings.Facebook", BuildTargetGroup.Facebook, true));
-            buildPlatformsList.Add(new BuildPlatform("Nintendo Switch", "BuildSettings.Switch", BuildTargetGroup.Switch, false));
-            buildPlatformsList.Add(new BuildPlatform("Lumin", "BuildSettings.Lumin", BuildTargetGroup.Lumin, false));
+            DiscoveredTargetInfo[] buildTargets = BuildTargetDiscovery.GetBuildTargetInfoList();
+
+            // Standalone needs to be first
+            buildPlatformsList.Add(new BuildPlatform(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Standalone), "BuildSettings.Standalone", BuildTargetGroup.Standalone, BuildTarget.StandaloneWindows, true));
+
+            foreach (var target in buildTargets)
+            {
+                if (!target.HasFlag(TargetAttributes.IsStandalonePlatform))
+                {
+                    BuildTargetGroup btg = BuildPipeline.GetBuildTargetGroup(target.buildTgtPlatformVal);
+                    buildPlatformsList.Add(new BuildPlatform(
+                        BuildPipeline.GetBuildTargetGroupDisplayName(btg),
+                        target.iconName,
+                        btg,
+                        target.buildTgtPlatformVal,
+                        !target.HasFlag(TargetAttributes.HideInUI)));
+                }
+            }
+
+            // Facebook is a special case and needs to be added separately
+            buildPlatformsList.Add(new BuildPlatform(BuildPipeline.GetBuildTargetGroupDisplayName(BuildTargetGroup.Facebook), "BuildSettings.Facebook", BuildTargetGroup.Facebook, BuildTarget.StandaloneWindows64, true));
 
             foreach (var buildPlatform in buildPlatformsList)
             {
-                buildPlatform.tooltip = BuildPipeline.GetBuildTargetGroupDisplayName(buildPlatform.targetGroup) + " settings";
+                buildPlatform.tooltip = buildPlatform.title.text + " settings";
             }
 
             buildPlatforms = buildPlatformsList.ToArray();
@@ -152,12 +126,20 @@ namespace UnityEditor.Build
             }
         }
 
-        public int BuildPlatformIndexFromTargetGroup(BuildTargetGroup group)
+        private int BuildPlatformIndexFromTargetGroup(BuildTargetGroup group)
         {
             for (int i = 0; i < buildPlatforms.Length; i++)
                 if (group == buildPlatforms[i].targetGroup)
                     return i;
             return -1;
+        }
+
+        public bool ContainsBuildTarget(BuildTargetGroup group)
+        {
+            if (BuildPlatformIndexFromTargetGroup(group) < 0)
+                return false;
+
+            return true;
         }
 
         public BuildPlatform BuildPlatformFromTargetGroup(BuildTargetGroup group)

@@ -80,6 +80,11 @@ namespace UnityEngine
         // Constructs GUIStyle identical to given other GUIStyle.
         public GUIStyle(GUIStyle other)
         {
+            if (other == null)
+            {
+                Debug.LogError("Copied style is null. Using StyleNotFound instead.");
+                other = GUISkin.error;
+            }
             m_Ptr = Internal_Copy(this, other);
         }
 
@@ -248,6 +253,11 @@ namespace UnityEngine
             Draw(position, content, controlID, false, false, on, false);
         }
 
+        public void Draw(Rect position, GUIContent content, int controlID, bool on, bool hover)
+        {
+            Draw(position, content, controlID, hover, false, on, false);
+        }
+
         private void Draw(Rect position, GUIContent content, int controlId, bool isHover, bool isActive, bool on, bool hasKeyboardFocus)
         {
             if (Event.current.type != EventType.Repaint)
@@ -314,14 +324,9 @@ namespace UnityEngine
             if (cursorFlashSpeed == 0 || cursorFlashRel < .5f)
                 cursorColor = GUI.skin.settings.cursorColor;
 
-            Internal_DrawWithTextSelection(position, content, position.Contains(Event.current.mousePosition), isActive, false,
-                hasKeyboardFocus, drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, selectionColor);
-        }
-
-        internal void DrawWithTextSelection(Rect position, GUIContent content, bool isActive, bool hasKeyboardFocus,
-            int firstSelectedCharacter, int lastSelectedCharacter, bool drawSelectionAsComposition)
-        {
-            DrawWithTextSelection(position, content, isActive, hasKeyboardFocus, firstSelectedCharacter, lastSelectedCharacter, drawSelectionAsComposition, GUI.skin.settings.selectionColor);
+            bool hovered = position.Contains(Event.current.mousePosition);
+            Internal_DrawWithTextSelection(position, content, hovered, isActive, false, hasKeyboardFocus,
+                drawSelectionAsComposition, firstSelectedCharacter, lastSelectedCharacter, cursorColor, selectionColor);
         }
 
         internal void DrawWithTextSelection(Rect position, GUIContent content, int controlID, int firstSelectedCharacter,
@@ -329,7 +334,7 @@ namespace UnityEngine
         {
             DrawWithTextSelection(position, content, controlID == GUIUtility.hotControl,
                 controlID == GUIUtility.keyboardControl && showKeyboardFocus,
-                firstSelectedCharacter, lastSelectedCharacter, drawSelectionAsComposition);
+                firstSelectedCharacter, lastSelectedCharacter, drawSelectionAsComposition, GUI.skin.settings.selectionColor);
         }
 
         // Draw this GUIStyle with selected content.

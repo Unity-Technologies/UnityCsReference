@@ -4,7 +4,7 @@
 
 using UnityEditor.IMGUI.Controls;
 using System.Collections.Generic;
-using UnityEditorInternal.Profiling;
+using UnityEditor.Profiling;
 using System;
 using UnityEditor;
 using UnityEngine;
@@ -21,8 +21,8 @@ namespace UnityEditorInternal
         readonly List<TreeViewItem> m_Rows = new List<TreeViewItem>(1000);
         ProfilerFrameDataMultiColumnHeader m_MultiColumnHeader;
 
-        FrameDataView m_FrameDataView;
-        FrameDataView.MarkerPath? m_SelectedItemMarkerIdPath;
+        HierarchyFrameDataView m_FrameDataView;
+        List<int> m_SelectedItemMarkerIdPath;
         string m_LegacySelectedItemMarkerNamePath;
 
         // Tree of expanded nodes.
@@ -51,7 +51,7 @@ namespace UnityEditorInternal
         public delegate void SearchChangedCallback(string newSearch);
         public event SearchChangedCallback searchChanged;
 
-        public ProfilerColumn sortedProfilerColumn
+        public int sortedProfilerColumn
         {
             get { return m_MultiColumnHeader.sortedProfilerColumn; }
         }
@@ -63,7 +63,7 @@ namespace UnityEditorInternal
 
         class FrameDataTreeViewItem : TreeViewItem
         {
-            FrameDataView m_FrameDataView;
+            HierarchyFrameDataView m_FrameDataView;
             bool m_Initialized;
             string[] m_StringProperties;
             string m_ResolvedCallstack;
@@ -87,18 +87,18 @@ namespace UnityEditorInternal
             {
                 get
                 {
-                    return m_FrameDataView.GetItemSamplesCount(id);
+                    return m_FrameDataView.GetItemMergedSamplesCount(id);
                 }
             }
 
-            public FrameDataTreeViewItem(FrameDataView frameDataView, int id, int depth, TreeViewItem parent)
+            public FrameDataTreeViewItem(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
                 : base(id, depth, parent, null)
             {
                 m_FrameDataView = frameDataView;
                 m_Initialized = false;
             }
 
-            internal void Init(FrameDataView frameDataView, int id, int depth, TreeViewItem parent)
+            internal void Init(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
             {
                 this.id = id;
                 this.depth = depth;
@@ -118,7 +118,7 @@ namespace UnityEditorInternal
                 {
                     var data = m_FrameDataView.GetItemColumnData(id, columns[i].profilerColumn);
                     m_StringProperties[i] = data;
-                    if (columns[i].profilerColumn == ProfilerColumn.FunctionName)
+                    if (columns[i].profilerColumn == HierarchyFrameDataView.columnName)
                         displayName = data;
                 }
 
@@ -133,10 +133,10 @@ namespace UnityEditorInternal
             m_MultiColumnHeader.sortingChanged += OnSortingChanged;
         }
 
-        public void SetFrameDataView(FrameDataView frameDataView)
+        public void SetFrameDataView(HierarchyFrameDataView frameDataView)
         {
             var needReload = !Equals(m_FrameDataView, frameDataView);
-            var needSorting = frameDataView != null && frameDataView.IsValid() &&
+            var needSorting = frameDataView != null && frameDataView.valid &&
                 (frameDataView.sortColumn != m_MultiColumnHeader.sortedProfilerColumn ||
                     frameDataView.sortColumnAscending != m_MultiColumnHeader.sortedProfilerColumnAscending);
 
@@ -185,7 +185,7 @@ namespace UnityEditorInternal
         {
             if (m_ExpandedMarkersHierarchy != null)
                 return;
-            if (m_FrameDataView == null || !m_FrameDataView.IsValid())
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return;
 
             m_ExpandedMarkersHierarchy = new ExpandedMarkerIdHierarchy();
@@ -204,7 +204,7 @@ namespace UnityEditorInternal
 
         private bool PropertyPathMatchesSelectedIDs(string legacyPropertyPath, List<int> selectedIDs)
         {
-            if (m_FrameDataView == null || !m_FrameDataView.IsValid())
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return false;
 
             if (string.IsNullOrEmpty(legacyPropertyPath) || selectedIDs == null || selectedIDs.Count == 0)
@@ -220,13 +220,13 @@ namespace UnityEditorInternal
             if (m_SelectedItemMarkerIdPath != null || m_LegacySelectedItemMarkerNamePath != null)
                 return;
 
-            if (m_FrameDataView == null || !m_FrameDataView.IsValid())
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return;
             var oldSelection = GetSelection();
             if (oldSelection.Count == 0)
                 return;
 
-            m_SelectedItemMarkerIdPath = m_FrameDataView.GetItemMarkerIDPath(oldSelection[0]);
+            m_FrameDataView.GetItemMarkerIDPath(oldSelection[0], m_SelectedItemMarkerIdPath);
         }
 
         void MigrateExpandedState(List<int> newExpandedIds)
@@ -247,7 +247,7 @@ namespace UnityEditorInternal
             bool selectedItemsPathIsExpanded = true;
             if (m_SelectedItemMarkerIdPath != null)
             {
-                foreach (var marker in m_SelectedItemMarkerIdPath.Value.markerIds)
+                foreach (var marker in m_SelectedItemMarkerIdPath)
                 {
                     if (m_FrameDataView.HasItemChildren(newSelectedId))
                     {
@@ -281,7 +281,7 @@ namespace UnityEditorInternal
                         m_FrameDataView.GetItemChildren(newSelectedId, m_ReusableChildrenIds);
                         foreach (var childId in m_ReusableChildrenIds)
                         {
-                            if (markerName == m_FrameDataView.GetItemFunctionName(childId))
+                            if (markerName == m_FrameDataView.GetItemName(childId))
                             {
                                 // check if the parent is expanded
                                 if (!IsExpanded(newSelectedId))
@@ -298,7 +298,7 @@ namespace UnityEditorInternal
                         break;
                 }
 
-                m_SelectedItemMarkerIdPath = new FrameDataView.MarkerPath(markerIdPath);
+                m_SelectedItemMarkerIdPath = markerIdPath;
                 m_LegacySelectedItemMarkerNamePath = null;
             }
 
@@ -315,16 +315,20 @@ namespace UnityEditorInternal
 
         public IList<int> GetSelectedInstanceIds()
         {
-            if (m_FrameDataView == null || !m_FrameDataView.IsValid())
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return null;
             var selection = GetSelection();
             if (selection == null || selection.Count == 0)
                 return null;
 
+            var allInstanceIds = new List<int>();
             var instanceIds = new List<int>();
             foreach (var selectedId in selection)
-                instanceIds.AddRange(m_FrameDataView.GetItemInstanceIDs(selectedId));
-            return instanceIds;
+            {
+                m_FrameDataView.GetItemMergedSamplesInstanceID(selectedId, instanceIds);
+                allInstanceIds.AddRange(instanceIds);
+            }
+            return allInstanceIds;
         }
 
         public void Clear()
@@ -356,7 +360,7 @@ namespace UnityEditorInternal
                 m_RowsPool.AddRange(m_Rows);
             m_Rows.Clear();
 
-            if (m_FrameDataView == null || !m_FrameDataView.IsValid())
+            if (m_FrameDataView == null || !m_FrameDataView.valid)
                 return m_Rows;
 
             var newExpandedIds = m_ExpandedMarkersHierarchy == null ? null : new List<int>(state.expandedIDs.Count);
@@ -394,7 +398,7 @@ namespace UnityEditorInternal
                 var current = stack.Pop();
 
                 // Matches search?
-                var functionName = m_FrameDataView.GetItemFunctionName(current);
+                var functionName = m_FrameDataView.GetItemName(current);
                 if (functionName.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     var item = AcquireFrameDataTreeViewItem(m_FrameDataView, current, kItemDepth, searchFromThis);
@@ -428,7 +432,7 @@ namespace UnityEditorInternal
             return node;
         }
 
-        FrameDataTreeViewItem AcquireFrameDataTreeViewItem(FrameDataView frameDataView, int id, int depth, TreeViewItem parent)
+        FrameDataTreeViewItem AcquireFrameDataTreeViewItem(HierarchyFrameDataView frameDataView, int id, int depth, TreeViewItem parent)
         {
             if (m_RowsPool.Count > 0)
             {
@@ -587,7 +591,9 @@ namespace UnityEditorInternal
             if (m_FrameDataView == null)
                 return new List<int>();
 
-            return m_FrameDataView.GetItemAncestors(id);
+            var ancestors = new List<int>();
+            m_FrameDataView.GetItemAncestors(id, ancestors);
+            return ancestors;
         }
 
         protected override IList<int> GetDescendantsThatHaveChildren(int id)
@@ -595,7 +601,9 @@ namespace UnityEditorInternal
             if (m_FrameDataView == null)
                 return new List<int>();
 
-            return m_FrameDataView.GetItemDescendantsThatHaveChildren(id);
+            var children = new List<int>();
+            m_FrameDataView.GetItemDescendantsThatHaveChildren(id, children);
+            return children;
         }
 
         void OnSortingChanged(MultiColumnHeader header)
@@ -663,7 +671,7 @@ namespace UnityEditorInternal
     {
         public struct Column
         {
-            public ProfilerColumn profilerColumn;
+            public int profilerColumn;
             public GUIContent headerLabel;
         }
         Column[] m_Columns;
@@ -673,7 +681,7 @@ namespace UnityEditorInternal
             get { return m_Columns; }
         }
 
-        public ProfilerColumn sortedProfilerColumn
+        public int sortedProfilerColumn
         {
             get { return GetProfilerColumn(sortedColumnIndex); }
         }
@@ -689,7 +697,7 @@ namespace UnityEditorInternal
             m_Columns = columns;
         }
 
-        public int GetMultiColumnHeaderIndex(ProfilerColumn profilerColumn)
+        public int GetMultiColumnHeaderIndex(int profilerColumn)
         {
             for (var i = 0; i < m_Columns.Length; ++i)
             {
@@ -700,7 +708,7 @@ namespace UnityEditorInternal
             return 0;
         }
 
-        public static int GetMultiColumnHeaderIndex(Column[] columns, ProfilerColumn profilerColumn)
+        public static int GetMultiColumnHeaderIndex(Column[] columns, int profilerColumn)
         {
             for (var i = 0; i < columns.Length; ++i)
             {
@@ -711,7 +719,7 @@ namespace UnityEditorInternal
             return 0;
         }
 
-        public ProfilerColumn GetProfilerColumn(int multiColumnHeaderIndex)
+        public int GetProfilerColumn(int multiColumnHeaderIndex)
         {
             return m_Columns[multiColumnHeaderIndex].profilerColumn;
         }

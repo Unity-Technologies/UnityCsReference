@@ -795,7 +795,7 @@ namespace UnityEditor
             set;
         }
 
-        internal static extern bool gcMaxTimeSlice
+        internal static extern bool gcIncremental
         {
             [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
             get;

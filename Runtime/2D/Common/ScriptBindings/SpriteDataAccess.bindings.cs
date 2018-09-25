@@ -185,7 +185,7 @@ namespace UnityEngine.Experimental.U2D
         extern private static SpriteChannelInfo GetBoneWeightsInfo(Sprite sprite);
         unsafe extern private static void SetBoneWeightsData(Sprite sprite, void* src, int count);
 
-        extern private static AtomicSafetyHandle GetSafetyHandle(this Sprite sprite);
+        extern internal static AtomicSafetyHandle GetSafetyHandle(this Sprite sprite);
     }
 
     [NativeHeader("Runtime/2D/Common/SpriteDataAccess.h")]

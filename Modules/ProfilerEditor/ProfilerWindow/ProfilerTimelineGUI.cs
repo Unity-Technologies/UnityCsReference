@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+using UnityEditor.Profiling;
 using UnityEditorInternal.Profiling;
 using Object = UnityEngine.Object;
 using UnityEditor.AnimatedValues;
@@ -684,10 +685,12 @@ namespace UnityEditorInternal
                 var groupThreadCount = groupInfo.threads.Count;
                 foreach (var threadInfo in groupInfo.threads)
                 {
-                    iter.SetRoot(frameIndex, threadInfo.threadIndex);
                     r.y = y;
                     r.height = expanded ? threadInfo.height * scaleForThreadHeight : Math.Max(groupInfo.height / groupThreadCount, k_ThreadMinHeightCollapsed);
+                    if (!r.Overlaps(fullRect))
+                        continue;
 
+                    iter.SetRoot(frameIndex, threadInfo.threadIndex);
                     DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
 
                     // Save the y pos and height of the selected thread each time we draw, since it can change
@@ -1170,11 +1173,11 @@ namespace UnityEditorInternal
             }
         }
 
-        public void DoGUI(FrameDataView frameDataView, float width, float ypos, float height)
+        public void DoGUI(HierarchyFrameDataView frameDataView, float width, float ypos, float height)
         {
             using (m_DoGUIMarker.Auto())
             {
-                if (frameDataView == null || !frameDataView.IsValid())
+                if (frameDataView == null || !frameDataView.valid)
                 {
                     GUILayout.Label(BaseStyles.noData, BaseStyles.label);
                     return;
@@ -1449,7 +1452,7 @@ namespace UnityEditorInternal
             }
         }
 
-        internal void DrawToolbar(FrameDataView frameDataView)
+        internal void DrawToolbar(HierarchyFrameDataView frameDataView)
         {
             if (frameDataView != null)
                 DrawViewTypePopup(ProfilerViewType.Timeline);
@@ -1457,7 +1460,7 @@ namespace UnityEditorInternal
             GUILayout.FlexibleSpace();
 
             if (frameDataView != null)
-                DrawCPUGPUTime(frameDataView.frameTime, frameDataView.frameGpuTime);
+                DrawCPUGPUTime(frameDataView.frameTimeMs, frameDataView.frameGpuTimeMs);
 
             GUILayout.FlexibleSpace();
         }

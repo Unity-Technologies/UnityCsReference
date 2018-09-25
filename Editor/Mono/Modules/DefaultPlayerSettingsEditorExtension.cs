@@ -6,6 +6,7 @@ using System;
 using UnityEngine;
 using UnityEditor;
 using System.Linq;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 namespace UnityEditor.Modules
 {
@@ -112,7 +113,7 @@ namespace UnityEditor.Modules
 
         public virtual void MultithreadedRenderingGUI(BuildTargetGroup targetGroup)
         {
-            if (playerSettingsEditor.IsMobileTarget(targetGroup))
+            if (BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.IsMobile))
             {
                 bool oldValue = PlayerSettings.GetMobileMTRendering(targetGroup);
                 bool newValue = EditorGUILayout.Toggle(MultithreadedRenderingGUITooltip(), oldValue);

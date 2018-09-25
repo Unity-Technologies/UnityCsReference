@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
@@ -11,19 +12,16 @@ namespace UnityEditor.ShortcutManagement
     class Discovery : IDiscovery
     {
         IEnumerable<IDiscoveryShortcutProvider> m_ShortcutProviders;
-        IDiscoveryIdentifierConflictHandler m_IdentifierConflictHandler;
-        IDiscoveryInvalidContextReporter m_InvalidContextReporter;
+        IBindingValidator m_BindingValidator;
+        IDiscoveryInvalidShortcutReporter m_InvalidShortcutReporter;
 
-        public Discovery(IEnumerable<IDiscoveryShortcutProvider> shortcutProviders, IDiscoveryIdentifierConflictHandler identifierConflictHandler, IDiscoveryInvalidContextReporter invalidContextReporter)
+        internal const string k_MainMenuShortcutPrefix = "Main Menu/";
+
+        public Discovery(IEnumerable<IDiscoveryShortcutProvider> shortcutProviders, IBindingValidator bindingValidator, IDiscoveryInvalidShortcutReporter invalidShortcutReporter = null)
         {
             m_ShortcutProviders = shortcutProviders;
-            m_IdentifierConflictHandler = identifierConflictHandler;
-            m_InvalidContextReporter = invalidContextReporter;
-        }
-
-        public Discovery(IEnumerable<IDiscoveryShortcutProvider> shortcutProviders, IDiscoveryIdentifierConflictHandler identifierConflictHandler)
-            : this(shortcutProviders, identifierConflictHandler, null)
-        {
+            m_BindingValidator = bindingValidator;
+            m_InvalidShortcutReporter = invalidShortcutReporter;
         }
 
         public IEnumerable<ShortcutEntry> GetAllShortcuts()
@@ -37,16 +35,34 @@ namespace UnityEditor.ShortcutManagement
                 foreach (var discoveredEntry in shortcuts)
                 {
                     var shortcutEntry = discoveredEntry.GetShortcutEntry();
+
+                    if (shortcutEntry.identifier.path != null && shortcutEntry.type != ShortcutType.Menu && shortcutEntry.identifier.path.StartsWith(k_MainMenuShortcutPrefix))
+                    {
+                        m_InvalidShortcutReporter?.ReportReservedIdentifierPrefixConflict(discoveredEntry, k_MainMenuShortcutPrefix);
+                        continue;
+                    }
+
                     if (identifier2ShortcutEntry.Contains(shortcutEntry.identifier))
                     {
-                        m_IdentifierConflictHandler.IdentifierConflictDetected(discoveredEntry);
+                        m_InvalidShortcutReporter?.ReportIdentifierConflict(discoveredEntry);
                         continue;
                     }
 
                     if (!ValidateContext(discoveredEntry))
                     {
-                        m_InvalidContextReporter?.ReportInvalidContext(discoveredEntry);
+                        m_InvalidShortcutReporter?.ReportInvalidContext(discoveredEntry);
                         continue;
+                    }
+
+                    string invalidBindingMessage;
+                    if (!m_BindingValidator.IsBindingValid(shortcutEntry.combinations, out invalidBindingMessage))
+                    {
+                        m_InvalidShortcutReporter?.ReportInvalidBinding(discoveredEntry, invalidBindingMessage);
+
+                        // Replace invalid binding with empty binding
+                        var emptyBinding = Enumerable.Empty<KeyCombination>();
+                        shortcutEntry = new ShortcutEntry(shortcutEntry.identifier, emptyBinding, shortcutEntry.action,
+                            shortcutEntry.context, shortcutEntry.type);
                     }
 
                     identifier2ShortcutEntry.Add(shortcutEntry.identifier);

@@ -103,12 +103,20 @@ namespace UnityEditor
             }
         }
 
-        protected void UpdateMouseGridPosition()
+        protected void ResetPreviousMousePositionToCurrentPosition()
         {
-            if (Event.current.type == EventType.MouseDrag || Event.current.type == EventType.MouseMove || Event.current.type == EventType.DragUpdated)
-            {
-                m_MouseGridPositionChanged = false;
+            m_PreviousMouseGridPosition = m_MouseGridPosition;
+        }
 
+        protected void UpdateMouseGridPosition(bool forceUpdate = false)
+        {
+            if (Event.current.type == EventType.MouseDrag
+                || Event.current.type == EventType.MouseMove
+                // Case 1075857: Mouse Down when window is not in focus needs to update mouse grid position
+                || Event.current.type == EventType.MouseDown
+                || Event.current.type == EventType.DragUpdated
+                || forceUpdate)
+            {
                 Vector2Int newGridPosition = ScreenToGrid(Event.current.mousePosition);
                 if (newGridPosition != m_MouseGridPosition)
                 {
@@ -118,9 +126,13 @@ namespace UnityEditor
                         newGridPosition.x = m_MouseGridPosition.x + Math.Sign(delta.x) * k_MaxMouseCellDelta;
                     if (Mathf.Abs(delta.y) > k_MaxMouseCellDelta)
                         newGridPosition.y = m_MouseGridPosition.y + Math.Sign(delta.y) * k_MaxMouseCellDelta;
-                    m_PreviousMouseGridPosition = m_MouseGridPosition;
+                    ResetPreviousMousePositionToCurrentPosition();
                     m_MouseGridPosition = newGridPosition;
                     MouseGridPositionChanged();
+                }
+                else if (!forceUpdate)
+                {
+                    m_MouseGridPositionChanged = false;
                 }
             }
         }

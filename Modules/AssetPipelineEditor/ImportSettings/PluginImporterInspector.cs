@@ -228,7 +228,7 @@ namespace UnityEditor
 
             if (m_CompatibleWithEditor > Compatibility.NotCompatible)
             {
-                BuildPlatform editorPlatform = new BuildPlatform("Editor settings", "Editor Settings", "BuildSettings.Editor", BuildTargetGroup.Unknown, true);
+                BuildPlatform editorPlatform = new BuildPlatform("Editor settings", "Editor Settings", "BuildSettings.Editor", BuildTargetGroup.Unknown, BuildTarget.NoTarget, true);
                 editorPlatform.name = BuildPipeline.GetEditorTargetName();
                 filtered.Add(editorPlatform);
             }

@@ -170,29 +170,6 @@ public sealed partial class AudioSettings
         }
     
     
-    [RequiredByNativeCode]
-    internal static void InvokeOnAudioManagerUpdate()
-        {
-            AudioExtensionManager.Update();
-        }
-    
-    
-    [RequiredByNativeCode]
-    internal static void InvokeOnAudioSourcePlay(AudioSource source)
-        {
-            AudioSourceExtension spatializerExtension = AudioExtensionManager.AddSpatializerExtension(source);
-            if (spatializerExtension != null)
-                AudioExtensionManager.GetReadyToPlay(spatializerExtension);
-
-            if ((source.clip != null) && source.clip.ambisonic)
-            {
-                AudioSourceExtension ambisonicExtension = AudioExtensionManager.AddAmbisonicDecoderExtension(source);
-                if (ambisonicExtension != null)
-                    AudioExtensionManager.GetReadyToPlay(ambisonicExtension);
-            }
-        }
-    
-    
     internal extern static bool unityAudioDisabled
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -207,14 +184,6 @@ public sealed partial class AudioSettings
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal static  void SetAmbisonicDecoderPluginName (string name) ;
-
-}
-
-internal sealed partial class AudioExtensionManager
-{
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal static  Object GetAudioListener () ;
 
 }
 
@@ -434,10 +403,6 @@ public partial class AudioBehaviour : Behaviour
 [RequireComponent(typeof(Transform))]
 public sealed partial class AudioListener : AudioBehaviour
 {
-    
-            internal AudioListenerExtension spatializerExtension = null;
-    
-    
     public extern static float volume
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -506,71 +471,6 @@ public static float[] GetSpectrumData(int numSamples, int channel, FFTWindow win
         }
     
     
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal int GetNumExtensionProperties () ;
-
-    internal int GetNumExtensionPropertiesForThisExtension (PropertyName extensionName) {
-        return INTERNAL_CALL_GetNumExtensionPropertiesForThisExtension ( this, ref extensionName );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static int INTERNAL_CALL_GetNumExtensionPropertiesForThisExtension (AudioListener self, ref PropertyName extensionName);
-    internal PropertyName ReadExtensionName (int listenerIndex) {
-        PropertyName result;
-        INTERNAL_CALL_ReadExtensionName ( this, listenerIndex, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_ReadExtensionName (AudioListener self, int listenerIndex, out PropertyName value);
-    internal PropertyName ReadExtensionPropertyName (int listenerIndex) {
-        PropertyName result;
-        INTERNAL_CALL_ReadExtensionPropertyName ( this, listenerIndex, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_ReadExtensionPropertyName (AudioListener self, int listenerIndex, out PropertyName value);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal float ReadExtensionPropertyValue (int listenerIndex) ;
-
-    internal bool ReadExtensionProperty (PropertyName extensionName, PropertyName propertyName, ref float propertyValue) {
-        return INTERNAL_CALL_ReadExtensionProperty ( this, ref extensionName, ref propertyName, ref propertyValue );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_ReadExtensionProperty (AudioListener self, ref PropertyName extensionName, ref PropertyName propertyName, ref float propertyValue);
-    internal void WriteExtensionProperty (PropertyName pluginName, PropertyName extensionName, PropertyName propertyName, float propertyValue) {
-        INTERNAL_CALL_WriteExtensionProperty ( this, ref pluginName, ref extensionName, ref propertyName, propertyValue );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_WriteExtensionProperty (AudioListener self, ref PropertyName pluginName, ref PropertyName extensionName, ref PropertyName propertyName, float propertyValue);
-    internal void ClearExtensionProperties (PropertyName extensionName) {
-        INTERNAL_CALL_ClearExtensionProperties ( this, ref extensionName );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_ClearExtensionProperties (AudioListener self, ref PropertyName extensionName);
-    internal AudioListenerExtension AddExtension(Type extensionType)
-        {
-            if (spatializerExtension == null)
-            {
-                spatializerExtension = ScriptableObject.CreateInstance(extensionType) as AudioListenerExtension;
-            }
-
-            return spatializerExtension;
-        }
-    
-    
 }
 
 public enum FFTWindow
@@ -610,11 +510,6 @@ public enum AudioSourceCurveType
 [RequireComponent(typeof(Transform))]
 public sealed partial class AudioSource : AudioBehaviour
 {
-    
-            internal AudioSourceExtension spatializerExtension = null;
-            internal AudioSourceExtension ambisonicExtension = null;
-    
-    
     public extern float volume
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -771,34 +666,14 @@ public sealed partial class AudioSource : AudioBehaviour
         get;
     }
 
-    [uei.ExcludeFromDocs]
-public void PlayOneShot (AudioClip clip) {
-    float volumeScale = 1.0F;
-    PlayOneShot ( clip, volumeScale );
-}
-
-public void PlayOneShot(AudioClip clip, [uei.DefaultValue("1.0F")]  float volumeScale )
-        {
-            if ((clip != null) && clip.ambisonic)
-            {
-                AudioSourceExtension ambisonicExtension = AudioExtensionManager.AddAmbisonicDecoderExtension(this);
-                if (ambisonicExtension != null)
-                    AudioExtensionManager.GetReadyToPlay(ambisonicExtension);
-            }
-
-            PlayOneShotHelper(clip, volumeScale);
-        }
-
-    
-    
     [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern private void PlayOneShotHelper (AudioClip clip, [uei.DefaultValue("1.0F")]  float volumeScale ) ;
+    extern public void PlayOneShot (AudioClip clip, [uei.DefaultValue("1.0F")]  float volumeScale ) ;
 
     [uei.ExcludeFromDocs]
-    private void PlayOneShotHelper (AudioClip clip) {
+    public void PlayOneShot (AudioClip clip) {
         float volumeScale = 1.0F;
-        PlayOneShotHelper ( clip, volumeScale );
+        PlayOneShot ( clip, volumeScale );
     }
 
     [uei.ExcludeFromDocs]
@@ -892,7 +767,7 @@ public static void PlayClipAtPoint(AudioClip clip, Vector3 position, [uei.Defaul
         set;
     }
 
-    internal extern  bool spatializeInternal
+    public extern bool spatialize
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
@@ -902,28 +777,6 @@ public static void PlayClipAtPoint(AudioClip clip, Vector3 position, [uei.Defaul
         set;
     }
 
-    public bool spatialize
-        {
-            get
-            {
-                return spatializeInternal;
-            }
-            set
-            {
-                if (spatializeInternal != value)
-                {
-                    spatializeInternal = value;
-                    if (value)
-                    {
-                        AudioSourceExtension extension = AudioExtensionManager.AddSpatializerExtension(this);
-                        if ((extension != null) && isPlaying)
-                            AudioExtensionManager.GetReadyToPlay(extension);
-                    }
-                }
-            }
-        }
-    
-    
     public extern bool spatializePostEffects
     {
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -1087,82 +940,6 @@ public float[] GetSpectrumData(int numSamples, int channel, FFTWindow window)
     public void GetSpectrumData(float[] samples, int channel, FFTWindow window)
         {
             GetSpectrumDataHelper(samples, channel, window);
-        }
-    
-    
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal int GetNumExtensionProperties () ;
-
-    internal int GetNumExtensionPropertiesForThisExtension (PropertyName extensionName) {
-        return INTERNAL_CALL_GetNumExtensionPropertiesForThisExtension ( this, ref extensionName );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static int INTERNAL_CALL_GetNumExtensionPropertiesForThisExtension (AudioSource self, ref PropertyName extensionName);
-    internal PropertyName ReadExtensionName (int sourceIndex) {
-        PropertyName result;
-        INTERNAL_CALL_ReadExtensionName ( this, sourceIndex, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_ReadExtensionName (AudioSource self, int sourceIndex, out PropertyName value);
-    internal PropertyName ReadExtensionPropertyName (int sourceIndex) {
-        PropertyName result;
-        INTERNAL_CALL_ReadExtensionPropertyName ( this, sourceIndex, out result );
-        return result;
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_ReadExtensionPropertyName (AudioSource self, int sourceIndex, out PropertyName value);
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    extern internal float ReadExtensionPropertyValue (int sourceIndex) ;
-
-    internal bool ReadExtensionProperty (PropertyName extensionName, PropertyName propertyName, ref float propertyValue) {
-        return INTERNAL_CALL_ReadExtensionProperty ( this, ref extensionName, ref propertyName, ref propertyValue );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static bool INTERNAL_CALL_ReadExtensionProperty (AudioSource self, ref PropertyName extensionName, ref PropertyName propertyName, ref float propertyValue);
-    internal void WriteExtensionProperty (PropertyName pluginName, PropertyName extensionName, PropertyName propertyName, float propertyValue) {
-        INTERNAL_CALL_WriteExtensionProperty ( this, ref pluginName, ref extensionName, ref propertyName, propertyValue );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_WriteExtensionProperty (AudioSource self, ref PropertyName pluginName, ref PropertyName extensionName, ref PropertyName propertyName, float propertyValue);
-    internal void ClearExtensionProperties (PropertyName extensionName) {
-        INTERNAL_CALL_ClearExtensionProperties ( this, ref extensionName );
-    }
-
-    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
-    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
-    private extern static void INTERNAL_CALL_ClearExtensionProperties (AudioSource self, ref PropertyName extensionName);
-    internal AudioSourceExtension AddSpatializerExtension(Type extensionType)
-        {
-            if (spatializerExtension == null)
-            {
-                spatializerExtension = ScriptableObject.CreateInstance(extensionType) as AudioSourceExtension;
-            }
-
-            return spatializerExtension;
-        }
-    
-    
-    internal AudioSourceExtension AddAmbisonicExtension(Type extensionType)
-        {
-            if (ambisonicExtension == null)
-            {
-                ambisonicExtension = ScriptableObject.CreateInstance(extensionType) as AudioSourceExtension;
-            }
-
-            return ambisonicExtension;
         }
     
     

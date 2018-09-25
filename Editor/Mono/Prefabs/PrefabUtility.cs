@@ -134,7 +134,7 @@ namespace UnityEditor
             {
                 var importer = t as AssetImporter;
 
-                var materials = AssetDatabase.LoadAllAssetsAtPath(importer.assetPath).Where(x => x.GetType() == typeof(Material));
+                var materials = AssetDatabase.LoadAllAssetsAtPath(importer.assetPath).Where(x => x.GetType() == typeof(Material)).ToArray();
 
                 foreach (var material in materials)
                 {
@@ -386,20 +386,90 @@ namespace UnityEditor
 
         public static void ApplyPropertyOverride(SerializedProperty instanceProperty, string assetPath, InteractionMode action)
         {
-            ApplyPropertyOverride(instanceProperty, assetPath, action, true);
-        }
-
-        static void ApplyPropertyOverride(SerializedProperty instanceProperty, string assetPath, InteractionMode action, bool singlePropertyOnly)
-        {
             DateTime startTime = DateTime.UtcNow;
 
             Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
+            CheckInstanceIsNotPersistent(prefabInstanceObject);
+
+            ApplyPropertyOverrides(prefabInstanceObject, instanceProperty, assetPath, action);
+
+            Analytics.SendApplyEvent(
+                Analytics.ApplyScope.PropertyOverride,
+                prefabInstanceObject,
+                assetPath,
+                action,
+                startTime,
+                IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty)
+            );
+        }
+
+        // This method is called both from ApplyPropertyOverride (one time) and ApplyObjectOverride (many times).
+        // In the former case, optionalSingleInstanceProperty is passed along as is the only property that should be processed.
+        // In the latter, all properties in the prefabInstanceObject are iterated.
+        // An alternative approach was considered where the method takes an array of SerializedProperties,
+        // but since there can be thousands of those in a component, and they would each have to be copied from the iterator,
+        // it's better to handle properties inline as the iterator iterates over them.
+        // This does mean that we need to cache the SerializedObjects that end up being touched.
+        // Those are that of the prefabInstanceObject itself, and the chain of corresponding object
+        // all the way to the Prefab at the specified assetPath.
+        // Since calling ApplyModifiedProperties on a SerializedObject can trigger a whole chain of imports,
+        // we don't want to create and call ApplyModifiedProperties more than once for each SerializedObject, hence the caching.
+        // We also can't swap the inner and outer loop, iterating the chain of corresponding objects in the outer loop
+        // and the SerializedProperties in the inner loop, since we only process overridden properties, so it would
+        // again require storing information about that for each property in some kind of list, which we want to avoid.
+        static void ApplyPropertyOverrides(Object prefabInstanceObject, SerializedProperty optionalSingleInstanceProperty, string assetPath, InteractionMode action)
+        {
+            bool singleProperty = optionalSingleInstanceProperty != null;
 
             Object prefabSourceObject = GetCorrespondingObjectFromSourceAtPath(prefabInstanceObject, assetPath);
             if (prefabSourceObject == null)
                 return;
 
-            if (IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty) && IsObjectOnRootInAsset(prefabInstanceObject, assetPath))
+            SerializedObject prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
+
+            // Cache SerializedObjects used.
+            List<SerializedObject> serializedObjects = new List<SerializedObject>();
+
+            bool isObjectOnRootInAsset = IsObjectOnRootInAsset(prefabInstanceObject, assetPath);
+            if (singleProperty)
+            {
+                if (optionalSingleInstanceProperty.prefabOverride)
+                    ApplySingleProperty(optionalSingleInstanceProperty, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, true, serializedObjects, action);
+            }
+            else
+            {
+                SerializedObject so = new SerializedObject(prefabInstanceObject);
+                SerializedProperty property = so.GetIterator();
+                while (property.Next(property.hasChildren))
+                {
+                    if (property.prefabOverride)
+                        ApplySingleProperty(property, prefabSourceSerializedObject, assetPath, isObjectOnRootInAsset, false, serializedObjects, action);
+                }
+            }
+
+            // Write modified value to prefab source object.
+            for (int i = 0; i < serializedObjects.Count; i++)
+            {
+                serializedObjects[i].ApplyModifiedProperties();
+                if (action == InteractionMode.UserAction)
+                    Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
+            }
+        }
+
+        // Since method is called for each overridden property in a component.
+        // That may be thousands of times if a component has lots of array data.
+        // We provide as much information as possible to the method as parameters
+        // so we don't have to recalculate it for each call.
+        static void ApplySingleProperty(
+            SerializedProperty instanceProperty,
+            SerializedObject prefabSourceSerializedObject,
+            string assetPath,
+            bool isObjectOnRootInAsset,
+            bool singlePropertyOnly,
+            List<SerializedObject> serializedObjects,
+            InteractionMode action)
+        {
+            if (isObjectOnRootInAsset && IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty))
             {
                 if (singlePropertyOnly)
                 {
@@ -408,12 +478,14 @@ namespace UnityEditor
                     if (action == InteractionMode.AutomatedAction)
                         Debug.LogWarning("Cannot apply default-override property, since it is protected from being applied or reverted.");
                     else
-                        EditorUtility.DisplayDialog("Cannot apply default-override property", "Default-override properties are protected from being applied or reverted.", "OK");
+                        EditorUtility.DisplayDialog(
+                            "Cannot apply default-override property",
+                            "Default-override properties are protected from being applied or reverted.",
+                            "OK");
                 }
                 return;
             }
 
-            SerializedObject prefabSourceSerializedObject = new SerializedObject(prefabSourceObject);
             prefabSourceSerializedObject.CopyFromSerializedProperty(instanceProperty);
             SerializedProperty sourceProperty = prefabSourceSerializedObject.FindProperty(instanceProperty.propertyPath);
 
@@ -432,47 +504,46 @@ namespace UnityEditor
                         if (action == InteractionMode.AutomatedAction)
                             Debug.LogWarning("Cannot apply reference to scene object that is not part of apply target prefab.");
                         else
-                            EditorUtility.DisplayDialog("Cannot apply reference to object in scene", "A reference to an object in the scene cannot be applied to the Prefab asset.", "OK");
+                            EditorUtility.DisplayDialog(
+                                "Cannot apply reference to object in scene",
+                                "A reference to an object in the scene cannot be applied to the Prefab asset.",
+                                "OK");
                     }
                     return;
                 }
             }
 
-            // Write modified value to prefab source object.
-            prefabSourceSerializedObject.ApplyModifiedProperties();
+            // Apply target SerializedObject should get ApplyModifiedProperties called first.
+            if (serializedObjects.Count == 0)
+                serializedObjects.Add(prefabSourceSerializedObject);
 
-            if (action == InteractionMode.UserAction)
-                Undo.FlushUndoRecordObjects(); // flush'es ensure that SavePrefab() on undo/redo on the source happens in the right order
-
-            // Clear overrides for property in prefab instance and outer prefabs that are using(nesting) the prefab source.
+            // Clear overrides for property in Prefab instance and outer Prefabs that are using(nesting) the Prefab source.
             // Otherwise applied modification would appear to jump back to the value it had before applying.
+            Object prefabInstanceObject = instanceProperty.serializedObject.targetObject;
+            Object prefabSourceObject = prefabSourceSerializedObject.targetObject;
             Object outerPrefabObject = prefabInstanceObject;
+            int sourceIndex = 1;
             while (outerPrefabObject != prefabSourceObject)
             {
-                SerializedObject outerPrefabSerializedObject = new SerializedObject(outerPrefabObject);
+                SerializedObject outerPrefabSerializedObject;
+                if (sourceIndex >= serializedObjects.Count)
+                {
+                    outerPrefabSerializedObject = new SerializedObject(outerPrefabObject);
+                    serializedObjects.Add(outerPrefabSerializedObject);
+                }
+                else
+                {
+                    outerPrefabSerializedObject = serializedObjects[sourceIndex];
+                }
+
                 SerializedProperty outerPrefabProp = outerPrefabSerializedObject.FindProperty(instanceProperty.propertyPath);
                 if (outerPrefabProp.prefabOverride)
                 {
                     outerPrefabProp.prefabOverride = false;
-                    outerPrefabSerializedObject.ApplyModifiedProperties();
-
-                    if (action == InteractionMode.UserAction)
-                        Undo.FlushUndoRecordObjects();
                 }
-                outerPrefabObject = PrefabUtility.GetCorrespondingObjectFromSource(outerPrefabObject);
-            }
 
-            // If this method is called as part of ApplyObjectOverride, we don't want to send analytics here too.
-            if (singlePropertyOnly)
-            {
-                Analytics.SendApplyEvent(
-                    Analytics.ApplyScope.PropertyOverride,
-                    prefabInstanceObject,
-                    assetPath,
-                    action,
-                    startTime,
-                    IsPropertyOverrideDefaultOverrideComparedToAnySource(instanceProperty)
-                );
+                outerPrefabObject = PrefabUtility.GetCorrespondingObjectFromSource(outerPrefabObject);
+                sourceIndex++;
             }
         }
 
@@ -492,13 +563,7 @@ namespace UnityEditor
 
             CheckInstanceIsNotPersistent(instanceComponentOrGameObject);
 
-            SerializedObject so = new SerializedObject(instanceComponentOrGameObject);
-            SerializedProperty property = so.GetIterator();
-            while (property.Next(property.hasChildren))
-            {
-                if (property.prefabOverride)
-                    ApplyPropertyOverride(property, assetPath, action, false);
-            }
+            ApplyPropertyOverrides(instanceComponentOrGameObject, null, assetPath, action);
 
             Analytics.SendApplyEvent(
                 Analytics.ApplyScope.ObjectOverride,
@@ -963,21 +1028,21 @@ namespace UnityEditor
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
-        private static void SaveAsPrefabAssetArgumentCheck(GameObject root)
+        private static void SaveAsPrefabAssetArgumentCheck(GameObject instanceRoot)
         {
-            if (root == null)
+            if (instanceRoot == null)
                 throw new ArgumentNullException("Parameter root is null");
 
-            if (EditorUtility.IsPersistent(root))
+            if (EditorUtility.IsPersistent(instanceRoot))
                 throw new ArgumentException("Can't save persistent object as a Prefab asset");
 
-            if (IsPrefabAssetMissing(root))
+            if (IsPrefabAssetMissing(instanceRoot))
                 throw new ArgumentException("Can't save Prefab instance with missing asset as a Prefab. You may unpack the instance and save the unpacked GameObjects as a Prefab.");
 
-            var instanceRoot = GetOutermostPrefabInstanceRoot(root);
-            if (instanceRoot)
+            var actualInstanceRoot = GetOutermostPrefabInstanceRoot(instanceRoot);
+            if (actualInstanceRoot)
             {
-                if (instanceRoot != root)
+                if (actualInstanceRoot != instanceRoot)
                     throw new ArgumentException("Can't save part of a Prefab instance as a Prefab");
             }
         }
@@ -988,41 +1053,41 @@ namespace UnityEditor
             return instanceRoot != null && instanceRoot == gameObject;
         }
 
-        public static GameObject SaveAsPrefabAsset(GameObject root, string assetPath)
+        public static GameObject SaveAsPrefabAsset(GameObject instanceRoot, string assetPath)
         {
-            SaveAsPrefabAssetArgumentCheck(root);
+            SaveAsPrefabAssetArgumentCheck(instanceRoot);
 
             PrefabCreationFlags creationFlags = PrefabCreationFlags.None;
-            if (IsPrefabInstanceRoot(root))
+            if (IsPrefabInstanceRoot(instanceRoot))
                 creationFlags = PrefabCreationFlags.CreateVariant;
 
 #pragma warning disable CS0618 // Type or member is obsolete
-            return SavePrefab(root, assetPath, ReplacePrefabOptions.Default, creationFlags);
+            return SavePrefab(instanceRoot, assetPath, ReplacePrefabOptions.Default, creationFlags);
 #pragma warning restore CS0618 // Type or member is obsolete
         }
 
-        public static GameObject SaveAsPrefabAssetAndConnect(GameObject root, string assetPath, InteractionMode action)
+        public static GameObject SaveAsPrefabAssetAndConnect(GameObject instanceRoot, string assetPath, InteractionMode action)
         {
-            SaveAsPrefabAssetArgumentCheck(root);
+            SaveAsPrefabAssetArgumentCheck(instanceRoot);
 
             var actionName = "Connect to Prefab";
 
             if (action == InteractionMode.UserAction)
             {
-                Undo.RegisterFullObjectHierarchyUndo(root, actionName);
+                Undo.RegisterFullObjectHierarchyUndo(instanceRoot, actionName);
             }
 
             PrefabCreationFlags creationFlags = PrefabCreationFlags.None;
-            if (IsPrefabInstanceRoot(root))
+            if (IsPrefabInstanceRoot(instanceRoot))
                 creationFlags = PrefabCreationFlags.CreateVariant;
 
 #pragma warning disable CS0618 // Type or member is obsolete
-            var assetRoot = SavePrefab(root, assetPath, ReplacePrefabOptions.ConnectToPrefab, creationFlags);
+            var assetRoot = SavePrefab(instanceRoot, assetPath, ReplacePrefabOptions.ConnectToPrefab, creationFlags);
 #pragma warning restore CS0618 // Type or member is obsolete
 
             if (action == InteractionMode.UserAction)
             {
-                Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(root), actionName);
+                Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(instanceRoot), actionName);
             }
 
             return assetRoot;
@@ -1305,44 +1370,55 @@ namespace UnityEditor
             Save,
             Apply
         }
+
         internal static bool PromptAndCheckoutPrefabIfNeeded(string assetPath, SaveVerb saveVerb)
         {
+            return PromptAndCheckoutPrefabIfNeeded(new string[] { assetPath }, saveVerb);
+        }
+
+        internal static bool PromptAndCheckoutPrefabIfNeeded(string[] assetPaths, SaveVerb saveVerb)
+        {
+            string prefabNoun = assetPaths.Length > 1 ? "Prefabs" : "Prefab";
             bool result = Provider.PromptAndCheckoutIfNeeded(
-                new string[] { assetPath },
+                assetPaths,
                 String.Format(
-                    "The version control requires you to check out the Prefab before {0} changes.",
-                    saveVerb == SaveVerb.Save ? "saving" : "applying")
+                    "The version control requires you to check out the {1} before {0} changes.",
+                    saveVerb == SaveVerb.Save ? "saving" : "applying",
+                    prefabNoun
+                )
             );
 
             if (!result)
                 EditorUtility.DisplayDialog(
                     String.Format(
-                        "Could not {0} Prefab",
-                        saveVerb == SaveVerb.Save ? "save" : "apply to"),
+                        "Could not {0} {1}",
+                        saveVerb == SaveVerb.Save ? "save" : "apply to",
+                        prefabNoun),
                     String.Format(
-                        "It was not possible to check out the Prefab so the {0} operation has been canceled.",
-                        saveVerb == SaveVerb.Save ? "save" : "apply"),
+                        "It was not possible to check out the {1} so the {0} operation has been canceled.",
+                        saveVerb == SaveVerb.Save ? "save" : "apply",
+                        prefabNoun),
                     "OK");
 
             return result;
         }
 
-        public static void UnpackPrefabInstance(GameObject root, PrefabUnpackMode unpackMode, InteractionMode action)
+        public static void UnpackPrefabInstance(GameObject instanceRoot, PrefabUnpackMode unpackMode, InteractionMode action)
         {
-            if (!IsPartOfNonAssetPrefabInstance(root))
+            if (!IsPartOfNonAssetPrefabInstance(instanceRoot))
                 throw new ArgumentException("UnpackPrefabInstance must be called with a Prefab instance.");
 
-            if (!IsOutermostPrefabInstanceRoot(root))
+            if (!IsOutermostPrefabInstanceRoot(instanceRoot))
                 throw new ArgumentException("UnpackPrefabInstance must be called with a root Prefab instance GameObject.");
 
             if (action == InteractionMode.UserAction)
             {
                 var undoActionName = "Unpack Prefab instance";
-                Undo.RegisterFullObjectHierarchyUndo(root, undoActionName);
-                var instanceRoots = UnpackPrefabInstanceAndReturnNewOutermostRoots(root, unpackMode);
-                foreach (var instanceRoot in instanceRoots)
+                Undo.RegisterFullObjectHierarchyUndo(instanceRoot, undoActionName);
+                var newInstanceRoots = UnpackPrefabInstanceAndReturnNewOutermostRoots(instanceRoot, unpackMode);
+                foreach (var newInstanceRoot in newInstanceRoots)
                 {
-                    var prefabInstance = PrefabUtility.GetPrefabInstanceHandle(instanceRoot);
+                    var prefabInstance = PrefabUtility.GetPrefabInstanceHandle(newInstanceRoot);
                     if (prefabInstance)
                     {
                         Undo.RegisterCreatedObjectUndo(prefabInstance, undoActionName);
@@ -1351,7 +1427,7 @@ namespace UnityEditor
             }
             else
             {
-                UnpackPrefabInstanceAndReturnNewOutermostRoots(root, unpackMode);
+                UnpackPrefabInstanceAndReturnNewOutermostRoots(instanceRoot, unpackMode);
             }
         }
 
@@ -1433,13 +1509,13 @@ namespace UnityEditor
             return roots[0];
         }
 
-        public static void UnloadPrefabContents(GameObject root)
+        public static void UnloadPrefabContents(GameObject contentsRoot)
         {
-            if (!EditorSceneManager.IsPreviewSceneObject(root))
+            if (!EditorSceneManager.IsPreviewSceneObject(contentsRoot))
             {
                 throw new ArgumentException("Specified object is not part of Prefab contents");
             }
-            var scene = root.scene;
+            var scene = contentsRoot.scene;
             EditorSceneManager.ClosePreviewScene(scene);
         }
 

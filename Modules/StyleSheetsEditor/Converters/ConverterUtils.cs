@@ -85,10 +85,48 @@ namespace UnityEditor.StyleSheets
         public const string k_BundleSkinPath = "Builtin Skins/Generated/Skins";
 
         public static Dictionary<string, string> k_GuiStyleTypeNames;
+        public static HashSet<string> k_StyleProperties;
 
         static ConverterUtils()
         {
             k_GuiStyleTypeNames = GetGUIStyleProperties().ToDictionary(p => p.Name.ToLower(), p => p.Name.Capitalize());
+
+            k_StyleProperties = new HashSet<string>();
+            k_StyleProperties.Add(k_TextAlignment);
+
+            foreach (var propPrefix in new[] { k_Border, k_Margin, k_Padding, k_Overflow })
+            {
+                k_StyleProperties.Add(propPrefix + "-left");
+                k_StyleProperties.Add(propPrefix + "-right");
+                k_StyleProperties.Add(propPrefix + "-top");
+                k_StyleProperties.Add(propPrefix + "-bottom");
+            }
+
+            k_StyleProperties.Add(k_Clipping);
+            k_StyleProperties.Add(k_ContentOffset);
+            k_StyleProperties.Add(k_Height);
+            k_StyleProperties.Add(k_Width);
+            k_StyleProperties.Add(k_Font);
+            k_StyleProperties.Add(k_FontSize);
+            k_StyleProperties.Add(k_FontStyle);
+            k_StyleProperties.Add(k_FontWeight);
+            k_StyleProperties.Add(k_ImagePosition);
+
+            k_StyleProperties.Add(k_RichText);
+            k_StyleProperties.Add(k_StretchHeight);
+            k_StyleProperties.Add(k_StretchWidth);
+            k_StyleProperties.Add(k_WordWrap);
+            k_StyleProperties.Add(k_TextColor);
+            k_StyleProperties.Add(k_BackgroundImage);
+            k_StyleProperties.Add(k_ScaledBackground);
+            k_StyleProperties.Add(k_Name);
+            k_StyleProperties.Add(k_SelectionColor);
+            k_StyleProperties.Add(k_RichText);
+            k_StyleProperties.Add(k_CursorColor);
+            k_StyleProperties.Add(k_CursorFlashSpeed);
+            k_StyleProperties.Add(k_DoubleClickSelectsWord);
+            k_StyleProperties.Add(k_TripleClickSelectsLine);
+            k_StyleProperties.Add(k_Extend);
         }
 
         public static string ToUssString(TextAnchor anchor)
@@ -465,7 +503,7 @@ namespace UnityEditor.StyleSheets
 
         public static string EscapeSelectorName(string name)
         {
-            return name.Replace(" ", "-");
+            return name.Replace(" ", "-").Replace(".", "-");
         }
 
         public static bool IsTypeStyleSelector(string guiStyleName)

@@ -127,6 +127,7 @@ namespace UnityEditor
         internal static extern Object GetBuiltinExtraResource(Type type, string path);
         internal static extern BuiltinResource[] GetBuiltinResourceList(int classID);
         internal static extern AssetBundle GetEditorAssetBundle();
+        internal static extern AssetBundle ReloadEditorAssetBundle();
         internal static extern void SetRenderTextureNoViewport(RenderTexture rt);
         internal static extern void SetVisibleLayers(int layers);
         internal static extern void SetLockedLayers(int layers);

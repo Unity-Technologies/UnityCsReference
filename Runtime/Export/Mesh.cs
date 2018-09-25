@@ -173,8 +173,8 @@ namespace UnityEngine
         }
         public Color32[] colors32
         {
-            get { return GetAllocArrayFromChannel<Color32>(VertexAttribute.Color, InternalVertexChannelType.Color, 1); }
-            set { SetArrayForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 1, value); }
+            get { return GetAllocArrayFromChannel<Color32>(VertexAttribute.Color, InternalVertexChannelType.Color, 4); }
+            set { SetArrayForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 4, value); }
         }
 
         public void GetVertices(List<Vector3> vertices)
@@ -234,12 +234,12 @@ namespace UnityEngine
             if (colors == null)
                 throw new ArgumentNullException("The result colors list cannot be null.", "colors");
 
-            GetListForChannel(colors, vertexCount, VertexAttribute.Color, 1, InternalVertexChannelType.Color);
+            GetListForChannel(colors, vertexCount, VertexAttribute.Color, 4, InternalVertexChannelType.Color);
         }
 
         public void SetColors(List<Color32> inColors)
         {
-            SetListForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 1, inColors);
+            SetListForChannel(VertexAttribute.Color, InternalVertexChannelType.Color, 4, inColors);
         }
 
         private void SetUvsImpl<T>(int uvIndex, int dim, List<T> uvs)

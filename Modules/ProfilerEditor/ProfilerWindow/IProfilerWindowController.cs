@@ -2,10 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using UnityEditorInternal.Profiling;
+using UnityEditor.Profiling;
 
 namespace UnityEditorInternal
 {
+    internal enum ProfilerViewType
+    {
+        Hierarchy = 0,
+        Timeline = 1,
+        RawHierarchy = 2
+    }
+
     internal interface IProfilerWindowController
     {
         void SetSelectedPropertyPath(string path);
@@ -14,9 +21,7 @@ namespace UnityEditorInternal
         void SetClearOnPlay(bool enabled);
         bool GetClearOnPlay();
 
-
-        ProfilerProperty GetRootProfilerProperty(ProfilerColumn sortType);
-        FrameDataView GetFrameDataView(ProfilerViewType viewType, ProfilerColumn profilerSortColumn, FrameViewFilteringModes filteringMode, bool sortAscending);
+        HierarchyFrameDataView GetFrameDataView(HierarchyFrameDataView.ViewModes viewMode, int profilerSortColumn, bool sortAscending);
         int GetActiveVisibleFrameIndex();
         bool IsRecording();
         void Repaint();

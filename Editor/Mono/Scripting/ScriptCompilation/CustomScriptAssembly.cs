@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.Compilation;
+using UnityEditor;
+using DiscoveredTargetInfo = UnityEditor.BuildTargetDiscovery.DiscoveredTargetInfo;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
@@ -158,25 +160,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static CustomScriptAssembly()
         {
             // When removing a platform from Platforms, please add it to DeprecatedPlatforms.
-            Platforms = new CustomScriptAssemblyPlatform[]
+            DiscoveredTargetInfo[] buildTargetList = BuildTargetDiscovery.GetBuildTargetInfoList();
+            // Need extra slot for Editor which is not included in the build target list
+            Platforms = new CustomScriptAssemblyPlatform[buildTargetList.Length + 1];
+            Platforms[0] = new CustomScriptAssemblyPlatform("Editor", BuildTarget.NoTarget);
+            for (int i = 1; i < Platforms.Length; i++)
             {
-                new CustomScriptAssemblyPlatform("Editor", "Editor", BuildTarget.NoTarget),
-                new CustomScriptAssemblyPlatform("macOSStandalone", "macOS", BuildTarget.StandaloneOSX),
-                new CustomScriptAssemblyPlatform("WindowsStandalone32", "Windows 32-bit", BuildTarget.StandaloneWindows),
-                new CustomScriptAssemblyPlatform("WindowsStandalone64", "Windows 64-bit", BuildTarget.StandaloneWindows64),
-                new CustomScriptAssemblyPlatform("LinuxStandalone32", "Linux 32-bit", BuildTarget.StandaloneLinux),
-                new CustomScriptAssemblyPlatform("LinuxStandalone64", "Linux 64-bit", BuildTarget.StandaloneLinux64),
-                new CustomScriptAssemblyPlatform("LinuxStandaloneUniversal", "Linux Universal", BuildTarget.StandaloneLinuxUniversal),
-                new CustomScriptAssemblyPlatform("iOS", BuildTarget.iOS),
-                new CustomScriptAssemblyPlatform("Android", BuildTarget.Android),
-                new CustomScriptAssemblyPlatform("WebGL", BuildTarget.WebGL),
-                new CustomScriptAssemblyPlatform("WSA", "Universal Windows Platform", BuildTarget.WSAPlayer),
-                new CustomScriptAssemblyPlatform("PS4", BuildTarget.PS4),
-                new CustomScriptAssemblyPlatform("XboxOne", BuildTarget.XboxOne),
-                new CustomScriptAssemblyPlatform("tvOS", BuildTarget.tvOS),
-                new CustomScriptAssemblyPlatform("Switch", BuildTarget.Switch),
-                new CustomScriptAssemblyPlatform("Lumin", BuildTarget.Lumin),
-            };
+                Platforms[i] = new CustomScriptAssemblyPlatform(
+                    BuildTargetDiscovery.GetScriptAssemblyName(buildTargetList[i - 1]),
+                    buildTargetList[i - 1].niceName,
+                    buildTargetList[i - 1].buildTgtPlatformVal);
+            }
 
 #pragma warning disable 0618
             DeprecatedPlatforms = new CustomScriptAssemblyPlatform[]

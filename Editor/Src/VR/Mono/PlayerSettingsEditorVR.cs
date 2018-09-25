@@ -476,7 +476,7 @@ namespace UnityEditorInternal.VR
             VRCustomOptions customOptions;
             if (m_CustomOptions.TryGetValue(name, out customOptions))
             {
-                customOptionsHeight = customOptions.IsExpanded ? customOptions.GetHeight() + EditorGUI.kControlVerticalSpacing : 0.0f;
+                customOptionsHeight = customOptions.IsExpanded ? customOptions.GetHeight(target) + EditorGUI.kControlVerticalSpacing : 0.0f;
             }
 
             return list.elementHeight + customOptionsHeight;

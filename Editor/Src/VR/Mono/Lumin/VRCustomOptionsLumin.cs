@@ -129,7 +129,7 @@ namespace UnityEditorInternal.VR
             return rect;
         }
 
-        public override float GetHeight()
+        public override float GetHeight(BuildTargetGroup target)
         {
             float entryCount = 6.0f;
             return (EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing) * entryCount;

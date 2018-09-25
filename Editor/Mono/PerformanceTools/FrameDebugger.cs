@@ -130,7 +130,7 @@ namespace UnityEditorInternal
         public int subShaderIndex;
         public int shaderPassIndex;
         public string shaderKeywords;
-        public int rendererInstanceID;
+        public int componentInstanceID;
         public Mesh mesh;
         public int meshInstanceID;
         public int meshSubset;

@@ -168,6 +168,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void RecompileAllScriptsOnNextTick()
+        {
+            Instance.RecompileAllScriptsOnNextTick();
+        }
+
+        [RequiredByNativeCode]
+        public static bool WillRecompileAllScriptsOnNextTick()
+        {
+            return Instance.WillRecompileAllScriptsOnNextTick();
+        }
+
+        [RequiredByNativeCode]
         public static void RunScriptUpdaterOnAssembly(string assemblyFilename)
         {
             Instance.RunScriptUpdaterOnAssembly(assemblyFilename);

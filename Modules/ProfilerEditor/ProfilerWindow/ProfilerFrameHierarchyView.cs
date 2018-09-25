@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
+using UnityEditor.Profiling;
 using Unity.Profiling;
 
 namespace UnityEditorInternal.Profiling
@@ -90,11 +91,11 @@ namespace UnityEditorInternal.Profiling
             get { return m_DetailedCallsView; }
         }
 
-        public ProfilerColumn sortedProfilerColumn
+        public int sortedProfilerColumn
         {
             get
             {
-                return m_TreeView == null ? ProfilerColumn.DontSort : m_TreeView.sortedProfilerColumn;
+                return m_TreeView == null ? HierarchyFrameDataView.columnDontSort : m_TreeView.sortedProfilerColumn;
             }
         }
 
@@ -126,15 +127,24 @@ namespace UnityEditorInternal.Profiling
 
             var cpuHierarchyColumns = new[]
             {
-                ProfilerColumn.FunctionName, ProfilerColumn.TotalPercent, ProfilerColumn.SelfPercent, ProfilerColumn.Calls,
-                ProfilerColumn.GCMemory, ProfilerColumn.TotalTime, ProfilerColumn.SelfTime, ProfilerColumn.WarningCount
+                HierarchyFrameDataView.columnName,
+                HierarchyFrameDataView.columnTotalPercent,
+                HierarchyFrameDataView.columnSelfPercent,
+                HierarchyFrameDataView.columnCalls,
+                HierarchyFrameDataView.columnGcMemory,
+                HierarchyFrameDataView.columnTotalTime,
+                HierarchyFrameDataView.columnSelfTime,
+                HierarchyFrameDataView.columnWarningCount
             };
             var gpuHierarchyColumns = new[]
             {
-                ProfilerColumn.FunctionName, ProfilerColumn.TotalGPUPercent, ProfilerColumn.DrawCalls, ProfilerColumn.TotalGPUTime
+                HierarchyFrameDataView.columnName,
+                HierarchyFrameDataView.columnTotalGpuPercent,
+                HierarchyFrameDataView.columnDrawCalls,
+                HierarchyFrameDataView.columnTotalGpuTime
             };
             var profilerColumns = gpuView ? gpuHierarchyColumns : cpuHierarchyColumns;
-            var defaultSortColumn = gpuView ? ProfilerColumn.TotalGPUTime : ProfilerColumn.TotalTime;
+            var defaultSortColumn = gpuView ? HierarchyFrameDataView.columnTotalGpuTime : HierarchyFrameDataView.columnTotalTime;
 
             var columns = CreateColumns(profilerColumns);
             var headerState = CreateDefaultMultiColumnHeaderState(columns, defaultSortColumn);
@@ -174,14 +184,14 @@ namespace UnityEditorInternal.Profiling
             m_Initialized = true;
         }
 
-        public static ProfilerFrameDataMultiColumnHeader.Column[] CreateColumns(ProfilerColumn[] profilerColumns)
+        public static ProfilerFrameDataMultiColumnHeader.Column[] CreateColumns(int[] profilerColumns)
         {
             var columns = new ProfilerFrameDataMultiColumnHeader.Column[profilerColumns.Length];
             for (var i = 0; i < profilerColumns.Length; ++i)
             {
                 var columnName = GetProfilerColumnName(profilerColumns[i]);
-                var content = columnName.StartsWith("|")
-                    ? EditorGUIUtility.IconContent("ProfilerColumn." + profilerColumns[i], columnName)
+                var content = profilerColumns[i] == HierarchyFrameDataView.columnWarningCount
+                    ? EditorGUIUtility.IconContent("ProfilerColumn.WarningCount", columnName)
                     : new GUIContent(columnName);
                 var column = new ProfilerFrameDataMultiColumnHeader.Column
                 {
@@ -194,7 +204,7 @@ namespace UnityEditorInternal.Profiling
             return columns;
         }
 
-        public static MultiColumnHeaderState CreateDefaultMultiColumnHeaderState(ProfilerFrameDataMultiColumnHeader.Column[] columns, ProfilerColumn defaultSortColumn)
+        public static MultiColumnHeaderState CreateDefaultMultiColumnHeaderState(ProfilerFrameDataMultiColumnHeader.Column[] columns, int defaultSortColumn)
         {
             var headerColumns = new MultiColumnHeaderState.Column[columns.Length];
             for (var i = 0; i < columns.Length; ++i)
@@ -206,13 +216,13 @@ namespace UnityEditorInternal.Profiling
                 var allowToggleVisibility = true;
                 switch (columns[i].profilerColumn)
                 {
-                    case ProfilerColumn.FunctionName:
+                    case HierarchyFrameDataView.columnName:
                         width = 200;
                         minWidth = 200;
                         autoResize = true;
                         allowToggleVisibility = false;
                         break;
-                    case ProfilerColumn.WarningCount:
+                    case HierarchyFrameDataView.columnWarningCount:
                         width = 25;
                         minWidth = 25;
                         maxWidth = 25;
@@ -239,44 +249,44 @@ namespace UnityEditorInternal.Profiling
             return state;
         }
 
-        static string GetProfilerColumnName(ProfilerColumn column)
+        static string GetProfilerColumnName(int column)
         {
             switch (column)
             {
-                case ProfilerColumn.FunctionName:
+                case HierarchyFrameDataView.columnName:
                     return LocalizationDatabase.GetLocalizedString("Overview");
-                case ProfilerColumn.TotalPercent:
+                case HierarchyFrameDataView.columnTotalPercent:
                     return LocalizationDatabase.GetLocalizedString("Total");
-                case ProfilerColumn.SelfPercent:
+                case HierarchyFrameDataView.columnSelfPercent:
                     return LocalizationDatabase.GetLocalizedString("Self");
-                case ProfilerColumn.Calls:
+                case HierarchyFrameDataView.columnCalls:
                     return LocalizationDatabase.GetLocalizedString("Calls");
-                case ProfilerColumn.GCMemory:
+                case HierarchyFrameDataView.columnGcMemory:
                     return LocalizationDatabase.GetLocalizedString("GC Alloc");
-                case ProfilerColumn.TotalTime:
+                case HierarchyFrameDataView.columnTotalTime:
                     return LocalizationDatabase.GetLocalizedString("Time ms");
-                case ProfilerColumn.SelfTime:
+                case HierarchyFrameDataView.columnSelfTime:
                     return LocalizationDatabase.GetLocalizedString("Self ms");
-                case ProfilerColumn.DrawCalls:
+                case HierarchyFrameDataView.columnDrawCalls:
                     return LocalizationDatabase.GetLocalizedString("DrawCalls");
-                case ProfilerColumn.TotalGPUTime:
+                case HierarchyFrameDataView.columnTotalGpuTime:
                     return LocalizationDatabase.GetLocalizedString("GPU ms");
-                case ProfilerColumn.SelfGPUTime:
+                case HierarchyFrameDataView.columnSelfGpuTime:
                     return LocalizationDatabase.GetLocalizedString("Self ms");
-                case ProfilerColumn.TotalGPUPercent:
+                case HierarchyFrameDataView.columnTotalGpuPercent:
                     return LocalizationDatabase.GetLocalizedString("Total");
-                case ProfilerColumn.SelfGPUPercent:
+                case HierarchyFrameDataView.columnSelfGpuPercent:
                     return LocalizationDatabase.GetLocalizedString("Self");
-                case ProfilerColumn.WarningCount:
+                case HierarchyFrameDataView.columnWarningCount:
                     return LocalizationDatabase.GetLocalizedString("|Warnings");
-                case ProfilerColumn.ObjectName:
+                case HierarchyFrameDataView.columnObjectName:
                     return LocalizationDatabase.GetLocalizedString("Name");
                 default:
                     return "ProfilerColumn." + column;
             }
         }
 
-        public void DoGUI(FrameDataView frameDataView)
+        public void DoGUI(HierarchyFrameDataView frameDataView)
         {
             using (m_DoGUIMarker.Auto())
             {
@@ -285,7 +295,7 @@ namespace UnityEditorInternal.Profiling
                 var collectingSamples = ProfilerDriver.enabled && (ProfilerDriver.profileEditor || EditorApplication.isPlaying);
                 var isSearchAllowed = string.IsNullOrEmpty(treeView.searchString) || !(collectingSamples && ProfilerDriver.deepProfiling);
 
-                var isDataAvailable = frameDataView != null && frameDataView.IsValid();
+                var isDataAvailable = frameDataView != null && frameDataView.valid;
                 if (isDataAvailable && isSearchAllowed)
                     if (isDataAvailable)
                         m_TreeView.SetFrameDataView(frameDataView);
@@ -353,17 +363,17 @@ namespace UnityEditorInternal.Profiling
             treeView.searchString = m_SearchField.OnToolbarGUI(rect, treeView.searchString);
         }
 
-        void DrawToolbar(FrameDataView frameDataView, bool showDetailedView)
+        void DrawToolbar(HierarchyFrameDataView frameDataView, bool showDetailedView)
         {
             EditorGUILayout.BeginHorizontal(BaseStyles.toolbar);
 
             if (frameDataView != null)
-                DrawViewTypePopup(frameDataView.viewType);
+                DrawViewTypePopup((frameDataView.viewMode & HierarchyFrameDataView.ViewModes.MergeSamplesWithTheSameName) != 0 ? ProfilerViewType.Hierarchy : ProfilerViewType.RawHierarchy);
 
             GUILayout.FlexibleSpace();
 
             if (frameDataView != null)
-                DrawCPUGPUTime(frameDataView.frameTime, frameDataView.frameGpuTime);
+                DrawCPUGPUTime(frameDataView.frameTimeMs, frameDataView.frameGpuTimeMs);
 
             GUILayout.FlexibleSpace();
 
@@ -450,11 +460,11 @@ namespace UnityEditorInternal.Profiling
                 m_TreeView.Clear();
         }
 
-        public override FrameViewFilteringModes GetFilteringMode()
+        public override HierarchyFrameDataView.ViewModes GetFilteringMode()
         {
             if (gpuView)
                 return base.GetFilteringMode();
-            return base.GetFilteringMode() | (OptionEnabled(CpuProfilerOptions.CollapseEditorBoundarySamples) ? FrameViewFilteringModes.CollapseEditorBoundarySamples : 0);
+            return base.GetFilteringMode() | (OptionEnabled(CpuProfilerOptions.CollapseEditorBoundarySamples) ? HierarchyFrameDataView.ViewModes.HideEditorOnlySamples : 0);
         }
 
         void DrawOptionsMenuPopup()

@@ -2,10 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
-using UnityEditor;
 using UnityEditor.Accessibility;
-using UnityEditorInternal.Profiling;
+using UnityEditor.Profiling;
 using UnityEngine;
 using UnityEngine.Accessibility;
 
@@ -20,14 +18,14 @@ namespace UnityEditorInternal
             // Sample color is defined by ProfilerGroup (category) and defined in s_ProfilerGroupInfos table.
             s_DefaultColors = new Color[]
             {
-                FrameDataView.GetMarkerCategoryColor(0),                            // "Rendering"
-                FrameDataView.GetMarkerCategoryColor(1),                            // "Scripts"
-                FrameDataView.GetMarkerCategoryColor(5),                            // "Physics"
-                FrameDataView.GetMarkerCategoryColor(6),                            // "Animation"
-                FrameDataView.GetMarkerCategoryColor(15),                           // "GarbageCollector"
-                FrameDataView.GetMarkerCategoryColor(16),                           // "VSync"
-                FrameDataView.GetMarkerCategoryColor(11),                           // "Global Illumination"
-                FrameDataView.GetMarkerCategoryColor(24),                           // "UI"
+                HierarchyFrameDataView.GetMarkerCategoryColor(0),                   // "Rendering"
+                HierarchyFrameDataView.GetMarkerCategoryColor(1),                   // "Scripts"
+                HierarchyFrameDataView.GetMarkerCategoryColor(5),                   // "Physics"
+                HierarchyFrameDataView.GetMarkerCategoryColor(6),                   // "Animation"
+                HierarchyFrameDataView.GetMarkerCategoryColor(15),                  // "GarbageCollector"
+                HierarchyFrameDataView.GetMarkerCategoryColor(16),                  // "VSync"
+                HierarchyFrameDataView.GetMarkerCategoryColor(11),                  // "Global Illumination"
+                HierarchyFrameDataView.GetMarkerCategoryColor(24),                  // "UI"
                 new Color(122.0f / 255.0f, 123.0f / 255.0f,  30.0f / 255.0f, 1.0f), // "Others"
 
                 new Color(240.0f / 255.0f, 128.0f / 255.0f, 128.0f / 255.0f, 1.0f),  // light-coral

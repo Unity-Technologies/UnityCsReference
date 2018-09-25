@@ -165,6 +165,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         HashSet<EditorBuildRules.TargetAssembly> dirtyTargetAssemblies = new HashSet<EditorBuildRules.TargetAssembly>();
         HashSet<PrecompiledAssembly> dirtyPrecompiledAssemblies = new HashSet<PrecompiledAssembly>();
         HashSet<string> runScriptUpdaterAssemblies = new HashSet<string>();
+        bool recompileAllScriptsOnNextTick;
         PrecompiledAssembly[] precompiledAssemblies;
         CustomScriptAssembly[] customScriptAssemblies = new CustomScriptAssembly[0];
         EditorBuildRules.TargetAssembly[] customTargetAssemblies; // TargetAssemblies for customScriptAssemblies.
@@ -280,6 +281,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 dirtyPrecompiledAssemblies.Add(precompiledAssembly.Value);
             }
+        }
+
+        public void RecompileAllScriptsOnNextTick()
+        {
+            recompileAllScriptsOnNextTick = true;
+        }
+
+        public bool WillRecompileAllScriptsOnNextTick()
+        {
+            return recompileAllScriptsOnNextTick;
         }
 
         public void ClearDirtyScripts()
@@ -510,15 +521,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
                                 assembly.PackageAssembly = packageAssembly;
                                 break;
                             }
-                        }
-                    }
-
-                    if (assembly.References != null)
-                    {
-                        foreach (var reference in assembly.References)
-                        {
-                            if (!customScriptAssemblies.Any(a => a.Name == reference))
-                                throw new Compilation.AssemblyDefinitionException(string.Format("Assembly has reference to non-existent assembly '{0}'", reference), assembly.FilePath);
                         }
                     }
                 }
@@ -1189,7 +1191,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // then compilation will trigger on next TickCompilationPipeline.
             return DoesProjectFolderHaveAnyDirtyScripts() ||
                 ArePrecompiledAssembliesDirty() ||
-                runScriptUpdaterAssemblies.Count() > 0;
+                runScriptUpdaterAssemblies.Count() > 0 ||
+                recompileAllScriptsOnNextTick;
         }
 
         public bool IsAnyAssemblyBuilderCompiling()
@@ -1267,6 +1270,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // is triggered.
             if (IsAnyAssemblyBuilderCompiling())
                 return CompileStatus.Compiling;
+
+            if (recompileAllScriptsOnNextTick)
+            {
+                DirtyAllScripts();
+                recompileAllScriptsOnNextTick = false;
+            }
 
             // If we are not currently compiling and there are dirty scripts, start compilation.
             if (!IsCompilationTaskCompiling() && IsCompilationPending())
@@ -1395,7 +1404,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts()
             };
 
-            return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies);
+            return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, runScriptUpdaterAssemblies);
         }
 
         private static void UpdateAllTargetAssemblyDefines(EditorBuildRules.TargetAssembly[] customScriptAssemblies, EditorBuildRules.TargetAssembly[] predefinedTargetAssemblies, ScriptAssemblySettings settings)
@@ -1436,7 +1445,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 EditorAssemblyReferences = ModuleUtils.GetAdditionalReferencesForUserScripts(),
             };
 
-            return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, type);
+            return EditorBuildRules.GetAllScriptAssemblies(allScripts, projectDirectory, settings, assemblies, runScriptUpdaterAssemblies, type);
         }
 
         public MonoIsland[] GetAllMonoIslands(EditorScriptCompilationOptions additionalOptions)

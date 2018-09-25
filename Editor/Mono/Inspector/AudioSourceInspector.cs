@@ -33,10 +33,6 @@ namespace UnityEditor
 
         SerializedObject m_LowpassObject;
 
-        AudioSourceExtensionEditor m_SpatializerEditor = null;
-        private bool m_AddSpatializerExtension = false;
-        private bool m_AddSpatializerExtensionMixedValues = false;
-
         class AudioCurveWrapper
         {
             public AudioCurveType type;
@@ -108,7 +104,6 @@ namespace UnityEditor
             public GUIContent spatialRightLabel = EditorGUIUtility.TrTextContent("3D");
             public GUIContent panLeftLabel = EditorGUIUtility.TrTextContent("Left");
             public GUIContent panRightLabel = EditorGUIUtility.TrTextContent("Right");
-            public GUIContent addSpatializerExtensionLabel = EditorGUIUtility.TrTextContent("Override Spatializer Settings", "Override the Google spatializer's default property settings.");
         }
         static Styles ms_Styles;
 
@@ -118,88 +113,6 @@ namespace UnityEditor
             if (source == null)
                 return new Vector3(0.0f, 0.0f, 0.0f);
             return source.transform.position;
-        }
-
-        private void UpdateSpatializerExtensionMixedValues()
-        {
-            m_AddSpatializerExtension = false;
-
-            int numTargetsWithSpatializerExtensions = 0;
-            for (int i = 0; i < targets.Length; i++)
-            {
-                AudioSource source = targets[i] as AudioSource;
-                if (source != null)
-                {
-                    System.Type spatializerExtensionType = AudioExtensionManager.GetSourceSpatializerExtensionType();
-                    if ((spatializerExtensionType != null) && (source.GetNumExtensionPropertiesForThisExtension(spatializerExtensionType.Name) > 0))
-                    {
-                        m_AddSpatializerExtension = true;
-                        numTargetsWithSpatializerExtensions++;
-                    }
-                }
-            }
-
-            m_AddSpatializerExtensionMixedValues = ((numTargetsWithSpatializerExtensions == 0) || (numTargetsWithSpatializerExtensions == targets.Length)) ? false : true;
-            if (m_AddSpatializerExtensionMixedValues)
-                m_AddSpatializerExtension = false;
-        }
-
-        // Created editors for all the enabled extensions of this AudioSource.
-        private void CreateExtensionEditors()
-        {
-            if (m_SpatializerEditor != null)
-                DestroyExtensionEditors();
-
-            System.Type spatializerEditorType = AudioExtensionManager.GetSourceSpatializerExtensionEditorType();
-            m_SpatializerEditor = ScriptableObject.CreateInstance(spatializerEditorType) as AudioSourceExtensionEditor;
-
-            if (m_SpatializerEditor != null)
-            {
-                for (int i = 0; i < targets.Length; i++)
-                {
-                    AudioSource source = targets[i] as AudioSource;
-                    if (source != null)
-                    {
-                        Undo.RecordObject(source, "Add AudioSource extension properties");
-                        string extensionName = AudioExtensionManager.GetSourceSpatializerExtensionType().Name;
-                        for (int j = 0; j < m_SpatializerEditor.GetNumExtensionProperties(); j++)
-                        {
-                            PropertyName propertyName = m_SpatializerEditor.GetExtensionPropertyName(j);
-                            float value = 0.0f;
-
-                            // If the AudioSource is missing an extension property, then create it now.
-                            if (!source.ReadExtensionProperty(extensionName, propertyName, ref value))
-                            {
-                                value = m_SpatializerEditor.GetExtensionPropertyDefaultValue(j);
-                                source.WriteExtensionProperty(AudioExtensionManager.GetSourceSpatializerExtensionName(), extensionName, propertyName, value);
-                            }
-                        }
-                    }
-                }
-            }
-
-            m_AddSpatializerExtensionMixedValues = false;
-        }
-
-        private void DestroyExtensionEditors()
-        {
-            DestroyImmediate(m_SpatializerEditor);
-            m_SpatializerEditor = null;
-        }
-
-        private void ClearExtensionProperties()
-        {
-            for (int i = 0; i < targets.Length; i++)
-            {
-                AudioSource source = targets[i] as AudioSource;
-                if (source != null)
-                {
-                    Undo.RecordObject(source, "Remove AudioSource extension properties");
-                    source.ClearExtensionProperties(AudioExtensionManager.GetSourceSpatializerExtensionName());
-                }
-            }
-
-            m_AddSpatializerExtensionMixedValues = false;
         }
 
         void OnEnable()
@@ -260,22 +173,14 @@ namespace UnityEditor
             m_LastSourcePosition = GetSourcePos(target);
             m_LastListenerPosition = AudioUtil.GetListenerPos();
             EditorApplication.update += Update;
-            Undo.undoRedoPerformed += UndoRedoPerformed;
 
             m_Expanded3D = EditorPrefs.GetBool("AudioSourceExpanded3D", m_Expanded3D);
-
-            UpdateSpatializerExtensionMixedValues();
-            if (m_AddSpatializerExtension)
-                CreateExtensionEditors();
         }
 
         void OnDisable()
         {
             m_CurveEditor.OnDisable();
 
-            DestroyExtensionEditors();
-
-            Undo.undoRedoPerformed -= UndoRedoPerformed;
             EditorApplication.update -= Update;
 
             EditorPrefs.SetBool("AudioSourceExpanded3D", m_Expanded3D);
@@ -414,20 +319,6 @@ namespace UnityEditor
             }
         }
 
-        private void UndoRedoPerformed()
-        {
-            DestroyExtensionEditors();
-
-            UpdateSpatializerExtensionMixedValues();
-            if (!m_AddSpatializerExtension && !m_AddSpatializerExtensionMixedValues)
-                ClearExtensionProperties();
-
-            if (m_AddSpatializerExtension)
-                CreateExtensionEditors();
-
-            Repaint();
-        }
-
         private void HandleLowPassFilter()
         {
             AudioCurveWrapper audioCurve = m_AudioCurves[kLowPassCurveID];
@@ -474,6 +365,14 @@ namespace UnityEditor
             EditorGUILayout.Space();
             EditorGUILayout.PropertyField(m_OutputAudioMixerGroup, ms_Styles.outputMixerGroupLabel);
             EditorGUILayout.PropertyField(m_Mute);
+            if (AudioUtil.canUseSpatializerEffect)
+            {
+                EditorGUILayout.PropertyField(m_Spatialize, ms_Styles.spatializeLabel);
+                using (new EditorGUI.DisabledScope(!m_Spatialize.boolValue))
+                {
+                    EditorGUILayout.PropertyField(m_SpatializePostEffects, ms_Styles.spatializePostEffectsLabel);
+                }
+            }
             EditorGUILayout.PropertyField(m_BypassEffects);
             if (targets.Any(t => (t as AudioSource).outputAudioMixerGroup != null))
             {
@@ -523,98 +422,6 @@ namespace UnityEditor
                 EditorGUI.indentLevel++;
                 Audio3DGUI();
                 EditorGUI.indentLevel--;
-            }
-
-            if (AudioUtil.canUseSpatializerEffect)
-            {
-                EditorGUILayout.PropertyField(m_Spatialize, ms_Styles.spatializeLabel);
-                if (m_Spatialize.boolValue && !m_Spatialize.hasMultipleDifferentValues)
-                {
-                    for (int i = 0; i < targets.Length; i++)
-                    {
-                        AudioSource source = targets[i] as AudioSource;
-                        AudioSourceExtension extension = (source != null) ? AudioExtensionManager.GetSpatializerExtension(source) : null;
-
-                        // If we are playing in Editor or previewing in the scene view, spatialize is true, and we do not have a spatializer extension, try to add one.
-                        // We may have just toggled spatialize here in the Editor.
-                        if ((source != null) && source.spatialize && source.isPlaying)
-                        {
-                            if (extension == null)
-                                extension = AudioExtensionManager.AddSpatializerExtension(source);
-
-                            AudioExtensionManager.GetReadyToPlay(extension);
-                        }
-                    }
-
-                    EditorGUI.indentLevel++;
-                    EditorGUILayout.PropertyField(m_SpatializePostEffects, ms_Styles.spatializePostEffectsLabel);
-
-                    bool allowExtensionEditing = (m_AddSpatializerExtension && !m_AddSpatializerExtensionMixedValues) || !serializedObject.isEditingMultipleObjects;
-                    if (AudioExtensionManager.IsSourceSpatializerExtensionRegistered() && allowExtensionEditing)
-                    {
-                        EditorGUI.showMixedValue = m_AddSpatializerExtensionMixedValues;
-                        bool addSpatializerExtensionNew = EditorGUILayout.Toggle(ms_Styles.addSpatializerExtensionLabel, m_AddSpatializerExtension);
-                        EditorGUI.showMixedValue = false;
-
-                        bool showExtensionProperties = false;
-                        if (m_AddSpatializerExtension != addSpatializerExtensionNew)
-                        {
-                            m_AddSpatializerExtension = addSpatializerExtensionNew;
-                            if (m_AddSpatializerExtension)
-                            {
-                                CreateExtensionEditors();
-
-                                if (m_SpatializerEditor != null)
-                                    showExtensionProperties = m_SpatializerEditor.FindAudioExtensionProperties(serializedObject);
-                            }
-                            else
-                            {
-                                ClearExtensionProperties();
-                                DestroyExtensionEditors();
-                                showExtensionProperties = false;
-                            }
-                        }
-                        else if (m_SpatializerEditor != null)
-                        {
-                            showExtensionProperties = m_SpatializerEditor.FindAudioExtensionProperties(serializedObject);
-                            if (!showExtensionProperties)
-                            {
-                                m_AddSpatializerExtension = false;
-                                ClearExtensionProperties();
-                                DestroyExtensionEditors();
-                            }
-                        }
-
-                        if ((m_SpatializerEditor != null) && showExtensionProperties)
-                        {
-                            EditorGUI.indentLevel++;
-                            m_SpatializerEditor.OnAudioSourceGUI();
-                            EditorGUI.indentLevel--;
-
-                            // Push any AudioSource extension property changes to the AudioSourceExtension properties. We always attempt to do this
-                            // because we may be playing in Editor or previewing sound in the scene view.
-                            for (int i = 0; i < targets.Length; i++)
-                            {
-                                AudioSource source = targets[i] as AudioSource;
-                                AudioSourceExtension extension = (source != null) ? AudioExtensionManager.GetSpatializerExtension(source) : null;
-
-                                if ((source != null) && (extension != null) && source.isPlaying)
-                                {
-                                    string extensionName = AudioExtensionManager.GetSourceSpatializerExtensionType().Name;
-                                    for (int j = 0; j < m_SpatializerEditor.GetNumExtensionProperties(); j++)
-                                    {
-                                        PropertyName propertyName = m_SpatializerEditor.GetExtensionPropertyName(j);
-                                        float value = 0.0f;
-                                        if (source.ReadExtensionProperty(extensionName, propertyName, ref value))
-                                        {
-                                            extension.WriteExtensionProperty(propertyName, value);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
 
             serializedObject.ApplyModifiedProperties();
@@ -898,9 +705,6 @@ namespace UnityEditor
             }
 
             Handles.color = tempColor;
-
-            if (m_Spatialize.boolValue && (m_SpatializerEditor != null))
-                m_SpatializerEditor.OnAudioSourceSceneGUI(source);
         }
     }
 }

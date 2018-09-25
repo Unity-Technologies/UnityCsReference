@@ -147,7 +147,7 @@ namespace UnityEditor
 
         protected static Vector3 SnapToSprite(SpriteRenderer spriteRenderer, Vector3 position, float snapDistance)
         {
-            if (spriteRenderer == null)
+            if (spriteRenderer == null || spriteRenderer.sprite == null)
                 return position;
 
             snapDistance = HandleUtility.GetHandleSize(position) * snapDistance;

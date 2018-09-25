@@ -557,8 +557,7 @@ namespace UnityEditor.VisualStudioIntegration
 
             if (PlayerSettingsEditor.IsLatestApiCompatibility(island._api_compatibility_level))
             {
-                if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.Rider
-                    || ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
+                if (ScriptEditorUtility.GetScriptEditorFromPreferences() == ScriptEditorUtility.ScriptEditor.VisualStudioCode)
                 {
                     targetframeworkversion = "v4.5";
                 }

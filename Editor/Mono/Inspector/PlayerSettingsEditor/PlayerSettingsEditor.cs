@@ -19,6 +19,7 @@ using UnityEditor.Scripting.ScriptCompilation;
 using UnityEngine.Events;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
 using VR = UnityEditorInternal.VR;
+using TargetAttributes = UnityEditor.BuildTargetDiscovery.TargetAttributes;
 
 // ************************************* READ BEFORE EDITING **************************************
 //
@@ -141,10 +142,11 @@ namespace UnityEditor
             public static readonly GUIContent applicationBuildNumber = EditorGUIUtility.TrTextContent("Build");
             public static readonly GUIContent appleDeveloperTeamID = EditorGUIUtility.TrTextContent("iOS Developer Team ID", "Developers can retrieve their Team ID by visiting the Apple Developer site under Account > Membership.");
             public static readonly GUIContent useOnDemandResources = EditorGUIUtility.TrTextContent("Use on demand resources*");
+            public static readonly GUIContent gcIncremental = EditorGUIUtility.TrTextContent("Use incremental GC (Experimental)");
             public static readonly GUIContent accelerometerFrequency = EditorGUIUtility.TrTextContent("Accelerometer Frequency*");
-            public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*");
-            public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*");
-            public static readonly GUIContent microphoneUsageDescription = EditorGUIUtility.TrTextContent("Microphone Usage Description*");
+            public static readonly GUIContent cameraUsageDescription = EditorGUIUtility.TrTextContent("Camera Usage Description*", "String shown to the user when requesting permission to use the device camera. Written to the NSCameraUsageDescription field in Xcode project's info.plist file");
+            public static readonly GUIContent locationUsageDescription = EditorGUIUtility.TrTextContent("Location Usage Description*", "String shown to the user when requesting permission to access the device location. Written to the NSLocationWhenInUseUsageDescription field in Xcode project's info.plist file.");
+            public static readonly GUIContent microphoneUsageDescription = EditorGUIUtility.TrTextContent("Microphone Usage Description*", "String shown to the user when requesting to use the device microphone. Written to the NSMicrophoneUsageDescription field in Xcode project's info.plist file");
             public static readonly GUIContent muteOtherAudioSources = EditorGUIUtility.TrTextContent("Mute Other Audio Sources*");
             public static readonly GUIContent prepareIOSForRecording = EditorGUIUtility.TrTextContent("Prepare iOS for Recording");
             public static readonly GUIContent forceIOSSpeakersWhenRecording = EditorGUIUtility.TrTextContent("Force iOS Speakers when Recording");
@@ -281,6 +283,8 @@ namespace UnityEditor
         SerializedProperty m_DisableInputManager;
 
         SerializedProperty m_AllowUnsafeCode;
+        /* Uncomment this once we want to expose this setting */
+        //SerializedProperty m_GCIncremental;
 
         // General
         SerializedProperty m_CompanyName;
@@ -369,13 +373,6 @@ namespace UnityEditor
         readonly AnimBool m_ShowResolution = new AnimBool();
         private static Texture2D s_WarningIcon;
 
-        public bool IsMobileTarget(BuildTargetGroup targetGroup)
-        {
-            return targetGroup == BuildTargetGroup.iOS
-                ||  targetGroup == BuildTargetGroup.tvOS
-                ||  targetGroup == BuildTargetGroup.Android;
-        }
-
         public SerializedProperty FindPropertyAssert(string name)
         {
             SerializedProperty property = serializedObject.FindProperty(name);
@@ -444,6 +441,8 @@ namespace UnityEditor
             m_DisableInputManager           = FindPropertyAssert("disableOldInputManagerSupport");
 
             m_AllowUnsafeCode               = FindPropertyAssert("allowUnsafeCode");
+            /* Uncomment this once we want to expose this setting */
+            //m_GCIncremental                 = FindPropertyAssert("gcIncremental");
 
             m_DefaultScreenWidth            = FindPropertyAssert("defaultScreenWidth");
             m_DefaultScreenHeight           = FindPropertyAssert("defaultScreenHeight");
@@ -948,7 +947,7 @@ namespace UnityEditor
                     }
 
                     // mobiles color/depth bits setup
-                    if (IsMobileTarget(targetGroup))
+                    if (BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.IsMobile))
                     {
                         // iOS, while supports 16bit FB through GL interface, use 32bit in hardware, so there is no need in 16bit
                         if (targetGroup != BuildTargetGroup.iOS &&
@@ -1434,7 +1433,7 @@ namespace UnityEditor
                 OtherSectionRenderingGUI(platform, targetGroup, settingsExtension);
                 OtherSectionVulkanSettingsGUI(targetGroup, settingsExtension);
                 OtherSectionIdentificationGUI(targetGroup, settingsExtension);
-                OtherSectionConfigurationGUI(targetGroup, settingsExtension);
+                OtherSectionConfigurationGUI(platform, targetGroup, settingsExtension);
                 OtherSectionOptimizationGUI(targetGroup);
                 OtherSectionLoggingGUI();
                 OtherSectionLegacyGUI();
@@ -1451,71 +1450,49 @@ namespace UnityEditor
             // Rendering related settings
             GUILayout.Label(SettingsContent.renderingTitle, EditorStyles.boldLabel);
 
-            // Color space
-            if (targetGroup == BuildTargetGroup.Standalone
-                || targetGroup == BuildTargetGroup.iOS
-                || targetGroup == BuildTargetGroup.tvOS
-                || targetGroup == BuildTargetGroup.Android
-                || targetGroup == BuildTargetGroup.PS4
-                || targetGroup == BuildTargetGroup.XboxOne
-                || targetGroup == BuildTargetGroup.WSA
-                || targetGroup == BuildTargetGroup.WebGL
-                || targetGroup == BuildTargetGroup.Lumin
-                || targetGroup == BuildTargetGroup.Switch)
+            // Color space (supported by all non deprecated platforms)
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching color spaces in play mode is not supported
             {
-                using (new EditorGUI.DisabledScope(EditorApplication.isPlaying)) // switching color spaces in play mode is not supported
+                EditorGUI.BeginChangeCheck();
+                EditorGUILayout.PropertyField(m_ActiveColorSpace, SettingsContent.activeColorSpace);
+                if (EditorGUI.EndChangeCheck())
                 {
-                    EditorGUI.BeginChangeCheck();
-                    EditorGUILayout.PropertyField(m_ActiveColorSpace, SettingsContent.activeColorSpace);
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        serializedObject.ApplyModifiedProperties();
-                        GUIUtility.ExitGUI(); // Fixes case 690421
-                    }
+                    serializedObject.ApplyModifiedProperties();
+                    GUIUtility.ExitGUI(); // Fixes case 690421
                 }
+            }
 
-                // Display a warning for platforms that some devices don't support linear rendering if the settings are not fine for linear colorspace
-                if (PlayerSettings.colorSpace == ColorSpace.Linear)
+            // Display a warning for platforms that some devices don't support linear rendering if the settings are not fine for linear colorspace
+            if (PlayerSettings.colorSpace == ColorSpace.Linear)
+            {
+                if (BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.OpenGLES))
                 {
+                    bool hasMinGraphicsAPI = false;
+                    var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+
+
                     if (targetGroup == BuildTargetGroup.iOS)
                     {
-                        var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
-                        var hasMinMetal = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
                         Version requiredVersion = new Version(8, 0);
                         bool hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
 
-                        if (!hasMinMetal || !hasMinOSVersion)
+                        if (!hasMinGraphicsAPI || !hasMinOSVersion)
                             EditorGUILayout.HelpBox(SettingsContent.colorSpaceIOSWarning.text, MessageType.Warning);
                     }
 
-                    if (targetGroup == BuildTargetGroup.tvOS)
-                    {
-                        var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.tvOS);
-                        var hasMinMetal = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
-                        if (!hasMinMetal)
-                            EditorGUILayout.HelpBox(SettingsContent.colorSpaceTVOSWarning.text, MessageType.Warning);
-                    }
+                    if ((targetGroup == BuildTargetGroup.tvOS) && !hasMinGraphicsAPI)
+                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceTVOSWarning.text, MessageType.Warning);
 
                     if (targetGroup == BuildTargetGroup.Android)
                     {
-                        var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
-                        var hasMinAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
                         var hasBlitDisabled = PlayerSettings.Android.blitType == AndroidBlitType.Never;
-                        if (hasBlitDisabled || !hasMinAPI || (int)PlayerSettings.Android.minSdkVersion < 18)
+                        if (hasBlitDisabled || !hasMinGraphicsAPI || (int)PlayerSettings.Android.minSdkVersion < 18)
                             EditorGUILayout.HelpBox(SettingsContent.colorSpaceAndroidWarning.text, MessageType.Warning);
                     }
 
-                    if (targetGroup == BuildTargetGroup.WebGL)
-                    {
-                        var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.WebGL);
-                        var hasMinAPI = apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
-                        if (!hasMinAPI)
-                            EditorGUILayout.HelpBox(SettingsContent.colorSpaceWebGLWarning.text, MessageType.Error);
-                    }
+                    if ((targetGroup == BuildTargetGroup.WebGL) && !hasMinGraphicsAPI)
+                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceWebGLWarning.text, MessageType.Error);
                 }
             }
 
@@ -1526,39 +1503,31 @@ namespace UnityEditor
             ColorGamutGUI(targetGroup);
 
             // Metal
-            if (Application.platform == RuntimePlatform.OSXEditor && (targetGroup == BuildTargetGroup.Standalone || targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS))
+            if (Application.platform == RuntimePlatform.OSXEditor && BuildTargetDiscovery.BuildTargetSupportsRenderer(platform, GraphicsDeviceType.Metal))
             {
                 bool curMetalSupport = m_MetalEditorSupport.boolValue || SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal;
                 bool newMetalSupport = EditorGUILayout.Toggle(SettingsContent.metalEditorSupport, curMetalSupport);
 
                 if (newMetalSupport != curMetalSupport)
                 {
-                    if (Application.platform == RuntimePlatform.OSXEditor)
-                    {
-                        GraphicsDeviceType[] api = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneOSX);
+                    GraphicsDeviceType[] api = PlayerSettings.GetGraphicsAPIs(BuildTarget.StandaloneOSX);
 
-                        bool updateCurrentAPI = api[0] != SystemInfo.graphicsDeviceType;
-                        if (!newMetalSupport && SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal)
-                            updateCurrentAPI = true; // running on metal and disabled it
-                        if (newMetalSupport && api[0] == GraphicsDeviceType.Metal)
-                            updateCurrentAPI = true; // just enabled metal so want to switch to it
+                    bool updateCurrentAPI = api[0] != SystemInfo.graphicsDeviceType;
+                    if (!newMetalSupport && SystemInfo.graphicsDeviceType == GraphicsDeviceType.Metal)
+                        updateCurrentAPI = true; // running on metal and disabled it
+                    if (newMetalSupport && api[0] == GraphicsDeviceType.Metal)
+                        updateCurrentAPI = true; // just enabled metal so want to switch to it
 
-                        ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(BuildTarget.StandaloneOSX, updateCurrentAPI);
-                        if (action.changeList)
-                        {
-                            m_MetalEditorSupport.boolValue = newMetalSupport;
-                            serializedObject.ApplyModifiedProperties();
-                            // HACK: we pretended to change first api in list to trigger possible gfx device recreation
-                            // HACK: but we dont really change api list (as we will simply set bool checked from native code)
-                            action = new ChangeGraphicsApiAction(false, action.reloadGfx);
-                        }
-                        ApplyChangeGraphicsApiAction(BuildTarget.StandaloneOSX, api, action);
-                    }
-                    else
+                    ChangeGraphicsApiAction action = CheckApplyGraphicsAPIList(BuildTarget.StandaloneOSX, updateCurrentAPI);
+                    if (action.changeList)
                     {
                         m_MetalEditorSupport.boolValue = newMetalSupport;
                         serializedObject.ApplyModifiedProperties();
+                        // HACK: we pretended to change first api in list to trigger possible gfx device recreation
+                        // HACK: but we dont really change api list (as we will simply set bool checked from native code)
+                        action = new ChangeGraphicsApiAction(false, action.reloadGfx);
                     }
+                    ApplyChangeGraphicsApiAction(BuildTarget.StandaloneOSX, api, action);
                 }
 
                 if (m_MetalEditorSupport.boolValue)
@@ -1642,14 +1611,7 @@ namespace UnityEditor
             }
 
             // GPU Skinning toggle (only show on relevant platforms)
-            if (targetGroup == BuildTargetGroup.Standalone ||
-                targetGroup == BuildTargetGroup.iOS ||
-                targetGroup == BuildTargetGroup.tvOS ||
-                targetGroup == BuildTargetGroup.Android ||
-                targetGroup == BuildTargetGroup.PS4 ||
-                targetGroup == BuildTargetGroup.XboxOne ||
-                targetGroup == BuildTargetGroup.WSA ||
-                targetGroup == BuildTargetGroup.Switch)
+            if (targetGroup != BuildTargetGroup.Facebook && !BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.GPUSkinningNotSupported))
             {
                 EditorGUI.BeginChangeCheck();
                 EditorGUILayout.PropertyField(m_SkinOnGPU,
@@ -1917,7 +1879,7 @@ namespace UnityEditor
             }
         }
 
-        private void OtherSectionConfigurationGUI(BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
+        private void OtherSectionConfigurationGUI(BuildPlatform platform, BuildTargetGroup targetGroup, ISettingEditorExtension settingsExtension)
         {
             // Configuration
             GUILayout.Label(SettingsContent.configurationTitle, EditorStyles.boldLabel);
@@ -2043,6 +2005,18 @@ namespace UnityEditor
                 }
             }
 
+            /* Uncomment this once we want to expose this setting */
+            /*
+            bool gcIncrementalEnabled = BuildPipeline.IsFeatureSupported("ENABLE_SCRIPTING_GC_WBARRIERS", platform.defaultTarget);
+            if (targetGroup == BuildTargetGroup.iOS)
+                gcIncrementalEnabled = gcIncrementalEnabled && PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP && PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest;
+
+            using (new EditorGUI.DisabledScope(!gcIncrementalEnabled))
+            {
+                EditorGUILayout.PropertyField(m_GCIncremental, SettingsContent.gcIncremental);
+            }
+            */
+
             bool showMobileSection =
                 targetGroup == BuildTargetGroup.iOS ||
                 targetGroup == BuildTargetGroup.tvOS ||
@@ -2165,15 +2139,7 @@ namespace UnityEditor
             if (platformUsesAOT)
                 EditorGUILayout.PropertyField(m_AotOptions, SettingsContent.aotOptions);
 
-            bool platformSupportsStripping =
-                targetGroup == BuildTargetGroup.iOS ||
-                targetGroup == BuildTargetGroup.tvOS ||
-                targetGroup == BuildTargetGroup.Android ||
-                targetGroup == BuildTargetGroup.WebGL ||
-                targetGroup == BuildTargetGroup.PS4 ||
-                targetGroup == BuildTargetGroup.XboxOne ||
-                targetGroup == BuildTargetGroup.WSA ||
-                targetGroup == BuildTargetGroup.Standalone;
+            bool platformSupportsStripping = !BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.StrippingNotSupported);
 
             if (platformSupportsStripping)
             {

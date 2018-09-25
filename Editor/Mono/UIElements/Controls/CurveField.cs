@@ -149,6 +149,7 @@ namespace UnityEditor.Experimental.UIElements
                 m_Value.postWrapMode = WrapMode.Once;
             }
             m_TextureDirty = true;
+            CurveEditorWindow.curve = m_Value;
 
             IncrementVersion(VersionChangeType.Repaint);
 
@@ -237,8 +238,8 @@ namespace UnityEditor.Experimental.UIElements
                 normals = new Vector3[k_HorizontalCurveResolution * 2];
             }
 
-            float startTime = 0;
-            float endTime = curve.keys.Length > 0 ? curve.keys[curve.keys.Length - 1].time : 1.0f;
+            float startTime = curve.keys[0].time;
+            float endTime = curve.keys[curve.keys.Length - 1].time;
             float duration = endTime - startTime;
 
             float minValue = Mathf.Infinity;

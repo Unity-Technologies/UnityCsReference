@@ -175,7 +175,6 @@ namespace UnityEngine
         extern public static Terrain activeTerrain { get; }
         extern public static void SetConnectivityDirty();
 
-
         [NativeProperty("ActiveTerrainsScriptingArray")]
         extern public static Terrain[] activeTerrains { get; }
 

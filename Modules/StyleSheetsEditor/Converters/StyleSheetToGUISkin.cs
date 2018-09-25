@@ -7,8 +7,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.Internal;
 using UnityEngine.StyleSheets;
+using UnityEngine.Internal;
 
 namespace UnityEditor.StyleSheets
 {
@@ -260,7 +260,7 @@ namespace UnityEditor.StyleSheets
             }
         }
 
-        private static void GetProperty(StyleRule rule, string name, bool throwIfNotFound, Action<StyleProperty> next)
+        private static bool GetProperty(StyleRule rule, string name, bool throwIfNotFound, Action<StyleProperty> next)
         {
             var property = rule.properties.FirstOrDefault(prop => prop.name == name);
             if (property == null)
@@ -273,7 +273,9 @@ namespace UnityEditor.StyleSheets
             else
             {
                 next(property);
+                return true;
             }
+            return false;
         }
 
         private static void ReadState(StyleSheetCache cache, StyleRule rule, GUIStyleState state, bool throwIfNotFound)
@@ -418,6 +420,18 @@ namespace UnityEditor.StyleSheets
             {
                 style.name = sheet.ReadString(property.values[0]);
             });
+
+            if (style.name == "")
+            {
+                style.name = ConverterUtils.ToStyleName(complexSelectorStr);
+            }
+            else if (ConverterUtils.ToGUIStyleSelectorName(style.name) != complexSelectorStr)
+            {
+                var msg = string.Format("Selector: {0} doesn't match with -unity-name: {1}. Did you mean selector: {2} or -unity-name: {3}?",
+                    complexSelectorStr, style.name, ConverterUtils.ToGUIStyleSelectorName(style.name), ConverterUtils.ToStyleName(complexSelectorStr));
+                Debug.LogWarning(msg);
+                throw new Exception(msg);
+            }
 
             // GUIStyle.overflow
             ReadRectOffset(cache, rule, ConverterUtils.k_Overflow, null, throwIfIncomplete, style.overflow);

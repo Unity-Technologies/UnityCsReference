@@ -1115,7 +1115,7 @@ namespace UnityEditor
                     if (!editor.IsEditingControl(id))
                     {
                         BeginHandleMixedValueContentColor();
-                        style.Draw(position, EditorGUIUtility.TempContent(drawText), id, false);
+                        style.Draw(position, EditorGUIUtility.TempContent(drawText), id, false, position.Contains(Event.current.mousePosition));
                         EndHandleMixedValueContentColor();
                     }
                     else
@@ -1566,7 +1566,8 @@ namespace UnityEditor
                 position.width -= k_CancelButtonWidth;
                 using (new DisabledScope(true))
                 {
-                    EditorStyles.toolbarSearchFieldPopup.Draw(position, EditorGUIUtility.TempContent(searchModes[searchMode]), id, false);
+                    bool hovered = position.Contains(Event.current.mousePosition);
+                    EditorStyles.toolbarSearchFieldPopup.Draw(position, EditorGUIUtility.TempContent(searchModes[searchMode]), id, false, hovered);
                 }
             }
 
@@ -2950,7 +2951,7 @@ namespace UnityEditor
                     }
 
                     BeginHandleMixedValueContentColor();
-                    style.Draw(position, buttonContent, controlID, false);
+                    style.Draw(position, buttonContent, controlID, false, position.Contains(Event.current.mousePosition));
                     EndHandleMixedValueContentColor();
 
                     style.font = originalFont;
@@ -3074,7 +3075,7 @@ namespace UnityEditor
             }
             else if (Event.current.type == EventType.Repaint)
             {
-                style.Draw(position, EditorGUIUtility.TempContent(tag), id, false);
+                style.Draw(position, EditorGUIUtility.TempContent(tag), id, false, position.Contains(evt.mousePosition));
             }
 
             return tag;
@@ -3144,7 +3145,7 @@ namespace UnityEditor
             }
             else if (evt.type == EventType.Repaint)
             {
-                style.Draw(position, EditorGUIUtility.TempContent(InternalEditorUtility.GetLayerName(layer)), id, false);
+                style.Draw(position, EditorGUIUtility.TempContent(InternalEditorUtility.GetLayerName(layer)), id, false, position.Contains(evt.mousePosition));
             }
 
             return layer;
@@ -4787,7 +4788,7 @@ namespace UnityEditor
                 }
 
 
-                if (toggleRect.Contains(Event.current.mousePosition))
+                if (iconRect.Contains(Event.current.mousePosition))
                 {
                     // It's necessary to handle property context menu here in right mouse down because
                     // component contextual menu will override this otherwise.
@@ -4809,7 +4810,7 @@ namespace UnityEditor
             if (evt.type == EventType.Repaint)
             {
                 var icon = AssetPreview.GetMiniThumbnail(targetObjs[0]);
-                GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), false, false, false, false);
+                GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(icon), iconRect.Contains(Event.current.mousePosition), false, false, false);
 
                 if (isAddedComponentAndEventIsRepaint)
                     GUIStyle.none.Draw(iconRect, EditorGUIUtility.TempContent(Styles.prefabOverlayAddedIcon), false, false, false, false);
@@ -4830,12 +4831,11 @@ namespace UnityEditor
                     }
                     break;
                 case EventType.Repaint:
-                    baseStyle.Draw(position, GUIContent.none, id, foldout);
-                    position = baseStyle.padding.Remove(position);
-                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), id, foldout);
+                    baseStyle.Draw(position, GUIContent.none, id, foldout, position.Contains(Event.current.mousePosition));
+                    textStyle.Draw(textRect, EditorGUIUtility.TempContent(ObjectNames.GetInspectorTitle(targetObjs[0])), id, foldout, textRect.Contains(Event.current.mousePosition));
                     using (new EditorGUI.DisabledScope(EditorGUIUtility.comparisonViewMode != EditorGUIUtility.ComparisonViewMode.None))
                     {
-                        iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, id, foldout);
+                        iconButtonStyle.Draw(settingsRect, GUIContents.titleSettingsIcon, id, foldout, settingsRect.Contains(Event.current.mousePosition));
                     }
                     break;
             }
@@ -6245,14 +6245,15 @@ This warning only shows up in development builds.", helpTopic, pageName);
             switch (evt.type)
             {
                 case EventType.Repaint:
+                    var hovered = position.Contains(Event.current.mousePosition);
                     if (showMixedValue)
                     {
                         BeginHandleMixedValueContentColor();
-                        style.Draw(position, s_MixedValueContent, id, false);
+                        style.Draw(position, s_MixedValueContent, id, false, hovered);
                         EndHandleMixedValueContentColor();
                     }
                     else
-                        style.Draw(position, content, id, false);
+                        style.Draw(position, content, id, false, hovered);
                     break;
                 case EventType.MouseDown:
                     if (position.Contains(evt.mousePosition) && evt.button == 0)
