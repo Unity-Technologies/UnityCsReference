@@ -248,10 +248,10 @@ namespace UnityEditor
                     var inst = Activator.CreateInstance(assetPostprocessorClass) as AssetPostprocessor;
                     var type = inst.GetType();
                     bool hasPreProcessMethod = type.GetMethod("OnPreprocessModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
-                    bool hasProcessMeshAssignMethod = type.GetMethod("OnProcessMeshAssingModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
+                    bool hasPostprocessMeshHierarchy = type.GetMethod("OnPostprocessMeshHierarchy", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
                     bool hasPostProcessMethod = type.GetMethod("OnPostprocessModel", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance) != null;
                     uint version = inst.GetVersion();
-                    if (version != 0 && (hasPreProcessMethod || hasProcessMeshAssignMethod || hasPostProcessMethod))
+                    if (version != 0 && (hasPreProcessMethod || hasPostprocessMeshHierarchy || hasPostProcessMethod))
                     {
                         versions.Add(version);
                     }
@@ -339,6 +339,16 @@ namespace UnityEditor
             }
 
             return false;
+        }
+
+        [RequiredByNativeCode]
+        static void PostprocessMeshHierarchy(GameObject root)
+        {
+            foreach (AssetPostprocessor inst in m_ImportProcessors)
+            {
+                object[] args = { root };
+                AttributeHelper.InvokeMemberIfAvailable(inst, "OnPostprocessMeshHierarchy", args);
+            }
         }
 
         static void PostprocessMesh(GameObject gameObject)
