@@ -80,6 +80,11 @@ namespace UnityEngine
         // Constructs GUIStyle identical to given other GUIStyle.
         public GUIStyle(GUIStyle other)
         {
+            if (other == null)
+            {
+                Debug.LogError("Copied style is null. Using StyleNotFound instead.");
+                other = GUISkin.error;
+            }
             m_Ptr = Internal_Copy(this, other);
         }
 

@@ -147,6 +147,7 @@ namespace UnityEditor.Presets
                     case EventType.MouseDown:
                         if (buttonRect.Contains(Event.current.mousePosition))
                         {
+                            RefreshAddList();
                             var menu = new GenericMenu();
                             if (m_DiscoveredPresets.ContainsKey(keyType))
                             {

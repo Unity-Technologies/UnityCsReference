@@ -56,7 +56,7 @@ namespace UnityEditor
             int height = Mathf.Clamp(res.height * 3 / 4, 600, 950);
             cw.position = new Rect(60, 20, width, height);
 
-            cw.Show(ShowMode.MainWindow, true, true);
+            cw.Show(ShowMode.MainWindow, loadPosition: true, displayImmediately: true, setFocus: true);
             cw.DisplayAllViews();
         }
 

@@ -1241,7 +1241,7 @@ namespace UnityEditor
             Rect contentRect = new Rect();
             bool excludedClass = ModuleMetadata.GetModuleIncludeSettingForObject(target) == ModuleIncludeSetting.ForceExclude;
             if (excludedClass)
-                EditorGUILayout.HelpBox("The built-in package which implements this component type has been disabled in Package Manager. This object will be removed in play mode and from any builds you make.", MessageType.Warning);
+                EditorGUILayout.HelpBox("The built-in package '" + ModuleMetadata.GetExcludingModuleForObject(target) + "', which is required this component type has been disabled in Package Manager. This object will be removed in play mode and from any builds you make.", MessageType.Warning);
 
             using (new EditorGUI.DisabledScope(!editor.IsEnabled() || excludedClass))
             {

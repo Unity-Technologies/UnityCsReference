@@ -11,6 +11,8 @@ namespace UnityEditor
     [CanEditMultipleObjects]
     internal class ModelImporterEditor : AssetImporterTabbedEditor
     {
+        static string s_LocalizedTitle = L10n.Tr("Model Import Settings");
+
         public override void OnEnable()
         {
             if (tabs == null)
@@ -47,5 +49,16 @@ namespace UnityEditor
 
         // Only show the imported GameObject when the Model tab is active; not when the Animation tab is active
         public override bool showImportedObject { get { return activeTab is ModelImporterModelEditor; } }
+
+        internal override string targetTitle
+        {
+            get
+            {
+                if (assetTargets == null || assetTargets.Length == 1 || !m_AllowMultiObjectAccess)
+                    return base.targetTitle;
+                else
+                    return assetTargets.Length + " " + s_LocalizedTitle;
+            }
+        }
     }
 }

@@ -739,6 +739,7 @@ namespace UnityEngine
 
     public sealed partial class CubemapArray : Texture
     {
+        [RequiredByNativeCode]
         public CubemapArray(int width, int cubemapCount, GraphicsFormat format, TextureCreationFlags flags)
         {
             if (ValidateFormat(format, FormatUsage.Sample))

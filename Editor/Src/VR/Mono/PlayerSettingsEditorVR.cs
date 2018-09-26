@@ -101,6 +101,7 @@ namespace UnityEditorInternal.VR
                         customOptions = new VRCustomOptionsNone();
                     }
                     customOptions.Initialize(m_Settings.serializedObject);
+                    customOptions.IsExpanded = true;
                     m_CustomOptions.Add(deviceInfo.deviceNameKey, customOptions);
                 }
             }
@@ -390,7 +391,16 @@ namespace UnityEditorInternal.VR
         private void RemoveVRDeviceElement(BuildTargetGroup target, ReorderableList list)
         {
             var devices = VREditor.GetVREnabledDevicesOnTargetGroup(target).ToList();
+            var device = devices[list.index];
             devices.RemoveAt(list.index);
+
+            VRCustomOptions customOptions;
+            if (m_CustomOptions.TryGetValue(device, out customOptions))
+            {
+                customOptions.IsExpanded = true;
+            }
+
+
             ApplyChangedVRDeviceList(target, devices.ToArray());
         }
 

@@ -13,6 +13,11 @@ namespace UnityEditorInternal
     internal class AddCurvesPopup : EditorWindow
     {
         const float k_WindowPadding = 3;
+        const float k_SpaceForSlider = 16;
+
+        const float k_WindowMaxWidth = 450;
+        const float k_WindowMinWidth = 240;
+        const float k_WindowFixedHeight = 250;
 
         internal static AnimationWindowState s_State;
 
@@ -20,16 +25,25 @@ namespace UnityEditorInternal
         private static long s_LastClosedTime;
         private static AddCurvesPopupHierarchy s_Hierarchy;
 
-        private static  Vector2 windowSize = new Vector2(240, 250);
-
         public delegate void OnNewCurveAdded(AddCurvesPopupPropertyNode node);
 
         private static OnNewCurveAdded NewCurveAddedCallback;
 
+        Vector2 GetWindowSize()
+        {
+            float contentWidth = s_Hierarchy.GetContentWidth();
+            float width = Mathf.Clamp(contentWidth + k_SpaceForSlider + k_WindowPadding, k_WindowMinWidth, k_WindowMaxWidth);
+            return new Vector2(width, k_WindowFixedHeight);
+        }
+
         void Init(Rect buttonRect)
         {
+            s_Hierarchy = new AddCurvesPopupHierarchy();
+            s_Hierarchy.InitIfNeeded(this, new Rect(0, 0, k_WindowMinWidth, k_WindowFixedHeight));
+
             buttonRect = GUIUtility.GUIToScreenRect(buttonRect);
-            ShowAsDropDown(buttonRect, windowSize, new[] { PopupLocation.Right });
+
+            ShowAsDropDown(buttonRect, GetWindowSize(), new[] { PopupLocation.Right });
         }
 
         void OnEnable()
@@ -77,8 +91,7 @@ namespace UnityEditorInternal
             if (Event.current.type == EventType.Layout)
                 return;
 
-            if (s_Hierarchy == null)
-                s_Hierarchy = new AddCurvesPopupHierarchy();
+            Vector2 windowSize = GetWindowSize();
 
             Rect rect = new Rect(1, 1, windowSize.x - k_WindowPadding, windowSize.y - k_WindowPadding);
             GUI.Box(new Rect(0, 0, windowSize.x, windowSize.y), GUIContent.none, "grey_border");

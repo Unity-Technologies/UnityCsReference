@@ -792,6 +792,9 @@
   <Compile Include="..\..\Runtime\Export\Scripting\ExtensionOfNativeClassAttribute.cs">
     <Link>Runtime\Export\Scripting\ExtensionOfNativeClassAttribute.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Scripting\GarbageCollector.bindings.cs">
+    <Link>Runtime\Export\Scripting\GarbageCollector.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Scripting\PreserveAttribute.cs">
     <Link>Runtime\Export\Scripting\PreserveAttribute.cs</Link>
   </Compile>

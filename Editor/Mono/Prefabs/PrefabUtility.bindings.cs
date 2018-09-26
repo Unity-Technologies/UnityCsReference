@@ -57,6 +57,9 @@ namespace UnityEditor
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         extern public static void SetPropertyModifications(Object targetPrefab, PropertyModification[] modifications);
 
+        [FreeFunction]
+        extern public static bool HasPrefabInstanceAnyOverrides(GameObject instanceRoot, bool includeDefaultOverrides);
+
         // Instantiate an asset that is referenced by a prefab and use it on the prefab instance.
         [FreeFunction]
         [NativeHeader("Editor/Src/Prefabs/AttachedPrefabAsset.h")]
@@ -79,7 +82,7 @@ namespace UnityEditor
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
-        extern public static GameObject[] UnpackPrefabInstanceAndReturnNewOutermostRoots(GameObject root, PrefabUnpackMode unpackMode);
+        extern public static GameObject[] UnpackPrefabInstanceAndReturnNewOutermostRoots(GameObject instanceRoot, PrefabUnpackMode unpackMode);
 
         [StaticAccessor("PrefabUtilityBindings", StaticAccessorType.DoubleColon)]
         [NativeThrows]
@@ -158,16 +161,11 @@ namespace UnityEditor
             if (!Paths.IsValidAssetPath(path, ".prefab"))
                 throw new ArgumentException("Given path is not valid: '" + path + "'");
 
-#pragma warning disable 0618 // Type or member is obsolete
-            return CreateVariant_Internal(assetRoot, path, ReplacePrefabOptions.Default);
-#pragma warning restore 0618 // Type or member is obsolete
+            return CreateVariant_Internal(assetRoot, path);
         }
 
-        // TODO: Having an non-obsolete method that takes an obsolete enum types as parameter is no good.
         [NativeMethod("CreateVariant", IsFreeFunction = true)]
-#pragma warning disable 0618 // Type or member is obsolete
-        extern private static GameObject CreateVariant_Internal([NotNull] GameObject original, string path, ReplacePrefabOptions replaceOptions);
-#pragma warning restore 0618 // Type or member is obsolete
+        extern private static GameObject CreateVariant_Internal([NotNull] GameObject original, string path);
 
         private enum PrefabCreationFlags
         {

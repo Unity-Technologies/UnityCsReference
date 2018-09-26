@@ -49,7 +49,7 @@ namespace UnityEditor
                 // This toggle controls two things:
                 // * Is platform enabled/disabled?
                 // * Platform CPU value
-                bool isTargetEnabled = EditorGUILayout.Toggle(name, IsTargetEnabled(inspector));
+                bool isTargetEnabled = EditorGUILayout.Toggle(name, IsTargetEnabled(inspector) && value.ToString() == defaultValue.ToString());
                 if (EditorGUI.EndChangeCheck())
                 {
                     value = isTargetEnabled ? defaultValue : DesktopPluginCPUArchitecture.None;
