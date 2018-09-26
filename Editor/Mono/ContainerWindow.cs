@@ -94,7 +94,7 @@ namespace UnityEditor
         }
 
         // Show the editor window.
-        public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately)
+        public void Show(ShowMode showMode, bool loadPosition, bool displayImmediately, bool setFocus)
         {
             if (showMode == ShowMode.AuxWindow)
                 showMode = ShowMode.Utility;
@@ -117,7 +117,7 @@ namespace UnityEditor
 
             SetBackgroundColor(skinBackgroundColor);
 
-            Internal_BringLiveAfterCreation(displayImmediately, true);
+            Internal_BringLiveAfterCreation(displayImmediately, setFocus);
 
             // Window could be killed by now in user callbacks...
             if (!this)

@@ -56,6 +56,12 @@ namespace UnityEditor.ShortcutManagement
                 {
                     if (!contextManager.HasActiveContextOfType(shortcutEntry.context))
                         continue;
+                    if (shortcutEntry.type != ShortcutType.Menu && contextManager.playModeContextIsActive)
+                        // Emulate old play mode shortcut behavior
+                        // * Menu shortcuts are always active
+                        // * Non-menu shortcuts only apply when the game view does not have focus
+                        continue;
+
                     outputShortcuts.Add(shortcutEntry);
                 }
             }

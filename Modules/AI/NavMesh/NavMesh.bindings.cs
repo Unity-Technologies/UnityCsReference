@@ -10,7 +10,7 @@ namespace UnityEngine.AI
     public static partial class NavMesh
     {
         [StaticAccessor("GetNavMeshManager()")]
-        [NativeName("Cleanup")]
+        [NativeName("CleanupAfterCarving")]
         public static extern void RemoveAllNavMeshData();
     }
 }

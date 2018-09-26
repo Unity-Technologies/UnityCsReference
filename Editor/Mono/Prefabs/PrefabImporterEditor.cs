@@ -15,6 +15,8 @@ namespace UnityEditor
     {
         static GUIContent s_OpenContent = EditorGUIUtility.TrTextContent("Open Prefab");
         static GUIContent s_BaseContent = EditorGUIUtility.TrTextContent("Base");
+        static string s_LocalizedTitleMultiplePrefabs = L10n.Tr("Prefab Assets");
+        static string s_LocalizedTitleSinglePrefab = L10n.Tr("Prefab Asset");
 
         int m_HasMixedBaseVariants = -1;
 
@@ -40,6 +42,17 @@ namespace UnityEditor
         }
 
         public override bool showImportedObject { get { return false; } }
+
+        internal override string targetTitle
+        {
+            get
+            {
+                if (assetTargets == null || assetTargets.Length == 1 || !m_AllowMultiObjectAccess)
+                    return assetTarget != null ? assetTarget.name : s_LocalizedTitleSinglePrefab;
+                else
+                    return assetTargets.Length + " " + s_LocalizedTitleMultiplePrefabs;
+            }
+        }
 
         internal override void OnHeaderControlsGUI()
         {

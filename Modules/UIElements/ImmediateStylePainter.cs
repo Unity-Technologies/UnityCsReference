@@ -119,18 +119,18 @@ namespace UnityEngine.Experimental.UIElements
         {
             IStyle style = currentElement.style;
 
-            // The background color is embedded in the texture/background image
+            if (style.backgroundColor != Color.clear)
+            {
+                var painterParams = RectStylePainterParameters.GetDefault(currentElement);
+                painterParams.border.SetWidth(0.0f);
+                DrawRect(painterParams);
+            }
+
             if (style.backgroundImage.value != null)
             {
                 var painterParams = TextureStylePainterParameters.GetDefault(currentElement);
                 painterParams.border.SetWidth(0.0f);
                 DrawTexture(painterParams);
-            }
-            else if (style.backgroundColor != Color.clear)
-            {
-                var painterParams = RectStylePainterParameters.GetDefault(currentElement);
-                painterParams.border.SetWidth(0.0f);
-                DrawRect(painterParams);
             }
         }
 

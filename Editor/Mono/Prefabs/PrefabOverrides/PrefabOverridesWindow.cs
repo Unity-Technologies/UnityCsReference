@@ -17,19 +17,28 @@ namespace UnityEditor
         const float k_HeaderHeight = 32f;
         const float k_ButtonWidth = 120;
         const float k_HeaderLeftMargin = 6;
+        const float k_NoOverridesLabelHeight = 26f;
+        const float k_ApplyButtonHeight = 32f;
+        const float k_HelpBoxHeight = 40f;
 
+        GameObject[] m_SelectedGameObjects = null;
+
+        // TreeView not used when there are multiple Prefabs.
         TreeViewState m_TreeViewState;
         PrefabOverridesTreeView m_TreeView;
-        GameObject m_SelectedGameObject;
 
         GUIContent m_StageContent = new GUIContent();
         GUIContent m_InstanceContent = new GUIContent();
         GUIContent m_RevertAllContent = new GUIContent();
         GUIContent m_ApplyAllContent = new GUIContent();
 
-        bool m_Immutable;
+        bool m_AnyOverrides;
+        bool m_Disconnected;
         bool m_InvalidComponentOnInstance;
+        bool m_ModelPrefab;
+        bool m_Immutable;
         bool m_InvalidComponentOnAsset;
+
         static class Styles
         {
             public static GUIContent revertAllContent = EditorGUIUtility.TrTextContent("Revert All", "Revert all overrides.");
@@ -49,46 +58,76 @@ namespace UnityEditor
 
         internal PrefabOverridesWindow(GameObject selectedGameObject)
         {
-            m_SelectedGameObject = selectedGameObject;
+            m_SelectedGameObjects = new GameObject[] { selectedGameObject };
             m_TreeViewState = new TreeViewState();
             m_TreeView = new PrefabOverridesTreeView(selectedGameObject, m_TreeViewState);
 
-            GameObject prefabAssetRoot = PrefabUtility.GetCorrespondingObjectFromSource(m_SelectedGameObject);
+            GameObject prefabAssetRoot = PrefabUtility.GetCorrespondingObjectFromSource(selectedGameObject);
 
-            m_TreeView.SetApplyTarget(m_SelectedGameObject, prefabAssetRoot, AssetDatabase.GetAssetPath(prefabAssetRoot));
+            m_TreeView.SetApplyTarget(selectedGameObject, prefabAssetRoot, AssetDatabase.GetAssetPath(prefabAssetRoot));
 
-            UpdateText(prefabAssetRoot);
-
-            m_Immutable = PrefabUtility.IsPartOfImmutablePrefab(prefabAssetRoot);
-            m_InvalidComponentOnInstance = PrefabUtility.HasInvalidComponent(m_SelectedGameObject);
-            m_InvalidComponentOnAsset = PrefabUtility.HasInvalidComponent(prefabAssetRoot);
+            UpdateTextSingle(prefabAssetRoot);
+            UpdateStatusChecks(selectedGameObject);
         }
 
-        bool IsDisconnected()
+        internal PrefabOverridesWindow(GameObject[] selectedGameObjects)
         {
-            return PrefabUtility.IsDisconnectedFromPrefabAsset(m_SelectedGameObject);
+            m_SelectedGameObjects = selectedGameObjects;
+            UpdateTextMultiple();
+            for (int i = 0; i < m_SelectedGameObjects.Length; i++)
+                UpdateStatusChecks(m_SelectedGameObjects[i]);
+        }
+
+        void UpdateStatusChecks(GameObject prefabInstanceRoot)
+        {
+            if (PrefabUtility.HasPrefabInstanceAnyOverrides(prefabInstanceRoot, false))
+                m_AnyOverrides = true;
+            if (PrefabUtility.IsDisconnectedFromPrefabAsset(prefabInstanceRoot))
+                m_Disconnected = true;
+            if (PrefabUtility.HasInvalidComponent(prefabInstanceRoot))
+                m_InvalidComponentOnInstance = true;
+
+            GameObject prefabAssetRoot = PrefabUtility.GetCorrespondingObjectFromSource(prefabInstanceRoot);
+
+            if (PrefabUtility.IsPartOfModelPrefab(prefabAssetRoot))
+                m_ModelPrefab = true;
+            if (PrefabUtility.IsPartOfImmutablePrefab(prefabAssetRoot))
+                m_Immutable = true;
+            if (PrefabUtility.HasInvalidComponent(prefabAssetRoot))
+                m_InvalidComponentOnAsset = true;
         }
 
         bool IsShowingActionButton()
         {
-            if (m_TreeView.hasModifications || IsDisconnected())
-                return true;
+            return m_AnyOverrides || m_Disconnected;
+        }
 
-            return false;
+        bool HasMultiSelection()
+        {
+            return m_SelectedGameObjects.Length > 1;
+        }
+
+        bool DisplayingTreeView()
+        {
+            return m_AnyOverrides && !HasMultiSelection();
         }
 
         public override Vector2 GetWindowSize()
         {
             var height = k_HeaderHeight;
 
-            if (!IsDisconnected())
-                height += k_TreeViewPadding.top + m_TreeView.totalHeight + k_TreeViewPadding.bottom;
+            if (!IsShowingActionButton())
+            {
+                height += k_NoOverridesLabelHeight;
+            }
+            else
+            {
+                if (DisplayingTreeView())
+                    height += k_TreeViewPadding.top + m_TreeView.totalHeight + k_TreeViewPadding.bottom;
 
-            const float applyButtonHeight = 32f;
-            if (IsShowingActionButton())
-                height += applyButtonHeight;
-            if (m_TreeView.hasModifications || IsDisconnected())
-                height += 40;
+                if (IsShowingActionButton())
+                    height += k_ApplyButtonHeight + k_HelpBoxHeight;
+            }
 
             // Width should be no smaller than minimum width, but we could potentially improve
             // width handling by making it expand if needed based on tree view content.
@@ -99,6 +138,13 @@ namespace UnityEditor
 
         public override void OnGUI(Rect rect)
         {
+            // Escape closes the window
+            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
+            {
+                editorWindow.Close();
+                GUIUtility.ExitGUI();
+            }
+
             Rect headerRect = GUILayoutUtility.GetRect(20, 10000, k_HeaderHeight, k_HeaderHeight);
             EditorGUI.DrawRect(headerRect, headerBgColor);
 
@@ -120,20 +166,36 @@ namespace UnityEditor
 
             GUILayout.Space(k_TreeViewPadding.top);
 
-            if (!IsDisconnected())
+            // If we know there are no overrides and thus no meaningful actions we just show that and nothing more.
+            if (!IsShowingActionButton())
             {
-                Rect treeViewRect = GUILayoutUtility.GetRect(100, 1000, 0, 1000);
-                m_TreeView.OnGUI(treeViewRect);
+                EditorGUILayout.LabelField("No Overrides");
+                return;
             }
 
-            if (IsShowingActionButton())
+            // Display tree view and/or instructions related to it.
+            if (HasMultiSelection())
             {
-                if (IsDisconnected())
+                if (m_InvalidComponentOnAsset || m_InvalidComponentOnInstance || m_ModelPrefab || m_Immutable)
+                    EditorGUILayout.HelpBox(
+                        "Multiple Prefabs selected. Cannot show overrides.\nApplying is not possible for one or more Prefabs. Select individual Prefabs for details.",
+                        MessageType.Info);
+                else
+                    EditorGUILayout.HelpBox(
+                        "Multiple Prefabs selected. Cannot show overrides.",
+                        MessageType.Info);
+            }
+            else
+            {
+                if (m_Disconnected)
                 {
                     EditorGUILayout.HelpBox("Disconnected. Cannot show overrides.", MessageType.Warning);
                 }
-                else if (m_TreeView.hasModifications)
+                else if (m_AnyOverrides)
                 {
+                    Rect treeViewRect = GUILayoutUtility.GetRect(100, 1000, 0, 1000);
+                    m_TreeView.OnGUI(treeViewRect);
+
                     if (m_InvalidComponentOnAsset)
                         EditorGUILayout.HelpBox(
                             "Click on individual items to review and revert.\nThe Prefab file contains an invalid script. Applying is not possible. Enter Prefab Mode and remove the script.",
@@ -142,7 +204,7 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox(
                             "Click on individual items to review and revert.\nThe Prefab instance contains an invalid script. Applying is not possible. Remove the script.",
                             MessageType.Info);
-                    else if (PrefabUtility.IsPartOfModelPrefab(m_SelectedGameObject))
+                    else if (m_ModelPrefab)
                         EditorGUILayout.HelpBox(
                             "Click on individual items to review and revert.\nApplying to a model Prefab is not possible.",
                             MessageType.Info);
@@ -154,54 +216,93 @@ namespace UnityEditor
                         EditorGUILayout.HelpBox("Click on individual items to review, revert and apply.",
                             MessageType.Info);
                 }
+            }
 
-                GUILayout.BeginHorizontal();
-
-                GUILayout.FlexibleSpace();
-
-                using (new EditorGUI.DisabledScope(m_InvalidComponentOnAsset))
+            // Display action buttons (Revert All and Apply All)
+            GUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            using (new EditorGUI.DisabledScope(m_InvalidComponentOnAsset))
+            {
+                if (GUILayout.Button(m_RevertAllContent, GUILayout.Width(k_ButtonWidth)))
                 {
-                    if (GUILayout.Button(m_RevertAllContent, GUILayout.Width(k_ButtonWidth)))
+                    if (RevertAll() && editorWindow != null)
                     {
-                        PrefabUtility.RevertPrefabInstance(m_SelectedGameObject, InteractionMode.UserAction);
+                        editorWindow.Close();
+                        GUIUtility.ExitGUI();
+                    }
+                }
 
-                        if (editorWindow != null)
+                using (new EditorGUI.DisabledScope(m_Immutable || m_InvalidComponentOnInstance))
+                {
+                    if (GUILayout.Button(m_ApplyAllContent, GUILayout.Width(k_ButtonWidth)))
+                    {
+                        if (ApplyAll() && editorWindow != null)
                         {
                             editorWindow.Close();
                             GUIUtility.ExitGUI();
                         }
                     }
-
-                    using (new EditorGUI.DisabledScope(m_Immutable || m_InvalidComponentOnInstance))
-                    {
-                        if (GUILayout.Button(m_ApplyAllContent, GUILayout.Width(k_ButtonWidth)))
-                        {
-                            string assetPath =
-                                PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(m_SelectedGameObject);
-                            if (PrefabUtility.PromptAndCheckoutPrefabIfNeeded(assetPath, PrefabUtility.SaveVerb.Apply))
-                            {
-                                PrefabUtility.ApplyPrefabInstance(m_SelectedGameObject, InteractionMode.UserAction);
-
-                                if (editorWindow != null)
-                                {
-                                    editorWindow.Close();
-                                    GUIUtility.ExitGUI();
-                                }
-                            }
-                        }
-                    }
                 }
             }
-
-            // Escape closes the window
-            if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape)
-            {
-                editorWindow.Close();
-                GUIUtility.ExitGUI();
-            }
+            GUILayout.EndHorizontal();
         }
 
-        void UpdateText(GameObject prefabAsset)
+        bool ApplyAll()
+        {
+            // Collect Prefab Asset paths and also check if there's more than one of the same.
+            HashSet<string> prefabAssetPaths = new HashSet<string>();
+            bool multipleOfSame = false;
+            for (int i = 0; i < m_SelectedGameObjects.Length; i++)
+            {
+                string prefabAssetPath = PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(m_SelectedGameObjects[i]);
+                if (prefabAssetPaths.Contains(prefabAssetPath))
+                    multipleOfSame = true;
+                else
+                    prefabAssetPaths.Add(prefabAssetPath);
+            }
+
+            // If more than one instance of the same Prefab Asset, show dialog to user.
+            if (multipleOfSame && !EditorUtility.DisplayDialog(
+                "Multiple instances of same Prefab Asset",
+                "Multiple instances of the same Prefab Asset were detected. Potentially conflicting overrides will be applied sequentially and will overwrite each other.",
+                "OK",
+                "Cancel"))
+                return false;
+
+            // Make sure assets are checked out in version control.
+            if (!PrefabUtility.PromptAndCheckoutPrefabIfNeeded(prefabAssetPaths.ToArray(), PrefabUtility.SaveVerb.Apply))
+                return false;
+
+            // Apply sequentially.
+            for (int i = 0; i < m_SelectedGameObjects.Length; i++)
+                PrefabUtility.ApplyPrefabInstance(m_SelectedGameObjects[i], InteractionMode.UserAction);
+
+            return true;
+        }
+
+        bool RevertAll()
+        {
+            for (int i = 0; i < m_SelectedGameObjects.Length; i++)
+                PrefabUtility.RevertPrefabInstance(m_SelectedGameObjects[i], InteractionMode.UserAction);
+
+            return true;
+        }
+
+        void UpdateTextSingle(GameObject prefabAsset)
+        {
+            Texture2D icon = (Texture2D)AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(prefabAsset));
+            string name = prefabAsset.name;
+            UpdateText(icon, name);
+        }
+
+        void UpdateTextMultiple()
+        {
+            Texture icon = EditorGUIUtility.IconContent("Prefab Icon").image;
+            string name = "(Multiple Prefabs)";
+            UpdateText(icon, name);
+        }
+
+        void UpdateText(Texture assetIcon, string assetName)
         {
             var stage = SceneManagement.StageNavigationManager.instance.currentItem;
             if (stage.isMainStage)
@@ -215,8 +316,8 @@ namespace UnityEditor
                 m_StageContent.text = stage.displayName;
             }
 
-            m_InstanceContent.image = (Texture2D)AssetDatabase.GetCachedIcon(AssetDatabase.GetAssetPath(prefabAsset));
-            m_InstanceContent.text = prefabAsset.name;
+            m_InstanceContent.image = assetIcon;
+            m_InstanceContent.text = assetName;
 
             m_RevertAllContent.text = Styles.revertAllContent.text;
             m_RevertAllContent.tooltip = Styles.revertAllContent.tooltip;
@@ -226,7 +327,7 @@ namespace UnityEditor
                 applyAllContent = Styles.applyAllToBaseContent;
 
             m_ApplyAllContent.text = applyAllContent.text;
-            m_ApplyAllContent.tooltip = string.Format(applyAllContent.tooltip, prefabAsset.name);
+            m_ApplyAllContent.tooltip = string.Format(applyAllContent.tooltip, assetName);
         }
     }
 }

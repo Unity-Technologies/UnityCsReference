@@ -16,6 +16,7 @@ namespace UnityEditor.ShortcutManagement
         bool HasAnyPriorityContext();
         bool HasPriorityContextOfType(Type type);
         bool HasActiveContextOfType(Type type);
+        bool playModeContextIsActive { get; }
         object GetContextInstanceOfType(Type type);
     }
 
@@ -32,7 +33,19 @@ namespace UnityEditor.ShortcutManagement
 
         List<IShortcutToolContext> m_ToolContexts = new List<IShortcutToolContext>();
 
-        public int activeContextCount => 1 + ((m_FocusedWindow != null && m_FocusedWindow.IsAlive && m_FocusedWindow.Target != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
+        public int activeContextCount => 1 + ((focusedWindow != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
+
+        public bool playModeContextIsActive => focusedWindow is GameView && EditorApplication.isPlaying;
+
+        private EditorWindow focusedWindow
+        {
+            get
+            {
+                if (m_FocusedWindow != null && m_FocusedWindow.IsAlive && m_FocusedWindow.Target != null)
+                    return m_FocusedWindow.Target as EditorWindow;
+                return null;
+            }
+        }
 
         public void SetFocusedWindow(EditorWindow window)
         {

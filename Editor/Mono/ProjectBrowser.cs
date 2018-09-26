@@ -1277,6 +1277,13 @@ namespace UnityEditor
                             OpenAssetSelection(Selection.instanceIDs);
                         }
                         break;
+                    case KeyCode.Delete:
+                        if (Event.current.shift)
+                        {
+                            DeleteSelectedAssets(false);
+                            Event.current.Use();
+                        }
+                        break;
                 }
             }
         }

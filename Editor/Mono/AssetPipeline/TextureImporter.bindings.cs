@@ -20,6 +20,14 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/EditorUserBuildSettings.h")]
     public sealed partial class TextureImporter : AssetImporter, ISpriteEditorDataProvider
     {
+        private string GetFixedPlatformName(string platform)
+        {
+            var targetGroup = BuildPipeline.GetBuildTargetGroupByName(platform);
+            if (targetGroup != BuildTargetGroup.Unknown)
+                return BuildPipeline.GetBuildTargetGroupName(targetGroup);
+            return platform;
+        }
+
         [Obsolete("textureFormat is no longer accessible at the TextureImporter level. For old 'simple' formats use the textureCompression property for the equivalent automatic choice (Uncompressed for TrueColor, Compressed and HQCommpressed for 16 bits). For platform specific formats use the [[PlatformTextureSettings]] API. Using this setter will setup various parameters to match the new automatic system as well as possible. Getter will return the last value set.")]
         public extern TextureImporterFormat textureFormat
         {
@@ -96,6 +104,9 @@ namespace UnityEditor
         // public API will always return a valid TextureImporterPlatformSettings, creating it based on the default one if it did not exist.
         public TextureImporterPlatformSettings GetPlatformTextureSettings(string platform)
         {
+            // make sure we are converting the settings to use the proper BuildTargetGroupName to get them (the way it works on other importers)
+            platform = GetFixedPlatformName(platform);
+
             TextureImporterPlatformSettings dest = GetPlatformTextureSetting_Internal(platform);
             if (platform != dest.name)
             {
@@ -112,6 +123,7 @@ namespace UnityEditor
 
         public TextureImporterFormat GetAutomaticFormat(string platform)
         {
+            platform = GetFixedPlatformName(platform);
             TextureImporterSettings settings = new TextureImporterSettings();
             ReadTextureSettings(settings);
             TextureImporterPlatformSettings platformSettings = GetPlatformTextureSettings(platform);
@@ -161,11 +173,25 @@ namespace UnityEditor
             SetPlatformTextureSettings(dest);
         }
 
+        [NativeName("SetPlatformTextureSettings")]
+        private extern void SetPlatformTextureSettings_Internal(TextureImporterPlatformSettings platformSettings);
+
         // Set specific target platform settings
-        public extern void SetPlatformTextureSettings(TextureImporterPlatformSettings platformSettings);
+        public void SetPlatformTextureSettings(TextureImporterPlatformSettings platformSettings)
+        {
+            // we need to fix the name in case the user changed it to some mismatching value
+            platformSettings.name = GetFixedPlatformName(platformSettings.name);
+            SetPlatformTextureSettings_Internal(platformSettings);
+        }
 
         // Clear specific target platform settings
-        public extern void ClearPlatformTextureSettings(string platform);
+        [NativeName("ClearPlatformTextureSettings")]
+        private extern void ClearPlatformTextureSettings_Internal(string platform);
+
+        public void ClearPlatformTextureSettings(string platform)
+        {
+            ClearPlatformTextureSettings_Internal(GetFixedPlatformName(platform));
+        }
 
         [FreeFunction]
         internal static extern  TextureImporterFormat DefaultFormatFromTextureParameters([NotNull] TextureImporterSettings settings, TextureImporterPlatformSettings platformSettings, bool doesTextureContainAlpha, bool sourceWasHDR, BuildTarget destinationPlatform);

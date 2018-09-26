@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.Experimental.UIElements;
 using UnityEngine.Internal;
 using UnityEditor.StyleSheets;
+using UnityEditorInternal;
 
 namespace UnityEditor
 {
@@ -68,8 +69,19 @@ namespace UnityEditor
         public override void OnGUI(string searchContext)
         {
             if (m_SettingsEditor != null)
+            {
                 using (new SettingsWindow.GUIScope())
                     m_SettingsEditor.OnInspectorGUI();
+
+                // Emulate the Inspector by handling DnD at the native level.
+                var remainingRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true));
+                if ((Event.current.type == EventType.DragUpdated || Event.current.type == EventType.DragPerform) && remainingRect.Contains(Event.current.mousePosition))
+                {
+                    DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(new[] { m_SettingsEditor.target }, Event.current.type == EventType.DragPerform);
+                    if (Event.current.type == EventType.DragPerform)
+                        DragAndDrop.AcceptDrag();
+                }
+            }
 
             base.OnGUI(searchContext);
         }

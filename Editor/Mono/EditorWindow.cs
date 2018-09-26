@@ -525,7 +525,7 @@ namespace UnityEditor
                 cw.position = r;
                 cw.rootView = host;
                 MakeParentsSettingsMatchMe();
-                cw.Show(mode, true, false);
+                cw.Show(mode, loadPosition: true, displayImmediately: false, setFocus: true);
                 // set min/max size now that native window is not null so that it will e.g., use proper styleMask on macOS
                 cw.SetMinMaxSizes(minSize, maxSize);
 
@@ -1068,24 +1068,19 @@ namespace UnityEditor
 
         // Internal stuff:
         // Helper to show this EditorWindow
-        internal static void CreateNewWindowForEditorWindow(EditorWindow window, bool loadPosition, bool showImmediately)
-        {
-            CreateNewWindowForEditorWindow(window, new Vector2(window.position.x, window.position.y), loadPosition, showImmediately);
-        }
-
-        internal static void CreateNewWindowForEditorWindow(EditorWindow window, Vector2 screenPosition, bool loadPosition, bool showImmediately)
+        internal static void CreateNewWindowForEditorWindow(EditorWindow window, bool loadPosition, bool showImmediately, bool setFocus = true)
         {
             ContainerWindow cw = ScriptableObject.CreateInstance<ContainerWindow>();
             SplitView sw = ScriptableObject.CreateInstance<SplitView>();
             cw.rootView = sw;
             DockArea da = ScriptableObject.CreateInstance<DockArea>();
-            da.AddTab(window);
+            da.AddTab(window, setFocus);
             sw.AddChild(da);
-            Rect r = window.m_Parent.borderSize.Add(new Rect(screenPosition.x, screenPosition.y, window.position.width, window.position.height));
+            Rect r = window.m_Parent.borderSize.Add(window.position);
             cw.position = r;
             sw.position = new Rect(0, 0, r.width, r.height);
             window.MakeParentsSettingsMatchMe();
-            cw.Show(ShowMode.NormalWindow, loadPosition, showImmediately);
+            cw.Show(ShowMode.NormalWindow, loadPosition, showImmediately, setFocus: true);
             //Need this, as show my change the size of the window, due to screen constraints
             cw.OnResize();
         }

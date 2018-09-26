@@ -12,7 +12,7 @@ namespace UnityEditor.ShortcutManagement
 {
     class ConflictResolver : IConflictResolver
     {
-        public void ResolveConflict(List<KeyCombination> keyCombinationSequence, List<ShortcutEntry> entries)
+        public void ResolveConflict(IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries)
         {
             var builder = new StringBuilder();
 

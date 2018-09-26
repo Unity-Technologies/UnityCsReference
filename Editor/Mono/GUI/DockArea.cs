@@ -82,14 +82,16 @@ namespace UnityEditor
         public int selected
         {
             get { return m_Selected; }
-            set
-            {
-                if (m_Selected != value)
-                    m_LastSelected = m_Selected;
-                m_Selected = value;
-                if (m_Selected >= 0 && m_Selected < m_Panes.Count)
-                    actualView = m_Panes[m_Selected];
-            }
+            set { SetSelectedPrivate(value, sendEvents: true); }
+        }
+
+        private void SetSelectedPrivate(int value, bool sendEvents)
+        {
+            if (m_Selected != value)
+                m_LastSelected = m_Selected;
+            m_Selected = value;
+            if (m_Selected >= 0 && m_Selected < m_Panes.Count)
+                SetActualViewInternal(m_Panes[m_Selected], sendEvents);
         }
 
         public DockArea()
@@ -173,16 +175,16 @@ namespace UnityEditor
             style.positionType = PositionType.Absolute;
         }
 
-        public void AddTab(EditorWindow pane)
+        public void AddTab(EditorWindow pane, bool sendPaneEvents = true)
         {
-            AddTab(m_Panes.Count, pane);
+            AddTab(m_Panes.Count, pane, sendPaneEvents);
         }
 
-        public void AddTab(int idx, EditorWindow pane)
+        public void AddTab(int idx, EditorWindow pane, bool sendPaneEvents = true)
         {
-            DeregisterSelectedPane(true);
+            DeregisterSelectedPane(clearActualView: true, sendEvents: true);
             m_Panes.Insert(idx, pane);
-            selected = idx;
+            SetSelectedPrivate(idx, sendPaneEvents);
             s_GUIContents.Clear();
 
             var sp = parent as SplitView;
@@ -192,11 +194,11 @@ namespace UnityEditor
             Repaint();
         }
 
-        public void RemoveTab(EditorWindow pane) { RemoveTab(pane, true); }
-        public void RemoveTab(EditorWindow pane, bool killIfEmpty)
+        public void RemoveTab(EditorWindow pane) { RemoveTab(pane, killIfEmpty: true); }
+        public void RemoveTab(EditorWindow pane, bool killIfEmpty, bool sendEvents = true)
         {
             if (actualView == pane)
-                DeregisterSelectedPane(true);
+                DeregisterSelectedPane(clearActualView: true, sendEvents: sendEvents);
             int idx = m_Panes.IndexOf(pane);
             if (idx == -1)
                 return; // Pane is not in the window
@@ -222,7 +224,7 @@ namespace UnityEditor
             pane.m_Parent = null;
             if (killIfEmpty)
                 KillIfEmpty();
-            RegisterSelectedPane();
+            RegisterSelectedPane(sendEvents: true);
         }
 
         private void KillIfEmpty()
@@ -279,9 +281,10 @@ namespace UnityEditor
 
         public bool PerformDrop(EditorWindow w, DropInfo info, Vector2 screenPos)
         {
-            s_OriginalDragSource.RemoveTab(w, s_OriginalDragSource != this);
+            // Don't send focus events to the tab being moved
+            s_OriginalDragSource.RemoveTab(w, killIfEmpty: s_OriginalDragSource != this, sendEvents: false);
             int tabInsertIndex = s_PlaceholderPos == -1 || s_PlaceholderPos > m_Panes.Count ? m_Panes.Count : s_PlaceholderPos;
-            AddTab(tabInsertIndex, w);
+            AddTab(tabInsertIndex, w, sendPaneEvents: false);
             selected = tabInsertIndex;
             return true;
         }
@@ -891,7 +894,9 @@ namespace UnityEditor
 
                                 ResetDragVars();
 
-                                RemoveTab(w);
+                                // The active tab that we're moving to the new window stays focused at all times.
+                                // Do not remove focus from the tab being detached.
+                                RemoveTab(w, killIfEmpty: true, sendEvents: false);
                                 Rect wPos = w.position;
                                 wPos.x = screenMousePos.x - wPos.width * .5f;
                                 wPos.y = screenMousePos.y - wPos.height * .5f;
@@ -900,7 +905,8 @@ namespace UnityEditor
                                 if (Application.platform == RuntimePlatform.WindowsEditor)
                                     wPos.y = Mathf.Max(InternalEditorUtility.GetBoundsOfDesktopAtPoint(screenMousePos).y, wPos.y);
 
-                                EditorWindow.CreateNewWindowForEditorWindow(w, false, false);
+                                // Don't call OnFocus on the tab when it is moved to the new window
+                                EditorWindow.CreateNewWindowForEditorWindow(w, loadPosition: false, showImmediately: false, setFocus: false);
 
                                 w.position = w.m_Parent.window.FitWindowRectToScreen(wPos, true, true);
 

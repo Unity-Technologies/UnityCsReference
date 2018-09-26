@@ -148,7 +148,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     var index = message.message.IndexOf(EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest ? "Consider adding a reference to that assembly." : "Consider adding a reference to assembly");
                     if (index != -1)
                         message.message = message.message.Substring(0, index);
-                    var moduleName = GetNiceDisplayNameForModule(match.Groups[1].Value);
+                    var moduleName = match.Groups[1].Value;
+                    moduleName = ModuleMetadata.GetExcludingModule(moduleName);
+                    moduleName = GetNiceDisplayNameForModule(moduleName);
 
                     message.message += string.Format("Enable the built in package '{0}' in the Package Manager window to fix this error.", moduleName);
                 }

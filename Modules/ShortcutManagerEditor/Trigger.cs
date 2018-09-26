@@ -64,26 +64,24 @@ namespace UnityEditor.ShortcutManagement
                 return;
 
             m_Directory.FindShortcutEntries(m_KeyCombinationSequence, contextManager, m_Entries);
+            IEnumerable<ShortcutEntry> entries = m_Entries;
 
             // Deal ONLY with prioritycontext
-            if (m_Entries.Count > 1 && contextManager.HasAnyPriorityContext())
+            if (entries.Count() > 1 && contextManager.HasAnyPriorityContext())
             {
-                var entry = m_Entries.FindAll(a => contextManager.HasPriorityContextOfType(a.context));
-                if (entry.Any())
-                {
-                    m_Entries.Clear();
-                    m_Entries.AddRange(entry);
-                }
+                entries = m_Entries.FindAll(a => contextManager.HasPriorityContextOfType(a.context));
+                if (!entries.Any())
+                    entries = m_Entries;
             }
 
-            switch (m_Entries.Count)
+            switch (entries.Count())
             {
                 case 0:
                     Reset();
                     break;
 
                 case 1:
-                    var shortcutEntry = m_Entries.Single();
+                    var shortcutEntry = entries.Single();
                     if (ShortcutFullyMatchesKeyCombination(shortcutEntry))
                     {
                         if (evt.keyCode != m_KeyCombinationSequence.Last().keyCode)
@@ -121,9 +119,9 @@ namespace UnityEditor.ShortcutManagement
                     break;
 
                 default:
-                    if (HasConflicts(m_Entries, m_KeyCombinationSequence))
+                    if (HasConflicts(entries, m_KeyCombinationSequence))
                     {
-                        m_ConflictResolver.ResolveConflict(m_KeyCombinationSequence, m_Entries);
+                        m_ConflictResolver.ResolveConflict(m_KeyCombinationSequence, entries);
                         Reset();
                     }
                     break;
@@ -136,10 +134,10 @@ namespace UnityEditor.ShortcutManagement
         }
 
         // filtered entries are expected to all be in the same context and/or null context and they all are known to share the prefix
-        bool HasConflicts(List<ShortcutEntry> filteredEntries, List<KeyCombination> prefix)
+        bool HasConflicts(IEnumerable<ShortcutEntry> filteredEntries, List<KeyCombination> prefix)
         {
             if (filteredEntries.Any(e => e.FullyMatches(prefix)))
-                return filteredEntries.Count > 1;
+                return filteredEntries.Count() > 1;
             return false;
         }
 

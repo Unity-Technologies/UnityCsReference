@@ -131,7 +131,9 @@ namespace UnityEditor
             {
                 SetWindowPos(pixelPos);
             }
-            m_Window.Show(ShowMode.NoShadow, true, false);
+
+            // Do not steal focus from the pane
+            m_Window.Show(ShowMode.NoShadow, loadPosition: true, displayImmediately: false, setFocus: false);
 
             m_TargetRect = pixelPos;
         }

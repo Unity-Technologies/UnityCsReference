@@ -445,9 +445,9 @@ namespace UnityEditor
             parentForDrop.MakeRoomForRect(dropRect);
             parentForDrop.AddChild(newDockArea, dropIndex);
             newDockArea.position = dropRect;
-            DockArea.s_OriginalDragSource.RemoveTab(dropWindow);
+            DockArea.s_OriginalDragSource.RemoveTab(dropWindow, killIfEmpty: true, sendEvents: false);
             dropWindow.m_Parent = newDockArea;
-            newDockArea.AddTab(dropWindow);
+            newDockArea.AddTab(dropWindow, sendPaneEvents: false);
             Reflow();
             RecalcMinMaxAndReflowAll(this);
             newDockArea.MakeVistaDWMHappyDance();

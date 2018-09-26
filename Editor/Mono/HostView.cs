@@ -32,22 +32,24 @@ namespace UnityEditor
         internal EditorWindow actualView
         {
             get { return m_ActualView; }
-            set
-            {
-                if (m_ActualView == value)
-                    return;
-                DeregisterSelectedPane(true);
-                m_ActualView = value;
-                m_IsGameView = m_ActualView is GameView;
-                RegisterSelectedPane();
-                actualViewChanged?.Invoke(this);
-            }
+            set { SetActualViewInternal(value, sendEvents: true); }
+        }
+
+        internal void SetActualViewInternal(EditorWindow value, bool sendEvents)
+        {
+            if (m_ActualView == value)
+                return;
+            DeregisterSelectedPane(clearActualView: true, sendEvents: true);
+            m_ActualView = value;
+            m_IsGameView = m_ActualView is GameView;
+            RegisterSelectedPane(sendEvents);
+            actualViewChanged?.Invoke(this);
         }
 
         internal void ResetActiveView()
         {
-            DeregisterSelectedPane(false);
-            RegisterSelectedPane();
+            DeregisterSelectedPane(clearActualView: false, sendEvents: true);
+            RegisterSelectedPane(sendEvents: true);
             if (actualViewChanged != null)
                 actualViewChanged(this);
         }
@@ -94,7 +96,7 @@ namespace UnityEditor
             EditorPrefs.onValueWasUpdated += PlayModeTintColorChangedCallback;
             base.OnEnable();
             background = null;
-            RegisterSelectedPane();
+            RegisterSelectedPane(sendEvents: true);
         }
 
         protected override void OnDisable()
@@ -102,7 +104,7 @@ namespace UnityEditor
             EditorApplication.playModeStateChanged -= PlayModeStateChangedCallback;
             EditorPrefs.onValueWasUpdated -= PlayModeTintColorChangedCallback;
             base.OnDisable();
-            DeregisterSelectedPane(false);
+            DeregisterSelectedPane(clearActualView: false, sendEvents: true);
         }
 
         protected override void OldOnGUI()
@@ -159,6 +161,11 @@ namespace UnityEditor
         {
             EditorGUI.EndEditingActiveTextField();
             Invoke("OnLostFocus");
+
+            // Callback could have killed us
+            if (!this)
+                return;
+
             Repaint();
         }
 
@@ -339,7 +346,7 @@ namespace UnityEditor
             mi?.Invoke(obj, null);
         }
 
-        protected void RegisterSelectedPane()
+        protected void RegisterSelectedPane(bool sendEvents)
         {
             if (!m_ActualView)
                 return;
@@ -368,24 +375,27 @@ namespace UnityEditor
                 EditorApplication.update += m_ActualView.CheckForWindowRepaint;
             }
 
-            try
+            if (sendEvents)
             {
-                Invoke("OnBecameVisible");
-                EditorModes.OnBecameVisible(m_ActualView);
-                Invoke("OnFocus");
-                EditorModes.OnFocus(m_ActualView);
-            }
-            catch (TargetInvocationException ex)
-            {
-                // We need to catch these so the window initialization doesn't get screwed
-                if (ex.InnerException != null)
-                    Debug.LogError(ex.InnerException.GetType().Name + ":" + ex.InnerException.Message);
+                try
+                {
+                    Invoke("OnBecameVisible");
+                    EditorModes.OnBecameVisible(m_ActualView);
+                    Invoke("OnFocus");
+                    EditorModes.OnFocus(m_ActualView);
+                }
+                catch (TargetInvocationException ex)
+                {
+                    // We need to catch these so the window initialization doesn't get screwed
+                    if (ex.InnerException != null)
+                        Debug.LogError(ex.InnerException.GetType().Name + ":" + ex.InnerException.Message);
+                }
             }
 
             UpdateViewMargins(m_ActualView);
         }
 
-        protected void DeregisterSelectedPane(bool clearActualView)
+        protected void DeregisterSelectedPane(bool clearActualView, bool sendEvents)
         {
             if (!m_ActualView)
                 return;
@@ -417,10 +427,13 @@ namespace UnityEditor
             {
                 EditorWindow oldActualView = m_ActualView;
                 m_ActualView = null;
-                Invoke("OnLostFocus", oldActualView);
-                EditorModes.OnLostFocus(m_ActualView);
-                Invoke("OnBecameInvisible", oldActualView);
-                EditorModes.OnBecameInvisible(oldActualView);
+                if (sendEvents)
+                {
+                    Invoke("OnLostFocus", oldActualView);
+                    EditorModes.OnLostFocus(m_ActualView);
+                    Invoke("OnBecameInvisible", oldActualView);
+                    EditorModes.OnBecameInvisible(oldActualView);
+                }
             }
         }
 

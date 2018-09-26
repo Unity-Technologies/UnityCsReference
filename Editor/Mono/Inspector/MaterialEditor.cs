@@ -60,6 +60,7 @@ namespace UnityEditor
             public static readonly GUIContent enableInstancingLabel = EditorGUIUtility.TrTextContent("Enable GPU Instancing");
             public static readonly GUIContent doubleSidedGILabel = EditorGUIUtility.TrTextContent("Double Sided Global Illumination", "When enabled, the lightmapper accounts for both sides of the geometry when calculating Global Illumination. Backfaces are not rendered or added to lightmaps, but get treated as valid when seen from other objects. When using the Progressive Lightmapper backfaces bounce light using the same emission and albedo as frontfaces.");
             public static readonly GUIContent emissionLabel = EditorGUIUtility.TrTextContent("Emission");
+            public static readonly GUIContent ProgressiveGPUWarning = EditorGUIUtility.TrTextContent("The Double Sided Global Illumination feature is not implemented in the Progressive GPU lightmapper yet. Use the CPU lightmapper instead if you need this functionality.");
         }
 
         private static readonly List<MaterialEditor> s_MaterialEditors = new List<MaterialEditor>(4);

@@ -600,7 +600,7 @@ namespace UnityEditor
                     throw new System.Exception();
                 }
 
-                mainWindow.Show(mainWindow.showMode, true, true);
+                mainWindow.Show(mainWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
 
                 // Show other windows
                 for (int i = 0; i < newWindows.Count; i++)
@@ -611,7 +611,7 @@ namespace UnityEditor
 
                     ContainerWindow containerWindow = newWindows[i] as ContainerWindow;
                     if (containerWindow && containerWindow != mainWindow)
-                        containerWindow.Show(containerWindow.showMode, true, true);
+                        containerWindow.Show(containerWindow.showMode, loadPosition: true, displayImmediately: true, setFocus: true);
                 }
 
                 // Unmaximize maximized GameView if maximize on play is enabled

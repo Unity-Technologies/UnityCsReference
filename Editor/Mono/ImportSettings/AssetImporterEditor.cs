@@ -22,11 +22,13 @@ namespace UnityEditor.Experimental.AssetImporters
         protected internal Object assetTarget { get { return m_AssetEditor != null ? m_AssetEditor.target : null; } }
         protected internal SerializedObject assetSerializedObject { get { return m_AssetEditor != null ? m_AssetEditor.serializedObject : null; } }
 
+        static string s_LocalizedTitleString = L10n.Tr("{0} Import Settings");
+
         internal override string targetTitle
         {
             get
             {
-                return string.Format(L10n.Tr("{0} Import Settings"), m_AssetEditor == null ? string.Empty : m_AssetEditor.targetTitle);
+                return string.Format(s_LocalizedTitleString, m_AssetEditor == null ? string.Empty : m_AssetEditor.targetTitle);
             }
         }
 
