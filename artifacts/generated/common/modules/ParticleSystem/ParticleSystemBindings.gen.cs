@@ -4111,6 +4111,10 @@ public void Emit(ParticleSystem.Particle particle)
     [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
     extern internal int GenerateRandomSeed () ;
 
+    [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+    [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+    extern public static  void EnableMeshNonUniformScaleFix (bool enabled) ;
+
 }
 
 [RequireComponent(typeof(Transform))]
