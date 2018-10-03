@@ -104,6 +104,9 @@ namespace UnityEditor
             {
                 if (GUILayout.Button(Styles.ok))
                 {
+                    // case 1077362: Close window to prevent overlap with OS folder window when saving new palette asset
+                    Close();
+
                     var swizzle = Grid.CellSwizzle.XYZ;
                     if (m_Layout == GridLayout.CellLayout.Hexagon)
                         swizzle = Styles.hexagonSwizzleTypeValue[m_HexagonLayout];
@@ -114,6 +117,7 @@ namespace UnityEditor
                         m_Owner.palette = go;
                         m_Owner.Repaint();
                     }
+
                     GUIUtility.ExitGUI();
                 }
             }

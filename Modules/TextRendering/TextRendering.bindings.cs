@@ -365,7 +365,14 @@ namespace UnityEngine
         }
 
         internal static extern Font GetDefault();
-        public extern bool HasCharacter(char c);
+
+        public bool HasCharacter(char c)
+        {
+            return HasCharacter((int)c);
+        }
+
+        private extern bool HasCharacter(int c);
+
         public static extern string[] GetOSInstalledFontNames();
 
         private static extern void Internal_CreateFont([Writable] Font self, string name);

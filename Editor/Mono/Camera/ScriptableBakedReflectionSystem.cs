@@ -21,6 +21,7 @@ namespace UnityEditor.Experimental.Rendering
         public virtual void SynchronizeReflectionProbes() {}
         public virtual void Clear() {}
         public virtual void Cancel() {}
+        public virtual bool BakeAllReflectionProbes() { return false; }
 
         protected virtual void Dispose(bool disposing) {}
 

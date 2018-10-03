@@ -382,7 +382,10 @@ namespace UnityEngine
         [FreeFunction("SetHierarchyCapacity", HasExplicitThis = true)]
         private extern void internal_setHierarchyCapacity(int value);
 
-        public int hierarchyCount { get; }
+        public int hierarchyCount { get { return internal_getHierarchyCount(); } }
+
+        [FreeFunction("GetHierarchyCount", HasExplicitThis = true)]
+        private extern int internal_getHierarchyCount();
 
         [NativeConditional("UNITY_EDITOR")]
         [FreeFunction("IsNonUniformScaleTransform", HasExplicitThis = true)]

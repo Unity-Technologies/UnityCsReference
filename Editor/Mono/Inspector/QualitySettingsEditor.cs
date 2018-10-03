@@ -503,6 +503,7 @@ namespace UnityEditor
             var particleRaycastBudgetProperty = currentSettings.FindPropertyRelative("particleRaycastBudget");
             var asyncUploadTimeSliceProperty = currentSettings.FindPropertyRelative("asyncUploadTimeSlice");
             var asyncUploadBufferSizeProperty = currentSettings.FindPropertyRelative("asyncUploadBufferSize");
+            var asyncUploadPersistentBufferProperty = currentSettings.FindPropertyRelative("asyncUploadPersistentBuffer");
             var resolutionScalingFixedDPIFactorProperty = currentSettings.FindPropertyRelative("resolutionScalingFixedDPIFactor");
 
             bool usingSRP = GraphicsSettings.renderPipelineAsset != null;
@@ -586,6 +587,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(particleRaycastBudgetProperty);
             EditorGUILayout.PropertyField(asyncUploadTimeSliceProperty);
             EditorGUILayout.PropertyField(asyncUploadBufferSizeProperty);
+            EditorGUILayout.PropertyField(asyncUploadPersistentBufferProperty);
 
             asyncUploadTimeSliceProperty.intValue = Mathf.Clamp(asyncUploadTimeSliceProperty.intValue, kMinAsyncUploadTimeSlice, kMaxAsyncUploadTimeSlice);
             asyncUploadBufferSizeProperty.intValue = Mathf.Clamp(asyncUploadBufferSizeProperty.intValue, kMinAsyncRingBufferSize, kMaxAsyncRingBufferSize);

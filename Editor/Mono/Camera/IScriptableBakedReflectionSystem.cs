@@ -16,5 +16,6 @@ namespace UnityEditor.Experimental.Rendering
         void SynchronizeReflectionProbes();
         void Clear();
         void Cancel();
+        bool BakeAllReflectionProbes();
     }
 }

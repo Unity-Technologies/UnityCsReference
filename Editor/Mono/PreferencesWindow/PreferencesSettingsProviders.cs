@@ -37,6 +37,12 @@ namespace UnityEditor
         internal class Styles
         {
             public static readonly GUIContent browse = EditorGUIUtility.TrTextContent("Browse...");
+            public static readonly GUIStyle clearBindingButton = new GUIStyle(GUI.skin.button);
+
+            static Styles()
+            {
+                clearBindingButton.margin.top = 0;
+            }
         }
 
         internal class GeneralProperties
@@ -711,6 +717,9 @@ namespace UnityEditor
             {
                 GUILayout.Label("Key:");
                 e = EditorGUILayout.KeyEventField(e);
+
+                if (GUILayout.Button("Clear", Styles.clearBindingButton))
+                    e.keyCode = KeyCode.None;
             }
 
             using (new GUILayout.HorizontalScope())
@@ -732,7 +741,9 @@ namespace UnityEditor
                         if (m_ValidKeyChange)
                         {
                             // TODO: Don't clobber secondary+ combinations
-                            var newCombination = new List<KeyCombination> { new KeyCombination(e) };
+                            var newCombination = new List<KeyCombination>();
+                            if (e.keyCode != KeyCode.None)
+                                newCombination.Add(new KeyCombination(e));
                             shortcutController.profileManager.ModifyShortcutEntry(selectedShortcut.identifier, newCombination);
                             shortcutController.profileManager.PersistChanges();
                         }

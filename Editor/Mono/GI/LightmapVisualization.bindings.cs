@@ -32,6 +32,9 @@ namespace UnityEditor
         internal extern static bool IsBakedTextureType(GITextureType textureType);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
+        internal extern static bool IsAtlasTextureType(GITextureType textureType);
+
+        [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]
         public   extern static VisualisationGITexture[] GetRealtimeGITextures(GITextureType textureType);
 
         [StaticAccessor("VisualisationManager::Get()", StaticAccessorType.Arrow)]

@@ -63,12 +63,18 @@ namespace UnityEditor
             public static readonly GUIContent GINotEnabledInfo = EditorGUIUtility.TrTextContent("Lightmapping settings are currently disabled. Enable Baked Global Illumination or Realtime Global Illumination to display these settings.");
             public static readonly GUIContent CastShadowsProgressiveGPUWarning = EditorGUIUtility.TrTextContent("Cast Shadows is forced to 'On' when using the GPU lightmapper (Preview), it will be supported in a later version. Use the CPU lightmapper instead if you need this functionality.");
             public static readonly GUIContent ReceiveShadowsProgressiveGPUWarning = EditorGUIUtility.TrTextContent("Receive Shadows is forced to 'On' when using the GPU lightmapper (Preview), it will be supported in a later version. Use the CPU lightmapper instead if you need this functionality.");
+            public static readonly GUIContent OpenPreview = EditorGUIUtility.TrTextContent("Open Preview");
+
+            public static readonly GUIStyle OpenPreviewStyle = EditorStyles.objectFieldThumb.name + "LightmapPreviewOverlay";
+
+            public static readonly int PreviewPadding = 30;
+            public static readonly int PreviewWidth = 104;
         }
 
         bool m_ShowChartingSettings = true;
         bool m_ShowLightmapSettings = true;
-        bool m_ShowBakedLM = false;
-        bool m_ShowRealtimeLM = false;
+        bool m_ShowBakedLM = true;
+        bool m_ShowRealtimeLM = true;
 
         SerializedObject m_SerializedObject;
         SerializedObject m_GameObjectsSerializedObject;
@@ -240,13 +246,8 @@ namespace UnityEditor
                 {
                     EditorGUI.indentLevel += 1;
 
-                    m_ShowBakedLM = EditorGUILayout.Foldout(m_ShowBakedLM, Styles.Atlas, true);
-                    if (m_ShowBakedLM)
-                        ShowAtlasGUI(m_Renderers[0].GetInstanceID());
-
-                    m_ShowRealtimeLM = EditorGUILayout.Foldout(m_ShowRealtimeLM, Styles.RealtimeLM, true);
-                    if (m_ShowRealtimeLM)
-                        ShowRealtimeLMGUI(m_Renderers[0]);
+                    ShowAtlasGUI(m_Renderers[0].GetInstanceID());
+                    ShowRealtimeLMGUI(m_Renderers[0]);
 
                     EditorGUI.indentLevel -= 1;
                 }
@@ -312,13 +313,8 @@ namespace UnityEditor
                         if (GUI.enabled && m_Terrains.Length == 1 && m_Terrains[0].terrainData != null)
                             ShowBakePerformanceWarning(m_Terrains[0]);
 
-                        m_ShowBakedLM = EditorGUILayout.Foldout(m_ShowBakedLM, Styles.Atlas, true);
-                        if (m_ShowBakedLM)
-                            ShowAtlasGUI(m_Terrains[0].GetInstanceID());
-
-                        m_ShowRealtimeLM = EditorGUILayout.Foldout(m_ShowRealtimeLM, Styles.RealtimeLM, true);
-                        if (m_ShowRealtimeLM)
-                            ShowRealtimeLMGUI(m_Terrains[0]);
+                        ShowAtlasGUI(m_Terrains[0].GetInstanceID());
+                        ShowRealtimeLMGUI(m_Terrains[0]);
 
                         m_SerializedObject.ApplyModifiedProperties();
                     }
@@ -413,43 +409,28 @@ namespace UnityEditor
             if (m_CachedBakedTexture.texture == null)
                 return;
 
+            m_ShowBakedLM = EditorGUILayout.Foldout(m_ShowBakedLM, Styles.Atlas, true);
+
+            if (!m_ShowBakedLM)
+                return;
+
             EditorGUI.indentLevel += 1;
 
             GUILayout.BeginHorizontal();
-            GUILayout.Space(30);
 
-            Rect rect = GUILayoutUtility.GetRect(100, 100, EditorStyles.objectField);
+            DrawLightmapPreview(m_CachedBakedTexture.texture, false, instanceID);
 
-            EditorGUI.Toggle(rect, false, EditorStyles.objectFieldThumb);
+            GUILayout.BeginVertical();
 
-            if (rect.Contains(Event.current.mousePosition))
-            {
-                Object actualTargetObject = m_CachedBakedTexture.texture;
-                Component com = actualTargetObject as Component;
+            GUILayout.Label(Styles.AtlasIndex.text + ": " + m_LightmapIndex.intValue.ToString());
+            GUILayout.Label(Styles.AtlasTilingX.text + ": " + m_LightmapTilingOffsetX.floatValue.ToString());
+            GUILayout.Label(Styles.AtlasTilingY.text + ": " + m_LightmapTilingOffsetY.floatValue.ToString());
+            GUILayout.Label(Styles.AtlasOffsetX.text + ": " + m_LightmapTilingOffsetZ.floatValue.ToString());
+            GUILayout.Label(Styles.AtlasOffsetY.text + ": " + m_LightmapTilingOffsetW.floatValue.ToString());
 
-                if (com)
-                    actualTargetObject = com.gameObject;
-
-                if (Event.current.clickCount == 2)
-                    LightmapPreviewWindow.CreateLightmapPreviewWindow(m_Renderers[0].GetInstanceID(), false, false);
-                else if (Event.current.clickCount == 1)
-                    EditorGUI.PingObjectOrShowPreviewOnClick(actualTargetObject, GUILayoutUtility.GetLastRect());
-            }
-
-            if (Event.current.type == EventType.Repaint)
-            {
-                rect = EditorStyles.objectFieldThumb.padding.Remove(rect);
-                EditorGUI.DrawPreviewTexture(rect, m_CachedBakedTexture.texture);
-            }
-
+            GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
-
-            EditorGUILayout.LabelField(Styles.AtlasIndex, GUIContent.Temp(m_LightmapIndex.intValue.ToString()));
-            EditorGUILayout.LabelField(Styles.AtlasTilingX, GUIContent.Temp(m_LightmapTilingOffsetX.floatValue.ToString()));
-            EditorGUILayout.LabelField(Styles.AtlasTilingY, GUIContent.Temp(m_LightmapTilingOffsetY.floatValue.ToString()));
-            EditorGUILayout.LabelField(Styles.AtlasOffsetX, GUIContent.Temp(m_LightmapTilingOffsetZ.floatValue.ToString()));
-            EditorGUILayout.LabelField(Styles.AtlasOffsetY, GUIContent.Temp(m_LightmapTilingOffsetW.floatValue.ToString()));
 
             bool showProgressiveInfo = isPrefabAsset || (m_EnabledBakedGI.boolValue && LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten);
 
@@ -467,19 +448,32 @@ namespace UnityEditor
                 LightmapEditorSettings.GetPVRAtlasInstanceOffset(instanceID, out atlasInstanceOffset);
                 EditorGUILayout.LabelField(Styles.PVRAtlasInstanceOffset, GUIContent.Temp(atlasInstanceOffset.ToString()));
             }
-
             EditorGUI.indentLevel -= 1;
+
+            GUILayout.Space(5);
         }
 
         void ShowRealtimeLMGUI(Terrain terrain)
         {
+            Hash128 inputSystemHash;
+            if (terrain == null || !LightmapEditorSettings.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash) || inputSystemHash == new Hash128())
+                return; // early return since we don't have any lightmaps for it
+
+            if (!UpdateRealtimeTexture(inputSystemHash, terrain.GetInstanceID()))
+                return;
+
+            m_ShowRealtimeLM = EditorGUILayout.Foldout(m_ShowRealtimeLM, Styles.RealtimeLM, true);
+
+            if (!m_ShowRealtimeLM)
+                return;
+
             EditorGUI.indentLevel += 1;
 
-            Hash128 inputSystemHash;
-            if (terrain != null && LightmapEditorSettings.GetInputSystemHash(terrain.GetInstanceID(), out inputSystemHash))
-            {
-                ShowRealtimeLightmapPreview(inputSystemHash);
-            }
+            GUILayout.BeginHorizontal();
+
+            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, terrain.GetInstanceID());
+
+            GUILayout.BeginVertical();
 
             // Resolution of the system.
             int width, height;
@@ -489,33 +483,55 @@ namespace UnityEditor
                 var str = width.ToString() + "x" + height.ToString();
                 if (numChunksInX > 1 || numChunksInY > 1)
                     str += string.Format(" ({0}x{1} chunks)", numChunksInX, numChunksInY);
-                EditorGUILayout.LabelField(Styles.RealtimeLMResolution, GUIContent.Temp(str));
+                GUILayout.Label(Styles.RealtimeLMResolution.text + ": " + str);
             }
 
+            GUILayout.EndVertical();
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
+
             EditorGUI.indentLevel -= 1;
+
+            GUILayout.Space(5);
         }
 
         void ShowRealtimeLMGUI(Renderer renderer)
         {
+            Hash128 inputSystemHash;
+            if (renderer == null || !LightmapEditorSettings.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash) || inputSystemHash == new Hash128())
+                return; // early return since we don't have any lightmaps for it
+
+            if (!UpdateRealtimeTexture(inputSystemHash, renderer.GetInstanceID()))
+                return;
+
+            m_ShowRealtimeLM = EditorGUILayout.Foldout(m_ShowRealtimeLM, Styles.RealtimeLM, true);
+
+            if (!m_ShowRealtimeLM)
+                return;
+
             EditorGUI.indentLevel += 1;
 
-            Hash128 inputSystemHash = new Hash128();
-            if (renderer != null && LightmapEditorSettings.GetInputSystemHash(renderer.GetInstanceID(), out inputSystemHash))
-            {
-                ShowRealtimeLightmapPreview(inputSystemHash);
-            }
+            GUILayout.BeginHorizontal();
+
+            DrawLightmapPreview(m_CachedRealtimeTexture.texture, true, renderer.GetInstanceID());
+
+            GUILayout.BeginVertical();
 
             int instWidth, instHeight;
             if (LightmapEditorSettings.GetInstanceResolution(renderer, out instWidth, out instHeight))
             {
-                EditorGUILayout.LabelField(Styles.RealtimeLMInstanceResolution, GUIContent.Temp(instWidth.ToString() + "x" + instHeight.ToString()));
+                GUILayout.Label(Styles.RealtimeLMInstanceResolution.text + ": " + instWidth.ToString() + "x" + instHeight.ToString());
             }
 
             int width, height;
             if (LightmapEditorSettings.GetSystemResolution(renderer, out width, out height))
             {
-                EditorGUILayout.LabelField(Styles.RealtimeLMResolution, GUIContent.Temp(width.ToString() + "x" + height.ToString()));
+                GUILayout.Label(Styles.RealtimeLMResolution.text + ": " + width.ToString() + "x" + height.ToString());
             }
+
+            GUILayout.EndVertical();
+            GUILayout.FlexibleSpace();
+            GUILayout.EndHorizontal();
 
             if (Unsupported.IsDeveloperMode())
             {
@@ -535,12 +551,14 @@ namespace UnityEditor
             }
 
             EditorGUI.indentLevel -= 1;
+
+            GUILayout.Space(5);
         }
 
-        void ShowRealtimeLightmapPreview(Hash128 inputSystemHash)
+        bool UpdateRealtimeTexture(Hash128 inputSystemHash, int instanceId)
         {
             if (inputSystemHash == new Hash128())
-                return;
+                return false;
 
             Hash128 contentHash = LightmapVisualizationUtility.GetRealtimeGITextureHash(inputSystemHash, GITextureType.Irradiance);
 
@@ -549,35 +567,51 @@ namespace UnityEditor
                 m_CachedRealtimeTexture = LightmapVisualizationUtility.GetRealtimeGITexture(inputSystemHash, GITextureType.Irradiance);
 
             if (m_CachedRealtimeTexture.texture == null)
-                return;
+                return false;
 
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(30);
+            return true;
+        }
 
-            Rect rect = GUILayoutUtility.GetRect(100, 100, EditorStyles.objectField);
+        private void DrawLightmapPreview(Texture2D texture, bool realtimeLightmap, int instanceId)
+        {
+            GUILayout.Space(Styles.PreviewPadding);
+
+            int previewWidth = Styles.PreviewWidth - 4; // padding
+
+            Rect rect = GUILayoutUtility.GetRect(previewWidth, previewWidth, EditorStyles.objectField);
+            Rect buttonRect = new Rect(rect.xMax - 70, rect.yMax - 14, 70, 14);
+
+            if (Event.current.type == EventType.MouseDown)
+            {
+                if ((buttonRect.Contains(Event.current.mousePosition) && Event.current.clickCount == 1) ||
+                    (rect.Contains(Event.current.mousePosition) && Event.current.clickCount == 2))
+                {
+                    LightmapPreviewWindow.CreateLightmapPreviewWindow(instanceId, realtimeLightmap, false);
+                }
+                else if (rect.Contains(Event.current.mousePosition) && Event.current.clickCount == 1)
+                {
+                    Object actualTargetObject = texture;
+                    Component com = actualTargetObject as Component;
+
+                    if (com)
+                        actualTargetObject = com.gameObject;
+
+                    EditorGUI.PingObjectOrShowPreviewOnClick(actualTargetObject, rect);
+                }
+            }
 
             EditorGUI.Toggle(rect, false, EditorStyles.objectFieldThumb);
-
-            if (rect.Contains(Event.current.mousePosition))
-            {
-                Object actualTargetObject = m_CachedRealtimeTexture.texture;
-                Component com = actualTargetObject as Component;
-
-                if (com)
-                    actualTargetObject = com.gameObject;
-
-                if (Event.current.clickCount == 2)
-                    LightmapPreviewWindow.CreateLightmapPreviewWindow(m_Renderers[0].GetInstanceID(),  true, false);
-            }
 
             if (Event.current.type == EventType.Repaint)
             {
                 rect = EditorStyles.objectFieldThumb.padding.Remove(rect);
-                EditorGUI.DrawPreviewTexture(rect, m_CachedRealtimeTexture.texture);
+                EditorGUI.DrawPreviewTexture(rect, texture);
+
+                Styles.OpenPreviewStyle.Draw(rect, Styles.OpenPreview, false, false, false, false);
             }
 
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
+            float spacing = Mathf.Max(5.0f, EditorGUIUtility.labelWidth - Styles.PreviewPadding - Styles.PreviewWidth);
+            GUILayout.Space(spacing);
         }
 
         static bool HasNormals(Renderer renderer)

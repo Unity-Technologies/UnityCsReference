@@ -6,11 +6,12 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
+    [InitializeOnLoad]
     internal class UXMLEditorFactories
     {
         private static bool s_Registered;
 
-        internal static void RegisterAll()
+        static UXMLEditorFactories()
         {
             if (s_Registered)
                 return;

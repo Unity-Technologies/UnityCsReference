@@ -274,10 +274,13 @@ namespace UnityEditor
                 {
                     if (renderMode != RenderMode.Mesh)
                         GUIFloat(s_Texts.normalDirection, m_NormalDirection);
-
-                    if (m_Material != null) // The renderer's material list could be empty
-                        GUIObject(s_Texts.material, m_Material);
                 }
+            }
+
+            if (renderMode != RenderMode.None)
+            {
+                if (m_Material != null) // The renderer's material list could be empty
+                    GUIObject(s_Texts.material, m_Material);
             }
 
             if (m_TrailMaterial != null) // The renderer's material list could be empty

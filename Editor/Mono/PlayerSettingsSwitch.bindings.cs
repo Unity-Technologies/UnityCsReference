@@ -49,7 +49,8 @@ namespace UnityEditor
                 Korean,
             }
 
-            public enum StartupUserAccount
+            public enum
+            StartupUserAccount
             {
                 None = 0,
                 Required = 1,
@@ -366,6 +367,9 @@ namespace UnityEditor
 
             [NativeProperty("switchDataLossConfirmation", TargetType.Field)]
             extern public static bool isDataLossConfirmationEnabled { get; set; }
+
+            [NativeProperty("switchUserAccountLockEnabled", TargetType.Field)]
+            extern public static bool isUserAccountLockEnabled { get; set; }
 
             [Obsolete("isDataLossConfirmation was renamed to isDataLossConfirmationEnabled")]
             [NativeProperty("switchDataLossConfirmation", TargetType.Field)]

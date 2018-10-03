@@ -63,7 +63,7 @@ namespace UnityEngine.Experimental.VFX
 
         // matrix operations
         TRSToMatrix,
-        InverseTRS,
+        InverseMatrix,
         ExtractPositionFromMatrix,
         ExtractAnglesFromMatrix,
         ExtractScaleFromMatrix,
@@ -123,7 +123,10 @@ namespace UnityEngine.Experimental.VFX
         // Logical operations
         LogicalAnd,
         LogicalOr,
-        LogicalNot
+        LogicalNot,
+
+        // This allows backward compatibility
+        InverseTRS = InverseMatrix,
     }
 
     internal enum VFXValueType

@@ -1244,7 +1244,18 @@ namespace UnityEditor
 
         public class PaletteAssetModificationProcessor : AssetModificationProcessor
         {
+            static void OnWillCreateAsset(string assetName)
+            {
+                SavePalettesIfRequired();
+            }
+
             static string[] OnWillSaveAssets(string[] paths)
+            {
+                SavePalettesIfRequired();
+                return paths;
+            }
+
+            static void SavePalettesIfRequired()
             {
                 if (!GridPaintingState.savingPalette)
                 {
@@ -1257,7 +1268,6 @@ namespace UnityEditor
                         }
                     }
                 }
-                return paths;
             }
         }
     }

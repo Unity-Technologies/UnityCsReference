@@ -118,6 +118,18 @@ namespace UnityEditor.Experimental.Rendering
                 implementation.Cancel();
         }
 
+        [RequiredByNativeCode]
+        bool Internal_ScriptableBakedReflectionSystemWrapper_BakeAllReflectionProbes()
+        {
+            if (Disposed)
+                throw new ObjectDisposedException("ScriptableBakedReflectionSystemWrapper");
+
+            if (implementation != null)
+                return implementation.BakeAllReflectionProbes();
+
+            return false;
+        }
+
         [StaticAccessor("ScriptableBakedReflectionSystem", StaticAccessorType.DoubleColon)]
         static extern void ScriptingEnterStage(IntPtr objPtr, int stage, string progressMessage, float progress);
 

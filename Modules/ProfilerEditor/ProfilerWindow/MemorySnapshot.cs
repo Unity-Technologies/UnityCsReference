@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.IO;
 using UnityEngine;
 
 namespace UnityEditor.MemoryProfiler
@@ -15,23 +16,33 @@ namespace UnityEditor.MemoryProfiler
         {
             if (result)
             {
-                UnityEditor.Profiling.Memory.Experimental.PackedMemorySnapshot snapshot = UnityEditor.Profiling.Memory.Experimental.PackedMemorySnapshot.Load(path);
+                Profiling.Memory.Experimental.PackedMemorySnapshot snapshot = Profiling.Memory.Experimental.PackedMemorySnapshot.Load(path);
 
-                OnSnapshotReceived(new PackedMemorySnapshot(snapshot));
+                var oldSnapshot = new PackedMemorySnapshot(snapshot);
+                snapshot.Dispose();
+                File.Delete(path);
+
+                OnSnapshotReceived(oldSnapshot);
             }
             else
             {
+                if (File.Exists(path))
+                    File.Delete(path);
+
                 OnSnapshotReceived(null);
             }
         }
 
-        public static void RequestNewSnapshot()
+        internal static string GetTemporarySnapshotPath()
         {
             string[] s = Application.dataPath.Split('/');
             string projectName = s[s.Length - 2];
-            string path = Application.temporaryCachePath + "/" + projectName + ".snap";
+            return Path.Combine(Application.temporaryCachePath, projectName + ".snap");
+        }
 
-            UnityEngine.Profiling.Memory.Experimental.MemoryProfiler.TakeSnapshot(path, SnapshotFinished, UnityEngine.Profiling.Memory.Experimental.CaptureFlags.NativeObjects | UnityEngine.Profiling.Memory.Experimental.CaptureFlags.ManagedObjects);
+        public static void RequestNewSnapshot()
+        {
+            UnityEngine.Profiling.Memory.Experimental.MemoryProfiler.TakeSnapshot(GetTemporarySnapshotPath(), SnapshotFinished, UnityEngine.Profiling.Memory.Experimental.CaptureFlags.NativeObjects | UnityEngine.Profiling.Memory.Experimental.CaptureFlags.ManagedObjects);
         }
     }
 
