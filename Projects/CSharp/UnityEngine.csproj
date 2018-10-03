@@ -1506,11 +1506,17 @@
   <Compile Include="..\..\Modules\TextCore\Managed\AssemblyInfo.cs">
     <Link>Modules\TextCore\Managed\AssemblyInfo.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\TextCore\Managed\FaceInfo.cs">
+    <Link>Modules\TextCore\Managed\FaceInfo.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\TextCore\Managed\Glyph.cs">
     <Link>Modules\TextCore\Managed\Glyph.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\TextCore\ScriptBindings\FontEngine.bindings.cs">
     <Link>Modules\TextCore\ScriptBindings\FontEngine.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\TextCore\ScriptBindings\GlyphMarshallingStruct.cs">
+    <Link>Modules\TextCore\ScriptBindings\GlyphMarshallingStruct.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\TextRendering\FontStyle.cs">
     <Link>Modules\TextRendering\FontStyle.cs</Link>

@@ -21,30 +21,30 @@ namespace UnityEngine
         // Properties
         extern public bool isPlaying
         {
-            [NativeName("SyncJobs()->IsPlaying")] get;
+            [NativeName("SyncJobs(false)->IsPlaying")] get;
         }
         extern public bool isEmitting
         {
-            [NativeName("SyncJobs()->IsEmitting")] get;
+            [NativeName("SyncJobs(false)->IsEmitting")] get;
         }
         extern public bool isStopped
         {
-            [NativeName("SyncJobs()->IsStopped")] get;
+            [NativeName("SyncJobs(false)->IsStopped")] get;
         }
         extern public bool isPaused
         {
-            [NativeName("SyncJobs()->IsPaused")] get;
+            [NativeName("SyncJobs(false)->IsPaused")] get;
         }
         extern public int particleCount
         {
-            [NativeName("SyncJobs()->GetParticleCount")] get;
+            [NativeName("SyncJobs(false)->GetParticleCount")] get;
         }
 
         extern public float time
         {
-            [NativeName("SyncJobs()->GetSecPosition")]
+            [NativeName("SyncJobs(false)->GetSecPosition")]
             get;
-            [NativeName("SyncJobs()->SetSecPosition")]
+            [NativeName("SyncJobs(false)->SetSecPosition")]
             set;
         }
 
@@ -52,7 +52,7 @@ namespace UnityEngine
         {
             [NativeName("GetRandomSeed")]
             get;
-            [NativeName("SyncJobs()->SetRandomSeed")]
+            [NativeName("SyncJobs(false)->SetRandomSeed")]
             set;
         }
 
@@ -60,7 +60,7 @@ namespace UnityEngine
         {
             [NativeName("GetAutoRandomSeed")]
             get;
-            [NativeName("SyncJobs()->SetAutoRandomSeed")]
+            [NativeName("SyncJobs(false)->SetAutoRandomSeed")]
             set;
         }
 

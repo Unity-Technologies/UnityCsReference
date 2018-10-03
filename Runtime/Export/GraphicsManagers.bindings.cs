@@ -84,6 +84,8 @@ namespace UnityEngine
         extern public static int   antiAliasing          { get; set; }
         extern public static int   asyncUploadTimeSlice  { get; set; }
         extern public static int   asyncUploadBufferSize { get; set; }
+        extern public static bool  asyncUploadPersistentBuffer { get; set; }
+
 
         extern public static bool  realtimeReflectionProbes         { get; set; }
         extern public static bool  billboardsFaceCameraPosition     { get; set; }

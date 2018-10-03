@@ -39,15 +39,15 @@ namespace UnityEditor.ShortcutManagement
         {
             var entries = new List<IShortcutEntryDiscoveryInfo>();
             var names = new List<string>();
-            var shortcuts = new List<string>();
-            Menu.GetMenuItemShortcuts(names, shortcuts);
+            var defaultShortcuts = new List<string>();
+            Menu.GetMenuItemDefaultShortcuts(names, defaultShortcuts);
             entries.Capacity += names.Count;
 
             for (int index = 0; index < names.Count; ++index)
             {
                 var keys = new List<KeyCombination>();
-                if (!string.IsNullOrEmpty(shortcuts[index]))
-                    keys.Add(new KeyCombination(Event.KeyboardEvent(shortcuts[index])));
+                if (!string.IsNullOrEmpty(defaultShortcuts[index]))
+                    keys.Add(new KeyCombination(Event.KeyboardEvent(defaultShortcuts[index])));
                 entries.Add(new MenuItemEntryDiscoveryInfo(names[index], keys));
             }
 
