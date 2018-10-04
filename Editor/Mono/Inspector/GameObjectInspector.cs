@@ -68,9 +68,6 @@ namespace UnityEditor
 
                 // Seems to be a bug in the way controls with margin internal to layout groups with padding calculate position. We'll work around it here.
                 layerPopup.margin.right = 0;
-
-                // match modification in Editor.Styles
-                inspectorBig.padding.bottom -= 1;
             }
         }
         static Styles s_Styles;

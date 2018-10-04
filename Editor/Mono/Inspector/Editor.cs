@@ -387,9 +387,6 @@ namespace UnityEditor
             static Styles()
             {
                 centerStyle.alignment = TextAnchor.MiddleCenter;
-                // modify header bottom padding on a mutable copy here
-                // this was done rather than modifying the style asset itself in order to minimize possible side effects where the style was already used
-                inspectorBig.padding.bottom -= 1;
             }
         }
 
@@ -663,14 +660,24 @@ namespace UnityEditor
             // If we call DrawHeader from inside an an editor's OnInspectorGUI call, we have to do special handling.
             // (See DrawHeaderFromInsideHierarchy for details.)
             // We know we're inside the OnInspectorGUI block (or a similar vertical block) if hierarchyMode is set to true.
-            if (EditorGUIUtility.hierarchyMode)
+            var hierarchyMode = EditorGUIUtility.hierarchyMode;
+            if (hierarchyMode)
                 DrawHeaderFromInsideHierarchy();
             else
                 OnHeaderGUI();
 
             if (finishedDefaultHeaderGUI != null)
             {
-                EditorGUIUtility.ResetGUIState();
+                // see DrawHeaderFromInsideHierarchy()
+                if (hierarchyMode)
+                {
+                    EditorGUILayout.EndVertical();
+                    EditorGUILayout.BeginVertical(GUILayoutUtility.topLevel.style);
+                }
+                // reset label and field widths to defaults
+                EditorGUIUtility.labelWidth = 0f;
+                EditorGUIUtility.fieldWidth = 0f;
+
                 GUILayout.Space(
                     -1f                                      // move up to cover up bottom pixel of header box
                     - Styles.inspectorBig.margin.bottom
@@ -679,13 +686,19 @@ namespace UnityEditor
                     );
 
                 // align with controls in the Inspector
-                // see InspectorWindow.DrawEditor before calls to OnOptimizedInspectorGUI()/OnInspectorGUI()
+                // see InspectorWindow.DrawEditor() before calls to OnOptimizedInspectorGUI()/OnInspectorGUI()
                 EditorGUIUtility.hierarchyMode = true;
                 EditorGUIUtility.wideMode = EditorGUIUtility.contextWidth > k_WideModeMinWidth;
 
                 EditorGUILayout.BeginVertical(Styles.postLargeHeaderBackground, GUILayout.ExpandWidth(true));
                 finishedDefaultHeaderGUI(this);
                 EditorGUILayout.EndVertical();
+                if (hierarchyMode)
+                {
+                    EditorGUILayout.EndVertical();
+                    // see InspectorWindow.DoOnInspectorGUI()
+                    EditorGUILayout.BeginVertical(UseDefaultMargins() ? EditorStyles.inspectorDefaultMargins : GUIStyle.none);
+                }
             }
         }
 
@@ -796,10 +809,9 @@ namespace UnityEditor
         // draw the header, and then start a new vertical block with the same style.
         private void DrawHeaderFromInsideHierarchy()
         {
-            GUIStyle style = GUILayoutUtility.topLevel.style;
             EditorGUILayout.EndVertical();
             OnHeaderGUI();
-            EditorGUILayout.BeginVertical(style);
+            EditorGUILayout.BeginVertical(GUILayoutUtility.topLevel.style);
         }
 
         internal static Rect DrawHeaderGUI(Editor editor, string header)
