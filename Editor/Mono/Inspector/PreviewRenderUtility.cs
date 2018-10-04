@@ -180,7 +180,7 @@ namespace UnityEditor
         {
             get
             {
-                return new[] {Light0, Light1};
+                return new[] { Light0, Light1 };
             }
         }
 
@@ -229,7 +229,7 @@ namespace UnityEditor
                 new Rect(0, 0, 1, 1),
                 previewBackground.border.left, previewBackground.border.right, previewBackground.border.top,
                 previewBackground.border.bottom,
-                new Color(.5f, .5f, .5f, 1),
+                new Color(.5f, .5f, .5f, 0.5f),
                 null
             );
 
@@ -341,8 +341,13 @@ namespace UnityEditor
 
         public void EndAndDrawPreview(Rect r)
         {
-            Texture t = EndPreview();
-            GUI.DrawTexture(r, t, ScaleMode.StretchToFill, false);
+            var texture = EndPreview();
+            DrawPreview(r, texture);
+        }
+
+        internal static void DrawPreview(Rect r, Texture texture)
+        {
+            GUI.DrawTexture(r, texture, ScaleMode.StretchToFill, false);
         }
 
         public Texture2D EndStaticPreview()

@@ -153,8 +153,18 @@ namespace UnityEditor
         ActiveEditorTracker m_Tracker;
 
         [SerializeField]
-        public bool m_SceneLighting = true;  // Has been public for a long time (Make it private at some point now that we have the property below)
-        internal bool sceneLighting { get { return m_SceneLighting; } set { m_SceneLighting = value; } }
+        bool m_SceneIsLit = true;
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // todo Mark obsolete once packages in ABV package cocktail have been updated
+        // [Obsolete("m_SceneLighting has been deprecated. Use sceneLighting instead (UnityUpgradable) -> UnityEditor.SceneView.sceneLighting", true)]
+        public bool m_SceneLighting = true;
+
+        public bool sceneLighting
+        {
+            get { return m_SceneIsLit; }
+            set { m_SceneIsLit = value; }
+        }
 
         public event Func<CameraMode, bool> onValidateCameraMode;
         public event Action<CameraMode> onCameraModeChanged;
@@ -183,12 +193,24 @@ namespace UnityEditor
                 showParticleSystems = other.showParticleSystems;
             }
 
+            [Obsolete("IsAllOn() has been deprecated. Use allEnabled instead (UnityUpgradable) -> allEnabled")]
             public bool IsAllOn()
             {
-                return showFog && showMaterialUpdate && showSkybox && showFlares && showImageEffects && showParticleSystems;
+                return allEnabled;
             }
 
+            public bool allEnabled
+            {
+                get { return showFog && showMaterialUpdate && showSkybox && showFlares && showImageEffects && showParticleSystems; }
+            }
+
+            [Obsolete("Toggle() has been deprecated. Use SetAllEnabled() instead (UnityUpgradable) -> SetAllEnabled(*)")]
             public void Toggle(bool value)
+            {
+                SetAllEnabled(value);
+            }
+
+            public void SetAllEnabled(bool value)
             {
                 showFog = value;
                 showMaterialUpdate = value;
@@ -241,36 +263,53 @@ namespace UnityEditor
         internal Object m_OneClickDragObject;
 
         [SerializeField]
+        bool m_PlayAudio = false;
+
+        [Obsolete("m_AudioPlay has been deprecated. Use audioPlay instead (UnityUpgradable) -> audioPlay", true)]
         public bool m_AudioPlay = false;
-        internal bool audioPlay { get { return m_AudioPlay; } set { m_AudioPlay = value; } }
+
+        public bool audioPlay
+        {
+            get { return m_PlayAudio; }
+
+            set
+            {
+                if (value == m_PlayAudio)
+                    return;
+                m_PlayAudio = value;
+                RefreshAudioPlay();
+            }
+        }
 
         static SceneView s_AudioSceneView;
 
         [SerializeField]
         AnimVector3 m_Position = new AnimVector3(kDefaultPivot);
 
+        // todo - mark obsolete once builtin packages are updated
+        // [Obsolete("OnSceneFunc() has been deprecated. Use System.Action instead.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public delegate void OnSceneFunc(SceneView sceneView);
+
+        // todo - mark obsolete once builtin packages are updated
+        // [Obsolete("onSceneGUIDelegate has been deprecated. Use duringSceneGui instead.")]
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         public static OnSceneFunc onSceneGUIDelegate;
 
-        //TODO: we want to expose this callback to the users, so they have
-        //the ability to draw custom things to the SceneView, without the need
-        //for a CustomEditor.
-        //We are waiting for some public API guidelines regarding delegates
-        //to be able to expose this in a good way.
-        //While exposing this one, we should also document onSceneGUIDelegate
-        //And if possible AutoUpgrade it to the new way of doing this.
-        internal static OnSceneFunc onPreSceneGUIDelegate;
+        public static event Action<SceneView> beforeSceneGui;
+        public static event Action<SceneView> duringSceneGui;
 
         [Obsolete("Use cameraMode instead", false)]
         public DrawCameraMode m_RenderMode = 0;
 
-        [SerializeField]
-        CameraMode m_CameraMode;
 
         [Obsolete("Use cameraMode instead", false)]
         public DrawCameraMode renderMode
         {
-            get { return m_CameraMode.drawMode; }
+            get
+            {
+                return m_CameraMode.drawMode;
+            }
             set
             {
                 if (value == DrawCameraMode.UserDefined)
@@ -278,6 +317,9 @@ namespace UnityEditor
                 cameraMode = SceneRenderModeWindow.GetBuiltinCameraMode(value);
             }
         }
+
+        [SerializeField]
+        CameraMode m_CameraMode;
 
         public CameraMode cameraMode
         {
@@ -297,9 +339,6 @@ namespace UnityEditor
                     throw new ArgumentException(string.Format("The provided camera mode {0} is not registered!", value));
                 }
                 m_CameraMode = value;
-#pragma warning disable 618
-                m_RenderMode = value.drawMode;
-#pragma warning restore 618
                 SetupPBRValidation();
                 if (onCameraModeChanged != null)
                     onCameraModeChanged(m_CameraMode);
@@ -308,9 +347,25 @@ namespace UnityEditor
 
         private DrawCameraMode lastRenderMode = 0;
 
-        [SerializeField]
+        [Obsolete("m_ValidateTrueMetals has been deprecated. Use validateTrueMetals instead (UnityUpgradable) -> validateTrueMetals", true)]
         public bool m_ValidateTrueMetals = false;
-        internal bool validateTrueMetals { get { return m_ValidateTrueMetals; } set { m_ValidateTrueMetals = value; } }
+
+        [SerializeField]
+        bool m_DoValidateTrueMetals = false;
+
+        public bool validateTrueMetals
+        {
+            get { return m_DoValidateTrueMetals; }
+
+            set
+            {
+                if (m_DoValidateTrueMetals == value)
+                    return;
+
+                m_DoValidateTrueMetals = value;
+                Shader.SetGlobalInt("_CheckPureMetal", m_DoValidateTrueMetals ? 1 : 0);
+            }
+        }
 
         [SerializeField]
         private SceneViewState m_SceneViewState;
@@ -328,7 +383,7 @@ namespace UnityEditor
         [SerializeField]
         internal AnimQuaternion m_Rotation = new AnimQuaternion(kDefaultRotation);
 
-        /// How large an area the scene view covers (measured diagonally). Modify this for immediate effect, or use LookAt to animate it nicely.
+        // How large an area the scene view covers (measured diagonally). Modify this for immediate effect, or use LookAt to animate it nicely.
         [SerializeField]
         AnimFloat m_Size = new AnimFloat(kDefaultViewSize);
 
@@ -345,6 +400,7 @@ namespace UnityEditor
 
         [SerializeField]
         private Quaternion m_LastSceneViewRotation;
+
         public Quaternion lastSceneViewRotation
         {
             get
@@ -419,7 +475,7 @@ namespace UnityEditor
         //static GameObject[] s_PickedObject = { null };
         GUIContent m_Lighting;
         GUIContent m_Fx;
-        GUIContent m_AudioPlayContent;
+        GUIContent audioPlayContent;
         GUIContent m_GizmosContent;
         GUIContent m_2DModeContent;
         GUIContent m_RenderDocContent;
@@ -545,7 +601,7 @@ namespace UnityEditor
                 SceneViewMotion.ResetMotion();
         }
 
-        override public void OnEnable()
+        public override void OnEnable()
         {
             if (string.IsNullOrEmpty(titleContent.text) || titleContent.text.Contains("UnityEditor"))
                 titleContent = GetLocalizedTitleContent();
@@ -571,7 +627,7 @@ namespace UnityEditor
 
             m_Lighting = EditorGUIUtility.TrIconContent("SceneviewLighting", "When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
             m_Fx = EditorGUIUtility.TrIconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.");
-            m_AudioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
+            audioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
             m_GizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle the visibility of different Gizmos in the Scene view.");
             m_2DModeContent = EditorGUIUtility.TrTextContent("2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
             m_RenderDocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc.");
@@ -653,10 +709,9 @@ namespace UnityEditor
             return view ? view.camera : null;
         }
 
-        override public void OnDisable()
+        public override void OnDisable()
         {
             EditorApplication.modifierKeysChanged -= RepaintAll;
-
             EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
 
             if (m_Camera)
@@ -691,20 +746,14 @@ namespace UnityEditor
 
         public void OnDestroy()
         {
-            if (m_AudioPlay)
-            {
-                m_AudioPlay = false;
-                RefreshAudioPlay();
-            }
+            if (audioPlay)
+                audioPlay = false;
         }
 
         internal void OnPlayModeStateChanged(PlayModeStateChange state)
         {
-            if (m_AudioPlay)
-            {
-                m_AudioPlay = false;
-                RefreshAudioPlay();
-            }
+            if (audioPlay)
+                audioPlay = false;
         }
 
         // This has to be called explicitly from SceneViewStageHandling to ensure,
@@ -713,7 +762,7 @@ namespace UnityEditor
         // event since that would not guarantee the order dependency.
         internal void OnStageChanged(StageNavigationItem previousStage, StageNavigationItem newStage)
         {
-            // m_AudioPlay may be different in the new stage,
+            // audioPlay may be different in the new stage,
             // so update regardless of whether it's on or off.
             // Not if we're in Play Mode however, as audio preview
             // is entirely disabled in that case.
@@ -751,16 +800,13 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            m_SceneLighting = GUILayout.Toggle(m_SceneLighting, m_Lighting, EditorStyles.toolbarButton);
+            m_SceneIsLit = GUILayout.Toggle(m_SceneIsLit, m_Lighting, EditorStyles.toolbarButton);
             if (cameraMode.drawMode == DrawCameraMode.ShadowCascades)     // cascade visualization requires actual lights with shadows
-                m_SceneLighting = true;
+                m_SceneIsLit = true;
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
-                EditorGUI.BeginChangeCheck();
-                m_AudioPlay = GUILayout.Toggle(m_AudioPlay, m_AudioPlayContent, EditorStyles.toolbarButton);
-                if (EditorGUI.EndChangeCheck())
-                    RefreshAudioPlay();
+                audioPlay = GUILayout.Toggle(audioPlay, audioPlayContent, EditorStyles.toolbarButton);
             }
 
             Rect fxRect = GUILayoutUtility.GetRect(m_Fx, effectsDropDownStyle);
@@ -772,9 +818,9 @@ namespace UnityEditor
                 GUIUtility.ExitGUI();
             }
 
-            var allOn = GUI.Toggle(fxRect, sceneViewState.IsAllOn(), m_Fx, effectsDropDownStyle);
-            if (allOn != sceneViewState.IsAllOn())
-                sceneViewState.Toggle(allOn);
+            var allOn = GUI.Toggle(fxRect, sceneViewState.allEnabled, m_Fx, effectsDropDownStyle);
+            if (allOn != sceneViewState.allEnabled)
+                sceneViewState.SetAllEnabled(allOn);
         }
 
         void ToolbarGizmosDropdownGUI()
@@ -860,9 +906,9 @@ namespace UnityEditor
             if ((s_AudioSceneView != null) && (s_AudioSceneView != this))
             {
                 // turn *other* sceneview off
-                if (s_AudioSceneView.m_AudioPlay)
+                if (s_AudioSceneView.m_PlayAudio)
                 {
-                    s_AudioSceneView.m_AudioPlay = false;
+                    s_AudioSceneView.m_PlayAudio = false;
                     s_AudioSceneView.Repaint();
                 }
             }
@@ -876,7 +922,7 @@ namespace UnityEditor
 
                 if (source.playOnAwake)
                 {
-                    if (!m_AudioPlay || !StageUtility.IsGameObjectRenderedByCamera(source.gameObject, m_Camera))
+                    if (!m_PlayAudio || !StageUtility.IsGameObjectRenderedByCamera(source.gameObject, m_Camera))
                     {
                         source.Stop();
                     }
@@ -895,27 +941,25 @@ namespace UnityEditor
                 if (EditorUtility.IsPersistent(zone))
                     continue;
 
-                zone.active = m_AudioPlay && StageUtility.IsGameObjectRenderedByCamera(zone.gameObject, m_Camera);
+                zone.active = m_PlayAudio && StageUtility.IsGameObjectRenderedByCamera(zone.gameObject, m_Camera);
             }
 
-            AudioUtil.SetListenerTransform(m_AudioPlay ? m_Camera.transform : null);
+            AudioUtil.SetListenerTransform(m_PlayAudio ? m_Camera.transform : null);
 
             s_AudioSceneView = this;
 
 
-            if (m_AudioPlay)
+            if (m_PlayAudio)
             {
                 AudioMixerWindow.RepaintAudioMixerWindow();
             }
         }
 
-        /// TODO: Don't repaint sceneview unless either old or new selection is a scene object
-        public void OnSelectionChange()
+        void OnSelectionChange()
         {
             if (Selection.activeObject != null && m_LastLockedObject != Selection.activeObject)
-            {
                 viewIsLockedToObject = false;
-            }
+
             Repaint();
         }
 
@@ -937,7 +981,7 @@ namespace UnityEditor
         }
 
         [MenuItem("GameObject/Set as first sibling %=")]
-        static internal void MenuMoveToFront()
+        internal static void MenuMoveToFront()
         {
             foreach (Transform t in Selection.transforms)
             {
@@ -947,7 +991,7 @@ namespace UnityEditor
         }
 
         [MenuItem("GameObject/Set as first sibling %=", true)]
-        static internal bool ValidateMenuMoveToFront()
+        internal static bool ValidateMenuMoveToFront()
         {
             if (Selection.activeTransform != null)
             {
@@ -958,7 +1002,7 @@ namespace UnityEditor
         }
 
         [MenuItem("GameObject/Set as last sibling %-")]
-        static internal void MenuMoveToBack()
+        internal static void MenuMoveToBack()
         {
             foreach (Transform t in Selection.transforms)
             {
@@ -968,7 +1012,7 @@ namespace UnityEditor
         }
 
         [MenuItem("GameObject/Set as last sibling %-", true)]
-        static internal bool ValidateMenuMoveToBack()
+        internal static bool ValidateMenuMoveToBack()
         {
             if (Selection.activeTransform != null)
             {
@@ -979,7 +1023,7 @@ namespace UnityEditor
         }
 
         [MenuItem("GameObject/Move To View %&f")]
-        static internal void MenuMoveToView()
+        internal static void MenuMoveToView()
         {
             if (ValidateMoveToView())
                 s_LastActiveSceneView.MoveToView();
@@ -992,33 +1036,33 @@ namespace UnityEditor
         }
 
         [MenuItem("GameObject/Align With View %#f")]
-        static internal void MenuAlignWithView()
+        internal static void MenuAlignWithView()
         {
             if (ValidateAlignWithView())
                 s_LastActiveSceneView.AlignWithView();
         }
 
         [MenuItem("GameObject/Align With View %#f", true)]
-        static internal bool ValidateAlignWithView()
+        internal static bool ValidateAlignWithView()
         {
             return s_LastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
         [MenuItem("GameObject/Align View to Selected")]
-        static internal void MenuAlignViewToSelected()
+        internal static void MenuAlignViewToSelected()
         {
             if (ValidateAlignViewToSelected())
                 s_LastActiveSceneView.AlignViewToObject(Selection.activeTransform);
         }
 
         [MenuItem("GameObject/Align View to Selected", true)]
-        static internal bool ValidateAlignViewToSelected()
+        internal static bool ValidateAlignViewToSelected()
         {
             return s_LastActiveSceneView != null && (Selection.activeTransform != null);
         }
 
         [MenuItem("GameObject/Toggle Active State &#a")]
-        static internal void ActivateSelection()
+        internal static void ActivateSelection()
         {
             if (Selection.activeTransform != null)
             {
@@ -1031,7 +1075,7 @@ namespace UnityEditor
         }
 
         [MenuItem("GameObject/Toggle Active State &#a", true)]
-        static internal bool ValidateActivateSelection()
+        internal static bool ValidateActivateSelection()
         {
             return (Selection.activeTransform != null);
         }
@@ -1067,7 +1111,7 @@ namespace UnityEditor
         private bool m_RequestedSceneViewFiltering;
         private double m_lastRenderedTime;
 
-        public void SetSceneViewFiltering(bool enable)
+        internal void SetSceneViewFiltering(bool enable)
         {
             m_RequestedSceneViewFiltering = enable;
         }
@@ -1283,17 +1327,6 @@ namespace UnityEditor
                     m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
                 }
             }
-            /*
-            else if (m_RenderMode == DrawCameraMode.Lightmaps)
-            {
-                // show lightmaps
-                if (!s_ShowLightmapsShader)
-                    s_ShowLightmapsShader = EditorGUIUtility.LoadRequired ("SceneView/SceneViewShowLightmap.shader") as Shader;
-                if (s_ShowLightmapsShader.isSupported)
-                    m_Camera.SetReplacementShader (s_ShowLightmapsShader, "RenderType");
-                else
-                    m_Camera.SetReplacementShader (m_ReplacementShader, m_ReplacementString);
-            }*/
             else
             {
                 m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
@@ -1380,12 +1413,12 @@ namespace UnityEditor
             if ((renderMode == DrawCameraMode.ValidateAlbedo || renderMode == DrawCameraMode.ValidateMetalSpecular) &&
                 lastRenderMode != DrawCameraMode.ValidateAlbedo && lastRenderMode != DrawCameraMode.ValidateMetalSpecular)
             {
-                SceneView.onSceneGUIDelegate += DrawValidateAlbedoSwatches;
+                duringSceneGui += DrawValidateAlbedoSwatches;
             }
             else if ((renderMode != DrawCameraMode.ValidateAlbedo && renderMode != DrawCameraMode.ValidateMetalSpecular) &&
                      (lastRenderMode == DrawCameraMode.ValidateAlbedo || lastRenderMode == DrawCameraMode.ValidateMetalSpecular))
             {
-                SceneView.onSceneGUIDelegate -= DrawValidateAlbedoSwatches;
+                duringSceneGui -= DrawValidateAlbedoSwatches;
             }
 
             lastRenderMode = renderMode;
@@ -1405,7 +1438,7 @@ namespace UnityEditor
 
         void SetupCustomSceneLighting()
         {
-            if (m_SceneLighting)
+            if (m_SceneIsLit)
                 return;
             m_Light[0].transform.rotation = m_Camera.transform.rotation;
             if (Event.current.type == EventType.Repaint)
@@ -1414,7 +1447,7 @@ namespace UnityEditor
 
         void CleanupCustomSceneLighting()
         {
-            if (m_SceneLighting)
+            if (m_SceneIsLit)
                 return;
             if (Event.current.type == EventType.Repaint)
                 InternalEditorUtility.RemoveCustomLighting();
@@ -1667,16 +1700,16 @@ namespace UnityEditor
             }
             Shader.SetGlobalColor("_AlbedoCompareColor", color.linear);
             Shader.SetGlobalInt("_CheckAlbedo", (m_SelectedAlbedoSwatchIndex != 0) ? 1 : 0);
-            Shader.SetGlobalInt("_CheckPureMetal", m_ValidateTrueMetals ? 1 : 0);
+            Shader.SetGlobalInt("_CheckPureMetal", m_DoValidateTrueMetals ? 1 : 0);
         }
 
         internal void DrawTrueMetalCheckbox()
         {
             EditorGUI.BeginChangeCheck();
-            m_ValidateTrueMetals = EditorGUILayout.ToggleLeft(EditorGUIUtility.TrTextContent("Check Pure Metals", "Check if albedo is black for materials with an average specular color above 0.45"), m_ValidateTrueMetals);
+            m_DoValidateTrueMetals = EditorGUILayout.ToggleLeft(EditorGUIUtility.TrTextContent("Check Pure Metals", "Check if albedo is black for materials with an average specular color above 0.45"), m_DoValidateTrueMetals);
             if (EditorGUI.EndChangeCheck())
             {
-                Shader.SetGlobalInt("_CheckPureMetal", m_ValidateTrueMetals ? 1 : 0);
+                Shader.SetGlobalInt("_CheckPureMetal", m_DoValidateTrueMetals ? 1 : 0);
             }
         }
 
@@ -2074,10 +2107,10 @@ namespace UnityEditor
             CallOnSceneGUI();
         }
 
-        /// Center point of the scene view. Modify it to move the sceneview immediately, or use LookAt to animate it nicely.
+        // Center point of the scene view. Modify it to move the sceneview immediately, or use LookAt to animate it nicely.
         public Vector3 pivot { get { return m_Position.value; } set { m_Position.value = value; } }
 
-        /// The direction of the scene view.
+        // The direction of the scene view.
         public Quaternion rotation { get { return m_Rotation.value; } set { m_Rotation.value = value; } }
 
         public float size
@@ -2185,7 +2218,7 @@ namespace UnityEditor
 
         private void SetSceneCameraHDRAndDepthModes()
         {
-            if (!m_SceneLighting || !DoesCameraDrawModeSupportHDR(m_CameraMode.drawMode))
+            if (!m_SceneIsLit || !DoesCameraDrawModeSupportHDR(m_CameraMode.drawMode))
             {
                 m_Camera.allowHDR = false;
                 m_Camera.depthTextureMode = DepthTextureMode.None;
@@ -2292,7 +2325,7 @@ namespace UnityEditor
             m_Light[0].transform.rotation = m_Camera.transform.rotation;
 
             // Update audio engine
-            if (m_AudioPlay)
+            if (m_PlayAudio)
             {
                 AudioUtil.SetListenerTransform(m_Camera.transform);
                 AudioUtil.UpdateAudio();
@@ -2355,81 +2388,81 @@ namespace UnityEditor
         }
 
         // Look at a specific point.
-        public void LookAt(Vector3 pos)
+        public void LookAt(Vector3 point)
         {
             FixNegativeSize();
-            m_Position.target = pos;
+            m_Position.target = point;
         }
 
         // Look at a specific point from a given direction.
-        public void LookAt(Vector3 pos, Quaternion rot)
+        public void LookAt(Vector3 point, Quaternion direction)
         {
             FixNegativeSize();
-            m_Position.target = pos;
-            m_Rotation.target = rot;
+            m_Position.target = point;
+            m_Rotation.target = direction;
             // Update name in the top-right handle
-            svRot.UpdateGizmoLabel(this, rot * Vector3.forward, m_Ortho.target);
+            svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look directly at a specific point from a given direction.
-        public void LookAtDirect(Vector3 pos, Quaternion rot)
+        public void LookAtDirect(Vector3 point, Quaternion direction)
         {
             FixNegativeSize();
-            m_Position.value = pos;
-            m_Rotation.value = rot;
+            m_Position.value = point;
+            m_Rotation.value = direction;
             // Update name in the top-right handle
-            svRot.UpdateGizmoLabel(this, rot * Vector3.forward, m_Ortho.target);
+            svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look at a specific point from a given direction with a given zoom level.
-        public void LookAt(Vector3 pos, Quaternion rot, float newSize)
+        public void LookAt(Vector3 point, Quaternion direction, float newSize)
         {
             FixNegativeSize();
-            m_Position.target = pos;
-            m_Rotation.target = rot;
+            m_Position.target = point;
+            m_Rotation.target = direction;
             m_Size.target = Mathf.Abs(newSize);
             // Update name in the top-right handle
-            svRot.UpdateGizmoLabel(this, rot * Vector3.forward, m_Ortho.target);
+            svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look directally at a specific point from a given direction with a given zoom level.
-        public void LookAtDirect(Vector3 pos, Quaternion rot, float newSize)
+        public void LookAtDirect(Vector3 point, Quaternion direction, float newSize)
         {
             FixNegativeSize();
-            m_Position.value = pos;
-            m_Rotation.value = rot;
+            m_Position.value = point;
+            m_Rotation.value = direction;
             m_Size.value = Mathf.Abs(newSize);
             // Update name in the top-right handle
-            svRot.UpdateGizmoLabel(this, rot * Vector3.forward, m_Ortho.target);
+            svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         // Look at a specific point from a given direction with a given zoom level, enabling and disabling perspective
-        public void LookAt(Vector3 pos, Quaternion rot, float newSize, bool ortho)
+        public void LookAt(Vector3 point, Quaternion direction, float newSize, bool ortho)
         {
-            LookAt(pos, rot, newSize, ortho, false);
+            LookAt(point, direction, newSize, ortho, false);
         }
 
         // Look at a specific point from a given direction with a given zoom level, enabling and disabling perspective
-        public void LookAt(Vector3 pos, Quaternion rot, float newSize, bool ortho, bool instant)
+        public void LookAt(Vector3 point, Quaternion direction, float newSize, bool ortho, bool instant)
         {
             FixNegativeSize();
             if (instant)
             {
-                m_Position.value = pos;
-                m_Rotation.value = rot;
+                m_Position.value = point;
+                m_Rotation.value = direction;
                 m_Size.value = Mathf.Abs(newSize);
                 m_Ortho.value = ortho;
                 draggingLocked = DraggingLockedState.NotDragging;
             }
             else
             {
-                m_Position.target = pos;
-                m_Rotation.target = rot;
+                m_Position.target = point;
+                m_Rotation.target = direction;
                 m_Size.target = Mathf.Abs(newSize);
                 m_Ortho.target = ortho;
             }
             // Update name in the top-right handle
-            svRot.UpdateGizmoLabel(this, rot * Vector3.forward, m_Ortho.target);
+            svRot.UpdateGizmoLabel(this, direction * Vector3.forward, m_Ortho.target);
         }
 
         void DefaultHandles()
@@ -2598,6 +2631,44 @@ namespace UnityEditor
                         Selection.objects = FindObjectsOfType(typeof(GameObject));
                     Event.current.Use();
                     break;
+                case EventCommandNames.DeselectAll:
+                    if (execute)
+                        Selection.activeGameObject = null;
+                    Event.current.Use();
+                    break;
+                case EventCommandNames.InvertSelection:
+                    if (execute)
+                        Selection.objects = FindObjectsOfType(typeof(GameObject)).Except(Selection.gameObjects).ToArray();
+                    Event.current.Use();
+                    break;
+                case EventCommandNames.SelectChildren:
+                    if (execute)
+                    {
+                        List<GameObject> gameObjects = new List<GameObject>(Selection.gameObjects);
+                        foreach (var gameObject in Selection.gameObjects)
+                        {
+                            gameObjects.AddRange(gameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject));
+                        }
+                        Selection.objects = gameObjects.Distinct().Cast<Object>().ToArray();
+                    }
+                    Event.current.Use();
+                    break;
+                case EventCommandNames.SelectPrefabRoot:
+                    if (execute)
+                    {
+                        List<GameObject> gameObjects = new List<GameObject>(Selection.gameObjects.Length);
+                        foreach (var gameObject in Selection.gameObjects)
+                        {
+                            var root = PrefabUtility.GetOutermostPrefabInstanceRoot(gameObject);
+                            if (root != null)
+                            {
+                                gameObjects.Add(root);
+                            }
+                        }
+                        Selection.objects = gameObjects.Distinct().Cast<Object>().ToArray();
+                    }
+                    Event.current.Use();
+                    break;
             }
         }
 
@@ -2759,16 +2830,6 @@ namespace UnityEditor
             {
                 if (!EditorGUIUtility.IsGizmosAllowedForObject(editor.target))
                     continue;
-                /*
-                // Don't call function for editors whose target's GameObject is not active.
-                Component comp = editor.target as Component;
-                if (comp && !comp.gameObject.activeInHierarchy)
-                    continue;
-
-                // No gizmo if component state is disabled
-                if (!InternalEditorUtility.GetIsInspectorExpanded(comp))
-                    continue;
-                 * */
 
                 MethodInfo method = editor.GetType().GetMethod("OnSceneGUI", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy);
 
@@ -2793,10 +2854,18 @@ namespace UnityEditor
                 }
             }
 
-            if (onSceneGUIDelegate != null)
+            if (duringSceneGui != null)
             {
                 ResetOnSceneGUIState();
-                onSceneGUIDelegate(this);
+
+                if (duringSceneGui != null)
+                    duringSceneGui(this);
+
+#pragma warning disable 618
+                if (onSceneGUIDelegate != null)
+                    onSceneGUIDelegate(this);
+#pragma warning restore 618
+
                 ResetOnSceneGUIState();
             }
         }
@@ -2840,10 +2909,10 @@ namespace UnityEditor
                 }
             }
 
-            if (onPreSceneGUIDelegate != null)
+            if (beforeSceneGui != null)
             {
                 Handles.ClearHandles();
-                onPreSceneGUIDelegate(this);
+                beforeSceneGui(this);
             }
 
             // reset the handles matrix, calls above calls might have changed it
@@ -2880,7 +2949,7 @@ namespace UnityEditor
             }
         }
 
-        public static void ShowCompileErrorNotification()
+        static void ShowCompileErrorNotification()
         {
             ShowNotification("All compiler errors have to be fixed before you can enter playmode!");
         }
@@ -2987,9 +3056,9 @@ namespace UnityEditor
             s_UserDefinedModes.Clear();
         }
 
-        public static CameraMode GetBuiltinCameraMode(DrawCameraMode cameraMode)
+        public static CameraMode GetBuiltinCameraMode(DrawCameraMode mode)
         {
-            return SceneRenderModeWindow.GetBuiltinCameraMode(cameraMode);
+            return SceneRenderModeWindow.GetBuiltinCameraMode(mode);
         }
     }
 } // namespace

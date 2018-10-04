@@ -4,7 +4,7 @@
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class GeometryChangedEvent : EventBase<GeometryChangedEvent>, IPropagatableEvent
+    public class GeometryChangedEvent : EventBase<GeometryChangedEvent>
     {
         public static GeometryChangedEvent GetPooled(Rect oldRect, Rect newRect)
         {

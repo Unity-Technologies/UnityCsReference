@@ -715,7 +715,7 @@ namespace UnityEditor
             GridPaintingState.RegisterPainterInterest(this);
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
             GridPaintingState.brushChanged += OnBrushChanged;
-            SceneView.onSceneGUIDelegate += OnSceneViewGUI;
+            SceneView.duringSceneGui += OnSceneViewGUI;
             PrefabUtility.prefabInstanceUpdated += PrefabInstanceUpdated;
             EditorApplication.projectWasLoaded += OnProjectLoaded;
 
@@ -805,7 +805,7 @@ namespace UnityEditor
             ShortcutIntegration.instance.profileManager.shortcutsModified -= UpdateTooltips;
             Tools.onToolChanged -= ToolChanged;
             GridSelection.gridSelectionChanged -= OnGridSelectionChanged;
-            SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
+            SceneView.duringSceneGui -= OnSceneViewGUI;
             GridPaintingState.scenePaintTargetChanged -= OnScenePaintTargetChanged;
             GridPaintingState.brushChanged -= OnBrushChanged;
             GridPaintingState.UnregisterPainterInterest(this);

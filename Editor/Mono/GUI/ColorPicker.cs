@@ -448,7 +448,7 @@ namespace UnityEditor
                 m_LastConstant = constantValue;
                 m_TextureColorBoxMode = (int)m_ColorBoxMode;
             }
-            Graphics.DrawTexture(colorBoxRect, m_ColorBox, new Rect(.5f / m_ColorBox.width, .5f / m_ColorBox.height, 1 - 1f / m_ColorBox.width, 1 - 1f / m_ColorBox.height), 0, 0, 0, 0, Color.grey);
+            Graphics.DrawTexture(colorBoxRect, m_ColorBox, new Rect(.5f / m_ColorBox.width, .5f / m_ColorBox.height, 1 - 1f / m_ColorBox.width, 1 - 1f / m_ColorBox.height), 0, 0, 0, 0, new Color(.5f, .5f, .5f, .5f));
         }
 
         static class Styles

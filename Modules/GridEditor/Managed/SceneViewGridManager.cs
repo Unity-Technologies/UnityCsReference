@@ -39,7 +39,7 @@ namespace UnityEditor
             if (m_RegisteredEventHandlers)
                 return;
 
-            SceneView.onSceneGUIDelegate += OnSceneGuiDelegate;
+            SceneView.duringSceneGui += OnSceneGuiDelegate;
             Selection.selectionChanged += UpdateCache;
             EditorApplication.hierarchyChanged += UpdateCache;
             EditMode.editModeStarted += OnEditModeStart;
@@ -75,7 +75,7 @@ namespace UnityEditor
         void OnDisable()
         {
             FlushCachedGridProxy();
-            SceneView.onSceneGUIDelegate -= OnSceneGuiDelegate;
+            SceneView.duringSceneGui -= OnSceneGuiDelegate;
             Selection.selectionChanged -= UpdateCache;
             EditorApplication.hierarchyChanged -= UpdateCache;
             EditMode.editModeStarted -= OnEditModeStart;

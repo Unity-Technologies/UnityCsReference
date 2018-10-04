@@ -56,45 +56,25 @@ namespace UnityEditor.Scripting.Compilers
             return true;
         }
 
-        public string GetNamespaceNewRuntime(string filePath, string definedSymbols)
+        static string[] GetSystemReferenceDirectories(ApiCompatibilityLevel apiCompatibilityLevel)
         {
-            var definedSymbolSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            string[] defines = null;
-            var responseFilePath = Path.Combine("Assets", MonoCSharpCompiler.ReponseFilename);
-            try
-            {
-                var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(responseFilePath);
-                defines = new string[responseFileData.Defines.Length + definedSymbolSplit.Length];
-                Array.Copy(definedSymbolSplit, defines, definedSymbolSplit.Length);
-                Array.Copy(responseFileData.Defines, 0, defines, definedSymbolSplit.Length, responseFileData.Defines.Length);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-
-            var uniqueSymbols = new HashSet<string>(defines ?? definedSymbolSplit);
-            return CSharpNamespaceParser.GetNamespace(ReadAndConverteNewLines(filePath).ReadToEnd(), Path.GetFileNameWithoutExtension(filePath), uniqueSymbols.ToArray());
+            return MonoLibraryHelpers.GetSystemReferenceDirectories(apiCompatibilityLevel);
         }
 
-        public string GetNamespaceOldRuntime(string filePath, string definedSymbols)
+        public string GetNamespaceNewRuntime(string filePath, string definedSymbols, string[] defines)
         {
             var definedSymbolSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
-            string[] defines = null;
-            var responseFilePath = Path.Combine("Assets", MonoCSharpCompiler.ReponseFilename);
-            try
-            {
-                var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(responseFilePath);
-                defines = new string[responseFileData.Defines.Length + definedSymbolSplit.Length];
-                Array.Copy(definedSymbolSplit, defines, definedSymbolSplit.Length);
-                Array.Copy(responseFileData.Defines, 0, defines, definedSymbolSplit.Length, responseFileData.Defines.Length);
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
+            var uniqueSymbols = defines.Union(definedSymbolSplit).Distinct().ToArray();
+            return CSharpNamespaceParser.GetNamespace(
+                ReadAndConverteNewLines(filePath).ReadToEnd(),
+                Path.GetFileNameWithoutExtension(filePath),
+                uniqueSymbols);
+        }
 
-            var uniqueSymbols = new HashSet<string>(defines ?? definedSymbolSplit);
+        public string GetNamespaceOldRuntime(string filePath, string definedSymbols, string[] defines)
+        {
+            var definedSymbolSplit = definedSymbols.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var uniqueSymbols = defines.Union(definedSymbolSplit).Distinct().ToArray();
             using (var parser = ParserFactory.CreateParser(ICSharpCode.NRefactory.SupportedLanguage.CSharp, ReadAndConverteNewLines(filePath)))
             {
                 foreach (var symbol in uniqueSymbols)
@@ -121,13 +101,22 @@ namespace UnityEditor.Scripting.Compilers
 
         public override string GetNamespace(string filePath, string definedSymbols)
         {
+            var responseFilePath = Path.Combine("Assets", MonoCSharpCompiler.ResponseFilename);
             if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
             {
-                return GetNamespaceNewRuntime(filePath, definedSymbols);
+                var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
+                    responseFilePath,
+                    Application.dataPath,
+                    GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_4_6));
+                return GetNamespaceNewRuntime(filePath, definedSymbols, responseFileData.Defines);
             }
             else
             {
-                return GetNamespaceOldRuntime(filePath, definedSymbols);
+                var responseFileData = ScriptCompilerBase.ParseResponseFileFromFile(
+                    responseFilePath,
+                    Application.dataPath,
+                    GetSystemReferenceDirectories(ApiCompatibilityLevel.NET_2_0));
+                return GetNamespaceOldRuntime(filePath, definedSymbols, responseFileData.Defines);
             }
         }
 

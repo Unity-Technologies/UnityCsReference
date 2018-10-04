@@ -763,25 +763,19 @@ namespace UnityEditor
         internal virtual void OnHeaderIconGUI(Rect iconRect)
         {
             Texture2D icon = null;
-            if (!HasPreviewGUI())
+
+            //  Fetch isLoadingAssetPreview to ensure that there is no situation where a preview needs a repaint because it hasn't finished loading yet.
+            bool isLoadingAssetPreview = AssetPreview.IsLoadingAssetPreview(target.GetInstanceID());
+            icon = AssetPreview.GetAssetPreview(target);
+            if (!icon)
             {
-                //  Fetch isLoadingAssetPreview to ensure that there is no situation where a preview needs a repaint because it hasn't finished loading yet.
-                bool isLoadingAssetPreview = AssetPreview.IsLoadingAssetPreview(target.GetInstanceID());
-                icon = AssetPreview.GetAssetPreview(target);
-                if (!icon)
-                {
-                    // We have a static preview it just hasn't been loaded yet. Repaint until we have it loaded.
-                    if (isLoadingAssetPreview)
-                        Repaint();
-                    icon = AssetPreview.GetMiniThumbnail(target);
-                }
+                // We have a static preview it just hasn't been loaded yet. Repaint until we have it loaded.
+                if (isLoadingAssetPreview)
+                    Repaint();
+                icon = AssetPreview.GetMiniThumbnail(target);
             }
 
-            if (HasPreviewGUI())
-                // OnPreviewGUI must have all events; not just Repaint, or else the control IDs will mis-match.
-                OnPreviewGUI(iconRect, BaseStyles.inspectorBigInner);
-            else if (icon)
-                GUI.Label(iconRect, icon, BaseStyles.centerStyle);
+            GUI.Label(iconRect, icon, BaseStyles.centerStyle);
         }
 
         internal virtual void OnHeaderTitleGUI(Rect titleRect, string header)

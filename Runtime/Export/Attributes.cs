@@ -7,10 +7,12 @@ using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
+    [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Class, Inherited = false)]
     public sealed class DisallowMultipleComponent : Attribute {}
 
     // The RequireComponent attribute lets automatically add required component as a dependency.
+    [RequiredByNativeCode]
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public sealed class RequireComponent : Attribute
     {
@@ -112,10 +114,15 @@ namespace UnityEngine
     {
         public DefaultExecutionOrder(int order)
         {
-            this.order = order;
+            m_Order = order;
         }
 
-        public int order { get; private set; }
+        public int order
+        {
+            get { return m_Order; }
+        }
+
+        int m_Order;
     }
 
     [AttributeUsage(AttributeTargets.Assembly)]

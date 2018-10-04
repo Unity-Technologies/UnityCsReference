@@ -179,6 +179,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         public Action<CompilationSetupErrorFlags> setupErrorFlagsChanged;
         private PackageAssembly[] m_PackageAssemblies;
+
+        public event Action<object> compilationStarted;
+        public event Action<object> compilationFinished;
         public event Action<string> assemblyCompilationStarted;
         public event Action<string, UnityEditor.Compilation.CompilerMessage[]> assemblyCompilationFinished;
 
@@ -1003,7 +1006,17 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 Directory.CreateDirectory(tempBuildDirectory);
 
             // Compile to tempBuildDirectory
-            compilationTask = new CompilationTask(scriptAssemblies, tempBuildDirectory, options, compilationTaskOptions, UnityEngine.SystemInfo.processorCount);
+            compilationTask = new CompilationTask(scriptAssemblies, tempBuildDirectory, "Editor Compilation", options, compilationTaskOptions, UnityEngine.SystemInfo.processorCount);
+
+            compilationTask.OnCompilationTaskStarted += (context) =>
+            {
+                InvokeCompilationStarted(context);
+            };
+
+            compilationTask.OnCompilationTaskFinished += (context) =>
+            {
+                InvokeCompilationFinished(context);
+            };
 
             compilationTask.OnCompilationStarted += (assembly, phase) =>
             {
@@ -1097,6 +1110,18 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 var convertedMessages = ConvertCompilerMessages(messages);
                 assemblyCompilationFinished(assemblyOutputPath, convertedMessages);
             }
+        }
+
+        public void InvokeCompilationStarted(object context)
+        {
+            if (compilationStarted != null)
+                compilationStarted(context);
+        }
+
+        public void InvokeCompilationFinished(object context)
+        {
+            if (compilationFinished != null)
+                compilationFinished(context);
         }
 
         public bool AreAllScriptsDirty()

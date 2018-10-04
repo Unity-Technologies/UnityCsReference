@@ -35,11 +35,13 @@ namespace UnityEditor
             public static GUIContent renderingPath = EditorGUIUtility.TrTextContent("Rendering Path", "Choose a rendering method for this camera.\n\nUse Graphics Settings to use the rendering path specified in Player settings.\n\nUse Forward to render all objects with one pass per material.\n\nUse Deferred to draw all objects once without lighting and then draw the lighting of all objects at the end of the render queue.\n\nUse Legacy Vertex Lit to to render all lights in a single pass, calculated in vertices.\n\nLegacy Deferred has been deprecated.");
             public static GUIContent focalLength = EditorGUIUtility.TrTextContent("Focal Length", "The simulated distance between the lens and the sensor of the physical camera. Larger values give a narrower field of view.");
             public static GUIContent allowOcclusionCulling = EditorGUIUtility.TrTextContent("Occlusion Culling", "Occlusion Culling means that objects that are hidden behind other objects are not rendered, for example if they are behind walls.");
-            public static GUIContent allowHDR = EditorGUIUtility.TrTextContent("Allow HDR", "High Dynamic Range gives you a wider range of light intensities, so your lighting looks more realistic. With it, you can still see details and experience less saturation even with bright light.");
-            public static GUIContent allowMSAA = EditorGUIUtility.TrTextContent("Allow MSAA", "Use Multi Sample Anti-Aliasing to reduce aliasing.");
+            public static GUIContent allowHDR = EditorGUIUtility.TrTextContent("HDR", "High Dynamic Range gives you a wider range of light intensities, so your lighting looks more realistic. With it, you can still see details and experience less saturation even with bright light.");
+            public static GUIContent allowMSAA = EditorGUIUtility.TrTextContent("MSAA", "Use Multi Sample Anti-Aliasing to reduce aliasing.");
             public static GUIContent gateFit = EditorGUIUtility.TrTextContent("Gate Fit", "Determines how the rendered area (resolution gate) fits into the sensor area (film gate).");
             public static GUIContent allowDynamicResolution = EditorGUIUtility.TrTextContent("Allow Dynamic Resolution", "Scales render textures to support dynamic resolution if the target platform/graphics API supports it.");
             public static GUIStyle invisibleButton = "InvisibleButton";
+            public static GUIContent[] displayedOptions = new[] { new GUIContent("Off"), new GUIContent("Use Graphics Settings") };
+            public static int[] optionValues = new[] { 0, 1 };
         }
         public sealed class Settings
         {
@@ -326,12 +328,22 @@ namespace UnityEditor
 
             public void DrawHDR()
             {
-                EditorGUILayout.PropertyField(HDR, Styles.allowHDR);
+                var rect = EditorGUILayout.GetControlRect(true);
+                EditorGUI.BeginProperty(rect, Styles.allowHDR, HDR);
+                int value = HDR.boolValue ? 1 : 0;
+                value = EditorGUI.IntPopup(rect, Styles.allowHDR, value, Styles.displayedOptions, Styles.optionValues);
+                HDR.boolValue = value == 1;
+                EditorGUI.EndProperty();
             }
 
             public void DrawMSAA()
             {
-                EditorGUILayout.PropertyField(allowMSAA, Styles.allowMSAA);
+                var rect = EditorGUILayout.GetControlRect(true);
+                EditorGUI.BeginProperty(rect, Styles.allowMSAA, allowMSAA);
+                int value = allowMSAA.boolValue ? 1 : 0;
+                value = EditorGUI.IntPopup(rect, Styles.allowMSAA, value, Styles.displayedOptions, Styles.optionValues);
+                allowMSAA.boolValue = value == 1;
+                EditorGUI.EndProperty();
             }
 
             public void DrawDynamicResolution()
@@ -631,7 +643,7 @@ namespace UnityEditor
             {
                 string[] warnings = camera.GetCameraBufferWarnings();
                 if (warnings.Length > 0)
-                    EditorGUILayout.HelpBox(string.Join("\n\n", warnings), MessageType.Warning, true);
+                    EditorGUILayout.HelpBox(string.Join("\n\n", warnings), MessageType.Info, true);
             }
         }
 

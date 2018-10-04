@@ -45,6 +45,8 @@ namespace UnityEditor.ShortcutManagement
 
             // Need to reinitialize after project load if we want menu items
             EditorApplication.projectWasLoaded += InitializeController;
+
+            EditorApplication.focusChanged += OnFocusChanged;
         }
 
         static bool HasAnyEntriesHandler()
@@ -56,6 +58,17 @@ namespace UnityEditor.ShortcutManagement
         {
             instance.contextManager.SetFocusedWindow(EditorWindow.focusedWindow);
             instance.HandleKeyEvent(Event.current);
+        }
+
+        static void OnInvokingAction(ShortcutEntry shortcutEntry, ShortcutArguments shortcutArguments)
+        {
+            // Separate shortcut actions into different undo groups
+            Undo.IncrementCurrentGroup();
+        }
+
+        static void OnFocusChanged(bool isFocused)
+        {
+            instance.trigger.ResetActiveClutches();
         }
 
         static void InitializeController()
@@ -70,6 +83,7 @@ namespace UnityEditor.ShortcutManagement
             var discovery = new Discovery(shortcutProviders, bindingValidator, invalidContextReporter);
             instance = new ShortcutController(discovery, bindingValidator, new ShortcutProfileStore(), new LastUsedProfileIdProvider());
             instance.Initialize(instance.profileManager);
+            instance.trigger.invokingAction += OnInvokingAction;
         }
     }
 
@@ -83,6 +97,7 @@ namespace UnityEditor.ShortcutManagement
         public IShortcutProfileManager profileManager { get; }
         public IDirectory directory => m_Directory;
         public IBindingValidator bindingValidator { get; }
+        public Trigger trigger => m_Trigger;
 
         ContextManager m_ContextManager = new ContextManager();
 

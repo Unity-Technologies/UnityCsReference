@@ -385,6 +385,9 @@ namespace UnityEditor
             CopyDimensionsToParentView();
             m_LastWindowPixelSize = position.size * EditorGUIUtility.pixelsPerPoint;
             EditorApplication.SetSceneRepaintDirty();
+
+            // update the scale according to new resolution
+            m_ZoomArea.UpdateZoomScale(maxScale, minScale);
         }
 
         void AllowCursorLockAndHide(bool enable)

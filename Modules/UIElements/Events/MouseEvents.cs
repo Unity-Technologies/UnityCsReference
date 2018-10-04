@@ -22,7 +22,7 @@ namespace UnityEngine.Experimental.UIElements
 
     internal interface IMouseEventInternal
     {
-        bool hasUnderlyingPhysicalEvent { get; set; }
+        bool triggeredByOS { get; set; }
     }
 
     public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent, IMouseEventInternal where T : MouseEventBase<T>, new()
@@ -69,7 +69,7 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        bool IMouseEventInternal.hasUnderlyingPhysicalEvent { get; set; }
+        bool IMouseEventInternal.triggeredByOS { get; set; }
 
         protected override void Init()
         {
@@ -81,7 +81,7 @@ namespace UnityEngine.Experimental.UIElements
             mouseDelta = Vector2.zero;
             clickCount = 0;
             button = 0;
-            ((IMouseEventInternal)this).hasUnderlyingPhysicalEvent = false;
+            ((IMouseEventInternal)this).triggeredByOS = false;
         }
 
         public override IEventHandler currentTarget
@@ -111,13 +111,18 @@ namespace UnityEngine.Experimental.UIElements
                 e.mouseDelta = systemEvent.delta;
                 e.button = systemEvent.button;
                 e.clickCount = systemEvent.clickCount;
-                ((IMouseEventInternal)e).hasUnderlyingPhysicalEvent = true;
+                ((IMouseEventInternal)e).triggeredByOS = true;
             }
             return e;
         }
 
-        public static T GetPooled(Vector2 mousePosition)
+        internal static T GetPooled(IMouseEvent triggerEvent, Vector2 mousePosition)
         {
+            if (triggerEvent != null)
+            {
+                return GetPooled(triggerEvent);
+            }
+
             T e = GetPooled();
             e.mousePosition = mousePosition;
             return e;
@@ -138,7 +143,7 @@ namespace UnityEngine.Experimental.UIElements
                 IMouseEventInternal mouseEventInternal = triggerEvent as IMouseEventInternal;
                 if (mouseEventInternal != null)
                 {
-                    ((IMouseEventInternal)e).hasUnderlyingPhysicalEvent = mouseEventInternal.hasUnderlyingPhysicalEvent;
+                    ((IMouseEventInternal)e).triggeredByOS = mouseEventInternal.triggeredByOS;
                 }
             }
             return e;
@@ -286,7 +291,7 @@ namespace UnityEngine.Experimental.UIElements
                 IMouseEventInternal mouseEventInternal = triggerEvent as IMouseEventInternal;
                 if (mouseEventInternal != null)
                 {
-                    ((IMouseEventInternal)e).hasUnderlyingPhysicalEvent = mouseEventInternal.hasUnderlyingPhysicalEvent;
+                    ((IMouseEventInternal)e).triggeredByOS = mouseEventInternal.triggeredByOS;
                 }
             }
 

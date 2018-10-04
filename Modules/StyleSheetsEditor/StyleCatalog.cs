@@ -76,6 +76,8 @@ namespace UnityEditor.StyleSheets
         public readonly static int backgroundColor = "background-color".GetHashCode();
         public readonly static int backgroundImage = "background-image".GetHashCode();
         public readonly static int backgroundPosition = "background-position".GetHashCode();
+        public readonly static int backgroundPositionX = "background-position-x".GetHashCode();
+        public readonly static int backgroundPositionY = "background-position-y".GetHashCode();
         public readonly static int backgroundRepeat = "background-repeat".GetHashCode();
         public readonly static int backgroundSize = "background-size".GetHashCode();
         public readonly static int border = "border".GetHashCode();
@@ -123,7 +125,10 @@ namespace UnityEditor.StyleSheets
         public readonly static int marginLeft = "margin-left".GetHashCode();
         public readonly static int marginRight = "margin-right".GetHashCode();
         public readonly static int marginTop = "margin-top".GetHashCode();
+        public readonly static int opacity = "opacity".GetHashCode();
         public readonly static int overflow = "overflow".GetHashCode();
+        public readonly static int overflowX = "overflow-x".GetHashCode();
+        public readonly static int overflowY = "overflow-y".GetHashCode();
         public readonly static int padding = "padding".GetHashCode();
         public readonly static int paddingBottom = "padding-bottom".GetHashCode();
         public readonly static int paddingLeft = "padding-left".GetHashCode();

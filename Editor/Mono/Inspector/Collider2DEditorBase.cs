@@ -27,6 +27,8 @@ namespace UnityEditor
 
         static ContactPoint2D[] m_Contacts = new ContactPoint2D[100];
 
+        private SavedBool m_ShowInfoFoldout;
+
         private SerializedProperty m_Material;
         private SerializedProperty m_IsTrigger;
         private SerializedProperty m_UsedByEffector;
@@ -46,6 +48,8 @@ namespace UnityEditor
             m_ShowDensity.valueChanged.AddListener(Repaint);
 
             m_ShowInfo.valueChanged.AddListener(Repaint);
+            m_ShowInfoFoldout = new SavedBool($"{target.GetType()}.ShowFoldout", false);
+            m_ShowInfo.value = m_ShowInfoFoldout.value;
             m_ShowContacts.valueChanged.AddListener(Repaint);
             m_ContactScrollPosition = Vector2.zero;
 
@@ -119,7 +123,7 @@ namespace UnityEditor
 
         private void ShowColliderInfoProperties()
         {
-            m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
+            m_ShowInfoFoldout.value = m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
             if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
             {
                 if (targets.Length == 1)

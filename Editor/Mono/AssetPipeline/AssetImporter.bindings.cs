@@ -7,12 +7,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 using UnityEngine.Bindings;
+using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
     [NativeHeader("Editor/Src/AssetPipeline/AssetImporter.h")]
     [NativeHeader("Editor/Src/AssetPipeline/AssetImporter.bindings.h")]
     [ExcludeFromObjectFactory]
+    [Preserve]
+    [UsedByNativeCode]
     public partial class AssetImporter : Object
     {
         [NativeType(CodegenOptions.Custom, "MonoSourceAssetIdentifier")]

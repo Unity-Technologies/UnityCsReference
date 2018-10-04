@@ -1000,7 +1000,7 @@ namespace UnityEditor
         }
     }
 
-    internal class SpriteSelectionChangeEvent : EventBase<SpriteSelectionChangeEvent>, IPropagatableEvent
+    internal class SpriteSelectionChangeEvent : EventBase<SpriteSelectionChangeEvent>
     {
     }
 }

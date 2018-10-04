@@ -78,6 +78,6 @@ namespace UnityEngine.Rendering
         }
 
         const int k_SizeInBits = sizeof(uint) * 8;
-        internal fixed uint m_Bits[8];
+        internal fixed uint m_Bits[10];
     }
 }

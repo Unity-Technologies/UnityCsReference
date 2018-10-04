@@ -67,7 +67,7 @@ namespace UnityEngine.Experimental.UIElements
 
             m_LastVersion = m_Version;
 
-            panel.dispatcher.UpdateElementUnderMouse(panel);
+            panel.UpdateElementUnderMouse();
         }
     }
 }

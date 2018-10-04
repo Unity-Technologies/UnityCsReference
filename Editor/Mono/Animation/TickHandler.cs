@@ -24,6 +24,8 @@ namespace UnityEditor
 
         public int tickLevels { get { return m_BiggestTick - m_SmallestTick + 1; } }
 
+        private List<float> m_TickList = new List<float>(1000);
+
         public void SetTickModulos(float[] tickModulos)
         {
             m_TickModulos = tickModulos;
@@ -140,8 +142,17 @@ namespace UnityEditor
             if (level < 0)
                 return new float[0] {};
 
+            m_TickList.Clear();
+            GetTicksAtLevel(level, excludeTicksFromHigherlevels, m_TickList);
+            return m_TickList.ToArray();
+        }
+
+        public void GetTicksAtLevel(int level, bool excludeTicksFromHigherlevels, List<float> list)
+        {
+            if (list == null)
+                throw new System.ArgumentNullException("list");
+
             int l = Mathf.Clamp(m_SmallestTick + level, 0, m_TickModulos.Length - 1);
-            List<float> ticks = new List<float>();
             int startTick = Mathf.FloorToInt(m_MinValue / m_TickModulos[l]);
             int endTick = Mathf.CeilToInt(m_MaxValue / m_TickModulos[l]);
             for (int i = startTick; i <= endTick; i++)
@@ -151,9 +162,8 @@ namespace UnityEditor
                     && l < m_BiggestTick
                     && (i % Mathf.RoundToInt(m_TickModulos[l + 1] / m_TickModulos[l]) == 0))
                     continue;
-                ticks.Add(i * m_TickModulos[l]);
+                list.Add(i * m_TickModulos[l]);
             }
-            return ticks.ToArray();
         }
 
         public float GetStrengthOfLevel(int level)

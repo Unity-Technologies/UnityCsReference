@@ -106,7 +106,7 @@ namespace UnityEditor
         // returns true if children needs to be drawn separately
         public bool OnGUI(Rect position, SerializedProperty property, GUIContent label, bool includeChildren)
         {
-            Rect visibleArea = new Rect(0, 0, position.width, float.MaxValue);
+            Rect visibleArea = new Rect(0, 0, float.MaxValue, float.MaxValue);
             return OnGUI(position, property, label, includeChildren, visibleArea);
         }
 

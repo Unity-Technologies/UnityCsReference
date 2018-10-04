@@ -524,7 +524,7 @@ namespace UnityEditor
             m_SelfCollisionDistance = serializedObject.FindProperty("m_SelfCollisionDistance");
             m_SelfCollisionStiffness = serializedObject.FindProperty("m_SelfCollisionStiffness");
 
-            SceneView.onPreSceneGUIDelegate += OnPreSceneGUICallback;
+            SceneView.beforeSceneGui += OnPreSceneGUICallback;
         }
 
         void InitBrushCollider()
@@ -545,7 +545,7 @@ namespace UnityEditor
 
         public void OnDestroy()
         {
-            SceneView.onPreSceneGUIDelegate -= OnPreSceneGUICallback;
+            SceneView.beforeSceneGui -= OnPreSceneGUICallback;
 
             if (s_BrushCreated == true)
             {
@@ -609,7 +609,7 @@ namespace UnityEditor
 
         void OnDisable()
         {
-            SceneView.onPreSceneGUIDelegate -= OnPreSceneGUICallback;
+            SceneView.beforeSceneGui -= OnPreSceneGUICallback;
         }
 
         float CoefficientField(float value, float useValue, bool enabled, DrawMode mode)

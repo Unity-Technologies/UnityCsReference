@@ -27,7 +27,6 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEditor.Timeline")] // for Driven Properties
 [assembly: InternalsVisibleTo("Unity.Timeline.EditorTests")]
 [assembly: InternalsVisibleTo("UnityEditor.InteractiveTutorialsFramework")]
-[assembly: InternalsVisibleTo("com.unity.editor.resources-testable")]
 
 // Required for the type forwarder UnityEngine.dll
 [assembly: InternalsVisibleTo("UnityEngine")]

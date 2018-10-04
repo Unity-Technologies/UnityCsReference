@@ -5,6 +5,7 @@
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEditor.AnimatedValues;
 
 namespace UnityEditor
 {
@@ -16,9 +17,17 @@ namespace UnityEditor
         static GUIContent m_FreezePositionLabel = EditorGUIUtility.TrTextContent("Freeze Position");
         static GUIContent m_FreezeRotationLabel = EditorGUIUtility.TrTextContent("Freeze Rotation");
 
+        readonly AnimBool m_ShowInfo = new AnimBool();
+
         public void OnEnable()
         {
             m_Constraints = serializedObject.FindProperty("m_Constraints");
+            m_ShowInfo.valueChanged.AddListener(Repaint);
+        }
+
+        public void OnDisable()
+        {
+            m_ShowInfo.valueChanged.RemoveListener(Repaint);
         }
 
         void ConstraintToggle(Rect r, string label, RigidbodyConstraints value, int bit)
@@ -72,6 +81,40 @@ namespace UnityEditor
                 ToggleBlock(constraints, m_FreezeRotationLabel, 4, 5, 6);
                 EditorGUI.indentLevel--;
             }
+
+            ShowBodyInfoProperties();
+        }
+
+        private void ShowBodyInfoProperties()
+        {
+            m_ShowInfo.target = EditorGUILayout.Foldout(m_ShowInfo.target, "Info", true);
+            if (EditorGUILayout.BeginFadeGroup(m_ShowInfo.faded))
+            {
+                if (targets.Length == 1)
+                {
+                    var body = targets[0] as Rigidbody;
+                    EditorGUI.BeginDisabledGroup(true);
+                    EditorGUILayout.FloatField("Speed", body.velocity.magnitude);
+                    EditorGUILayout.Vector3Field("Velocity", body.velocity);
+                    EditorGUILayout.Vector3Field("Angular Velocity", body.angularVelocity);
+                    EditorGUILayout.Vector3Field("Inertia Tensor", body.inertiaTensor);
+                    EditorGUILayout.Vector3Field("Inertia Tensor Rotation", body.inertiaTensorRotation.eulerAngles);
+                    EditorGUILayout.Vector3Field("Local Center of Mass", body.centerOfMass);
+                    EditorGUILayout.Vector3Field("World Center of Mass", body.worldCenterOfMass);
+
+                    EditorGUILayout.LabelField("Sleep State", body.IsSleeping() ? "Asleep" : "Awake");
+                    EditorGUI.EndDisabledGroup();
+
+                    // We need to repaint as some of the above properties can change without causing a repaint.
+                    if (EditorApplication.isPlaying)
+                        Repaint();
+                }
+                else
+                {
+                    EditorGUILayout.HelpBox("Cannot show Info properties when multiple bodies are selected.", MessageType.Info);
+                }
+            }
+            EditorGUILayout.EndFadeGroup();
         }
     }
 }

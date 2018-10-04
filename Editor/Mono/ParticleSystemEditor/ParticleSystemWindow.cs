@@ -60,7 +60,7 @@ namespace UnityEditor
             // Get notified when hierarchy- or project window has changes so we can detect if particle systems have been dragged in or out.
             EditorApplication.hierarchyChanged += OnHierarchyOrProjectWindowWasChanged;
             EditorApplication.projectChanged += OnHierarchyOrProjectWindowWasChanged;
-            SceneView.onSceneGUIDelegate += OnSceneViewGUI;
+            SceneView.duringSceneGui += OnSceneViewGUI;
             EditorApplication.pauseStateChanged += OnPauseStateChanged;
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
             Undo.undoRedoPerformed += UndoRedoPerformed;
@@ -70,7 +70,7 @@ namespace UnityEditor
 
         void OnDisable()
         {
-            SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
+            SceneView.duringSceneGui -= OnSceneViewGUI;
             EditorApplication.projectChanged -= OnHierarchyOrProjectWindowWasChanged;
             EditorApplication.hierarchyChanged -= OnHierarchyOrProjectWindowWasChanged;
             EditorApplication.pauseStateChanged -= OnPauseStateChanged;

@@ -2783,7 +2783,21 @@ namespace UnityEngine
         extern public void MovePosition(Vector2 position);
 
         // Rotates the rigidbody to /angle/ during the next fixed update.
-        extern public void MoveRotation(float angle);
+        public void MoveRotation(float angle)
+        {
+            MoveRotation_Angle(angle);
+        }
+
+        [NativeMethod("MoveRotation")]
+        extern private void MoveRotation_Angle(float angle);
+
+        public void MoveRotation(Quaternion rotation)
+        {
+            MoveRotation_Quaternion(rotation);
+        }
+
+        [NativeMethod("MoveRotation")]
+        extern private void MoveRotation_Quaternion(Quaternion rotation);
 
         // The linear velocity vector of the object.
         extern public Vector2 velocity { get; set; }

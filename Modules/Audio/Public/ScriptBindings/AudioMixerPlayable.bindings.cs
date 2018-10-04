@@ -29,9 +29,10 @@ namespace UnityEngine.Audio
         private static PlayableHandle CreateHandle(PlayableGraph graph, int inputCount, bool normalizeInputVolumes)
         {
             PlayableHandle handle = PlayableHandle.Null;
-            if (!CreateAudioMixerPlayableInternal(ref graph, inputCount, normalizeInputVolumes, ref handle))
+            if (!CreateAudioMixerPlayableInternal(ref graph, normalizeInputVolumes, ref handle))
                 return PlayableHandle.Null;
 
+            handle.SetInputCount(inputCount);
             return handle;
         }
 
@@ -84,7 +85,7 @@ namespace UnityEngine.Audio
         //extern private static void SetAutoNormalizeInternal(ref PlayableHandle hdl, bool normalise);
 
         [NativeThrows]
-        extern private static bool CreateAudioMixerPlayableInternal(ref PlayableGraph graph, int inputCount, bool normalizeInputVolumes, ref PlayableHandle handle);
+        extern private static bool CreateAudioMixerPlayableInternal(ref PlayableGraph graph, bool normalizeInputVolumes, ref PlayableHandle handle);
 
     }
 }

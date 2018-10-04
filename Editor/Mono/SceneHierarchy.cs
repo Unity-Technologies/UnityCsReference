@@ -493,8 +493,6 @@ namespace UnityEditor
 
             if (m_TreeViewKeyboardControlID == 0)
                 m_TreeViewKeyboardControlID = EditorGUIUtility.GetPermanentControlID();
-
-            DoPingRequest();
         }
 
         public virtual void OnDisable()
@@ -919,6 +917,34 @@ namespace UnityEditor
                 evt.Use();
                 GUIUtility.ExitGUI();
             }
+            else if (evt.commandName == EventCommandNames.DeselectAll)
+            {
+                if (execute)
+                    DeselectAll();
+                evt.Use();
+                GUIUtility.ExitGUI();
+            }
+            else if (evt.commandName == EventCommandNames.InvertSelection)
+            {
+                if (execute)
+                    InvertSelection();
+                evt.Use();
+                GUIUtility.ExitGUI();
+            }
+            else if (evt.commandName == EventCommandNames.SelectChildren)
+            {
+                if (execute)
+                    SelectChildren();
+                evt.Use();
+                GUIUtility.ExitGUI();
+            }
+            else if (evt.commandName == EventCommandNames.SelectPrefabRoot)
+            {
+                if (execute)
+                    SelectPrefabRoot();
+                evt.Use();
+                GUIUtility.ExitGUI();
+            }
         }
 
         void CreateGameObjectContextClick(GenericMenu menu, int contextClickedItemID)
@@ -940,6 +966,16 @@ namespace UnityEditor
                 menu.AddItem(EditorGUIUtility.TrTextContent("Delete"), false, DeleteGO);
 
             menu.AddSeparator("");
+
+            if (IsSelectChildrenAvailable())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Select Children"), false, SelectChildren);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Children"));
+
+            if (IsSelectPrefabRootAvailable())
+                menu.AddItem(EditorGUIUtility.TrTextContent("Select Prefab Root"), false, SelectPrefabRoot);
+            else
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Select Prefab Root"));
 
             // Prefab menu items that only make sense if a single object is selected.
             if (m_TreeViewState.selectedIDs.Count == 1)
@@ -1433,6 +1469,114 @@ namespace UnityEditor
             int[] instanceIDs = treeView.GetRowIDs();
             treeView.SetSelection(instanceIDs, false);
             TreeViewSelectionChanged(instanceIDs);
+        }
+
+        private void DeselectAll()
+        {
+            int[] instanceIDs = new int[0];
+            treeView.SetSelection(instanceIDs, false);
+            TreeViewSelectionChanged(instanceIDs);
+        }
+
+        private void InvertSelection()
+        {
+            int[] instanceIDs = treeView.GetRowIDs().Except(treeView.GetSelection()).ToArray();
+            treeView.SetSelection(instanceIDs, false);
+            TreeViewSelectionChanged(instanceIDs);
+        }
+
+        private bool IsSelectChildrenAvailable()
+        {
+            foreach (var id in treeView.GetSelection())
+            {
+                var scene = EditorSceneManager.GetSceneByHandle(id);
+                if (IsSceneHeaderInHierarchyWindow(scene))
+                {
+                    foreach (var rootGameObject in scene.GetRootGameObjects())
+                    {
+                        if (rootGameObject.transform.GetComponentsInChildren<Transform>(true).Length > 1)
+                            return true;
+                    }
+                }
+                else
+                {
+                    var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
+                    if (go != null)
+                    {
+                        if (go.transform.GetComponentsInChildren<Transform>(true).Length > 1)
+                            return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private void SelectChildren()
+        {
+            List<int> instanceIDs = new List<int>(treeView.GetSelection());
+            foreach (var id in treeView.GetSelection())
+            {
+                var scene = EditorSceneManager.GetSceneByHandle(id);
+                if (IsSceneHeaderInHierarchyWindow(scene))
+                {
+                    foreach (var rootGameObject in scene.GetRootGameObjects())
+                    {
+                        instanceIDs.Add(rootGameObject.GetInstanceID());
+                        instanceIDs.AddRange(rootGameObject.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetInstanceID()));
+                    }
+                }
+                else
+                {
+                    var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
+                    if (go != null)
+                        instanceIDs.AddRange(go.transform.GetComponentsInChildren<Transform>(true).Select(t => t.gameObject.GetInstanceID()));
+                }
+            }
+
+            var newSelection = instanceIDs.Distinct().ToArray();
+            treeView.SetSelection(newSelection, true);
+
+            TreeViewSelectionChanged(newSelection);
+        }
+
+        private bool IsSelectPrefabRootAvailable()
+        {
+            foreach (var id in treeView.GetSelection())
+            {
+                var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
+                if (go != null)
+                {
+                    var root = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
+                    if (root != null)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private void SelectPrefabRoot()
+        {
+            List<int> instanceIDs = new List<int>(treeView.GetSelection().Length);
+            foreach (var id in treeView.GetSelection())
+            {
+                var go = InternalEditorUtility.GetObjectFromInstanceID(id) as GameObject;
+                if (go != null)
+                {
+                    var root = PrefabUtility.GetOutermostPrefabInstanceRoot(go);
+                    if (root != null)
+                    {
+                        instanceIDs.Add(root.GetInstanceID());
+                    }
+                }
+            }
+
+            var newSelection = instanceIDs.Distinct().ToArray();
+            treeView.SetSelection(newSelection, false);
+            TreeViewSelectionChanged(newSelection);
         }
 
         public virtual void AddItemsToWindowMenu(GenericMenu menu)

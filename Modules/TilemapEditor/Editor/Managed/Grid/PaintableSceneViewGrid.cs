@@ -40,14 +40,14 @@ namespace UnityEditor
         protected override void OnEnable()
         {
             base.OnEnable();
-            SceneView.onSceneGUIDelegate += OnSceneGUI;
+            SceneView.duringSceneGui += OnSceneGUI;
             Undo.undoRedoPerformed += UndoRedoPerformed;
             GridSelection.gridSelectionChanged += OnGridSelectionChanged;
         }
 
         protected override void OnDisable()
         {
-            SceneView.onSceneGUIDelegate -= OnSceneGUI;
+            SceneView.duringSceneGui -= OnSceneGUI;
             Undo.undoRedoPerformed -= UndoRedoPerformed;
             GridSelection.gridSelectionChanged -= OnGridSelectionChanged;
             base.OnDisable();

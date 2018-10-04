@@ -15,7 +15,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         Texture brushTexture { get; }
         Vector2 uv { get; }
         float brushStrength { get; }
-        float brushRotation { get; }
         float brushSize { get; }
 
         void RepaintAllInspectors();
@@ -25,8 +24,9 @@ namespace UnityEditor.Experimental.TerrainAPI
         SceneView sceneView { get; }
         Texture brushTexture { get; }
         float brushStrength { get; }
-        float brushRotation { get; }
         float brushSize { get; }
+        bool hitValidTerrain { get; }
+        RaycastHit raycastHit { get;  }
     }
 
     public interface IOnInspectorGUI
@@ -40,6 +40,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         string GetDesc();
         void OnEnable();
         void OnDisable();
+        void OnEnterToolMode();
+        void OnExitToolMode();
         void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext);
         void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext);
         bool OnPaint(Terrain terrain, IOnPaint editContext);
@@ -51,6 +53,8 @@ namespace UnityEditor.Experimental.TerrainAPI
         public abstract string GetDesc();
         public virtual void OnEnable() {}
         public virtual void OnDisable() {}
+        public virtual void OnEnterToolMode() {}
+        public virtual void OnExitToolMode() {}
         public virtual void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext) {}
         public virtual void OnInspectorGUI(Terrain terrain, IOnInspectorGUI editContext) {}
         public virtual bool OnPaint(Terrain terrain, IOnPaint editContext) { return false; }
@@ -62,27 +66,28 @@ namespace UnityEditor.Experimental.TerrainAPI
         internal Vector2 m_UV = Vector2.zero;
         internal float m_BrushStrength = 0.0f;
         internal float m_BrushSize = 0;
-        internal float m_BrushRotation = 0.0f;
+        internal bool m_HitValidTerrain = false;
+        internal RaycastHit m_RaycastHit;
 
-        public OnPaintContext(Texture brushTexture, Vector2 uv, float brushStrength, float brushRotation, float brushSize)
+        public OnPaintContext(RaycastHit raycastHit, Texture brushTexture, Vector2 uv, float brushStrength, float brushSize)
         {
-            Set(brushTexture, uv, brushStrength, brushRotation, brushSize);
+            Set(false, raycastHit, brushTexture, uv, brushStrength, brushSize);
         }
 
-        public OnPaintContext Set(Texture brushTexture, Vector2 uv, float brushStrength, float brushRotation, float brushSize)
+        public OnPaintContext Set(bool hitValidTerrain, RaycastHit raycastHit, Texture brushTexture, Vector2 uv, float brushStrength, float brushSize)
         {
             m_BrushTexture = brushTexture;
             m_UV = uv;
             m_BrushStrength = brushStrength;
             m_BrushSize = brushSize;
-            m_BrushRotation = brushRotation;
+            m_HitValidTerrain = hitValidTerrain;
+            m_RaycastHit = raycastHit;
             return this;
         }
 
         public Texture brushTexture { get { return m_BrushTexture; } }
         public Vector2 uv { get { return m_UV; } }
         public float brushStrength { get { return m_BrushStrength; } }
-        public float brushRotation { get { return m_BrushRotation; } }
         public float brushSize { get { return m_BrushSize; } }
 
         public void RepaintAllInspectors() { InspectorWindow.RepaintAllInspectors(); }
@@ -94,28 +99,31 @@ namespace UnityEditor.Experimental.TerrainAPI
         internal Texture m_BrushTexture = null;
         internal float m_BrushStrength = 0.0f;
         internal float m_BrushSize = 0;
-        internal float m_BrushRotation = 0.0f;
+        internal bool m_HitValidTerrain = false;
+        internal RaycastHit m_RaycastHit;
 
-        public OnSceneGUIContext(SceneView sceneView, Texture brushTexture, float brushStrength, float brushRotation, float brushSize)
+        public OnSceneGUIContext(SceneView sceneView, RaycastHit raycastHit, Texture brushTexture, float brushStrength, float brushSize)
         {
-            Set(sceneView, brushTexture, brushStrength, brushSize, brushRotation);
+            Set(sceneView, false, raycastHit, brushTexture, brushStrength, brushSize);
         }
 
-        public OnSceneGUIContext Set(SceneView sceneView, Texture brushTexture, float brushStrength, float brushRotation, float brushSize)
+        public OnSceneGUIContext Set(SceneView sceneView, bool hitValidTerrain, RaycastHit raycastHit, Texture brushTexture, float brushStrength, float brushSize)
         {
             m_SceneView = sceneView;
             m_BrushTexture = brushTexture;
             m_BrushStrength = brushStrength;
             m_BrushSize = brushSize;
-            m_BrushRotation = brushRotation;
+            m_HitValidTerrain = hitValidTerrain;
+            m_RaycastHit = raycastHit;
             return this;
         }
 
         public SceneView sceneView { get { return m_SceneView; } }
         public Texture brushTexture { get { return m_BrushTexture; } }
         public float brushStrength { get { return m_BrushStrength; } }
-        public float brushRotation { get { return m_BrushRotation; } }
         public float brushSize { get { return m_BrushSize; } }
+        public bool hitValidTerrain { get { return m_HitValidTerrain; } }
+        public RaycastHit raycastHit { get { return m_RaycastHit; } }
     }
 
     internal class OnInspectorGUIContext : IOnInspectorGUI

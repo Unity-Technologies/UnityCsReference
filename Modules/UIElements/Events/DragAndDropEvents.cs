@@ -8,7 +8,7 @@ namespace UnityEngine.Experimental.UIElements
     {
     }
 
-    public abstract class DragAndDropEventBase<T> : MouseEventBase<T>, IDragAndDropEvent, IPropagatableEvent where T : DragAndDropEventBase<T>, new()
+    public abstract class DragAndDropEventBase<T> : MouseEventBase<T>, IDragAndDropEvent where T : DragAndDropEventBase<T>, new()
     {
     }
 
@@ -22,6 +22,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public DragExitedEvent()
         {
+            Init();
         }
     }
 
@@ -35,6 +36,7 @@ namespace UnityEngine.Experimental.UIElements
 
         public DragEnterEvent()
         {
+            Init();
         }
     }
 

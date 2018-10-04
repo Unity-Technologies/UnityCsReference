@@ -33,13 +33,13 @@ namespace UnityEditor
             if (m_RegisteredEventHandlers)
                 return;
 
-            SceneView.onSceneGUIDelegate += OnSceneGUIDelegate;
+            SceneView.duringSceneGui += OnSceneGUIDelegate;
             m_RegisteredEventHandlers = true;
         }
 
         void OnDisable()
         {
-            SceneView.onSceneGUIDelegate -= OnSceneGUIDelegate;
+            SceneView.duringSceneGui -= OnSceneGUIDelegate;
             m_RegisteredEventHandlers = false;
         }
 

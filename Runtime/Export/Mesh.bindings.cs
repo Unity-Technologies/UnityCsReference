@@ -150,6 +150,10 @@ namespace UnityEngine
 
         [FreeFunction(Name = "MeshScripting::CombineMeshes", HasExplicitThis = true)]
         extern private void CombineMeshesImpl(CombineInstance[] combine, bool mergeSubMeshes, bool useMatrices, bool hasLightmapData);
+
+        [NativeMethod("Optimize")]                    extern private void OptimizeImpl();
+        [NativeMethod("OptimizeIndexBuffers")]        extern private void OptimizeIndexBuffersImpl();
+        [NativeMethod("OptimizeReorderVertexBuffer")] extern private void OptimizeReorderVertexBufferImpl();
     }
 
     [NativeHeader("Runtime/Graphics/Mesh/MeshScriptBindings.h")]

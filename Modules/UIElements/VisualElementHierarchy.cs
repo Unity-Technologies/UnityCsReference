@@ -26,10 +26,7 @@ namespace UnityEngine.Experimental.UIElements
             ClipAndCacheContents // Renders contents to an cache texture
         }
 
-        // Suppress "use of obsolete enum" warning
-        #pragma warning disable 0618
-        private ClippingOptions m_ClippingOptions = ClippingOptions.NoClipping;
-        #pragma warning restore 0618
+        ClippingOptions m_ClippingOptions = ClippingOptions.NoClipping;
 
         public ClippingOptions clippingOptions
         {

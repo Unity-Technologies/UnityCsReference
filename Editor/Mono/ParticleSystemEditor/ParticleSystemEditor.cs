@@ -61,7 +61,7 @@ namespace UnityEditor
             // Get notified when hierarchy- or project window has changes so we can detect if particle systems have been dragged in or out.
             EditorApplication.hierarchyChanged += HierarchyOrProjectWindowWasChanged;
             EditorApplication.projectChanged += HierarchyOrProjectWindowWasChanged;
-            SceneView.onSceneGUIDelegate += OnSceneViewGUI;
+            SceneView.duringSceneGui += OnSceneViewGUI;
             Undo.undoRedoPerformed += UndoRedoPerformed;
 
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
@@ -69,7 +69,7 @@ namespace UnityEditor
 
         public void OnDisable()
         {
-            SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
+            SceneView.duringSceneGui -= OnSceneViewGUI;
             EditorApplication.projectChanged -= HierarchyOrProjectWindowWasChanged;
             EditorApplication.hierarchyChanged -= HierarchyOrProjectWindowWasChanged;
             Undo.undoRedoPerformed -= UndoRedoPerformed;

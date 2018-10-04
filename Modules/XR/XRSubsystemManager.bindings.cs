@@ -9,6 +9,7 @@ using System.Collections.Generic;
 
 using UnityEngine.Analytics;
 using UnityEngine.Bindings;
+using UnityEngine.Internal;
 using UnityEngine.Scripting;
 
 using intptr_t = System.Int32;
@@ -137,7 +138,7 @@ namespace UnityEngine.Experimental
         private struct SubsystemInfo
         {
             internal string id;
-        };
+        }
 
         internal static List<ISubsystemDescriptorImpl> s_IntegratedSubsystemDescriptors = new List<ISubsystemDescriptorImpl>();
         internal static List<ISubsystemDescriptor> s_StandaloneSubsystemDescriptors = new List<ISubsystemDescriptor>();

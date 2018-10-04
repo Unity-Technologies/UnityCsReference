@@ -16,8 +16,10 @@ namespace UnityEditor.StyleSheets
         #region Implementation
         private static void AddProperty(StyleSheetBuilderHelper helper, FontStyle style, string comment)
         {
-            helper.AddProperty(ConverterUtils.k_FontStyle, style == FontStyle.Italic || style == FontStyle.BoldAndItalic ? "italic" : "normal", comment);
-            helper.AddProperty(ConverterUtils.k_FontWeight, style == FontStyle.Bold || style == FontStyle.BoldAndItalic ? "bold" : "normal");
+            string fontStyle, fontWeight;
+            ConverterUtils.GetFontStylePropertyValues(style, out fontStyle, out fontWeight);
+            helper.AddProperty(ConverterUtils.k_FontStyle, fontStyle, comment);
+            helper.AddProperty(ConverterUtils.k_FontWeight, fontWeight);
         }
 
         private static void AddProperty(StyleSheetBuilderHelper helper, string name, string suffix, RectOffset offset, RectOffset defaultValue, string comment = "")

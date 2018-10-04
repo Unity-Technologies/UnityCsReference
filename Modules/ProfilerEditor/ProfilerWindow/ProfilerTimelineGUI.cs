@@ -687,19 +687,22 @@ namespace UnityEditorInternal
                 {
                     r.y = y;
                     r.height = expanded ? threadInfo.height * scaleForThreadHeight : Math.Max(groupInfo.height / groupThreadCount, k_ThreadMinHeightCollapsed);
-                    if (!r.Overlaps(fullRect))
-                        continue;
 
-                    iter.SetRoot(frameIndex, threadInfo.threadIndex);
-                    DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
-
-                    // Save the y pos and height of the selected thread each time we draw, since it can change
-                    bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
-                    if (containsSelected)
+                    var tr = r;
+                    tr.y -= fullRect.y;
+                    if (tr.Overlaps(m_TimeArea.shownArea))
                     {
-                        m_SelectedThreadY = y;
-                        m_SelectedThreadYRange = rangeY;
-                        m_SelectedThread = threadInfo;
+                        iter.SetRoot(frameIndex, threadInfo.threadIndex);
+                        DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
+
+                        // Save the y pos and height of the selected thread each time we draw, since it can change
+                        bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
+                        if (containsSelected)
+                        {
+                            m_SelectedThreadY = y;
+                            m_SelectedThreadYRange = rangeY;
+                            m_SelectedThread = threadInfo;
+                        }
                     }
 
                     y += r.height;

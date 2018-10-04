@@ -16,9 +16,9 @@ namespace UnityEditor.StyleSheets
 {
     internal enum SkinTarget
     {
+        Shared,
         Light,
-        Dark,
-        Shared
+        Dark
     }
 
     internal class DebugLogTimer : IDisposable
@@ -32,7 +32,7 @@ namespace UnityEditor.StyleSheets
             m_Timer = System.Diagnostics.Stopwatch.StartNew();
         }
 
-        static public DebugLogTimer Start(string m)
+        public static DebugLogTimer Start(string m)
         {
             return new DebugLogTimer(m);
         }
@@ -292,6 +292,17 @@ namespace UnityEditor.StyleSheets
 
             newSelector.selectors = new[] { new StyleSelector() { previousRelationship = StyleSelectorRelationship.None, parts = newSelectorParts } };
             return newSelector;
+        }
+
+        public static StyleComplexSelector CreateSimpleSelector(string styleName)
+        {
+            var cs = new StyleComplexSelector();
+            StyleSelectorPart[] parts;
+            CSSSpec.ParseSelector(styleName, out parts);
+            var selector = new StyleSelector();
+            selector.parts = parts;
+            cs.selectors = new[] { selector };
+            return cs;
         }
 
         public static string Capitalize(this string s)
@@ -585,6 +596,12 @@ namespace UnityEditor.StyleSheets
         public static bool IsAbstractStyleSelector(string selectorStr)
         {
             return selectorStr.StartsWith(k_CustomAbstractGUIStyleSelectorPrefix) && !selectorStr.Contains(":");
+        }
+
+        public static void GetFontStylePropertyValues(FontStyle style, out string fontStyle, out string fontWeight)
+        {
+            fontStyle = style == FontStyle.Italic || style == FontStyle.BoldAndItalic ? "italic" : "normal";
+            fontWeight = style == FontStyle.Bold || style == FontStyle.BoldAndItalic ? "bold" : "normal";
         }
 
         public static bool TryGetFontStyle(string fontStyle, string weight, out FontStyle style)

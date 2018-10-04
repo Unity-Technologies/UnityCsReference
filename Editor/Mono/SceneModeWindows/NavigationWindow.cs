@@ -143,7 +143,7 @@ namespace UnityEditor
             titleContent = GetLocalizedTitleContent();
             s_NavMeshEditorWindow = this;
             EditorApplication.searchChanged += Repaint;
-            SceneView.onSceneGUIDelegate += OnSceneViewGUI;
+            SceneView.duringSceneGui += OnSceneViewGUI;
 
             UpdateSelectedAgentAndObstacleState();
 
@@ -231,7 +231,7 @@ namespace UnityEditor
         {
             s_NavMeshEditorWindow = null;
             EditorApplication.searchChanged -= Repaint;
-            SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
+            SceneView.duringSceneGui -= OnSceneViewGUI;
         }
 
         void UpdateSelectedAgentAndObstacleState()

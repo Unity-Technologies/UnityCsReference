@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.ComponentModel;
 
 namespace UnityEngine.Experimental.UIElements
 {
@@ -35,6 +36,8 @@ namespace UnityEngine.Experimental.UIElements
             Dispatching = 8,
             Pooled = 16,
             IMGUIEventIsValid = 32,
+            StopDispatch = 64,
+            PropagateToIMGUI = 128,
             Dispatched = 512,
         }
 
@@ -195,6 +198,38 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
+        internal bool stopDispatch
+        {
+            get { return (lifeCycleFlags & LifeCycleFlags.StopDispatch) != LifeCycleFlags.None; }
+            set
+            {
+                if (value)
+                {
+                    lifeCycleFlags |= LifeCycleFlags.StopDispatch;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.StopDispatch;
+                }
+            }
+        }
+
+        internal bool propagateToIMGUI
+        {
+            get { return (lifeCycleFlags & LifeCycleFlags.PropagateToIMGUI) != LifeCycleFlags.None; }
+            set
+            {
+                if (value)
+                {
+                    lifeCycleFlags |= LifeCycleFlags.PropagateToIMGUI;
+                }
+                else
+                {
+                    lifeCycleFlags &= ~LifeCycleFlags.PropagateToIMGUI;
+                }
+            }
+        }
+
         private Event m_ImguiEvent;
         bool imguiEventIsValid
         {
@@ -240,7 +275,7 @@ namespace UnityEngine.Experimental.UIElements
 
         protected virtual void Init()
         {
-            timestamp = DateTime.Now.Ticks;
+            timestamp = (long)(Time.realtimeSinceStartup * 1000.0f);
 
             flags = EventFlags.None;
 
@@ -258,6 +293,9 @@ namespace UnityEngine.Experimental.UIElements
             m_CurrentTarget = null;
 
             dispatch = false;
+            stopDispatch = false;
+            propagateToIMGUI = true;
+
             dispatched = false;
             imguiEventIsValid = false;
             pooled = false;
@@ -357,10 +395,5 @@ namespace UnityEngine.Experimental.UIElements
         {
             return s_TypeId;
         }
-    }
-
-    // IPropagatableEvent event interface cause the EventDispatcher to propagate this event to the element hierarchy under the target.
-    internal interface IPropagatableEvent
-    {
     }
 }

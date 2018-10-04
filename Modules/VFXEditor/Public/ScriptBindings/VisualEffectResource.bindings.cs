@@ -35,6 +35,7 @@ namespace UnityEditor.Experimental.VFX
         public bool receiveShadows;
         public ReflectionProbeUsage reflectionProbeUsage;
         public LightProbeUsage lightProbeUsage;
+        public int transparencyPriority;
     }
 
     [UsedByNativeCode]

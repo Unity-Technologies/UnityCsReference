@@ -70,14 +70,14 @@ namespace UnityEditor
         void OnBecameVisible()
         {
             PhysicsVisualizationSettings.InitDebugDraw();
-            SceneView.onSceneGUIDelegate += OnSceneViewGUI;
+            SceneView.duringSceneGui += OnSceneViewGUI;
             RepaintSceneAndGameViews();
         }
 
         void OnBecameInvisible()
         {
             RemovePicker();
-            SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
+            SceneView.duringSceneGui -= OnSceneViewGUI;
             PhysicsVisualizationSettings.DeinitDebugDraw();
             RepaintSceneAndGameViews();
         }

@@ -119,6 +119,7 @@ namespace UnityEditor
             public static readonly GUIContent allowFullscreenSwitch = EditorGUIUtility.TrTextContent("Allow Fullscreen Switch");
             public static readonly GUIContent use32BitDisplayBuffer = EditorGUIUtility.TrTextContent("Use 32-bit Display Buffer*", "If set Display Buffer will be created to hold 32-bit color values. Use it only if you see banding, as it has performance implications.");
             public static readonly GUIContent disableDepthAndStencilBuffers = EditorGUIUtility.TrTextContent("Disable Depth and Stencil*");
+            public static readonly GUIContent preserveFramebufferAlpha = EditorGUIUtility.TrTextContent("Render Over Native UI*", "Enable this option ONLY if you want Unity to render on top of the native Android or iOS UI.");
             public static readonly GUIContent iosShowActivityIndicatorOnLoading = EditorGUIUtility.TrTextContent("Show Loading Indicator");
             public static readonly GUIContent androidShowActivityIndicatorOnLoading = EditorGUIUtility.TrTextContent("Show Loading Indicator");
             public static readonly GUIContent actionOnDotNetUnhandledException = EditorGUIUtility.TrTextContent("On .Net UnhandledException*");
@@ -156,6 +157,7 @@ namespace UnityEditor
             public static readonly GUIContent aotOptions = EditorGUIUtility.TrTextContent("AOT Compilation Options*");
             public static readonly GUIContent require31 = EditorGUIUtility.TrTextContent("Require ES3.1");
             public static readonly GUIContent requireAEP = EditorGUIUtility.TrTextContent("Require ES3.1+AEP");
+            public static readonly GUIContent require32 = EditorGUIUtility.TrTextContent("Require ES3.2");
             public static readonly GUIContent skinOnGPU = EditorGUIUtility.TrTextContent("GPU Skinning*", "Use DX11/ES3 GPU Skinning");
             public static readonly GUIContent skinOnGPUPS4 = EditorGUIUtility.TrTextContent("Compute Skinning*", "Use Compute pipeline for Skinning");
             public static readonly GUIContent disableStatistics = EditorGUIUtility.TrTextContent("Disable HW Statistics*", "Disables HW Statistics");
@@ -252,6 +254,7 @@ namespace UnityEditor
         SerializedProperty m_AllowedAutoRotateToLandscapeLeft;
         SerializedProperty m_UseOSAutoRotation;
         SerializedProperty m_Use32BitDisplayBuffer;
+        SerializedProperty m_PreserveFramebufferAlpha;
         SerializedProperty m_DisableDepthAndStencilBuffers;
         SerializedProperty m_iosShowActivityIndicatorOnLoading;
         SerializedProperty m_androidShowActivityIndicatorOnLoading;
@@ -329,9 +332,10 @@ namespace UnityEditor
         SerializedProperty m_SkinOnGPU;
         SerializedProperty m_GraphicsJobs;
 
-        // OpenGL ES 3.1
+        // OpenGL ES 3.1+
         SerializedProperty m_RequireES31;
         SerializedProperty m_RequireES31AEP;
+        SerializedProperty m_RequireES32;
 
         SerializedProperty m_LightmapEncodingQuality;
         SerializedProperty m_LightmapStreamingEnabled;
@@ -455,6 +459,7 @@ namespace UnityEditor
             m_AllowedAutoRotateToLandscapeLeft      = FindPropertyAssert("allowedAutorotateToLandscapeLeft");
             m_UseOSAutoRotation                     = FindPropertyAssert("useOSAutorotation");
             m_Use32BitDisplayBuffer                 = FindPropertyAssert("use32BitDisplayBuffer");
+            m_PreserveFramebufferAlpha              = FindPropertyAssert("preserveFramebufferAlpha");
             m_DisableDepthAndStencilBuffers         = FindPropertyAssert("disableDepthAndStencilBuffers");
             m_iosShowActivityIndicatorOnLoading     = FindPropertyAssert("iosShowActivityIndicatorOnLoading");
             m_androidShowActivityIndicatorOnLoading = FindPropertyAssert("androidShowActivityIndicatorOnLoading");
@@ -481,6 +486,7 @@ namespace UnityEditor
 
             m_RequireES31                   = FindPropertyAssert("openGLRequireES31");
             m_RequireES31AEP                = FindPropertyAssert("openGLRequireES31AEP");
+            m_RequireES32                   = FindPropertyAssert("openGLRequireES32");
 
             m_LegacyClampBlendShapeWeights  = FindPropertyAssert("legacyClampBlendShapeWeights");
 
@@ -957,6 +963,7 @@ namespace UnityEditor
                         }
 
                         EditorGUILayout.PropertyField(m_DisableDepthAndStencilBuffers, SettingsContent.disableDepthAndStencilBuffers);
+                        EditorGUILayout.PropertyField(m_PreserveFramebufferAlpha, SettingsContent.preserveFramebufferAlpha);
                     }
                     // activity indicator on loading
                     if (targetGroup == BuildTargetGroup.iOS)
@@ -1135,6 +1142,7 @@ namespace UnityEditor
 
             EditorGUILayout.PropertyField(m_RequireES31, SettingsContent.require31);
             EditorGUILayout.PropertyField(m_RequireES31AEP, SettingsContent.requireAEP);
+            EditorGUILayout.PropertyField(m_RequireES32, SettingsContent.require32);
         }
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)

@@ -8,7 +8,7 @@ namespace UnityEngine.Experimental.UIElements
     {
     }
 
-    public abstract class MouseCaptureEventBase<T> : EventBase<T>, IMouseCaptureEvent, IPropagatableEvent where T : MouseCaptureEventBase<T>, new()
+    public abstract class MouseCaptureEventBase<T> : EventBase<T>, IMouseCaptureEvent where T : MouseCaptureEventBase<T>, new()
     {
         public IEventHandler relatedTarget { get; private set; }
 

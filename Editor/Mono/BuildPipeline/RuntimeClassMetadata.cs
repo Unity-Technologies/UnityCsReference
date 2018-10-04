@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using UnityEditorInternal;
 using System;
+using System.Linq;
 using UnityEditor.Compilation;
 using UnityEditor.Scripting.ScriptCompilation;
 
@@ -75,7 +76,7 @@ namespace UnityEditor
             monoBaseClasses.Add(className);
         }
 
-        protected void AddNativeClassFromName(string className)
+        public void AddNativeClassFromName(string className)
         {
             if (objectUnityType == null)
                 objectUnityType = UnityType.FindTypeByName("Object");
@@ -85,6 +86,32 @@ namespace UnityEditor
             ////System.Console.WriteLine("Looking for name {1}  ID {0}", classID, className);
             if (t != null && t.persistentTypeID != objectUnityType.persistentTypeID)
                 allNativeClasses[t.persistentTypeID] = className;
+        }
+
+        public Dictionary<string, string[]> GetAllManagedTypesInScenes()
+        {
+            var items = new Dictionary<string, string[]>();
+
+            // Use a hashset to remove duplicate types.
+            // Duplicates of UnityEngine.Object will happen because native types without a managed type will come back as
+            // UnityEngine.Object
+            var engineModuleTypes = new HashSet<string>();
+            foreach (var nativeClassID in allNativeClasses.Keys)
+            {
+                var managedName = RuntimeClassMetadataUtils.ScriptingWrapperTypeNameForNativeID(nativeClassID);
+
+                if (string.IsNullOrEmpty(managedName))
+                    continue;
+
+                engineModuleTypes.Add(managedName);
+            }
+
+            items.Add("UnityEngine.dll", engineModuleTypes.ToArray());
+
+            foreach (var userAssembly in m_UsedTypesPerUserAssembly)
+                items.Add(userAssembly.Key, userAssembly.Value);
+
+            return items;
         }
 
         public List<string> GetAllNativeClassesIncludingManagersAsString()

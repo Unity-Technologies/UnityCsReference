@@ -270,8 +270,8 @@ namespace UnityEditorInternal
                 blacklists = blacklists.Concat(new[]
                 {
                     WriteMethodsToPreserveBlackList(rcr, platformProvider.target),
-                    WriteUnityEngineBlackList(),
-                    MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(managedAssemblyFolderPath, rcr)
+                    MonoAssemblyStripping.GenerateLinkXmlToPreserveDerivedTypes(managedAssemblyFolderPath, rcr),
+                    WriteTypesInScenesBlacklist(managedAssemblyFolderPath, rcr)
                 });
             }
 
@@ -367,6 +367,28 @@ namespace UnityEditorInternal
             Directory.Delete(tempStripPath);
         }
 
+        private static string WriteTypesInScenesBlacklist(string managedAssemblyDirectory, RuntimeClassRegistry rcr)
+        {
+            var items = rcr.GetAllManagedTypesInScenes();
+
+            var sb = new StringBuilder();
+            sb.AppendLine("<linker>");
+            foreach (var assemblyTypePair in items)
+            {
+                sb.AppendLine($"\t<assembly fullname=\"{Path.GetFileNameWithoutExtension(assemblyTypePair.Key)}\">");
+                foreach (var type in assemblyTypePair.Value)
+                {
+                    sb.AppendLine($"\t\t<type fullname=\"{type}\"/>");
+                }
+                sb.AppendLine("\t</assembly>");
+            }
+            sb.AppendLine("</linker>");
+
+            var path = Path.Combine(managedAssemblyDirectory, "TypesInScenes.xml");
+            File.WriteAllText(path, sb.ToString());
+            return path;
+        }
+
         private static string WriteMethodsToPreserveBlackList(RuntimeClassRegistry rcr, BuildTarget target)
         {
             var contents = GetMethodPreserveBlacklistContents(rcr, target);
@@ -375,15 +397,6 @@ namespace UnityEditorInternal
             var methodPerserveBlackList = Path.GetTempFileName();
             File.WriteAllText(methodPerserveBlackList, contents);
             return methodPerserveBlackList;
-        }
-
-        private static string WriteUnityEngineBlackList()
-        {
-            // UnityEngine.dll would be stripped, as it contains no referenced symbols, only type forwarders.
-            // Since we need those type forwarders, we generate blacklist to preserve the assembly (but no members).
-            var unityEngineBlackList = Path.GetTempFileName();
-            File.WriteAllText(unityEngineBlackList, "<linker><assembly fullname=\"UnityEngine\" preserve=\"nothing\"/></linker>");
-            return unityEngineBlackList;
         }
 
         private static string GetMethodPreserveBlacklistContents(RuntimeClassRegistry rcr, BuildTarget target)

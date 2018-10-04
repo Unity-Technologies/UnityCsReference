@@ -200,7 +200,7 @@ namespace UnityEditor
             m_BoundsHandle.wireframeColor = Color.clear;
 
             UpdateOldLocalSpace();
-            SceneView.onPreSceneGUIDelegate += OnPreSceneGUICallback;
+            SceneView.beforeSceneGui += OnPreSceneGUICallback;
 
             for (int i = 0; i < targets.Length; ++i)
             {
@@ -210,7 +210,7 @@ namespace UnityEditor
 
         public void OnDisable()
         {
-            SceneView.onPreSceneGUIDelegate -= OnPreSceneGUICallback;
+            SceneView.beforeSceneGui -= OnPreSceneGUICallback;
 
             DestroyImmediate(m_ReflectiveMaterial);
             DestroyImmediate(m_CubemapEditor);

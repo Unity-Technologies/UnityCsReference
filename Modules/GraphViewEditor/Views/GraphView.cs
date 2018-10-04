@@ -1279,12 +1279,23 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (frameType == FrameType.Selection)
             {
-                var graphElement = selection[0] as GraphElement;
+                VisualElement graphElement = selection[0] as GraphElement;
                 if (graphElement != null)
+                {
+                    // Edges don't have a size. Only their internal EdgeControl have a size.
+                    if (graphElement is Edge)
+                        graphElement = (graphElement as Edge).edgeControl;
                     rectToFit = graphElement.ChangeCoordinatesTo(contentViewContainer, graphElement.rect);
+                }
 
                 rectToFit = selection.Cast<GraphElement>()
-                    .Aggregate(rectToFit, (current, e) => RectUtils.Encompass(current, e.ChangeCoordinatesTo(contentViewContainer, e.rect)));
+                    .Aggregate(rectToFit, (current, currentGraphElement) =>
+                    {
+                        VisualElement currentElement = currentGraphElement;
+                        if (currentGraphElement is Edge)
+                            currentElement = (currentGraphElement as Edge).edgeControl;
+                        return RectUtils.Encompass(current, currentElement.ChangeCoordinatesTo(contentViewContainer, currentElement.rect));
+                    });
                 CalculateFrameTransform(rectToFit, layout, k_FrameBorder, out frameTranslation, out frameScaling);
             }
             else if (frameType == FrameType.All)

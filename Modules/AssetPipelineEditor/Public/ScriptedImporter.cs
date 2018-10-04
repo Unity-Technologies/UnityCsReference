@@ -14,6 +14,8 @@ namespace UnityEditor.Experimental.AssetImporters
 {
     // Class Concept: Root, abstract class for all Asset importers implemented in C#.
     [ExtensionOfNativeClass]
+    [Preserve]
+    [UsedByNativeCode]
     public abstract class ScriptedImporter : AssetImporter
     {
         // Called by native code to invoke the import handling code of the specialized scripted importer class.

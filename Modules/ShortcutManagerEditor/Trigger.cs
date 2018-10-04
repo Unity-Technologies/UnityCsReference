@@ -17,7 +17,8 @@ namespace UnityEditor.ShortcutManagement
         List<KeyCombination> m_KeyCombinationSequence = new List<KeyCombination>();
         List<ShortcutEntry> m_Entries = new List<ShortcutEntry>();
         Dictionary<KeyCode, Tuple<ShortcutEntry, object>> m_ActiveClutches = new Dictionary<KeyCode, Tuple<ShortcutEntry, object>>();
-        HashSet<KeyCode> m_KeysDown = new HashSet<KeyCode>();
+
+        public event Action<ShortcutEntry, ShortcutArguments> invokingAction;
 
         public Trigger(IDirectory directory, IConflictResolver conflictResolver)
         {
@@ -32,7 +33,6 @@ namespace UnityEditor.ShortcutManagement
 
             if (evt.type == EventType.KeyUp)
             {
-                m_KeysDown.Remove(evt.keyCode);
                 Tuple<ShortcutEntry, object> clutchTuple;
                 if (m_ActiveClutches.TryGetValue(evt.keyCode, out clutchTuple))
                 {
@@ -44,17 +44,18 @@ namespace UnityEditor.ShortcutManagement
                         context = clutchContext,
                         state = ShortcutState.End
                     };
+                    invokingAction?.Invoke(clutchTuple.Item1, args);
                     clutchTuple.Item1.action(args);
                 }
                 return;
             }
 
-            if (m_KeysDown.Contains(evt.keyCode))
+            // Use the event and return if the key is currently used in an active clutch
+            if (m_ActiveClutches.ContainsKey(evt.keyCode))
             {
                 evt.Use();
                 return;
             }
-            m_KeysDown.Add(evt.keyCode);
 
             var keyCodeCombination = new KeyCombination(evt);
             m_KeyCombinationSequence.Add(keyCodeCombination);
@@ -99,6 +100,7 @@ namespace UnityEditor.ShortcutManagement
                         {
                             case ShortcutType.Action:
                                 args.state = ShortcutState.End;
+                                invokingAction?.Invoke(shortcutEntry, args);
                                 shortcutEntry.action(args);
                                 evt.Use();
                                 Reset();
@@ -109,6 +111,7 @@ namespace UnityEditor.ShortcutManagement
                                 {
                                     m_ActiveClutches.Add(evt.keyCode, new Tuple<ShortcutEntry, object>(shortcutEntry, args.context));
                                     args.state = ShortcutState.Begin;
+                                    invokingAction?.Invoke(shortcutEntry, args);
                                     shortcutEntry.action(args);
                                     evt.Use();
                                     Reset();
@@ -116,6 +119,7 @@ namespace UnityEditor.ShortcutManagement
                                 break;
                             case ShortcutType.Menu:
                                 args.state = ShortcutState.End;
+                                invokingAction?.Invoke(shortcutEntry, args);
                                 shortcutEntry.action(args);
                                 evt.Use();
                                 Reset();
@@ -132,6 +136,22 @@ namespace UnityEditor.ShortcutManagement
                     }
                     break;
             }
+        }
+
+        public void ResetActiveClutches()
+        {
+            foreach (var clutchTuple in m_ActiveClutches.Values)
+            {
+                var args = new ShortcutArguments
+                {
+                    context = clutchTuple.Item2,
+                    state = ShortcutState.End,
+                };
+                invokingAction?.Invoke(clutchTuple.Item1, args);
+                clutchTuple.Item1.action(args);
+            }
+
+            m_ActiveClutches.Clear();
         }
 
         public bool HasAnyEntries()

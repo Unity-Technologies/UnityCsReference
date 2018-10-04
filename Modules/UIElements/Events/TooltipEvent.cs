@@ -7,7 +7,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEngine.Experimental.UIElements
 {
-    public class TooltipEvent : EventBase<TooltipEvent>, IPropagatableEvent
+    public class TooltipEvent : EventBase<TooltipEvent>
     {
         public string tooltip { get; set; }
         public Rect rect { get; set; }

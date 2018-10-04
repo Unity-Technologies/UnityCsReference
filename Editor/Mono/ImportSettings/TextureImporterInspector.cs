@@ -572,6 +572,7 @@ namespace UnityEditor
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Cookie);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.ColorSpace);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.AlphaHandling);
+            m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.SingleChannelComponent);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.NormalMap);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.Sprite);
             m_GUIElementsDisplayOrder.Add(TextureInspectorGUIElement.PowerOfTwo);

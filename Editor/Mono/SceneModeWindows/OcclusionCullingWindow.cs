@@ -61,7 +61,7 @@ namespace UnityEditor
 
             s_IsVisible = true;
 
-            SceneView.onSceneGUIDelegate += OnSceneViewGUI;
+            SceneView.duringSceneGui += OnSceneViewGUI;
             StaticOcclusionCullingVisualization.showOcclusionCulling = true;
             SceneView.RepaintAll();
         }
@@ -70,7 +70,7 @@ namespace UnityEditor
         {
             s_IsVisible = false;
 
-            SceneView.onSceneGUIDelegate -= OnSceneViewGUI;
+            SceneView.duringSceneGui -= OnSceneViewGUI;
             StaticOcclusionCullingVisualization.showOcclusionCulling = false;
             SceneView.RepaintAll();
         }

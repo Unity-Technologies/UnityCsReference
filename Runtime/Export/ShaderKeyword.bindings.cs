@@ -24,13 +24,13 @@ namespace UnityEngine.Rendering
     [NativeHeader("Runtime/Shaders/ShaderKeywords.h")]
     public partial class ShaderKeyword
     {
-        [NativeMethod("keywords::Find", true)]
+        [NativeMethod("GetDefaultGlobalKeywordMap().Find", true)]
         extern internal static int GetShaderKeywordIndex(string keywordName);
 
-        [NativeMethod("keywords::GetKeywordName", true)]
+        [NativeMethod("GetDefaultGlobalKeywordMap().GetName", true)]
         extern internal static string GetShaderKeywordName(int keywordIndex);
 
-        [NativeMethod("keywords::GetKeywordType", true)]
+        [NativeMethod("GetDefaultGlobalKeywordMap().GetKeywordType", true)]
         extern internal static ShaderKeywordType GetShaderKeywordType(int keywordIndex);
 
         internal const int k_MaxShaderKeywords = 256; // Keep in sync with kMaxShaderKeywords in ShaderKeywordSet.h

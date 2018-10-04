@@ -14,12 +14,6 @@ namespace UnityEditor.Experimental.TerrainAPI
 {
     public static class TerrainPaintUtilityEditor
     {
-        internal enum BrushPreviewMeshType
-        {
-            QuadOutline = 0,
-            QuadPatch
-        }
-
         // This maintains the list of terrains we have touched in the current operation (and the current operation identifier, as an undo group)
         // We track this to have good cross-tile undo support: each modified tile should be added, at most, ONCE within a single operation
         private static int s_CurrentOperationUndoGroup = -1;
@@ -27,7 +21,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         static TerrainPaintUtilityEditor()
         {
-            TerrainPaintUtility.onTerrainTileBeforePaint += (tile, action, editorUndoName) =>
+            PaintContext.onTerrainTileBeforePaint += (tile, action, editorUndoName) =>
             {
                 // if we are in a new undo group (new operation) then start with an empty list
                 if (Undo.GetCurrentGroup() != s_CurrentOperationUndoGroup)
@@ -44,7 +38,7 @@ namespace UnityEditor.Experimental.TerrainAPI
                     s_CurrentOperationUndoStack.Add(tile.terrain);
                     var undoObjects = new List<UnityEngine.Object>();
                     undoObjects.Add(tile.terrain.terrainData);
-                    if (0 != (action & TerrainPaintUtility.ToolAction.PaintTexture))
+                    if (0 != (action & PaintContext.ToolAction.PaintTexture))
                         undoObjects.AddRange(tile.terrain.terrainData.alphamapTextures);
                     Undo.RegisterCompleteObjectUndo(undoObjects.ToArray(), editorUndoName);
                 }
@@ -67,31 +61,15 @@ namespace UnityEditor.Experimental.TerrainAPI
             }
         }
 
-        public static void ShowDefaultPreviewBrush(Terrain terrain, Texture brushTexture, float brushStrength, float brushSize, float futurePreviewScale)
+        public static void ShowDefaultPreviewBrush(Terrain terrain, Texture brushTexture, float brushSize)
         {
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
             RaycastHit hit;
             if (terrain.GetComponent<Collider>().Raycast(mouseRay, out hit, Mathf.Infinity))
             {
-                if (Event.current.shift)
-                    brushStrength = -brushStrength;
-
-                Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, hit.textureCoord, brushSize);
-                TerrainPaintUtility.PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushRect);
-
-                ctx.sourceRenderTexture.filterMode = FilterMode.Bilinear;
-                brushTexture.filterMode = FilterMode.Bilinear;
-
-                Vector2 topLeft = ctx.brushRect.min;
-                float xfrac = ((topLeft.x - (int)topLeft.x) / (float)ctx.sourceRenderTexture.width);
-                float yfrac = ((topLeft.y - (int)topLeft.y) / (float)ctx.sourceRenderTexture.height);
-
-                Vector4 texScaleOffset = new Vector4(0.5f, 0.5f, 0.5f + xfrac + 0.5f / (float)ctx.sourceRenderTexture.width, 0.5f + yfrac + 0.5f / (float)ctx.sourceRenderTexture.height);
-
-                DrawDefaultBrushPreviewMesh(terrain, hit, ctx.sourceRenderTexture, brushTexture, brushStrength * 0.01f, brushSize, defaultPreviewPatchMesh, false, texScaleOffset);
-                if ((futurePreviewScale > Mathf.Epsilon) && Event.current.control)
-                    DrawDefaultBrushPreviewMesh(terrain, hit, ctx.sourceRenderTexture, brushTexture, futurePreviewScale, brushSize, defaultPreviewPatchMesh, true, texScaleOffset);
-
+                BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, hit.textureCoord, brushSize, 0.0f);
+                PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+                DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, brushTexture, brushXform, GetDefaultBrushPreviewMaterial(), 0);
                 TerrainPaintUtility.ReleaseContextResources(ctx);
             }
         }
@@ -103,83 +81,96 @@ namespace UnityEditor.Experimental.TerrainAPI
             return m_BrushPreviewMaterial;
         }
 
-        // drawing utilities
-
-        internal static Mesh GenerateDefaultBrushPreviewMesh(int tesselationLevel)
+        public enum BrushPreview
         {
-            if (tesselationLevel < 1)
-            {
-                Debug.LogWarning("Invalid tessellation level passed to GenerateBrushPreviewMesh.");
-                return null;
-            }
+            SourceRenderTexture,
+            DestinationRenderTexture
+        };
 
-            var verts = new List<Vector3>();
-            var indices = new List<int>();
+        public static void DrawBrushPreview(
+            PaintContext heightmapPC,
+            BrushPreview previewTexture,
+            Texture brushTexture,                           // brush texture to apply
+            BrushTransform brushXform,                      // brush transform that defines the brush UV space
+            Material proceduralMaterial,                    // the material to render with (must support procedural quad-mesh generation)
+            int materialPassIndex)                          // the pass to use within the material
+        {
+            // we want to build a quad mesh, with one vertex for each pixel in the heightmap
+            // i.e. a 3x3 heightmap would create a mesh that looks like this:
+            //
+            //    +-+-+
+            //    |\|\|
+            //    +-+-+
+            //    |\|\|
+            //    +-+-+
+            //
+            int quadsX = heightmapPC.pixelRect.width - 1;
+            int quadsY = heightmapPC.pixelRect.height - 1;
+            int vertexCount = quadsX * quadsY * (2 * 3);  // two triangles (2 * 3 vertices) per quad
 
-            Mesh m = new Mesh();
+            // this is used to tessellate the quad mesh (from within the vertex shader)
+            proceduralMaterial.SetVector("_QuadRez", new Vector4(quadsX, quadsY, vertexCount, 0.0f));
 
-            float incr = 2.0f / (float)tesselationLevel;
+            // paint context pixels to heightmap uv:   uv = (pixels + 0.5) / width
+            Texture heightmapTexture = (previewTexture == BrushPreview.SourceRenderTexture) ? heightmapPC.sourceRenderTexture : heightmapPC.destinationRenderTexture;
+            float invWidth = 1.0f / heightmapTexture.width;
+            float invHeight = 1.0f / heightmapTexture.height;
+            proceduralMaterial.SetVector("_HeightmapUV_PCPixelsX",  new Vector4(invWidth, 0.0f, 0.0f, 0.0f));
+            proceduralMaterial.SetVector("_HeightmapUV_PCPixelsY",  new Vector4(0.0f, invHeight, 0.0f, 0.0f));
+            proceduralMaterial.SetVector("_HeightmapUV_Offset",     new Vector4(0.5f  * invWidth, 0.5f * invHeight, 0.0f, 0.0f));
 
-            Vector3 v = new Vector3(-1.0f, 0, -1.0f);
+            // make sure we point filter the heightmap
+            FilterMode oldFilter = heightmapTexture.filterMode;
+            heightmapTexture.filterMode = FilterMode.Point;
+            proceduralMaterial.SetTexture("_Heightmap", heightmapTexture);
 
-            for (int i = 0; i <= tesselationLevel; i++)
-            {
-                v.x = -1.0f;
-                for (int j = 0; j <= tesselationLevel; j++)
-                {
-                    verts.Add(v);
-                    v.x += incr;
+            // paint context pixels to object (terrain) position
+            // objectPos.x = scaleX * pcPixels.x + heightmapRect.xMin * scaleX
+            // objectPos.y = scaleY * H
+            // objectPos.z = scaleZ * pcPixels.y + heightmapRect.yMin * scaleZ
+            float scaleX = heightmapPC.pixelSize.x;
+            float scaleY = 2.0f * heightmapPC.originTerrain.terrainData.heightmapScale.y;
+            float scaleZ = heightmapPC.pixelSize.y;
+            proceduralMaterial.SetVector("_ObjectPos_PCPixelsX", new Vector4(scaleX, 0.0f, 0.0f, 0.0f));
+            proceduralMaterial.SetVector("_ObjectPos_HeightMapSample", new Vector4(0.0f, scaleY, 0.0f, 0.0f));
+            proceduralMaterial.SetVector("_ObjectPos_PCPixelsY", new Vector4(0.0f, 0.0f, scaleZ, 0.0f));
+            proceduralMaterial.SetVector("_ObjectPos_Offset", new Vector4(heightmapPC.pixelRect.xMin * scaleX, 0.0f, heightmapPC.pixelRect.yMin * scaleZ, 1.0f));
 
-                    if (i != tesselationLevel && j != tesselationLevel)
-                    {
-                        int index = i * (tesselationLevel + 1) + j;
+            // heightmap paint context pixels to brush UV
+            // derivation:
 
-                        indices.Add(index);
-                        indices.Add(index + tesselationLevel + 1);
-                        indices.Add(index + 1);
+            // BrushUV = f(terrainSpace.xz) = f(g(pcPixels.xy))
+            //   f(ts.xy) = ts.x * brushXform.X + ts.y * brushXform.Y + brushXform.Origin
+            //   g(pcPixels.xy) = ts.xz = pcOrigin + pcPixels.xy * pcSize
+            //   f(g(pcPixels.uv)) == (pcOrigin + pcPixels.uv * pcSize).x * brushXform.X + (pcOrigin + pcPixels.uv * pcSize).y * brushXform.Y + brushXform.Origin
+            //   f(g(pcPixels.uv)) == (pcOrigin.x + pcPixels.u * pcSize.x) * brushXform.X + (pcOrigin.y + pcPixels.v * pcSize.y) * brushXform.Y + brushXform.Origin
+            //   f(g(pcPixels.uv)) == (pcOrigin.x * brushXform.X) + (pcPixels.u * pcSize.x) * brushXform.X + (pcOrigin.y * brushXform.Y) + (pcPixels.v * pcSize.y) * brushXform.Y + brushXform.Origin
+            //   f(g(pcPixels.uv)) == pcPixels.u * (pcSize.x * brushXform.X) + pcPixels.v * (pcSize.y * brushXform.Y) + (brushXform.Origin + (pcOrigin.x * brushXform.X) + (pcOrigin.y * brushXform.Y))
 
-                        indices.Add(index + 1);
-                        indices.Add(index + tesselationLevel + 1);
-                        indices.Add(index + tesselationLevel + 2);
-                    }
-                }
-                v.z += incr;
-            }
+            // paint context origin in terrain space
+            // (note this is the UV space origin and size, not the mesh origin & size)
+            float pcOriginX = heightmapPC.pixelRect.xMin * heightmapPC.pixelSize.x;
+            float pcOriginZ = heightmapPC.pixelRect.yMin * heightmapPC.pixelSize.y;
+            float pcSizeX = heightmapPC.pixelSize.x;
+            float pcSizeZ = heightmapPC.pixelSize.y;
 
-            m.vertices = verts.ToArray();
-            m.triangles = indices.ToArray();
+            Vector2 scaleU = pcSizeX * brushXform.targetX;
+            Vector2 scaleV = pcSizeZ * brushXform.targetY;
+            Vector2 offset = brushXform.targetOrigin + pcOriginX * brushXform.targetX + pcOriginZ * brushXform.targetY;
+            proceduralMaterial.SetVector("_BrushUV_PCPixelsX",      new Vector4(scaleU.x, scaleU.y, 0.0f, 0.0f));
+            proceduralMaterial.SetVector("_BrushUV_PCPixelsY",      new Vector4(scaleV.x, scaleV.y, 0.0f, 0.0f));
+            proceduralMaterial.SetVector("_BrushUV_Offset",         new Vector4(offset.x, offset.y, 0.0f, 1.0f));
+            proceduralMaterial.SetTexture("_BrushTex", brushTexture);
 
-            return m;
+            Vector3 terrainPos = heightmapPC.originTerrain.GetPosition();
+            proceduralMaterial.SetVector("_TerrainObjectToWorldOffset", terrainPos);
+
+            proceduralMaterial.SetPass(materialPassIndex);
+            Graphics.DrawProcedural(MeshTopology.Triangles, vertexCount);
+
+            heightmapTexture.filterMode = oldFilter;
         }
 
-        public static void DrawDefaultBrushPreviewMesh(Terrain terrain, RaycastHit hit, Texture heightmapTexture, Texture brushTexture, float brushStrength, float brushSize, Mesh mesh, bool showPreviewPostBrush, Vector4 texScaleOffset)
-        {
-            Vector4 brushParams = new Vector4(brushStrength, 2.0f * terrain.terrainData.heightmapScale.y, 0.0f, 0.0f);
-
-            Material mat = GetDefaultBrushPreviewMaterial();
-            mat.SetTexture("_MainTex", heightmapTexture);
-            mat.SetTexture("_BrushTex", brushTexture);
-            mat.SetVector("_BrushParams", brushParams);
-            mat.SetVector("_TexScaleOffet", texScaleOffset);
-            mat.SetPass(showPreviewPostBrush ? 1 : 0);
-
-            Matrix4x4 matrix = Matrix4x4.identity;
-            matrix.SetTRS(new Vector3(hit.point.x, terrain.GetPosition().y, hit.point.z), Quaternion.identity, new Vector3(brushSize / 2.0f, 1, brushSize / 2.0f));
-
-            Graphics.DrawMeshNow(mesh, matrix);
-        }
-
-        static Mesh m_DefaultPreviewPatchMesh = null;
         static Material m_BrushPreviewMaterial = null;
-
-        public static Mesh defaultPreviewPatchMesh
-        {
-            get
-            {
-                if (m_DefaultPreviewPatchMesh == null)
-                    m_DefaultPreviewPatchMesh = GenerateDefaultBrushPreviewMesh(100);
-                return m_DefaultPreviewPatchMesh;
-            }
-        }
     }
 }

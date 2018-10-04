@@ -11,7 +11,7 @@ namespace UnityEngine.Experimental.UIElements
         FocusChangeDirection direction { get; }
     }
 
-    public abstract class FocusEventBase<T> : EventBase<T>, IFocusEvent, IPropagatableEvent where T : FocusEventBase<T>, new()
+    public abstract class FocusEventBase<T> : EventBase<T>, IFocusEvent where T : FocusEventBase<T>, new()
     {
         public Focusable relatedTarget { get; protected set; }
 

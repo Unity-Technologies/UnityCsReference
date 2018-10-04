@@ -90,8 +90,18 @@ namespace UnityEditor.Compilation
 
             var scriptAssembly = editorCompilation.CreateScriptAssembly(this);
 
-            compilationTask = new CompilationTask(new ScriptAssembly[] { scriptAssembly }, scriptAssembly.OutputDirectory,
+            compilationTask = new CompilationTask(new ScriptAssembly[] { scriptAssembly }, scriptAssembly.OutputDirectory, this,
                 EditorScriptCompilationOptions.BuildingEmpty, CompilationTaskOptions.StopOnFirstError, 1);
+
+            compilationTask.OnCompilationTaskStarted += (context) =>
+            {
+                editorCompilation.InvokeCompilationStarted(context);
+            };
+
+            compilationTask.OnCompilationTaskFinished += (context) =>
+            {
+                editorCompilation.InvokeCompilationFinished(context);
+            };
 
             compilationTask.OnCompilationStarted += (assembly, phase) =>
             {

@@ -25,7 +25,7 @@ namespace UnityEditor
         // Meshes
         SerializedProperty m_MeshCompression;
         SerializedProperty m_IsReadable;
-        SerializedProperty m_OptimizeMeshForGPU;
+        SerializedProperty m_MeshOptimizationFlags;
 
         // Geometry
         SerializedProperty m_KeepQuads;
@@ -83,8 +83,9 @@ namespace UnityEditor
             m_NormalSmoothingSource = serializedObject.FindProperty("normalSmoothingSource");
             m_BlendShapeNormalCalculationMode = serializedObject.FindProperty("blendShapeNormalImportMode");
             m_TangentImportMode = serializedObject.FindProperty("tangentImportMode");
-            m_OptimizeMeshForGPU = serializedObject.FindProperty("optimizeMeshForGPU");
+            m_MeshOptimizationFlags = serializedObject.FindProperty("meshOptimizationFlags");
             m_IsReadable = serializedObject.FindProperty("m_IsReadable");
+
             m_KeepQuads = serializedObject.FindProperty("keepQuads");
             m_IndexFormat = serializedObject.FindProperty("indexFormat");
             m_WeldVertices = serializedObject.FindProperty("weldVertices");
@@ -107,7 +108,8 @@ namespace UnityEditor
             public static GUIContent Meshes = EditorGUIUtility.TrTextContent("Meshes", "Global settings for generated meshes");
             public static GUIContent MeshCompressionLabel = EditorGUIUtility.TrTextContent("Mesh Compression" , "Higher compression ratio means lower mesh precision. If enabled, the mesh bounds and a lower bit depth per component are used to compress the mesh data.");
             public static GUIContent IsReadable = EditorGUIUtility.TrTextContent("Read/Write Enabled", "Allow vertices and indices to be accessed from script.");
-            public static GUIContent OptimizeMeshForGPU = EditorGUIUtility.TrTextContent("Optimize Mesh", "The vertices and indices will be reordered for better GPU performance.");
+            public static GUIContent OptimizationFlags = EditorGUIUtility.TrTextContent("Optimize Mesh", "Reorder vertices and/or polygons for better GPU performance.");
+
             public static GUIContent GenerateColliders = EditorGUIUtility.TrTextContent("Generate Colliders", "Should Unity generate mesh colliders for all meshes.");
 
             public static GUIContent Geometry = EditorGUIUtility.TrTextContent("Geometry", "Detailed mesh data");
@@ -180,7 +182,9 @@ namespace UnityEditor
             }
 
             EditorGUILayout.PropertyField(m_IsReadable, Styles.IsReadable);
-            EditorGUILayout.PropertyField(m_OptimizeMeshForGPU, Styles.OptimizeMeshForGPU);
+
+            m_MeshOptimizationFlags.intValue = (int)(MeshOptimizationFlags)EditorGUILayout.EnumFlagsField(Styles.OptimizationFlags, (MeshOptimizationFlags)m_MeshOptimizationFlags.intValue);
+
             EditorGUILayout.PropertyField(m_AddColliders, Styles.GenerateColliders);
         }
 

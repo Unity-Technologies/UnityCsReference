@@ -155,7 +155,7 @@ namespace UnityEditor
         public bool DoubleSidedGIField()
         {
             Rect r = GetControlRectForSingleLine();
-            if (isPrefabAsset || LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveCPU)
+            if (isPrefabAsset || LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.Enlighten)
             {
                 EditorGUI.PropertyField(r, m_DoubleSidedGI, Styles.doubleSidedGILabel);
                 serializedObject.ApplyModifiedProperties();
@@ -163,13 +163,8 @@ namespace UnityEditor
             }
             else
             {
-                // TODO(RadeonRays): change this to (lightmapper == Enlighten) once Double Sided GI works with GPU lightmapper.
-                using (new EditorGUI.DisabledScope(LightmapEditorSettings.lightmapper != LightmapEditorSettings.Lightmapper.ProgressiveCPU))
+                using (new EditorGUI.DisabledScope(LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten))
                     EditorGUI.Toggle(r, Styles.doubleSidedGILabel, false);
-                if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
-                {
-                    EditorGUILayout.HelpBox(Styles.ProgressiveGPUWarning.text, MessageType.Info);
-                }
             }
             return false;
         }

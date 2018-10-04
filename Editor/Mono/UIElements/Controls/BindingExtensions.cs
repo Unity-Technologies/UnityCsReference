@@ -10,7 +10,7 @@ using UnityEngine.Experimental.UIElements;
 
 namespace UnityEditor.Experimental.UIElements
 {
-    internal class SerializedObjectBindEvent : EventBase<SerializedObjectBindEvent>, IPropagatableEvent
+    internal class SerializedObjectBindEvent : EventBase<SerializedObjectBindEvent>
     {
         private SerializedObject m_BindObject;
         public SerializedObject bindObject
@@ -36,7 +36,7 @@ namespace UnityEditor.Experimental.UIElements
         }
     }
 
-    internal class SerializedPropertyBindEvent : EventBase<SerializedPropertyBindEvent>, IPropagatableEvent
+    internal class SerializedPropertyBindEvent : EventBase<SerializedPropertyBindEvent>
     {
         private SerializedProperty m_BindProperty;
         public SerializedProperty bindProperty

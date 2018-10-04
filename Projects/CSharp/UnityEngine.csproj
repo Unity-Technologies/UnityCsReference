@@ -13,6 +13,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <LangVersion>6</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
+    <NoStdLib>false</NoStdLib>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -795,6 +796,9 @@
   <Compile Include="..\..\Runtime\Export\Scripting\ScriptingRuntime.bindings.cs">
     <Link>Runtime\Export\Scripting\ScriptingRuntime.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\Scripting\ScriptingUtility.cs">
+    <Link>Runtime\Export\Scripting\ScriptingUtility.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\ScrollWaitDefinitions.cs">
     <Link>Runtime\Export\ScrollWaitDefinitions.cs</Link>
   </Compile>
@@ -1254,6 +1258,9 @@
   <Compile Include="..\..\Modules\Audio\Public\Managed\Audio.deprecated.cs">
     <Link>Modules\Audio\Public\Managed\Audio.deprecated.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\Audio.bindings.cs">
+    <Link>Modules\Audio\Public\ScriptBindings\Audio.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Audio\Public\ScriptBindings\AudioClipPlayable.bindings.cs">
     <Link>Modules\Audio\Public\ScriptBindings\AudioClipPlayable.bindings.cs</Link>
   </Compile>
@@ -1482,6 +1489,12 @@
   <Compile Include="..\..\Modules\Substance\SubstanceUtility.cs">
     <Link>Modules\Substance\SubstanceUtility.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\BrushTransform.cs">
+    <Link>Modules\Terrain\Public\BrushTransform.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\PaintContext.cs">
+    <Link>Modules\Terrain\Public\PaintContext.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Terrain\Public\Terrain.bindings.cs">
     <Link>Modules\Terrain\Public\Terrain.bindings.cs</Link>
   </Compile>
@@ -1614,8 +1627,17 @@
   <Compile Include="..\..\Modules\UIElements\Events\ChangeEvent.cs">
     <Link>Modules\UIElements\Events\ChangeEvent.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\CommandEventDispatchingStrategy.cs">
+    <Link>Modules\UIElements\Events\CommandEventDispatchingStrategy.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElements\Events\CommandEvents.cs">
     <Link>Modules\UIElements\Events\CommandEvents.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\DebuggerEventDispatchingStrategy.cs">
+    <Link>Modules\UIElements\Events\DebuggerEventDispatchingStrategy.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\DefaultDispatchingStrategy.cs">
+    <Link>Modules\UIElements\Events\DefaultDispatchingStrategy.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Events\DragAndDropEvents.cs">
     <Link>Modules\UIElements\Events\DragAndDropEvents.cs</Link>
@@ -1638,8 +1660,17 @@
   <Compile Include="..\..\Modules\UIElements\Events\FocusEvents.cs">
     <Link>Modules\UIElements\Events\FocusEvents.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\IEventDispatchingStrategy.cs">
+    <Link>Modules\UIElements\Events\IEventDispatchingStrategy.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\IMGUIEventDispatchingStrategy.cs">
+    <Link>Modules\UIElements\Events\IMGUIEventDispatchingStrategy.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElements\Events\InputEvents.cs">
     <Link>Modules\UIElements\Events\InputEvents.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\KeyboardEventDispatchingStrategy.cs">
+    <Link>Modules\UIElements\Events\KeyboardEventDispatchingStrategy.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Events\KeyboardEvents.cs">
     <Link>Modules\UIElements\Events\KeyboardEvents.cs</Link>
@@ -1647,11 +1678,23 @@
   <Compile Include="..\..\Modules\UIElements\Events\LayoutEvents.cs">
     <Link>Modules\UIElements\Events\LayoutEvents.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\MouseCaptureDispatchingStrategy.cs">
+    <Link>Modules\UIElements\Events\MouseCaptureDispatchingStrategy.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\MouseEventDispatchingStrategy.cs">
+    <Link>Modules\UIElements\Events\MouseEventDispatchingStrategy.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElements\Events\MouseEvents.cs">
     <Link>Modules\UIElements\Events\MouseEvents.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\MouseEventsHelper.cs">
+    <Link>Modules\UIElements\Events\MouseEventsHelper.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UIElements\Events\PanelEvents.cs">
     <Link>Modules\UIElements\Events\PanelEvents.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UIElements\Events\PropagationPaths.cs">
+    <Link>Modules\UIElements\Events\PropagationPaths.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\UIElements\Events\TooltipEvent.cs">
     <Link>Modules\UIElements\Events\TooltipEvent.cs</Link>
@@ -2375,9 +2418,6 @@
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Animation\AnimationsBindings.gen.cs</Link>
-  </Compile>
-  <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioBindings.gen.cs">
-    <Link>artifacts\generated\bindings_old\common\Audio\AudioBindings.gen.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\Audio\AudioMixerBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\Audio\AudioMixerBindings.gen.cs</Link>

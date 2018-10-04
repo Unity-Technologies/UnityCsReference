@@ -13,6 +13,7 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <LangVersion>6</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
+    <NoStdLib>false</NoStdLib>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -1217,6 +1218,9 @@
   <Compile Include="..\..\Editor\Mono\BuildPipeline\RuntimeClassMetadata.cs">
     <Link>Editor\Mono\BuildPipeline\RuntimeClassMetadata.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\BuildPipeline\RuntimeClassMetadataUtils.bindings.cs">
+    <Link>Editor\Mono\BuildPipeline\RuntimeClassMetadataUtils.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\BuildPipeline\WinRT\WinRTUtils.cs">
     <Link>Editor\Mono\BuildPipeline\WinRT\WinRTUtils.cs</Link>
   </Compile>
@@ -1666,9 +1670,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\GUI\PreviewResizer.cs">
     <Link>Editor\Mono\GUI\PreviewResizer.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\GUI\QuadTree.cs">
-    <Link>Editor\Mono\GUI\QuadTree.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\GUI\RenameOverlay.cs">
     <Link>Editor\Mono\GUI\RenameOverlay.cs</Link>
@@ -3179,6 +3180,9 @@
   <Compile Include="..\..\Editor\Mono\Scripting\Serialization\Weaver.cs">
     <Link>Editor\Mono\Scripting\Serialization\Weaver.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\SelectionCommands\SelectionCommands.cs">
+    <Link>Editor\Mono\SelectionCommands\SelectionCommands.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\SerializedProperty\SerializedPropertyFilters.cs">
     <Link>Editor\Mono\SerializedProperty\SerializedPropertyFilters.cs</Link>
   </Compile>
@@ -3259,30 +3263,6 @@
   </Compile>
   <Compile Include="..\..\Editor\Mono\Sprites\TightSpritePackerPolicy.cs">
     <Link>Editor\Mono\Sprites\TightSpritePackerPolicy.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\StyleSheets\CSSSpec.cs">
-    <Link>Editor\Mono\StyleSheets\CSSSpec.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\StyleSheets\StyleCatalog.cs">
-    <Link>Editor\Mono\StyleSheets\StyleCatalog.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetBuilder.cs">
-    <Link>Editor\Mono\StyleSheets\StyleSheetBuilder.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetEditor.cs">
-    <Link>Editor\Mono\StyleSheets\StyleSheetEditor.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetImportErrors.cs">
-    <Link>Editor\Mono\StyleSheets\StyleSheetImportErrors.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetImporter.cs">
-    <Link>Editor\Mono\StyleSheets\StyleSheetImporter.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetImporterImpl.cs">
-    <Link>Editor\Mono\StyleSheets\StyleSheetImporterImpl.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Editor\Mono\StyleSheets\StyleSheetResourceUtil.cs">
-    <Link>Editor\Mono\StyleSheets\StyleSheetResourceUtil.cs</Link>
   </Compile>
   <Compile Include="..\..\Editor\Mono\TerrainEditor\TerrainInspectorUtil.bindings.cs">
     <Link>Editor\Mono\TerrainEditor\TerrainInspectorUtil.bindings.cs</Link>
@@ -4484,6 +4464,9 @@
   <Compile Include="..\..\Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs">
     <Link>Modules\SpriteShapeEditor\Managed\SpriteShapeRendererEditor.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\CSSSpec.cs">
+    <Link>Modules\StyleSheetsEditor\CSSSpec.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\ConverterUtils.cs">
     <Link>Modules\StyleSheetsEditor\Converters\ConverterUtils.cs</Link>
   </Compile>
@@ -4513,6 +4496,27 @@
   </Compile>
   <Compile Include="..\..\Modules\StyleSheetsEditor\Converters\StyleSheetToUss.cs">
     <Link>Modules\StyleSheetsEditor\Converters\StyleSheetToUss.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\StyleCatalog.cs">
+    <Link>Modules\StyleSheetsEditor\StyleCatalog.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetBuilder.cs">
+    <Link>Modules\StyleSheetsEditor\StyleSheetBuilder.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetEditor.cs">
+    <Link>Modules\StyleSheetsEditor\StyleSheetEditor.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetImportErrors.cs">
+    <Link>Modules\StyleSheetsEditor\StyleSheetImportErrors.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetImporter.cs">
+    <Link>Modules\StyleSheetsEditor\StyleSheetImporter.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetImporterImpl.cs">
+    <Link>Modules\StyleSheetsEditor\StyleSheetImporterImpl.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\StyleSheetsEditor\StyleSheetResourceUtil.cs">
+    <Link>Modules\StyleSheetsEditor\StyleSheetResourceUtil.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\TerrainEditor\Brush\Brush.cs">
     <Link>Modules\TerrainEditor\Brush\Brush.cs</Link>
@@ -4774,6 +4778,9 @@
   </Compile>
   <Compile Include="..\..\Modules\VideoEditor\Editor\VideoUtil.bindings.cs">
     <Link>Modules\VideoEditor\Editor\VideoUtil.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\XREditor\Build\XRBuildUtilities.bindings.cs">
+    <Link>Modules\XREditor\Build\XRBuildUtilities.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\artifacts\generated\bindings_old\common\AIEditor\NavMeshBuilderBindings.gen.cs">
     <Link>artifacts\generated\bindings_old\common\AIEditor\NavMeshBuilderBindings.gen.cs</Link>

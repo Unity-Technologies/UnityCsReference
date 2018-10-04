@@ -103,6 +103,8 @@ namespace UnityEditor.Compilation
     {
         static AssemblyDefinitionPlatform[] assemblyDefinitionPlatforms;
 
+        public static event Action<object> compilationStarted;
+        public static event Action<object> compilationFinished;
         public static event Action<string> assemblyCompilationStarted;
         public static event Action<string, CompilerMessage[]> assemblyCompilationFinished;
 
@@ -113,6 +115,32 @@ namespace UnityEditor.Compilation
 
         internal static void SubscribeToEvents(EditorCompilation editorCompilation)
         {
+            editorCompilation.compilationStarted += (context) =>
+            {
+                try
+                {
+                    if (compilationStarted != null)
+                        compilationStarted(context);
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.Log(e);
+                }
+            };
+
+            editorCompilation.compilationFinished += (context) =>
+            {
+                try
+                {
+                    if (compilationFinished != null)
+                        compilationFinished(context);
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.Log(e);
+                }
+            };
+
             editorCompilation.assemblyCompilationStarted += (assemblyPath) =>
             {
                 try

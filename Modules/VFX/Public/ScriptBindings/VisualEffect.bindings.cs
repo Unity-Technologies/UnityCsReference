@@ -43,9 +43,29 @@ namespace UnityEngine.Experimental.VFX
             return vfxEventAttribute;
         }
 
-        extern public void Play(VFXEventAttribute eventAttribute = null);
-        extern public void Stop(VFXEventAttribute eventAttribute = null);
-        extern public void SendEvent(string eventName, VFXEventAttribute eventAttribute = null);
+        extern public void Play(VFXEventAttribute eventAttribute);
+
+        public void Play()
+        {
+            Play(null);
+        }
+
+        extern public void Stop(VFXEventAttribute eventAttribute);
+        public void Stop()
+        {
+            Stop(null);
+        }
+
+        extern public void SendEvent(int eventNameID, VFXEventAttribute eventAttribute);
+        public void SendEvent(string eventName)
+        {
+            SendEvent(Shader.PropertyToID(eventName), null);
+        }
+
+        public void SendEvent(string eventName, VFXEventAttribute eventAttribute)
+        {
+            SendEvent(Shader.PropertyToID(eventName), null);
+        }
 
         extern public void Reinit();
         extern public void AdvanceOneFrame();

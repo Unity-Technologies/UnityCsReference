@@ -8,7 +8,7 @@ namespace UnityEngine.Experimental.UIElements
     {
     }
 
-    public abstract class PanelChangedEventBase<T> : EventBase<T>, IPanelChangedEvent, IPropagatableEvent where T : PanelChangedEventBase<T>, new()
+    public abstract class PanelChangedEventBase<T> : EventBase<T>, IPanelChangedEvent where T : PanelChangedEventBase<T>, new()
     {
         public IPanel originPanel { get; private set; }
         public IPanel destinationPanel { get; private set; }

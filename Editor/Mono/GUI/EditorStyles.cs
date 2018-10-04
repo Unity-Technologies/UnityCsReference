@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using UnityEditor.Experimental;
 using UnityEngine;
 
 // See Style Guide in wiki for more information on editor styles.
@@ -305,6 +306,8 @@ namespace UnityEditor
 
             if (s_CachedStyles[skinIndex] == null)
             {
+                EditorResources.BuildCatalog();
+
                 s_CachedStyles[skinIndex] = new EditorStyles();
                 s_CachedStyles[skinIndex].InitSharedStyles();
             }

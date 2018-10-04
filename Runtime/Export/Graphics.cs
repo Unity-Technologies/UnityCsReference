@@ -579,4 +579,10 @@ namespace UnityEngine
     public sealed partial class ImageEffectAfterScale : Attribute
     {
     }
+
+    [UsedByNativeCode]
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed partial class ImageEffectUsesCommandBuffer : Attribute
+    {
+    }
 }

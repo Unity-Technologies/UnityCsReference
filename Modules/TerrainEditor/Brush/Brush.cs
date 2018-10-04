@@ -99,7 +99,7 @@ namespace UnityEditor
                 s_CreateBrushMaterial = new Material(EditorGUIUtility.LoadRequired("Brushes/CreateBrush.shader") as Shader);
 
             int sampleCount = Mathf.Max(width, 1024);
-            Texture2D falloffTex = new Texture2D(sampleCount, 1, TextureFormat.R8, false);
+            Texture2D falloffTex = new Texture2D(sampleCount, 1, TextureFormat.R16, false);
             Color[] falloffPix = new Color[sampleCount];
             for (int i = 0; i < sampleCount; i++)
             {

@@ -32,7 +32,7 @@ namespace UnityEngine.Animations
         private static PlayableHandle CreateHandle(PlayableGraph graph, int inputCount = 0, bool normalizeWeights = false)
         {
             PlayableHandle handle = PlayableHandle.Null;
-            if (!CreateHandleInternal(graph, inputCount, normalizeWeights, ref handle))
+            if (!CreateHandleInternal(graph, normalizeWeights, ref handle))
                 return PlayableHandle.Null;
             handle.SetInputCount(inputCount);
             return handle;
@@ -70,6 +70,6 @@ namespace UnityEngine.Animations
         }
 
         [NativeThrows]
-        extern private static bool CreateHandleInternal(PlayableGraph graph, int inputCount, bool normalizeWeights, ref PlayableHandle handle);
+        extern private static bool CreateHandleInternal(PlayableGraph graph, bool normalizeWeights, ref PlayableHandle handle);
     }
 }

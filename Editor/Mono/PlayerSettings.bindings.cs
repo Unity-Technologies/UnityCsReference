@@ -539,6 +539,16 @@ namespace UnityEditor
             set;
         }
 
+        [NativeProperty(TargetType = TargetType.Field)]
+        public static extern bool openGLRequireES32
+        {
+            [StaticAccessor("GetPlayerSettings().GetEditorOnly()")]
+            get;
+
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
+            set;
+        }
+
         // The image to display in the Resolution Dialog window.
         public static extern Texture2D resolutionDialogBanner { get; set; }
 
@@ -940,6 +950,12 @@ namespace UnityEditor
         [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()")]
         public static extern void SetPlatformVuforiaEnabled(BuildTargetGroup targetGroup, bool enabled);
 
+        [StaticAccessor("GetPlayerSettings()")]
+        public static extern bool GetWsaHolographicRemotingEnabled();
+
+        [StaticAccessor("GetPlayerSettings()")]
+        public static extern void SetWsaHolographicRemotingEnabled(bool enabled);
+
         // Xbox 360 Pix Texture Capture
         public static extern bool xboxPIXTextureCapture { get; }
 
@@ -1021,7 +1037,7 @@ namespace UnityEditor
         // 32-bit Display Buffer is used
         public static extern bool use32BitDisplayBuffer { get; set; }
 
-        // Preserve framebuffer alpha
+        // Preserve framebuffer alpha, iOS and Android only. Enables rendering Unity on top of native UI.
         public static extern bool preserveFramebufferAlpha { get; set; }
 
         // .NET API compatibility level

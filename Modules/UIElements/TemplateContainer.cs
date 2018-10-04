@@ -11,7 +11,7 @@ namespace UnityEngine.Experimental.UIElements
     {
         public new class UxmlFactory : UxmlFactory<TemplateContainer, UxmlTraits> {}
 
-        public new class UxmlTraits : VisualElement.UxmlTraits
+        public new class UxmlTraits : BindableElement.UxmlTraits
         {
             UxmlStringAttributeDescription m_Template = new UxmlStringAttributeDescription { name = "template", use = UxmlAttributeDescription.Use.Required };
 

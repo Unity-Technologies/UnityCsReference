@@ -113,7 +113,7 @@ namespace UnityEditor
 
             m_PointEditor = new LineRendererEditor(target as LineRenderer, this);
             m_PointEditor.Deselect();
-            SceneView.onSceneGUIDelegate += OnSceneGUIDelegate;
+            SceneView.duringSceneGui += OnSceneGUIDelegate;
             Undo.undoRedoPerformed += UndoRedoPerformed;
             EditMode.onEditModeStartDelegate += EditModeStarted;
             EditMode.onEditModeEndDelegate += EditModeEnded;
@@ -188,7 +188,7 @@ namespace UnityEditor
             m_CurveEditor.OnDisable();
             EndEditPositions();
             Undo.undoRedoPerformed -= UndoRedoPerformed;
-            SceneView.onSceneGUIDelegate -= OnSceneGUIDelegate;
+            SceneView.duringSceneGui -= OnSceneGUIDelegate;
             EditorApplication.contextualPropertyMenu -= OnPropertyContextMenu;
         }
 

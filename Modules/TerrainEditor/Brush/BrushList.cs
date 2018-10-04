@@ -97,6 +97,11 @@ namespace UnityEditor
             m_BrushEditor = Editor.CreateEditor(GetActiveBrush());
         }
 
+        public Brush GetCircleBrush()
+        {
+            return m_BrushList[0];
+        }
+
         public Brush GetActiveBrush()
         {
             if (m_SelectedBrush >= m_BrushList.Length)

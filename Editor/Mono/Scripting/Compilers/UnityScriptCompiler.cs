@@ -25,7 +25,7 @@ namespace UnityEditor.Scripting.Compilers
             return new UnityScriptCompilerOutputParser();
         }
 
-        override protected Program StartCompiler()
+        protected override Program StartCompiler()
         {
             var arguments = new List<string>
             {
@@ -37,30 +37,30 @@ namespace UnityEditor.Scripting.Compilers
                 "-nowarn:BCW0016",
                 "-nowarn:BCW0003",
                 "-method:Main",
-                "-out:" + _island._output,
+                "-out:" + m_Island._output,
                 "-x-type-inference-rule-attribute:" + typeof(UnityEngineInternal.TypeInferenceRuleAttribute)
             };
 
             if (StrictBuildTarget())
                 arguments.Add("-pragmas:strict,downcast");
 
-            foreach (var define in _island._defines.Distinct())
+            foreach (var define in m_Island._defines.Distinct())
                 arguments.Add("-define:" + define);
 
-            foreach (var dll in _island._references)
+            foreach (var dll in m_Island._references)
                 arguments.Add("-r:" + PrepareFileName(dll));
 
-            var compilingEditorScripts = Array.Exists(_island._references, UnityEditorPattern.IsMatch);
+            var compilingEditorScripts = Array.Exists(m_Island._references, UnityEditorPattern.IsMatch);
             if (compilingEditorScripts)
                 arguments.Add("-i:UnityEditor");
-            else if (!BuildPipeline.IsUnityScriptEvalSupported(_island._target))
-                arguments.Add(string.Format("-disable-eval:eval is not supported on the current build target ({0}).", _island._target));
+            else if (!BuildPipeline.IsUnityScriptEvalSupported(m_Island._target))
+                arguments.Add($"-disable-eval:eval is not supported on the current build target ({m_Island._target}).");
 
-            foreach (string source in _island._files)
+            foreach (string source in m_Island._files)
                 arguments.Add(PrepareFileName(source));
 
             var compilerPath = Path.Combine(GetUnityScriptCompilerDirectory(), "us.exe");
-            return StartCompiler(_island._target, compilerPath, arguments, GetUnityScriptProfileDirectory());
+            return StartCompiler(m_Island._target, compilerPath, arguments, GetUnityScriptProfileDirectory());
         }
 
         string GetUnityScriptCompilerDirectory()
@@ -74,14 +74,19 @@ namespace UnityEditor.Scripting.Compilers
         string GetUnityScriptProfileDirectory()
         {
             if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
-                return BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level);
+                return BuildPipeline.CompatibilityProfileToClassLibFolder(m_Island._api_compatibility_level);
 
             return k_UnityScriptProfileDirectory;
         }
 
         private bool StrictBuildTarget()
         {
-            return Array.IndexOf(_island._defines, "ENABLE_DUCK_TYPING") == -1;
+            return Array.IndexOf(m_Island._defines, "ENABLE_DUCK_TYPING") == -1;
+        }
+
+        protected override string[] GetSystemReferenceDirectories()
+        {
+            return new[] { GetUnityScriptCompilerDirectory() };
         }
 
         protected override string[] GetStreamContainingCompilerMessages()

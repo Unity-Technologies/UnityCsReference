@@ -9,7 +9,7 @@ namespace UnityEngine.Experimental.UIElements
         string commandName { get; }
     }
 
-    public abstract class CommandEventBase<T> : EventBase<T>, ICommandEvent, IPropagatableEvent where T : CommandEventBase<T>, new()
+    public abstract class CommandEventBase<T> : EventBase<T>, ICommandEvent where T : CommandEventBase<T>, new()
     {
         string m_CommandName;
         public string commandName

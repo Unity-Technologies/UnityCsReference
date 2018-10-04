@@ -185,7 +185,64 @@ namespace UnityEngine.Experimental.UIElements
 
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
-        internal VisualElement topElementUnderMouse { get; set; }
+        VisualElement topElementUnderMouse { get; set; }
+
+        internal void SetElementUnderMouse(VisualElement newElementUnderMouse, EventBase triggerEvent)
+        {
+            if (newElementUnderMouse == topElementUnderMouse)
+            {
+                return;
+            }
+
+            VisualElement previousTopElementUnderMouse = topElementUnderMouse;
+            topElementUnderMouse = newElementUnderMouse;
+
+            if (triggerEvent == null)
+            {
+                using (new EventDispatcher.Gate(dispatcher))
+                {
+                    MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, null, MousePositionTracker.mousePosition);
+                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, null, MousePositionTracker.mousePosition);
+                }
+            }
+            else if (
+                triggerEvent.GetEventTypeId() == MouseMoveEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == MouseDownEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == MouseUpEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == MouseEnterWindowEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == MouseLeaveWindowEvent.TypeId() ||
+                triggerEvent.GetEventTypeId() == WheelEvent.TypeId())
+            {
+                IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
+                using (new EventDispatcher.Gate(dispatcher))
+                {
+                    MouseEventsHelper.SendEnterLeave<MouseLeaveEvent, MouseEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
+                    MouseEventsHelper.SendMouseOverMouseOut(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
+                }
+            }
+            else if (triggerEvent.GetEventTypeId() == DragUpdatedEvent.TypeId() ||
+                     triggerEvent.GetEventTypeId() == DragExitedEvent.TypeId())
+            {
+                IMouseEvent mouseEvent = triggerEvent as IMouseEvent;
+                using (new EventDispatcher.Gate(dispatcher))
+                {
+                    MouseEventsHelper.SendEnterLeave<DragLeaveEvent, DragEnterEvent>(previousTopElementUnderMouse, topElementUnderMouse, mouseEvent, mouseEvent?.mousePosition ?? Vector2.zero);
+                }
+            }
+        }
+
+        internal void UpdateElementUnderMouse()
+        {
+            if (MousePositionTracker.panel != this)
+            {
+                SetElementUnderMouse(null, null);
+            }
+            else
+            {
+                VisualElement elementUnderMouse = Pick(MousePositionTracker.mousePosition);
+                SetElementUnderMouse(elementUnderMouse, null);
+            }
+        }
 
         public IPanelDebug panelDebug { get; set; }
     }

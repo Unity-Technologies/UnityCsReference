@@ -529,6 +529,30 @@ namespace UnityEngine
                 UploadMeshDataImpl(markNoLongerReadable);
         }
 
+        public void Optimize()
+        {
+            if (canAccess)
+                OptimizeImpl();
+            else
+                Debug.LogError(String.Format("Not allowed to call Optimize() on mesh '{0}'", name));
+        }
+
+        public void OptimizeIndexBuffers()
+        {
+            if (canAccess)
+                OptimizeIndexBuffersImpl();
+            else
+                Debug.LogError(String.Format("Not allowed to call OptimizeIndexBuffers() on mesh '{0}'", name));
+        }
+
+        public void OptimizeReorderVertexBuffer()
+        {
+            if (canAccess)
+                OptimizeReorderVertexBufferImpl();
+            else
+                Debug.LogError(String.Format("Not allowed to call OptimizeReorderVertexBuffer() on mesh '{0}'", name));
+        }
+
         public MeshTopology GetTopology(int submesh)
         {
             if (submesh < 0 || submesh >= subMeshCount)
@@ -557,16 +581,6 @@ namespace UnityEngine
         public void CombineMeshes(CombineInstance[] combine)
         {
             CombineMeshesImpl(combine, true, true, false);
-        }
-    }
-
-
-    public sealed partial class Mesh : Object
-    {
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
-        [System.Obsolete("This method is no longer supported (UnityUpgradable)", true)]
-        public void Optimize()
-        {
         }
     }
 

@@ -86,6 +86,11 @@ namespace Unity.Jobs
             return CombineDependenciesInternalPtr(jobs.GetUnsafeReadOnlyPtr(), jobs.Length);
         }
 
+        unsafe public static JobHandle CombineDependencies(NativeSlice<JobHandle> jobs)
+        {
+            return CombineDependenciesInternalPtr(jobs.GetUnsafeReadOnlyPtr(), jobs.Length);
+        }
+
         [NativeMethod(IsFreeFunction = true)]
         static extern JobHandle CombineDependenciesInternal2(ref JobHandle job0, ref JobHandle job1);
 

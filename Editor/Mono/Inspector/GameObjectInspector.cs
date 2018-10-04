@@ -130,6 +130,8 @@ namespace UnityEditor
         }
 
         Dictionary<int, PreviewData> m_PreviewInstances = new Dictionary<int, PreviewData>();
+        Dictionary<int, Texture> m_PreviewCache;
+
 
         bool m_PlayModeObjects;
         bool m_IsAsset;
@@ -156,6 +158,8 @@ namespace UnityEditor
             m_Icon = serializedObject.FindProperty("m_Icon");
 
             CalculatePrefabStatus();
+
+            m_PreviewCache = new Dictionary<int, Texture>();
         }
 
         void CalculatePrefabStatus()
@@ -203,7 +207,17 @@ namespace UnityEditor
         {
             foreach (var previewData in m_PreviewInstances.Values)
                 previewData.Dispose();
-            m_PreviewInstances.Clear();
+            ClearPreviewCache();
+            m_PreviewCache = null;
+        }
+
+        void ClearPreviewCache()
+        {
+            foreach (var texture in m_PreviewCache.Values)
+            {
+                DestroyImmediate(texture);
+            }
+            m_PreviewCache.Clear();
         }
 
         private static bool ShowMixedStaticEditorFlags(StaticEditorFlags mask)
@@ -805,17 +819,32 @@ namespace UnityEditor
                 return;
             }
 
-            previewDir = PreviewGUI.Drag2D(previewDir, r);
+            var direction = PreviewGUI.Drag2D(previewDir, r);
+            if (direction != previewDir)
+            {
+                // None of the preview are valid since the camera position has changed.
+                ClearPreviewCache();
+                previewDir = direction;
+            }
 
             if (Event.current.type != EventType.Repaint)
                 return;
 
             var previewUtility = GetPreviewData().renderUtility;
-            previewUtility.BeginPreview(r, background);
-
-            DoRenderPreview();
-
-            previewUtility.EndAndDrawPreview(r);
+            Texture previewTexture;
+            if (m_PreviewCache.TryGetValue(referenceTargetIndex, out previewTexture))
+            {
+                PreviewRenderUtility.DrawPreview(r, previewTexture);
+            }
+            else
+            {
+                previewUtility.BeginPreview(r, background);
+                DoRenderPreview();
+                previewUtility.EndAndDrawPreview(r);
+                var copy = new RenderTexture(previewUtility.renderTexture);
+                Graphics.CopyTexture(previewUtility.renderTexture, copy);
+                m_PreviewCache.Add(referenceTargetIndex, copy);
+            }
         }
 
         // Handle dragging in scene view

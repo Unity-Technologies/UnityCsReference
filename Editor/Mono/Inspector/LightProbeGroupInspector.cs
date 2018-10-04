@@ -556,7 +556,7 @@ namespace UnityEditor
             m_Editor.PullProbePositions();
             m_Editor.DeselectProbes();
             m_Editor.PushProbePositions();
-            SceneView.onSceneGUIDelegate += OnSceneGUIDelegate;
+            SceneView.duringSceneGui += OnSceneGUIDelegate;
             Undo.undoRedoPerformed += UndoRedoPerformed;
             EditMode.editModeStarted += OnEditModeStarted;
             EditMode.editModeEnded += OnEditModeEnded;
@@ -611,7 +611,7 @@ namespace UnityEditor
         {
             EndEditProbes();
             Undo.undoRedoPerformed -= UndoRedoPerformed;
-            SceneView.onSceneGUIDelegate -= OnSceneGUIDelegate;
+            SceneView.duringSceneGui -= OnSceneGUIDelegate;
             if (target != null)
             {
                 m_Editor.PushProbePositions();

@@ -36,6 +36,11 @@ namespace UnityEditor.StyleSheets
                 return (StyleValueKeyword)Obj;
             }
 
+            public bool AsBool()
+            {
+                return AsKeyword() == StyleValueKeyword.True;
+            }
+
             public Color AsColor()
             {
                 return (Color)Obj;
@@ -81,6 +86,11 @@ namespace UnityEditor.StyleSheets
                 }
                 return true;
             }
+
+            public Value Clone()
+            {
+                return new Value(ValueType, Obj);
+            }
         }
 
         internal class Property
@@ -118,6 +128,14 @@ namespace UnityEditor.StyleSheets
 
                 return true;
             }
+
+            public Property Clone()
+            {
+                return new Property(Name)
+                {
+                    Values = Values.Select(v => v.Clone()).ToList()
+                };
+            }
         }
 
         internal class Rule
@@ -145,6 +163,15 @@ namespace UnityEditor.StyleSheets
                 }
 
                 return rules;
+            }
+
+            public Rule Clone()
+            {
+                return new Rule(SelectorName, Selector)
+                {
+                    Properties = new Dictionary<string, Property>(Properties),
+                    PseudoStateRules = new List<string>(PseudoStateRules)
+                };
             }
         }
 

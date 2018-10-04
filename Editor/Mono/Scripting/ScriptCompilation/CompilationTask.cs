@@ -21,26 +21,43 @@ namespace UnityEditor.Scripting.ScriptCompilation
     // The ScriptAssembly's are built in correct order according to their ScriptAssembly dependencies.
     class CompilationTask
     {
+        enum CompilionTaskState
+        {
+            Started = 0,
+            Running = 1,
+            Finished = 2
+        }
+
         HashSet<ScriptAssembly> pendingAssemblies;
         Dictionary<ScriptAssembly, CompilerMessage[]> processedAssemblies = new Dictionary<ScriptAssembly, CompilerMessage[]>();
         Dictionary<ScriptAssembly, ScriptCompilerBase> compilerTasks = new Dictionary<ScriptAssembly, ScriptCompilerBase>();
         string buildOutputDirectory;
+        object context;
         int compilePhase = 0;
         EditorScriptCompilationOptions options;
         CompilationTaskOptions compilationTaskOptions;
         int maxConcurrentCompilers;
+        CompilionTaskState state = CompilionTaskState.Started;
 
+        public event Action<object> OnCompilationTaskStarted;
+        public event Action<object> OnCompilationTaskFinished;
         public event Action<ScriptAssembly, int> OnCompilationStarted;
         public event Action<ScriptAssembly, List<CompilerMessage>> OnCompilationFinished;
 
         public bool Stopped { get; private set; }
         public bool CompileErrors { get; private set; }
 
-        public CompilationTask(ScriptAssembly[] scriptAssemblies, string buildOutputDirectory, EditorScriptCompilationOptions options, CompilationTaskOptions compilationTaskOptions, int maxConcurrentCompilers)
+        public CompilationTask(ScriptAssembly[] scriptAssemblies,
+                               string buildOutputDirectory,
+                               object context,
+                               EditorScriptCompilationOptions options,
+                               CompilationTaskOptions compilationTaskOptions,
+                               int maxConcurrentCompilers)
         {
             pendingAssemblies = new HashSet<ScriptAssembly>(scriptAssemblies);
             CompileErrors = false;
             this.buildOutputDirectory = buildOutputDirectory;
+            this.context = context;
             this.options = options;
             this.compilationTaskOptions = compilationTaskOptions;
             this.maxConcurrentCompilers = maxConcurrentCompilers;
@@ -72,14 +89,41 @@ namespace UnityEditor.Scripting.ScriptCompilation
             Stopped = true;
         }
 
+        void HandleOnCompilationTaskStarted()
+        {
+            if (state == CompilionTaskState.Started)
+            {
+                if (OnCompilationTaskStarted != null)
+                    OnCompilationTaskStarted(context);
+
+                state = CompilionTaskState.Running;
+            }
+        }
+
+        void HandleOnCompilationTaskFinished()
+        {
+            if (state == CompilionTaskState.Running)
+            {
+                if (OnCompilationTaskFinished != null)
+                    OnCompilationTaskFinished(context);
+
+                state = CompilionTaskState.Finished;
+            }
+        }
+
         // Returns true when compilation is finished due to one of these reasons
         // * Was stopped (CompilationTask.Stopped will be true)
         // * Compilation had errors (CompilationTask.CompileErrors will be true)
         // * Compilation succesfully completed without errors.
         public bool Poll()
         {
+            HandleOnCompilationTaskStarted();
+
             if (Stopped)
+            {
+                HandleOnCompilationTaskFinished();
                 return true;
+            }
 
             Dictionary<ScriptAssembly, ScriptCompilerBase> finishedCompilerTasks = null;
 
@@ -139,14 +183,28 @@ namespace UnityEditor.Scripting.ScriptCompilation
                     pendingAssemblies.Clear();
                 }
 
-                return compilerTasks.Count == 0;
+                bool finishedRunningCompilerTasks = (compilerTasks.Count == 0);
+
+                if (finishedRunningCompilerTasks)
+                {
+                    HandleOnCompilationTaskFinished();
+                }
+
+                return finishedRunningCompilerTasks;
             }
 
             // Queue pending assemblies for compilation if we have no running compilers or if compilers have finished.
             if (compilerTasks.Count == 0 || (finishedCompilerTasks != null && finishedCompilerTasks.Count > 0))
                 QueuePendingAssemblies();
 
-            return pendingAssemblies.Count == 0 && compilerTasks.Count == 0;
+            bool finishedCompilation = (pendingAssemblies.Count == 0 && compilerTasks.Count == 0);
+
+            if (finishedCompilation)
+            {
+                HandleOnCompilationTaskFinished();
+            }
+
+            return finishedCompilation;
         }
 
         void QueuePendingAssemblies()

@@ -333,6 +333,11 @@ namespace UnityEngine.Rendering
             DrawMeshInstancedIndirect(mesh, submeshIndex, material, shaderPass, bufferWithArgs, 0, null);
         }
 
+        public void DrawOcclusionMesh(RectInt normalizedCamViewport)
+        {
+            Internal_DrawOcclusionMesh(normalizedCamViewport);
+        }
+
         public void SetRandomWriteTarget(int index, RenderTargetIdentifier rt)
         {
             SetRandomWriteTarget_Texture(index, ref rt);

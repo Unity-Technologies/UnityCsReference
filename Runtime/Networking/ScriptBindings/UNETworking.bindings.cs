@@ -481,6 +481,9 @@ namespace UnityEngine.Networking
             GetBroadcastConnectionMessageInternal(hostId, buffer, bufferSize, out  receivedSize, out  error);
         }
 
+        [FreeFunction("UNETManager::SetMulticastLock")]
+        extern public static void SetMulticastLock(bool enabled);
+
         [FreeFunction("UNETManager::Get()->GetBroadcastConnectionMessage")]
         extern static private void GetBroadcastConnectionMessageInternal(int hostId, [Out] byte[] buffer, int bufferSize, out int receivedSize, out byte error);
 

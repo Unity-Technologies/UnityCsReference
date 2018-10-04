@@ -163,6 +163,7 @@ namespace UnityEngine
         [Obsolete("Please use Rigidbody.solverVelocityIterations instead. (UnityUpgradable) -> solverVelocityIterations")]
         public int solverVelocityIterationCount { get { return solverVelocityIterations; } set { solverVelocityIterations = value; } }
 
+
         extern public void AddForce(Vector3 force, [DefaultValue("ForceMode.Force")] ForceMode mode);
 
         [ExcludeFromDocs]
@@ -805,6 +806,7 @@ namespace UnityEngine
 
         [Obsolete("penetrationPenaltyForce has no effect.")]
         public static float penetrationPenaltyForce { get { return 0f; } set {} }
+        extern static public float defaultMaxAngularSpeed { get; set; }
 
         [NativeProperty("DefaultPhysicsSceneHandle")]
         extern public static PhysicsScene defaultPhysicsScene { get; }
@@ -826,8 +828,9 @@ namespace UnityEngine
             IgnoreLayerCollision(layer1, layer2, true);
         }
 
-        [NativeName("GetIgnoreCollision")]
         extern public static bool GetIgnoreLayerCollision(int layer1, int layer2);
+
+        extern public static bool GetIgnoreCollision(Collider collider1, Collider collider2);
 
         static public bool Raycast(Vector3 origin, Vector3 direction, [DefaultValue("Mathf.Infinity")] float maxDistance, [DefaultValue("DefaultRaycastLayers")] int layerMask, [DefaultValue("QueryTriggerInteraction.UseGlobal")] QueryTriggerInteraction queryTriggerInteraction)
         {

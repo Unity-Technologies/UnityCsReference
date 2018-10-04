@@ -12,6 +12,16 @@ using UsedByNativeCodeAttribute = UnityEngine.Scripting.UsedByNativeCodeAttribut
 
 namespace UnityEditor
 {
+    // Mesh data that can be optimized to improve rendering quality
+    [Flags]
+    public enum MeshOptimizationFlags
+    {
+        PolygonOrder = 1 << 0,
+        VertexOrder = 1 << 1,
+
+        Everything = ~0
+    }
+
     public enum ClipAnimationMaskType
     {
         CreateFromThisModel = 0,
@@ -580,10 +590,61 @@ namespace UnityEditor
             set;
         }
 
-        public extern bool optimizeMesh
+        public extern MeshOptimizationFlags meshOptimizationFlags
         {
             get;
             set;
+        }
+
+        public bool optimizeMeshPolygons
+        {
+            get
+            {
+                return (meshOptimizationFlags & MeshOptimizationFlags.PolygonOrder) != 0;
+            }
+            set
+            {
+                if (value)
+                    meshOptimizationFlags |= MeshOptimizationFlags.PolygonOrder;
+                else
+                    meshOptimizationFlags &= ~MeshOptimizationFlags.PolygonOrder;
+            }
+        }
+
+        public bool optimizeMeshVertices
+        {
+            get
+            {
+                return (meshOptimizationFlags & MeshOptimizationFlags.VertexOrder) != 0;
+            }
+            set
+            {
+                if (value)
+                    meshOptimizationFlags |= MeshOptimizationFlags.VertexOrder;
+                else
+                    meshOptimizationFlags &= ~MeshOptimizationFlags.VertexOrder;
+            }
+        }
+
+        [System.Obsolete("optimizeMesh is deprecated. Use optimizeMeshPolygons and/or optimizeMeshVertices instead.  Note that optimizeMesh false equates to optimizeMeshPolygons true and optimizeMeshVertices false while optimizeMesh true equates to both true")]
+        public bool optimizeMesh
+        {
+            // Legacy property that has been replaced with 'optimizeMeshPolygons' and 'optimizeMeshVertices' to provide more granular mesh optimization control
+            get { return meshOptimizationFlags != 0; }
+            set
+            {
+                if (value)
+                {
+                    // Original single flag 'optimizeMesh' caused both polygons and vertices to be optimized when true so emulate that behaviour
+                    meshOptimizationFlags = MeshOptimizationFlags.Everything;
+                }
+                else
+                {
+                    // Original single flag 'optimizeMesh' caused polygons but not vertices to be optimized when false so emulate that behaviour
+                    optimizeMeshPolygons = true;
+                    optimizeMeshVertices = false;
+                }
+            }
         }
 
         [System.Obsolete("normalImportMode is deprecated. Use importNormals instead")]

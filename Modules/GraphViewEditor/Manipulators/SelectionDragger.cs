@@ -537,7 +537,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
                 m_GraphView.UpdateViewTransform(p, s);
             }
 
-            using (DragExitedEvent dexit = new DragExitedEvent())
+            using (DragExitedEvent dexit = DragExitedEvent.GetPooled())
             {
                 List<ISelectable> selection = m_GraphView.selection;
                 SendDragAndDropEvent(dexit, selection, m_PrevDropTarget, m_GraphView);
