@@ -566,7 +566,20 @@ namespace UnityEditor
                     continue;
 
                 tooltip.Clear();
-                tooltip.AppendFormat("Size: {0} x {1}", texture.width.ToString(), texture.height.ToString());
+                int depth = 0;
+                if (texture.dimension == TextureDimension.Tex3D)
+                {
+                    if (texture is Texture3D)
+                        depth = (texture as Texture3D).depth;
+                    else if (texture is RenderTexture)
+                        depth = (texture as RenderTexture).volumeDepth;
+                }
+
+                if (depth == 0)
+                    tooltip.AppendFormat("Size: {0} x {1}", texture.width.ToString(), texture.height.ToString());
+                else
+                    tooltip.AppendFormat("Size: {0} x {1} x {2}", texture.width.ToString(), texture.height.ToString(), depth);
+
                 tooltip.AppendFormat("\nDimension: {0}", texture.dimension.ToString());
 
                 string formatFormat = "\nFormat: {0}";
@@ -918,6 +931,9 @@ namespace UnityEditor
                 threadGroupsText = "indirect dispatch";
 
             EditorGUILayout.LabelField("Thread Groups", threadGroupsText);
+
+            // properties
+            DrawShaderProperties(m_CurEventData.shaderProperties);
         }
 
         private void DrawCurrentEvent(Rect rect, FrameDebuggerEvent[] descs)
@@ -1057,7 +1073,7 @@ namespace UnityEditor
             {
                 GUILayout.Label(t.name, EditorStyles.miniLabel, GUILayout.MinWidth(kNameFieldWidth));
                 DrawShaderPropertyFlags(t.flags);
-                GUILayout.Label(t.value.ToString(kFloatFormat), EditorStyles.miniLabel, GUILayout.MinWidth(kValueFieldWidth));
+                GUILayout.Label(t.value.ToString(kFloatDetailedFormat), EditorStyles.miniLabel, GUILayout.MinWidth(kValueFieldWidth));
                 ShaderPropertyCopyValueMenu(GUILayoutUtility.GetLastRect(), t.value);
             }
             else

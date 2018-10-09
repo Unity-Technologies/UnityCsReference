@@ -250,10 +250,10 @@ namespace UnityEngine
         extern private static void Blit4(Texture source, RenderTexture dest, Vector2 scale, Vector2 offset);
 
         [NativeMethod(Name = "GraphicsScripting::CreateGPUFence", IsFreeFunction = true, ThrowsException = true)]
-        extern private static IntPtr CreateGPUFenceImpl(SynchronisationStage stage);
+        extern private static IntPtr CreateGPUFenceImpl(GraphicsFenceType fenceType, SynchronisationStageFlags stage);
 
         [NativeMethod(Name = "GraphicsScripting::WaitOnGPUFence", IsFreeFunction = true, ThrowsException = true)]
-        extern private static void WaitOnGPUFenceImpl(IntPtr fencePtr, SynchronisationStage stage);
+        extern private static void WaitOnGPUFenceImpl(IntPtr fencePtr, SynchronisationStageFlags stage);
 
         [NativeMethod(Name = "GraphicsScripting::ExecuteCommandBuffer", IsFreeFunction = true, ThrowsException = true)]
         extern public static void ExecuteCommandBuffer([NotNull] CommandBuffer buffer);

@@ -10,8 +10,8 @@ namespace UnityEngine.Experimental.Rendering
 {
     [NativeType("Runtime/Graphics/ScriptableRenderLoop/ScriptableRenderContext.h")]
     [NativeHeader("Runtime/Export/ScriptableRenderContext.bindings.h")]
-    [NativeHeader("Runtime/UI/Canvas.h")]
-    [NativeHeader("Runtime/UI/CanvasManager.h")]
+    [NativeHeader("Modules/UI/Canvas.h")]
+    [NativeHeader("Modules/UI/CanvasManager.h")]
     public partial struct ScriptableRenderContext
     {
         [FreeFunction("ScriptableRenderContext::BeginRenderPass")]

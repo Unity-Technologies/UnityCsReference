@@ -6,6 +6,7 @@ using System;
 
 namespace UnityEditor
 {
+    [Obsolete("[PreferenceItem] is deprecated. Use [SettingsProvider] instead.")]
     [AttributeUsage(AttributeTargets.Method)]
     public sealed partial class PreferenceItem : Attribute
     {

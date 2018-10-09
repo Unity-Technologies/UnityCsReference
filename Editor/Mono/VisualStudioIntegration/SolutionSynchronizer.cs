@@ -596,7 +596,7 @@ namespace UnityEditor.VisualStudioIntegration
                 {
                     targetframeworkversion = "v4.7.1";
                 }
-                targetLanguageVersion = "7.2";
+                targetLanguageVersion = "7.3";
             }
             else if (_settings.VisualStudioVersion == 9)
             {

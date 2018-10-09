@@ -10,7 +10,7 @@ using UnityEngine.Scripting;
 namespace UnityEngine
 {
     [NativeClass("UI::CanvasRenderer"),
-     NativeHeader("Runtime/UI/CanvasRenderer.h")]
+     NativeHeader("Modules/UI/CanvasRenderer.h")]
     public sealed class CanvasRenderer : Component
     {
         public extern bool hasPopInstruction { get; set; }

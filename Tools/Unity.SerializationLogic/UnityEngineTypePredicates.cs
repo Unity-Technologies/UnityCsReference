@@ -39,13 +39,18 @@ namespace Unity.SerializationLogic
         protected const string Color32 = "UnityEngine.Color32";
         private const string SerializeFieldAttribute = "UnityEngine.SerializeField";
 
-        private static string[] serializableStructs = new[]
+        private static string[] serializableClasses = new[]
         {
             "UnityEngine.AnimationCurve",
-            "UnityEngine.Color32",
             "UnityEngine.Gradient",
             "UnityEngine.GUIStyle",
-            "UnityEngine.RectOffset",
+            "UnityEngine.RectOffset"
+        };
+
+        private static string[] serializableStructs = new[]
+        {
+            // NOTE: assumes all types here are NOT interfaces
+            "UnityEngine.Color32",
             "UnityEngine.Matrix4x4",
             "UnityEngine.PropertyName"
         };
@@ -96,11 +101,24 @@ namespace Unity.SerializationLogic
             return type.IsAssignableTo(RectOffset);
         }
 
+        public static bool IsSerializableUnityClass(TypeReference type)
+        {
+            foreach (var unityClasses in serializableClasses)
+            {
+                if (type.IsAssignableTo(unityClasses))
+                    return true;
+            }
+            return false;
+        }
+
         public static bool IsSerializableUnityStruct(TypeReference type)
         {
             foreach (var unityStruct in serializableStructs)
             {
-                if (type.IsAssignableTo(unityStruct))
+                // NOTE: structs cannot inherit from structs, and can only inherit from interfaces
+                //       since we know all types in serializableStructs are not interfaces,
+                //       we can just do a direct comparison.
+                if (type.FullName == unityStruct)
                     return true;
             }
             return false;
@@ -112,11 +130,14 @@ namespace Unity.SerializationLogic
             if (type.IsArray)
                 return false;
 
+            if (type.FullName == UnityEngineObject)
+                return true;
+
             var typeDefinition = type.Resolve();
             if (typeDefinition == null)
                 return false;
 
-            return type.FullName == UnityEngineObject || typeDefinition.IsSubclassOf(UnityEngineObject);
+            return typeDefinition.IsSubclassOf(UnityEngineObject);
         }
 
         public static bool ShouldHaveHadSerializableAttribute(TypeReference type)

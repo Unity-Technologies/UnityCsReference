@@ -98,7 +98,7 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
-        public bool StartsWith(List<KeyCombination> prefix)
+        public bool StartsWith(IList<KeyCombination> prefix)
         {
             if (activeCombination.Count < prefix.Count)
                 return false;
@@ -159,19 +159,19 @@ namespace UnityEditor.ShortcutManagement
             return StartsWith(other);
         }
 
-        public void ResetToDefault()
+        internal void ResetToDefault()
         {
             m_OverridenCombinations = null;
         }
 
-        public void SetOverride(List<KeyCombination> newKeyCombinations)
+        internal void SetOverride(List<KeyCombination> newKeyCombinations)
         {
             m_OverridenCombinations = new List<KeyCombination>(newKeyCombinations);
             if (m_Type == ShortcutType.Menu && m_OverridenCombinations.Any())
                 Menu.SetHotkey(m_Identifier.path.Substring(Discovery.k_MainMenuShortcutPrefix.Length), m_OverridenCombinations[0].ToMenuShortcutString());
         }
 
-        public void ApplyOverride(SerializableShortcutEntry shortcutOverride)
+        internal void ApplyOverride(SerializableShortcutEntry shortcutOverride)
         {
             SetOverride(shortcutOverride.combinations);
         }
@@ -201,6 +201,21 @@ namespace UnityEditor.ShortcutManagement
         {
             m_KeyCode = keyCode;
             m_Modifiers = shortcutModifiers;
+        }
+
+        public KeyCombination(KeyCode keyCode, EventModifiers eventModifiers)
+        {
+            m_KeyCode = keyCode;
+            m_Modifiers = ShortcutModifiers.None;
+
+            if ((eventModifiers & EventModifiers.Alt) == EventModifiers.Alt)
+                m_Modifiers |= ShortcutModifiers.Alt;
+            if ((eventModifiers & EventModifiers.Control) == EventModifiers.Control)
+                m_Modifiers |= ShortcutModifiers.ControlOrCommand;
+            if ((eventModifiers & EventModifiers.Command) == EventModifiers.Command)
+                m_Modifiers |= ShortcutModifiers.ControlOrCommand;
+            if ((eventModifiers & EventModifiers.Shift) == EventModifiers.Shift)
+                m_Modifiers |= ShortcutModifiers.Shift;
         }
 
         internal KeyCombination(Event evt)

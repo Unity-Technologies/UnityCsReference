@@ -52,32 +52,45 @@ namespace UnityEngine.Rendering
             Dispose();
         }
 
-        public GPUFence CreateGPUFence(SynchronisationStage stage)
+        public GraphicsFence CreateAsyncGraphicsFence()
         {
-            GPUFence newFence = new GPUFence();
-            newFence.m_Ptr = CreateGPUFence_Internal(stage);
+            return CreateGraphicsFence(GraphicsFenceType.AsyncQueueSynchronisation, SynchronisationStageFlags.PixelProcessing);
+        }
+
+        public GraphicsFence CreateAsyncGraphicsFence(SynchronisationStage stage)
+        {
+            return CreateGraphicsFence(GraphicsFenceType.AsyncQueueSynchronisation, GraphicsFence.TranslateSynchronizationStageToFlags(stage));
+        }
+
+        public GraphicsFence CreateGraphicsFence(GraphicsFenceType fenceType, SynchronisationStageFlags stage)
+        {
+            GraphicsFence newFence = new GraphicsFence();
+            newFence.m_Ptr = CreateGPUFence_Internal(fenceType, stage);
             newFence.InitPostAllocation();
             newFence.Validate();
             return newFence;
         }
 
-        public GPUFence CreateGPUFence()
+        public void WaitOnAsyncGraphicsFence(GraphicsFence fence)
         {
-            return CreateGPUFence(SynchronisationStage.PixelProcessing);
+            WaitOnAsyncGraphicsFence(fence, SynchronisationStage.VertexProcessing);
         }
 
-        public void WaitOnGPUFence(GPUFence fence, SynchronisationStage stage)
+        public void WaitOnAsyncGraphicsFence(GraphicsFence fence, SynchronisationStage stage)
         {
+            WaitOnAsyncGraphicsFence(fence, GraphicsFence.TranslateSynchronizationStageToFlags(stage));
+        }
+
+        public void WaitOnAsyncGraphicsFence(GraphicsFence fence, SynchronisationStageFlags stage)
+        {
+            if (fence.m_FenceType != GraphicsFenceType.AsyncQueueSynchronisation)
+                throw new ArgumentException("Attempting to call WaitOnAsyncGPUFence on a fence that is not of GraphicsFenceType.AsyncQueueSynchronization");
+
             fence.Validate();
 
             //Don't wait on a fence that's already known to have passed
             if (fence.IsFencePending())
                 WaitOnGPUFence_Internal(fence.m_Ptr, stage);
-        }
-
-        public void WaitOnGPUFence(GPUFence fence)
-        {
-            WaitOnGPUFence(fence, SynchronisationStage.VertexProcessing);
         }
 
         // Set a float parameter.

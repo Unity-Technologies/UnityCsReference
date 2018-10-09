@@ -244,6 +244,23 @@ namespace UnityEditor.Scripting.ScriptCompilation
             dirtyScripts.Add(path);
         }
 
+        public void DirtyMovedScript(string oldPath, string newPath)
+        {
+            DirtyScript(newPath);
+
+            var targetAssembly = EditorBuildRules.GetTargetAssembly(oldPath, projectDirectory, customTargetAssemblies);
+
+            // The target assembly might not exist any more.
+            if (targetAssembly == null)
+            {
+                areAllScriptsDirty = true;
+            }
+            else
+            {
+                dirtyTargetAssemblies.Add(targetAssembly);
+            }
+        }
+
         public void DirtyRemovedScript(string path)
         {
             allScripts.Remove(path);
@@ -368,7 +385,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return this.precompiledAssemblies;
         }
 
-        public TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies(out CustomScriptAssemblyAndReference[] assembliesWithMissingReference)
+        public TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies(EditorScriptCompilationOptions options, BuildTarget buildTarget, out CustomScriptAssemblyAndReference[] assembliesWithMissingReference)
         {
             if (customTargetAssemblies == null)
             {
@@ -407,6 +424,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         // of compiled assemblies.
                         foreach (var reference in assembly.References)
                         {
+                            // Don't check references that are not compatible with the current build target,
+                            // as those assemblies have not been compiled.
+                            if (!EditorBuildRules.IsCompatibleWithPlatformAndDefines(reference, buildTarget, options))
+                                continue;
+
                             if (!customTargetAssemblyCompiledPaths.ContainsKey(reference))
                             {
                                 customTargetAssemblyCompiledPaths.Remove(assembly);

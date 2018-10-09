@@ -16,6 +16,8 @@ namespace UnityEditor.ShortcutManagement
         bool HasAnyPriorityContext();
         bool HasPriorityContextOfType(Type type);
         bool HasActiveContextOfType(Type type);
+        bool DoContextsConflict(Type context1, Type context2);
+        bool playModeContextIsActive { get; }
         object GetContextInstanceOfType(Type type);
     }
 
@@ -32,7 +34,19 @@ namespace UnityEditor.ShortcutManagement
 
         List<IShortcutToolContext> m_ToolContexts = new List<IShortcutToolContext>();
 
-        public int activeContextCount => 1 + ((m_FocusedWindow != null && m_FocusedWindow.IsAlive && m_FocusedWindow.Target != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
+        public int activeContextCount => 1 + ((focusedWindow != null) ? 1 : 0) + m_PriorityContexts.Count(c => c.active) + m_ToolContexts.Count(c => c.active);
+
+        public bool playModeContextIsActive => focusedWindow is GameView && EditorApplication.isPlaying;
+
+        private EditorWindow focusedWindow
+        {
+            get
+            {
+                if (m_FocusedWindow != null && m_FocusedWindow.IsAlive && m_FocusedWindow.Target != null)
+                    return m_FocusedWindow.Target as EditorWindow;
+                return null;
+            }
+        }
 
         public void SetFocusedWindow(EditorWindow window)
         {
@@ -41,7 +55,30 @@ namespace UnityEditor.ShortcutManagement
 
         static bool IsPriorityContext(IShortcutToolContext context)
         {
-            return Attribute.GetCustomAttribute(context.GetType(), typeof(PriorityContextAttribute)) != null;
+            return IsPriorityContext(context.GetType());
+        }
+
+        static bool IsPriorityContext(Type context)
+        {
+            return Attribute.GetCustomAttribute(context, typeof(PriorityContextAttribute)) != null;
+        }
+
+        public bool DoContextsConflict(Type context1, Type context2)
+        {
+            if (IsPriorityContext(context1) != IsPriorityContext(context2))
+            {
+                return false;
+            }
+
+            if (context1 == globalContextType)
+                return true;
+            if (context2 == globalContextType)
+                return true;
+
+            if (context1.IsAssignableFrom(context2) || context2.IsAssignableFrom(context1))
+                return true;
+
+            return false;
         }
 
         void RegisterPriorityContext(IShortcutToolContext context)

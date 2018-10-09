@@ -14,18 +14,35 @@ using System.Runtime.InteropServices;
 
 namespace UnityEngine.Rendering
 {
-    public enum SynchronisationStage
+    public enum SynchronisationStageFlags
     {
-        VertexProcessing = 0,
-        PixelProcessing = 1
+        VertexProcessing = 1,
+        PixelProcessing = 2,
+        ComputeProcessing = 4,
+        AllGPUOperations = VertexProcessing | PixelProcessing | ComputeProcessing,
     }
+
+    // The type of GraphicsFence to create. CPUSynchronization one can only be used to check whether the GPU has passed the fence.
+    // AsyncQueueSynchronisation can be used to synchronise between the main thread and the async queue
+    public enum GraphicsFenceType
+    {
+        AsyncQueueSynchronisation = 0,
+//        CPUSynchronisation = 0,
+    }
+
 
     [NativeHeader("Runtime/Graphics/GPUFence.h")]
     [UsedByNativeCode]
-    public struct GPUFence
+    public struct GraphicsFence
     {
         internal IntPtr m_Ptr;
         internal int m_Version;
+        internal GraphicsFenceType m_FenceType;
+
+        internal static SynchronisationStageFlags TranslateSynchronizationStageToFlags(SynchronisationStage s)
+        {
+            return s == SynchronisationStage.VertexProcessing ? SynchronisationStageFlags.VertexProcessing : SynchronisationStageFlags.PixelProcessing;
+        }
 
         public bool passed
         {
@@ -33,8 +50,8 @@ namespace UnityEngine.Rendering
             {
                 Validate();
 
-                if (!SystemInfo.supportsGPUFence)
-                    throw new System.NotSupportedException("Cannot determine if this GPUFence has passed as this platform has not implemented GPUFences.");
+                if (!SystemInfo.supportsGraphicsFence)
+                    throw new System.NotSupportedException("Cannot determine if this GraphicsFence has passed as this platform has not implemented GraphicsFences.");
 
                 if (!IsFencePending())
                     return true;
@@ -50,9 +67,9 @@ namespace UnityEngine.Rendering
         {
             if (m_Ptr == IntPtr.Zero)
             {
-                if (SystemInfo.supportsGPUFence)
+                if (SystemInfo.supportsGraphicsFence)
                 {
-                    throw new System.NullReferenceException("The internal fence ptr is null, this should not be possible for fences that have been correctly constructed using Graphics.CreateGPUFence() or CommandBuffer.CreateGPUFence()");
+                    throw new System.NullReferenceException("The internal fence ptr is null, this should not be possible for fences that have been correctly constructed using Graphics.CreateGraphicsFence() or CommandBuffer.CreateGraphicsFence()");
                 }
                 m_Version = GetPlatformNotSupportedVersion();
                 return;
@@ -71,8 +88,8 @@ namespace UnityEngine.Rendering
 
         internal void Validate()
         {
-            if (m_Version == 0 || (SystemInfo.supportsGPUFence && m_Version == GetPlatformNotSupportedVersion()))
-                throw new System.InvalidOperationException("This GPUFence object has not been correctly constructed see Graphics.CreateGPUFence() or CommandBuffer.CreateGPUFence()");
+            if (m_Version == 0 || (SystemInfo.supportsGraphicsFence && m_Version == GetPlatformNotSupportedVersion()))
+                throw new System.InvalidOperationException("This GraphicsFence object has not been correctly constructed see Graphics.CreateGraphicsFence() or CommandBuffer.CreateGraphicsFence()");
         }
 
         private int GetPlatformNotSupportedVersion()

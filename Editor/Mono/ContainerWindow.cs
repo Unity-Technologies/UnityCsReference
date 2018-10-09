@@ -82,7 +82,8 @@ namespace UnityEditor
                 m_RootView.SetWindowRecurse(this);
             Internal_SetTitle(m_Title);
             Save();
-            Internal_BringLiveAfterCreation(false, false);
+            //  only set focus iff mode is a popupMenu.
+            Internal_BringLiveAfterCreation(false, mode == ShowMode.PopupMenu);
         }
 
         static Color skinBackgroundColor

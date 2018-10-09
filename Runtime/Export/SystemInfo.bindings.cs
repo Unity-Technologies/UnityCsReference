@@ -56,7 +56,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/GraphicsFormatUtility.bindings.h")]
     [NativeHeader("Runtime/Camera/RenderLoops/MotionVectorRenderLoop.h")]
     [NativeHeader("Runtime/Input/GetInput.h")]
-    public sealed class SystemInfo
+    public sealed partial class SystemInfo
     {
         public const string unsupportedIdentifier = "n/a";
 
@@ -424,8 +424,9 @@ namespace UnityEngine
             get { return SupportsAsyncCompute(); }
         }
 
-        public static bool supportsGPUFence
+        public static bool supportsGraphicsFence
         {
+            // Note that on the native side we'll still use the old GPUFence terms
             get { return SupportsGPUFence(); }
         }
 

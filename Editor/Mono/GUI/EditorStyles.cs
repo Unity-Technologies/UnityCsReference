@@ -146,6 +146,12 @@ namespace UnityEditor
         public static GUIStyle foldoutPreDrop { get { return s_Current.m_FoldoutPreDrop; } }
         private GUIStyle m_FoldoutPreDrop;
 
+        public static GUIStyle foldoutHeader { get { return s_Current.m_FoldoutHeader;} }
+        GUIStyle m_FoldoutHeader;
+
+        public static GUIStyle foldoutHeaderIcon { get { return s_Current.m_FoldoutHeaderIcon; } }
+        GUIStyle m_FoldoutHeaderIcon;
+
         // Style used for headings for EditorGUILayout::ref::BeginToggleGroup.
         public static GUIStyle toggleGroup { get { return s_Current.m_ToggleGroup; }  }
         private GUIStyle m_ToggleGroup;
@@ -366,6 +372,8 @@ namespace UnityEditor
             m_ProgressBarBar = GetStyle("ProgressBarBar");
             m_ProgressBarText = GetStyle("ProgressBarText");
             m_FoldoutPreDrop = GetStyle("FoldoutPreDrop");
+            m_FoldoutHeader = GetStyle("FoldoutHeader");
+            m_FoldoutHeaderIcon = GetStyle("FoldoutHeaderIcon");
             m_InspectorTitlebar = GetStyle("IN Title");
             m_InspectorTitlebarText = GetStyle("IN TitleText");
             m_ToggleGroup = GetStyle("BoldToggle");

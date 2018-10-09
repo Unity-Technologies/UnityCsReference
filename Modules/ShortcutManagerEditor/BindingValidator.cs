@@ -19,6 +19,7 @@ namespace UnityEditor.ShortcutManagement
         {
             KeyCode.None,
             KeyCode.Escape,
+            KeyCode.Return,
             KeyCode.CapsLock,
         };
 

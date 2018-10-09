@@ -403,19 +403,16 @@ namespace UnityEditor
                 if (BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.OpenGLES))
                 {
                     var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
-                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                    if (platform.targetGroup == BuildTargetGroup.Android)
+                    {
+                        hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
+                        hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                    }
+                    else if (platform.targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
+                    {
+                        hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                    }
                 }
-
-                if (platform.targetGroup == BuildTargetGroup.iOS)
-                {
-                    Version requiredVersion = new Version(8, 0);
-                    hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
-                }
-                else if (platform.targetGroup == BuildTargetGroup.Android)
-                {
-                    hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
-                }
-
                 return hasMinGraphicsAPI && hasMinOSVersion;
             }
             else
@@ -435,9 +432,6 @@ namespace UnityEditor
                 {
                     var apis = PlayerSettings.GetGraphicsAPIs(BuildTarget.iOS);
                     hasMinGraphicsAPI = apis.Contains(GraphicsDeviceType.Metal) && !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
-                    Version requiredVersion = new Version(8, 0);
-                    hasMinOSVersion = PlayerSettings.iOS.IsTargetVersionEqualOrHigher(requiredVersion);
                 }
                 else if (platform.targetGroup == BuildTargetGroup.tvOS)
                 {

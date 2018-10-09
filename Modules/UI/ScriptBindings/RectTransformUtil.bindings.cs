@@ -7,8 +7,8 @@ using UnityEngine.Bindings;
 namespace UnityEngine
 {
     [NativeHeader("Runtime/Camera/Camera.h"),
-     NativeHeader("Runtime/UI/Canvas.h"),
-     NativeHeader("Runtime/UI/RectTransformUtil.h"),
+     NativeHeader("Modules/UI/Canvas.h"),
+     NativeHeader("Modules/UI/RectTransformUtil.h"),
      NativeHeader("Runtime/Transform/RectTransform.h"),
      StaticAccessor("UI", StaticAccessorType.DoubleColon)]
     partial class RectTransformUtility

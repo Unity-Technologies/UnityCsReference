@@ -25,6 +25,10 @@ namespace UnityEditor.ShortcutManagement
     {
         public bool ValidateProfileId(string id)
         {
+            // Reserve id for default profile
+            if (id == "Default")
+                return false;
+
             // TODO: This could be problematic since Path.GetInvalidFileNameChars is platform dependent
             return !string.IsNullOrEmpty(id) && id.IndexOfAny(Path.GetInvalidFileNameChars()) == -1;
         }
@@ -91,7 +95,7 @@ namespace UnityEditor.ShortcutManagement
             if (!System.IO.Directory.Exists(shortcutsFolderPath))
                 return Enumerable.Empty<string>();
 
-            return System.IO.Directory.GetFiles(shortcutsFolderPath, "*.shortcut", SearchOption.TopDirectoryOnly);
+            return System.IO.Directory.GetFiles(shortcutsFolderPath, "*.shortcut", System.IO.SearchOption.TopDirectoryOnly);
         }
     }
 }

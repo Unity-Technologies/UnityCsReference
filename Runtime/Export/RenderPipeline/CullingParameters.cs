@@ -65,6 +65,7 @@ namespace UnityEngine.Experimental.Rendering
 
         CoreCameraValues coreCameraValues;
         uint cameraType;
+        private int projectionIsOblique;
 
         public Plane GetShadowCullingPlane(int index)
         {

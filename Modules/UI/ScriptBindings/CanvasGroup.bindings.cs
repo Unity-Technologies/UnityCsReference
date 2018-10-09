@@ -15,7 +15,7 @@ namespace UnityEngine
     }
 
     [NativeClass("UI::CanvasGroup"),
-     NativeHeader("Runtime/UI/CanvasGroup.h")]
+     NativeHeader("Modules/UI/CanvasGroup.h")]
     public sealed class CanvasGroup : Behaviour, ICanvasRaycastFilter
     {
         [NativeProperty("Alpha", false, TargetType.Function)] public extern float alpha { get; set; }

@@ -35,9 +35,17 @@ namespace UnityEditor.ShortcutManagement
     [Serializable]
     class ShortcutProfile
     {
-        public string id => m_Id;
+        public string id
+        {
+            get { return m_Id; }
+            set { m_Id = value; }
+        }
 
-        public string parentId => m_ParentId;
+        public string parentId
+        {
+            get { return m_ParentId; }
+            set { m_ParentId = value; }
+        }
 
         [SerializeField]
         string m_Id;
@@ -82,6 +90,12 @@ namespace UnityEditor.ShortcutManagement
                 throw new ArgumentException("This profile already contains an existing entry with matching Identifier!", nameof(profileEntry));
             }
             m_Entries.Add(new SerializableShortcutEntry(profileEntry));
+        }
+
+        public void Remove(Identifier identifier)
+        {
+            var existingEntry = m_Entries.FirstOrDefault(entry => entry.identifier.Equals(identifier));
+            m_Entries.Remove(existingEntry);
         }
     }
 }

@@ -5,7 +5,7 @@
 using System;
 using ShadowCastingMode = UnityEngine.Rendering.ShadowCastingMode;
 using LightProbeUsage   = UnityEngine.Rendering.LightProbeUsage;
-
+using UnityEngine.Rendering;
 
 namespace UnityEngine
 {
@@ -71,6 +71,23 @@ namespace UnityEngine
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
         [Obsolete("Property deviceVersion has been deprecated. Use SystemInfo.graphicsDeviceVersion instead (UnityUpgradable) -> UnityEngine.SystemInfo.graphicsDeviceVersion", true)]
         static public string deviceVersion { get { return SystemInfo.graphicsDeviceVersion; } }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("CreateGPUFence has been deprecated. Use CreateGraphicsFence instead (UnityUpgradable) -> CreateAsyncGraphicsFence(*)", true)]
+        public static GPUFence CreateGPUFence([UnityEngine.Internal.DefaultValue("UnityEngine.Rendering.SynchronisationStage.PixelProcessing")] SynchronisationStage stage) { return new GPUFence(); }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("WaitOnGPUFence has been deprecated. Use WaitOnAsyncGraphicsFence instead (UnityUpgradable) -> WaitOnAsyncGraphicsFence(*)", true)]
+        public static void WaitOnGPUFence(GPUFence fence, [UnityEngine.Internal.DefaultValue("UnityEngine.Rendering.SynchronisationStage.PixelProcessing")] SynchronisationStage stage) {}
+
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("CreateGPUFence has been deprecated. Use CreateGraphicsFence instead (UnityUpgradable) -> CreateAsyncGraphicsFence(*)", true)]
+        [UnityEngine.Internal.ExcludeFromDocs] public static GPUFence CreateGPUFence() { return new GPUFence(); }
+
+        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [Obsolete("WaitOnGPUFence has been deprecated. Use WaitOnAsyncGraphicsFence instead (UnityUpgradable) -> WaitOnAsyncGraphicsFence(*)", true)]
+        [UnityEngine.Internal.ExcludeFromDocs] public static void WaitOnGPUFence(GPUFence fence) {}
     }
 
     partial class Screen

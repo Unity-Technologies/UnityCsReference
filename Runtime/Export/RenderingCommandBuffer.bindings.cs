@@ -86,10 +86,10 @@ namespace UnityEngine.Rendering
         extern private static IntPtr InitBuffer();
 
         [FreeFunction("RenderingCommandBuffer_Bindings::CreateGPUFence_Internal", HasExplicitThis = true)]
-        extern private IntPtr CreateGPUFence_Internal(SynchronisationStage stage);
+        extern private IntPtr CreateGPUFence_Internal(GraphicsFenceType fenceType, SynchronisationStageFlags stage);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::WaitOnGPUFence_Internal", HasExplicitThis = true)]
-        extern private void WaitOnGPUFence_Internal(IntPtr fencePtr, SynchronisationStage stage);
+        extern private void WaitOnGPUFence_Internal(IntPtr fencePtr, SynchronisationStageFlags stage);
 
         [FreeFunction("RenderingCommandBuffer_Bindings::ReleaseBuffer", HasExplicitThis = true, IsThreadSafe = true)]
         extern private void ReleaseBuffer();

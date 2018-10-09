@@ -65,8 +65,6 @@ namespace UnityEditor
             public static readonly GUIStyle OpenPreviewStyle = EditorStyles.objectFieldThumb.name + "LightmapPreviewOverlay";
             public static readonly int PreviewPadding = 30;
             public static readonly int PreviewWidth = 104;
-            public static readonly GUIContent CastShadowsProgressiveGPUWarning = EditorGUIUtility.TrTextContent("Cast Shadows is forced to 'On' when using the GPU lightmapper (Preview), it will be supported in a later version. Use the CPU lightmapper instead if you need this functionality.");
-            public static readonly GUIContent ReceiveShadowsProgressiveGPUWarning = EditorGUIUtility.TrTextContent("Receive Shadows is forced to 'On' when using the GPU lightmapper (Preview), it will be supported in a later version. Use the CPU lightmapper instead if you need this functionality.");
         }
 
         bool m_ShowChartingSettings = true;
@@ -162,25 +160,13 @@ namespace UnityEditor
             m_GameObjectsSerializedObject.Update();
             m_LightmapSettings.Update();
 
-            // TODO(RadeonRays): remove scope for GPU lightmapper once the feature has been implemented.
-            using (new EditorGUI.DisabledScope(LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU))
-            {
-                EditorGUILayout.PropertyField(m_CastShadows, Styles.CastShadows, true);
-            }
-            if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
-                EditorGUILayout.HelpBox(Styles.CastShadowsProgressiveGPUWarning.text, MessageType.Info);
-
+            EditorGUILayout.PropertyField(m_CastShadows, Styles.CastShadows, true);
             bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
 
             if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
             {
-                // TODO(RadeonRays): remove scope for GPU lightmapper once the feature has been implemented.
-                using (new EditorGUI.DisabledScope(isDeferredRenderingPath || LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU))
-                {
+                using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
                     EditorGUILayout.PropertyField(m_ReceiveShadows, Styles.ReceiveShadows, true);
-                }
-                if (LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.ProgressiveGPU)
-                    EditorGUILayout.HelpBox(Styles.ReceiveShadowsProgressiveGPUWarning.text, MessageType.Info);
             }
 
             if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)

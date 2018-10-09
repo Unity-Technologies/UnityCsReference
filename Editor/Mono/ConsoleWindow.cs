@@ -603,6 +603,7 @@ namespace UnityEditor
             EditorGUIUtility.SetIconSize(new Vector2(rowHeight, rowHeight));
             GUIContent tempContent = new GUIContent();
             int id = GUIUtility.GetControlID(0);
+            int rowDoubleClicked = -1;
 
             /////@TODO: Make Frame selected work with ListViewState
             using (new GettingLogEntriesScope(m_ListView))
@@ -688,10 +689,15 @@ namespace UnityEditor
 
                 if (openSelectedItem)
                 {
-                    LogEntries.RowGotDoubleClicked(selectedRow);
-                    Event.current.Use();
+                    rowDoubleClicked = selectedRow;
+                    e.Use();
                 }
             }
+
+            // Prevent dead locking in EditorMonoConsole by delaying callbacks (which can log to the console) until after LogEntries.EndGettingEntries() has been
+            // called (this releases the mutex in EditorMonoConsole so logging again is allowed). Fix for case 1081060.
+            if (rowDoubleClicked != -1)
+                LogEntries.RowGotDoubleClicked(rowDoubleClicked);
 
             EditorGUIUtility.SetIconSize(Vector2.zero);
 

@@ -75,12 +75,6 @@ namespace UnityEditor.ShortcutManagement
                     entries = m_Entries;
             }
 
-            // Emulate old play mode shortcut behavior
-            // * Menu shortcuts are always active
-            // * Non-menu shortcuts only apply when the game view does not have focus
-            if (EditorApplication.isPlaying && EditorWindow.focusedWindow is GameView)
-                entries = entries.Where(entry => entry.type == ShortcutType.Menu);
-
             switch (entries.Count())
             {
                 case 0:
@@ -132,6 +126,7 @@ namespace UnityEditor.ShortcutManagement
                     if (HasConflicts(entries, m_KeyCombinationSequence))
                     {
                         m_ConflictResolver.ResolveConflict(m_KeyCombinationSequence, entries);
+                        evt.Use();
                         Reset();
                     }
                     break;

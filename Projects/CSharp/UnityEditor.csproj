@@ -1584,6 +1584,9 @@
   <Compile Include="..\..\Editor\Mono\GUI\FlowLayout.cs">
     <Link>Editor\Mono\GUI\FlowLayout.cs</Link>
   </Compile>
+  <Compile Include="..\..\Editor\Mono\GUI\FoldoutHeader.cs">
+    <Link>Editor\Mono\GUI\FoldoutHeader.cs</Link>
+  </Compile>
   <Compile Include="..\..\Editor\Mono\GUI\GenericMenu.cs">
     <Link>Editor\Mono\GUI\GenericMenu.cs</Link>
   </Compile>
@@ -4445,6 +4448,15 @@
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutEntry.cs">
     <Link>Modules\ShortcutManagerEditor\ShortcutEntry.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutManagerWindow.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutManagerWindow.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutManagerWindowView.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutManagerWindowView.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutManagerWindowViewController.cs">
+    <Link>Modules\ShortcutManagerEditor\ShortcutManagerWindowViewController.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\ShortcutProfile.cs">
     <Link>Modules\ShortcutManagerEditor\ShortcutProfile.cs</Link>

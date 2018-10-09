@@ -231,28 +231,39 @@ namespace Unity.SerializationLogic
             if (fieldDefinition.IsStatic || IsConst(fieldDefinition) || fieldDefinition.IsNotSerialized || fieldDefinition.IsInitOnly)
                 return false;
 
+            // The field must have correct visibility/decoration to be serialized.
+            if (!fieldDefinition.IsPublic &&
+                !ShouldHaveHadAllFieldsPublic(fieldDefinition) &&
+                !HasSerializeFieldAttribute(fieldDefinition))
+                return false;
+
             // Don't try to resolve types that come from Windows assembly,
             // as serialization weaver will fail to resolve that (due to it being in platform specific SDKs)
             if (ShouldNotTryToResolve(fieldDefinition.FieldType))
                 return false;
 
-            //AND, the field must have correct visibility/decoration to be serialized.
-            bool hasSerializeFieldAttribute = HasSerializeFieldAttribute(fieldDefinition);
-            if (!fieldDefinition.IsPublic && !hasSerializeFieldAttribute &&
-                !ShouldHaveHadAllFieldsPublic(fieldDefinition))
-                return false;
-
-            if (fieldDefinition.FullName == "UnityScript.Lang.Array")
-                return false;
+            if (IsFixedBuffer(fieldDefinition))
+                return true;
 
             // Resolving types is more complex and slower than checking their names or attributes,
             // thus keep those checks below
+            var typeReference = typeResolver.Resolve(fieldDefinition.FieldType);
 
             //the type of the field must be serializable in the first place.
-            if (!IsFieldTypeSerializable(typeResolver.Resolve(fieldDefinition.FieldType), fieldDefinition))
+
+            if (typeReference.MetadataType == MetadataType.String)
+                return true;
+
+            if (typeReference.IsValueType)
+                return IsValueTypeSerializable(typeReference);
+
+            if (typeReference is ArrayType || CecilUtils.IsGenericList(typeReference))
+                return IsSupportedCollection(typeReference);
+
+            if (!IsReferenceTypeSerializable(typeReference))
                 return false;
 
-            if (IsDelegate(typeResolver.Resolve(fieldDefinition.FieldType)))
+            if (IsDelegate(typeReference))
                 return false;
 
             return true;
@@ -356,12 +367,13 @@ namespace Unity.SerializationLogic
 
         public static bool ShouldNotTryToResolve(TypeReference typeReference)
         {
-            if (typeReference.Scope.Name == "Windows")
+            var typeReferenceScopeName = typeReference.Scope.Name;
+            if (typeReferenceScopeName == "Windows")
             {
                 return true;
             }
 
-            if (typeReference.Scope.Name == "mscorlib")
+            if (typeReferenceScopeName == "mscorlib")
             {
                 var resolved = typeReference.Resolve();
                 return resolved == null;
@@ -387,16 +399,38 @@ namespace Unity.SerializationLogic
             return IsTypeSerializable(typeReference) || IsSupportedCollection(typeReference) || IsFixedBuffer(fieldDefinition);
         }
 
+        private static bool IsValueTypeSerializable(TypeReference typeReference)
+        {
+            if (typeReference.IsPrimitive)
+                return IsSerializablePrimitive(typeReference);
+            return UnityEngineTypePredicates.IsSerializableUnityStruct(typeReference) ||
+                typeReference.IsEnum() ||
+                ShouldImplementIDeserializable(typeReference);
+        }
+
+        private static bool IsReferenceTypeSerializable(TypeReference typeReference)
+        {
+            if (typeReference.MetadataType == MetadataType.String)
+                return IsSerializablePrimitive(typeReference);
+
+            if (IsGenericDictionary(typeReference))
+                return false;
+
+            if (IsUnityEngineObject(typeReference) ||
+                ShouldImplementIDeserializable(typeReference) ||
+                UnityEngineTypePredicates.IsSerializableUnityClass(typeReference))
+                return true;
+
+            return false;
+        }
+
         private static bool IsTypeSerializable(TypeReference typeReference)
         {
-            if (typeReference.IsAssignableTo("UnityScript.Lang.Array")) return false;
-            if (IsGenericDictionary(typeReference)) return false;
-
-            return IsSerializablePrimitive(typeReference)
-                || typeReference.IsEnum()
-                || IsUnityEngineObject(typeReference)
-                || UnityEngineTypePredicates.IsSerializableUnityStruct(typeReference)
-                || ShouldImplementIDeserializable(typeReference);
+            if (typeReference.MetadataType == MetadataType.String)
+                return true;
+            if (typeReference.IsValueType)
+                return IsValueTypeSerializable(typeReference);
+            return IsReferenceTypeSerializable(typeReference);
         }
 
         private static bool IsGenericDictionary(TypeReference typeReference)
@@ -514,19 +548,20 @@ namespace Unity.SerializationLogic
         {
             if (typeDeclaration == null)
                 return true;
-            if (typeDeclaration.IsEnum())
-                return true;
             if (typeDeclaration.HasGenericParameters)
                 return true;
             if (typeDeclaration.MetadataType == MetadataType.Object)
                 return true;
-            if (typeDeclaration.FullName.StartsWith("System.")) //can this be done better?
+            var fullName = typeDeclaration.FullName;
+            if (fullName.StartsWith("System.")) //can this be done better?
                 return true;
             if (typeDeclaration.IsArray)
                 return true;
             if (typeDeclaration.FullName == UnityEngineTypePredicates.MonoBehaviour)
                 return true;
             if (typeDeclaration.FullName == UnityEngineTypePredicates.ScriptableObject)
+                return true;
+            if (typeDeclaration.IsEnum())
                 return true;
             return false;
         }
@@ -550,10 +585,19 @@ namespace Unity.SerializationLogic
 
             try
             {
-                return UnityEngineTypePredicates.IsMonoBehaviour(typeDeclaration)
-                    || UnityEngineTypePredicates.IsScriptableObject(typeDeclaration)
-                    || (typeDeclaration.CheckedResolve().IsSerializable && !typeDeclaration.CheckedResolve().IsAbstract && !typeDeclaration.CheckedResolve().CustomAttributes.Any(a => a.AttributeType.FullName.Contains("System.Runtime.CompilerServices.CompilerGenerated")))
-                    || UnityEngineTypePredicates.ShouldHaveHadSerializableAttribute(typeDeclaration);
+                if (UnityEngineTypePredicates.ShouldHaveHadSerializableAttribute(typeDeclaration))
+                    return true;
+
+                var resolvedTypeDeclaration = typeDeclaration.CheckedResolve();
+                if (resolvedTypeDeclaration.IsValueType)
+                {
+                    return resolvedTypeDeclaration.IsSerializable && !resolvedTypeDeclaration.CustomAttributes.Any(a => a.AttributeType.FullName.Contains("System.Runtime.CompilerServices.CompilerGenerated"));
+                }
+                else
+                {
+                    return (resolvedTypeDeclaration.IsSerializable && !resolvedTypeDeclaration.IsAbstract && !resolvedTypeDeclaration.CustomAttributes.Any(a => a.AttributeType.FullName.Contains("System.Runtime.CompilerServices.CompilerGenerated"))) ||
+                        resolvedTypeDeclaration.IsSubclassOf(UnityEngineTypePredicates.MonoBehaviour, UnityEngineTypePredicates.ScriptableObject);
+                }
             }
             catch (Exception)
             {

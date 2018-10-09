@@ -11,6 +11,7 @@ using System.Reflection;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Scripting;
+using UnityEngine.Rendering;
 using UnityEditorInternal;
 using UnityEditor.Scripting.ScriptCompilation;
 using Object = UnityEngine.Object;
@@ -18,7 +19,6 @@ using Event = UnityEngine.Event;
 using UnityEditor.Build;
 using UnityEditor.StyleSheets;
 using UnityEngine.Internal;
-using UnityEngine.Rendering;
 using DescriptionAttribute = System.ComponentModel.DescriptionAttribute;
 
 namespace UnityEditor

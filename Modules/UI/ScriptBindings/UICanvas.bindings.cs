@@ -28,8 +28,8 @@ namespace UnityEngine
 
     [RequireComponent(typeof(RectTransform)),
      NativeClass("UI::Canvas"),
-     NativeHeader("Runtime/UI/Canvas.h"),
-     NativeHeader("Runtime/UI/UIStructs.h")]
+     NativeHeader("Modules/UI/Canvas.h"),
+     NativeHeader("Modules/UI/UIStructs.h")]
     public sealed class Canvas : Behaviour
     {
         public delegate void WillRenderCanvases();
@@ -77,7 +77,7 @@ namespace UnityEngine
         }
     }
 
-    [NativeHeader("Runtime/UI/Canvas.h"),
+    [NativeHeader("Modules/UI/Canvas.h"),
      StaticAccessor("UI::SystemProfilerApi", StaticAccessorType.DoubleColon)]
     public static class UISystemProfilerApi
     {

@@ -26,5 +26,22 @@ namespace Unity.CecilTools.Extensions
 
             return IsSubclassOf(baseTypeDef, baseTypeName);
         }
+
+        public static bool IsSubclassOf(this TypeDefinition type, params string[] baseTypeNames)
+        {
+            var baseType = type.BaseType;
+            if (baseType == null)
+                return false;
+
+            for (int i = 0; i < baseTypeNames.Length; i++)
+                if (baseType.FullName == baseTypeNames[i])
+                    return true;
+
+            var baseTypeDef = baseType.Resolve();
+            if (baseTypeDef == null)
+                return false;
+
+            return IsSubclassOf(baseTypeDef, baseTypeNames);
+        }
     }
 }

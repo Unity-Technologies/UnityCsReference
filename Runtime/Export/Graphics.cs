@@ -281,26 +281,42 @@ namespace UnityEngine
             return ConvertTexture_Slice(src, srcElement, dst, dstElement);
         }
 
-        public static GPUFence CreateGPUFence([uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStage stage)
+        public static GraphicsFence CreateAsyncGraphicsFence([uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStage stage)
         {
-            GPUFence newFence = new GPUFence();
-            newFence.m_Ptr = CreateGPUFenceImpl(stage);
+            return CreateGraphicsFence(GraphicsFenceType.AsyncQueueSynchronisation, GraphicsFence.TranslateSynchronizationStageToFlags(stage));
+        }
+
+        public static GraphicsFence CreateAsyncGraphicsFence()
+        {
+            return CreateGraphicsFence(GraphicsFenceType.AsyncQueueSynchronisation, SynchronisationStageFlags.PixelProcessing);
+        }
+
+        public static GraphicsFence CreateGraphicsFence(GraphicsFenceType fenceType, [uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStageFlags stage)
+        {
+            GraphicsFence newFence = new GraphicsFence();
+            newFence.m_FenceType = fenceType;
+            newFence.m_Ptr = CreateGPUFenceImpl(fenceType, stage);
             newFence.InitPostAllocation();
             newFence.Validate();
             return newFence;
         }
 
-        public static void WaitOnGPUFence(GPUFence fence, [uei.DefaultValue("SynchronisationStage.VertexProcessing")] SynchronisationStage stage)
+        public static void WaitOnAsyncGraphicsFence(GraphicsFence fence)
         {
+            WaitOnAsyncGraphicsFence(fence, SynchronisationStage.PixelProcessing);
+        }
+
+        public static void WaitOnAsyncGraphicsFence(GraphicsFence fence, [uei.DefaultValue("SynchronisationStage.PixelProcessing")] SynchronisationStage stage)
+        {
+            if (fence.m_FenceType != GraphicsFenceType.AsyncQueueSynchronisation)
+                throw new ArgumentException("Graphics.WaitOnGraphicsFence can only be called with fences created with GraphicsFenceType.AsyncQueueSynchronization.");
+
             fence.Validate();
 
             //Don't wait on a fence that's already known to have passed
             if (fence.IsFencePending())
-                WaitOnGPUFenceImpl(fence.m_Ptr, stage);
+                WaitOnGPUFenceImpl(fence.m_Ptr, GraphicsFence.TranslateSynchronizationStageToFlags(stage));
         }
-
-        [uei.ExcludeFromDocs] public static GPUFence CreateGPUFence() { return CreateGPUFence(SynchronisationStage.PixelProcessing); }
-        [uei.ExcludeFromDocs] public static void WaitOnGPUFence(GPUFence fence) { WaitOnGPUFence(fence, SynchronisationStage.VertexProcessing); }
     }
 }
 

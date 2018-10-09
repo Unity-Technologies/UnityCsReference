@@ -113,7 +113,9 @@ namespace UnityEditor.Modules
 
         public virtual void MultithreadedRenderingGUI(BuildTargetGroup targetGroup)
         {
-            if (BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.IsMobile))
+            // For platforms defined as IsMTRenderingDisabledByDefault in BuildTargetDiscovery::PreloadKnownBuildTargets (iPhone, tvOS, Android) the "Multithreaded Rendering" feature is controlled by PlayerSettings::m_MobileMTRenderingBaked (whose default is false)
+            // For other platforms the "Multithreaded Rendering" feature is controlled by PlayerSettings::m_MTRendering. Default value is true (set during PlayerSettings::Reset)
+            if (BuildTargetDiscovery.PlatformGroupHasFlag(targetGroup, TargetAttributes.IsMTRenderingDisabledByDefault))
             {
                 bool oldValue = PlayerSettings.GetMobileMTRendering(targetGroup);
                 bool newValue = EditorGUILayout.Toggle(MultithreadedRenderingGUITooltip(), oldValue);

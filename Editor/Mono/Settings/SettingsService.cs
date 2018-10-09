@@ -58,14 +58,17 @@ namespace UnityEditor
 
         private static IEnumerable<SettingsProvider> FetchPreferenceItems()
         {
+#pragma warning disable CS0618
             var methods = AttributeHelper.GetMethodsWithAttribute<PreferenceItem>(BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly);
+#pragma warning restore CS0618
             return methods.methodsWithAttributes.Select(method =>
             {
                 var callback = Delegate.CreateDelegate(typeof(Action), method.info) as Action;
                 if (callback != null)
                 {
+#pragma warning disable CS0618
                     var attributeName = (method.attribute as PreferenceItem).name;
-                    Debug.LogWarning($"Trying to register preference item: \"{attributeName}\". [PreferenceItem] attribute is deprecated. Use [SettingsProvider] attribute instead.");
+#pragma warning restore CS0618
                     return new SettingsProvider("Preferences/" + attributeName) { guiHandler = searchContext => callback(), scopes = SettingsScopes.User };
                 }
 

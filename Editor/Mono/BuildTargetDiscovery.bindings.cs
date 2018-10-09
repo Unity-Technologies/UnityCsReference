@@ -45,7 +45,8 @@ namespace UnityEditor
             WarnForMouseEvents = (1 << 19),
             HideInUI = (1 << 20),
             GPUSkinningNotSupported = (1 << 21),
-            StrippingNotSupported = (1 << 22)
+            StrippingNotSupported = (1 << 22),
+            IsMTRenderingDisabledByDefault = (1 << 23),
         }
 
         public enum TargetDefaultScriptingBackend

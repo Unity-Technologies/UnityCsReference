@@ -156,6 +156,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
+        public static void DirtyMovedScript(string oldPath, string newPath)
+        {
+            Instance.DirtyMovedScript(oldPath, newPath);
+        }
+
+        [RequiredByNativeCode]
         public static void DirtyPrecompiledAssembly(string path)
         {
             Instance.DirtyPrecompiledAssembly(path);
@@ -222,11 +228,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
+        public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies(EditorScriptCompilationOptions options, BuildTarget buildTarget)
         {
             EditorCompilation.CustomScriptAssemblyAndReference[] assembliesWithMissingReference = null;
 
-            var result = EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(out assembliesWithMissingReference), new EditorCompilation.TargetAssemblyInfo[0]);
+            var result = EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(options, buildTarget, out assembliesWithMissingReference), new EditorCompilation.TargetAssemblyInfo[0]);
 
             if (assembliesWithMissingReference.Length > 0)
             {

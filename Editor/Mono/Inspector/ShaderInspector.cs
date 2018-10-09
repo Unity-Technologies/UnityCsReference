@@ -6,6 +6,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Globalization;
 using Object = UnityEngine.Object;
+using UnityEngine.Experimental.Rendering;
 
 namespace UnityEditor
 {
@@ -103,6 +104,21 @@ namespace UnityEditor
                         break;
                 }
                 EditorGUILayout.LabelField("Disable batching", disableBatchingString);
+
+                // If any SRP is active, then display the SRP Batcher compatibility status
+                if (RenderPipelineManager.currentPipeline != null)
+                {
+                    var mat = new Material(s);
+                    mat.SetPass(0);                 // NOTE: Force the shader compilation to ensure GetSRPBatcherCompatibilityCode will be up to date
+                    int subShader = ShaderUtil.GetShaderActiveSubshaderIndex(s);
+                    int SRPErrCode = ShaderUtil.GetSRPBatcherCompatibilityCode(s, subShader);
+                    string result = (0 == SRPErrCode) ? "compatible" : "not compatible";
+                    EditorGUILayout.LabelField("SRP Batcher", result);
+                    if (SRPErrCode != 0)
+                    {
+                        EditorGUILayout.HelpBox(ShaderUtil.GetSRPBatcherCompatibilityIssueReason(s, subShader, SRPErrCode), MessageType.Info);
+                    }
+                }
                 ShowShaderProperties(s);
             }
         }

@@ -412,8 +412,8 @@
   <Compile Include="..\..\Runtime\Export\GI\Lightmapping.cs">
     <Link>Runtime\Export\GI\Lightmapping.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\GPUFence.bindings.cs">
-    <Link>Runtime\Export\GPUFence.bindings.cs</Link>
+  <Compile Include="..\..\Runtime\Export\GPUFence.deprecated.cs">
+    <Link>Runtime\Export\GPUFence.deprecated.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\GUIElement.bindings.cs">
     <Link>Runtime\Export\GUIElement.bindings.cs</Link>
@@ -450,6 +450,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\GraphicsEnums.cs">
     <Link>Runtime\Export\GraphicsEnums.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\GraphicsFence.bindings.cs">
+    <Link>Runtime\Export\GraphicsFence.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\GraphicsFormatUtility.bindings.cs">
     <Link>Runtime\Export\GraphicsFormatUtility.bindings.cs</Link>
@@ -736,6 +739,9 @@
   <Compile Include="..\..\Runtime\Export\RenderingCommandBuffer.cs">
     <Link>Runtime\Export\RenderingCommandBuffer.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderingCommandBuffer.deprecated.cs">
+    <Link>Runtime\Export\RenderingCommandBuffer.deprecated.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\Resources.bindings.cs">
     <Link>Runtime\Export\Resources.bindings.cs</Link>
   </Compile>
@@ -888,6 +894,9 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\SystemInfo.bindings.cs">
     <Link>Runtime\Export\SystemInfo.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\SystemInfo.deprecated.cs">
+    <Link>Runtime\Export\SystemInfo.deprecated.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\TextAsset.bindings.cs">
     <Link>Runtime\Export\TextAsset.bindings.cs</Link>
@@ -1915,6 +1924,21 @@
   <Compile Include="..\..\Modules\UIElements\VisualTreeUpdater.cs">
     <Link>Modules\UIElements\VisualTreeUpdater.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasGroup.bindings.cs">
+    <Link>Modules\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UI\ScriptBindings\CanvasRenderer.bindings.cs">
+    <Link>Modules\UI\ScriptBindings\CanvasRenderer.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UI\ScriptBindings\RectTransformUtil.bindings.cs">
+    <Link>Modules\UI\ScriptBindings\RectTransformUtil.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UI\ScriptBindings\RectTransformUtility.cs">
+    <Link>Modules\UI\ScriptBindings\RectTransformUtility.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\UI\ScriptBindings\UICanvas.bindings.cs">
+    <Link>Modules\UI\ScriptBindings\UICanvas.bindings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\UnityAnalytics\ContinuousEvent\Manager.bindings.cs">
     <Link>Modules\UnityAnalytics\ContinuousEvent\Manager.bindings.cs</Link>
   </Compile>
@@ -2316,21 +2340,6 @@
   </Compile>
   <Compile Include="..\..\Runtime\TerrainPhysics\TerrainPhysics.bindings.cs">
     <Link>Runtime\TerrainPhysics\TerrainPhysics.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\UI\ScriptBindings\CanvasGroup.bindings.cs">
-    <Link>Runtime\UI\ScriptBindings\CanvasGroup.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\UI\ScriptBindings\CanvasRenderer.bindings.cs">
-    <Link>Runtime\UI\ScriptBindings\CanvasRenderer.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\UI\ScriptBindings\RectTransformUtil.bindings.cs">
-    <Link>Runtime\UI\ScriptBindings\RectTransformUtil.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\UI\ScriptBindings\RectTransformUtility.cs">
-    <Link>Runtime\UI\ScriptBindings\RectTransformUtility.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\UI\ScriptBindings\UICanvas.bindings.cs">
-    <Link>Runtime\UI\ScriptBindings\UICanvas.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\VR\HoloLens\HolographicEmulation\HolographicRemoting.cs">
     <Link>Runtime\VR\HoloLens\HolographicEmulation\HolographicRemoting.cs</Link>

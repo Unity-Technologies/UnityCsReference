@@ -26,6 +26,14 @@ namespace UnityEditor.ShortcutManagement
         ProfileHasDependencies,
     }
 
+    enum CanRenameProfileResult
+    {
+        Success,
+        ProfileNotFound,
+        InvalidProfileId,
+        DuplicateProfileId,
+    }
+
     interface IShortcutProfileManager
     {
         event Action<IShortcutProfileManager> shortcutsModified;
@@ -38,11 +46,14 @@ namespace UnityEditor.ShortcutManagement
         ShortcutProfile GetProfileById(string profileId);
         CanCreateProfileResult CanCreateProfile(string profileId, ShortcutProfile parentProfile = null);
         ShortcutProfile CreateProfile(string profileId, ShortcutProfile parentProfile = null);
-        CanDeleteProfileResult CanDeleteProfile(ShortcutProfile profileId);
-        void DeleteProfile(ShortcutProfile profileId);
+        CanDeleteProfileResult CanDeleteProfile(ShortcutProfile profile);
+        void DeleteProfile(ShortcutProfile profile);
+        CanRenameProfileResult CanRenameProfile(ShortcutProfile profile, string newProfileId);
+        void RenameProfile(ShortcutProfile profile, string newProfileId);
 
         IEnumerable<ShortcutEntry> GetAllShortcuts(); // Preferences UI relies on this order being stable
         void ModifyShortcutEntry(Identifier identifier, List<KeyCombination> combinationSequence);
+        void ClearShortcutOverride(Identifier identifier);
         void ResetToDefault(); // TODO: Remove this when current UI is replaced. Set activeProfile to null instead.
     }
 
@@ -141,7 +152,7 @@ namespace UnityEditor.ShortcutManagement
                     var profile = new ShortcutProfile(profileId, parentProfile?.id ?? "");
                     m_LoadedProfiles.Add(profileId, profile);
                     ResolveProfileParentReference(profile);
-                    m_ProfileStore.SaveShortcutProfileJson(profile.id, JsonUtility.ToJson(profile));
+                    SaveShortcutProfile(profile);
                     return profile;
 
                 case CanCreateProfileResult.InvalidProfileId:
@@ -194,6 +205,57 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
+        public CanRenameProfileResult CanRenameProfile(ShortcutProfile profile, string newProfileId)
+        {
+            // Profile must exist
+            if (!m_LoadedProfiles.ContainsKey(profile.id))
+                return CanRenameProfileResult.ProfileNotFound;
+
+            // Profile id must be valid
+            if (!m_ProfileStore.ValidateProfileId(newProfileId))
+                return CanRenameProfileResult.InvalidProfileId;
+
+            // Profile id must be unique
+            if (newProfileId != profile.id && m_LoadedProfiles.ContainsKey(newProfileId))
+                return CanRenameProfileResult.DuplicateProfileId;
+
+            return CanRenameProfileResult.Success;
+        }
+
+        public void RenameProfile(ShortcutProfile profile, string newProfileId)
+        {
+            switch (CanRenameProfile(profile, newProfileId))
+            {
+                case CanRenameProfileResult.Success:
+                    m_LoadedProfiles.Remove(profile.id);
+                    profile.id = newProfileId;
+                    m_LoadedProfiles.Add(profile.id, profile);
+                    SaveShortcutProfile(profile);
+                    foreach (var childProfile in m_LoadedProfiles.Values)
+                    {
+                        if (childProfile.parent == profile)
+                        {
+                            childProfile.parentId = profile.id;
+                            SaveShortcutProfile(childProfile);
+                        }
+                    }
+                    activeProfileChanged?.Invoke(this);
+                    break;
+
+                case CanRenameProfileResult.ProfileNotFound:
+                    throw new ArgumentException("Profile not found", nameof(profile));
+
+                case CanRenameProfileResult.InvalidProfileId:
+                    throw new ArgumentException("Invalid profile id", nameof(newProfileId));
+
+                case CanRenameProfileResult.DuplicateProfileId:
+                    throw new ArgumentException("Duplicate profile id", nameof(newProfileId));
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
         public IEnumerable<ShortcutEntry> GetAllShortcuts()
         {
             return m_Entries;
@@ -230,6 +292,14 @@ namespace UnityEditor.ShortcutManagement
             SaveShortcutProfile(m_ActiveProfile);
 
             shortcutsModified?.Invoke(this);
+        }
+
+        public void ClearShortcutOverride(Identifier identifier)
+        {
+            if (activeProfile == null)
+                throw new InvalidOperationException("No active profile");
+
+            activeProfile.Remove(identifier);
         }
 
         // TODO: Make this private when current UI is replaced. Set activeProfile to null instead.
@@ -291,8 +361,9 @@ namespace UnityEditor.ShortcutManagement
             return ancestors;
         }
 
-        static void MigrateUserSpecifiedPrefKeys(IEnumerable<MethodInfo> methodsWithFormerlyPrefKeyAs, List<ShortcutEntry> entries)
+        void MigrateUserSpecifiedPrefKeys(IEnumerable<MethodInfo> methodsWithFormerlyPrefKeyAs, List<ShortcutEntry> entries)
         {
+            KeyCombination[] tempKeyCombinations = new KeyCombination[1];
             foreach (var method in methodsWithFormerlyPrefKeyAs)
             {
                 var shortcutAttr = Attribute.GetCustomAttribute(method, typeof(ShortcutAttribute), true) as ShortcutAttribute;
@@ -314,7 +385,16 @@ namespace UnityEditor.ShortcutManagement
                 var prefKeyCurrentValue = new KeyCombination(keyboardEvent);
                 // only migrate pref keys that the user actually overwrote
                 if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
+                {
+                    string invalidBindingMessage;
+                    tempKeyCombinations[0] = prefKeyCurrentValue;
+                    if (!m_BindingValidator.IsBindingValid(tempKeyCombinations, out invalidBindingMessage))
+                    {
+                        Debug.LogWarning($"Could not migrate existing binding for shortcut \"{entry.identifier.path}\" with invalid binding.\n{invalidBindingMessage}.");
+                        continue;
+                    }
                     entry.SetOverride(new List<KeyCombination> { prefKeyCurrentValue });
+                }
             }
         }
 
@@ -415,14 +495,7 @@ namespace UnityEditor.ShortcutManagement
 
         void SaveShortcutProfile(ShortcutProfile profile)
         {
-            if (profile.id == profile.parentId)
-            {
-                Debug.LogWarning(string.Format("A profile cannot inherit from itself! ({0})", profile.id));
-            }
-            else
-            {
-                m_ProfileStore.SaveShortcutProfileJson(profile.id, JsonUtility.ToJson(profile));
-            }
+            m_ProfileStore.SaveShortcutProfileJson(profile.id, JsonUtility.ToJson(profile));
         }
 
         ShortcutProfile LoadProfile(string id)
