@@ -229,7 +229,7 @@ namespace UnityEditor
                 new Rect(0, 0, 1, 1),
                 previewBackground.border.left, previewBackground.border.right, previewBackground.border.top,
                 previewBackground.border.bottom,
-                new Color(.5f, .5f, .5f, 1),
+                new Color(.5f, .5f, .5f, 0.5f),
                 null
             );
 

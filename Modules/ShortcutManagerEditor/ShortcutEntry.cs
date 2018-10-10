@@ -74,10 +74,10 @@ namespace UnityEditor.ShortcutManagement
         public Type context => m_Context;
         public ShortcutType type => m_Type;
 
-        internal ShortcutEntry(Identifier id, List<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type)
+        internal ShortcutEntry(Identifier id, IEnumerable<KeyCombination> defaultCombination, Action<ShortcutArguments> action, Type context, ShortcutType type)
         {
             m_Identifier = id;
-            m_DefaultCombinations = new List<KeyCombination>(defaultCombination);
+            m_DefaultCombinations = defaultCombination.ToList();
             m_Context = context ?? ContextManager.globalContextType;
             m_Action = action;
             m_Type = type;

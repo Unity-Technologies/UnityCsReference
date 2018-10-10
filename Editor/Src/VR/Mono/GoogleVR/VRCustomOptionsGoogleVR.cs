@@ -47,7 +47,7 @@ namespace UnityEditorInternal.VR
             return rect;
         }
 
-        public override float GetHeight()
+        public override float GetHeight(BuildTargetGroup target)
         {
             return EditorGUIUtility.singleLineHeight + (EditorGUIUtility.standardVerticalSpacing * 2.0f);
         }
@@ -87,9 +87,9 @@ namespace UnityEditorInternal.VR
             return rect;
         }
 
-        public override float GetHeight()
+        public override float GetHeight(BuildTargetGroup target)
         {
-            return base.GetHeight() + EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+            return base.GetHeight(target) + EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
         }
     }
 
@@ -266,7 +266,7 @@ namespace UnityEditorInternal.VR
             return rect;
         }
 
-        public override float GetHeight()
+        public override float GetHeight(BuildTargetGroup target)
         {
             float singleLineCount = 5.0f;
             float thumbnailCount = 2.0f;
@@ -278,7 +278,7 @@ namespace UnityEditorInternal.VR
                 verticalSpacingCount += 1.0f;
             }
 
-            return base.GetHeight() + (EditorGUIUtility.singleLineHeight * singleLineCount) +
+            return base.GetHeight(target) + (EditorGUIUtility.singleLineHeight * singleLineCount) +
                 (EditorGUI.kObjectFieldThumbnailHeight * thumbnailCount) +
                 (EditorGUIUtility.standardVerticalSpacing * verticalSpacingCount);
         }

@@ -2,6 +2,7 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -139,7 +140,8 @@ namespace UnityEditor.ShortcutManagement
             m_KeyCombinations = keys;
             m_MenuItemPath = menuItemPath;
 
-            m_ShortcutEntry = new ShortcutEntry(new Identifier(m_MenuItemPath), m_KeyCombinations, null, null, ShortcutType.Menu);
+            Action<ShortcutArguments> menuAction = (args) => { EditorApplication.ExecuteMenuItem(m_MenuItemPath); };
+            m_ShortcutEntry = new ShortcutEntry(new Identifier(m_MenuItemPath), m_KeyCombinations, menuAction, null, ShortcutType.Menu);
         }
 
         public ShortcutEntry GetShortcutEntry()

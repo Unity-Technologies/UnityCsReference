@@ -190,6 +190,8 @@ namespace UnityEditor
         // Returns true when the pressed keys are defined in the Trigger
         internal static Func<bool> doPressedKeysTriggerAnyShortcut;
 
+        internal static event Action<bool> focusChanged;
+
         // Windows were reordered
         internal static CallbackFunction windowsReordered;
 
@@ -334,6 +336,12 @@ namespace UnityEditor
             WindowLayout.MaximizeGestureHandler();
 
             Event.current = null;
+        }
+
+        [RequiredByNativeCode]
+        static void Internal_FocusChanged(bool isFocused)
+        {
+            focusChanged?.Invoke(isFocused);
         }
     }
 }
