@@ -61,7 +61,8 @@ namespace UnityEditor.U2D
             public readonly GUIContent variantMultiplierLabel = EditorGUIUtility.TrTextContent("Scale", "Down scale ratio.");
             public readonly GUIContent copyMasterButton = EditorGUIUtility.TrTextContent("Copy Master's Settings", "Copy all master's settings into this variant.");
             public readonly GUIContent packButton = EditorGUIUtility.TrTextContent("Pack Preview", "Pack this atlas.");
-            public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Project Settings > Editor.");
+
+            public readonly GUIContent disabledPackLabel = EditorGUIUtility.TrTextContent("Sprite Atlas packing is disabled. Enable it in Edit > Settings > Editor.", null, EditorGUIUtility.GetHelpIcon(MessageType.Info));
             public readonly GUIContent packableListLabel = EditorGUIUtility.TrTextContent("Objects for Packing", "Only accept Folder, Sprite Sheet(Texture) and Sprite.");
 
             public readonly GUIContent notPowerOfTwoWarning = EditorGUIUtility.TrTextContent("This scale will produce a Sprite Atlas variant with a packed texture that is NPOT (non - power of two). This may cause visual artifacts in certain compression/texture formats.");
@@ -310,7 +311,10 @@ namespace UnityEditor.U2D
             }
             else
             {
-                EditorGUILayout.HelpBox(s_Styles.disabledPackLabel.text, MessageType.Info);
+                if (GUILayout.Button(s_Styles.disabledPackLabel, EditorStyles.helpBox))
+                {
+                    SettingsWindow.OpenProjectSettings("Project/Editor");
+                }
             }
 
             serializedObject.ApplyModifiedProperties();

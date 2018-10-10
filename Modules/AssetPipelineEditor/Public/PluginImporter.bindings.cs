@@ -213,6 +213,9 @@ namespace UnityEditor
         [NativeMethod("SetCompatibleWithEditor")]
         extern internal void SetCompatibleWithEditorWithBuildTargetsInternal(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, bool enable);
 
+        [NativeMethod("IsCompatibleWithDefines")]
+        extern internal bool IsCompatibleWithDefines(string[] defines);
+
         internal void SetCompatibleWithEditor(BuildTargetGroup buildTargetGroup, BuildTarget buildTarget, bool enable)
         {
             SetCompatibleWithEditorWithBuildTargetsInternal(buildTargetGroup, buildTarget, enable);

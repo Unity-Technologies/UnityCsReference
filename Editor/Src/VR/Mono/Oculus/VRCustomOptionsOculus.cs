@@ -13,6 +13,7 @@ namespace UnityEditorInternal.VR
     {
         static GUIContent s_SharedDepthBufferLabel = EditorGUIUtility.TextContent("Shared Depth Buffer|Enable depth buffer submission to allow for overlay depth occlusion, etc.");
         static GUIContent s_DashSupportLabel = EditorGUIUtility.TextContent("Dash Support|If enabled, pressing the home button brings up Dash, otherwise it brings up the older universal menu.");
+        static GUIContent s_SharedDepthAndroidInfo = EditorGUIUtility.TrTextContent("Shared Depth Buffer and Dash Support aren't available when targeting mobile.");
 
         SerializedProperty m_SharedDepthBuffer;
         SerializedProperty m_DashSupport;
@@ -33,39 +34,51 @@ namespace UnityEditorInternal.VR
         {
             rect.y += EditorGUIUtility.standardVerticalSpacing;
 
-            EditorGUI.BeginDisabled(target == BuildTargetGroup.Android);
-
-            rect.height = EditorGUIUtility.singleLineHeight;
-            GUIContent label = EditorGUI.BeginProperty(rect, s_SharedDepthBufferLabel, m_SharedDepthBuffer);
-            EditorGUI.BeginChangeCheck();
-            bool boolValue = EditorGUI.Toggle(rect, label, m_SharedDepthBuffer.boolValue);
-            if (EditorGUI.EndChangeCheck())
+            if (target != BuildTargetGroup.Android)
             {
-                m_SharedDepthBuffer.boolValue = boolValue;
-            }
-            EditorGUI.EndProperty();
-            rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
+                rect.height = EditorGUIUtility.singleLineHeight;
+                GUIContent label = EditorGUI.BeginProperty(rect, s_SharedDepthBufferLabel, m_SharedDepthBuffer);
+                EditorGUI.BeginChangeCheck();
+                bool boolValue = EditorGUI.Toggle(rect, label, m_SharedDepthBuffer.boolValue);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_SharedDepthBuffer.boolValue = boolValue;
+                }
+                EditorGUI.EndProperty();
+                rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
 
-            rect.height = EditorGUIUtility.singleLineHeight;
-            label = EditorGUI.BeginProperty(rect, s_DashSupportLabel, m_DashSupport);
-            EditorGUI.BeginChangeCheck();
-            boolValue = EditorGUI.Toggle(rect, label, m_DashSupport.boolValue);
-            if (EditorGUI.EndChangeCheck())
+                rect.height = EditorGUIUtility.singleLineHeight;
+                label = EditorGUI.BeginProperty(rect, s_DashSupportLabel, m_DashSupport);
+                EditorGUI.BeginChangeCheck();
+                boolValue = EditorGUI.Toggle(rect, label, m_DashSupport.boolValue);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    m_DashSupport.boolValue = boolValue;
+                }
+                EditorGUI.EndProperty();
+            }
+            else
             {
-                m_DashSupport.boolValue = boolValue;
+                EditorGUI.BeginDisabled(true);
+                EditorGUI.LabelField(rect, s_SharedDepthAndroidInfo.text, EditorStyles.wordWrappedMiniLabel);
+                EditorGUI.EndDisabled();
             }
-            EditorGUI.EndProperty();
-
-            EditorGUI.EndDisabled();
 
             rect.y += rect.height + EditorGUIUtility.standardVerticalSpacing;
 
             return rect;
         }
 
-        public override float GetHeight()
+        public override float GetHeight(BuildTargetGroup target)
         {
-            return (EditorGUIUtility.singleLineHeight * 2.0f) + (EditorGUIUtility.standardVerticalSpacing * 3.0f);
+            if (target != BuildTargetGroup.Android)
+            {
+                return (EditorGUIUtility.singleLineHeight * 2.0f) + (EditorGUIUtility.standardVerticalSpacing * 3.0f);
+            }
+            else
+            {
+                return (EditorGUIUtility.singleLineHeight * 1.0f) + (EditorGUIUtility.standardVerticalSpacing * 2.0f);
+            }
         }
     }
 }

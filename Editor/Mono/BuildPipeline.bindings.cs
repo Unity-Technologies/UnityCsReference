@@ -9,6 +9,7 @@ using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEditor.Build.Reporting;
 using Mono.Cecil;
+using UnityEditor.Scripting.ScriptCompilation;
 
 namespace UnityEditor
 {
@@ -179,6 +180,7 @@ namespace UnityEditor
         internal static extern BuildTargetGroup GetBuildTargetGroupByName(string platform);
 
         internal static extern BuildTarget GetBuildTargetByName(string platform);
+        internal static extern EditorScriptCompilationOptions GetScriptCompileFlags(BuildOptions buildOptions, BuildTarget buildTarget);
 
         [FreeFunction]
         internal static extern string GetBuildTargetGroupDisplayName(BuildTargetGroup targetPlatformGroup);

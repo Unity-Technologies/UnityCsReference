@@ -28,6 +28,7 @@ namespace UnityEditor
             public GUIContent shadowBias = EditorGUIUtility.TrTextContent("Shadow Bias", "Apply a shadow bias to prevent self-shadowing artifacts. The specified value is the proportion of the trail width at each segment.");
             public GUIContent ribbonCount = EditorGUIUtility.TrTextContent("Ribbon Count", "Select how many ribbons to render throughout the Particle System.");
             public GUIContent splitSubEmitterRibbons = EditorGUIUtility.TrTextContent("Split Sub Emitter Ribbons", "When used on a sub emitter, ribbons will connect particles from each parent particle independently.");
+            public GUIContent attachRibbonsToTransform = EditorGUIUtility.TrTextContent("Attach Ribbons to Transform", "Connect each ribbon to the position of the Transform Component.");
 
             public GUIContent[] trailModeOptions =
             {
@@ -62,6 +63,7 @@ namespace UnityEditor
         SerializedProperty m_ShadowBias;
         SerializedProperty m_RibbonCount;
         SerializedProperty m_SplitSubEmitterRibbons;
+        SerializedProperty m_AttachRibbonsToTransform;
 
         public TrailModuleUI(ParticleSystemUI owner, SerializedObject o, string displayName)
             : base(owner, o, "TrailModule", displayName)
@@ -94,6 +96,7 @@ namespace UnityEditor
             m_ShadowBias = GetProperty("shadowBias");
             m_RibbonCount = GetProperty("ribbonCount");
             m_SplitSubEmitterRibbons = GetProperty("splitSubEmitterRibbons");
+            m_AttachRibbonsToTransform = GetProperty("attachRibbonsToTransform");
         }
 
         override public void OnInspectorGUI(InitialModuleUI initial)
@@ -113,6 +116,7 @@ namespace UnityEditor
                 {
                     GUIInt(s_Texts.ribbonCount, m_RibbonCount);
                     GUIToggle(s_Texts.splitSubEmitterRibbons, m_SplitSubEmitterRibbons);
+                    GUIToggle(s_Texts.attachRibbonsToTransform, m_AttachRibbonsToTransform);
                 }
             }
 

@@ -59,7 +59,6 @@ namespace UnityEditor.Experimental.UIElements
 
             if (m_Panel == null)
             {
-                UXMLEditorFactories.RegisterAll();
                 m_Panel = UIElementsUtility.FindOrCreatePanel(m_LastTree, ContextType.Editor, new DataWatchService());
                 if (m_Panel.visualTree.styleSheets == null)
                 {

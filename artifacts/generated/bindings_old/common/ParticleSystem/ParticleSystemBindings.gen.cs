@@ -2971,6 +2971,8 @@ public sealed partial class ParticleSystem : Component
                     public bool generateLightingData { set { SetGenerateLightingData(m_ParticleSystem, value); } get { return GetGenerateLightingData(m_ParticleSystem); } }
                     public int ribbonCount { get { return GetRibbonCount(m_ParticleSystem); } set { SetRibbonCount(m_ParticleSystem, value); } }
                     public float shadowBias { set { SetShadowBias(m_ParticleSystem, value); } get { return GetShadowBias(m_ParticleSystem); } }
+                    public bool splitSubEmitterRibbons { set { SetSplitSubEmitterRibbons(m_ParticleSystem, value); } get { return GetSplitSubEmitterRibbons(m_ParticleSystem); } }
+                    public bool attachRibbonsToTransform { set { SetAttachRibbonsToTransform(m_ParticleSystem, value); } get { return GetAttachRibbonsToTransform(m_ParticleSystem); } }
         
         
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
@@ -3124,6 +3126,22 @@ public sealed partial class ParticleSystem : Component
         [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
         [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
         extern private static  float GetShadowBias (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetSplitSubEmitterRibbons (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetSplitSubEmitterRibbons (ParticleSystem system) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  void SetAttachRibbonsToTransform (ParticleSystem system, bool value) ;
+
+        [UnityEngine.Scripting.GeneratedByOldBindingsGeneratorAttribute] // Temporarily necessary for bindings migration
+        [System.Runtime.CompilerServices.MethodImplAttribute((System.Runtime.CompilerServices.MethodImplOptions)0x1000)]
+        extern private static  bool GetAttachRibbonsToTransform (ParticleSystem system) ;
 
     }
 

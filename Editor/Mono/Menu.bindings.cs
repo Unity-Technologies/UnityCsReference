@@ -16,8 +16,8 @@ namespace UnityEditor
         [NativeMethod("MenuController::GetChecked", true)]
         public static extern bool GetChecked(string menuPath);
 
-        [FreeFunction("MenuController::GetMenuItemShortcuts")]
-        internal static extern void GetMenuItemShortcuts(List<string> outItemNames, List<string> outItemShortcuts);
+        [FreeFunction("MenuController::GetMenuItemDefaultShortcuts")]
+        internal static extern void GetMenuItemDefaultShortcuts(List<string> outItemNames, List<string> outItemDefaultShortcuts);
 
         [FreeFunction("MenuController::SetMenuItemHotkey")]
         internal static extern void SetHotkey(string menuPath, string hotkey);

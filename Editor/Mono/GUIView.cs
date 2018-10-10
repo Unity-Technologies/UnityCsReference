@@ -36,7 +36,6 @@ namespace UnityEditor
             {
                 if (m_Panel == null)
                 {
-                    UXMLEditorFactories.RegisterAll();
                     m_Panel = UIElementsUtility.FindOrCreatePanel(this, ContextType.Editor, DataWatchService.sharedInstance);
                     m_Panel.cursorManager = m_CursorManager;
                     m_Panel.contextualMenuManager = s_ContextualMenuManager;

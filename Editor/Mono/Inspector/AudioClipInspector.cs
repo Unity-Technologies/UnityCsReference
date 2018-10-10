@@ -120,29 +120,26 @@ namespace UnityEditor
 
             AudioClip clip = target as AudioClip;
 
+            bool isEditingMultipleObjects = targets.Length > 1;
+
             using (new EditorGUI.DisabledScope(AudioUtil.IsMovieAudio(clip)))
             {
-                bool isEditingMultipleObjects = targets.Length > 1;
-
-                using (new EditorGUI.DisabledScope(isEditingMultipleObjects))
+                bool oldAutoPlay = m_bAutoPlay;
+                bool newAutoPlay = PreviewGUI.CycleButton(oldAutoPlay ? 1 : 0, s_AutoPlayIcons) != 0;
+                if (oldAutoPlay != newAutoPlay)
                 {
-                    bool oldAutoPlay = isEditingMultipleObjects ? false : m_bAutoPlay;
-                    bool newAutoPlay = PreviewGUI.CycleButton(oldAutoPlay ? 1 : 0, s_AutoPlayIcons) != 0;
-                    if (oldAutoPlay != newAutoPlay)
-                    {
-                        m_bAutoPlay = newAutoPlay;
-                        InspectorWindow.RepaintAllInspectors();
-                    }
+                    m_bAutoPlay = newAutoPlay;
+                    InspectorWindow.RepaintAllInspectors();
+                }
 
-                    bool oldLoop = isEditingMultipleObjects ? false : m_bLoop;
-                    bool newLoop = PreviewGUI.CycleButton(oldLoop ? 1 : 0, s_LoopIcons) != 0;
-                    if (oldLoop != newLoop)
-                    {
-                        m_bLoop = newLoop;
-                        if (playing)
-                            AudioUtil.LoopClip(clip, newLoop);
-                        InspectorWindow.RepaintAllInspectors();
-                    }
+                bool oldLoop = m_bLoop;
+                bool newLoop = PreviewGUI.CycleButton(oldLoop ? 1 : 0, s_LoopIcons) != 0;
+                if (oldLoop != newLoop)
+                {
+                    m_bLoop = newLoop;
+                    if (playing)
+                        AudioUtil.LoopClip(clip, newLoop);
+                    InspectorWindow.RepaintAllInspectors();
                 }
 
                 using (new EditorGUI.DisabledScope(isEditingMultipleObjects && !playing && m_PlayingInspector != this))
@@ -153,14 +150,31 @@ namespace UnityEditor
                     if (newPlaying != curPlaying)
                     {
                         AudioUtil.StopAllClips();
+                        m_PlayingClip = null;
+                        m_PlayingInspector = null;
 
-                        if (newPlaying)
+                        if (newPlaying && !isEditingMultipleObjects)
                         {
                             AudioUtil.PlayClip(clip, 0, m_bLoop);
                             m_PlayingClip = clip;
                             m_PlayingInspector = this;
                         }
                     }
+                }
+            }
+
+            // autoplay start?
+            if (m_bAutoPlay && m_PlayingClip != clip && m_PlayingInspector == this && !isEditingMultipleObjects)
+            {
+                AudioUtil.StopAllClips();
+                m_PlayingClip = null;
+                m_PlayingInspector = null;
+
+                if (!isEditingMultipleObjects)
+                {
+                    AudioUtil.PlayClip(clip, 0, m_bLoop);
+                    m_PlayingClip = clip;
+                    m_PlayingInspector = this;
                 }
             }
         }
@@ -312,16 +326,6 @@ namespace UnityEditor
 
 
                 PreviewGUI.EndScrollView();
-            }
-
-
-            // autoplay start?
-            if (m_bAutoPlay && m_PlayingClip != clip && m_PlayingInspector == this)
-            {
-                AudioUtil.StopAllClips();
-                AudioUtil.PlayClip(clip, 0, m_bLoop);
-                m_PlayingClip = clip;
-                m_PlayingInspector = this;
             }
 
             // force update GUI

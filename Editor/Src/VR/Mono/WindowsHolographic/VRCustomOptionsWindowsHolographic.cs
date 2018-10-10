@@ -61,7 +61,7 @@ namespace UnityEditorInternal.VR
             return rect;
         }
 
-        public override float GetHeight()
+        public override float GetHeight(BuildTargetGroup target)
         {
             return EditorGUIUtility.singleLineHeight * 2.0f;
         }

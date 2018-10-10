@@ -232,6 +232,9 @@ namespace UnityEngine
         }
         public static int GetAllCameras(Camera[] cameras)
         {
+            if (cameras == null)
+                throw new NullReferenceException();
+
             if (cameras.Length < allCamerasCount)
                 throw new ArgumentException("Passed in array to fill with cameras is to small to hold the number of cameras. Use Camera.allCamerasCount to get the needed size.");
             return GetAllCamerasImpl(cameras);

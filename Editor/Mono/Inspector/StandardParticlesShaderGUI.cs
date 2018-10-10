@@ -54,20 +54,18 @@ namespace UnityEditor
             public static GUIContent colorMode = EditorGUIUtility.TrTextContent("Color Mode", "Determines the blending mode between the particle color and the texture albedo.");
             public static GUIContent[] colorNames = Array.ConvertAll(Enum.GetNames(typeof(ColorMode)), item => new GUIContent(item));
 
-            public static GUIContent flipbookMode = EditorGUIUtility.TrTextContent("Flip-Book Mode", "Determines the blending mode used for animated texture sheets.");
-            public static GUIContent[] flipbookNames = Array.ConvertAll(Enum.GetNames(typeof(FlipbookMode)), item => new GUIContent(item));
-
+            public static GUIContent flipbookBlending = EditorGUIUtility.TrTextContent("Flip-Book Frame Blending", "Enables blending between the frames of animated texture sheets.");
             public static GUIContent twoSidedEnabled = EditorGUIUtility.TrTextContent("Two Sided", "Render both front and back faces of the particle geometry.");
 
-            public static GUIContent distortionEnabled = EditorGUIUtility.TrTextContent("Enable Distortion", "Use a grab pass and normal map to simulate refraction.");
+            public static GUIContent distortionEnabled = EditorGUIUtility.TrTextContent("Distortion", "Use a grab pass and normal map to simulate refraction.");
             public static GUIContent distortionStrengthText = EditorGUIUtility.TrTextContent("Strength", "Distortion Strength.");
             public static GUIContent distortionBlendText = EditorGUIUtility.TrTextContent("Blend", "Weighting between albedo and grab pass.");
 
-            public static GUIContent softParticlesEnabled = EditorGUIUtility.TrTextContent("Enable Soft Particles", "Fade out particle geometry when it gets close to the surface of objects written into the depth buffer.");
+            public static GUIContent softParticlesEnabled = EditorGUIUtility.TrTextContent("Soft Particles", "Fade out particle geometry when it gets close to the surface of objects written into the depth buffer.");
             public static GUIContent softParticlesNearFadeDistanceText = EditorGUIUtility.TrTextContent("Near fade", "Soft Particles near fade distance.");
             public static GUIContent softParticlesFarFadeDistanceText = EditorGUIUtility.TrTextContent("Far fade", "Soft Particles far fade distance.");
 
-            public static GUIContent cameraFadingEnabled = EditorGUIUtility.TrTextContent("Enable Camera Fading", "Fade out particle geometry when it gets close to the camera.");
+            public static GUIContent cameraFadingEnabled = EditorGUIUtility.TrTextContent("Camera Fading", "Fade out particle geometry when it gets close to the camera.");
             public static GUIContent cameraNearFadeDistanceText = EditorGUIUtility.TrTextContent("Near fade", "Camera near fade distance.");
             public static GUIContent cameraFarFadeDistanceText = EditorGUIUtility.TrTextContent("Far fade", "Camera far fade distance.");
 
@@ -184,7 +182,7 @@ namespace UnityEditor
                 EditorGUILayout.Space();
                 GUILayout.Label(Styles.mainOptionsText, EditorStyles.boldLabel);
 
-                FlipbookModePopup();
+                FlipbookBlendingPopup();
                 TwoSidedPopup(material);
                 FadingPopup(material);
                 DistortionPopup(material);
@@ -296,17 +294,17 @@ namespace UnityEditor
             }
         }
 
-        void FlipbookModePopup()
+        void FlipbookBlendingPopup()
         {
             EditorGUI.showMixedValue = flipbookMode.hasMixedValue;
-            var mode = (FlipbookMode)flipbookMode.floatValue;
+            var enabled = (flipbookMode.floatValue == (float)FlipbookMode.Blended);
 
             EditorGUI.BeginChangeCheck();
-            mode = (FlipbookMode)EditorGUILayout.Popup(Styles.flipbookMode, (int)mode, Styles.flipbookNames);
+            enabled = EditorGUILayout.Toggle(Styles.flipbookBlending, enabled);
             if (EditorGUI.EndChangeCheck())
             {
                 m_MaterialEditor.RegisterPropertyChangeUndo("Flip-Book Mode");
-                flipbookMode.floatValue = (float)mode;
+                flipbookMode.floatValue = enabled ? (float)FlipbookMode.Blended : (float)FlipbookMode.Simple;
             }
 
             EditorGUI.showMixedValue = false;

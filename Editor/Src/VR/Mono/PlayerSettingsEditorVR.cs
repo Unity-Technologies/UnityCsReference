@@ -160,6 +160,8 @@ namespace UnityEditorInternal.VR
 
                     VuforiaGUI(targetGroup);
 
+                    RemotingWSAHolographicGUI(targetGroup);
+
                     Stereo360CaptureGUI(targetGroup);
 
                     ErrorOnARDeviceIncompatibility(targetGroup);
@@ -168,6 +170,11 @@ namespace UnityEditorInternal.VR
                 InstallGUI(targetGroup);
             }
             m_Settings.EndSettingsBox();
+        }
+
+        internal bool TargetGroupSupportsWSAHolographicRemoting(BuildTargetGroup targetGroup)
+        {
+            return targetGroup == BuildTargetGroup.WSA;
         }
 
         private void DevicesGUI(BuildTargetGroup targetGroup)
@@ -474,7 +481,7 @@ namespace UnityEditorInternal.VR
             VRCustomOptions customOptions;
             if (m_CustomOptions.TryGetValue(name, out customOptions))
             {
-                customOptionsHeight = customOptions.IsExpanded ? customOptions.GetHeight() + EditorGUI.kControlVerticalSpacing : 0.0f;
+                customOptionsHeight = customOptions.IsExpanded ? customOptions.GetHeight(target) + EditorGUI.kControlVerticalSpacing : 0.0f;
             }
 
             return list.elementHeight + customOptionsHeight;
@@ -610,6 +617,27 @@ namespace UnityEditorInternal.VR
             if (shouldDisableScope)
             {
                 EditorGUILayout.HelpBox("Vuforia Augmented Reality is required when using the Vuforia Virtual Reality SDK.", MessageType.Info);
+            }
+        }
+
+        internal void RemotingWSAHolographicGUI(BuildTargetGroup targetGroup)
+        {
+            if (!TargetGroupSupportsWSAHolographicRemoting(targetGroup))
+                return;
+            var shouldEnableScope = VREditor.GetVREnabledOnTargetGroup(targetGroup) && GetVRDeviceElementIsInList(targetGroup, "WindowsMR");
+            using (new EditorGUI.DisabledScope(!shouldEnableScope))
+            {
+                var remotingEnabled = PlayerSettings.GetWsaHolographicRemotingEnabled();
+                EditorGUI.BeginChangeCheck();
+                remotingEnabled = EditorGUILayout.Toggle(EditorGUIUtility.TrTextContent("WSA Holographic Remoting Supported"), remotingEnabled);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    PlayerSettings.SetWsaHolographicRemotingEnabled(remotingEnabled);
+                }
+            }
+            if (shouldEnableScope)
+            {
+                EditorGUILayout.HelpBox("WindowsMR is required when using WSA Holographic Remoting.", MessageType.Info);
             }
         }
     }

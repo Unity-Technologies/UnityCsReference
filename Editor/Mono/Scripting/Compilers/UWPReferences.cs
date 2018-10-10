@@ -31,20 +31,22 @@ namespace UnityEditor.Scripting.Compilers
     {
         public readonly Version Version;
         public readonly Version MinVSVersion;
+        public readonly IEnumerable<PreviousUWPSDK> PreviousSDKs;
 
-        public UWPSDK(Version version, Version minVSVersion)
+        public UWPSDK(Version version, Version minVSVersion, IEnumerable<PreviousUWPSDK> previousSDKs)
         {
             Version = version;
             MinVSVersion = minVSVersion;
+            PreviousSDKs = previousSDKs;
         }
     }
 
-    internal class PreviousSDKVersion
+    internal class PreviousUWPSDK
     {
-        public readonly string Version;
+        public readonly Version Version;
         public readonly bool DefaultFallback;
 
-        public PreviousSDKVersion(string version, bool defaultFallback)
+        public PreviousUWPSDK(Version version, bool defaultFallback)
         {
             Version = version;
             DefaultFallback = defaultFallback;
@@ -71,13 +73,19 @@ namespace UnityEditor.Scripting.Compilers
             }
         }
 
-        public static string[] GetReferences(Version sdkVersion)
+        private static readonly Version kMinimumSupportedUWPVersion = new Version(10, 0, 10240, 0);
+        private static readonly PreviousUWPSDK kMinimumSupportedPreviousUWPSDK = new PreviousUWPSDK(kMinimumSupportedUWPVersion, true);
+        private static readonly UWPSDK kMinimumSupportedUWPSDK = new UWPSDK(kMinimumSupportedUWPVersion, new Version(14, 0), new[] { kMinimumSupportedPreviousUWPSDK });
+
+        public static UWPSDK MinimumSupportedUWPSDK { get { return kMinimumSupportedUWPSDK; } }
+
+        public static string[] GetReferences(UWPSDK sdk)
         {
             var folder = GetWindowsKit10();
             if (string.IsNullOrEmpty(folder))
                 return new string[0];
 
-            var version = SdkVersionToString(sdkVersion);
+            var version = SdkVersionToString(sdk.Version);
             var references = new HashSet<string>(StringComparer.InvariantCultureIgnoreCase);
 
             var windowsWinMd = CombinePaths(folder, "UnionMetadata", version, "Facade", "Windows.winmd");
@@ -102,13 +110,13 @@ namespace UnityEditor.Scripting.Compilers
             return references.ToArray();
         }
 
-        public static IEnumerable<UWPExtensionSDK> GetExtensionSDKs(Version sdkVersion)
+        public static IEnumerable<UWPExtensionSDK> GetExtensionSDKs(UWPSDK sdk)
         {
             var windowsKit10Directory = GetWindowsKit10();
             if (string.IsNullOrEmpty(windowsKit10Directory))
                 return new UWPExtensionSDK[0];
 
-            return GetExtensionSDKs(windowsKit10Directory, SdkVersionToString(sdkVersion));
+            return GetExtensionSDKs(windowsKit10Directory, SdkVersionToString(sdk.Version));
         }
 
         static string SdkVersionToString(Version version)
@@ -125,17 +133,17 @@ namespace UnityEditor.Scripting.Compilers
             return sdkVersion;
         }
 
-        public static IEnumerable<KeyValuePair<UWPSDK, IEnumerable<KeyValuePair<string, PreviousSDKVersion>>>> GetInstalledSDKs()
+        public static IEnumerable<UWPSDK> GetInstalledSDKs()
         {
             var windowsKit10Directory = GetWindowsKit10();
             if (string.IsNullOrEmpty(windowsKit10Directory))
-                return Enumerable.Empty<KeyValuePair<UWPSDK, IEnumerable<KeyValuePair<string, PreviousSDKVersion>>>>();
+                return Enumerable.Empty<UWPSDK>();
 
             var platformsUAP = CombinePaths(windowsKit10Directory, "Platforms", "UAP");
             if (!Directory.Exists(platformsUAP))
-                return Enumerable.Empty<KeyValuePair<UWPSDK, IEnumerable<KeyValuePair<string, PreviousSDKVersion>>>>();
+                return Enumerable.Empty<UWPSDK>();
 
-            var allSDKs = new Dictionary<UWPSDK, IEnumerable<KeyValuePair<string, PreviousSDKVersion>>>();
+            var allSDKs = new List<UWPSDK>();
 
             var filesUnderPlatformsUAP = Directory.GetFiles(platformsUAP, "*", SearchOption.AllDirectories);
             var allPlatformXmlFiles = filesUnderPlatformsUAP.Where(f => string.Equals("Platform.xml", Path.GetFileName(f), StringComparison.OrdinalIgnoreCase));
@@ -158,46 +166,64 @@ namespace UnityEditor.Scripting.Compilers
                     Version version;
                     if (FindVersionInNode(platformElement, out version))
                     {
+                        if (version < kMinimumSupportedUWPVersion)
+                            continue;
+
                         var minVSVersionString = platformElement.Elements("MinimumVisualStudioVersion").Select(e => e.Value).FirstOrDefault();
 
                         // Get supported previous versionss
                         var previousVersionPath = Path.Combine(Path.GetDirectoryName(platformXmlFile), "PreviousPlatforms.xml");
-                        var previousVersions = new SortedList<string, PreviousSDKVersion>();
+                        var previousVersions = new List<PreviousUWPSDK>();
 
                         if (File.Exists(previousVersionPath))
                         {
+                            XNamespace xn = "http://microsoft.com/schemas/Windows/SDK/PreviousPlatforms";
+                            XDocument previousPlatformsDocument = null;
+
                             try
                             {
-                                XNamespace xn = "http://microsoft.com/schemas/Windows/SDK/PreviousPlatforms";
-                                var previousPlatformsDocument = XDocument.Load(previousVersionPath);
-
-                                foreach (XElement previousPlatformElement in previousPlatformsDocument.Element(xn + "PreviousPlatforms").Elements(xn + "ApplicationPlatform"))
-                                {
-                                    var previousVersion = previousPlatformElement.Attribute("version").Value;
-                                    bool isDefault;
-
-                                    if (!bool.TryParse(previousPlatformElement.Attribute("IsDefaultFallback").Value, out isDefault))
-                                    {
-                                        isDefault = false;
-                                    }
-
-                                    previousVersions.Add(previousVersion, new PreviousSDKVersion(previousVersion, isDefault));
-                                }
+                                previousPlatformsDocument = XDocument.Load(previousVersionPath);
                             }
                             catch
                             {
-                                // Ignore exception. We'll just use the default below.
+                            }
+
+                            if (previousPlatformsDocument != null)
+                            {
+                                var previousPlatformsElement = previousPlatformsDocument.Element(xn + "PreviousPlatforms");
+                                if (previousPlatformsElement != null)
+                                {
+                                    foreach (XElement previousPlatformElement in previousPlatformsElement.Elements(xn + "ApplicationPlatform"))
+                                    {
+                                        var versionAttribute = previousPlatformElement.Attribute("version");
+                                        if (versionAttribute != null)
+                                        {
+                                            var previousVersionString = versionAttribute.Value;
+                                            bool isDefault = false;
+
+                                            var isDefaultFallbackAttribute = previousPlatformElement.Attribute("IsDefaultFallback");
+                                            if (isDefaultFallbackAttribute != null)
+                                                bool.TryParse(isDefaultFallbackAttribute.Value, out isDefault);
+
+                                            var previousVersion = TryParseVersion(previousVersionString);
+                                            if (previousVersion != null && previousVersion >= kMinimumSupportedUWPVersion)
+                                                previousVersions.Add(new PreviousUWPSDK(previousVersion, isDefault));
+                                        }
+                                    }
+                                }
                             }
                         }
 
                         if (previousVersions.Count == 0)
                         {
-                            // For previous versions, only support the current version if no PreviousVersions.xml was found.
-                            previousVersions.Add(version.ToString(), new PreviousSDKVersion(version.ToString(), true));
+                            // For previous versions, only support the current version and our minimum supported version if no PreviousVersions.xml was found.
+                            previousVersions.Add(new PreviousUWPSDK(version, true));
+
+                            if (version > kMinimumSupportedUWPVersion)
+                                previousVersions.Add(new PreviousUWPSDK(kMinimumSupportedUWPVersion, false));
                         }
 
-                        previousVersions.Reverse();
-                        allSDKs.Add(new UWPSDK(version, TryParseVersion(minVSVersionString)), previousVersions);
+                        allSDKs.Add(new UWPSDK(version, TryParseVersion(minVSVersionString), previousVersions));
                     }
                 }
             }

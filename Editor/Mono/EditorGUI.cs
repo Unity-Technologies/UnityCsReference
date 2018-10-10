@@ -2536,7 +2536,7 @@ namespace UnityEditor
                 if (sliderBackground != null && Event.current.type == EventType.Repaint)
                 {
                     var bgRect = sliderStyle.overflow.Add(sliderStyle.padding.Remove(sliderRect));
-                    Graphics.DrawTexture(bgRect, sliderBackground, new Rect(.5f / sliderBackground.width, .5f / sliderBackground.height, 1 - 1f / sliderBackground.width, 1 - 1f / sliderBackground.height), 0, 0, 0, 0, Color.grey);
+                    Graphics.DrawTexture(bgRect, sliderBackground, new Rect(.5f / sliderBackground.width, .5f / sliderBackground.height, 1 - 1f / sliderBackground.width, 1 - 1f / sliderBackground.height), 0, 0, 0, 0, new Color(0.5f, 0.5f, 0.5f, 0.5f));
                 }
 
                 newSliderValue = GUI.Slider(sliderRect, newSliderValue, 0, remapLeft, remapRight, sliderStyle, showMixedValue ? "SliderMixed" : thumbStyle, true, sliderId);

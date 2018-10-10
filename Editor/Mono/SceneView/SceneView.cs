@@ -412,6 +412,9 @@ namespace UnityEditor
         static Shader s_ShowMipsShader;
         static Shader s_ShowTextureStreamingShader;
         static Shader s_AuraShader;
+        static Shader s_BuildFilterShader;
+        static Material s_FadeMaterial;
+        static Material s_ApplyFilterMaterial;
         static Texture2D s_MipColorsTexture;
 
         // Handle Dragging of stuff over scene view
@@ -1317,31 +1320,7 @@ namespace UnityEditor
             if (UseSceneFiltering())
             {
                 if (evt.type == EventType.Repaint)
-                {
-                    // First pass: Draw objects which do not meet the search filter with grayscale image effect.
-                    Handles.EnableCameraFx(m_Camera, true);
-
-                    Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowRest);
-
-                    float fade = Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
-                    Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
-                    Handles.DrawCameraFade(m_Camera, fade);
-
-                    // Second pass: Draw aura for objects which do meet search filter, but are occluded.
-                    Handles.EnableCameraFx(m_Camera, false);
-                    Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowFiltered);
-                    if (!s_AuraShader)
-                        s_AuraShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewAura.shader") as Shader;
-                    m_Camera.SetReplacementShader(s_AuraShader, "");
-                    Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
-
-                    // Third pass: Draw objects which do meet filter normally
-                    m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
-                    Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
-
-                    if (fade < 1)
-                        Repaint();
-                }
+                    RenderFilteredScene(groupSpaceCameraRect);
 
                 if (evt.type == EventType.Repaint)
                     RenderTexture.active = null;
@@ -1366,6 +1345,73 @@ namespace UnityEditor
                 Handles.DrawCameraStep1(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode, gridParam);
                 DrawRenderModeOverlay(groupSpaceCameraRect);
             }
+        }
+
+        void RenderFilteredScene(Rect groupSpaceCameraRect)
+        {
+            var oldTargetTexture = m_Camera.targetTexture;
+            var oldDepthTextureMode = m_Camera.depthTextureMode;
+            var oldRenderingPath = m_Camera.renderingPath;
+
+            // First pass: Draw the scene normally in destination render textsure
+            DoClearCamera(groupSpaceCameraRect);
+            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
+
+            // Second pass: Blit the scene faded out in a different render texture
+            var fadedDesc = m_SceneTargetTexture.descriptor;
+            var fadedRT = RenderTexture.GetTemporary(fadedDesc);
+            fadedRT.name = "FadedRT";
+
+            float fade = Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
+            if (!s_FadeMaterial)
+                s_FadeMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewGrayscaleEffectFade.mat") as Material;
+            s_FadeMaterial.SetFloat("_Fade", fade);
+            Graphics.Blit(m_SceneTargetTexture, fadedRT, s_FadeMaterial);
+
+            // Third pass: Draw aura for objects which meet the search filter, but are occluded.
+            m_Camera.renderingPath = RenderingPath.Forward;
+            if (!s_AuraShader)
+                s_AuraShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewAura.shader") as Shader;
+            m_Camera.SetReplacementShader(s_AuraShader, "");
+            m_Camera.SetTargetBuffers(fadedRT.colorBuffer, m_SceneTargetTexture.depthBuffer);
+            m_Camera.depthTextureMode = DepthTextureMode.None;
+            Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowFiltered);
+            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
+
+            // Fourth pass: Draw objects which do meet filter in a mask
+            var maskDesc = m_SceneTargetTexture.descriptor;
+            maskDesc.colorFormat = RenderTextureFormat.R8;
+            maskDesc.depthBufferBits = 0;
+            var maskRT = RenderTexture.GetTemporary(maskDesc);
+            maskRT.name = "MaskRT";
+
+            RenderTexture.active = maskRT;
+            GL.Clear(false, true, Color.clear);
+
+            if (!s_BuildFilterShader)
+                s_BuildFilterShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewBuildFilter.shader") as Shader;
+            m_Camera.SetReplacementShader(s_BuildFilterShader, "");
+            m_Camera.SetTargetBuffers(maskRT.colorBuffer, m_SceneTargetTexture.depthBuffer);
+            m_Camera.depthTextureMode = DepthTextureMode.None;
+            Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
+
+            // Final pass: Blit the faded scene where the mask isn't set
+            if (!s_ApplyFilterMaterial)
+                s_ApplyFilterMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewApplyFilter.mat") as Material;
+            s_ApplyFilterMaterial.SetTexture("_MaskTex", maskRT);
+            Graphics.Blit(fadedRT, m_SceneTargetTexture, s_ApplyFilterMaterial);
+
+            RenderTexture.ReleaseTemporary(maskRT);
+            RenderTexture.ReleaseTemporary(fadedRT);
+
+            // Reset camera
+            m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
+            m_Camera.renderingPath = oldRenderingPath;
+            m_Camera.targetTexture = oldTargetTexture;
+            m_Camera.depthTextureMode = oldDepthTextureMode;
+
+            if (fade < 1)
+                Repaint();
         }
 
         void SetupPBRValidation()
@@ -2222,9 +2268,7 @@ namespace UnityEditor
 
             if (Event.current.type == EventType.Repaint)
             {
-                bool enableImageEffects = false;
-                if (!UseSceneFiltering())
-                    enableImageEffects = m_CameraMode.drawMode == DrawCameraMode.Textured && sceneViewState.showImageEffects;
+                bool enableImageEffects = m_CameraMode.drawMode == DrawCameraMode.Textured && sceneViewState.showImageEffects;
                 UpdateImageEffects(enableImageEffects);
             }
 

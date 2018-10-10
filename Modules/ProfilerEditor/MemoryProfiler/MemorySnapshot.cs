@@ -10,12 +10,10 @@ using UnityEditorInternal.Profiling.Memory.Experimental.FileFormat;
 
 namespace UnityEditor.Profiling.Memory.Experimental
 {
-    // Note: this snapshot is completely serializable by unity's serializer.
     // !!!!! NOTE: Keep in sync with Runtime\Profiler\MemorySnapshots.cpp
-    public class PackedMemorySnapshot : ISerializationCallbackReceiver
+    public class PackedMemorySnapshot : IDisposable
     {
-        private static readonly UInt64 kMinSupportedVersion = 7;
-
+        static readonly UInt64 kMinSupportedVersion = 7;
         public static PackedMemorySnapshot Load(string path)
         {
             MemorySnapshotFileReader reader = new MemorySnapshotFileReader(path);
@@ -42,7 +40,6 @@ namespace UnityEditor.Profiling.Memory.Experimental
             FileUtil.CopyFileIfExists(path, writePath, true);
         }
 
-        [SerializeField]
         MemorySnapshotFileReader m_Reader = null;
 
         public ConnectionEntries connections { get; internal set; }
@@ -84,15 +81,6 @@ namespace UnityEditor.Profiling.Memory.Experimental
             typeDescriptions = new TypeDescriptionEntries(m_Reader);
         }
 
-        public void OnBeforeSerialize()
-        {
-        }
-
-        public void OnAfterDeserialize()
-        {
-            BuildEntries();
-        }
-
         internal MemorySnapshotFileReader GetReader()
         {
             return m_Reader;
@@ -106,11 +94,11 @@ namespace UnityEditor.Profiling.Memory.Experimental
             }
         }
 
-        public UnityEngine.Profiling.Memory.Experimental.MetaData metadata
+        public MetaData metadata
         {
             get
             {
-                byte[] array = m_Reader.GetDataSingle<byte[]>(EntryType.Metadata_UserMetadata, ConversionFunctions.ToByteArray);
+                byte[] array = m_Reader.GetDataSingle(EntryType.Metadata_UserMetadata, ConversionFunctions.ToByteArray);
                 // decoded as
                 //   content_data_length
                 //   content_data
@@ -228,7 +216,7 @@ namespace UnityEditor.Profiling.Memory.Experimental
             }
         }
 
-        public UnityEngine.Profiling.Memory.Experimental.CaptureFlags captureFlags
+        public CaptureFlags captureFlags
         {
             get
             {
@@ -241,6 +229,31 @@ namespace UnityEditor.Profiling.Memory.Experimental
             get
             {
                 return m_Reader.GetDataSingle(EntryType.Metadata_VirtualMachineInformation, ConversionFunctions.ToVirtualMachineInformation);
+            }
+        }
+
+        ~PackedMemorySnapshot()
+        {
+            Dispose(false);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                if (m_Reader == null)
+                {
+                    return;
+                }
+
+                m_Reader.Dispose();
+                m_Reader = null;
             }
         }
     }

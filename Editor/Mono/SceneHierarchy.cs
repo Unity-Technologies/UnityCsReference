@@ -493,8 +493,6 @@ namespace UnityEditor
 
             if (m_TreeViewKeyboardControlID == 0)
                 m_TreeViewKeyboardControlID = EditorGUIUtility.GetPermanentControlID();
-
-            DoPingRequest();
         }
 
         public virtual void OnDisable()
