@@ -314,11 +314,11 @@ namespace UnityEditorInternal
             return sb.ToString();
         }
 
-        static public void InvokeFromBuildPlayer(BuildTarget buildTarget, RuntimeClassRegistry usedClasses)
+        static public void InvokeFromBuildPlayer(BuildTarget buildTarget, RuntimeClassRegistry usedClasses, BuildReport report)
         {
             var stagingAreaData = Paths.Combine("Temp", "StagingArea", "Data");
 
-            var platformProvider = new BaseIl2CppPlatformProvider(buildTarget, Path.Combine(stagingAreaData, "Libraries"));
+            var platformProvider = new BaseIl2CppPlatformProvider(buildTarget, Path.Combine(stagingAreaData, "Libraries"), report);
 
             var managedAssemblyFolderPath = Path.GetFullPath(Path.Combine(stagingAreaData, "Managed"));
             AssemblyStripper.StripAssemblies(managedAssemblyFolderPath, platformProvider, usedClasses);

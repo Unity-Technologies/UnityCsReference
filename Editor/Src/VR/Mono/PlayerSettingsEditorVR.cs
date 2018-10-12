@@ -563,18 +563,6 @@ namespace UnityEditorInternal.VR
 
             // Google Tango settings
             EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
-
-            if (PlayerSettings.Android.ARCoreEnabled)
-            {
-                EditorGUI.indentLevel++;
-
-                if ((int)PlayerSettings.Android.minSdkVersion < 24)
-                {
-                    GUIContent tangoAndroidWarning = EditorGUIUtility.TrTextContent("ARCore requires 'Minimum API Level' to be at least Android 7.0");
-                    EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
-                }
-                EditorGUI.indentLevel--;
-            }
         }
 
         internal void VuforiaGUI(BuildTargetGroup targetGroup)

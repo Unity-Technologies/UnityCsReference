@@ -122,9 +122,9 @@ namespace UnityEditorInternal
                 PlayerSettings.GetScriptingBackend(targetGroup) == ScriptingImplementation.IL2CPP;
         }
 
-        internal static bool EnableIL2CPPDebugger(BuildTargetGroup targetGroup)
+        internal static bool EnableIL2CPPDebugger(IIl2CppPlatformProvider provider, BuildTargetGroup targetGroup)
         {
-            if (!EditorUserBuildSettings.allowDebugging || !EditorUserBuildSettings.development)
+            if (!provider.allowDebugging || !provider.development)
                 return false;
 
             switch (PlayerSettings.GetApiCompatibilityLevel(targetGroup))
@@ -308,7 +308,7 @@ namespace UnityEditorInternal
                     break;
             }
 
-            if (IL2CPPUtils.EnableIL2CPPDebugger(buildTargetGroup) && platformSupportsManagedDebugging)
+            if (IL2CPPUtils.EnableIL2CPPDebugger(m_PlatformProvider, buildTargetGroup) && platformSupportsManagedDebugging)
                 arguments.Add("--enable-debugger");
 
             var il2CppNativeCodeBuilder = m_PlatformProvider.CreateIl2CppNativeCodeBuilder();
@@ -438,6 +438,8 @@ namespace UnityEditorInternal
         string moduleStrippingInformationFolder { get; }
         bool supportsEngineStripping { get; }
         bool supportsManagedDebugging { get; }
+        bool development { get; }
+        bool allowDebugging { get; }
 
         BuildReport buildReport { get; }
         string[] includePaths { get; }
@@ -450,10 +452,11 @@ namespace UnityEditorInternal
 
     internal class BaseIl2CppPlatformProvider : IIl2CppPlatformProvider
     {
-        public BaseIl2CppPlatformProvider(BuildTarget target, string libraryFolder)
+        public BaseIl2CppPlatformProvider(BuildTarget target, string libraryFolder, BuildReport buildReport)
         {
             this.target = target;
             this.libraryFolder = libraryFolder;
+            this.buildReport = buildReport;
         }
 
         public virtual BuildTarget target { get; private set; }
@@ -491,9 +494,30 @@ namespace UnityEditorInternal
             get { return false; }
         }
 
-        public virtual BuildReport buildReport
+
+        public virtual bool development
         {
-            get { return null; }
+            get
+            {
+                if (buildReport != null)
+                    return (buildReport.summary.options & BuildOptions.Development) == BuildOptions.Development;
+                return false;
+            }
+        }
+
+        public virtual bool allowDebugging
+        {
+            get
+            {
+                if (buildReport != null)
+                    return (buildReport.summary.options & BuildOptions.AllowDebugging) == BuildOptions.AllowDebugging;
+                return false;
+            }
+        }
+
+        public BuildReport buildReport
+        {
+            get; private set;
         }
 
         public virtual string[] includePaths

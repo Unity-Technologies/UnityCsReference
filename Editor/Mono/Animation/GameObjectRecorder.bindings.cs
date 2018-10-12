@@ -45,7 +45,17 @@ namespace UnityEditor.Experimental.Animations
         extern public GameObject root { get; }
 
         // Bindings.
-        extern public void Bind(EditorCurveBinding binding);
+        public void Bind(EditorCurveBinding binding)
+        {
+            if (!binding.type.IsSubclassOf(typeof(UnityEngine.Object)))
+                throw new InvalidCastException("Binding type should derive from Unity type.");
+
+            BindInternal(binding);
+        }
+
+        [NativeMethod("Bind")]
+        extern private void BindInternal(EditorCurveBinding binding);
+
         extern public void BindAll(GameObject target, bool recursive);
         extern public void BindComponent([NotNull] Component component);
 
