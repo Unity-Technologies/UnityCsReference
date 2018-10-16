@@ -190,49 +190,49 @@ namespace UnityEditor
         ShortcutContext m_ShortcutContext = new ShortcutContext { active = true };
 
         [FormerlyPrefKeyAs("Grid Painting/Select", "s")]
-        [Shortcut("Grid Painting/Select", typeof(ShortcutContext), "s")]
+        [Shortcut("Grid Painting/Select", typeof(ShortcutContext), KeyCode.S)]
         static void GridSelectKey()
         {
             ToggleEditMode(EditMode.SceneViewEditMode.GridSelect);
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Move", "m")]
-        [Shortcut("Grid Painting/Move", typeof(ShortcutContext), "m")]
+        [Shortcut("Grid Painting/Move", typeof(ShortcutContext), KeyCode.M)]
         static void GridMoveKey()
         {
             ToggleEditMode(EditMode.SceneViewEditMode.GridMove);
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Brush", "b")]
-        [Shortcut("Grid Painting/Brush", typeof(ShortcutContext), "b")]
+        [Shortcut("Grid Painting/Brush", typeof(ShortcutContext), KeyCode.B)]
         static void GridBrushKey()
         {
             ToggleEditMode(EditMode.SceneViewEditMode.GridPainting);
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Rectangle", "u")]
-        [Shortcut("Grid Painting/Rectangle", typeof(ShortcutContext), "u")]
+        [Shortcut("Grid Painting/Rectangle", typeof(ShortcutContext), KeyCode.U)]
         static void GridRectangleKey()
         {
             ToggleEditMode(EditMode.SceneViewEditMode.GridBox);
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Picker", "i")]
-        [Shortcut("Grid Painting/Picker", typeof(ShortcutContext), "i")]
+        [Shortcut("Grid Painting/Picker", typeof(ShortcutContext), KeyCode.I)]
         static void GridPickerKey()
         {
             ToggleEditMode(EditMode.SceneViewEditMode.GridPicking);
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Erase", "d")]
-        [Shortcut("Grid Painting/Erase", typeof(ShortcutContext), "d")]
+        [Shortcut("Grid Painting/Erase", typeof(ShortcutContext), KeyCode.D)]
         static void GridEraseKey()
         {
             ToggleEditMode(EditMode.SceneViewEditMode.GridEraser);
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Fill", "g")]
-        [Shortcut("Grid Painting/Fill", typeof(ShortcutContext), "g")]
+        [Shortcut("Grid Painting/Fill", typeof(ShortcutContext), KeyCode.G)]
         static void GridFillKey()
         {
             ToggleEditMode(EditMode.SceneViewEditMode.GridFloodFill);
@@ -245,7 +245,7 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Rotate Clockwise", "[")]
-        [Shortcut("Grid Painting/Rotate Clockwise", typeof(ShortcutContext), "[")]
+        [Shortcut("Grid Painting/Rotate Clockwise", typeof(ShortcutContext), KeyCode.LeftBracket)]
         static void RotateBrushClockwise()
         {
             if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
@@ -253,7 +253,7 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Rotate Anti-Clockwise", "]")]
-        [Shortcut("Grid Painting/Rotate Anti-Clockwise", typeof(ShortcutContext), "]")]
+        [Shortcut("Grid Painting/Rotate Anti-Clockwise", typeof(ShortcutContext), KeyCode.RightBracket)]
         static void RotateBrushAntiClockwise()
         {
             if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
@@ -267,7 +267,7 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Flip X", "#[")]
-        [Shortcut("Grid Painting/Flip X", typeof(ShortcutContext), "#[")]
+        [Shortcut("Grid Painting/Flip X", typeof(ShortcutContext), KeyCode.LeftBracket, ShortcutModifiers.Shift)]
         static void FlipBrushX()
         {
             if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
@@ -275,7 +275,7 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Grid Painting/Flip Y", "#]")]
-        [Shortcut("Grid Painting/Flip Y", typeof(ShortcutContext), "#]")]
+        [Shortcut("Grid Painting/Flip Y", typeof(ShortcutContext), KeyCode.RightBracket, ShortcutModifiers.Shift)]
         static void FlipBrushY()
         {
             if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
@@ -293,14 +293,14 @@ namespace UnityEditor
             }
         }
 
-        [Shortcut("Grid Painting/Increase Z", typeof(ShortcutContext), "-")]
+        [Shortcut("Grid Painting/Increase Z", typeof(ShortcutContext), KeyCode.Minus)]
         static void IncreaseBrushZ()
         {
             if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
                 ChangeBrushZ(1);
         }
 
-        [Shortcut("Grid Painting/Decrease Z", typeof(ShortcutContext), "=")]
+        [Shortcut("Grid Painting/Decrease Z", typeof(ShortcutContext), KeyCode.Equals)]
         static void DecreaseBrushZ()
         {
             if (GridPaintingState.gridBrush != null && GridPaintingState.activeGrid != null)
@@ -710,7 +710,7 @@ namespace UnityEditor
             GridPaletteBrushes.FlushCache();
             EditMode.editModeStarted += OnEditModeStart;
             EditMode.editModeEnded += OnEditModeEnd;
-            ShortcutIntegration.instance.profileManager.shortcutsModified += UpdateTooltips;
+            ShortcutIntegration.instance.profileManager.shortcutBindingChanged += UpdateTooltips;
             GridSelection.gridSelectionChanged += OnGridSelectionChanged;
             GridPaintingState.RegisterPainterInterest(this);
             GridPaintingState.scenePaintTargetChanged += OnScenePaintTargetChanged;
@@ -741,7 +741,7 @@ namespace UnityEditor
             ShortcutIntegration.instance.contextManager.RegisterToolContext(m_ShortcutContext);
         }
 
-        private static void UpdateTooltips(IShortcutProfileManager obj)
+        private static void UpdateTooltips(IShortcutProfileManager obj, Identifier identifier, ShortcutBinding oldBinding, ShortcutBinding newBinding)
         {
             Styles.UpdateTooltips();
         }
@@ -802,7 +802,7 @@ namespace UnityEditor
 
             EditMode.editModeStarted -= OnEditModeStart;
             EditMode.editModeEnded -= OnEditModeEnd;
-            ShortcutIntegration.instance.profileManager.shortcutsModified -= UpdateTooltips;
+            ShortcutIntegration.instance.profileManager.shortcutBindingChanged -= UpdateTooltips;
             Tools.onToolChanged -= ToolChanged;
             GridSelection.gridSelectionChanged -= OnGridSelectionChanged;
             SceneView.duringSceneGui -= OnSceneViewGUI;

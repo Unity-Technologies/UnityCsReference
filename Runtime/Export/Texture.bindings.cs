@@ -32,14 +32,14 @@ namespace UnityEngine
         extern private TextureDimension GetDimension();
 
         // Note: not implemented setters in base class since some classes do need to actually implement them (e.g. RenderTexture)
-        virtual public int width  { get { return GetDataWidth(); }  set { throw new NotImplementedException(); } }
+        virtual public int width { get { return GetDataWidth(); } set { throw new NotImplementedException(); } }
         virtual public int height { get { return GetDataHeight(); } set { throw new NotImplementedException(); } }
         virtual public TextureDimension dimension { get { return GetDimension(); } set { throw new NotImplementedException(); } }
 
         extern virtual public bool isReadable { get; }
 
         // Note: getter for "wrapMode" returns the U mode on purpose
-        extern public TextureWrapMode wrapMode  {[NativeName("GetWrapModeU")] get; set; }
+        extern public TextureWrapMode wrapMode { [NativeName("GetWrapModeU")] get; set; }
 
         extern public TextureWrapMode wrapModeU { get; set; }
         extern public TextureWrapMode wrapModeV { get; set; }
@@ -47,7 +47,7 @@ namespace UnityEngine
         extern public FilterMode filterMode { get; set; }
         extern public int anisoLevel { get; set; }
         extern public float mipMapBias { get; set; }
-        extern public Vector2 texelSize {[NativeName("GetNpotTexelSize")] get; }
+        extern public Vector2 texelSize { [NativeName("GetNpotTexelSize")] get; }
         extern public IntPtr GetNativeTexturePtr();
         [Obsolete("Use GetNativeTexturePtr instead.", false)]
         public int GetNativeTextureID() { return (int)GetNativeTexturePtr(); }
@@ -128,13 +128,17 @@ namespace UnityEngine
 
         extern public static bool streamingTextureForceLoadAll
         {
-            [FreeFunction(Name = "GetTextureStreamingManager().GetForceLoadAll")] get;
-            [FreeFunction(Name = "GetTextureStreamingManager().SetForceLoadAll")] set;
+            [FreeFunction(Name = "GetTextureStreamingManager().GetForceLoadAll")]
+            get;
+            [FreeFunction(Name = "GetTextureStreamingManager().SetForceLoadAll")]
+            set;
         }
         extern public static bool streamingTextureDiscardUnusedMips
         {
-            [FreeFunction(Name = "GetTextureStreamingManager().GetDiscardUnusedMips")] get;
-            [FreeFunction(Name = "GetTextureStreamingManager().SetDiscardUnusedMips")] set;
+            [FreeFunction(Name = "GetTextureStreamingManager().GetDiscardUnusedMips")]
+            get;
+            [FreeFunction(Name = "GetTextureStreamingManager().SetDiscardUnusedMips")]
+            set;
         }
     }
 
@@ -143,8 +147,8 @@ namespace UnityEngine
     [UsedByNativeCode]
     public sealed partial class Texture2D : Texture
     {
-        extern public int mipmapCount {[NativeName("CountDataMipmaps")] get; }
-        extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
+        extern public int mipmapCount { [NativeName("CountDataMipmaps")] get; }
+        extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D whiteTexture { get; }
         [StaticAccessor("builtintex", StaticAccessorType.DoubleColon)] extern public static Texture2D blackTexture { get; }
@@ -160,11 +164,11 @@ namespace UnityEngine
         }
 
         extern override public bool isReadable { get; }
-        [NativeName("Apply")]            extern private void  ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
-        [NativeName("Resize")]           extern private bool  ResizeImpl(int width, int height);
-        [NativeName("SetPixel")]         extern private void  SetPixelImpl(int image, int x, int y, Color color);
-        [NativeName("GetPixel")]         extern private Color GetPixelImpl(int image, int x, int y);
-        [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, float x, float y);
+        [NativeName("Apply")] extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
+        [NativeName("Resize")] extern private bool ResizeImpl(int width, int height);
+        [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int x, int y, Color color);
+        [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int x, int y);
+        [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, float u, float v);
 
         [FreeFunction(Name = "Texture2DScripting::ResizeWithFormat", HasExplicitThis = true)]
         extern private bool ResizeWithFormatImpl(int width, int height, TextureFormat format, bool hasMipMap);
@@ -196,8 +200,10 @@ namespace UnityEngine
 
         extern public int requestedMipmapLevel
         {
-            [FreeFunction(Name = "GetTextureStreamingManager().GetRequestedMipmapLevel", HasExplicitThis = true)] get;
-            [FreeFunction(Name = "GetTextureStreamingManager().SetRequestedMipmapLevel", HasExplicitThis = true)] set;
+            [FreeFunction(Name = "GetTextureStreamingManager().GetRequestedMipmapLevel", HasExplicitThis = true)]
+            get;
+            [FreeFunction(Name = "GetTextureStreamingManager().SetRequestedMipmapLevel", HasExplicitThis = true)]
+            set;
         }
 
         extern public int desiredMipmapLevel
@@ -208,12 +214,14 @@ namespace UnityEngine
 
         extern public int loadingMipmapLevel
         {
-            [FreeFunction(Name = "GetTextureStreamingManager().GetLoadingMipmapLevel", HasExplicitThis = true)] get;
+            [FreeFunction(Name = "GetTextureStreamingManager().GetLoadingMipmapLevel", HasExplicitThis = true)]
+            get;
         }
 
         extern public int loadedMipmapLevel
         {
-            [FreeFunction(Name = "GetTextureStreamingManager().GetLoadedMipmapLevel", HasExplicitThis = true)] get;
+            [FreeFunction(Name = "GetTextureStreamingManager().GetLoadedMipmapLevel", HasExplicitThis = true)]
+            get;
         }
 
         [FreeFunction(Name = "GetTextureStreamingManager().ClearRequestedMipmapLevel", HasExplicitThis = true)]
@@ -273,8 +281,8 @@ namespace UnityEngine
     [ExcludeFromPreset]
     public sealed partial class Cubemap : Texture
     {
-        extern public int mipmapCount {[NativeName("CountDataMipmaps")] get; }
-        extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
+        extern public int mipmapCount { [NativeName("CountDataMipmaps")] get; }
+        extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         [FreeFunction("CubemapScripting::Create")]
         extern private static bool Internal_CreateImpl([Writable] Cubemap mono, int ext, GraphicsFormat format, TextureCreationFlags flags, IntPtr nativeTex);
@@ -288,10 +296,10 @@ namespace UnityEngine
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
 
         extern override public bool isReadable { get; }
-        [NativeName("SetPixel")]      extern private void  SetPixelImpl(int image, int x, int y, Color color);
-        [NativeName("GetPixel")]      extern private Color GetPixelImpl(int image, int x, int y);
+        [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int x, int y, Color color);
+        [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int x, int y);
 
-        [NativeName("FixupEdges")]    extern public  void  SmoothEdges([uei.DefaultValue("1")] int smoothRegionWidthInPixels);
+        [NativeName("FixupEdges")] extern public void SmoothEdges([uei.DefaultValue("1")] int smoothRegionWidthInPixels);
         public void SmoothEdges() { SmoothEdges(1); }
 
         [FreeFunction(Name = "CubemapScripting::GetPixels", HasExplicitThis = true, ThrowsException = true)]
@@ -315,10 +323,13 @@ namespace UnityEngine
     [ExcludeFromPreset]
     public sealed partial class Texture3D : Texture
     {
-        extern public int depth {[NativeName("GetTextureLayerCount")] get; }
-        extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
+        extern public int depth { [NativeName("GetTextureLayerCount")] get; }
+        extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         extern override public bool isReadable { get; }
+        [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int x, int y, int z, Color color);
+        [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int x, int y, int z);
+        [NativeName("GetPixelBilinear")] extern private Color GetPixelBilinearImpl(int image, float u, float v, float w);
 
         [FreeFunction("Texture3DScripting::Create")]
         extern private static bool Internal_CreateImpl([Writable] Texture3D mono, int w, int h, int d, GraphicsFormat format, TextureCreationFlags flags);
@@ -367,8 +378,8 @@ namespace UnityEngine
     [NativeHeader("Runtime/Graphics/Texture2DArray.h")]
     public sealed partial class Texture2DArray : Texture
     {
-        extern public int depth {[NativeName("GetTextureLayerCount")] get; }
-        extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
+        extern public int depth { [NativeName("GetTextureLayerCount")] get; }
+        extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         extern override public bool isReadable { get; }
 
@@ -420,7 +431,7 @@ namespace UnityEngine
     public sealed partial class CubemapArray : Texture
     {
         extern public int cubemapCount { get; }
-        extern public TextureFormat format {[NativeName("GetTextureFormat")] get; }
+        extern public TextureFormat format { [NativeName("GetTextureFormat")] get; }
 
         extern override public bool isReadable { get; }
 
@@ -473,7 +484,7 @@ namespace UnityEngine
     {
         extern public int tileWidth { get; }
         extern public int tileHeight { get; }
-        extern public bool isCreated {[NativeName("IsInitialized")] get; }
+        extern public bool isCreated { [NativeName("IsInitialized")] get; }
 
         [FreeFunction(Name = "SparseTextureScripting::Create", ThrowsException = true)]
         extern private static void Internal_Create([Writable] SparseTexture mono, int width, int height, TextureFormat format, bool linear, int mipCount);
@@ -497,19 +508,19 @@ namespace UnityEngine
     [UsedByNativeCode]
     public partial class RenderTexture : Texture
     {
-        override extern public int width  { get; set; }
+        override extern public int width { get; set; }
         override extern public int height { get; set; }
         override extern public TextureDimension dimension { get; set; }
 
-        [NativeProperty("MipMap")]          extern public bool useMipMap { get; set; }
-        [NativeProperty("SRGBReadWrite")]   extern public bool sRGB { get; }
-        [NativeProperty("ColorFormat")]     extern public RenderTextureFormat format { get; set; }
-        [NativeProperty("VRUsage")]         extern public VRTextureUsage vrUsage { get; set; }
-        [NativeProperty("Memoryless")]      extern public RenderTextureMemoryless memorylessMode { get; set; }
+        [NativeProperty("MipMap")] extern public bool useMipMap { get; set; }
+        [NativeProperty("SRGBReadWrite")] extern public bool sRGB { get; }
+        [NativeProperty("ColorFormat")] extern public RenderTextureFormat format { get; set; }
+        [NativeProperty("VRUsage")] extern public VRTextureUsage vrUsage { get; set; }
+        [NativeProperty("Memoryless")] extern public RenderTextureMemoryless memorylessMode { get; set; }
 
         extern public bool autoGenerateMips { get; set; }
-        extern public int  volumeDepth { get; set; }
-        extern public int  antiAliasing { get; set; }
+        extern public int volumeDepth { get; set; }
+        extern public int antiAliasing { get; set; }
         extern public bool bindTextureMS { get; set; }
         extern public bool enableRandomWrite { get; set; }
         extern public bool useDynamicScale { get; set; }
@@ -543,7 +554,7 @@ namespace UnityEngine
         [NativeName("ResolveAntiAliasedSurface")] extern private void ResolveAA();
         [NativeName("ResolveAntiAliasedSurface")] extern private void ResolveAATo(RenderTexture rt);
 
-        public void ResolveAntiAliasedSurface()                     { ResolveAA(); }
+        public void ResolveAntiAliasedSurface() { ResolveAA(); }
         public void ResolveAntiAliasedSurface(RenderTexture target) { ResolveAATo(target); }
 
 
@@ -578,8 +589,10 @@ namespace UnityEngine
 
         extern public int depth
         {
-            [FreeFunction("RenderTextureScripting::GetDepth", HasExplicitThis = true)] get;
-            [FreeFunction("RenderTextureScripting::SetDepth", HasExplicitThis = true)] set;
+            [FreeFunction("RenderTextureScripting::GetDepth", HasExplicitThis = true)]
+            get;
+            [FreeFunction("RenderTextureScripting::SetDepth", HasExplicitThis = true)]
+            set;
         }
     }
 

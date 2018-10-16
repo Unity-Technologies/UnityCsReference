@@ -36,10 +36,10 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Return all ancestor items of the Item with 'id'
-        protected abstract HashSet<int> GetParentsAbove(int id);
+        protected abstract void GetParentsAbove(int id, HashSet<int> parentsAbove);
 
         // Return all descendant items that have children from the Item with 'id'
-        protected abstract HashSet<int> GetParentsBelow(int id);
+        protected abstract void GetParentsBelow(int id, HashSet<int> parentsBelow);
 
         override public void RevealItem(int itemID)
         {
@@ -47,11 +47,29 @@ namespace UnityEditor.IMGUI.Controls
             HashSet<int> expandedSet = new HashSet<int>(expandedIDs);
             int orgSize = expandedSet.Count;
 
-            // Get all parents above id
-            HashSet<int> candidates = GetParentsAbove(itemID);
+            // Add all parents above id
+            GetParentsAbove(itemID, expandedSet);
 
-            // Add parent ids
-            expandedSet.UnionWith(candidates);
+            if (orgSize != expandedSet.Count)
+            {
+                // Bulk set expanded ids (is sorted in SetExpandedIDs)
+                SetExpandedIDs(expandedSet.ToArray());
+
+                // Refresh immediately if any Item was expanded
+                if (m_NeedRefreshRows)
+                    FetchData();
+            }
+        }
+
+        override public void RevealItems(int[] itemIDs)
+        {
+            // Get existing expanded in hashset
+            HashSet<int> expandedSet = new HashSet<int>(expandedIDs);
+            int orgSize = expandedSet.Count;
+
+            foreach (var itemID in itemIDs)
+                // Add all parents above id
+                GetParentsAbove(itemID, expandedSet);
 
             if (orgSize != expandedSet.Count)
             {
@@ -88,7 +106,8 @@ namespace UnityEditor.IMGUI.Controls
             HashSet<int> oldExpandedSet = new HashSet<int>(expandedIDs);
 
             // Add all children expanded ids to hashset
-            HashSet<int> candidates = GetParentsBelow(id);
+            HashSet<int> candidates = new HashSet<int>();
+            GetParentsBelow(id, candidates);
 
             if (expand)     oldExpandedSet.UnionWith(candidates);
             else            oldExpandedSet.ExceptWith(candidates);

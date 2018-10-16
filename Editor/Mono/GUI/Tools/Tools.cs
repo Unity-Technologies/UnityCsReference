@@ -412,49 +412,49 @@ namespace UnityEditor
             ResetGlobalHandleRotation();
         }
 
-        [Shortcut("Tools/View", null, "q")]
+        [Shortcut("Tools/View", KeyCode.Q)]
         [FormerlyPrefKeyAs("Tools/View", "q")]
         static void SetToolModeView(ShortcutArguments args)
         {
             SetToolMode(Tool.View);
         }
 
-        [Shortcut("Tools/Move", null, "w")]
+        [Shortcut("Tools/Move", KeyCode.W)]
         [FormerlyPrefKeyAs("Tools/Move", "w")]
         static void SetToolModeMove(ShortcutArguments args)
         {
             SetToolMode(Tool.Move);
         }
 
-        [Shortcut("Tools/Rotate", null, "e")]
+        [Shortcut("Tools/Rotate", KeyCode.E)]
         [FormerlyPrefKeyAs("Tools/Rotate", "e")]
         static void SetToolModeRotate(ShortcutArguments args)
         {
             SetToolMode(Tool.Rotate);
         }
 
-        [Shortcut("Tools/Scale", null, "r")]
+        [Shortcut("Tools/Scale", KeyCode.R)]
         [FormerlyPrefKeyAs("Tools/Scale", "r")]
         static void SetToolModeScale(ShortcutArguments args)
         {
             SetToolMode(Tool.Scale);
         }
 
-        [Shortcut("Tools/Rect", null, "t")]
+        [Shortcut("Tools/Rect", KeyCode.T)]
         [FormerlyPrefKeyAs("Tools/Rect Handles", "t")]
         static void SetToolModeRect(ShortcutArguments args)
         {
             SetToolMode(Tool.Rect);
         }
 
-        [Shortcut("Tools/Transform", null, "y")]
+        [Shortcut("Tools/Transform", KeyCode.Y)]
         [FormerlyPrefKeyAs("Tools/Transform Handles", "y")]
         static void SetToolModeTransform(ShortcutArguments args)
         {
             SetToolMode(Tool.Transform);
         }
 
-        [Shortcut("Tools/Toggle Pivot Position", null, "z")]
+        [Shortcut("Tools/Toggle Pivot Position", KeyCode.Z)]
         [FormerlyPrefKeyAs("Tools/Pivot Mode", "z")]
         static void TogglePivotMode(ShortcutArguments args)
         {
@@ -463,7 +463,7 @@ namespace UnityEditor
             RepaintAllToolViews();
         }
 
-        [Shortcut("Tools/Toggle Pivot Orientation", null, "x")]
+        [Shortcut("Tools/Toggle Pivot Orientation", KeyCode.X)]
         [FormerlyPrefKeyAs("Tools/Pivot Rotation", "x")]
         static void TogglePivotRotation(ShortcutArguments args)
         {

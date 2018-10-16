@@ -62,9 +62,8 @@ namespace UnityEditor.TreeViewExamples
             return item.hasChildren;
         }
 
-        protected override HashSet<int> GetParentsAbove(int id)
+        protected override void GetParentsAbove(int id, HashSet<int> parentsAbove)
         {
-            HashSet<int> parentsAbove = new HashSet<int>();
             BackendData.Foo target = BackendData.FindItemRecursive(m_Backend.root, id);
 
             while (target != null)
@@ -73,13 +72,11 @@ namespace UnityEditor.TreeViewExamples
                     parentsAbove.Add(target.parent.id);
                 target = target.parent;
             }
-            return parentsAbove;
         }
 
-        protected override HashSet<int> GetParentsBelow(int id)
+        protected override void GetParentsBelow(int id, HashSet<int> parentsBelow)
         {
-            HashSet<int> parents = m_Backend.GetParentsBelow(id);
-            return parents;
+            m_Backend.GetParentsBelow(id, parentsBelow);
         }
     }
 } // UnityEditor

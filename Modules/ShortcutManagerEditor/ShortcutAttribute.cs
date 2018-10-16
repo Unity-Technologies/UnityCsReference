@@ -4,34 +4,49 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Reflection;
 using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
-    abstract class ShortcutBaseAttribute : Attribute
+    public abstract class ShortcutBaseAttribute : Attribute
     {
-        public abstract ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo);
+        internal abstract ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo);
     }
 
     // TODO: Find better name
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-    class ShortcutAttribute : ShortcutBaseAttribute
+    public class ShortcutAttribute : ShortcutBaseAttribute
     {
         internal string identifier { get; }
         internal Type context { get; }
-        internal string defaultKeyCombination { get; }
-
+        internal ShortcutBinding defaultBinding { get; }
 
         static readonly object[] k_ReusableShortcutArgs = { null };
         static readonly object[] k_EmptyReusableShortcutArgs = {};
 
-        public ShortcutAttribute(string identifier, Type context = null, string defaultKeyCombination = null)
+        ShortcutAttribute(string id, Type context, ShortcutBinding defaultBinding)
         {
-            this.identifier = identifier;
+            this.identifier = id;
             this.context = context;
-            this.defaultKeyCombination = defaultKeyCombination;
+            this.defaultBinding = defaultBinding;
+        }
+
+        public ShortcutAttribute(string id, [DefaultValue("null")] Type context = null)
+            : this(id, context, ShortcutBinding.empty)
+        {
+        }
+
+        public ShortcutAttribute(string id, Type context, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
+            : this(id, context, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+        {
+        }
+
+        public ShortcutAttribute(string id, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
+            : this(id, null, new ShortcutBinding(new KeyCombination(defaultKeyCode, defaultShortcutModifiers)))
+        {
         }
 
         [RequiredSignature]
@@ -39,19 +54,10 @@ namespace UnityEditor.ShortcutManagement
         [RequiredSignature]
         static extern void ShortcutMethodNoArgs();
 
-        public override ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo)
+        internal override ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo)
         {
             var identifier = new Identifier(methodInfo, this);
-
-            IEnumerable<KeyCombination> defaultCombination;
-            if (defaultKeyCombination == null)
-                defaultCombination = Enumerable.Empty<KeyCombination>();
-            else
-            {
-                var keyEvent = Event.KeyboardEvent(defaultKeyCombination);
-                defaultCombination = new[] { new KeyCombination(keyEvent) };
-            }
-
+            var defaultCombination = defaultBinding.keyCombinationSequence;
             var type = this is ClutchShortcutAttribute ? ShortcutType.Clutch : ShortcutType.Action;
             var methodParams = methodInfo.GetParameters();
             Action<ShortcutArguments> action;
@@ -77,10 +83,20 @@ namespace UnityEditor.ShortcutManagement
 
     [AttributeUsage(AttributeTargets.Method)]
     // TODO: Find better name
-    class ClutchShortcutAttribute : ShortcutAttribute
+    public class ClutchShortcutAttribute : ShortcutAttribute
     {
-        public ClutchShortcutAttribute(string identifier, Type context = null, string defaultKeyCombination = null)
-            : base(identifier, context, defaultKeyCombination)
+        public ClutchShortcutAttribute(string id, [DefaultValue("null")] Type context = null)
+            : base(id, context)
+        {
+        }
+
+        public ClutchShortcutAttribute(string id, Type context, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
+            : base(id, context, defaultKeyCode, defaultShortcutModifiers)
+        {
+        }
+
+        public ClutchShortcutAttribute(string id, KeyCode defaultKeyCode, [DefaultValue(nameof(ShortcutModifiers.None))] ShortcutModifiers defaultShortcutModifiers = ShortcutModifiers.None)
+            : base(id, defaultKeyCode, defaultShortcutModifiers)
         {
         }
 

@@ -64,21 +64,6 @@ namespace UnityEditor
             return null;
         }
 
-        internal static void FlushOptimizedGUIBlock(Editor editor)
-        {
-            if (editor == null)
-            {
-                return;
-            }
-
-            OptimizedGUIBlock optimizedBlock;
-            float height;
-            if (editor.GetOptimizedGUIBlock(false, false, out optimizedBlock, out height))
-            {
-                optimizedBlock.valid = false;
-            }
-        }
-
         public static void DisplayDeprecationMessageIfNecessary(Editor editor)
         {
             if (!editor || !editor.target)

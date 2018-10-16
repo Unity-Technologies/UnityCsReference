@@ -496,14 +496,14 @@ namespace UnityEditor
         [FreeFunction]
         internal static extern string GetBuildTargetAdvancedLicenseName(BuildTarget target);
 
-        internal static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options)
+        public static string GetPlaybackEngineDirectory(BuildTarget target, BuildOptions options)
         {
             BuildTargetGroup buildTargetGroup = GetBuildTargetGroup(target);
             return GetPlaybackEngineDirectory(buildTargetGroup, target, options);
         }
 
         [FreeFunction(IsThreadSafe = true)]
-        internal static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
+        public static extern string GetPlaybackEngineDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
 
         [FreeFunction(IsThreadSafe = true)]
         internal static extern string GetPlaybackEngineExtensionDirectory(BuildTargetGroup buildTargetGroup, BuildTarget target, BuildOptions options);
@@ -517,7 +517,7 @@ namespace UnityEditor
         internal static extern string GetMonoBinDirectory(BuildTarget target);
 
         [FreeFunction]
-        internal static extern string GetMonoLibDirectory(BuildTarget target);
+        internal static extern string GetMonoRuntimeLibDirectory(BuildTarget target);
 
         [FreeFunction]
         internal static extern string CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel compatibilityLevel);

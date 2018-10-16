@@ -16,6 +16,7 @@ namespace UnityEditor
     internal struct AnimationClipStats
     {
         public int size;
+        public int clips;
         public int positionCurves;
         public int quaternionCurves;
         public int eulerCurves;
@@ -31,6 +32,7 @@ namespace UnityEditor
         public void Reset()
         {
             size = 0;
+            clips = 0;
             positionCurves = 0;
             quaternionCurves = 0;
             eulerCurves = 0;
@@ -47,6 +49,7 @@ namespace UnityEditor
         public void Combine(AnimationClipStats other)
         {
             size += other.size;
+            clips += other.clips;
             positionCurves += other.positionCurves;
             quaternionCurves += other.quaternionCurves;
             eulerCurves += other.eulerCurves;

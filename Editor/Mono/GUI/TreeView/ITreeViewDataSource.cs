@@ -46,6 +46,7 @@ namespace UnityEditor.IMGUI.Controls
         bool IsRevealed(int id);
 
         void RevealItem(int id);
+        void RevealItems(int[] ids);
 
         // Expand / collapse interface
         // The DataSource has the interface for this because it should be able to rebuild

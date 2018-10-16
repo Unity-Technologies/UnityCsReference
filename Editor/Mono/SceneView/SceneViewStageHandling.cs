@@ -16,7 +16,7 @@ namespace UnityEditor
     class SceneViewStageHandling
     {
         SceneView m_SceneView;
-        StateCache m_StateCache = new StateCache("Library/StateCache/SceneView/");
+        StateCache<SceneViewCameraState> m_StateCache = new StateCache<SceneViewCameraState>("Library/StateCache/SceneView/");
 
         public BreadcrumbBar m_BreadcrumbBar = new BreadcrumbBar();
         public bool m_BreadcrumbInitialized;
@@ -188,7 +188,7 @@ namespace UnityEditor
             if (stage == null)
                 return;
             string key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, stage);
-            var state = m_StateCache.GetState<SceneViewCameraState>(key);
+            var state = m_StateCache.GetState(key);
             if (state == null)
                 state = new SceneViewCameraState();
             state.SaveStateFromSceneView(sceneView);
@@ -198,7 +198,7 @@ namespace UnityEditor
         SceneViewCameraState GetStoredCameraState(SceneView sceneView, StageNavigationItem stage)
         {
             string key = StageUtility.CreateWindowAndStageIdentifier(sceneView.windowGUID, stage);
-            return m_StateCache.GetState<SceneViewCameraState>(key);
+            return m_StateCache.GetState(key);
         }
 
         void LoadCameraState(SceneView sceneView, StageNavigationItem stage)

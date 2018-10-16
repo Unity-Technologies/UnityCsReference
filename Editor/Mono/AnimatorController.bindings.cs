@@ -14,10 +14,10 @@ using System.Runtime.InteropServices;
 
 namespace UnityEditor.Animations
 {
-    [NativeHeader("Runtime/Animation/Animator.h")]
+    [NativeHeader("Modules/Animation/Animator.h")]
     [NativeHeader("Editor/Src/Animation/StateMachineBehaviourScripting.h")]
     [NativeHeader("Editor/Src/Animation/AnimatorController.bindings.h")]
-    [NativeHeader("Runtime/Animation/AnimatorController.h")]
+    [NativeHeader("Modules/Animation/AnimatorController.h")]
     public partial class AnimatorController : RuntimeAnimatorController
     {
         public AnimatorController()

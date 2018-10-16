@@ -193,6 +193,8 @@ namespace UnityEngine.Rendering
             if (rt == null)
                 throw new ArgumentNullException("rt");
 
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Internal_GenerateMips(rt);
         }
 
@@ -208,6 +210,9 @@ namespace UnityEngine.Rendering
         {
             if (mesh == null)
                 throw new ArgumentNullException("mesh");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             if (submeshIndex < 0 || submeshIndex >= mesh.subMeshCount)
             {
                 submeshIndex = Mathf.Clamp(submeshIndex, 0, mesh.subMeshCount - 1);
@@ -237,6 +242,9 @@ namespace UnityEngine.Rendering
         {
             if (renderer == null)
                 throw new ArgumentNullException("renderer");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             if (submeshIndex < 0)
             {
                 submeshIndex = Mathf.Max(submeshIndex, 0);
@@ -261,6 +269,9 @@ namespace UnityEngine.Rendering
         {
             if (material == null)
                 throw new ArgumentNullException("material");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Internal_DrawProcedural(matrix, material, shaderPass, topology, vertexCount, instanceCount, properties);
         }
 
@@ -280,6 +291,9 @@ namespace UnityEngine.Rendering
                 throw new ArgumentNullException("material");
             if (bufferWithArgs == null)
                 throw new ArgumentNullException("bufferWithArgs");
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Internal_DrawProceduralIndirect(matrix, material, shaderPass, topology, bufferWithArgs, argsOffset, properties);
         }
 
@@ -307,6 +321,9 @@ namespace UnityEngine.Rendering
                 throw new ArgumentNullException("matrices");
             if (count < 0 || count > Mathf.Min(Graphics.kMaxDrawMeshInstanceCount, matrices.Length))
                 throw new ArgumentOutOfRangeException("count", String.Format("Count must be in the range of 0 to {0}.", Mathf.Min(Graphics.kMaxDrawMeshInstanceCount, matrices.Length)));
+
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             if (count > 0)
                 Internal_DrawMeshInstanced(mesh, submeshIndex, material, shaderPass, matrices, count, properties);
         }
@@ -353,11 +370,15 @@ namespace UnityEngine.Rendering
 
         public void SetRandomWriteTarget(int index, RenderTargetIdentifier rt)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             SetRandomWriteTarget_Texture(index, ref rt);
         }
 
         public void SetRandomWriteTarget(int index, ComputeBuffer buffer, bool preserveCounterValue)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             SetRandomWriteTarget_Buffer(index, buffer, preserveCounterValue);
         }
 
@@ -395,41 +416,57 @@ namespace UnityEngine.Rendering
 
         public void Blit(Texture source, RenderTargetIdentifier dest)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Blit_Texture(source, ref dest, null, -1, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
 
         public void Blit(Texture source, RenderTargetIdentifier dest, Vector2 scale, Vector2 offset)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Blit_Texture(source, ref dest, null, -1, scale, offset);
         }
 
         public void Blit(Texture source, RenderTargetIdentifier dest, Material mat)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Blit_Texture(source, ref dest, mat, -1, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
 
         public void Blit(Texture source, RenderTargetIdentifier dest, Material mat, int pass)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Blit_Texture(source, ref dest, mat, pass, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
 
         public void Blit(RenderTargetIdentifier source, RenderTargetIdentifier dest)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Blit_Identifier(ref source, ref dest, null, -1, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
 
         public void Blit(RenderTargetIdentifier source, RenderTargetIdentifier dest, Vector2 scale, Vector2 offset)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Blit_Identifier(ref source, ref dest, null, -1, scale, offset);
         }
 
         public void Blit(RenderTargetIdentifier source, RenderTargetIdentifier dest, Material mat)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Blit_Identifier(ref source, ref dest, mat, -1, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
 
         public void Blit(RenderTargetIdentifier source, RenderTargetIdentifier dest, Material mat, int pass)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             Blit_Identifier(ref source, ref dest, mat, pass, new Vector2(1.0f, 1.0f), new Vector2(0.0f, 0.0f));
         }
 
@@ -532,6 +569,8 @@ namespace UnityEngine.Rendering
 
         public void SetShadowSamplingMode(UnityEngine.Rendering.RenderTargetIdentifier shadowmap, ShadowSamplingMode mode)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             SetShadowSamplingMode_Impl(ref shadowmap, mode);
         }
 
@@ -548,11 +587,15 @@ namespace UnityEngine.Rendering
             if (callback == IntPtr.Zero)
                 throw new ArgumentException("Null callback specified.");
 
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             IssuePluginEventAndDataInternal(callback, eventID, data);
         }
 
         public void IssuePluginCustomBlit(IntPtr callback, uint command, UnityEngine.Rendering.RenderTargetIdentifier source, UnityEngine.Rendering.RenderTargetIdentifier dest, uint commandParam, uint commandFlags)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             IssuePluginCustomBlitInternal(callback, command, ref source, ref dest, commandParam, commandFlags);
         }
 
@@ -570,6 +613,8 @@ namespace UnityEngine.Rendering
 
         public void IssuePluginCustomTextureUpdateV2(IntPtr callback, Texture targetTexture, uint userData)
         {
+            ValidateAgainstExecutionFlags(CommandBufferExecutionFlags.None, CommandBufferExecutionFlags.AsyncCompute);
+
             IssuePluginCustomTextureUpdateInternal(callback, targetTexture, userData, true);
         }
     }

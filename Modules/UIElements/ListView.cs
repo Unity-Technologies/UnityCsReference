@@ -36,6 +36,7 @@ namespace UnityEngine.Experimental.UIElements
         {
             public readonly VisualElement element;
             public int index;
+            public int id;
 
             public RecycledItem(VisualElement element)
             {
@@ -95,7 +96,21 @@ namespace UnityEngine.Experimental.UIElements
             }
         }
 
-        private StyleValue<int> m_ItemHeight;
+        private Func<int, int> m_GetItemId;
+        internal Func<int, int> getItemId
+        {
+            get
+            {
+                return m_GetItemId;
+            }
+            set
+            {
+                m_GetItemId = value;
+                Refresh();
+            }
+        }
+
+        internal StyleValue<int> m_ItemHeight;
         public int itemHeight
         {
             get
@@ -115,7 +130,18 @@ namespace UnityEngine.Experimental.UIElements
 
         // Persisted. It's why this can't be a HashSet(). :(
         [SerializeField]
+        private List<int> m_SelectedIds = new List<int>();
+
+        internal List<int> currentSelectionIds
+        {
+            get { return m_SelectedIds; }
+        }
+
+        // Not persisted! Just used for fast lookups of selected indices and object references.
+        // This is to avoid also having a mapping from index/objectref to index for the entire
+        // items source.
         private List<int> m_SelectedIndices = new List<int>();
+        private List<object> m_SelectedItems = new List<object>();
 
         public int selectedIndex
         {
@@ -123,7 +149,7 @@ namespace UnityEngine.Experimental.UIElements
             set { SetSelection(value); }
         }
 
-        public object selectedItem { get { return m_ItemsSource == null ? null : m_ItemsSource[selectedIndex]; } }
+        public object selectedItem { get { return m_SelectedItems.Count == 0 ? null : m_SelectedItems.First(); } }
 
         public override VisualElement contentContainer { get { return m_ScrollView.contentContainer; } }
 
@@ -170,6 +196,8 @@ namespace UnityEngine.Experimental.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
+            bool shouldStopPropagation = true;
+
             switch (evt.keyCode)
             {
                 case KeyCode.UpArrow:
@@ -186,13 +214,24 @@ namespace UnityEngine.Experimental.UIElements
                 case KeyCode.End:
                     selectedIndex = itemsSource.Count - 1;
                     break;
+                case KeyCode.Return:
+                    if (onItemChosen != null)
+                        onItemChosen.Invoke(m_ItemsSource[selectedIndex]);
+                    break;
                 case KeyCode.PageDown:
                     selectedIndex = Math.Min(itemsSource.Count - 1, selectedIndex + (int)(m_LastHeight / itemHeight));
                     break;
                 case KeyCode.PageUp:
                     selectedIndex = Math.Max(0, selectedIndex - (int)(m_LastHeight / itemHeight));
                     break;
+                default:
+                    shouldStopPropagation = false;
+                    break;
             }
+
+            if (shouldStopPropagation)
+                evt.StopPropagation();
+
             ScrollToItem(selectedIndex);
         }
 
@@ -236,6 +275,8 @@ namespace UnityEngine.Experimental.UIElements
                 return;
 
             var clickedIndex = (int)(evt.localMousePosition.y / itemHeight);
+            var clickedItem = m_ItemsSource[clickedIndex];
+            var clickedItemId = GetIdFromIndex(clickedIndex);
             switch (evt.clickCount)
             {
                 case 1:
@@ -243,7 +284,7 @@ namespace UnityEngine.Experimental.UIElements
                         return;
 
                     if (selectionType == SelectionType.Multiple && evt.actionKey)
-                        if (m_SelectedIndices.Contains(clickedIndex))
+                        if (m_SelectedIds.Contains(clickedItemId))
                             RemoveFromSelection(clickedIndex);
                         else
                             AddToSelection(clickedIndex);
@@ -254,9 +295,17 @@ namespace UnityEngine.Experimental.UIElements
                     if (onItemChosen == null)
                         return;
 
-                    onItemChosen.Invoke(itemsSource[clickedIndex]);
+                    onItemChosen.Invoke(clickedItem);
                     break;
             }
+        }
+
+        private int GetIdFromIndex(int index)
+        {
+            if (m_GetItemId == null)
+                return index;
+            else
+                return m_GetItemId(index);
         }
 
         protected void AddToSelection(int index)
@@ -264,14 +313,21 @@ namespace UnityEngine.Experimental.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
+            var id = GetIdFromIndex(index);
+            var item = m_ItemsSource[index];
+
             foreach (var recycledItem in m_Pool)
-                if (recycledItem.index == index)
+                if (recycledItem.id == id)
                     recycledItem.SetSelected(true);
 
-            if (!m_SelectedIndices.Contains(index))
+            if (!m_SelectedIds.Contains(id))
+            {
+                m_SelectedIds.Add(id);
                 m_SelectedIndices.Add(index);
+                m_SelectedItems.Add(item);
+            }
 
-            SelectionChanged();
+            NotifyOfSelectionChange();
 
             SavePersistentData();
         }
@@ -281,14 +337,21 @@ namespace UnityEngine.Experimental.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
+            var id = GetIdFromIndex(index);
+            var item = m_ItemsSource[index];
+
             foreach (var recycledItem in m_Pool)
-                if (recycledItem.index == index)
+                if (recycledItem.id == id)
                     recycledItem.SetSelected(false);
 
-            if (m_SelectedIndices.Contains(index))
+            if (m_SelectedIds.Contains(id))
+            {
+                m_SelectedIds.Remove(id);
                 m_SelectedIndices.Remove(index);
+                m_SelectedItems.Remove(item);
+            }
 
-            SelectionChanged();
+            NotifyOfSelectionChange();
 
             SavePersistentData();
         }
@@ -298,18 +361,32 @@ namespace UnityEngine.Experimental.UIElements
             if (!HasValidDataAndBindings())
                 return;
 
-            foreach (var recycledItem in m_Pool)
-                recycledItem.SetSelected(recycledItem.index == index);
-            m_SelectedIndices.Clear();
-            if (index >= 0)
-                m_SelectedIndices.Add(index);
+            if (index < 0)
+            {
+                ClearSelection();
+                return;
+            }
 
-            SelectionChanged();
+            var id = GetIdFromIndex(index);
+            var item = m_ItemsSource[index];
+
+            foreach (var recycledItem in m_Pool)
+                recycledItem.SetSelected(recycledItem.id == id);
+
+            m_SelectedIds.Clear();
+            m_SelectedIndices.Clear();
+            m_SelectedItems.Clear();
+
+            m_SelectedIds.Add(id);
+            m_SelectedIndices.Add(index);
+            m_SelectedItems.Add(item);
+
+            NotifyOfSelectionChange();
 
             SavePersistentData();
         }
 
-        private void SelectionChanged()
+        private void NotifyOfSelectionChange()
         {
             if (!HasValidDataAndBindings())
                 return;
@@ -317,11 +394,7 @@ namespace UnityEngine.Experimental.UIElements
             if (onSelectionChanged == null)
                 return;
 
-            var selectedItems = new List<object>();
-            foreach (var i in m_SelectedIndices)
-                selectedItems.Add(itemsSource[i]);
-
-            onSelectionChanged.Invoke(selectedItems);
+            onSelectionChanged.Invoke(m_SelectedItems);
         }
 
         protected void ClearSelection()
@@ -331,9 +404,11 @@ namespace UnityEngine.Experimental.UIElements
 
             foreach (var recycledItem in m_Pool)
                 recycledItem.SetSelected(false);
+            m_SelectedIds.Clear();
             m_SelectedIndices.Clear();
+            m_SelectedItems.Clear();
 
-            SelectionChanged();
+            NotifyOfSelectionChange();
         }
 
         public void ScrollTo(VisualElement visualElement)
@@ -372,6 +447,9 @@ namespace UnityEngine.Experimental.UIElements
         {
             m_Pool.Clear();
             m_ScrollView.Clear();
+            m_SelectedIndices.Clear();
+            m_SelectedItems.Clear();
+
             m_VisibleItemCount = 0;
 
             if (!HasValidDataAndBindings())
@@ -421,6 +499,7 @@ namespace UnityEngine.Experimental.UIElements
                         var recycledItem = new RecycledItem(item);
                         m_Pool.Add(recycledItem);
 
+                        item.AddToClassList("unity-listview-item");
                         item.style.marginTop = 0;
                         item.style.marginBottom = 0;
                         item.style.positionType = PositionType.Absolute;
@@ -444,17 +523,29 @@ namespace UnityEngine.Experimental.UIElements
             }
 
             m_LastHeight = height;
+
+            // Add selected objects to working lists.
+            for (int index = 0; index < m_ItemsSource.Count; ++index)
+            {
+                if (m_SelectedIds.Contains(GetIdFromIndex(index)))
+                {
+                    m_SelectedIndices.Add(index);
+                    m_SelectedItems.Add(m_ItemsSource[index]);
+                }
+            }
         }
 
         private void Setup(RecycledItem recycledItem, int newIndex)
         {
-            Assert.IsTrue(newIndex < itemsSource.Count);
+            var newId = GetIdFromIndex(newIndex);
+
             recycledItem.element.style.visibility = Visibility.Visible;
             recycledItem.index = newIndex;
+            recycledItem.id = newId;
             recycledItem.element.style.positionTop = recycledItem.index * itemHeight;
             recycledItem.element.style.positionBottom = (itemsSource.Count - recycledItem.index - 1) * itemHeight;
             bindItem(recycledItem.element, recycledItem.index);
-            recycledItem.SetSelected(m_SelectedIndices.Contains(newIndex));
+            recycledItem.SetSelected(m_SelectedIds.Contains(newId));
         }
 
         private void OnSizeChanged(GeometryChangedEvent evt)

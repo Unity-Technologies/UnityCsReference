@@ -11,6 +11,7 @@ using UnityEditor.Modules;
 using UnityEditor.Scripting.ScriptCompilation;
 using UnityEditor.Utils;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace UnityEditor.Scripting.Compilers
 {
@@ -114,11 +115,18 @@ namespace UnityEditor.Scripting.Compilers
             if (!File.Exists(csc))
                 ThrowCompilerNotFoundException(csc);
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
-            if (!AddCustomResponseFileIfPresent(arguments, ReponseFilename) && PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.WinRTDotNET)
+            var responseFiles = m_Island._responseFiles?.ToDictionary(Path.GetFileName) ?? new Dictionary<string, string>();
+
+            KeyValuePair<string, string> obsoleteResponseFile = responseFiles
+                .SingleOrDefault(x => CompilerSpecificResponseFiles.MicrosoftCSharpCompilerObsolete.Contains(x.Key));
+            if (!string.IsNullOrEmpty(obsoleteResponseFile.Key))
             {
-                if (AddCustomResponseFileIfPresent(arguments, "mcs.rsp"))
-                    UnityEngine.Debug.LogWarning($"Using obsolete custom response file 'mcs.rsp'. Please use '{ReponseFilename}' instead.");
+                Debug.LogWarning($"Using obsolete custom response file '{obsoleteResponseFile.Key}'. Please use '{CompilerSpecificResponseFiles.MicrosoftCSharpCompiler}' instead.");
+            }
+
+            foreach (var file in responseFiles)
+            {
+                AddResponseFileToArguments(arguments, file.Value);
             }
 
             var responseFile = CommandLineFormatter.GenerateResponseFile(arguments);

@@ -243,18 +243,15 @@ namespace UnityEditor
             item.children = new List<TreeViewItem>(children);
         }
 
-        protected override HashSet<int> GetParentsAbove(int id)
+        protected override void GetParentsAbove(int id, HashSet<int> parentsAbove)
         {
-            int[] ancestorsInstanceIDs = ProjectWindowUtil.GetAncestors(id);
-            return new HashSet<int>(ancestorsInstanceIDs);
+            ProjectWindowUtil.GetAncestors(id, parentsAbove);
         }
 
         // Should return the items that have children from id and below
-        protected override HashSet<int> GetParentsBelow(int id)
+        protected override void GetParentsBelow(int id, HashSet<int> parentsBelow)
         {
             // Add all children expanded ids to hashset
-            HashSet<int> parentsBelow = new HashSet<int>();
-
             if (m_Roots.Count > 1)
             {
                 var assetsInstanceIDs = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID("Assets");
@@ -268,9 +265,9 @@ namespace UnityEditor
                         foreach (var child in item.children)
                         {
                             if (child != null && child.hasChildren)
-                                parentsBelow.UnionWith(GetParentsBelow(child.id));
+                                GetParentsBelow(child.id, parentsBelow);
                         }
-                        return parentsBelow;
+                        return;
                     }
                 }
             }
@@ -293,7 +290,6 @@ namespace UnityEditor
                     break;
                 }
             }
-            return parentsBelow;
         }
 
         override public void OnExpandedStateChanged()

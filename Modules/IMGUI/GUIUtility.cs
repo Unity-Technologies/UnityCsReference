@@ -271,7 +271,7 @@ namespace UnityEngine
         }
 
         // Convert a rect from GUI position to screen space.
-        internal static Rect GUIToScreenRect(Rect guiRect)
+        public static Rect GUIToScreenRect(Rect guiRect)
         {
             Vector2 screenPoint = GUIToScreenPoint(new Vector2(guiRect.x, guiRect.y));
             guiRect.x = screenPoint.x;

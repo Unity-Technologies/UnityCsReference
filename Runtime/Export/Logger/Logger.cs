@@ -3,6 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Globalization;
 
 namespace UnityEngine
 {
@@ -42,7 +43,19 @@ namespace UnityEngine
 
         private static string GetString(object message)
         {
-            return message != null ? message.ToString() : "Null";
+            if (message == null)
+            {
+                return "Null";
+            }
+            var formattable = message as IFormattable;
+            if (formattable != null)
+            {
+                return formattable.ToString(null, CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                return message.ToString();
+            }
         }
 
         public void Log(LogType logType, object message)

@@ -98,6 +98,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             evt.menu.AppendAction(anchored ? "Make floating" : "Anchor", ToggleAnchorState, DropdownMenu.MenuAction.AlwaysEnabled);
         }
 
+        public void OnResized()
+        {
+            Resize();
+        }
+
         void Resize()
         {
             if (parent == null)
@@ -188,12 +193,14 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 m_ContentRect.width *= totalRectFactor;
                 m_ContentRect.height *= totalRectFactor;
+                m_ContentRect.x *= totalRectFactor;
                 m_ContentRect.y *= totalRectFactor;
                 m_ContentRect.x += totalRectOffsetX;
                 m_ContentRect.y += totalRectOffsetY;
 
                 m_ViewportRect.width *= totalRectFactor;
                 m_ViewportRect.height *= totalRectFactor;
+                m_ViewportRect.x *= totalRectFactor;
                 m_ViewportRect.y *= totalRectFactor;
                 m_ViewportRect.x += totalRectOffsetX;
                 m_ViewportRect.y += totalRectOffsetY;

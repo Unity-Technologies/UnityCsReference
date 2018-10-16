@@ -21,6 +21,13 @@ namespace UnityEditor.Scripting.Compilers
         private static Regex _crOnlyRegex = new Regex("\r(?!\n)", RegexOptions.Compiled);
         private static Regex _lfOnlyRegex = new Regex("(?<!\r)\n", RegexOptions.Compiled);
 
+        public override ResponseFileProvider CreateResponseFileProvider()
+        {
+            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Latest)
+                return new MicrosoftCSharpResponseFileProvider();
+            return new MonoCSharpResponseFileProvider();
+        }
+
         public override string GetExtensionICanCompile()
         {
             return "cs";

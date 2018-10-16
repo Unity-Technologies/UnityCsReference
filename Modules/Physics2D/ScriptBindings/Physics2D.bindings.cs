@@ -725,6 +725,32 @@ namespace UnityEngine
         [NativeMethod("Distance")]
         extern private static ColliderDistance2D Distance_Internal([NotNull][Writable] Collider2D colliderA, [NotNull][Writable] Collider2D colliderB);
 
+        // Get the closest point to position on the specified collider.
+        public static Vector2 ClosestPoint(Vector2 position, Collider2D collider)
+        {
+            if (collider == null)
+                throw new ArgumentNullException("Collider cannot be NULL.");
+
+            return ClosestPoint_Collider(position, collider);
+        }
+
+        // Get the closest point to position on the specified rigidbody.
+        public static Vector2 ClosestPoint(Vector2 position, Rigidbody2D rigidbody)
+        {
+            if (rigidbody == null)
+                throw new ArgumentNullException("Rigidbody cannot be NULL.");
+
+            return ClosestPoint_Rigidbody(position, rigidbody);
+        }
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("ClosestPoint")]
+        extern private static Vector2 ClosestPoint_Collider(Vector2 position, [NotNull] Collider2D collider);
+
+        [StaticAccessor("PhysicsQuery2D", StaticAccessorType.DoubleColon)]
+        [NativeMethod("ClosestPoint")]
+        extern private static Vector2 ClosestPoint_Rigidbody(Vector2 position, [NotNull] Rigidbody2D rigidbody);
+
         #endregion
 
         #region Linecast
@@ -2931,6 +2957,12 @@ namespace UnityEngine
         [NativeMethod("Distance")]
         extern private ColliderDistance2D Distance_Internal([NotNull][Writable] Collider2D collider);
 
+        // Get the closest point to position on this rigidbody.
+        public Vector2 ClosestPoint(Vector2 position)
+        {
+            return Physics2D.ClosestPoint(position, this);
+        }
+
         // Adds /force/ (defined in global space) to the rigidbody center-of-mass.  No torque is therefore generated.
         [ExcludeFromDocs]
         public void AddForce(Vector2 force) { AddForce(force, ForceMode2D.Force); }
@@ -3246,6 +3278,12 @@ namespace UnityEngine
 
         [NativeMethod("Raycast_Binding")]
         extern private int Raycast_Internal(Vector2 direction, float distance, ContactFilter2D contactFilter, [Out] RaycastHit2D[] results);
+
+        // Get the closest point to position on this collider.
+        public Vector2 ClosestPoint(Vector2 position)
+        {
+            return Physics2D.ClosestPoint(position, this);
+        }
     }
 
     [NativeHeader("Modules/Physics2D/Public/CircleCollider2D.h")]

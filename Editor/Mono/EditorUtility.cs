@@ -290,7 +290,7 @@ namespace UnityEditor
             DisplayCustomMenuWithSeparators(position, options, enabled, separator, selected, callback, userData, showHotkey);
         }
 
-        internal static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData)
+        public static void DisplayCustomMenuWithSeparators(Rect position, string[] options, bool[] enabled, bool[] separator, int[] selected, SelectMenuItemFunction callback, object userData)
         {
             DisplayCustomMenuWithSeparators(position, options, enabled, separator, selected, callback, userData, false);
         }

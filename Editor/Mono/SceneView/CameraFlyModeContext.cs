@@ -73,7 +73,7 @@ namespace UnityEditor
                 foreach (KeyCode key in s_ArrowKeysDown)
                 {
                     var action = s_ArrowKeyBindings[key];
-                    action(orthographic, new ShortcutArguments { state = ShortcutState.End });
+                    action(orthographic, new ShortcutArguments { stage = ShortcutStage.End });
                 }
 
                 s_ArrowKeysDown.Clear();
@@ -93,7 +93,7 @@ namespace UnityEditor
                     case EventType.KeyDown:
                         if (!s_ArrowKeyBindings.TryGetValue(evt.keyCode, out action))
                             return false;
-                        action(orthographic, new ShortcutArguments { state = ShortcutState.Begin });
+                        action(orthographic, new ShortcutArguments { stage = ShortcutStage.Begin });
                         GUIUtility.hotControl = id;
                         s_ArrowKeysDown.Add(evt.keyCode);
                         evt.Use();
@@ -101,7 +101,7 @@ namespace UnityEditor
                     case EventType.KeyUp:
                         if (!s_ArrowKeyBindings.TryGetValue(evt.keyCode, out action))
                             return false;
-                        action(orthographic, new ShortcutArguments { state = ShortcutState.End });
+                        action(orthographic, new ShortcutArguments { stage = ShortcutStage.End });
                         s_ArrowKeysDown.Remove(evt.keyCode);
                         if (s_ArrowKeysDown.Count == 0)
                             GUIUtility.hotControl = 0;
@@ -123,46 +123,46 @@ namespace UnityEditor
 
         static Vector3 s_CurrentInputVector;
 
-        [ClutchShortcut("3D Viewport/Fly Mode Forward", typeof(CameraFlyModeContext), "w")]
+        [ClutchShortcut("3D Viewport/Fly Mode Forward", typeof(CameraFlyModeContext), KeyCode.W)]
         [FormerlyPrefKeyAs("View/FPS Forward", "w")]
         static void WalkForward(ShortcutArguments args)
         {
-            s_CurrentInputVector.z = args.state == ShortcutState.Begin ? 1f : s_CurrentInputVector.z > 0f ? 0f : s_CurrentInputVector.z;
+            s_CurrentInputVector.z = args.stage == ShortcutStage.Begin ? 1f : s_CurrentInputVector.z > 0f ? 0f : s_CurrentInputVector.z;
         }
 
-        [ClutchShortcut("3D Viewport/Fly Mode Backward", typeof(CameraFlyModeContext), "s")]
+        [ClutchShortcut("3D Viewport/Fly Mode Backward", typeof(CameraFlyModeContext), KeyCode.S)]
         [FormerlyPrefKeyAs("View/FPS Back", "s")]
         static void WalkBackward(ShortcutArguments args)
         {
-            s_CurrentInputVector.z = args.state == ShortcutState.Begin ? -1f : s_CurrentInputVector.z < 0f ? 0f : s_CurrentInputVector.z;
+            s_CurrentInputVector.z = args.stage == ShortcutStage.Begin ? -1f : s_CurrentInputVector.z < 0f ? 0f : s_CurrentInputVector.z;
         }
 
-        [ClutchShortcut("3D Viewport/Fly Mode Left", typeof(CameraFlyModeContext), "a")]
+        [ClutchShortcut("3D Viewport/Fly Mode Left", typeof(CameraFlyModeContext), KeyCode.A)]
         [FormerlyPrefKeyAs("View/FPS Strafe Left", "a")]
         static void WalkLeft(ShortcutArguments args)
         {
-            s_CurrentInputVector.x = args.state == ShortcutState.Begin ? -1f : s_CurrentInputVector.x < 0f ? 0f : s_CurrentInputVector.x;
+            s_CurrentInputVector.x = args.stage == ShortcutStage.Begin ? -1f : s_CurrentInputVector.x < 0f ? 0f : s_CurrentInputVector.x;
         }
 
-        [ClutchShortcut("3D Viewport/Fly Mode Right", typeof(CameraFlyModeContext), "d")]
+        [ClutchShortcut("3D Viewport/Fly Mode Right", typeof(CameraFlyModeContext), KeyCode.D)]
         [FormerlyPrefKeyAs("View/FPS Strafe Right", "d")]
         static void WalkRight(ShortcutArguments args)
         {
-            s_CurrentInputVector.x = args.state == ShortcutState.Begin ? 1f : s_CurrentInputVector.x > 0f ? 0f : s_CurrentInputVector.x;
+            s_CurrentInputVector.x = args.stage == ShortcutStage.Begin ? 1f : s_CurrentInputVector.x > 0f ? 0f : s_CurrentInputVector.x;
         }
 
-        [ClutchShortcut("3D Viewport/Fly Mode Up", typeof(CameraFlyModeContext), "e")]
+        [ClutchShortcut("3D Viewport/Fly Mode Up", typeof(CameraFlyModeContext), KeyCode.E)]
         [FormerlyPrefKeyAs("View/FPS Strafe Up", "e")]
         static void WalkUp(ShortcutArguments args)
         {
-            s_CurrentInputVector.y = args.state == ShortcutState.Begin ? 1f : s_CurrentInputVector.y > 0f ? 0f : s_CurrentInputVector.y;
+            s_CurrentInputVector.y = args.stage == ShortcutStage.Begin ? 1f : s_CurrentInputVector.y > 0f ? 0f : s_CurrentInputVector.y;
         }
 
-        [ClutchShortcut("3D Viewport/Fly Mode Down", typeof(CameraFlyModeContext), "q")]
+        [ClutchShortcut("3D Viewport/Fly Mode Down", typeof(CameraFlyModeContext), KeyCode.Q)]
         [FormerlyPrefKeyAs("View/FPS Strafe Down", "q")]
         static void WalkDown(ShortcutArguments args)
         {
-            s_CurrentInputVector.y = args.state == ShortcutState.Begin ? -1f : s_CurrentInputVector.y < 0f ? 0f : s_CurrentInputVector.y;
+            s_CurrentInputVector.y = args.stage == ShortcutStage.Begin ? -1f : s_CurrentInputVector.y < 0f ? 0f : s_CurrentInputVector.y;
         }
     }
 }

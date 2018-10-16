@@ -53,7 +53,7 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Sprite Editor/Trim", "#t")]
-        [Shortcut("Sprite Editor/Trim", typeof(SpriteFrameModuleContext), "#t")]
+        [Shortcut("Sprite Editor/Trim", typeof(SpriteFrameModuleContext), KeyCode.T, ShortcutModifiers.Shift)]
         static void ShortcutTrim(ShortcutArguments args)
         {
             if (!string.IsNullOrEmpty(GUI.GetNameOfFocusedControl()))

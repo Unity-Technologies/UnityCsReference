@@ -530,14 +530,18 @@ namespace UnityEditor.IMGUI.Controls
         protected virtual IList<int> GetAncestors(int id)
         {
             // Default behavior assumes complete tree
-            return TreeViewUtility.GetParentsAboveItem(FindItem(id)).ToList();
+            HashSet<int> parentsAbove = new HashSet<int>();
+            TreeViewUtility.GetParentsAboveItem(FindItem(id), parentsAbove);
+            return parentsAbove.ToArray();
         }
 
         // Used to expand children recursively below an item
         protected virtual IList<int> GetDescendantsThatHaveChildren(int id)
         {
             // Default behavior assumes complete tree
-            return TreeViewUtility.GetParentsBelowItem(FindItem(id)).ToList();
+            HashSet<int> parentsBelow = new HashSet<int>();
+            TreeViewUtility.GetParentsBelowItem(FindItem(id), parentsBelow);
+            return parentsBelow.ToArray();
         }
 
         TreeViewItem FindItem(int id)

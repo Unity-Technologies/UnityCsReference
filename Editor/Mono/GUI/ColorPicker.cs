@@ -567,6 +567,9 @@ namespace UnityEditor
         {
             GUILayout.BeginHorizontal();
 
+            var oldGUIColor = GUI.color;
+            GUI.color = Color.white;
+
             if (GUILayout.Button(Styles.eyeDropper, GUIStyle.none, GUILayout.Width(40), GUILayout.ExpandWidth(false)))
             {
                 GUIUtility.keyboardControl = 0;
@@ -610,6 +613,7 @@ namespace UnityEditor
 
             GUI.backgroundColor = backgroundColor;
             GUI.contentColor = contentColor;
+            GUI.color = oldGUIColor;
 
             GUILayout.EndHorizontal();
         }
@@ -619,6 +623,10 @@ namespace UnityEditor
             var backgroundStyle = m_HDR ? Styles.hueDialBackgroundHDR : Styles.hueDialBackground;
             var dialSize = backgroundStyle.CalcSize(GUIContent.none);
             var dialRect = GUILayoutUtility.GetRect(dialSize.x, dialSize.y);
+
+            var oldGUIColor = GUI.color;
+            GUI.color = Color.white;
+
             switch (m_ColorBoxMode)
             {
                 case ColorBoxMode.HSV:
@@ -673,6 +681,8 @@ namespace UnityEditor
                     EyeDropper.DrawPreview(dialRect);
                     break;
             }
+
+            GUI.color = oldGUIColor;
         }
 
         void DoColorSliders(float availableWidth)

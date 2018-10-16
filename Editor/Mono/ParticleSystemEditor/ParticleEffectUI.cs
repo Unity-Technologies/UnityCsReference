@@ -100,31 +100,31 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("ParticleSystem/Play", ",")]
-        [Shortcut("ParticleSystem/Play", typeof(ParticleSystemInspector.ShortcutContext), ",")]
+        [Shortcut("ParticleSystem/Play", typeof(ParticleSystemInspector.ShortcutContext), KeyCode.Comma)]
         static void PlayPauseShortcut(ShortcutArguments args)
         {
             DispatchShortcutEvent(s_PlayEvent);
         }
 
         [FormerlyPrefKeyAs("ParticleSystem/Stop", ".")]
-        [Shortcut("ParticleSystem/Stop", typeof(ParticleSystemInspector.ShortcutContext), ".")]
+        [Shortcut("ParticleSystem/Stop", typeof(ParticleSystemInspector.ShortcutContext), KeyCode.Period)]
         static void StopShortcut(ShortcutArguments args)
         {
             DispatchShortcutEvent(s_StopEvent);
         }
 
         [FormerlyPrefKeyAs("ParticleSystem/Forward", "m")]
-        [ClutchShortcut("ParticleSystem/Forward", typeof(ParticleSystemInspector.ShortcutContext), "m")]
+        [ClutchShortcut("ParticleSystem/Forward", typeof(ParticleSystemInspector.ShortcutContext), KeyCode.M)]
         static void ForwardShortcut(ShortcutArguments args)
         {
-            DispatchShortcutEvent(args.state == ShortcutState.Begin ? s_ForwardBeginEvent : s_ForwardEndEvent);
+            DispatchShortcutEvent(args.stage == ShortcutStage.Begin ? s_ForwardBeginEvent : s_ForwardEndEvent);
         }
 
         [FormerlyPrefKeyAs("ParticleSystem/Reverse", "n")]
-        [ClutchShortcut("ParticleSystem/Reverse", typeof(ParticleSystemInspector.ShortcutContext), "n")]
+        [ClutchShortcut("ParticleSystem/Reverse", typeof(ParticleSystemInspector.ShortcutContext), KeyCode.N)]
         static void ReverseShortcut(ShortcutArguments args)
         {
-            DispatchShortcutEvent(args.state == ShortcutState.Begin ? s_ReverseBeginEvent : s_ReverseEndEvent);
+            DispatchShortcutEvent(args.stage == ShortcutStage.Begin ? s_ReverseBeginEvent : s_ReverseEndEvent);
         }
 
         public ParticleEffectUI(ParticleEffectUIOwner owner)

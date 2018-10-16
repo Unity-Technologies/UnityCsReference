@@ -72,25 +72,26 @@ namespace UnityEditor.TreeViewExamples
             return null;
         }
 
-        public HashSet<int> GetParentsBelow(int id)
+        public void GetParentsBelow(int id, HashSet<int> parentsBelow)
         {
             Foo searchFromThis = FindItemRecursive(root, id);
-            if (searchFromThis != null)
-            {
-                if (m_RecursiveFindParentsBelow)
-                    return GetParentsBelowRecursive(searchFromThis);
+            if (searchFromThis == null)
+                return;
 
-                return GetParentsBelowStackBased(searchFromThis);
+            if (m_RecursiveFindParentsBelow)
+            {
+                GetParentsBelowRecursive(searchFromThis, parentsBelow);
+                return;
             }
-            return new HashSet<int>();
+
+            GetParentsBelowStackBased(searchFromThis, parentsBelow);
         }
 
-        private HashSet<int> GetParentsBelowStackBased(Foo searchFromThis)
+        private void GetParentsBelowStackBased(Foo searchFromThis, HashSet<int> parentsBelow)
         {
             Stack<Foo> stack = new Stack<Foo>();
             stack.Push(searchFromThis);
 
-            HashSet<int> parentsBelow = new HashSet<int>();
             while (stack.Count > 0)
             {
                 Foo current = stack.Pop();
@@ -103,15 +104,6 @@ namespace UnityEditor.TreeViewExamples
                     }
                 }
             }
-
-            return parentsBelow;
-        }
-
-        private HashSet<int> GetParentsBelowRecursive(Foo searchFromThis)
-        {
-            HashSet<int> result = new HashSet<int>();
-            GetParentsBelowRecursive(searchFromThis, result);
-            return result;
         }
 
         private static void GetParentsBelowRecursive(Foo item, HashSet<int> parentIDs)

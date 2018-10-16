@@ -93,7 +93,7 @@ namespace UnityEditor.ShortcutManagement
 
             var args = new ShortcutArguments();
             args.context = m_ContextManager.GetContextInstanceOfType(entry.context);
-            args.state = ShortcutState.End;
+            args.stage = ShortcutStage.End;
             entry.action(args);
         }
 

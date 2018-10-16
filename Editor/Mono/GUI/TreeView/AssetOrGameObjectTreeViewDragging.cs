@@ -160,11 +160,6 @@ namespace UnityEditor
 
         public override DragAndDropVisualMode DoDrag(TreeViewItem parentItem, TreeViewItem targetItem, bool perform, DropPosition dropPos)
         {
-            // Scene dragging logic
-            DragAndDropVisualMode dragSceneResult = DoDragScenes(parentItem as GameObjectTreeViewItem, targetItem as GameObjectTreeViewItem, perform, dropPos);
-            if (dragSceneResult != DragAndDropVisualMode.None)
-                return dragSceneResult;
-
             // Allow client to handle drag
             if (m_CustomDragHandling != null)
             {
@@ -172,6 +167,11 @@ namespace UnityEditor
                 if (dragResult != DragAndDropVisualMode.None)
                     return dragResult;
             }
+
+            // Scene dragging logic
+            DragAndDropVisualMode dragSceneResult = DoDragScenes(parentItem as GameObjectTreeViewItem, targetItem as GameObjectTreeViewItem, perform, dropPos);
+            if (dragSceneResult != DragAndDropVisualMode.None)
+                return dragSceneResult;
 
             if (targetItem != null && !IsDropTargetUserModifiable(targetItem as GameObjectTreeViewItem, dropPos))
                 return DragAndDropVisualMode.Rejected;
@@ -219,7 +219,21 @@ namespace UnityEditor
                 return DragAndDropVisualMode.None;
             }
 
-            option |= (draggingUpon ? InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon : InternalEditorUtility.HierarchyDropMode.kHierarchyDropBetween);
+            if (draggingUpon)
+            {
+                option |=  InternalEditorUtility.HierarchyDropMode.kHierarchyDropUpon;
+            }
+            else
+            {
+                if (dropPos == TreeViewDragging.DropPosition.Above)
+                {
+                    option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropAbove;
+                }
+                else
+                {
+                    option |= InternalEditorUtility.HierarchyDropMode.kHierarchyDropBetween;
+                }
+            }
 
             bool isDroppingBetweenParentAndFirstChild = parentItem != null && targetItem != parentItem && dropPos == DropPosition.Above && parentItem.children[0] == targetItem;
             if (isDroppingBetweenParentAndFirstChild)

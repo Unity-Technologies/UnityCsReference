@@ -11,17 +11,16 @@ using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
-    // TODO: Find better name
-    enum ShortcutState
+    public enum ShortcutStage
     {
-        Begin = 1,
-        End
+        Begin,
+        End,
     }
 
-    struct ShortcutArguments
+    public struct ShortcutArguments
     {
         public object context;
-        public ShortcutState state;
+        public ShortcutStage stage;
     }
 
     enum ShortcutType
@@ -58,7 +57,7 @@ namespace UnityEditor.ShortcutManagement
         readonly Identifier m_Identifier;
 
         readonly List<KeyCombination> m_DefaultCombinations = new List<KeyCombination>();
-        List<KeyCombination> m_OverridenCombinations;
+        List<KeyCombination> m_OverriddenCombinations;
 
         readonly Action<ShortcutArguments> m_Action;
         readonly Type m_Context;
@@ -68,7 +67,7 @@ namespace UnityEditor.ShortcutManagement
 
         public IEnumerable<KeyCombination> combinations => activeCombination;
 
-        public bool overridden => m_OverridenCombinations != null;
+        public bool overridden => m_OverriddenCombinations != null;
 
         public Action<ShortcutArguments> action => m_Action;
         public Type context => m_Context;
@@ -92,8 +91,8 @@ namespace UnityEditor.ShortcutManagement
         {
             get
             {
-                if (m_OverridenCombinations != null)
-                    return m_OverridenCombinations;
+                if (m_OverriddenCombinations != null)
+                    return m_OverriddenCombinations;
                 return m_DefaultCombinations;
             }
         }
@@ -124,9 +123,9 @@ namespace UnityEditor.ShortcutManagement
                         {
                             newModifier = newModifier & ~ShortcutModifiers.Alt;
                         }
-                        if ((modifier & ShortcutModifiers.ControlOrCommand) == ShortcutModifiers.ControlOrCommand)
+                        if ((modifier & ShortcutModifiers.Action) == ShortcutModifiers.Action)
                         {
-                            newModifier = newModifier & ~ShortcutModifiers.ControlOrCommand;
+                            newModifier = newModifier & ~ShortcutModifiers.Action;
                         }
                     }
 
@@ -161,14 +160,14 @@ namespace UnityEditor.ShortcutManagement
 
         internal void ResetToDefault()
         {
-            m_OverridenCombinations = null;
+            m_OverriddenCombinations = null;
         }
 
-        internal void SetOverride(List<KeyCombination> newKeyCombinations)
+        internal void SetOverride(IEnumerable<KeyCombination> newKeyCombinations)
         {
-            m_OverridenCombinations = new List<KeyCombination>(newKeyCombinations);
-            if (m_Type == ShortcutType.Menu && m_OverridenCombinations.Any())
-                Menu.SetHotkey(m_Identifier.path.Substring(Discovery.k_MainMenuShortcutPrefix.Length), m_OverridenCombinations[0].ToMenuShortcutString());
+            m_OverriddenCombinations = newKeyCombinations.ToList();
+            if (m_Type == ShortcutType.Menu && m_OverriddenCombinations.Any())
+                Menu.SetHotkey(m_Identifier.path.Substring(Discovery.k_MainMenuShortcutPrefix.Length), m_OverriddenCombinations[0].ToMenuShortcutString());
         }
 
         internal void ApplyOverride(SerializableShortcutEntry shortcutOverride)
@@ -178,16 +177,16 @@ namespace UnityEditor.ShortcutManagement
     }
 
     [Flags]
-    enum ShortcutModifiers
+    public enum ShortcutModifiers
     {
         None = 0,
         Alt = 1,
-        ControlOrCommand = 2,
+        Action = 2,
         Shift = 4
     }
 
     [Serializable]
-    struct KeyCombination
+    public struct KeyCombination
     {
         [SerializeField]
         KeyCode m_KeyCode;
@@ -203,7 +202,7 @@ namespace UnityEditor.ShortcutManagement
             m_Modifiers = shortcutModifiers;
         }
 
-        public KeyCombination(KeyCode keyCode, EventModifiers eventModifiers)
+        internal KeyCombination(KeyCode keyCode, EventModifiers eventModifiers)
         {
             m_KeyCode = keyCode;
             m_Modifiers = ShortcutModifiers.None;
@@ -211,9 +210,9 @@ namespace UnityEditor.ShortcutManagement
             if ((eventModifiers & EventModifiers.Alt) == EventModifiers.Alt)
                 m_Modifiers |= ShortcutModifiers.Alt;
             if ((eventModifiers & EventModifiers.Control) == EventModifiers.Control)
-                m_Modifiers |= ShortcutModifiers.ControlOrCommand;
+                m_Modifiers |= ShortcutModifiers.Action;
             if ((eventModifiers & EventModifiers.Command) == EventModifiers.Command)
-                m_Modifiers |= ShortcutModifiers.ControlOrCommand;
+                m_Modifiers |= ShortcutModifiers.Action;
             if ((eventModifiers & EventModifiers.Shift) == EventModifiers.Shift)
                 m_Modifiers |= ShortcutModifiers.Shift;
         }
@@ -226,28 +225,28 @@ namespace UnityEditor.ShortcutManagement
             if (evt.alt)
                 m_Modifiers |= ShortcutModifiers.Alt;
             if (evt.control || evt.command)
-                m_Modifiers |= ShortcutModifiers.ControlOrCommand;
+                m_Modifiers |= ShortcutModifiers.Action;
             if (evt.shift)
                 m_Modifiers |= ShortcutModifiers.Shift;
         }
 
         public bool alt => (modifiers & ShortcutModifiers.Alt) == ShortcutModifiers.Alt;
-        public bool controlOrCommand => (modifiers & ShortcutModifiers.ControlOrCommand) == ShortcutModifiers.ControlOrCommand;
+        public bool action => (modifiers & ShortcutModifiers.Action) == ShortcutModifiers.Action;
         public bool shift => (modifiers & ShortcutModifiers.Shift) == ShortcutModifiers.Shift;
 
-        public Event ToKeyboardEvent()
+        internal Event ToKeyboardEvent()
         {
             Event e = new Event();
             e.type = EventType.KeyDown;
             e.alt = alt;
-            e.command = controlOrCommand && Application.platform == RuntimePlatform.OSXEditor;
-            e.control = controlOrCommand && Application.platform != RuntimePlatform.OSXEditor;
+            e.command = action && Application.platform == RuntimePlatform.OSXEditor;
+            e.control = action && Application.platform != RuntimePlatform.OSXEditor;
             e.shift = shift;
             e.keyCode = keyCode;
             return e;
         }
 
-        public static string SequenceToString(IEnumerable<KeyCombination> keyCombinations)
+        internal static string SequenceToString(IEnumerable<KeyCombination> keyCombinations)
         {
             if (!keyCombinations.Any())
                 return "";
@@ -273,7 +272,7 @@ namespace UnityEditor.ShortcutManagement
             return builder.ToString();
         }
 
-        public string ToMenuShortcutString()
+        internal string ToMenuShortcutString()
         {
             if (keyCode == KeyCode.None)
                 return string.Empty;
@@ -283,7 +282,7 @@ namespace UnityEditor.ShortcutManagement
                 builder.Append("&");
             if ((modifiers & ShortcutModifiers.Shift) != 0)
                 builder.Append("#");
-            if ((modifiers & ShortcutModifiers.ControlOrCommand) != 0)
+            if ((modifiers & ShortcutModifiers.Action) != 0)
                 builder.Append("%");
             if (modifiers == ShortcutModifiers.None)
                 builder.Append("_");
@@ -301,12 +300,12 @@ namespace UnityEditor.ShortcutManagement
                     builder.Append("⌥");
                 if ((modifiers & ShortcutModifiers.Shift) != 0)
                     builder.Append("⇧");
-                if ((modifiers & ShortcutModifiers.ControlOrCommand) != 0)
+                if ((modifiers & ShortcutModifiers.Action) != 0)
                     builder.Append("⌘");
             }
             else
             {
-                if ((modifiers & ShortcutModifiers.ControlOrCommand) != 0)
+                if ((modifiers & ShortcutModifiers.Action) != 0)
                     builder.Append("Ctrl+");
                 if ((modifiers & ShortcutModifiers.Alt) != 0)
                     builder.Append("Alt+");

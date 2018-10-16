@@ -538,6 +538,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 scriptAssembly.Flags = targetAssembly.Flags;
                 scriptAssembly.BuildTarget = settings.BuildTarget;
                 scriptAssembly.Language = targetAssembly.Language;
+                scriptAssembly.OriginPath = targetAssembly.PathPrefix;
 
                 var editorOnlyTargetAssembly = (targetAssembly.Flags & AssemblyFlags.EditorOnly) == AssemblyFlags.EditorOnly;
 

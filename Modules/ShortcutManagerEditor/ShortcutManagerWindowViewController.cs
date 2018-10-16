@@ -67,7 +67,7 @@ namespace UnityEditor.ShortcutManagement
             m_ShortcutProfileManager.activeProfileChanged -= OnActiveProfileChanged;
         }
 
-        void OnActiveProfileChanged(IShortcutProfileManager shortcutProfileManager)
+        void OnActiveProfileChanged(IShortcutProfileManager shortcutProfileManager, ShortcutProfile previousActiveProfile, ShortcutProfile currentActiveProfile)
         {
             BuildKeyMapBindingStateData();
             m_ShortcutManagerWindowView.RefreshAll();
@@ -159,11 +159,10 @@ namespace UnityEditor.ShortcutManagement
 
         public List<string> GetAvailableProfiles()
         {
-            var profiles = new List<ShortcutProfile>();
-            m_ShortcutProfileManager.GetProfiles(profiles);
-            var profileIds = new List<string>(profiles.Count + 1) { "Default" };
-            profileIds.AddRange(profiles.Select(p => p.id));
-            return profileIds;
+            return m_ShortcutProfileManager.GetProfiles()
+                .Select(p => p.id)
+                .Concat(new[] { "Default" })
+                .ToList();
         }
 
         public string activeProfile

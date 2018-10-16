@@ -55,7 +55,7 @@ namespace UnityEditorInternal
             return Paths.Combine(moduleStrippingInformationFolder, module + ".xml");
         }
 
-        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist, BuildTargetGroup buildTargetGroup, ManagedStrippingLevel managedStrippingLevel)
+        private static bool StripAssembliesTo(string[] assemblies, string[] searchDirs, string outputFolder, string workingDirectory, out string output, out string error, string linkerPath, IIl2CppPlatformProvider platformProvider, IEnumerable<string> additionalBlacklist, BuildTargetGroup buildTargetGroup, ManagedStrippingLevel managedStrippingLevel, bool stripEngineCode)
         {
             if (!Directory.Exists(outputFolder))
                 Directory.CreateDirectory(outputFolder);
@@ -112,6 +112,28 @@ namespace UnityEditorInternal
                 args.Add($"--platform={compilerPlatform}");
                 if (platformProvider.target != BuildTarget.Android)
                     args.Add($"--architecture={compilerArchitecture}");
+            }
+
+            if (stripEngineCode)
+            {
+                if (UnityEngine.Connect.UnityConnectSettings.enabled)
+                    args.Add("--engine-stripping-flag=EnableUnityConnect");
+
+                if (UnityEngine.Analytics.PerformanceReporting.enabled)
+                    args.Add("--engine-stripping-flag=EnablePerformanceReporting");
+
+                if (UnityEngine.Analytics.Analytics.enabled)
+                    args.Add("--engine-stripping-flag=EnableAnalytics");
+
+                if (UnityEditor.CrashReporting.CrashReportingSettings.enabled)
+                    args.Add("--engine-stripping-flag=EnableCrashReporting");
+
+                if (UnityEditorInternal.VR.VRModule.ShouldInjectVRDependenciesForBuildTarget(platformProvider.target))
+                    args.Add("--engine-stripping-flag=EnableVR");
+
+                var modulesAssetPath = Path.Combine(platformProvider.moduleStrippingInformationFolder, "../modules.asset");
+                if (File.Exists(modulesAssetPath))
+                    args.Add($"--engine-modules-asset-file={modulesAssetPath}");
             }
 
             var additionalArgs = System.Environment.GetEnvironmentVariable("UNITYLINKER_ADDITIONAL_ARGS");
@@ -318,7 +340,8 @@ namespace UnityEditorInternal
                     platformProvider,
                     blacklists,
                     buildTargetGroup,
-                    managedStrippingLevel))
+                    managedStrippingLevel,
+                    stripEngineCode))
                     throw new Exception("Error in stripping assemblies: " + assemblies + ", " + error);
 
                 if (platformProvider.supportsEngineStripping)

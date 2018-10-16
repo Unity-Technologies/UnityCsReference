@@ -15,6 +15,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         Movable = 1 << 3,
         Deletable = 1 << 4,
         Droppable = 1 << 5,
-        Ascendable = 1 << 6
+        Ascendable = 1 << 6,
+        Renamable = 1 << 7,
     }
 }

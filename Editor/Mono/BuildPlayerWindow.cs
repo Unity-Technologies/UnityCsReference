@@ -463,7 +463,7 @@ namespace UnityEditor
             { "WindowsStandalone", "Windows" },
             { "LinuxStandalone", "Linux" },
             { "Facebook", "Facebook-Games"},
-            { "Metro", "UWP-IL2CPP"}
+            { "Metro", "Universal-Windows-Platform"}
         };
         static public string GetPlaybackEngineDownloadURL(string moduleName)
         {

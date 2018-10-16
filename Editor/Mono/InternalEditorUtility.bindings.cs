@@ -101,7 +101,8 @@ namespace UnityEditorInternal
             kHierarchyDropUpon = 1 << 0,
             kHierarchyDropBetween = 1 << 1,
             kHierarchyDropAfterParent = 1 << 2,
-            kHierarchySearchActive = 1 << 3
+            kHierarchySearchActive = 1 << 3,
+            kHierarchyDropAbove = 1 << 4
         }
 
         public extern static bool isHumanControllingUs
@@ -310,6 +311,9 @@ namespace UnityEditorInternal
 
         [FreeFunction("InternalEditorUtilityBindings::ConcatenatedLayersMaskToLayerMaskInternal")]
         extern private static int ConcatenatedLayersMaskToLayerMaskInternal(int concatenatedLayersMask);
+
+        [FreeFunction("TryOpenErrorFileFromConsole")]
+        public extern static bool TryOpenErrorFileFromConsole(string path, int line);
 
         public static int LayerMaskToConcatenatedLayersMask(LayerMask mask)
         {

@@ -583,9 +583,8 @@ namespace UnityEditor
             }
         }
 
-        internal virtual bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)
+        internal virtual bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out float height)
         {
-            block = null;
             height = -1;
             return false;
         }
@@ -810,9 +809,10 @@ namespace UnityEditor
         // draw the header, and then start a new vertical block with the same style.
         private void DrawHeaderFromInsideHierarchy()
         {
+            var style = GUILayoutUtility.topLevel.style;
             EditorGUILayout.EndVertical();
             OnHeaderGUI();
-            EditorGUILayout.BeginVertical(GUILayoutUtility.topLevel.style);
+            EditorGUILayout.BeginVertical(style);
         }
 
         internal static Rect DrawHeaderGUI(Editor editor, string header)

@@ -578,11 +578,16 @@ namespace UnityEditor
         // Returns instanceID of folders (and main asset if input is a subasset) up until and including the Assets folder
         public static int[] GetAncestors(int instanceID)
         {
-            List<int> ancestors = new List<int>();
+            HashSet<int> ancestors = new HashSet<int>();
+            GetAncestors(instanceID, ancestors);
+            return ancestors.ToArray();
+        }
 
+        internal static void GetAncestors(int instanceID, HashSet<int> ancestors)
+        {
             // Ensure we handle packages root folder
             if (instanceID == ProjectBrowser.kPackagesFolderInstanceId)
-                return ancestors.ToArray();
+                return;
 
             // Ensure we add the main asset as ancestor if input is a subasset
             int mainAssetInstanceID = AssetDatabase.GetMainAssetOrInProgressProxyInstanceID(AssetDatabase.GetAssetPath(instanceID));
@@ -598,8 +603,6 @@ namespace UnityEditor
                 ancestors.Add(currentInstanceID);
                 currentFolderPath = GetContainingFolder(AssetDatabase.GetAssetPath(currentInstanceID));
             }
-
-            return ancestors.ToArray();
         }
 
         public static bool IsFolder(int instanceID)

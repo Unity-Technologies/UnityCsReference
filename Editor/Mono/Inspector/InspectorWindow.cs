@@ -1109,12 +1109,6 @@ namespace UnityEditor
 
                 bool oldValue = GUIUtility.textFieldInput;
                 DrawEditor(editors, editorIndex, rebuildOptimizedGUIBlocks, ref showImportedObjectBarNext, ref importedObjectBarRect);
-                if (Event.current.type == EventType.Repaint && !oldValue && GUIUtility.textFieldInput) // Did this editor set textFieldInput=true?
-                {
-                    // If so, We need to flush the OptimizedGUIBlock every frame, so that EditorGUI.DoTextField() repaint keeps getting called and textFieldInput set to true.
-                    // textFieldInput is reset to false at beginning of every repaint in c++ GUIView::DoPaint()
-                    InspectorWindowUtils.FlushOptimizedGUIBlock(editors[editorIndex]);
-                }
             }
 
             // Make sure to display any remaining removed components that come after the last component on the GameObject.
@@ -1362,9 +1356,8 @@ namespace UnityEditor
 
         bool DoOnInspectorGUI(bool rebuildOptimizedGUIBlock, Editor editor, bool wasVisible, ref Rect contentRect)
         {
-            OptimizedGUIBlock optimizedBlock;
             float height;
-            if (editor.GetOptimizedGUIBlock(rebuildOptimizedGUIBlock, wasVisible, out optimizedBlock, out height))
+            if (editor.GetOptimizedGUIBlock(rebuildOptimizedGUIBlock, wasVisible, out height))
             {
                 contentRect = GUILayoutUtility.GetRect(0, wasVisible ? height : 0);
                 HandleLastInteractedEditor(contentRect, editor);
@@ -1377,18 +1370,12 @@ namespace UnityEditor
 
                 DrawAddedComponentBackground(contentRect, editor.targets);
 
-                // Try reusing optimized block
-                if (optimizedBlock.Begin(rebuildOptimizedGUIBlock, contentRect))
+                // Draw content
+                if (wasVisible)
                 {
-                    // Draw content
-                    if (wasVisible)
-                    {
-                        GUI.changed = false;
-                        editor.OnOptimizedInspectorGUI(contentRect);
-                    }
+                    GUI.changed = false;
+                    editor.OnOptimizedInspectorGUI(contentRect);
                 }
-
-                optimizedBlock.End();
             }
             else
             {
@@ -1658,9 +1645,6 @@ namespace UnityEditor
 
             foreach (var inspector in m_AllInspectors)
             {
-                foreach (var editor in inspector.tracker.activeEditors)
-                    InspectorWindowUtils.FlushOptimizedGUIBlock(editor);
-
                 inspector.ExtractPrefabComponents();
             }
         }

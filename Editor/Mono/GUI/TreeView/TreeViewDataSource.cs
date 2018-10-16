@@ -86,6 +86,40 @@ namespace UnityEditor.IMGUI.Controls
             }
         }
 
+        virtual public void RevealItems(int[] ids)
+        {
+            HashSet<int> expandedSet = new HashSet<int>(expandedIDs);
+            int orgSize = expandedSet.Count;
+
+            // Add all parents above id
+            foreach (var id in ids)
+            {
+                if (IsRevealed(id))
+                    continue;
+                // Reveal (expand parents up to root)
+                TreeViewItem item = FindItem(id);
+                if (item != null)
+                {
+                    TreeViewItem parent = item.parent;
+                    while (parent != null)
+                    {
+                        expandedSet.Add(parent.id);
+                        parent = parent.parent;
+                    }
+                }
+            }
+
+            if (orgSize != expandedSet.Count)
+            {
+                // Bulk set expanded ids (is sorted in SetExpandedIDs)
+                SetExpandedIDs(expandedSet.ToArray());
+
+                // Refresh immediately if any Item was expanded
+                if (m_NeedRefreshRows)
+                    FetchData();
+            }
+        }
+
         virtual public void OnSearchChanged()
         {
             m_NeedRefreshRows = true;
@@ -272,7 +306,8 @@ namespace UnityEditor.IMGUI.Controls
                 return;
             }
 
-            HashSet<int> parents = TreeViewUtility.GetParentsBelowItem(fromItem);
+            HashSet<int> parents = new HashSet<int>();
+            TreeViewUtility.GetParentsBelowItem(fromItem, parents);
 
             // Get existing expanded in hashset
             HashSet<int> oldExpandedSet = new HashSet<int>(expandedIDs);

@@ -47,7 +47,7 @@ namespace UnityEditor.Animations
     }
 
     [NativeHeader("Editor/Src/Animation/Transition.h")]
-    [NativeHeader("Runtime/Animation/MecanimUtility.h")]
+    [NativeHeader("Modules/Animation/MecanimUtility.h")]
     public partial class AnimatorTransitionBase : Object
     {
         protected AnimatorTransitionBase() {}

@@ -679,70 +679,70 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Terrain/Raise Height", "f1")]
-        [Shortcut("Terrain/Raise Height", typeof(TerrainToolContext), "f1")]
+        [Shortcut("Terrain/Raise Height", typeof(TerrainToolContext), KeyCode.F1)]
         static void RaiseHeight(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.Paint);
         }
 
         [FormerlyPrefKeyAs("Terrain/Set Height", "f2")]
-        [Shortcut("Terrain/Set Height", typeof(TerrainToolContext), "f2")]
+        [Shortcut("Terrain/Set Height", typeof(TerrainToolContext), KeyCode.F2)]
         static void SetHeight(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PlaceTree);
         }
 
         [FormerlyPrefKeyAs("Terrain/Smooth Height", "f3")]
-        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolContext), "f3")]
+        [Shortcut("Terrain/Smooth Height", typeof(TerrainToolContext), KeyCode.F3)]
         static void SmoothHeight(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.PaintDetail);
         }
 
         [FormerlyPrefKeyAs("Terrain/Texture Paint", "f4")]
-        [Shortcut("Terrain/Texture Paint", typeof(TerrainToolContext), "f4")]
+        [Shortcut("Terrain/Texture Paint", typeof(TerrainToolContext), KeyCode.F4)]
         static void TexturePaint(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.TerrainSettings);
         }
 
         [FormerlyPrefKeyAs("Terrain/Tree Brush", "f5")]
-        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolContext), "f5")]
+        [Shortcut("Terrain/Tree Brush", typeof(TerrainToolContext), KeyCode.F5)]
         static void TreeBrush(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = TerrainTool.TerrainToolCount);
         }
 
         [FormerlyPrefKeyAs("Terrain/Detail Brush", "f6")]
-        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolContext), "f6")]
+        [Shortcut("Terrain/Detail Brush", typeof(TerrainToolContext), KeyCode.F6)]
         static void DetailBrush(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.selectedTool = (TerrainTool)5);
         }
 
         [FormerlyPrefKeyAs("Terrain/Previous Brush", ",")]
-        [Shortcut("Terrain/Previous Brush", typeof(TerrainToolContext), ",")]
+        [Shortcut("Terrain/Previous Brush", typeof(TerrainToolContext), KeyCode.Comma)]
         static void PreviousBrush(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.brushList.SelectPrevBrush());
         }
 
         [FormerlyPrefKeyAs("Terrain/Next Brush", ".")]
-        [Shortcut("Terrain/Next Brush", typeof(TerrainToolContext), ".")]
+        [Shortcut("Terrain/Next Brush", typeof(TerrainToolContext), KeyCode.Period)]
         static void NextBrush(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.brushList.SelectNextBrush());
         }
 
         [FormerlyPrefKeyAs("Terrain/Previous Detail", "#,")]
-        [Shortcut("Terrain/Previous Detail", typeof(TerrainToolContext), "#,")]
+        [Shortcut("Terrain/Previous Detail", typeof(TerrainToolContext), KeyCode.Comma, ShortcutModifiers.Shift)]
         static void PreviousDetail(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.DetailDelta(-1));
         }
 
         [FormerlyPrefKeyAs("Terrain/Next Detail", "#.")]
-        [Shortcut("Terrain/Next Detail", typeof(TerrainToolContext), "#.")]
+        [Shortcut("Terrain/Next Detail", typeof(TerrainToolContext), KeyCode.Period, ShortcutModifiers.Shift)]
         static void NextDetail(ShortcutArguments args)
         {
             ChangeTool(args, editor => editor.DetailDelta(1));

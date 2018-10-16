@@ -16,15 +16,13 @@ namespace UnityEditor
         }
 
         private AudioFilterGUI m_AudioFilterGUI;
-        private OptimizedGUIBlock m_OptimizedBlock;
 
         private float m_LastHeight;
-        private OptimizedGUIBlock m_LastOptimizedBlock;
         private OptimizedBlockState m_OptimizedBlockState = OptimizedBlockState.CheckOptimizedBlock;
 
-        internal override bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out OptimizedGUIBlock block, out float height)
+        internal override bool GetOptimizedGUIBlock(bool isDirty, bool isVisible, out float height)
         {
-            block = null; height = -1;
+            height = -1;
 
             // Don't use optimizedGUI for audio filters
             var behaviour = target as MonoBehaviour;
@@ -34,16 +32,12 @@ namespace UnityEditor
             if (IsMissingMonoBehaviourTarget())
                 return false;
 
-            if (isDirty && m_OptimizedBlock != null)
+            if (isDirty)
                 ResetOptimizedBlock();
 
             if (!isVisible)
             {
-                if (m_OptimizedBlock == null)
-                    m_OptimizedBlock = new OptimizedGUIBlock();
-
                 height = 0;
-                block = m_OptimizedBlock;
                 return true;
             }
 
@@ -53,7 +47,6 @@ namespace UnityEditor
                 if (m_OptimizedBlockState == OptimizedBlockState.NoOptimizedBlock)
                     return false;
                 height = m_LastHeight;
-                block = m_LastOptimizedBlock;
                 return true;
             }
 
@@ -82,11 +75,7 @@ namespace UnityEditor
             if (height > 0)
                 height += EditorGUI.kControlVerticalSpacing;
 
-            if (m_OptimizedBlock == null)
-                m_OptimizedBlock = new OptimizedGUIBlock();
-
             m_LastHeight = height;
-            m_LastOptimizedBlock = block = m_OptimizedBlock;
             m_OptimizedBlockState = OptimizedBlockState.HasOptimizedBlock;
             return true;
         }
@@ -151,14 +140,7 @@ namespace UnityEditor
 
         private bool ResetOptimizedBlock(OptimizedBlockState resetState = OptimizedBlockState.CheckOptimizedBlock)
         {
-            if (m_OptimizedBlock != null)
-            {
-                m_OptimizedBlock.Dispose();
-                m_OptimizedBlock = null;
-            }
-
             m_LastHeight = -1;
-            m_LastOptimizedBlock = null;
             m_OptimizedBlockState = resetState;
             return m_OptimizedBlockState == OptimizedBlockState.HasOptimizedBlock;
         }

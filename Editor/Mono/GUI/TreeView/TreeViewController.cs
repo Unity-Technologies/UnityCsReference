@@ -229,8 +229,7 @@ namespace UnityEditor.IMGUI.Controls
             {
                 if (revealSelectionAndFrameLastSelected)
                 {
-                    foreach (int id in selectedIDs)
-                        data.RevealItem(id);
+                    data.RevealItems(selectedIDs);
                 }
 
                 state.selectedIDs = new List<int>(selectedIDs);

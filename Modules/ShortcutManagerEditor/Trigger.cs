@@ -42,7 +42,7 @@ namespace UnityEditor.ShortcutManagement
                     var args = new ShortcutArguments
                     {
                         context = clutchContext,
-                        state = ShortcutState.End
+                        stage = ShortcutStage.End
                     };
                     invokingAction?.Invoke(clutchTuple.Item1, args);
                     clutchTuple.Item1.action(args);
@@ -93,7 +93,7 @@ namespace UnityEditor.ShortcutManagement
                         switch (shortcutEntry.type)
                         {
                             case ShortcutType.Action:
-                                args.state = ShortcutState.End;
+                                args.stage = ShortcutStage.End;
                                 invokingAction?.Invoke(shortcutEntry, args);
                                 shortcutEntry.action(args);
                                 evt.Use();
@@ -104,7 +104,7 @@ namespace UnityEditor.ShortcutManagement
                                 if (!m_ActiveClutches.ContainsKey(evt.keyCode))
                                 {
                                     m_ActiveClutches.Add(evt.keyCode, new Tuple<ShortcutEntry, object>(shortcutEntry, args.context));
-                                    args.state = ShortcutState.Begin;
+                                    args.stage = ShortcutStage.Begin;
                                     invokingAction?.Invoke(shortcutEntry, args);
                                     shortcutEntry.action(args);
                                     evt.Use();
@@ -112,7 +112,7 @@ namespace UnityEditor.ShortcutManagement
                                 }
                                 break;
                             case ShortcutType.Menu:
-                                args.state = ShortcutState.End;
+                                args.stage = ShortcutStage.End;
                                 invokingAction?.Invoke(shortcutEntry, args);
                                 shortcutEntry.action(args);
                                 evt.Use();
@@ -140,7 +140,7 @@ namespace UnityEditor.ShortcutManagement
                 var args = new ShortcutArguments
                 {
                     context = clutchTuple.Item2,
-                    state = ShortcutState.End,
+                    stage = ShortcutStage.End,
                 };
                 invokingAction?.Invoke(clutchTuple.Item1, args);
                 clutchTuple.Item1.action(args);

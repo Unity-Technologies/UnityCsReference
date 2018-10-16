@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Internal;
 using UnityEngine.Rendering;
@@ -593,6 +594,11 @@ namespace UnityEditor
             position.y = Screen.height - position.y - cam.pixelRect.yMin;
 
             materialIndex = -1; // default
+
+            if (ignore != null && ignore.Any(go => go == null))
+                throw new ArgumentException("ignore may not contain null elements");
+            if (filter != null && filter.Any(go => go == null))
+                throw new ArgumentException("filter may not contain null elements");
 
             GameObject picked = null;
             if (pickClosestGameObjectDelegate != null)

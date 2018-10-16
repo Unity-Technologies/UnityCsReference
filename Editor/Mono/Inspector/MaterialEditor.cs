@@ -1257,6 +1257,11 @@ namespace UnityEditor
 
         public void LightmapEmissionFlagsProperty(int indent, bool enabled)
         {
+            LightmapEmissionFlagsProperty(indent, enabled, false);
+        }
+
+        public void LightmapEmissionFlagsProperty(int indent, bool enabled, bool ignoreEmissionColor)
+        {
             Material[] materials = Array.ConvertAll(targets, (Object o) => { return (Material)o; });
 
             // Calculate isMixed
@@ -1284,7 +1289,10 @@ namespace UnityEditor
             foreach (Material mat in materials)
             {
                 mat.globalIlluminationFlags = applyFlags ? giFlags : mat.globalIlluminationFlags;
-                FixupEmissiveFlag(mat);
+                if (!ignoreEmissionColor)
+                {
+                    FixupEmissiveFlag(mat);
+                }
             }
         }
 

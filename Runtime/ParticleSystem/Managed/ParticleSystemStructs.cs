@@ -270,4 +270,19 @@ namespace UnityEngine
             [NativeName(Name = "applyShapeToPosition")] private bool m_ApplyShapeToPosition;
         }
     }
+
+    [RequiredByNativeCode(Optional = true)]
+    public partial struct ParticleCollisionEvent
+    {
+        internal Vector3 m_Intersection;
+        internal Vector3 m_Normal;
+        internal Vector3 m_Velocity;
+        internal int m_ColliderInstanceID;
+
+        public Vector3 intersection { get { return m_Intersection; } }
+        public Vector3 normal { get { return m_Normal; } }
+        public Vector3 velocity { get { return m_Velocity; } }
+
+        public Component colliderComponent { get { return InstanceIDToColliderComponent(m_ColliderInstanceID); } }
+    }
 }

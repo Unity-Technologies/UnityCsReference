@@ -2,16 +2,16 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-using System;
 using System.Collections.Generic;
-using UnityEngine;
+using System.Runtime.InteropServices;
 using UnityEngine.Bindings;
-using Object = UnityEngine.Object;
+using UnityEngine.Scripting;
 
 namespace UnityEngine
 {
-    [NativeHeader("Runtime/ParticleSystem/ParticleSystemRenderer.h")]
     [NativeHeader("ParticleSystemScriptingClasses.h")]
+    [NativeHeader("Runtime/ParticleSystem/ParticleSystemRenderer.h")]
+    [NativeHeader("Runtime/ParticleSystem/ScriptBindings/ParticleSystemRendererScriptBindings.h")]
     [RequireComponent(typeof(Transform))]
     public partial class ParticleSystemRenderer : Renderer
     {
@@ -36,12 +36,36 @@ namespace UnityEngine
         extern public bool enableGPUInstancing { get; set; }
         extern public bool allowRoll { get; set; }
 
+        // Mesh used as particle instead of billboarded texture.
+        extern public Mesh mesh
+        {
+            [FreeFunction(Name = "ParticleSystemRendererScriptBindings::GetMesh", HasExplicitThis = true)]
+            get;
+            [FreeFunction(Name = "ParticleSystemRendererScriptBindings::SetMesh", HasExplicitThis = true)]
+            set;
+        }
+
+        [FreeFunction(Name = "ParticleSystemRendererScriptBindings::GetMeshes", HasExplicitThis = true)]
+        extern public int GetMeshes([NotNull][Out] Mesh[] meshes);
+
+        [FreeFunction(Name = "ParticleSystemRendererScriptBindings::SetMeshes", HasExplicitThis = true)]
+        extern public void SetMeshes([NotNull] Mesh[] meshes, int size);
+        public void SetMeshes(Mesh[] meshes) { SetMeshes(meshes, meshes.Length); }
+
         public void BakeMesh(Mesh mesh, bool useTransform = false) { BakeMesh(mesh, Camera.main, useTransform); }
         extern public void BakeMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);
 
         public void BakeTrailsMesh(Mesh mesh, bool useTransform = false) { BakeTrailsMesh(mesh, Camera.main, useTransform); }
         extern public void BakeTrailsMesh([NotNull] Mesh mesh, [NotNull] Camera camera, bool useTransform = false);
 
+        // Vertex streams
+        extern public int activeVertexStreamsCount { get; }
+        [FreeFunction(Name = "ParticleSystemRendererScriptBindings::SetActiveVertexStreams", HasExplicitThis = true)]
+        extern public void SetActiveVertexStreams([NotNull] List<ParticleSystemVertexStream> streams);
+        [FreeFunction(Name = "ParticleSystemRendererScriptBindings::GetActiveVertexStreams", HasExplicitThis = true)]
+        extern public void GetActiveVertexStreams([NotNull] List<ParticleSystemVertexStream> streams);
+
         extern internal bool editorEnabled { get; set; }
+        extern internal bool supportsMeshInstancing { get; }
     }
 }

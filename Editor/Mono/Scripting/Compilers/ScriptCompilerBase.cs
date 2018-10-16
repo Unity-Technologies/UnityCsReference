@@ -120,23 +120,31 @@ namespace UnityEditor.Scripting.Compilers
             if (!File.Exists(relativeCustomResponseFilePath))
                 return false;
 
+            AddResponseFileToArguments(arguments, relativeCustomResponseFilePath);
+
+            return true;
+        }
+
+        protected void AddResponseFileToArguments(List<string> arguments, string responseFileName)
+        {
             var responseFileData = ParseResponseFileFromFile(
-                Path.Combine(m_ProjectDirectory, relativeCustomResponseFilePath),
+                Path.Combine(m_ProjectDirectory, responseFileName),
                 Application.dataPath,
                 GetSystemReferenceDirectories());
             foreach (var error in responseFileData.Errors)
             {
-                Debug.LogError($"{relativeCustomResponseFilePath} Parse Error : {error}");
+                Debug.LogError($"{responseFileName} Parse Error : {error}");
             }
 
             arguments.AddRange(responseFileData.Defines.Distinct().Select(define => "/define:" + define));
             arguments.AddRange(responseFileData.FullPathReferences.Select(reference =>
                 "/reference:" + PrepareFileName(reference.Assembly)));
 
-            if (responseFileData.Unsafe) arguments.Add("/unsafe");
+            if (responseFileData.Unsafe)
+            {
+                arguments.Add("/unsafe");
+            }
             arguments.AddRange(responseFileData.OtherArguments);
-
-            return true;
         }
 
         public static ResponseFileData ParseResponseFileFromFile(

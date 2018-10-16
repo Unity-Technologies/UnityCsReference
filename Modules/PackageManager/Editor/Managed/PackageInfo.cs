@@ -102,7 +102,7 @@ namespace UnityEditor.PackageManager
         public string name { get { return m_Name;  } }
         public string displayName { get { return m_DisplayName;  } }
         public string category { get { return m_Category;  } }
-        internal string type { get { return m_Type;  } }
+        public string type { get { return m_Type; } }
         public string description { get { return m_Description;  } }
         public PackageStatus status { get { return m_Status;  } }
         public Error[] errors { get { return m_Errors;  } }

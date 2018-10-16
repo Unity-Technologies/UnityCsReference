@@ -10,7 +10,7 @@ using UnityEngine.Scripting;
 
 namespace UnityEditor
 {
-    [NativeHeader("Runtime/Animation/Animator.h")]
+    [NativeHeader("Modules/Animation/Animator.h")]
     [NativeHeader("Editor/Src/Animation/AvatarUtility.h")]
     internal class AvatarUtility
     {

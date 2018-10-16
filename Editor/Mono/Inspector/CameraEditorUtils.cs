@@ -36,8 +36,17 @@ namespace UnityEditor
             // get the corners of the far clip plane in world space
             var far = new Vector3[4];
             float frustumAspect;
-            if (!TryGetFrustum(c, null, far, out frustumAspect))
-                return;
+            if (c.usePhysicalProperties)
+            {
+                if (!TryGetSensorGateFrustum(c, null, far, out frustumAspect))
+                    return;
+            }
+            else
+            {
+                if (!TryGetFrustum(c, null, far, out frustumAspect))
+                    return;
+            }
+
             var leftBottomFar = far[0];
             var leftTopFar = far[1];
             var rightTopFar = far[2];

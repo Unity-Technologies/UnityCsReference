@@ -941,6 +941,12 @@ namespace UnityEditor
             }
         }
 
+        // Same as PingObject, but renamed to avoid ambiguity when calling externally (i.e. using CallStaticMonoMethod)
+        private static void PingObjectFromCPP(int targetInstanceID)
+        {
+            PingObject(targetInstanceID);
+        }
+
         internal static void MoveFocusAndScroll(bool forward)
         {
             int prev = keyboardControl;
@@ -1196,7 +1202,6 @@ namespace UnityEditor
             gs.Draw(position, false, false, false, false);
 
             // Render LDR -> HDR gradients on the sides when having HDR values (to let the user see what the normalized color looks like)
-            // Note that we use GUIStyle rendering methods to ensure this part works with OptimizedGUIBlock
             if (hdr)
             {
                 Color32 baseColor;

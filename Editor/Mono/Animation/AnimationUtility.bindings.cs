@@ -387,6 +387,10 @@ namespace UnityEditor
 
         extern internal static Vector3 GetClosestEuler(Quaternion q, Vector3 eulerHint, RotationOrder rotationOrder);
 
+        [NativeHeader("Modules/Animation/AnimationUtility.h")]
+        [FreeFunction]
+        extern internal static void SampleEulerHint([NotNull] GameObject go, [NotNull] AnimationClip clip, float inTime, WrapMode wrapMode);
+
         [Obsolete("Use AnimationMode.InAnimationMode instead.")]
         static public bool InAnimationMode()
         {

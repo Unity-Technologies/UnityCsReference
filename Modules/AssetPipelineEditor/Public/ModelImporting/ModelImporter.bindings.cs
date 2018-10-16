@@ -31,7 +31,7 @@ namespace UnityEditor
     }
 
     [UsedByNativeCode]
-    [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Runtime/Animation/AvatarMask.h", IntermediateScriptingStructName = "MonoTransformMaskElement")]
+    [NativeType(CodegenOptions = CodegenOptions.Custom, Header = "Modules/Animation/AvatarMask.h", IntermediateScriptingStructName = "MonoTransformMaskElement")]
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
     internal partial struct TransformMaskElement
     {
@@ -379,7 +379,7 @@ namespace UnityEditor
 
     [NativeType(Header = "Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.h")]
     [NativeHeader("Modules/AssetPipelineEditor/Public/ModelImporting/ModelImporter.bindings.h")]
-    [NativeHeader("Runtime/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
+    [NativeHeader("Modules/Animation/ScriptBindings/AvatarBuilder.bindings.h")]
     public partial class ModelImporter : AssetImporter
     {
         [System.Obsolete("Use importMaterials, materialName and materialSearch instead")]

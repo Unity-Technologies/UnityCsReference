@@ -1382,66 +1382,61 @@ namespace UnityEditor
 
         void RenderFilteredScene(Rect groupSpaceCameraRect)
         {
-            var oldTargetTexture = m_Camera.targetTexture;
-            var oldDepthTextureMode = m_Camera.depthTextureMode;
             var oldRenderingPath = m_Camera.renderingPath;
 
-            // First pass: Draw the scene normally in destination render textsure
+            // First pass: Draw the scene normally in destination render texture, save color buffer for later
             DoClearCamera(groupSpaceCameraRect);
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
 
-            // Second pass: Blit the scene faded out in a different render texture
-            var fadedDesc = m_SceneTargetTexture.descriptor;
-            var fadedRT = RenderTexture.GetTemporary(fadedDesc);
-            fadedRT.name = "FadedRT";
+            var colorDesc = m_SceneTargetTexture.descriptor;
+            colorDesc.depthBufferBits = 0;
+            var colorRT = RenderTexture.GetTemporary(colorDesc);
+            colorRT.name = "SavedColorRT";
+            Graphics.Blit(m_SceneTargetTexture, colorRT);
 
+            // Second pass: Blit the scene faded out in the scene target texture
             float fade = Mathf.Clamp01((float)(EditorApplication.timeSinceStartup - m_StartSearchFilterTime));
             if (!s_FadeMaterial)
                 s_FadeMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewGrayscaleEffectFade.mat") as Material;
             s_FadeMaterial.SetFloat("_Fade", fade);
-            Graphics.Blit(m_SceneTargetTexture, fadedRT, s_FadeMaterial);
+            Graphics.Blit(colorRT, m_SceneTargetTexture, s_FadeMaterial);
 
-            // Third pass: Draw aura for objects which meet the search filter, but are occluded.
+            // Third pass: Draw aura for objects which meet the search filter, but are occluded. Save color buffer for later.
             m_Camera.renderingPath = RenderingPath.Forward;
             if (!s_AuraShader)
                 s_AuraShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewAura.shader") as Shader;
             m_Camera.SetReplacementShader(s_AuraShader, "");
-            m_Camera.SetTargetBuffers(fadedRT.colorBuffer, m_SceneTargetTexture.depthBuffer);
-            m_Camera.depthTextureMode = DepthTextureMode.None;
             Handles.SetCameraFilterMode(m_Camera, Handles.CameraFilterMode.ShowFiltered);
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
 
-            // Fourth pass: Draw objects which do meet filter in a mask
-            var maskDesc = m_SceneTargetTexture.descriptor;
-            maskDesc.colorFormat = RenderTextureFormat.R8;
-            maskDesc.depthBufferBits = 0;
-            var maskRT = RenderTexture.GetTemporary(maskDesc);
-            maskRT.name = "MaskRT";
+            var fadedDesc = m_SceneTargetTexture.descriptor;
+            colorDesc.depthBufferBits = 0;
+            var fadedRT = RenderTexture.GetTemporary(fadedDesc);
+            fadedRT.name = "FadedColorRT";
+            Graphics.Blit(m_SceneTargetTexture, fadedRT);
 
-            RenderTexture.active = maskRT;
+            // Fourth pass: Draw objects which do meet filter in a mask
+            RenderTexture.active = m_SceneTargetTexture;
             GL.Clear(false, true, Color.clear);
 
             if (!s_BuildFilterShader)
                 s_BuildFilterShader = EditorGUIUtility.LoadRequired("SceneView/SceneViewBuildFilter.shader") as Shader;
             m_Camera.SetReplacementShader(s_BuildFilterShader, "");
-            m_Camera.SetTargetBuffers(maskRT.colorBuffer, m_SceneTargetTexture.depthBuffer);
-            m_Camera.depthTextureMode = DepthTextureMode.None;
             Handles.DrawCamera(groupSpaceCameraRect, m_Camera, m_CameraMode.drawMode);
 
             // Final pass: Blit the faded scene where the mask isn't set
             if (!s_ApplyFilterMaterial)
                 s_ApplyFilterMaterial = EditorGUIUtility.LoadRequired("SceneView/SceneViewApplyFilter.mat") as Material;
-            s_ApplyFilterMaterial.SetTexture("_MaskTex", maskRT);
-            Graphics.Blit(fadedRT, m_SceneTargetTexture, s_ApplyFilterMaterial);
+            s_ApplyFilterMaterial.SetTexture("_MaskTex", m_SceneTargetTexture);
+            Graphics.Blit(fadedRT, colorRT, s_ApplyFilterMaterial);
+            Graphics.Blit(colorRT, m_SceneTargetTexture);
 
-            RenderTexture.ReleaseTemporary(maskRT);
+            RenderTexture.ReleaseTemporary(colorRT);
             RenderTexture.ReleaseTemporary(fadedRT);
 
             // Reset camera
             m_Camera.SetReplacementShader(m_ReplacementShader, m_ReplacementString);
             m_Camera.renderingPath = oldRenderingPath;
-            m_Camera.targetTexture = oldTargetTexture;
-            m_Camera.depthTextureMode = oldDepthTextureMode;
 
             if (fade < 1)
                 Repaint();
@@ -1477,8 +1472,13 @@ namespace UnityEditor
             // for the skybox we always want to use the same FOV.
             float skyboxFOV = GetVerticalFOV(kPerspectiveFov);
             float realFOV = m_Camera.fieldOfView;
+
+            var clearFlags = m_Camera.clearFlags;
+            if (GraphicsSettings.renderPipelineAsset != null)
+                m_Camera.clearFlags = CameraClearFlags.Color;
             m_Camera.fieldOfView = skyboxFOV;
             Handles.ClearCamera(cameraRect, m_Camera);
+            m_Camera.clearFlags = clearFlags;
             m_Camera.fieldOfView = realFOV;
         }
 
@@ -2069,7 +2069,7 @@ namespace UnityEditor
             m_Camera.rect = origCameraRect;
         }
 
-        [Shortcut("Scene View/Toggle 2D Mode", typeof(SceneView), "2")]
+        [Shortcut("Scene View/Toggle 2D Mode", typeof(SceneView), KeyCode.Alpha2)]
         [FormerlyPrefKeyAs("Tools/2D Mode", "2")]
         static void Toggle2DMode(ShortcutArguments args)
         {

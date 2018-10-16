@@ -98,6 +98,9 @@ namespace UnityEngine
         extern public float focalLength  { get; set; }
         extern public GateFitMode gateFit  { get; set; }
 
+        extern public float GetGateFittedFieldOfView();
+        extern public Vector2 GetGateFittedLensShift();
+
         extern internal Vector3 GetLocalSpaceAim();
         [NativeProperty("NormalizedViewportRect")] extern public Rect rect      { get; set; }
         [NativeProperty("ScreenViewportRect")]     extern public Rect pixelRect { get; set; }

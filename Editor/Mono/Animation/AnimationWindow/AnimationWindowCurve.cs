@@ -216,6 +216,7 @@ namespace UnityEditorInternal
                 }
             }
 
+            keys.Sort((a, b) => a.time.CompareTo(b.time));
             return keys.ToArray();
         }
 

@@ -211,7 +211,7 @@ namespace UnityEditor
         public static GUIStyle helpBox { get { return s_Current.m_HelpBox; } }
         private GUIStyle m_HelpBox;
 
-        internal static GUIStyle toolbarSearchField { get { return s_Current.m_ToolbarSearchField; } }
+        public static GUIStyle toolbarSearchField { get { return s_Current.m_ToolbarSearchField; } }
         private GUIStyle m_ToolbarSearchField;
 
         internal static GUIStyle toolbarSearchFieldPopup { get { return s_Current.m_ToolbarSearchFieldPopup; } }

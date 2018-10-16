@@ -2,12 +2,20 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+
 using System;
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Collections;
 using Object = UnityEngine.Object;
+
+using UnityEngine.Playables;
+using UnityEngine.Animations;
+
+using UnityEngine.Experimental.Animations;
+
+using Unity.Profiling;
 
 namespace UnityEditorInternal
 {
@@ -87,6 +95,24 @@ namespace UnityEditorInternal
             }
         }
 
+        [Flags]
+        enum ResampleFlags
+        {
+            None                = 0,
+
+            RebuildGraph        = 1 << 0,
+            RefreshViews        = 1 << 1,
+            FlushUndos          = 1 << 2,
+
+            Scrub               = RefreshViews | FlushUndos,
+            Default             = RebuildGraph | RefreshViews | FlushUndos
+        };
+
+        private static bool HasFlag(ResampleFlags flags, ResampleFlags flag)
+        {
+            return (flags & flag) != 0;
+        }
+
         [SerializeField] private AnimationKeyTime m_Time;
 
         [NonSerialized] private float m_PreviousUpdateTime;
@@ -99,15 +125,25 @@ namespace UnityEditorInternal
         [SerializeField] private AnimationModeDriver m_Driver;
         [SerializeField] private AnimationModeDriver m_CandidateDriver;
 
+        private IAnimationWindowPostProcess[] m_PostProcessComponents;
+        private PlayableGraph m_Graph;
+        private Playable m_GraphRoot;
+
+        private static ProfilerMarker s_ResampleAnimationMarker = new ProfilerMarker("AnimationWindowControl.ResampleAnimation");
+
         public override void OnEnable()
         {
             base.OnEnable();
+
+            EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
         }
 
         public void OnDisable()
         {
             StopPreview();
             StopPlayback();
+
+            EditorApplication.playModeStateChanged -= OnPlayModeStateChanged;
         }
 
         public void OnDestroy()
@@ -124,6 +160,15 @@ namespace UnityEditorInternal
 
             StopPreview();
             StopPlayback();
+        }
+
+        void OnPlayModeStateChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingPlayMode)
+            {
+                StopPreview();
+                StopPlayback();
+            }
         }
 
         public override AnimationKeyTime time
@@ -250,7 +295,7 @@ namespace UnityEditorInternal
                 m_Time = AnimationKeyTime.Time(value, state.frameRate);
                 StartPreview();
                 ClearCandidates();
-                ResampleAnimation();
+                ResampleAnimation(ResampleFlags.Scrub);
             }
         }
 
@@ -261,7 +306,7 @@ namespace UnityEditorInternal
                 m_Time = AnimationKeyTime.Frame(value, state.frameRate);
                 StartPreview();
                 ClearCandidates();
-                ResampleAnimation();
+                ResampleAnimation(ResampleFlags.Scrub);
             }
         }
 
@@ -327,7 +372,7 @@ namespace UnityEditorInternal
 
             m_Time = AnimationKeyTime.Time(Mathf.Clamp(newTime, state.minTime, state.maxTime), state.frameRate);
 
-            ResampleAnimation();
+            ResampleAnimation(ResampleFlags.Scrub);
 
             return true;
         }
@@ -368,6 +413,9 @@ namespace UnityEditorInternal
             AnimationMode.StartAnimationMode(GetAnimationModeDriver());
             AnimationPropertyContextualMenu.Instance.SetResponder(this);
             Undo.postprocessModifications += PostprocessAnimationRecordingModifications;
+            FetchPostProcessComponents();
+            DestroyGraph();
+
             return true;
         }
 
@@ -376,6 +424,7 @@ namespace UnityEditorInternal
             StopPlayback();
             StopRecording();
             ClearCandidates();
+            DestroyGraph();
 
             AnimationMode.StopAnimationMode(GetAnimationModeDriver());
 
@@ -443,6 +492,7 @@ namespace UnityEditorInternal
         private void StartCandidateRecording()
         {
             AnimationMode.StartCandidateRecording(GetCandidateDriver());
+            DestroyGraph();
         }
 
         private void StopCandidateRecording()
@@ -450,7 +500,82 @@ namespace UnityEditorInternal
             AnimationMode.StopCandidateRecording();
         }
 
+        private void DestroyGraph()
+        {
+            if (!m_Graph.IsValid())
+                return;
+
+            m_Graph.Destroy();
+            m_GraphRoot.Destroy();
+        }
+
+        private void RebuildGraph(Animator animator)
+        {
+            DestroyGraph();
+
+            m_Graph = PlayableGraph.Create("PreviewGraph");
+            m_Graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
+
+            var clipPlayable = AnimationClipPlayable.Create(m_Graph, state.activeAnimationClip);
+            clipPlayable.SetOverrideLoopTime(true);
+            clipPlayable.SetLoopTime(false);
+
+            m_GraphRoot = (Playable)clipPlayable;
+
+            if (m_CandidateClip != null)
+            {
+                var mixer = AnimationLayerMixerPlayable.Create(m_Graph, 2);
+
+                var candidateClipPlayable = AnimationClipPlayable.Create(m_Graph, m_CandidateClip);
+
+                m_Graph.Connect(m_GraphRoot, 0, mixer, 0);
+                m_Graph.Connect(candidateClipPlayable, 0, mixer, 1);
+
+                mixer.SetInputWeight(0, 1.0f);
+                mixer.SetInputWeight(1, 1.0f);
+
+                m_GraphRoot = (Playable)mixer;
+            }
+
+            if (m_PostProcessComponents != null)
+            {
+                foreach (var component in m_PostProcessComponents)
+                {
+                    m_GraphRoot = component.PostProcessPlayableGraph(m_Graph, m_GraphRoot);
+                }
+            }
+
+            if (animator.applyRootMotion)
+            {
+                var motionX = AnimationMotionXToDeltaPlayable.Create(m_Graph);
+                motionX.SetAbsoluteMotion(true);
+                motionX.SetInputWeight(0, 1.0f);
+
+                m_Graph.Connect(m_GraphRoot, 0, motionX, 0);
+
+                m_GraphRoot = (Playable)motionX;
+            }
+
+            var output = AnimationPlayableOutput.Create(m_Graph, "ouput", animator);
+            output.SetSourcePlayable(m_GraphRoot);
+            output.SetWeight(0.0f);
+        }
+
+        private void FetchPostProcessComponents()
+        {
+            m_PostProcessComponents = null;
+            if (state.activeRootGameObject != null)
+            {
+                m_PostProcessComponents = state.activeRootGameObject.GetComponents<IAnimationWindowPostProcess>();
+            }
+        }
+
         public override void ResampleAnimation()
+        {
+            ResampleAnimation(ResampleFlags.Default);
+        }
+
+        private void ResampleAnimation(ResampleFlags flags)
         {
             if (state.disabled)
                 return;
@@ -460,26 +585,53 @@ namespace UnityEditorInternal
             if (canPreview == false)
                 return;
 
+            s_ResampleAnimationMarker.Begin();
             if (state.activeAnimationClip != null)
             {
                 AnimationMode.BeginSampling();
 
-                Undo.FlushUndoRecordObjects();
+                if (HasFlag(flags, ResampleFlags.FlushUndos))
+                    Undo.FlushUndoRecordObjects();
 
-                AnimationMode.SampleAnimationClip(state.activeRootGameObject, state.activeAnimationClip, time.time);
-                if (m_CandidateClip != null)
-                    AnimationMode.SampleCandidateClip(state.activeRootGameObject, m_CandidateClip, 0f);
+                var animationPlayer = state.activeAnimationPlayer;
+                if (animationPlayer is Animator)
+                {
+                    if (HasFlag(flags, ResampleFlags.RebuildGraph) || !m_Graph.IsValid())
+                    {
+                        RebuildGraph((Animator)animationPlayer);
+                    }
+
+                    if (m_CandidateClip != null)
+                        AnimationMode.AddCandidates(state.activeRootGameObject, m_CandidateClip);
+
+                    AnimationMode.SamplePlayableGraph(state.activeRootGameObject, m_Graph, 0, time.time);
+
+                    // This will cover euler/quaternion matching in basic playable graphs only (animation clip + candidate clip).
+                    AnimationUtility.SampleEulerHint(state.activeRootGameObject, state.activeAnimationClip, time.time, WrapMode.Clamp);
+                    if (m_CandidateClip != null)
+                        AnimationUtility.SampleEulerHint(state.activeRootGameObject, m_CandidateClip, time.time, WrapMode.Clamp);
+                }
+                else
+                {
+                    AnimationMode.SampleAnimationClip(state.activeRootGameObject, state.activeAnimationClip, time.time);
+                    if (m_CandidateClip != null)
+                        AnimationMode.SampleCandidateClip(state.activeRootGameObject, m_CandidateClip, 0f);
+                }
 
                 AnimationMode.EndSampling();
 
-                SceneView.RepaintAll();
-                InspectorWindow.RepaintAllInspectors();
+                if (HasFlag(flags, ResampleFlags.RefreshViews))
+                {
+                    SceneView.RepaintAll();
+                    InspectorWindow.RepaintAllInspectors();
 
-                // Particle editor needs to be manually repainted to refresh the animated properties
-                var particleSystemWindow = ParticleSystemWindow.GetInstance();
-                if (particleSystemWindow)
-                    particleSystemWindow.Repaint();
+                    // Particle editor needs to be manually repainted to refresh the animated properties
+                    var particleSystemWindow = ParticleSystemWindow.GetInstance();
+                    if (particleSystemWindow)
+                        particleSystemWindow.Repaint();
+                }
             }
+            s_ResampleAnimationMarker.End();
         }
 
         private AnimationModeDriver GetAnimationModeDriver()
@@ -533,9 +685,13 @@ namespace UnityEditorInternal
             }
 
             if (recording)
-                return ProcessAutoKey(modifications);
+                modifications = ProcessAutoKey(modifications);
             else if (previewing)
-                return RegisterCandidates(modifications);
+                modifications = RegisterCandidates(modifications);
+
+            // Only resample when playable graph has been customized with post process nodes.
+            if (m_PostProcessComponents != null)
+                ResampleAnimation(ResampleFlags.RebuildGraph);
 
             return modifications;
         }
@@ -607,8 +763,13 @@ namespace UnityEditorInternal
 
         public override void ClearCandidates()
         {
-            m_CandidateClip = null;
             StopCandidateRecording();
+
+            if (m_CandidateClip != null)
+            {
+                m_CandidateClip = null;
+                DestroyGraph();
+            }
         }
 
         public override void ProcessCandidates()

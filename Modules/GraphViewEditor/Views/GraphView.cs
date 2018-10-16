@@ -191,6 +191,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             AddStyleSheetPath("StyleSheets/GraphView/GraphView.uss");
             graphElements = contentViewContainer.Query<GraphElement>().Where(e => !(e is Port)).Build();
+            allGraphElements = this.Query<GraphElement>().Build();
             nodes = contentViewContainer.Query<Node>().Build();
             edges = this.Query<Layer>().Children<Edge>().Build();
             ports = contentViewContainer.Query().Children<Layer>().Descendents<Port>().Build();
@@ -346,6 +347,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         }
 
         public UQuery.QueryState<GraphElement> graphElements { get; private set; }
+        private UQuery.QueryState<GraphElement> allGraphElements { get; }
         public UQuery.QueryState<Node> nodes { get; private set; }
         public UQuery.QueryState<Port> ports;
         public UQuery.QueryState<Edge> edges { get; private set; }
@@ -404,7 +406,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public GraphElement GetElementByGuid(string guid)
         {
-            return graphElements.ToList().FirstOrDefault(e => e.persistenceKey == guid);
+            return allGraphElements.ToList().FirstOrDefault(e => e.persistenceKey == guid);
         }
 
         public Node GetNodeByGuid(string guid)

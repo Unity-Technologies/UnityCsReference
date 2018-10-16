@@ -569,6 +569,8 @@ namespace UnityEngine
         extern static private void PlayHelper(AudioSource source, UInt64 delay);
         extern private void Play(double delay);
 
+        extern static private void PlayOneShotHelper(AudioSource source, AudioClip clip, float volumeScale);
+
         extern private void Stop(bool stopOneShots);
 
         [NativeThrows]
@@ -677,7 +679,16 @@ namespace UnityEngine
             PlayOneShot(clip, 1.0f);
         }
 
-        extern public void PlayOneShot(AudioClip clip, [UnityEngine.Internal.DefaultValue("1.0F")] float volumeScale);
+        public void PlayOneShot(AudioClip clip, [UnityEngine.Internal.DefaultValue("1.0F")] float volumeScale)
+        {
+            if (clip == null)
+            {
+                Debug.LogWarning("PlayOneShot was called with a null AudioClip.");
+                return;
+            }
+
+            PlayOneShotHelper(this, clip, volumeScale);
+        }
 
         extern public void SetScheduledStartTime(double time);
         extern public void SetScheduledEndTime(double time);

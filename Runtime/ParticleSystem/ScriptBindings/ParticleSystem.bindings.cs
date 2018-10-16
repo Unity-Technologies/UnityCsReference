@@ -5,9 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
-using UnityEngine;
 using UnityEngine.Bindings;
-using Object = UnityEngine.Object;
 using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
 
 namespace UnityEngine
@@ -71,13 +69,13 @@ namespace UnityEngine
 
         // Current size/color helpers
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticleCurrentSize", HasExplicitThis = true)]
-        extern internal float GetParticleCurrentSize(ref ParticleSystem.Particle particle);
+        extern internal float GetParticleCurrentSize(ref Particle particle);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticleCurrentSize3D", HasExplicitThis = true)]
-        extern internal Vector3 GetParticleCurrentSize3D(ref ParticleSystem.Particle particle);
+        extern internal Vector3 GetParticleCurrentSize3D(ref Particle particle);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticleCurrentColor", HasExplicitThis = true)]
-        extern internal Color32 GetParticleCurrentColor(ref ParticleSystem.Particle particle);
+        extern internal Color32 GetParticleCurrentColor(ref Particle particle);
 
         // Modules
         public MainModule main
@@ -237,14 +235,20 @@ namespace UnityEngine
 
         // Set/get particles
         [FreeFunction(Name = "ParticleSystemScriptBindings::SetParticles", HasExplicitThis = true)]
-        extern public void SetParticles([Out] ParticleSystem.Particle[] particles, int size, int offset);
-        public void SetParticles([Out] ParticleSystem.Particle[] particles, int size) { SetParticles(particles, size, 0); }
-        public void SetParticles([Out] ParticleSystem.Particle[] particles) { SetParticles(particles, -1); }
+        extern public void SetParticles([Out] Particle[] particles, int size, int offset);
+        public void SetParticles([Out] Particle[] particles, int size) { SetParticles(particles, size, 0); }
+        public void SetParticles([Out] Particle[] particles) { SetParticles(particles, -1); }
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetParticles", HasExplicitThis = true)]
-        extern public int GetParticles([NotNull][Out] ParticleSystem.Particle[] particles, int size, int offset);
-        public int GetParticles([Out] ParticleSystem.Particle[] particles, int size) { return GetParticles(particles, size, 0); }
-        public int GetParticles([Out] ParticleSystem.Particle[] particles) { return GetParticles(particles, -1); }
+        extern public int GetParticles([NotNull][Out] Particle[] particles, int size, int offset);
+        public int GetParticles([Out] Particle[] particles, int size) { return GetParticles(particles, size, 0); }
+        public int GetParticles([Out] Particle[] particles) { return GetParticles(particles, -1); }
+
+        // Set/get custom particle data
+        [FreeFunction(Name = "ParticleSystemScriptBindings::SetCustomParticleData", HasExplicitThis = true)]
+        extern public void SetCustomParticleData([NotNull] List<Vector4> customData, ParticleSystemCustomData streamIndex);
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetCustomParticleData", HasExplicitThis = true)]
+        extern public int GetCustomParticleData([NotNull] List<Vector4> customData, ParticleSystemCustomData streamIndex);
 
         // Playback
         [FreeFunction(Name = "ParticleSystemScriptBindings::Simulate", HasExplicitThis = true)]
@@ -281,17 +285,34 @@ namespace UnityEngine
         extern private void Emit_Internal(int count);
 
         [NativeName(Name = "SyncJobs()->EmitParticlesExternal")]
-        extern public void Emit(ParticleSystem.EmitParams emitParams, int count);
+        extern public void Emit(EmitParams emitParams, int count);
+
+        [NativeName(Name = "SyncJobs()->EmitParticleExternal")]
+        extern private void EmitOld_Internal(ref ParticleSystem.Particle particle);
+
+        // Fire a sub-emitter
+        public void TriggerSubEmitter(int subEmitterIndex)
+        {
+            TriggerSubEmitter(subEmitterIndex, null);
+        }
+
+        public void TriggerSubEmitter(int subEmitterIndex, ref ParticleSystem.Particle particle)
+        {
+            TriggerSubEmitterForParticle(subEmitterIndex, particle);
+        }
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::TriggerSubEmitterForParticle", HasExplicitThis = true)]
+        extern internal void TriggerSubEmitterForParticle(int subEmitterIndex, ParticleSystem.Particle particle);
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::TriggerSubEmitter", HasExplicitThis = true)]
+        extern public void TriggerSubEmitter(int subEmitterIndex, List<ParticleSystem.Particle> particles);
 
 
         [FreeFunction(Name = "ParticleSystemEditor::SetupDefaultParticleSystemType", HasExplicitThis = true)]
         extern internal void SetupDefaultType(ParticleSystemSubEmitterType type);
 
         [NativeProperty("GetState().localToWorld", TargetType = TargetType.Field)]
-        extern internal Matrix4x4 localToWorldMatrix
-        {
-            get;
-        }
+        extern internal Matrix4x4 localToWorldMatrix { get; }
 
         [NativeName("GetNoiseModule().GeneratePreviewTexture")]
         extern internal void GenerateNoisePreviewTexture(Texture2D dst);
@@ -309,5 +330,69 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetMaxTexCoordStreams")]
         extern static internal int GetMaxTexCoordStreams();
 
+    }
+
+    public partial struct ParticleCollisionEvent
+    {
+        [FreeFunction(Name = "ParticleSystemScriptBindings::InstanceIDToColliderComponent")]
+        extern static private Component InstanceIDToColliderComponent(int instanceID);
+    }
+
+    internal class ParticleSystemExtensionsImpl
+    {
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetSafeCollisionEventSize")]
+        extern internal static int GetSafeCollisionEventSize(ParticleSystem ps);
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetCollisionEventsDeprecated")]
+        extern internal static int GetCollisionEventsDeprecated(ParticleSystem ps, GameObject go, [Out] ParticleCollisionEvent[] collisionEvents);
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetSafeTriggerParticlesSize")]
+        extern internal static int GetSafeTriggerParticlesSize(ParticleSystem ps, int type);
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetCollisionEvents")]
+        extern internal static int GetCollisionEvents(ParticleSystem ps, [NotNull] GameObject go, [NotNull] List<ParticleCollisionEvent> collisionEvents);
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::GetTriggerParticles")]
+        extern internal static int GetTriggerParticles(ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles);
+
+        [FreeFunction(Name = "ParticleSystemScriptBindings::SetTriggerParticles")]
+        extern internal static void SetTriggerParticles(ParticleSystem ps, int type, [NotNull] List<ParticleSystem.Particle> particles, int offset, int count);
+    }
+
+    public static partial class ParticlePhysicsExtensions
+    {
+        public static int GetSafeCollisionEventSize(this ParticleSystem ps)
+        {
+            return ParticleSystemExtensionsImpl.GetSafeCollisionEventSize(ps);
+        }
+
+        public static int GetCollisionEvents(this ParticleSystem ps, GameObject go, List<ParticleCollisionEvent> collisionEvents)
+        {
+            return ParticleSystemExtensionsImpl.GetCollisionEvents(ps, go, collisionEvents);
+        }
+
+        public static int GetSafeTriggerParticlesSize(this ParticleSystem ps, ParticleSystemTriggerEventType type)
+        {
+            return ParticleSystemExtensionsImpl.GetSafeTriggerParticlesSize(ps, (int)type);
+        }
+
+        public static int GetTriggerParticles(this ParticleSystem ps, ParticleSystemTriggerEventType type, List<ParticleSystem.Particle> particles)
+        {
+            return ParticleSystemExtensionsImpl.GetTriggerParticles(ps, (int)type, particles);
+        }
+
+        public static void SetTriggerParticles(this ParticleSystem ps, ParticleSystemTriggerEventType type, List<ParticleSystem.Particle> particles, int offset, int count)
+        {
+            if (particles == null) throw new ArgumentNullException("particles");
+            if (offset >= particles.Count) throw new ArgumentOutOfRangeException("offset", "offset should be smaller than the size of the particles list.");
+            if ((offset + count) >= particles.Count) throw new ArgumentOutOfRangeException("count", "offset+count should be smaller than the size of the particles list.");
+
+            ParticleSystemExtensionsImpl.SetTriggerParticles(ps, (int)type, particles, offset, count);
+        }
+
+        public static void SetTriggerParticles(this ParticleSystem ps, ParticleSystemTriggerEventType type, List<ParticleSystem.Particle> particles)
+        {
+            ParticleSystemExtensionsImpl.SetTriggerParticles(ps, (int)type, particles, 0, particles.Count);
+        }
     }
 }

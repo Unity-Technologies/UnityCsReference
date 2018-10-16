@@ -6,6 +6,7 @@ using System;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
 using UnityEngine.Scripting.APIUpdating;
+using UnityEngine.Playables;
 using UnityEngine;
 
 using Object = UnityEngine.Object;
@@ -127,6 +128,9 @@ namespace UnityEditor
         [NativeThrows]
         extern internal static void AddCandidate(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);
 
+        [NativeThrows]
+        extern internal static void AddCandidates([NotNull] GameObject gameObject, [NotNull] AnimationClip clip);
+
         extern internal static void StopCandidateRecording();
 
         extern internal static bool IsRecordingCandidates();
@@ -142,6 +146,9 @@ namespace UnityEditor
 
         [NativeThrows]
         extern internal static void SampleCandidateClip([NotNull] GameObject gameObject, [NotNull] AnimationClip clip, float time);
+
+        [NativeThrows]
+        extern internal static void SamplePlayableGraph([NotNull] GameObject gameObject, PlayableGraph graph, int index, float time);
 
         [NativeThrows]
         extern public static void AddPropertyModification(EditorCurveBinding binding, PropertyModification modification, bool keepPrefabOverride);

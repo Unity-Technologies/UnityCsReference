@@ -164,7 +164,7 @@ namespace UnityEngine.Profiling
         // End profiling a piece of code with a custom label.
         // TODO: make obsolete
         //OBSOLETE warning Profiler.EndSample method is deprecated. Please use faster CustomSampler.End method instead.
-        [NativeConditional("ENABLE_PROFILER")]
+        [Conditional("ENABLE_PROFILER")]
         [NativeMethod(Name = "ProfilerBindings::EndSample", IsFreeFunction = true, IsThreadSafe = true)]
         public extern static void EndSample();
 

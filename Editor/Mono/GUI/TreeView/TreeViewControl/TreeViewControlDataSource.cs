@@ -99,14 +99,16 @@ namespace UnityEditor.IMGUI.Controls
                 result.Sort((x, y) => EditorUtility.NaturalCompare(x.displayName, y.displayName));
             }
 
-            protected override HashSet<int> GetParentsAbove(int id)
+            protected override void GetParentsAbove(int id, HashSet<int> ancestors)
             {
-                return new HashSet<int>(m_Owner.GetAncestors(id));
+                foreach (var ancestor in m_Owner.GetAncestors(id))
+                    ancestors.Add(ancestor);
             }
 
-            protected override HashSet<int> GetParentsBelow(int id)
+            protected override void GetParentsBelow(int id, HashSet<int> children)
             {
-                return new HashSet<int>(m_Owner.GetDescendantsThatHaveChildren(id));
+                foreach (var child in m_Owner.GetDescendantsThatHaveChildren(id))
+                    children.Add(child);
             }
 
             public override bool IsExpandable(TreeViewItem item)

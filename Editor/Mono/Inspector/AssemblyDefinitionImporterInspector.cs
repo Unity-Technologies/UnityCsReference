@@ -178,7 +178,7 @@ namespace UnityEditor
                 {
                     GUILayout.Label(Styles.precompiledReferences, EditorStyles.boldLabel);
 
-                    if (m_State.precompiledReferences.Any(x => !x.precompiled.HasValue))
+                    if (m_State.precompiledReferences.Any(x => !x.precompiled.HasValue && !string.IsNullOrEmpty(x.name)))
                     {
                         EditorGUILayout.HelpBox("The grayed out assembly references are missing and will not be referenced during compilation.", MessageType.Info);
                     }
@@ -601,7 +601,7 @@ namespace UnityEditor
                 currentlySelectedIndex = Array.IndexOf(contextList.ToArray(), precompiledReference.fileName);
             }
 
-            EditorGUI.BeginDisabled(!precompiledReference.precompiled.HasValue);
+            EditorGUI.BeginDisabled(!precompiledReference.precompiled.HasValue && !string.IsNullOrEmpty(precompiledReference.name));
             int selectedIndex = EditorGUI.Popup(rect, label, currentlySelectedIndex, contextList.ToArray());
             EditorGUI.EndDisabled();
 
@@ -610,6 +610,7 @@ namespace UnityEditor
                 var selectedAssemblyName = contextList[selectedIndex];
                 precompiledReference.precompiled = EditorCompilationInterface.Instance.GetAllPrecompiledAssemblies()
                     .Single(x => AssetPath.GetFileName(x.Path) == selectedAssemblyName);
+                precompiledReference.name = selectedAssemblyName;
             }
 
             EditorGUI.showMixedValue = false;
@@ -912,7 +913,7 @@ namespace UnityEditor
             data.overrideReferences = state.overrideReferences == MixedBool.True;
 
             data.precompiledReferences = state.precompiledReferences
-                .Select(r => r.fileName).ToArray();
+                .Select(r => r.name).ToArray();
 
             List<string> optionalUnityReferences = new List<string>();
 

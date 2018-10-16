@@ -111,7 +111,7 @@ namespace UnityEditor.ShortcutManagement
             m_LastUsedProfileIdProvider = lastUsedProfileIdProvider;
 
             profileManager = new ShortcutProfileManager(discovery.GetAllShortcuts(), bindingValidator, profileStore);
-            profileManager.shortcutsModified += Initialize;
+            profileManager.shortcutBindingChanged += OnShortcutBindingChanged;
             profileManager.activeProfileChanged += OnActiveProfileChanged;
             profileManager.ReloadProfiles();
 
@@ -139,7 +139,12 @@ namespace UnityEditor.ShortcutManagement
             m_Trigger = new Trigger(directory, conflictResolver);
         }
 
-        void OnActiveProfileChanged(IShortcutProfileManager sender)
+        void OnShortcutBindingChanged(IShortcutProfileManager sender, Identifier identifier, ShortcutBinding oldBinding, ShortcutBinding newBinding)
+        {
+            Initialize(sender);
+        }
+
+        void OnActiveProfileChanged(IShortcutProfileManager sender, ShortcutProfile oldActiveProfile, ShortcutProfile newActiveProfile)
         {
             m_LastUsedProfileIdProvider.lastUsedProfileId = profileManager.activeProfile?.id;
         }

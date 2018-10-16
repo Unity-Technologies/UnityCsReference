@@ -424,7 +424,7 @@ namespace UnityEngine.Experimental.UIElements
             return (long)(Time.realtimeSinceStartup * 1000.0f);
         }
 
-        VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
+        internal static VisualElement PickAll(VisualElement root, Vector2 point, List<VisualElement> picked = null)
         {
             Profiler.BeginSample("Panel.PickAll");
             var result = PerformPick(root, point, picked);
@@ -432,7 +432,7 @@ namespace UnityEngine.Experimental.UIElements
             return result;
         }
 
-        private VisualElement PerformPick(VisualElement root, Vector2 point, List<VisualElement> picked = null)
+        private static VisualElement PerformPick(VisualElement root, Vector2 point, List<VisualElement> picked = null)
         {
             // do not pick invisible
             if (root.visible == false)

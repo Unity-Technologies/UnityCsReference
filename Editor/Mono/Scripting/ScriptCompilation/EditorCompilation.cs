@@ -1431,7 +1431,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetAllScriptAssemblies(EditorScriptCompilationOptions.BuildingForEditor | EditorScriptCompilationOptions.BuildingIncludingTestAssemblies | additionalOptions);
         }
 
-        ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options)
+        public ScriptAssembly[] GetAllScriptAssemblies(EditorScriptCompilationOptions options)
         {
             return GetAllScriptAssemblies(options, unityAssemblies, precompiledAssemblies);
         }

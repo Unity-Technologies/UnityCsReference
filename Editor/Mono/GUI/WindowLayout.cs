@@ -337,7 +337,7 @@ namespace UnityEditor
             if (mouseOverWindow == null)
                 return;
 
-            var args = new ShortcutArguments { state = ShortcutState.End };
+            var args = new ShortcutArguments { stage = ShortcutStage.End };
             if (IsMaximized(mouseOverWindow))
                 args.context = Event.current.delta.x < -0.05f ? mouseOverWindow : null;
             else
@@ -347,7 +347,7 @@ namespace UnityEditor
                 MaximizeKeyHandler(args);
         }
 
-        [Shortcut("Window/Maximize View", null, "# ")]
+        [Shortcut("Window/Maximize View", KeyCode.Space, ShortcutModifiers.Shift)]
         [FormerlyPrefKeyAs("Window/Maximize View", "# ")]
         internal static void MaximizeKeyHandler(ShortcutArguments args)
         {

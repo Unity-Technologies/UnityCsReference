@@ -19,6 +19,10 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private VisualElement m_RowsContainer;
         private int m_InsertIndex;
 
+        public delegate bool CanAcceptDropDelegate(ISelectable selected);
+
+        public CanAcceptDropDelegate canAcceptDrop { get; set; }
+
         int InsertionIndex(Vector2 pos)
         {
             int index = -1;
@@ -134,6 +138,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public bool CanAcceptDrop(List<ISelectable> selection)
         {
+            if (selection == null)
+                return false;
+
             // Look for at least one selected element in this section to accept drop
             foreach (ISelectable selected in selection)
             {
@@ -141,7 +148,8 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
                 if (selected != null && Contains(selectedElement))
                 {
-                    return true;
+                    if (canAcceptDrop == null || canAcceptDrop(selected))
+                        return true;
                 }
             }
 
@@ -152,7 +160,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             var selection = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
 
-            if (selection == null)
+            if (!CanAcceptDrop(selection))
             {
                 SetDragIndicatorVisible(false);
                 return;
@@ -218,7 +226,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         {
             var selection = DragAndDrop.GetGenericData("DragSelection") as List<ISelectable>;
 
-            if (selection == null)
+            if (!CanAcceptDrop(selection))
             {
                 SetDragIndicatorVisible(false);
                 return;

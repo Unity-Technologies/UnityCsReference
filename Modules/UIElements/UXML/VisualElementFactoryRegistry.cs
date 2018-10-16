@@ -112,6 +112,7 @@ namespace UnityEngine.Experimental.UIElements
                 new Box.UxmlFactory(),
                 new PopupWindow.UxmlFactory(),
                 new ListView.UxmlFactory(),
+                new TreeView.UxmlFactory(),
                 new Foldout.UxmlFactory(),
                 new BindableElement.UxmlFactory(),
             };

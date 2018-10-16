@@ -51,7 +51,9 @@ namespace UnityEditor
                 m_SerializedObject = so;
             }
 
-            static readonly string[] k_ApertureFormatNames =
+            public static IEnumerable<string> ApertureFormatNames => k_ApertureFormatNames;
+
+            private static readonly string[] k_ApertureFormatNames =
             {
                 "8mm",
                 "Super 8mm",
@@ -66,7 +68,9 @@ namespace UnityEditor
                 "Custom"
             };
 
-            static readonly Vector2[] k_ApertureFormats =
+            public static IEnumerable<Vector2> ApertureFormatValues => k_ApertureFormatValues;
+
+            private static readonly Vector2[] k_ApertureFormatValues =
             {
                 new Vector2(4.8f, 3.5f) , // 8mm
                 new Vector2(5.79f, 4.01f) , // Super 8mm
@@ -249,15 +253,15 @@ namespace UnityEditor
 
                                 EditorGUI.showMixedValue = sensorSize.hasMultipleDifferentValues;
                                 EditorGUI.BeginChangeCheck();
-                                int filmGateIndex = Array.IndexOf(k_ApertureFormats, new Vector2((float)Math.Round(sensorSize.vector2Value.x, 3), (float)Math.Round(sensorSize.vector2Value.y, 3)));
+                                int filmGateIndex = Array.IndexOf(k_ApertureFormatValues, new Vector2((float)Math.Round(sensorSize.vector2Value.x, 3), (float)Math.Round(sensorSize.vector2Value.y, 3)));
                                 if (filmGateIndex == -1)
                                     filmGateIndex = EditorGUILayout.Popup(Styles.cameraType, k_ApertureFormatNames.Length - 1, k_ApertureFormatNames);
                                 else
                                     filmGateIndex = EditorGUILayout.Popup(Styles.cameraType, filmGateIndex, k_ApertureFormatNames);
                                 EditorGUI.showMixedValue = false;
-                                if (EditorGUI.EndChangeCheck() && filmGateIndex < k_ApertureFormats.Length)
+                                if (EditorGUI.EndChangeCheck() && filmGateIndex < k_ApertureFormatValues.Length)
                                 {
-                                    sensorSize.vector2Value = k_ApertureFormats[filmGateIndex];
+                                    sensorSize.vector2Value = k_ApertureFormatValues[filmGateIndex];
                                 }
 
                                 EditorGUILayout.PropertyField(sensorSize, Styles.sensorSize);
@@ -368,7 +372,6 @@ namespace UnityEditor
                 if (ModuleManager.ShouldShowMultiDisplayOption())
                 {
                     int prevDisplay = targetDisplay.intValue;
-                    EditorGUILayout.Space();
                     EditorGUILayout.IntPopup(targetDisplay, DisplayUtility.GetDisplayNames(), DisplayUtility.GetDisplayIndices(), EditorGUIUtility.TempContent("Target Display"));
                     if (prevDisplay != targetDisplay.intValue)
                         GameView.RepaintAll();
@@ -381,6 +384,13 @@ namespace UnityEditor
                 {
                     EditorGUILayout.IntPopup(targetEye, kTargetEyes, kTargetEyeValues, EditorGUIUtility.TempContent("Target Eye"));
                 }
+            }
+
+            public static void DrawCameraWarnings(Camera camera)
+            {
+                string[] warnings = camera.GetCameraBufferWarnings();
+                if (warnings.Length > 0)
+                    EditorGUILayout.HelpBox(String.Join("\n\n", warnings), MessageType.Info, true);
             }
         }
 
@@ -621,9 +631,16 @@ namespace UnityEditor
             settings.DrawMSAA();
             settings.DrawDynamicResolution();
 
-            DisplayCameraWarnings();
+            foreach (Camera camera in targets)
+            {
+                if (camera != null)
+                {
+                    Settings.DrawCameraWarnings(camera);
+                }
+            }
 
             settings.DrawVR();
+            EditorGUILayout.Space();
             settings.DrawMultiDisplay();
 
             if (EditorGUILayout.BeginFadeGroup(m_ShowTargetEyeOption.faded))
@@ -634,17 +651,6 @@ namespace UnityEditor
             CommandBufferGUI();
 
             serializedObject.ApplyModifiedProperties();
-        }
-
-        private void DisplayCameraWarnings()
-        {
-            Camera camera = target as Camera;
-            if (camera != null)
-            {
-                string[] warnings = camera.GetCameraBufferWarnings();
-                if (warnings.Length > 0)
-                    EditorGUILayout.HelpBox(string.Join("\n\n", warnings), MessageType.Info, true);
-            }
         }
 
         public virtual void OnOverlayGUI(Object target, SceneView sceneView)

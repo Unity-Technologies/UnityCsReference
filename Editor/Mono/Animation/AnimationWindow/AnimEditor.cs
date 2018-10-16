@@ -746,14 +746,14 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Animation/Show Curves", "c")]
-        [Shortcut("Animation/Show Curves", typeof(AnimationShortcutContex), "c")]
+        [Shortcut("Animation/Show Curves", typeof(AnimationShortcutContex), KeyCode.C)]
         static void ShowCurves(ShortcutArguments args)
         {
             ExecuteShortcut(args, animEditor => { animEditor.SwitchBetweenCurvesAndDopesheet(); });
         }
 
         [FormerlyPrefKeyAs("Animation/Play Animation", " ")]
-        [Shortcut("Animation/Play Animation", typeof(AnimationShortcutContex), " ")]
+        [Shortcut("Animation/Play Animation", typeof(AnimationShortcutContex), KeyCode.Space)]
         static void TogglePlayAnimation(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface =>
@@ -766,49 +766,49 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Animation/Next Frame", ".")]
-        [Shortcut("Animation/Next Frame", typeof(AnimationShortcutContex), ".")]
+        [Shortcut("Animation/Next Frame", typeof(AnimationShortcutContex), KeyCode.Period)]
         static void NextFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToNextFrame());
         }
 
         [FormerlyPrefKeyAs("Animation/Previous Frame", ",")]
-        [Shortcut("Animation/Previous Frame", typeof(AnimationShortcutContex), ",")]
+        [Shortcut("Animation/Previous Frame", typeof(AnimationShortcutContex), KeyCode.Comma)]
         static void PreviousFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToPreviousFrame());
         }
 
         [FormerlyPrefKeyAs("Animation/Previous Keyframe", "&,")]
-        [Shortcut("Animation/Previous Keyframe", typeof(AnimationShortcutContex), "&,")]
+        [Shortcut("Animation/Previous Keyframe", typeof(AnimationShortcutContex), KeyCode.Comma, ShortcutModifiers.Alt)]
         static void PreviousKeyFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToPreviousKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Next Keyframe", "&.")]
-        [Shortcut("Animation/Next Keyframe", typeof(AnimationShortcutContex), "&.")]
+        [Shortcut("Animation/Next Keyframe", typeof(AnimationShortcutContex), KeyCode.Period, ShortcutModifiers.Alt)]
         static void NextKeyFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToNextKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/First Keyframe", "#,")]
-        [Shortcut("Animation/First Keyframe", typeof(AnimationShortcutContex), "#,")]
+        [Shortcut("Animation/First Keyframe", typeof(AnimationShortcutContex), KeyCode.Comma, ShortcutModifiers.Shift)]
         static void FirstKeyFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToFirstKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Last Keyframe", "#.")]
-        [Shortcut("Animation/Last Keyframe", typeof(AnimationShortcutContex), "#.")]
+        [Shortcut("Animation/Last Keyframe", typeof(AnimationShortcutContex), KeyCode.Period, ShortcutModifiers.Shift)]
         static void LastKeyFrame(ShortcutArguments args)
         {
             ExecuteShortcut(args, controlInterface => controlInterface.GoToLastKeyframe());
         }
 
         [FormerlyPrefKeyAs("Animation/Key Selected", "k")]
-        [Shortcut("Animation/Key Selected", typeof(AnimationShortcutContex), "k")]
+        [Shortcut("Animation/Key Selected", typeof(AnimationShortcutContex), KeyCode.K)]
         static void KeySelected(ShortcutArguments args)
         {
             var animEditorContext = (AnimationShortcutContex)args.context;
@@ -827,7 +827,7 @@ namespace UnityEditor
         }
 
         [FormerlyPrefKeyAs("Animation/Key Modified", "#k")]
-        [Shortcut("Animation/Key Modified", typeof(AnimationShortcutContex), "#k")]
+        [Shortcut("Animation/Key Modified", typeof(AnimationShortcutContex), KeyCode.K, ShortcutModifiers.Shift)]
         static void KeyModified(ShortcutArguments args)
         {
             var animEditorContext = (AnimationShortcutContex)args.context;

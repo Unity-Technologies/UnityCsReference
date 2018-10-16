@@ -14,6 +14,7 @@
     <LangVersion>6</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
     <NoStdLib>false</NoStdLib>
+    <DocumentationFile></DocumentationFile>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>

@@ -14,17 +14,24 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         private Vector2 m_Start;
         private Vector2 m_MinimumSize;
         private Rect m_StartPos;
+        private Action m_OnResizedCallback;
+        static readonly Vector2 k_ResizerSize = new Vector2(30.0f, 30.0f);
 
         public MouseButton activateButton { get; set; }
 
         bool m_Active;
 
         public Resizer() :
-            this(new Vector2(30.0f, 30.0f))
+            this(k_ResizerSize)
         {
         }
 
-        public Resizer(Vector2 minimumSize)
+        public Resizer(Action onResizedCallback) :
+            this(k_ResizerSize, onResizedCallback)
+        {
+        }
+
+        public Resizer(Vector2 minimumSize, Action onResizedCallback = null)
         {
             m_MinimumSize = minimumSize;
             style.positionType = PositionType.Absolute;
@@ -40,6 +47,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             style.backgroundScaleMode = ScaleMode.ScaleAndCrop;
 
             m_Active = false;
+            m_OnResizedCallback = onResizedCallback;
 
             RegisterCallback<MouseDownEvent>(OnMouseDown);
             RegisterCallback<MouseUpEvent>(OnMouseUp);
@@ -113,6 +121,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             if (e.button == (int)activateButton && m_Active)
             {
+                if (m_OnResizedCallback != null)
+                    m_OnResizedCallback();
+
                 m_Active = false;
                 this.ReleaseMouse();
                 e.StopPropagation();

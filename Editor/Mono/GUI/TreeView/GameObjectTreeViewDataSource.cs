@@ -105,6 +105,19 @@ namespace UnityEditor
                 base.RevealItem(itemID);
         }
 
+        public override void RevealItems(int[] itemIDs)
+        {
+            // Optimization: Only spend time on revealing item if it is part of the Hierarchy
+            HashSet<int> validItemIDs = new HashSet<int>();
+            foreach (var itemID in itemIDs)
+            {
+                if (IsValidHierarchyInstanceID(itemID))
+                    validItemIDs.Add(itemID);
+            }
+
+            base.RevealItems(validItemIDs.ToArray());
+        }
+
         override public bool IsRevealed(int id)
         {
             return GetRow(id) != -1;
@@ -531,30 +544,27 @@ namespace UnityEditor
             return property.pptrValue == null;
         }
 
-        protected override HashSet<int> GetParentsAbove(int id)
+        protected override void GetParentsAbove(int id, HashSet<int> parentsAbove)
         {
-            HashSet<int> parents = new HashSet<int>();
             if (!IsValidHierarchyInstanceID(id))
-                return parents;
+                return;
 
             IHierarchyProperty propertyIterator = CreateHierarchyProperty();
             if (propertyIterator.Find(id, null))
             {
                 while (propertyIterator.Parent())
                 {
-                    parents.Add((propertyIterator.instanceID));
+                    parentsAbove.Add((propertyIterator.instanceID));
                 }
             }
-            return parents;
         }
 
         // Should return the items that have children from id and below
-        protected override HashSet<int> GetParentsBelow(int id)
+        protected override void GetParentsBelow(int id, HashSet<int> parentsBelow)
         {
             // Add all children expanded ids to hashset
-            HashSet<int> parentsBelow = new HashSet<int>();
             if (!IsValidHierarchyInstanceID(id))
-                return parentsBelow;
+                return;
 
             IHierarchyProperty search = CreateHierarchyProperty();
             if (search.Find(id, null))
@@ -568,7 +578,6 @@ namespace UnityEditor
                         parentsBelow.Add(search.instanceID);
                 }
             }
-            return parentsBelow;
         }
 
         static void Log(string text)

@@ -116,13 +116,13 @@ namespace UnityEngine
             particle.angularVelocity3D = Vector3.zero;
             particle.startColor = color;
             particle.randomSeed = 5;
-            Internal_EmitOld(ref particle);
+            EmitOld_Internal(ref particle);
         }
 
         [Obsolete("Emit with a single particle structure is deprecated. Pass a ParticleSystem.EmitParams parameter instead, which allows you to override some/all of the emission properties", false)]
         public void Emit(ParticleSystem.Particle particle)
         {
-            Internal_EmitOld(ref particle);
+            EmitOld_Internal(ref particle);
         }
 
         [Obsolete("startDelay property is deprecated. Use main.startDelay or main.startDelayMultiplier instead.", false)]

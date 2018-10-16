@@ -5,6 +5,7 @@
 using System;
 using UnityEngine.Tilemaps;
 using UnityEngine;
+using System.Collections;
 
 namespace UnityEditor
 {
@@ -22,6 +23,9 @@ namespace UnityEditor
         [HideInInspector]
         private Vector3Int m_Pivot;
 
+        private ArrayList m_Locations;
+        private ArrayList m_Tiles;
+
         private static readonly Matrix4x4 s_Clockwise = new Matrix4x4(new Vector4(0f, 1f, 0f, 0f), new Vector4(-1f, 0f, 0f, 0f), new Vector4(0f, 0f, 1f, 0f), new Vector4(0f, 0f, 0f, 1f));
         private static readonly Matrix4x4 s_CounterClockwise = new Matrix4x4(new Vector4(0f, -1f, 0f, 0f), new Vector4(1f, 0f, 0f, 0f), new Vector4(0f, 0f, 1f, 0f), new Vector4(0f, 0f, 0f, 1f));
         private static readonly Matrix4x4 s_180Rotate = new Matrix4x4(new Vector4(-1f, 0f, 0f, 0f), new Vector4(0f, -1f, 0f, 0f), new Vector4(0f, 0f, 1f, 0f), new Vector4(0f, 0f, 0f, 1f));
@@ -30,6 +34,26 @@ namespace UnityEditor
         public Vector3Int pivot { get { return m_Pivot; } set { m_Pivot = value; } }
         public BrushCell[] cells { get { return m_Cells; } }
         public int cellCount { get { return m_Cells != null ? m_Cells.Length : 0; } }
+
+        private ArrayList locations
+        {
+            get
+            {
+                if (m_Locations == null)
+                    m_Locations = new ArrayList();
+                return m_Locations;
+            }
+        }
+
+        private ArrayList tiles
+        {
+            get
+            {
+                if (m_Tiles == null)
+                    m_Tiles = new ArrayList();
+                return m_Tiles;
+            }
+        }
 
         public GridBrush()
         {
@@ -57,24 +81,11 @@ namespace UnityEditor
             BoxFill(gridLayout, brushTarget, bounds);
         }
 
-        private void PaintCell(Vector3Int position, Tilemap tilemap, BrushCell cell)
-        {
-            if (cell.tile != null)
-            {
-                SetTilemapCell(tilemap, position, cell.tile, cell.matrix, cell.color);
-            }
-        }
-
         public override void Erase(GridLayout gridLayout, GameObject brushTarget, Vector3Int position)
         {
             Vector3Int min = position - pivot;
             BoundsInt bounds = new BoundsInt(min, m_Size);
             BoxErase(gridLayout, brushTarget, bounds);
-        }
-
-        private void EraseCell(Vector3Int position, Tilemap tilemap)
-        {
-            ClearTilemapCell(tilemap, position);
         }
 
         public override void BoxFill(GridLayout gridLayout, GameObject brushTarget, BoundsInt position)
@@ -83,11 +94,31 @@ namespace UnityEditor
                 return;
 
             Tilemap map = brushTarget.GetComponent<Tilemap>();
+            if (map == null)
+                return;
+
+            locations.Clear();
+            tiles.Clear();
             foreach (Vector3Int location in position.allPositionsWithin)
             {
                 Vector3Int local = location - position.min;
                 BrushCell cell = m_Cells[GetCellIndexWrapAround(local.x, local.y, local.z)];
-                PaintCell(location, map, cell);
+                if (cell.tile == null)
+                    continue;
+
+                locations.Add(location);
+                tiles.Add(cell.tile);
+            }
+            map.SetTiles((Vector3Int[])locations.ToArray(typeof(Vector3Int)), (TileBase[])tiles.ToArray(typeof(TileBase)));
+            foreach (Vector3Int location in position.allPositionsWithin)
+            {
+                Vector3Int local = location - position.min;
+                BrushCell cell = m_Cells[GetCellIndexWrapAround(local.x, local.y, local.z)];
+                if (cell.tile == null)
+                    continue;
+
+                map.SetTransformMatrix(location, cell.matrix);
+                map.SetColor(location, cell.color);
             }
         }
 
@@ -97,9 +128,15 @@ namespace UnityEditor
                 return;
 
             Tilemap map = brushTarget.GetComponent<Tilemap>();
+            if (map == null)
+                return;
+
+            var emptyTiles = new TileBase[position.size.x * position.size.y * position.size.z];
+            map.SetTilesBlock(position, emptyTiles);
             foreach (Vector3Int location in position.allPositionsWithin)
             {
-                EraseCell(location, map);
+                map.SetTransformMatrix(location, Matrix4x4.identity);
+                map.SetColor(location, Color.white);
             }
         }
 
@@ -112,10 +149,10 @@ namespace UnityEditor
                 return;
 
             Tilemap map = brushTarget.GetComponent<Tilemap>();
-            if (map != null)
-            {
-                map.FloodFill(position, cells[0].tile);
-            }
+            if (map == null)
+                return;
+
+            map.FloodFill(position, cells[0].tile);
         }
 
         public override void Rotate(RotationDirection direction, Grid.CellLayout layout)
@@ -251,12 +288,12 @@ namespace UnityEditor
 
         private void PickCell(Vector3Int position, Vector3Int brushPosition, Tilemap tilemap)
         {
-            if (tilemap != null)
-            {
-                SetTile(brushPosition, tilemap.GetTile(position));
-                SetMatrix(brushPosition, tilemap.GetTransformMatrix(position));
-                SetColor(brushPosition, tilemap.GetColor(position));
-            }
+            if (tilemap == null)
+                return;
+
+            SetTile(brushPosition, tilemap.GetTile(position));
+            SetMatrix(brushPosition, tilemap.GetTransformMatrix(position));
+            SetColor(brushPosition, tilemap.GetColor(position));
         }
 
         public override void MoveStart(GridLayout gridLayout, GameObject brushTarget, BoundsInt position)
@@ -265,14 +302,14 @@ namespace UnityEditor
             UpdateSizeAndPivot(new Vector3Int(position.size.x, position.size.y, 1), Vector3Int.zero);
 
             Tilemap tilemap = brushTarget.GetComponent<Tilemap>();
-            if (tilemap != null)
+            if (tilemap == null)
+                return;
+
+            foreach (Vector3Int pos in position.allPositionsWithin)
             {
-                foreach (Vector3Int pos in position.allPositionsWithin)
-                {
-                    Vector3Int brushPosition = new Vector3Int(pos.x - position.x, pos.y - position.y, 0);
-                    PickCell(pos, brushPosition, tilemap);
-                    tilemap.SetTile(pos, null);
-                }
+                Vector3Int brushPosition = new Vector3Int(pos.x - position.x, pos.y - position.y, 0);
+                PickCell(pos, brushPosition, tilemap);
+                tilemap.SetTile(pos, null);
             }
         }
 
@@ -400,26 +437,6 @@ namespace UnityEditor
             {
                 m_Cells[GetCellIndex(pos)] = new BrushCell();
             }
-        }
-
-        private static void SetTilemapCell(Tilemap map, Vector3Int location, TileBase tile, Matrix4x4 transformMatrix, Color color)
-        {
-            if (map == null)
-                return;
-
-            map.SetTile(location, tile);
-            map.SetTransformMatrix(location, transformMatrix);
-            map.SetColor(location, color);
-        }
-
-        private static void ClearTilemapCell(Tilemap map, Vector3Int location)
-        {
-            if (map == null)
-                return;
-
-            map.SetTile(location, null);
-            map.SetTransformMatrix(location, Matrix4x4.identity);
-            map.SetColor(location, Color.white);
         }
 
         public override int GetHashCode()

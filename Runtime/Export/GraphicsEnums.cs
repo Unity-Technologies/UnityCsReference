@@ -1539,6 +1539,13 @@ namespace UnityEngine.Rendering
         Background = 1,
         Urgent = 2
     }
+
+    //Needs to line up with the common elements of the c++ version of this enum found GfxDeviceTypes.h
+    public enum CommandBufferExecutionFlags
+    {
+        None = 0,
+        AsyncCompute = 1 << 1
+    }
 } // namespace UnityEngine.Rendering
 
 namespace UnityEngineInternal

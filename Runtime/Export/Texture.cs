@@ -448,6 +448,12 @@ namespace UnityEngine
             SetPixelImpl(0, x, y, color);
         }
 
+        public void SetPixel(int x, int y, Color color, int mipLevel)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            SetPixelImpl(mipLevel, x, y, color);
+        }
+
         public void SetPixels(int x, int y, int blockWidth, int blockHeight, Color[] colors, [uei.DefaultValue("0")] int miplevel)
         {
             if (!isReadable) throw CreateNonReadableException(this);
@@ -477,10 +483,22 @@ namespace UnityEngine
             return GetPixelImpl(0, x, y);
         }
 
-        public Color GetPixelBilinear(float x, float y)
+        public Color GetPixel(int x, int y, int mipLevel)
         {
             if (!isReadable) throw CreateNonReadableException(this);
-            return GetPixelBilinearImpl(0, x, y);
+            return GetPixelImpl(mipLevel, x, y);
+        }
+
+        public Color GetPixelBilinear(float u, float v)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return GetPixelBilinearImpl(0, u, v);
+        }
+
+        public Color GetPixelBilinear(float u, float v, int mipLevel)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return GetPixelBilinearImpl(mipLevel, u, v);
         }
 
         public void LoadRawTextureData(IntPtr data, int size)
@@ -523,8 +541,8 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps)   { Apply(updateMipmaps, false); }
-        public void Apply()                     { Apply(true, false); }
+        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        public void Apply() { Apply(true, false); }
 
         public bool Resize(int width, int height)
         {
@@ -662,8 +680,8 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps)   { Apply(updateMipmaps, false); }
-        public void Apply()                     { Apply(true, false); }
+        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        public void Apply() { Apply(true, false); }
     }
 
     public sealed partial class Texture3D : Texture
@@ -695,8 +713,44 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps)   { Apply(updateMipmaps, false); }
-        public void Apply()                     { Apply(true, false); }
+        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        public void Apply() { Apply(true, false); }
+
+        public void SetPixel(int x, int y, int z, Color color)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            SetPixelImpl(0, x, y, z, color);
+        }
+
+        public void SetPixel(int x, int y, int z, Color color, int mipLevel)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            SetPixelImpl(mipLevel, x, y, z, color);
+        }
+
+        public Color GetPixel(int x, int y, int z)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return GetPixelImpl(0, x, y, z);
+        }
+
+        public Color GetPixel(int x, int y, int z, int mipLevel)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return GetPixelImpl(mipLevel, x, y, z);
+        }
+
+        public Color GetPixelBilinear(float u, float v, float w)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return GetPixelBilinearImpl(0, u, v, w);
+        }
+
+        public Color GetPixelBilinear(float u, float v, float w, int mipLevel)
+        {
+            if (!isReadable) throw CreateNonReadableException(this);
+            return GetPixelBilinearImpl(mipLevel, u, v, w);
+        }
     }
 
     public sealed partial class Texture2DArray : Texture
@@ -733,8 +787,8 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps)   { Apply(updateMipmaps, false); }
-        public void Apply()                     { Apply(true, false); }
+        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        public void Apply() { Apply(true, false); }
     }
 
     public sealed partial class CubemapArray : Texture
@@ -771,8 +825,8 @@ namespace UnityEngine
             ApplyImpl(updateMipmaps, makeNoLongerReadable);
         }
 
-        public void Apply(bool updateMipmaps)   { Apply(updateMipmaps, false); }
-        public void Apply()                     { Apply(true, false); }
+        public void Apply(bool updateMipmaps) { Apply(updateMipmaps, false); }
+        public void Apply() { Apply(true, false); }
     }
 
     public sealed partial class SparseTexture : Texture

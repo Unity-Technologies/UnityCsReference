@@ -663,9 +663,9 @@ namespace UnityEditorInternal
 
                     discardListPos.Add(item.Key);
                 }
-                else if (applyRootMotion)
+                else if (applyRootMotion && isRootTransform)
                 {
-                    Vector3 scale = target.localScale * (isHuman ? animator.humanScale : 1);
+                    Vector3 scale = root.transform.localScale * (isHuman ? animator.humanScale : 1);
 
                     ProcessVector3Modification(state, binding, m.x, target, "x", scale.x);
                     ProcessVector3Modification(state, binding, m.y, target, "y", scale.y);

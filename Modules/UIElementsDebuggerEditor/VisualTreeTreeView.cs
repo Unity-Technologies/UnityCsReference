@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEditor.IMGUI.Controls;
 using UnityEngine.Experimental.UIElements;
+using TreeView = UnityEditor.IMGUI.Controls.TreeView;
 
 namespace UnityEditor.Experimental.UIElements.Debugger
 {

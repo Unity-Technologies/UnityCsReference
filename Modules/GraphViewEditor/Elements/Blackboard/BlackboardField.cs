@@ -72,7 +72,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
             RegisterCallback<MouseDownEvent>(OnMouseDownEvent);
 
-            capabilities |= Capabilities.Selectable | Capabilities.Droppable | Capabilities.Deletable;
+            capabilities |= Capabilities.Selectable | Capabilities.Droppable | Capabilities.Deletable | Capabilities.Renamable;
 
             ClearClassList();
             AddToClassList("blackboardField");
@@ -126,7 +126,7 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         private void OnMouseDownEvent(MouseDownEvent e)
         {
-            if ((e.clickCount == 2) && e.button == (int)MouseButton.LeftMouse)
+            if ((e.clickCount == 2) && e.button == (int)MouseButton.LeftMouse && IsRenamable())
             {
                 OpenTextEditor();
                 e.PreventDefault();

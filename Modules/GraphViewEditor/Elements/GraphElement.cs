@@ -154,6 +154,11 @@ namespace UnityEditor.Experimental.UIElements.GraphView
             return (capabilities & Capabilities.Ascendable) == Capabilities.Ascendable;
         }
 
+        public virtual bool IsRenamable()
+        {
+            return (capabilities & Capabilities.Renamable) == Capabilities.Renamable;
+        }
+
         public virtual Vector3 GetGlobalCenter()
         {
             var center = layout.center;

@@ -72,6 +72,16 @@ namespace UnityEditor
             set;
         }
 
+        public static void EnterPlaymode()
+        {
+            isPlaying = true;
+        }
+
+        public static void ExitPlaymode()
+        {
+            isPlaying = false;
+        }
+
         // Is editor either currently in play mode, or about to switch to it? (RO)
         [StaticAccessor("GetApplication()", StaticAccessorType.Dot)]
         public static extern bool isPlayingOrWillChangePlaymode

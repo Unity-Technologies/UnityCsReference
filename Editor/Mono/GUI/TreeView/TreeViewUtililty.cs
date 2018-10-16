@@ -77,23 +77,21 @@ namespace UnityEditor.IMGUI.Controls
         }
 
         // Assumes full tree
-        internal static HashSet<int> GetParentsAboveItem(TreeViewItem fromItem)
+        internal static void GetParentsAboveItem(TreeViewItem fromItem, HashSet<int> parentsAbove)
         {
             if (fromItem == null)
                 throw new ArgumentNullException("fromItem");
 
-            var hashSet = new HashSet<int>();
             TreeViewItem parent = fromItem.parent;
             while (parent != null)
             {
-                hashSet.Add(parent.id);
+                parentsAbove.Add(parent.id);
                 parent = parent.parent;
             }
-            return hashSet;
         }
 
         // Assumes full tree
-        internal static HashSet<int> GetParentsBelowItem(TreeViewItem fromItem)
+        internal static void GetParentsBelowItem(TreeViewItem fromItem, HashSet<int> parentsBelow)
         {
             if (fromItem == null)
                 throw new ArgumentNullException("fromItem");
@@ -101,13 +99,12 @@ namespace UnityEditor.IMGUI.Controls
             Stack<TreeViewItem> stack = new Stack<TreeViewItem>();
             stack.Push(fromItem);
 
-            HashSet<int> parents = new HashSet<int>();
             while (stack.Count > 0)
             {
                 TreeViewItem current = stack.Pop();
                 if (current.hasChildren)
                 {
-                    parents.Add(current.id);
+                    parentsBelow.Add(current.id);
                     if (LazyTreeViewDataSource.IsChildListForACollapsedParent(current.children))
                         throw new InvalidOperationException("Invalid tree for finding descendants: Ensure a complete tree when using this utillity method.");
 
@@ -117,7 +114,6 @@ namespace UnityEditor.IMGUI.Controls
                     }
                 }
             }
-            return parents;
         }
 
         internal static void DebugPrintToEditorLogRecursive(TreeViewItem item)

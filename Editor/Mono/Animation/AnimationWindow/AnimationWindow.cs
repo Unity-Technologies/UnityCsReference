@@ -4,7 +4,6 @@
 
 using System;
 using UnityEngine;
-using UnityEngine.Profiling;
 using UnityEditor;
 using System.Collections;
 using System.Collections.Generic;
@@ -96,10 +95,8 @@ namespace UnityEditor
             if (m_AnimEditor == null)
                 return;
 
-            Profiler.BeginSample("AnimationWindow.OnGUI");
             titleContent = m_AnimEditor.state.recording ? m_RecordTitleContent : m_DefaultTitleContent;
             m_AnimEditor.OnAnimEditorGUI(this, position);
-            Profiler.EndSample();
         }
 
         public void OnSelectionChange()

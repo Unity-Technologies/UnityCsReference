@@ -6,6 +6,7 @@ using System;
 
 namespace UnityEditor
 {
+    [Obsolete("[ShaderIncludePath] attribute is no longer supported. Your shader library must be under the Assets folder or in a package. To include shader headers directly from a package, use #include \"Packages/<package name>/<path to your header file>\"", true)]
     [AttributeUsage(AttributeTargets.Method)]
     public class ShaderIncludePathAttribute : Attribute
     {
