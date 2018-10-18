@@ -14,6 +14,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Animation/HumanDescription.h")]
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeType(CodegenOptions.Custom, "MonoSkeletonBone")]
     public struct SkeletonBone
     {
         [NativeName("m_Name")]
@@ -56,6 +57,7 @@ namespace UnityEngine
     [NativeHeader("Runtime/Animation/HumanDescription.h")]
     [RequiredByNativeCode]
     [StructLayout(LayoutKind.Sequential)]
+    [NativeType(CodegenOptions.Custom, "MonoHumanBone")]
     public struct HumanBone
     {
         string              m_BoneName;
@@ -87,7 +89,6 @@ namespace UnityEngine
         internal float  m_FeetSpacing;
 
         internal string  m_RootMotionBoneName;
-        internal Quaternion m_RootMotionBoneRotation;
 
         internal bool   m_HasTranslationDoF;
 

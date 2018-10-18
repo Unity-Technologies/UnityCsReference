@@ -487,9 +487,11 @@ namespace UnityEditor
             if (serializedAssetImporter.FindProperty("m_OptimizeGameObjects").boolValue)
                 AnimatorUtility.DeoptimizeTransformHierarchy(m_GameObject);
 
+            SerializedProperty humanBoneArray = serializedAssetImporter.FindProperty("m_HumanDescription.m_Human");
+
             // First get all available modelBones
             Dictionary<Transform, bool> modelBones = AvatarSetupTool.GetModelBones(m_GameObject.transform, true, null);
-            AvatarSetupTool.BoneWrapper[] humanBones = AvatarSetupTool.GetHumanBones(serializedAssetImporter, modelBones);
+            AvatarSetupTool.BoneWrapper[] humanBones = AvatarSetupTool.GetHumanBones(humanBoneArray, modelBones);
 
             m_ModelBones = AvatarSetupTool.GetModelBones(m_GameObject.transform, false, humanBones);
 

@@ -380,6 +380,7 @@ namespace UnityEditor
         SerializedProperty m_FeetSpacingProperty;
 
         SerializedProperty m_HasTranslationDoFProperty;
+        SerializedProperty m_HumanBoneArrayProperty;
 
         const string sMinX = "m_Limit.m_Min.x";
         const string sMinY = "m_Limit.m_Min.y";
@@ -401,6 +402,8 @@ namespace UnityEditor
         const string sFeetSpacing = "m_HumanDescription.m_FeetSpacing";
 
         const string sHasTranslationDoF = "m_HumanDescription.m_HasTranslationDoF";
+
+        const string sHumanBoneArray = "m_HumanDescription.m_Human";
 
         const float sMuscleMin = -180.0f;
         const float sMuscleMax = 180.0f;
@@ -501,10 +504,11 @@ namespace UnityEditor
             m_LegStretchProperty = serializedObject.FindProperty(sLegStretch);
             m_FeetSpacingProperty = serializedObject.FindProperty(sFeetSpacing);
             m_HasTranslationDoFProperty = serializedObject.FindProperty(sHasTranslationDoF);
+            m_HumanBoneArrayProperty = serializedObject.FindProperty(sHumanBoneArray);
 
             for (int i = 0; i < m_Bones.Length; i++)
             {
-                SerializedProperty bone = m_Bones[i].GetSerializedProperty(serializedObject, false);
+                SerializedProperty bone = m_Bones[i].GetSerializedProperty(m_HumanBoneArrayProperty, false);
                 if (bone != null)
                 {
                     m_Modified[i] = bone.FindPropertyRelative(sModified);
@@ -539,7 +543,7 @@ namespace UnityEditor
         {
             // Handle human bones
             if (m_Bones == null)
-                m_Bones = AvatarSetupTool.GetHumanBones(serializedObject, modelBones);
+                m_Bones = AvatarSetupTool.GetHumanBones(m_HumanBoneArrayProperty, modelBones);
 
             m_FocusedMuscle = -1;
 

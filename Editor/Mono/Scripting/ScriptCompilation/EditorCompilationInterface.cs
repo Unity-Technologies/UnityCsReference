@@ -186,9 +186,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
         }
 
         [RequiredByNativeCode]
-        public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
+        public static EditorCompilation.TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies(EditorScriptCompilationOptions options, BuildTarget buildTarget)
         {
-            return EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(), new EditorCompilation.TargetAssemblyInfo[0]);
+            return EmitExceptionAsError(() => Instance.GetAllCompiledAndResolvedCustomTargetAssemblies(options, buildTarget), new EditorCompilation.TargetAssemblyInfo[0]);
         }
 
         [RequiredByNativeCode]

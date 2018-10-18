@@ -4188,6 +4188,14 @@ namespace UnityEditor
                     break;
 
                 case EventType.ExecuteCommand:
+
+                    // Cancel EyeDropper if we change focus.
+                    if (showEyedropper && Event.current.commandName == EventCommandNames.NewKeyboardFocus)
+                    {
+                        EyeDropper.End();
+                        s_ColorPickID = 0;
+                    }
+
                     // when ColorPicker sends an event back to this control's GUIView, it someties retains keyboardControl
                     if (GUIUtility.keyboardControl == id || ColorPicker.originalKeyboardControl == id)
                     {

@@ -83,6 +83,9 @@ namespace UnityEditor
         internal static Styles styles { get { if (s_Styles == null) s_Styles = new Styles(); return s_Styles; } }
         static Styles s_Styles;
 
+        private SerializedProperty m_HumanBoneArray;
+        private SerializedProperty m_Skeleton;
+
         protected bool[]        m_BodyPartToggle;
         protected bool[]        m_BodyPartFoldout;
         protected int m_BodyView = 0;
@@ -163,11 +166,14 @@ namespace UnityEditor
             if (gameObject == null)
                 return;
 
+            m_HumanBoneArray = serializedObject.FindProperty("m_HumanDescription.m_Human");
+            m_Skeleton = serializedObject.FindProperty("m_HumanDescription.m_Skeleton");
+
             m_IsBiped = AvatarBipedMapper.IsBiped(gameObject.transform, null);
 
             // Handle human bones
             if (m_Bones == null)
-                m_Bones = AvatarSetupTool.GetHumanBones(serializedObject, modelBones);
+                m_Bones = AvatarSetupTool.GetHumanBones(m_HumanBoneArray, modelBones);
             ValidateMapping();
 
             if (m_CurrentTransformEditor != null)
@@ -195,7 +201,7 @@ namespace UnityEditor
         protected void ResetBones()
         {
             for (int i = 0; i < m_Bones.Length; i++)
-                m_Bones[i].Reset(serializedObject, modelBones);
+                m_Bones[i].Reset(m_HumanBoneArray, modelBones);
         }
 
         protected bool IsValidHuman()
@@ -254,9 +260,9 @@ namespace UnityEditor
         {
             if (Event.current.type == EventType.ValidateCommand && Event.current.commandName == EventCommandNames.UndoRedoPerformed)
             {
-                AvatarSetupTool.TransferPoseToDescription(serializedObject, root);
+                AvatarSetupTool.TransferPoseToDescription(m_Skeleton, root);
                 for (int i = 0; i < m_Bones.Length; i++)
-                    m_Bones[i].Serialize(serializedObject);
+                    m_Bones[i].Serialize(m_HumanBoneArray);
             }
 
             UpdateSelectedBone();
@@ -343,7 +349,7 @@ namespace UnityEditor
             {
                 if (TransformChanged(selected.transform))
                 {
-                    AvatarSetupTool.TransferPoseToDescription(serializedObject, root);
+                    AvatarSetupTool.TransferPoseToDescription(m_Skeleton, root);
                     m_Inspector.Repaint();
                     break;
                 }
@@ -394,14 +400,14 @@ namespace UnityEditor
         protected void CopyPrefabPose()
         {
             AvatarSetupTool.CopyPose(gameObject, prefab);
-            AvatarSetupTool.TransferPoseToDescription(serializedObject, root);
+            AvatarSetupTool.TransferPoseToDescription(m_Skeleton, root);
             m_Inspector.Repaint();
         }
 
         protected void SampleBindPose()
         {
             AvatarSetupTool.SampleBindPose(gameObject);
-            AvatarSetupTool.TransferPoseToDescription(serializedObject, root);
+            AvatarSetupTool.TransferPoseToDescription(m_Skeleton, root);
             m_Inspector.Repaint();
         }
 
@@ -409,14 +415,14 @@ namespace UnityEditor
         {
             AvatarBipedMapper.BipedPose(gameObject, m_Bones);
 
-            AvatarSetupTool.TransferPoseToDescription(serializedObject, root);
+            AvatarSetupTool.TransferPoseToDescription(m_Skeleton, root);
             m_Inspector.Repaint();
         }
 
         protected void MakePoseValid()
         {
             AvatarSetupTool.MakePoseValid(m_Bones);
-            AvatarSetupTool.TransferPoseToDescription(serializedObject, root);
+            AvatarSetupTool.TransferPoseToDescription(m_Skeleton, root);
             m_Inspector.Repaint();
         }
 
@@ -441,7 +447,7 @@ namespace UnityEditor
             {
                 AvatarSetupTool.BoneWrapper bone = m_Bones[kvp.Key];
                 bone.bone = kvp.Value;
-                bone.Serialize(serializedObject);
+                bone.Serialize(m_HumanBoneArray);
             }
         }
 
@@ -452,7 +458,7 @@ namespace UnityEditor
             {
                 AvatarSetupTool.BoneWrapper bone = m_Bones[kvp.Key];
                 bone.bone = kvp.Value;
-                bone.Serialize(serializedObject);
+                bone.Serialize(m_HumanBoneArray);
             }
         }
 
@@ -461,7 +467,7 @@ namespace UnityEditor
             if (serializedObject != null)
             {
                 Undo.RegisterCompleteObjectUndo(this, "Clear Mapping");
-                AvatarSetupTool.ClearHumanBoneArray(serializedObject);
+                AvatarSetupTool.ClearHumanBoneArray(m_HumanBoneArray);
                 ResetBones();
                 ValidateMapping();
                 SceneView.RepaintAll();
@@ -583,7 +589,7 @@ namespace UnityEditor
                             {
                                 Undo.RegisterCompleteObjectUndo(this, "Avatar mapping modified");
                                 bone.bone = newBoneTransform;
-                                bone.Serialize(serializedObject);
+                                bone.Serialize(m_HumanBoneArray);
 
                                 // User adding a bone manually, if it not in the modelBones dict, we must explictly add it
                                 if (newBoneTransform != null && !bones.ContainsKey(newBoneTransform))
@@ -828,7 +834,7 @@ namespace UnityEditor
                 {
                     m_Bones[i].bone = null;
                 }
-                m_Bones[i].Serialize(serializedObject);
+                m_Bones[i].Serialize(m_HumanBoneArray);
             }
 
             ValidateMapping();

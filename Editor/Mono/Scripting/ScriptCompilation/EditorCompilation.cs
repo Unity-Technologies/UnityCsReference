@@ -307,7 +307,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return this.precompiledAssemblies;
         }
 
-        public TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies()
+        public TargetAssemblyInfo[] GetAllCompiledAndResolvedCustomTargetAssemblies(EditorScriptCompilationOptions options, BuildTarget buildTarget)
         {
             if (customTargetAssemblies == null)
                 return new TargetAssemblyInfo[0];
@@ -341,6 +341,11 @@ namespace UnityEditor.Scripting.ScriptCompilation
                         // of compiled assemblies.
                         foreach (var reference in assembly.References)
                         {
+                            // Don't check references that are not compatible with the current build target,
+                            // as those assemblies have not been compiled.
+                            if (!EditorBuildRules.IsCompatibleWithPlatform(reference, buildTarget, options))
+                                continue;
+
                             if (!customTargetAssemblyCompiledPaths.ContainsKey(reference))
                             {
                                 customTargetAssemblyCompiledPaths.Remove(assembly);

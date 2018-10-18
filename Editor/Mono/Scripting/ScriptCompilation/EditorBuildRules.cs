@@ -651,7 +651,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static bool IsCompatibleWithPlatform(TargetAssembly assembly, ScriptAssemblySettings settings)
         {
-            return assembly.IsCompatibleFunc == null || assembly.IsCompatibleFunc(settings.BuildTarget, settings.CompilationOptions);
+            return IsCompatibleWithPlatform(assembly, settings.BuildTarget, settings.CompilationOptions);
+        }
+
+        public static bool IsCompatibleWithPlatform(TargetAssembly assembly, BuildTarget buildTarget, EditorScriptCompilationOptions compilationOptions)
+        {
+            return assembly.IsCompatibleFunc == null || assembly.IsCompatibleFunc(buildTarget, compilationOptions);
         }
 
         internal static TargetAssembly[] CreatePredefinedTargetAssemblies()
