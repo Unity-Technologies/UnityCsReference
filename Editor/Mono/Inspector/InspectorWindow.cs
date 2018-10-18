@@ -511,7 +511,8 @@ namespace UnityEditor
 
             if (tracker.activeEditors.Length > 0)
             {
-                DrawVCSShortInfo();
+                Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
+                DrawVCSShortInfo(this, assetEditor);
             }
         }
 
@@ -904,14 +905,13 @@ namespace UnityEditor
             GUIUtility.ExitGUI();
         }
 
-        protected virtual void DrawVCSSticky(float offset)
+        private static void DrawVCSSticky(EditorWindow hostWindow, Editor assetEditor, float offset)
         {
             string message = "";
-            Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
             bool hasRemovedSticky = EditorPrefs.GetBool("vcssticky");
             if (!hasRemovedSticky && !Editor.IsAppropriateFileOpenForEdit(assetEditor.target, out message))
             {
-                var rect = new Rect(10, position.height - 94, position.width - 20, 80);
+                var rect = new Rect(10, hostWindow.position.height - 94, hostWindow.position.width - 20, 80);
                 rect.y -= offset;
                 if (Event.current.type == EventType.Repaint)
                 {
@@ -932,14 +932,13 @@ namespace UnityEditor
             }
         }
 
-        private void DrawVCSShortInfo()
+        internal static void DrawVCSShortInfo(EditorWindow hostWindow, Editor assetEditor)
         {
             if (Provider.enabled &&
                 EditorSettings.externalVersionControl != ExternalVersionControl.Disabled &&
                 EditorSettings.externalVersionControl != ExternalVersionControl.AutoDetect &&
                 EditorSettings.externalVersionControl != ExternalVersionControl.Generic)
             {
-                Editor assetEditor = InspectorWindowUtils.GetFirstNonImportInspectorEditor(tracker.activeEditors);
                 string assetPath = AssetDatabase.GetAssetPath(assetEditor.target);
                 Asset asset = Provider.GetAssetByPath(assetPath);
                 if (asset == null || !(asset.path.StartsWith("Assets") || asset.path.StartsWith("ProjectSettings")))
@@ -1005,15 +1004,15 @@ namespace UnityEditor
                             // TODO: Retrieve default CheckoutMode from VC settings (depends on asset type; native vs. imported)
                             Task task = Provider.Checkout(assetEditor.targets, CheckoutMode.Both);
                             task.Wait();
-                            Repaint();
+                            hostWindow.Repaint();
                         }
                     }
-                    DrawVCSSticky(rect.height / 2);
+                    DrawVCSSticky(hostWindow, assetEditor, rect.height / 2);
                 }
             }
         }
 
-        protected string BuildTooltip(Asset asset, Asset metaAsset)
+        protected static string BuildTooltip(Asset asset, Asset metaAsset)
         {
             var sb = new StringBuilder();
             if (asset != null)
@@ -1029,7 +1028,7 @@ namespace UnityEditor
             return sb.ToString();
         }
 
-        protected void DrawVCSShortInfoAsset(Asset asset, string tooltip, Rect rect, Texture2D icon, string currentState)
+        protected static void DrawVCSShortInfoAsset(Asset asset, string tooltip, Rect rect, Texture2D icon, string currentState)
         {
             Rect overlayRect = new Rect(rect.x, rect.y, 28, 16);
             Rect iconRect = overlayRect;

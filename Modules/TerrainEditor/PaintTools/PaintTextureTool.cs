@@ -24,6 +24,7 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         [SerializeField]
         float m_SplatAlpha = 1.0f;
+
         public override string GetName()
         {
             return "Paint Texture";
@@ -36,17 +37,20 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
-            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, editContext.uv, editContext.brushSize);
-
-            TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushRect, m_SelectedTerrainLayer);
+            BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.uv, editContext.brushSize, 0.0f);
+            PaintContext paintContext = TerrainPaintUtility.BeginPaintTexture(terrain, brushXform.GetBrushXYBounds(), m_SelectedTerrainLayer);
             if (paintContext == null)
                 return false;
 
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
+
             // apply brush
             Vector4 brushParams = new Vector4(editContext.brushStrength, m_SplatAlpha, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", editContext.brushTexture);
             mat.SetVector("_BrushParams", brushParams);
+
+            TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
+
             Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.PaintTexture);
 
             TerrainPaintUtility.EndPaintTexture(paintContext, "Terrain Paint - Texture");
@@ -55,7 +59,17 @@ namespace UnityEditor.Experimental.TerrainAPI
 
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
-            TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(terrain, editContext.brushTexture, editContext.brushStrength, editContext.brushSize, 0.0f);
+            // We're only doing painting operations, early out if it's not a repaint
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            if (editContext.hitValidTerrain)
+            {
+                BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, editContext.brushSize, 0.0f);
+                PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                TerrainPaintUtility.ReleaseContextResources(ctx);
+            }
         }
 
         private void DrawFoldoutEditor(Editor editor, int controlId, ref bool visible)

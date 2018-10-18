@@ -33,6 +33,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return GetCachedSystemLibraryReferences(apiCompatibilityLevel);
         }
 
+        static string[] FindReferencesInDirectories(this string[] references, string[] directories)
+        {
+            return (
+                from reference in references
+                from directory in directories
+                where File.Exists(Path.Combine(directory, reference))
+                select Path.Combine(directory, reference)
+            ).ToArray();
+        }
+
         static string[] GetCachedSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel)
         {
             // We cache the references because they are computed by getting files in directories on disk,
@@ -43,7 +53,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
 
             var references = new List<string>();
-            var monoAssemblyDirectory = GetSystemReferenceDirectory(apiCompatibilityLevel);
+            var monoAssemblyDirectories = GetSystemReferenceDirectories(apiCompatibilityLevel);
 
             if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0)
             {
@@ -51,19 +61,20 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
             {
-                references.AddRange(GetSystemReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
-                references.AddRange(GetNet46SystemReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
+                references.AddRange(GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
+                references.AddRange(GetNet46SystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
 
                 // Look in the mono assembly directory for a facade folder and get a list of all the DLL's to be
                 // used later by the language compilers.
+                var monoAssemblyDirectory = MonoInstallationFinder.GetProfileDirectory("4.7.1-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
                 references.AddRange(Directory.GetFiles(Path.Combine(monoAssemblyDirectory, "Facades"), "*.dll"));
 
                 references.AddRange(GetBooAndUsReferences().Select(dll => Path.Combine(MonoInstallationFinder.GetProfileDirectory("unityscript", MonoInstallationFinder.MonoBleedingEdgeInstallation), dll)));
             }
             else
             {
-                references.AddRange(GetSystemReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
-                references.AddRange(GetBooAndUsReferences().Select(dll => Path.Combine(monoAssemblyDirectory, dll)));
+                references.AddRange(GetSystemReferences().FindReferencesInDirectories(monoAssemblyDirectories));
+                references.AddRange(GetBooAndUsReferences().FindReferencesInDirectories(monoAssemblyDirectories));
             }
 
             cachedReferences = new CachedReferences
@@ -76,16 +87,38 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return cachedReferences.References;
         }
 
-        public static string GetSystemReferenceDirectory(ApiCompatibilityLevel apiCompatibilityLevel)
+        static string GetSystemReference(ApiCompatibilityLevel apiCompatibilityLevel)
         {
-            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0)
-                return "";
-            else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
                 return MonoInstallationFinder.GetProfileDirectory("4.7.1-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
-            else if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_2_0)
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_2_0)
                 return MonoInstallationFinder.GetProfileDirectory("2.0-api", MonoInstallationFinder.MonoBleedingEdgeInstallation);
 
             return MonoInstallationFinder.GetProfileDirectory(BuildPipeline.CompatibilityProfileToClassLibFolder(apiCompatibilityLevel), MonoInstallationFinder.MonoBleedingEdgeInstallation);
+        }
+
+        public static string[] GetSystemReferenceDirectories(ApiCompatibilityLevel apiCompatibilityLevel)
+        {
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_Standard_2_0)
+            {
+                var systemReferenceDirectories = new List<string>();
+                systemReferenceDirectories.Add(NetStandardFinder.GetReferenceDirectory());
+                systemReferenceDirectories.Add(NetStandardFinder.GetNetStandardCompatShimsDirectory());
+                systemReferenceDirectories.Add(NetStandardFinder.GetNetStandardExtensionsDirectory());
+                systemReferenceDirectories.Add(NetStandardFinder.GetDotNetFrameworkCompatShimsDirectory());
+                return systemReferenceDirectories.ToArray();
+            }
+
+            if (apiCompatibilityLevel == ApiCompatibilityLevel.NET_4_6)
+            {
+                var systemReferenceDirectories = new List<string>();
+                var frameworkDirectory = GetSystemReference(apiCompatibilityLevel);
+                systemReferenceDirectories.Add(frameworkDirectory);
+                systemReferenceDirectories.Add(Path.Combine(frameworkDirectory, "Facades"));
+                return systemReferenceDirectories.ToArray();
+            }
+
+            return new[] { GetSystemReference(apiCompatibilityLevel) };
         }
 
         static string[] GetNetStandardClassLibraries()
@@ -125,7 +158,10 @@ namespace UnityEditor.Scripting.ScriptCompilation
             return new[]
             {
                 "System.Numerics.dll",
-                "System.Numerics.Vectors.dll"
+                "System.Numerics.Vectors.dll",
+                "System.Net.Http.dll",
+                "Microsoft.CSharp.dll",
+                "System.Data.dll",
             };
         }
 

@@ -364,11 +364,16 @@ namespace UnityEditor.Collaboration
 
         public PublishInfo GetChangesToPublish()
         {
-            Change[] changes = GetSelectedChangesInternal();
+            Change[] changes = GetChangesToPublishInternal();
             bool isFiltered = false;
-            if (Toolbar.isLastShowRequestPartial)
+
+            if (SupportsAsyncChanges())
             {
-                isFiltered = true;
+                changes = GetSelectedChangesInternal();
+                if (Toolbar.isLastShowRequestPartial)
+                {
+                    isFiltered = true;
+                }
             }
 
             return new PublishInfo()

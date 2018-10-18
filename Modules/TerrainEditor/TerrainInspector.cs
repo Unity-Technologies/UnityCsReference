@@ -635,9 +635,9 @@ namespace UnityEditor
         static internal ITerrainPaintTool[] m_Tools = null;
         static internal string[] m_ToolNames = null;
 
-        static OnPaintContext onPaintEditContext = new OnPaintContext(null, Vector2.zero, 0.0f, 0.0f, 0.0f);
+        static OnPaintContext onPaintEditContext = new OnPaintContext(new RaycastHit(), null, Vector2.zero, 0.0f, 0.0f);
         static OnInspectorGUIContext onInspectorGUIEditContext = new OnInspectorGUIContext();
-        static OnSceneGUIContext onSceneGUIEditContext = new OnSceneGUIContext(null, null, 0.0f, 0.0f, 0.0f);
+        static OnSceneGUIContext onSceneGUIEditContext = new OnSceneGUIContext(null, new RaycastHit(), null, 0.0f, 0.0f);
 
         ITerrainPaintTool GetActiveTool()
         {
@@ -813,6 +813,7 @@ namespace UnityEditor
         void Initialize()
         {
             m_Terrain = target as Terrain;
+            CheckToolActivation();
         }
 
         void LoadInspectorSettings()
@@ -826,7 +827,7 @@ namespace UnityEditor
             int selected = EditorPrefs.GetInt("TerrainSelectedBrush", 0);
             s_DetailPainter.selectedDetail = EditorPrefs.GetInt("TerrainSelectedDetail", 0);
 
-            m_ActivePaintToolIndex = EditorPrefs.GetInt("TerraiActivePaintToolIndex", 0);
+            m_ActivePaintToolIndex = EditorPrefs.GetInt("TerrainActivePaintToolIndex", 0);      // TODO: this should be stored by name
             if (m_ActivePaintToolIndex > m_Tools.Length)
                 m_ActivePaintToolIndex = 0;
 
@@ -844,7 +845,7 @@ namespace UnityEditor
             EditorPrefs.SetFloat("TerrainBrushSize", m_Size);
             EditorPrefs.SetFloat("TerrainBrushStrength", m_Strength);
 
-            EditorPrefs.SetInt("TerraiActivePaintToolIndex", m_ActivePaintToolIndex);
+            EditorPrefs.SetInt("TerrainActivePaintToolIndex", m_ActivePaintToolIndex);
         }
 
         public void OnEnable()
@@ -874,6 +875,9 @@ namespace UnityEditor
 
             LoadInspectorSettings();
 
+            // now that tool selection has been loaded from inspector, activate the selected tool
+            CheckToolActivation();
+
             InitializeLightingFields();
 
             m_TerrainToolContext = new TerrainToolContext(this);
@@ -886,8 +890,10 @@ namespace UnityEditor
         public void OnDisable()
         {
             ShortcutIntegration.instance.contextManager.DeregisterToolContext(m_TerrainToolContext);
-            TerrainPaintUtility.FlushAllPaints();
+            PaintContext.ApplyDelayedActions();
             SceneView.onSceneGUIDelegate -= OnSceneGUICallback;
+
+            SetCurrentPaintToolInactive();
 
             SaveInspectorSettings();
 
@@ -922,6 +928,55 @@ namespace UnityEditor
                     Tools.current = Tool.None;
                 m_SelectedTool.value = (int)value;
                 s_activeTerrainInspector = GetInstanceID();
+                CheckToolActivation();
+            }
+        }
+
+        // this is a bunch of tracking to ensure we don't mess up the tool mode callbacks
+        private bool m_PaintToolActive = false;
+        private void SetCurrentPaintToolActive()
+        {
+            if (!m_PaintToolActive)
+            {
+                ITerrainPaintTool paintTool = GetActiveTool();
+                if (paintTool != null)
+                {
+                    paintTool.OnEnterToolMode();
+                    m_PaintToolActive = true;
+                }
+            }
+        }
+
+        private void SetCurrentPaintToolInactive()
+        {
+            if (m_PaintToolActive)
+            {
+                ITerrainPaintTool paintTool = GetActiveTool();
+                if (paintTool != null)
+                {
+                    paintTool.OnExitToolMode();
+                    m_PaintToolActive = false;
+                }
+            }
+        }
+
+        // Ideally we would be notified when the active tool changes, but I can see no way to do that
+        // So instead we will call this function everywhere, which checks for it changing and does the proper notification callbacks
+        private TerrainTool m_PreviousSelectedTool = TerrainTool.None;
+        private void CheckToolActivation()
+        {
+            TerrainTool currentTool = selectedTool;
+            if (currentTool != m_PreviousSelectedTool)
+            {
+                // inactivate previous tool, if necessary
+                if (m_PreviousSelectedTool == TerrainTool.Paint)
+                    SetCurrentPaintToolInactive();
+
+                m_PreviousSelectedTool = currentTool;
+
+                // activate new tool, if necessary
+                if (currentTool == TerrainTool.Paint)
+                    SetCurrentPaintToolActive();
             }
         }
 
@@ -1390,9 +1445,14 @@ namespace UnityEditor
             if (m_Tools != null && m_Tools.Length > 1 && m_ToolNames != null)
             {
                 EditorGUI.BeginChangeCheck();
-                m_ActivePaintToolIndex = EditorGUILayout.Popup(m_ActivePaintToolIndex, m_ToolNames);
-                if (EditorGUI.EndChangeCheck())
+                int newPaintToolIndex = EditorGUILayout.Popup(m_ActivePaintToolIndex, m_ToolNames);
+                if (EditorGUI.EndChangeCheck() && (newPaintToolIndex != m_ActivePaintToolIndex))
+                {
+                    SetCurrentPaintToolInactive();
+                    m_ActivePaintToolIndex = newPaintToolIndex;
+                    SetCurrentPaintToolActive();
                     Repaint();
+                }
                 ITerrainPaintTool activeTool = GetActiveTool();
 
                 GUILayout.BeginVertical(EditorStyles.helpBox);
@@ -1408,7 +1468,8 @@ namespace UnityEditor
             GUILayout.Space(spacing);
             bool repaint = brushList.ShowGUI();
 
-            m_Size = EditorGUILayout.Slider(styles.brushSize, m_Size, 1.0f, Mathf.Min(m_Terrain.terrainData.size.x - 1.0f, m_Terrain.terrainData.size.z - 1.0f));
+            float safetyFactorHack = 0.9375f;
+            m_Size = EditorGUILayout.Slider(styles.brushSize, m_Size, 0.1f, Mathf.Round(Mathf.Min(m_Terrain.terrainData.size.x, m_Terrain.terrainData.size.z) * safetyFactorHack));
             m_Strength = PercentSlider(styles.opacity, m_Strength, kMinBrushStrength, 1); // former string formatting: "0.0%"
 
             brushList.ShowEditGUI();
@@ -1866,23 +1927,21 @@ namespace UnityEditor
             return true;
         }
 
-        bool IsBrushPreviewVisible()
+        bool IsBrushPreviewVisible(Terrain overTerrain)
         {
             if (!IsModificationToolActive())
                 return false;
 
-            Vector3 pos;
-            Vector2 uv;
-            return Raycast(out uv, out pos);
+            return (overTerrain != null);
         }
 
-        private bool RaycastAllTerrains(out Terrain hitTerrain, out Vector2 hitUV)
+        private bool RaycastAllTerrains(out Terrain hitTerrain, out RaycastHit raycastHit)
         {
             Ray mouseRay = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
 
             float minDist = float.MaxValue;
             hitTerrain = null;
-            hitUV = Vector2.zero;
+            raycastHit = new RaycastHit();
             foreach (Terrain terrain in Terrain.activeTerrains)
             {
                 RaycastHit hit;
@@ -1892,11 +1951,11 @@ namespace UnityEditor
                     {
                         minDist = hit.distance;
                         hitTerrain = terrain;
-                        hitUV = hit.textureCoord;
+                        raycastHit = hit;
                     }
                 }
             }
-            return hitTerrain;
+            return (hitTerrain != null);
         }
 
         public void OnSceneGUICallback(SceneView sceneView)
@@ -1905,47 +1964,52 @@ namespace UnityEditor
 
             Event e = Event.current;
 
-            Terrain terrain = null;
-            Vector2 uv = Vector2.zero;
+            Terrain hitTerrain = null;
+            RaycastHit raycastHit = new RaycastHit();
 
             if (selectedTool == TerrainTool.Paint ||
                 selectedTool == TerrainTool.PaintDetail ||
                 selectedTool == TerrainTool.PlaceTree)
             {
-                if (RaycastAllTerrains(out terrain, out uv))
+                if (RaycastAllTerrains(out hitTerrain, out raycastHit))
                 {
                     if (e.type == EventType.MouseDown || e.type == EventType.MouseUp)
                     {
                         if (e.button == 0 && !Event.current.alt)
-                            Selection.activeObject = terrain;
+                            Selection.activeObject = hitTerrain;
                     }
                 }
             }
+            Vector2 uv = raycastHit.textureCoord;
 
-            bool isTerrainValid = (terrain != null && terrain.terrainData != null);
+            bool hitValidTerrain = (hitTerrain != null && hitTerrain.terrainData != null);
+            if (!hitValidTerrain)
+            {
+                raycastHit = new RaycastHit();
+            }
 
             if (selectedTool == TerrainTool.Paint)
             {
-                Terrain lastActiveTerrain = isTerrainValid ? terrain : s_LastActiveTerrain;
+                Terrain lastActiveTerrain = hitValidTerrain ? hitTerrain : s_LastActiveTerrain;
                 if (lastActiveTerrain)
                 {
                     ITerrainPaintTool activeTool = GetActiveTool();
-                    activeTool.OnSceneGUI(lastActiveTerrain, onSceneGUIEditContext.Set(sceneView, brushList.GetActiveBrush().texture, m_Strength, 0.0f, m_Size));
+                    activeTool.OnSceneGUI(lastActiveTerrain, onSceneGUIEditContext.Set(sceneView, hitValidTerrain, raycastHit, brushList.GetActiveBrush().texture, m_Strength, m_Size));
                 }
             }
             else if (selectedTool == TerrainTool.PaintDetail || selectedTool == TerrainTool.PlaceTree)
             {
-                if (isTerrainValid)
+                if (hitValidTerrain)
                 {
                     float brushSize = selectedTool == TerrainTool.PlaceTree ? TreePainter.brushSize : m_Size;
-                    TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(terrain, brushList.GetActiveBrush().texture, m_Strength, brushSize, 0.0f);
+                    TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(hitTerrain, brushList.GetCircleBrush().texture, brushSize);
                 }
             }
 
-            if (!isTerrainValid)
+            if (!hitValidTerrain)
                 return;
 
-            s_LastActiveTerrain = terrain;
+            s_LastActiveTerrain = hitTerrain;
 
             int id = GUIUtility.GetControlID(s_TerrainEditorHash, FocusType.Passive);
             switch (e.GetTypeForControl(id))
@@ -1957,7 +2021,7 @@ namespace UnityEditor
                     break;
 
                 case EventType.MouseMove:
-                    if (IsBrushPreviewVisible())
+                    if (IsBrushPreviewVisible(hitTerrain))
                         HandleUtility.Repaint();
                     break;
 
@@ -2000,12 +2064,12 @@ namespace UnityEditor
                                     TreePainter.BeginPlaceTrees(m_Terrain);
                                 }
 
-                                TreePainter.PlaceTrees(terrain, uv.x, uv.y);
+                                TreePainter.PlaceTrees(hitTerrain, uv.x, uv.y);
                             }
                         }
                         else
                         {
-                            TreePainter.RemoveTrees(terrain, uv.x, uv.y, Event.current.control);
+                            TreePainter.RemoveTrees(hitTerrain, uv.x, uv.y, Event.current.control);
                         }
                     }
                     else if (selectedTool == TerrainTool.PaintDetail)
@@ -2016,13 +2080,13 @@ namespace UnityEditor
                         }
 
                         DetailPaintOperation paintOp = new DetailPaintOperation();
-                        paintOp.size = (int)Mathf.Max(1.0f, ((float)m_Size * ((float)terrain.terrainData.detailResolution / terrain.terrainData.size.x)));
+                        paintOp.size = (int)Mathf.Max(1.0f, ((float)m_Size * ((float)hitTerrain.terrainData.detailResolution / hitTerrain.terrainData.size.x)));
                         paintOp.targetStrength = m_DetailStrength * 16F;
                         if (Event.current.shift || Event.current.control)
                             paintOp.targetStrength *= -1;
                         paintOp.opacity = m_DetailOpacity;
                         paintOp.clearSelectedOnly = Event.current.control;
-                        paintOp.terrainData = terrain.terrainData;
+                        paintOp.terrainData = hitTerrain.terrainData;
                         paintOp.brush = brushList.GetActiveBrush();
                         paintOp.tool = selectedTool;
                         paintOp.randomizeDetails = true;
@@ -2034,10 +2098,10 @@ namespace UnityEditor
                     else
                     {
                         ITerrainPaintTool activeTool = GetActiveTool();
-                        if (activeTool.OnPaint(terrain, onPaintEditContext.Set(brushList.GetActiveBrush().texture, uv, m_Strength, 0.0f, m_Size)))
+                        if (activeTool.OnPaint(hitTerrain, onPaintEditContext.Set(hitValidTerrain, raycastHit, brushList.GetActiveBrush().texture, uv, m_Strength, m_Size)))
                         {
                             // height map modification modes
-                            terrain.editorRenderFlags = TerrainRenderFlags.Heightmap;
+                            hitTerrain.editorRenderFlags = TerrainRenderFlags.Heightmap;
                         }
                     }
 
@@ -2067,8 +2131,8 @@ namespace UnityEditor
                         s_DetailPainter.EndPaintDetails();
                     }
 
-                    terrain.editorRenderFlags = TerrainRenderFlags.All;
-                    TerrainPaintUtility.FlushAllPaints();
+                    hitTerrain.editorRenderFlags = TerrainRenderFlags.All;
+                    PaintContext.ApplyDelayedActions();
 
                     e.Use();
                 }

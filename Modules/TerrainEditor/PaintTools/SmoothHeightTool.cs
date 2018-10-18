@@ -25,22 +25,41 @@ namespace UnityEditor.Experimental.TerrainAPI
             editContext.ShowBrushesGUI(5);
         }
 
+        private void ApplyBrushInternal(PaintContext paintContext, float brushStrength, Texture brushTexture, BrushTransform brushXform)
+        {
+            Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
+
+            brushStrength = Event.current.shift ? -brushStrength : brushStrength;
+
+            Vector4 brushParams = new Vector4(brushStrength, 0.0f, 0.0f, 0.0f);
+            mat.SetTexture("_BrushTex", brushTexture);
+            mat.SetVector("_BrushParams", brushParams);
+
+            TerrainPaintUtility.SetupTerrainToolMaterialProperties(paintContext, brushXform, mat);
+
+            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.SmoothHeights);
+        }
+
         public override void OnSceneGUI(Terrain terrain, IOnSceneGUI editContext)
         {
-            TerrainPaintUtilityEditor.ShowDefaultPreviewBrush(terrain, editContext.brushTexture, editContext.brushStrength, editContext.brushSize, 0.0f);
+            // We're only doing painting operations, early out if it's not a repaint
+            if (Event.current.type != EventType.Repaint)
+                return;
+
+            if (editContext.hitValidTerrain)
+            {
+                BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.raycastHit.textureCoord, editContext.brushSize, 0.0f);
+                PaintContext ctx = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds(), 1);
+                TerrainPaintUtilityEditor.DrawBrushPreview(ctx, TerrainPaintUtilityEditor.BrushPreview.SourceRenderTexture, editContext.brushTexture, brushXform, TerrainPaintUtilityEditor.GetDefaultBrushPreviewMaterial(), 0);
+                TerrainPaintUtility.ReleaseContextResources(ctx);
+            }
         }
 
         public override bool OnPaint(Terrain terrain, IOnPaint editContext)
         {
-            Rect brushRect = TerrainPaintUtility.CalculateBrushRectInTerrainUnits(terrain, editContext.uv, editContext.brushSize);
-            TerrainPaintUtility.PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushRect);
-
-            Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
-            Vector4 brushParams = new Vector4(editContext.brushStrength, 0.0f, 0.0f, 0.0f);
-            mat.SetTexture("_BrushTex", editContext.brushTexture);
-            mat.SetVector("_BrushParams", brushParams);
-            Graphics.Blit(paintContext.sourceRenderTexture, paintContext.destinationRenderTexture, mat, (int)TerrainPaintUtility.BuiltinPaintMaterialPasses.SmoothHeights);
-
+            BrushTransform brushXform = TerrainPaintUtility.CalculateBrushTransform(terrain, editContext.uv, editContext.brushSize, 0.0f);
+            PaintContext paintContext = TerrainPaintUtility.BeginPaintHeightmap(terrain, brushXform.GetBrushXYBounds());
+            ApplyBrushInternal(paintContext, editContext.brushStrength, editContext.brushTexture, brushXform);
             TerrainPaintUtility.EndPaintHeightmap(paintContext, "Terrain Paint - Smooth Height");
             return true;
         }

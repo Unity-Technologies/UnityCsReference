@@ -275,19 +275,22 @@ namespace UnityEditor
 
         private void DrawSettingsPanel()
         {
+            if (m_TreeView.currentProvider == null)
+                return;
+
+            DrawTitleBar();
+
             using (var scrollViewScope = new EditorGUILayout.ScrollViewScope(m_PosRight, GUILayout.ExpandWidth(true)))
             {
                 m_PosRight = scrollViewScope.scrollPosition;
                 DrawControls();
             }
+
+            DrawFooterBar();
         }
 
         private void DrawControls()
         {
-            if (m_TreeView.currentProvider == null)
-                return;
-
-            DrawTitleBar();
             using (new EditorGUI.LabelHighlightScope(m_SearchText, Styles.settingsPanel.GetColor("-unity-search-highlight-selection-color"), Styles.settingsPanel.GetColor("-unity-search-highlight-color")))
                 m_TreeView.currentProvider.OnGUI(m_SearchText);
         }
@@ -301,6 +304,11 @@ namespace UnityEditor
             GUILayout.FlexibleSpace();
             m_TreeView.currentProvider.OnTitleBarGUI();
             GUILayout.EndHorizontal();
+        }
+
+        private void DrawFooterBar()
+        {
+            m_TreeView.currentProvider.OnFooterBarGUI();
         }
 
         private void DrawTreeView()

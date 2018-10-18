@@ -16,14 +16,14 @@ namespace UnityEditor.Scripting.Compilers
 
         protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments)
         {
-            return StartCompiler(target, compiler, arguments, BuildPipeline.CompatibilityProfileToClassLibFolder(_island._api_compatibility_level));
+            return StartCompiler(target, compiler, arguments, BuildPipeline.CompatibilityProfileToClassLibFolder(m_Island._api_compatibility_level));
         }
 
         protected ManagedProgram StartCompiler(BuildTarget target, string compiler, List<string> arguments, string profileDirectory)
         {
             AddCustomResponseFileIfPresent(arguments, Path.GetFileNameWithoutExtension(compiler) + ".rsp");
 
-            var monoInstallation = (PlayerSettingsEditor.IsLatestApiCompatibility(_island._api_compatibility_level))
+            var monoInstallation = PlayerSettingsEditor.IsLatestApiCompatibility(m_Island._api_compatibility_level)
                 ? MonoInstallationFinder.GetMonoBleedingEdgeInstallation()
                 : MonoInstallationFinder.GetMonoInstallation();
             return StartCompiler(target, compiler, arguments, profileDirectory, true, monoInstallation);

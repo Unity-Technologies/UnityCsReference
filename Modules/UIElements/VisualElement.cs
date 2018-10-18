@@ -620,9 +620,25 @@ namespace UnityEngine.Experimental.UIElements
                 elements.Add(this);
                 GatherAllChildren(elements);
 
-                foreach (var e in elements)
+                EventDispatcher.Gate? pDispatcherGate = null;
+                if (p?.dispatcher != null)
                 {
-                    e.ChangePanel(p);
+                    pDispatcherGate = new EventDispatcher.Gate(p.dispatcher);
+                }
+
+                EventDispatcher.Gate? panelDispatcherGate = null;
+                if (panel?.dispatcher != null && panel.dispatcher != p?.dispatcher)
+                {
+                    panelDispatcherGate = new EventDispatcher.Gate(panel.dispatcher);
+                }
+
+                using (pDispatcherGate)
+                using (panelDispatcherGate)
+                {
+                    foreach (var e in elements)
+                    {
+                        e.ChangePanel(p);
+                    }
                 }
             }
             finally
@@ -655,7 +671,7 @@ namespace UnityEngine.Experimental.UIElements
                 using (var e = AttachToPanelEvent.GetPooled(prevPanel, p))
                 {
                     e.target = this;
-                    elementPanel.SendEvent(e, DispatchMode.Immediate);
+                    elementPanel.SendEvent(e, DispatchMode.Default);
                 }
             }
 

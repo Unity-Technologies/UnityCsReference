@@ -1488,6 +1488,12 @@
   <Compile Include="..\..\Modules\Substance\SubstanceUtility.cs">
     <Link>Modules\Substance\SubstanceUtility.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\BrushTransform.cs">
+    <Link>Modules\Terrain\Public\BrushTransform.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Terrain\Public\PaintContext.cs">
+    <Link>Modules\Terrain\Public\PaintContext.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\Terrain\Public\Terrain.bindings.cs">
     <Link>Modules\Terrain\Public\Terrain.bindings.cs</Link>
   </Compile>
