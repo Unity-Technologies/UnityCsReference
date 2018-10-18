@@ -265,10 +265,6 @@ namespace UnityEditor.SceneManagement
                 var previousStage = m_NavigationHistory.GetPrevious();
                 SwitchToStage(previousStage, false, true, stageChangeAnalytics);
             }
-            else
-            {
-                Debug.LogError("Cannot navigate back");
-            }
         }
 
         internal void GoToMainStage(bool setPreviousSelection, Analytics.ChangeType stageChangeAnalytics)
@@ -469,8 +465,8 @@ namespace UnityEditor.SceneManagement
 
             if (assetPath.EndsWith(".prefab", StringComparison.OrdinalIgnoreCase))
             {
-                // The 'line' parameter is used for passing an instance if entered from the Hierarchy or SceneView, otherwise it is -1
-                GameObject instanceRoot = line == -1 ? null : (GameObject)EditorUtility.InstanceIDToObject(line);
+                // The 'line' parameter can be used for passing an instanceID of a prefab instance
+                GameObject instanceRoot = line == -1 ? null : EditorUtility.InstanceIDToObject(line) as GameObject;
 
                 PrefabStageUtility.OpenPrefab(assetPath, instanceRoot, Analytics.ChangeType.EnterViaAssetOpened);
                 return true;

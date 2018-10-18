@@ -69,6 +69,7 @@ namespace UnityEditor
 
         public Action<string> guiHandler { get; set; }
         public Action titleBarGuiHandler { get; set; }
+        public Action footerBarGuiHandler { get; set; }
         public Action<string, VisualElement> activateHandler { get; set; }
         public Action deactivateHandler { get; set; }
         public Func<string, bool> hasSearchInterestHandler { get; set; }
@@ -117,6 +118,11 @@ namespace UnityEditor
         public virtual void OnTitleBarGUI()
         {
             titleBarGuiHandler?.Invoke();
+        }
+
+        public virtual void OnFooterBarGUI()
+        {
+            footerBarGuiHandler?.Invoke();
         }
 
         public void PopulateSearchKeywordsFromGUIContentProperties<T>()

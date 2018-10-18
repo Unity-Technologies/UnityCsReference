@@ -102,5 +102,11 @@ namespace UnityEditor
                 }
             }
         }
+
+        public override void OnFooterBarGUI()
+        {
+            if (m_SettingsEditor != null)
+                InspectorWindow.DrawVCSShortInfo(settingsWindow, m_SettingsEditor);
+        }
     }
 }

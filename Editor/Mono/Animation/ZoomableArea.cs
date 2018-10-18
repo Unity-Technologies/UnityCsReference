@@ -992,5 +992,20 @@ namespace UnityEditor
         {
             return shownArea.width / rect.width;
         }
+
+        public void UpdateZoomScale(float fMaxScaleValue, float fMinScaleValue)
+        {
+            // Update/reset the values of the scale to new zoom range, if the current values do not fall in the range of the new resolution
+
+            if (m_Scale.y > fMaxScaleValue || m_Scale.y < fMinScaleValue)
+            {
+                m_Scale.y = m_Scale.y > fMaxScaleValue ? fMaxScaleValue : fMinScaleValue;
+            }
+
+            if (m_Scale.x > fMaxScaleValue || m_Scale.x < fMinScaleValue)
+            {
+                m_Scale.x = m_Scale.x > fMaxScaleValue ? fMaxScaleValue : fMinScaleValue;
+            }
+        }
     }
 } // namespace

@@ -126,6 +126,7 @@ namespace UnityEditor.ShortcutManagement
                     if (HasConflicts(entries, m_KeyCombinationSequence))
                     {
                         m_ConflictResolver.ResolveConflict(m_KeyCombinationSequence, entries);
+                        evt.Use();
                         Reset();
                     }
                     break;

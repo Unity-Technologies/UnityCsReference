@@ -22,19 +22,21 @@ namespace UnityEditorInternal.VR
         {
             public static readonly GUIContent singlepassAndroidWarning = EditorGUIUtility.TrTextContent("Single Pass stereo rendering requires OpenGL ES 3. Please make sure that it's the first one listed under Graphics APIs.");
             public static readonly GUIContent singlepassAndroidWarning2 = EditorGUIUtility.TrTextContent("Multi Pass will be used on Android devices that don't support Single Pass.");
+            public static readonly GUIContent singlepassAndroidWarning3 = EditorGUIUtility.TrTextContent("When using a Scriptable Render Pipeline, Single Pass Double Wide will be used on Android devices that don't support Single Pass Instancing or Multi-view.");
             public static readonly GUIContent singlePassInstancedWarning = EditorGUIUtility.TrTextContent("Single Pass Instanced is only supported on Windows. Multi Pass will be used on other platforms.");
+            public static readonly GUIContent multiPassNotSupportedWithSRP = EditorGUIUtility.TrTextContent("Multi Pass is only supported using the legacy render pipelies.  Stereo Rendering Mode is set to the fallback mode of Single Pass.");
 
             public static readonly GUIContent[] kDefaultStereoRenderingPaths =
             {
                 EditorGUIUtility.TrTextContent("Multi Pass"),
                 EditorGUIUtility.TrTextContent("Single Pass"),
-                EditorGUIUtility.TrTextContent("Single Pass Instanced (Preview)")
+                EditorGUIUtility.TrTextContent("Single Pass Instanced")
             };
 
             public static readonly GUIContent[] kMultiviewStereoRenderingPaths =
             {
                 EditorGUIUtility.TrTextContent("Multi Pass"),
-                EditorGUIUtility.TrTextContent("Single Pass Multiview or Instanced (Preview)")
+                EditorGUIUtility.TrTextContent("Single Pass")
             };
 
             public static readonly GUIContent xrSettingsTitle = EditorGUIUtility.TrTextContent("XR Settings");
@@ -60,6 +62,7 @@ namespace UnityEditorInternal.VR
 
         private bool m_InstallsRequired = false;
         private bool m_VuforiaInstalled = false;
+        private bool m_ShowMultiPassSRPInfoBox = false;
 
         internal int GUISectionIndex { get; set; }
 
@@ -305,16 +308,44 @@ namespace UnityEditorInternal.VR
             return DoesBuildTargetSupportStereoMultiviewRendering(targetGroup) ? Styles.kMultiviewStereoRenderingPaths : Styles.kDefaultStereoRenderingPaths;
         }
 
+        private bool IsStereoRenderingModeSupported(BuildTargetGroup targetGroup, StereoRenderingPath stereoRenderingPath)
+        {
+            switch (stereoRenderingPath)
+            {
+                case StereoRenderingPath.MultiPass:
+                    return (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset == null);
+
+                case StereoRenderingPath.SinglePass:
+                    return DoesBuildTargetSupportSinglePassStereoRendering(targetGroup);
+
+                case StereoRenderingPath.Instancing:
+                    return DoesBuildTargetSupportStereoInstancingRendering(targetGroup);
+            }
+            ;
+
+            return false;
+        }
+
+        void OnStereoModeSelected(SerializedProperty stereoRenderingPath, object userData)
+        {
+            stereoRenderingPath.intValue = (int)userData;
+            m_ShowMultiPassSRPInfoBox = false;
+
+            m_Settings.serializedObject.ApplyModifiedProperties();
+        }
+
         private void SinglePassStereoGUI(BuildTargetGroup targetGroup, SerializedProperty stereoRenderingPath)
         {
             if (!PlayerSettings.virtualRealitySupported)
                 return;
 
-            bool supportsSinglePass = DoesBuildTargetSupportSinglePassStereoRendering(targetGroup);
-            bool supportsSinglePassInstanced = DoesBuildTargetSupportStereoInstancingRendering(targetGroup);
+            bool supportsMultiPass = IsStereoRenderingModeSupported(targetGroup, StereoRenderingPath.MultiPass);
+            bool supportsSinglePass = IsStereoRenderingModeSupported(targetGroup, StereoRenderingPath.SinglePass);
+            bool supportsSinglePassInstanced = IsStereoRenderingModeSupported(targetGroup, StereoRenderingPath.Instancing);
 
             // populate the dropdown with the valid options based on target platform.
-            int validStereoRenderingOptionsCount = 1 + (supportsSinglePass ? 1 : 0) + (supportsSinglePassInstanced ? 1 : 0);
+            int multiPassAndSinglePass = 2;
+            int validStereoRenderingOptionsCount = multiPassAndSinglePass + (supportsSinglePassInstanced ? 1 : 0);
             var validStereoRenderingPaths = new GUIContent[validStereoRenderingOptionsCount];
             var validStereoRenderingValues = new int[validStereoRenderingOptionsCount];
 
@@ -324,11 +355,8 @@ namespace UnityEditorInternal.VR
             validStereoRenderingPaths[addedStereoRenderingOptionsCount] = stereoRenderingPaths[(int)StereoRenderingPath.MultiPass];
             validStereoRenderingValues[addedStereoRenderingOptionsCount++] = (int)StereoRenderingPath.MultiPass;
 
-            if (supportsSinglePass)
-            {
-                validStereoRenderingPaths[addedStereoRenderingOptionsCount] = stereoRenderingPaths[(int)StereoRenderingPath.SinglePass];
-                validStereoRenderingValues[addedStereoRenderingOptionsCount++] = (int)StereoRenderingPath.SinglePass;
-            }
+            validStereoRenderingPaths[addedStereoRenderingOptionsCount] = stereoRenderingPaths[(int)StereoRenderingPath.SinglePass];
+            validStereoRenderingValues[addedStereoRenderingOptionsCount++] = (int)StereoRenderingPath.SinglePass;
 
             if (supportsSinglePassInstanced)
             {
@@ -337,20 +365,56 @@ namespace UnityEditorInternal.VR
             }
 
             // setup fallbacks
+            if (!supportsMultiPass && (stereoRenderingPath.intValue == (int)StereoRenderingPath.MultiPass))
+            {
+                stereoRenderingPath.intValue = (int)StereoRenderingPath.SinglePass;
+                m_ShowMultiPassSRPInfoBox = true;
+            }
+
             if (!supportsSinglePassInstanced && (stereoRenderingPath.intValue == (int)StereoRenderingPath.Instancing))
                 stereoRenderingPath.intValue = (int)StereoRenderingPath.SinglePass;
 
             if (!supportsSinglePass && (stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass))
                 stereoRenderingPath.intValue = (int)StereoRenderingPath.MultiPass;
 
-            EditorGUILayout.IntPopup(stereoRenderingPath, validStereoRenderingPaths, validStereoRenderingValues, EditorGUIUtility.TrTextContent("Stereo Rendering Mode*"));
+            if (m_ShowMultiPassSRPInfoBox)
+                EditorGUILayout.HelpBox(Styles.multiPassNotSupportedWithSRP.text, MessageType.Info);
+
+            var rect = EditorGUILayout.GetControlRect();
+            EditorGUI.BeginProperty(rect, EditorGUIUtility.TrTextContent("Stereo Rendering Mode*"), stereoRenderingPath);
+            rect = EditorGUI.PrefixLabel(rect, EditorGUIUtility.TrTextContent("Stereo Rendering Mode*"));
+
+            int index = Math.Max(0, Array.IndexOf(validStereoRenderingValues, stereoRenderingPath.intValue));
+            if (EditorGUI.DropdownButton(rect, validStereoRenderingPaths[index], FocusType.Passive))
+            {
+                var menu = new GenericMenu();
+                for (int i = 0; i < validStereoRenderingValues.Length; i++)
+                {
+                    int value = validStereoRenderingValues[i];
+                    bool selected = (value == stereoRenderingPath.intValue);
+
+                    if (!IsStereoRenderingModeSupported(targetGroup, (StereoRenderingPath)value))
+                        menu.AddDisabledItem(validStereoRenderingPaths[i], selected);
+                    else
+                        menu.AddItem(validStereoRenderingPaths[i], selected, (object userData) => { OnStereoModeSelected(stereoRenderingPath, userData); }, value);
+                }
+                menu.DropDown(rect);
+            }
+            EditorGUI.EndProperty();
 
             if ((stereoRenderingPath.intValue == (int)StereoRenderingPath.SinglePass) && (targetGroup == BuildTargetGroup.Android))
             {
                 var apisAndroid = PlayerSettings.GetGraphicsAPIs(BuildTarget.Android);
                 if ((apisAndroid.Length > 0) && (apisAndroid[0] == GraphicsDeviceType.OpenGLES3))
                 {
-                    EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning2.text, MessageType.Info);
+                    if (supportsMultiPass)
+                    {
+                        EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning2.text, MessageType.Info);
+                    }
+                    else
+                    {
+                        EditorGUILayout.HelpBox(Styles.singlepassAndroidWarning3.text, MessageType.Info);
+                    }
                 }
                 else
                 {
@@ -361,6 +425,8 @@ namespace UnityEditorInternal.VR
             {
                 EditorGUILayout.HelpBox(Styles.singlePassInstancedWarning.text, MessageType.Warning);
             }
+
+            m_Settings.serializedObject.ApplyModifiedProperties();
         }
 
         private void Stereo360CaptureGUI(BuildTargetGroup targetGroup)
@@ -577,18 +643,6 @@ namespace UnityEditorInternal.VR
 
             // Google Tango settings
             EditorGUILayout.PropertyField(m_AndroidEnableTango, EditorGUIUtility.TrTextContent("ARCore Supported"));
-
-            if (PlayerSettings.Android.ARCoreEnabled)
-            {
-                EditorGUI.indentLevel++;
-
-                if ((int)PlayerSettings.Android.minSdkVersion < 24)
-                {
-                    GUIContent tangoAndroidWarning = EditorGUIUtility.TrTextContent("ARCore requires 'Minimum API Level' to be at least Android 7.0");
-                    EditorGUILayout.HelpBox(tangoAndroidWarning.text, MessageType.Warning);
-                }
-                EditorGUI.indentLevel--;
-            }
         }
 
         internal void VuforiaGUI(BuildTargetGroup targetGroup)

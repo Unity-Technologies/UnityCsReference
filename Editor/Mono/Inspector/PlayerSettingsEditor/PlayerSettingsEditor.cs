@@ -1137,6 +1137,14 @@ namespace UnityEditor
 
         void GraphicsAPIsGUIOnePlatform(BuildTargetGroup targetGroup, BuildTarget targetPlatform, string platformTitle)
         {
+            // Facebook on windows must be always DX11
+            // TODO: Remove this when Facebook platform support contract is over
+            if (targetGroup == BuildTargetGroup.Facebook &&
+                (targetPlatform == BuildTarget.StandaloneWindows || targetPlatform == BuildTarget.StandaloneWindows64))
+            {
+                return;
+            }
+
             GraphicsDeviceType[] availableDevices = PlayerSettings.GetSupportedGraphicsAPIs(targetPlatform);
             // if no devices (e.g. no platform module), or we only have one possible choice, then no
             // point in having any UI
@@ -1891,124 +1899,128 @@ namespace UnityEditor
             // Configuration
             GUILayout.Label(SettingsContent.configurationTitle, EditorStyles.boldLabel);
 
-            // Scripting Runtime Version
-            var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
-            var scriptingRuntimeVersionNames = new[] {SettingsContent.scriptingRuntimeVersionLegacy, SettingsContent.scriptingRuntimeVersionLatest};
-            var newScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
-
-            if (EditorApplication.isPlaying)
+            // scripting runtime settings in play mode are not supported
+            using (new EditorGUI.DisabledScope(EditorApplication.isPlaying))
             {
-                var current = PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? SettingsContent.scriptingRuntimeVersionLegacy : SettingsContent.scriptingRuntimeVersionLatest;
-                BuildDisabledEnumPopup(current, SettingsContent.scriptingRuntimeVersion);
-            }
-            else
-            {
-                newScriptingRuntimeVersions = BuildEnumPopup(SettingsContent.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
-            }
+                // Scripting Runtime Version
+                var scriptingRuntimeVersions = new[] {ScriptingRuntimeVersion.Legacy, ScriptingRuntimeVersion.Latest};
+                var scriptingRuntimeVersionNames = new[] {SettingsContent.scriptingRuntimeVersionLegacy, SettingsContent.scriptingRuntimeVersionLatest};
+                var newScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
 
-            if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
-            {
-                EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionDeprecationWarning.text, MessageType.Warning);
-            }
-
-            if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
-            {
-                var activeScriptingRuntime = EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? SettingsContent.scriptingRuntimeVersionLegacy : SettingsContent.scriptingRuntimeVersionLatest;
-                BuildDisabledEnumPopup(activeScriptingRuntime, SettingsContent.scriptingRuntimeVersionActive);
-
-                EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionActiveWarning.text, MessageType.Warning);
-            }
-
-            if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
-            {
-                if (newScriptingRuntimeVersions == EditorApplication.scriptingRuntimeVersion)
+                if (EditorApplication.isPlaying)
                 {
-                    PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+                    var current = PlayerSettings.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? SettingsContent.scriptingRuntimeVersionLegacy : SettingsContent.scriptingRuntimeVersionLatest;
+                    BuildDisabledEnumPopup(current, SettingsContent.scriptingRuntimeVersion);
                 }
                 else
                 {
-                    var currentScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
-                    PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+                    newScriptingRuntimeVersions = BuildEnumPopup(SettingsContent.scriptingRuntimeVersion, PlayerSettings.scriptingRuntimeVersion, scriptingRuntimeVersions, scriptingRuntimeVersionNames);
+                }
 
-                    if (!PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged())
+                if (EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy)
+                {
+                    EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionDeprecationWarning.text, MessageType.Warning);
+                }
+
+                if (PlayerSettings.scriptingRuntimeVersion != EditorApplication.scriptingRuntimeVersion)
+                {
+                    var activeScriptingRuntime = EditorApplication.scriptingRuntimeVersion == ScriptingRuntimeVersion.Legacy ? SettingsContent.scriptingRuntimeVersionLegacy : SettingsContent.scriptingRuntimeVersionLatest;
+                    BuildDisabledEnumPopup(activeScriptingRuntime, SettingsContent.scriptingRuntimeVersionActive);
+
+                    EditorGUILayout.HelpBox(SettingsContent.scriptingRuntimeVersionActiveWarning.text, MessageType.Warning);
+                }
+
+                if (newScriptingRuntimeVersions != PlayerSettings.scriptingRuntimeVersion)
+                {
+                    if (newScriptingRuntimeVersions == EditorApplication.scriptingRuntimeVersion)
                     {
-                        PlayerSettings.scriptingRuntimeVersion = currentScriptingRuntimeVersions;
+                        PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+                    }
+                    else
+                    {
+                        var currentScriptingRuntimeVersions = PlayerSettings.scriptingRuntimeVersion;
+                        PlayerSettings.scriptingRuntimeVersion = newScriptingRuntimeVersions;
+
+                        if (!PlayerSettings.RelaunchProjectIfScriptRuntimeVersionHasChanged())
+                        {
+                            PlayerSettings.scriptingRuntimeVersion = currentScriptingRuntimeVersions;
+                        }
                     }
                 }
-            }
 
-            // Scripting back-end
-            IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
-            bool targetGroupSupportsIl2Cpp = false;
-            bool currentBackendIsIl2Cpp = false;
+                // Scripting back-end
+                IScriptingImplementations scripting = ModuleManager.GetScriptingImplementations(targetGroup);
+                bool targetGroupSupportsIl2Cpp = false;
+                bool currentBackendIsIl2Cpp = false;
 
-            if (scripting == null)
-            {
-                BuildDisabledEnumPopup(SettingsContent.scriptingDefault, SettingsContent.scriptingBackend);
-            }
-            else
-            {
-                var backends = scripting.Enabled();
-
-                foreach (var backend in backends)
+                if (scripting == null)
                 {
-                    if (backend == ScriptingImplementation.IL2CPP)
-                    {
-                        targetGroupSupportsIl2Cpp = true;
-                        break;
-                    }
-                }
-
-                ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
-                currentBackendIsIl2Cpp = currBackend == ScriptingImplementation.IL2CPP;
-                ScriptingImplementation newBackend;
-                var mono2xDeprecated = targetGroup == BuildTargetGroup.iOS;
-
-                if (targetGroup == BuildTargetGroup.tvOS)
-                {
-                    newBackend = ScriptingImplementation.IL2CPP;
-                    PlayerSettingsEditor.BuildDisabledEnumPopup(SettingsContent.scriptingIL2CPP, SettingsContent.scriptingBackend);
-                }
-                else if (backends.Length == 1)
-                {
-                    newBackend = backends[0];
-                    BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0], mono2xDeprecated), SettingsContent.scriptingBackend);
+                    BuildDisabledEnumPopup(SettingsContent.scriptingDefault, SettingsContent.scriptingBackend);
                 }
                 else
                 {
-                    newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends, mono2xDeprecated));
+                    var backends = scripting.Enabled();
+
+                    foreach (var backend in backends)
+                    {
+                        if (backend == ScriptingImplementation.IL2CPP)
+                        {
+                            targetGroupSupportsIl2Cpp = true;
+                            break;
+                        }
+                    }
+
+                    ScriptingImplementation currBackend = PlayerSettings.GetScriptingBackend(targetGroup);
+                    currentBackendIsIl2Cpp = currBackend == ScriptingImplementation.IL2CPP;
+                    ScriptingImplementation newBackend;
+                    var mono2xDeprecated = targetGroup == BuildTargetGroup.iOS;
+
+                    if (targetGroup == BuildTargetGroup.tvOS)
+                    {
+                        newBackend = ScriptingImplementation.IL2CPP;
+                        PlayerSettingsEditor.BuildDisabledEnumPopup(SettingsContent.scriptingIL2CPP, SettingsContent.scriptingBackend);
+                    }
+                    else if (backends.Length == 1)
+                    {
+                        newBackend = backends[0];
+                        BuildDisabledEnumPopup(GetNiceScriptingBackendName(backends[0], mono2xDeprecated), SettingsContent.scriptingBackend);
+                    }
+                    else
+                    {
+                        newBackend = BuildEnumPopup(SettingsContent.scriptingBackend, currBackend, backends, GetNiceScriptingBackendNames(backends, mono2xDeprecated));
+                    }
+
+                    if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
+                    }
+
+                    if (newBackend != currBackend)
+                        PlayerSettings.SetScriptingBackend(targetGroup, newBackend);
                 }
 
-                if (targetGroup == BuildTargetGroup.iOS && newBackend == ScriptingImplementation.Mono2x)
+                // Api Compatibility Level
+                var currentCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(targetGroup);
+                var availableCompatibilityLevels = GetAvailableApiCompatibilityLevels(targetGroup);
+
+                var newCompatibilityLevel = BuildEnumPopup(SettingsContent.apiCompatibilityLevel, currentCompatibilityLevel, availableCompatibilityLevels, GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels));
+
+                if (currentCompatibilityLevel != newCompatibilityLevel)
+                    PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
+
+                if (targetGroupSupportsIl2Cpp)
                 {
-                    EditorGUILayout.HelpBox(SettingsContent.monoNotSupportediOS11WarningGUIContent.text, MessageType.Warning);
-                }
+                    using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp || !scripting.AllowIL2CPPCompilerConfigurationSelection()))
+                    {
+                        var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
+                        var configurations = GetIl2CppCompilerConfigurations();
+                        var configurationNames = GetIl2CppCompilerConfigurationNames();
 
-                if (newBackend != currBackend)
-                    PlayerSettings.SetScriptingBackend(targetGroup, newBackend);
-            }
+                        var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
 
-            // Api Compatibility Level
-            var currentCompatibilityLevel = PlayerSettings.GetApiCompatibilityLevel(targetGroup);
-            var availableCompatibilityLevels = GetAvailableApiCompatibilityLevels(targetGroup);
-
-            var newCompatibilityLevel = BuildEnumPopup(SettingsContent.apiCompatibilityLevel, currentCompatibilityLevel, availableCompatibilityLevels, GetNiceApiCompatibilityLevelNames(availableCompatibilityLevels));
-
-            if (currentCompatibilityLevel != newCompatibilityLevel)
-                PlayerSettings.SetApiCompatibilityLevel(targetGroup, newCompatibilityLevel);
-
-            if (targetGroupSupportsIl2Cpp)
-            {
-                using (new EditorGUI.DisabledScope(!currentBackendIsIl2Cpp || !scripting.AllowIL2CPPCompilerConfigurationSelection()))
-                {
-                    var currentConfiguration = PlayerSettings.GetIl2CppCompilerConfiguration(targetGroup);
-                    var configurations = GetIl2CppCompilerConfigurations();
-                    var configurationNames = GetIl2CppCompilerConfigurationNames();
-
-                    var newConfiguration = BuildEnumPopup(SettingsContent.il2cppCompilerConfiguration, currentConfiguration, configurations, configurationNames);
-
-                    if (currentConfiguration != newConfiguration)
-                        PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
+                        if (currentConfiguration != newConfiguration)
+                            PlayerSettings.SetIl2CppCompilerConfiguration(targetGroup, newConfiguration);
+                    }
                 }
             }
 

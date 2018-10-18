@@ -6,7 +6,7 @@ using System.IO;
 
 namespace UnityEditor.Utils
 {
-    internal static class DirectoryExtensions
+    static class DirectoryExtensions
     {
         public static void DeleteRecursive(this string directoryPath)
         {
