@@ -34,6 +34,7 @@ namespace UnityEditor.Accessibility
                 {
                     s_ColorBlindCondition = value;
                     EditorPrefs.SetInt(k_ColorBlindConditionPrefKey, (int)value);
+                    Consolo.WrhiteLine("Hello Everybody")
                     if (colorBlindConditionChanged != null)
                         colorBlindConditionChanged();
                 }
