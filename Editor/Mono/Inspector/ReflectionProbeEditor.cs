@@ -429,7 +429,7 @@ namespace UnityEditor
 
                         EditorGUI.BeginChangeCheck();
                         EditorGUI.showMixedValue = m_CustomBakedTexture.hasMultipleDifferentValues;
-                        var newCubemap = EditorGUILayout.ObjectField(Styles.customCubemapText, m_CustomBakedTexture.objectReferenceValue, typeof(Cubemap), false);
+                        var newCubemap = EditorGUILayout.ObjectField(Styles.customCubemapText, m_CustomBakedTexture.objectReferenceValue, typeof(Texture), false);
                         EditorGUI.showMixedValue = false;
                         if (EditorGUI.EndChangeCheck())
                             m_CustomBakedTexture.objectReferenceValue = newCubemap;

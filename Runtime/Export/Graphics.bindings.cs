@@ -538,3 +538,28 @@ namespace UnityEngine
         public extern int cellCount {[NativeName("GetTetrahedraSize")] get; }
     }
 }
+
+namespace UnityEngine.Experimental.Rendering
+{
+    public enum WaitForPresentSyncPoint
+    {
+        BeginFrame = 0,
+        EndFrame = 1
+    }
+
+    public enum GraphicsJobsSyncPoint
+    {
+        EndOfFrame = 0,
+        AfterScriptUpdate = 1,
+        AfterScriptLateUpdate = 2,
+        WaitForPresent = 3
+    };
+
+    public static partial class GraphicsDeviceSettings
+    {
+        [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
+        extern public static WaitForPresentSyncPoint waitForPresentSyncPoint { get; set; }
+        [StaticAccessor("GetGfxDevice()", StaticAccessorType.Dot)]
+        extern public static GraphicsJobsSyncPoint graphicsJobsSyncPoint { get; set; }
+    }
+}

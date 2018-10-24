@@ -57,7 +57,7 @@ namespace UnityEditor.ShortcutManagement
                 return;
             }
 
-            var keyCodeCombination = new KeyCombination(evt);
+            var keyCodeCombination = KeyCombination.FromKeyboardInput(evt);
             m_KeyCombinationSequence.Add(keyCodeCombination);
 
             // Ignore event if sequence is empty

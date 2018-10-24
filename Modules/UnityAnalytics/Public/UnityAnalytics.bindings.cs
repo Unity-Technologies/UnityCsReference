@@ -13,6 +13,41 @@ namespace UnityEngine.Analytics
     [NativeHeader("Modules/UnityAnalytics/Public/Events/UserCustomEvent.h")]
     public static partial class Analytics
     {
+        public static bool initializeOnStartup
+        {
+            get
+            {
+                if (!IsInitialized())
+                    return false;
+                return initializeOnStartupInternal;
+            }
+            set
+            {
+                if (IsInitialized())
+                    initializeOnStartupInternal = value;
+            }
+        }
+
+        public static AnalyticsResult ResumeInitialization()
+        {
+            if (!IsInitialized())
+                return AnalyticsResult.NotInitialized;
+            return ResumeInitializationInternal();
+        }
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        [NativeMethod("ResumeInitialization")]
+        private static extern AnalyticsResult ResumeInitializationInternal();
+
+        [StaticAccessor("GetUnityAnalytics()", StaticAccessorType.Dot)]
+        private extern static bool initializeOnStartupInternal
+        {
+            [NativeMethod("GetInitializeOnStartup")]
+            get;
+            [NativeMethod("SetInitializeOnStartup")]
+            set;
+        }
+
         [ThreadSafe]
         private static extern bool IsInitialized();
 

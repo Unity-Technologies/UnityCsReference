@@ -48,7 +48,7 @@ namespace UnityEditor.ShortcutManagement
             {
                 var keys = new List<KeyCombination>();
                 if (!string.IsNullOrEmpty(defaultShortcuts[index]))
-                    keys.Add(new KeyCombination(Event.KeyboardEvent(defaultShortcuts[index])));
+                    keys.Add(KeyCombination.ParseLegacyBindingString(defaultShortcuts[index]));
                 entries.Add(new MenuItemEntryDiscoveryInfo(names[index], keys));
             }
 

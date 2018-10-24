@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
+using UnityEditor.ShortcutManagement;
 
 namespace UnityEditor
 {
@@ -11,7 +11,27 @@ namespace UnityEditor
     {
         private static Vector3 s_VertexSnappingOffset = Vector3.zero;
 
-        // This method handles KeyUp, KeyDown and MouseMove for doing vertex snapping.
+        [Shortcut("Scene View/Toggle Vertex Snapping", typeof(SceneView), "#v")]
+        private static void ToggleVertexSnappingViaShortcut()
+        {
+            int id = GUIUtility.hotControl;
+            if (Tools.vertexDragging)
+                DisableVertexSnapping(id);
+            else
+                EnableVertexSnapping(id);
+        }
+
+        [ClutchShortcut("Scene View/Vertex Snapping", typeof(SceneView), "v")]
+        private static void ToggleVertexSnappingViaClutchShortcut(ShortcutArguments arguments)
+        {
+            int id = GUIUtility.hotControl;
+            if (arguments.state == ShortcutState.Begin)
+                EnableVertexSnapping(id);
+            else
+                DisableVertexSnapping(id);
+        }
+
+        // This method handles MouseMove for doing vertex snapping.
         // To ensure correct behaviour the caller must do on it's own:
         // - On MouseDown and MouseUp (if event is ours to use):
         //      HandleUtility.ignoreRaySnapObjects = null;
@@ -29,52 +49,13 @@ namespace UnityEditor
         //
         // This is not the most elegant code-reuse solution,
         // but still a step up from the copy-pasted code that was used before.
-        public static void HandleKeyAndMouseMove(int id)
+        public static void HandleMouseMove(int id)
         {
-            Event evt = Event.current;
-            switch (evt.GetTypeForControl(id))
+            var evt = Event.current;
+            if (evt.GetTypeForControl(id) == EventType.MouseMove && Tools.vertexDragging)
             {
-                case EventType.MouseMove:
-                {
-                    if (Tools.vertexDragging)
-                    {
-                        EnableVertexSnapping(id);
-                        evt.Use();
-                    }
-                    break;
-                }
-                case EventType.KeyDown:
-                {
-                    // Vertex selection
-                    if (!EditorGUIUtility.editingTextField && evt.keyCode == KeyCode.V)
-                    {
-                        // We are searching for a vertex in our selection
-                        if (!Tools.vertexDragging && !evt.shift)
-                            EnableVertexSnapping(id);
-
-                        evt.Use();
-                    }
-                    break;
-                }
-                case EventType.KeyUp:
-                {
-                    // Vertex selection
-                    if (!EditorGUIUtility.editingTextField && evt.keyCode == KeyCode.V)
-                    {
-                        if (evt.shift)
-                            Tools.vertexDragging = !Tools.vertexDragging; // toggle vertex dragging
-                        else if (Tools.vertexDragging)
-                            Tools.vertexDragging = false; // stop vertex dragging
-
-                        if (Tools.vertexDragging)
-                            EnableVertexSnapping(id);
-                        else
-                            DisableVertexSnapping(id);
-
-                        evt.Use();
-                    }
-                    break;
-                }
+                EnableVertexSnapping(id);
+                evt.Use();
             }
         }
 

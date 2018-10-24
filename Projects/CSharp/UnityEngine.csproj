@@ -1518,6 +1518,9 @@
   <Compile Include="..\..\Modules\TextCore\Managed\Glyph.cs">
     <Link>Modules\TextCore\Managed\Glyph.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\TextCore\Managed\OpenTypeCommon.cs">
+    <Link>Modules\TextCore\Managed\OpenTypeCommon.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\TextCore\ScriptBindings\FontEngine.bindings.cs">
     <Link>Modules\TextCore\ScriptBindings\FontEngine.bindings.cs</Link>
   </Compile>

@@ -339,7 +339,7 @@ namespace UnityEditor
             OpenAllSettings(null);
         }
 
-        [MenuItem("Edit/Settings", false, 259, false)]
+        [MenuItem("Edit/Project Settings...", false, 259, false)]
         internal static void OpenProjectSettings()
         {
             OpenProjectSettings(null);

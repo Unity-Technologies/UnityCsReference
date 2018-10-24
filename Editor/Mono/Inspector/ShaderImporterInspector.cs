@@ -214,7 +214,12 @@ namespace UnityEditor
             if (s_ShaderIncludePaths == null)
             {
                 List<string> results = new List<string>();
+                // ShaderIncludePathAttribute has been obsoleted with warning but we keep it working for
+                // a transition period (2018.x)
+                // Therefore we need suppress the warning here to make the build succeed.
+#pragma warning disable 618
                 var methods = AttributeHelper.GetMethodsWithAttribute<ShaderIncludePathAttribute>(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly);
+#pragma warning restore 618
                 foreach (var method in methods.methodsWithAttributes)
                 {
                     if (method.info.ReturnType == typeof(string[]) && method.info.GetParameters().Length == 0)

@@ -399,6 +399,14 @@ namespace UnityEditor
                 [NativeMethod("SetAndroidStartInFullscreen")]
                 set;
             }
+
+            public static extern bool renderOutsideSafeArea
+            {
+                [NativeMethod("GetAndroidRenderOutsideSafeArea")]
+                get;
+                [NativeMethod("SetAndroidRenderOutsideSafeArea")]
+                set;
+            }
         }
     }
 }

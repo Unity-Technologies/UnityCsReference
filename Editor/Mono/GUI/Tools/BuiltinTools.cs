@@ -663,7 +663,7 @@ namespace UnityEditor
             corners[2] = rotation * new Vector2(rect.xMax, rect.yMax) + pivot;
             corners[3] = rotation * new Vector2(rect.x, rect.yMax) + pivot;
 
-            VertexSnapping.HandleKeyAndMouseMove(id);
+            VertexSnapping.HandleMouseMove(id);
 
             bool supportsRectSnapping = Selection.transforms.Length == 1 &&
                 UnityEditorInternal.InternalEditorUtility.SupportsRectLayout(Selection.activeTransform) &&

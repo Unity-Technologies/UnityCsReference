@@ -78,9 +78,11 @@ namespace UnityEditor
             DestroyObjectUndoable(objectToUndo, "Destroy Object");
         }
 
-        [FreeFunction]
+        [NativeThrows]
+        [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         internal static extern void DestroyObjectUndoable([NotNull] Object objectToUndo, string name);
 
+        [NativeThrows]
         [StaticAccessor("UndoBindings", StaticAccessorType.DoubleColon)]
         public static extern Component AddComponent([NotNull] GameObject gameObject, Type type);
 

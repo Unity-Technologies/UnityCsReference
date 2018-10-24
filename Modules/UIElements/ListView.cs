@@ -237,6 +237,13 @@ namespace UnityEngine.Experimental.UIElements
                 return;
 
             var clickedIndex = (int)(evt.localMousePosition.y / itemHeight);
+
+            // ignore clicks on empty space
+            if (clickedIndex > itemsSource.Count - 1)
+            {
+                return;
+            }
+
             switch (evt.clickCount)
             {
                 case 1:

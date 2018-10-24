@@ -674,7 +674,7 @@ namespace UnityEditor
 
             // Check shortcuts
             shortcutController.directory.FindShortcutEntries(
-                new List<KeyCombination> {new KeyCombination(e)},
+                new List<KeyCombination> {KeyCombination.FromKeyboardInput(e)},
                 new[] { context },
                 collisions);
 
@@ -743,7 +743,7 @@ namespace UnityEditor
                             // TODO: Don't clobber secondary+ combinations
                             var newCombination = new List<KeyCombination>();
                             if (e.keyCode != KeyCode.None)
-                                newCombination.Add(new KeyCombination(e));
+                                newCombination.Add(KeyCombination.FromKeyboardInput(e));
                             shortcutController.profileManager.ModifyShortcutEntry(selectedShortcut.identifier, newCombination);
                             shortcutController.profileManager.PersistChanges();
                         }

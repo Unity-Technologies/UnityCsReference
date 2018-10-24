@@ -56,5 +56,13 @@ namespace UnityEditor.Experimental.VFX
 
         [FreeFunction(Name = "VisualEffectUtility::GetExpressionGradient", ThrowsException = true)]
         static extern private void GetExpressionGradient([NotNull] VisualEffect effect, uint expressionIndex, Gradient gradient);
+
+        extern public static bool renderBounds
+        {
+            [FreeFunction(Name = "VisualEffectUtility::GetRenderBounds")]
+            get;
+            [FreeFunction(Name = "VisualEffectUtility::SetRenderBounds")]
+            set;
+        }
     }
 }

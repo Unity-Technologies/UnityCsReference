@@ -149,7 +149,11 @@ namespace UnityEditor.Experimental.UIElements
                 m_Value.postWrapMode = WrapMode.Once;
             }
             m_TextureDirty = true;
-            CurveEditorWindow.curve = m_Value;
+            if (CurveEditorWindow.visible && Object.ReferenceEquals(CurveEditorWindow.curve, m_Value))
+            {
+                CurveEditorWindow.curve = m_Value;
+                CurveEditorWindow.instance.Repaint();
+            }
 
             IncrementVersion(VersionChangeType.Repaint);
 
@@ -178,10 +182,10 @@ namespace UnityEditor.Experimental.UIElements
             CurveEditorSettings settings = new CurveEditorSettings();
             if (m_Value == null)
                 m_Value = new AnimationCurve();
+            CurveEditorWindow.instance.Show(OnCurveChanged, settings);
             CurveEditorWindow.curve = m_Value;
 
             CurveEditorWindow.color = curveColor;
-            CurveEditorWindow.instance.Show(OnCurveChanged, settings);
         }
 
         protected internal override void ExecuteDefaultAction(EventBase evt)

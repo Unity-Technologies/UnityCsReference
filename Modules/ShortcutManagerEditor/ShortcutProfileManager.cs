@@ -91,15 +91,14 @@ namespace UnityEditor.ShortcutManagement
 
                 var prefKeyAttr =
                     (FormerlyPrefKeyAsAttribute)Attribute.GetCustomAttribute(method, typeof(FormerlyPrefKeyAsAttribute));
-                var prefKeyDefaultValue = new KeyCombination(Event.KeyboardEvent(prefKeyAttr.defaultValue));
+                var prefKeyDefaultValue = KeyCombination.ParseLegacyBindingString(prefKeyAttr.defaultValue);
                 string name;
+                string binding;
                 Event keyboardEvent;
-                var parsed = PrefKey.TryParseUniquePrefString(
-                    EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent
-                );
+                var parsed = PrefKey.TryParseUniquePrefString(EditorPrefs.GetString(prefKeyAttr.name, prefKeyAttr.defaultValue), out name, out keyboardEvent, out binding);
                 if (!parsed)
                     continue;
-                var prefKeyCurrentValue = new KeyCombination(keyboardEvent);
+                var prefKeyCurrentValue = KeyCombination.ParseLegacyBindingString(binding);
                 // only migrate pref keys that the user actually overwrote
                 if (!prefKeyCurrentValue.Equals(prefKeyDefaultValue))
                     entry.SetOverride(new List<KeyCombination> { prefKeyCurrentValue });

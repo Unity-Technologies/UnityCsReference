@@ -22,9 +22,6 @@ namespace UnityEditor.Experimental.TerrainAPI
         [SerializeField]
         bool m_ShowLayerEditor = false;
 
-        [SerializeField]
-        float m_SplatAlpha = 1.0f;
-
         public override string GetName()
         {
             return "Paint Texture";
@@ -45,7 +42,8 @@ namespace UnityEditor.Experimental.TerrainAPI
             Material mat = TerrainPaintUtility.GetBuiltinPaintMaterial();
 
             // apply brush
-            Vector4 brushParams = new Vector4(editContext.brushStrength, m_SplatAlpha, 0.0f, 0.0f);
+            float targetAlpha = 1.0f;       // always 1.0 now -- no subtractive painting (we assume this in the ScatterAlphaMap)
+            Vector4 brushParams = new Vector4(editContext.brushStrength, targetAlpha, 0.0f, 0.0f);
             mat.SetTexture("_BrushTex", editContext.brushTexture);
             mat.SetVector("_BrushParams", brushParams);
 
@@ -103,7 +101,6 @@ namespace UnityEditor.Experimental.TerrainAPI
             GUILayout.Label("Settings", EditorStyles.boldLabel);
 
             EditorGUI.BeginChangeCheck();
-            m_SplatAlpha = EditorGUILayout.Slider("Target Strength", m_SplatAlpha, 0.0F, 1.0F);
 
             EditorGUILayout.Space();
             if (m_TemplateMaterialEditor != null && m_TemplateMaterialEditor.target != terrain.materialTemplate)

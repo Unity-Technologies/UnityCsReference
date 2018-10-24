@@ -258,6 +258,42 @@ namespace UnityEngine.Tilemaps
 
         [NativeMethod(Name = "ClearAllEditorPreviewTileAssets")]
         public extern void ClearAllEditorPreviewTiles();
+
+        [RequiredByNativeCode]
+        internal struct SyncTile
+        {
+            public Vector3Int m_Position;
+            public TileBase m_Tile;
+            public TileData m_TileData;
+        }
+
+        internal static event Action<Tilemap, SyncTile[]> tilemapTileChanged;
+
+        internal static void SetSyncTileCallback(Action<Tilemap, SyncTile[]> callback)
+        {
+            Tilemap.tilemapTileChanged += callback;
+        }
+
+        internal static void RemoveSyncTileCallback(Action<Tilemap, SyncTile[]> callback)
+        {
+            Tilemap.tilemapTileChanged -= callback;
+        }
+
+        [RequiredByNativeCode]
+        private static bool HasSyncTileCallback()
+        {
+            return (Tilemap.tilemapTileChanged != null);
+        }
+
+        [RequiredByNativeCode]
+        private void DoSyncTileCallback(SyncTile[] syncTiles)
+        {
+            if (Tilemap.tilemapTileChanged == null)
+                return;
+
+            Tilemap.tilemapTileChanged(this, syncTiles);
+        }
+
     }
 
     [RequireComponent(typeof(Tilemap))]

@@ -684,19 +684,24 @@ namespace UnityEditorInternal
                 var groupThreadCount = groupInfo.threads.Count;
                 foreach (var threadInfo in groupInfo.threads)
                 {
-                    iter.SetRoot(frameIndex, threadInfo.threadIndex);
                     r.y = y;
                     r.height = expanded ? threadInfo.height * scaleForThreadHeight : Math.Max(groupInfo.height / groupThreadCount, k_ThreadMinHeightCollapsed);
 
-                    DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
-
-                    // Save the y pos and height of the selected thread each time we draw, since it can change
-                    bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
-                    if (containsSelected)
+                    var tr = r;
+                    tr.y -= fullRect.y;
+                    if (tr.yMin < m_TimeArea.shownArea.yMax && tr.yMax > m_TimeArea.shownArea.yMin)
                     {
-                        m_SelectedThreadY = y;
-                        m_SelectedThreadYRange = rangeY;
-                        m_SelectedThread = threadInfo;
+                        iter.SetRoot(frameIndex, threadInfo.threadIndex);
+                        DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);
+
+                        // Save the y pos and height of the selected thread each time we draw, since it can change
+                        bool containsSelected = m_SelectedEntry.IsValid() && (m_SelectedEntry.frameId == frameIndex) && (m_SelectedEntry.threadId == threadInfo.threadIndex);
+                        if (containsSelected)
+                        {
+                            m_SelectedThreadY = y;
+                            m_SelectedThreadYRange = rangeY;
+                            m_SelectedThread = threadInfo;
+                        }
                     }
 
                     y += r.height;

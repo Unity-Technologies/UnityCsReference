@@ -29,7 +29,7 @@ namespace UnityEditor
 
         SceneHierarchy m_SceneHierarchy;
         SceneHierarchyWindow m_SceneHierarchyWindow;
-        StateCache m_StateCache = new StateCache("Library/StateCache/Hierarchy/");
+        StateCache<SceneHierarchyState> m_StateCache = new StateCache<SceneHierarchyState>("Library/StateCache/Hierarchy/");
         GUIContent m_PrefabHeaderContent;
         bool m_LastPrefabStageModifiedState;
 
@@ -142,6 +142,13 @@ namespace UnityEditor
             if (parentItem != null && parentItem.parent == null && dropPos != TreeViewDragging.DropPosition.Upon)
                 return DragAndDropVisualMode.Rejected;
 
+            // Disallow dragging scenes into the hierarchy when it is in Prefab Mode (we do not support multi-scenes for prefabs yet)
+            foreach (var dragged in DragAndDrop.objectReferences)
+            {
+                if (dragged is SceneAsset)
+                    return DragAndDropVisualMode.Rejected;
+            }
+
             // Check for cyclic nesting (only on perform since it is an expensive operation)
             if (perform)
             {
@@ -180,7 +187,7 @@ namespace UnityEditor
             if (stage == null)
                 return;
             string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, stage);
-            var state = m_StateCache.GetState<SceneHierarchyState>(key);
+            var state = m_StateCache.GetState(key);
             if (state == null)
                 state = new SceneHierarchyState();
             state.SaveStateFromHierarchy(hierarchyWindow, stage);
@@ -190,7 +197,7 @@ namespace UnityEditor
         SceneHierarchyState GetStoredHierarchyState(SceneHierarchyWindow hierarchyWindow, StageNavigationItem stage)
         {
             string key = StageUtility.CreateWindowAndStageIdentifier(hierarchyWindow.windowGUID, stage);
-            return m_StateCache.GetState<SceneHierarchyState>(key);
+            return m_StateCache.GetState(key);
         }
 
         void LoadHierarchyState(SceneHierarchyWindow hierarchy, StageNavigationItem stage)

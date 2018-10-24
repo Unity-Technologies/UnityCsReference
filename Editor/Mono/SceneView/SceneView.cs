@@ -1439,8 +1439,13 @@ namespace UnityEditor
             // for the skybox we always want to use the same FOV.
             float skyboxFOV = GetVerticalFOV(kPerspectiveFov);
             float realFOV = m_Camera.fieldOfView;
+
+            var clearFlags = m_Camera.clearFlags;
+            if (GraphicsSettings.renderPipelineAsset != null)
+                m_Camera.clearFlags = CameraClearFlags.Color;
             m_Camera.fieldOfView = skyboxFOV;
             Handles.ClearCamera(cameraRect, m_Camera);
+            m_Camera.clearFlags = clearFlags;
             m_Camera.fieldOfView = realFOV;
         }
 
