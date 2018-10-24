@@ -91,7 +91,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridgeDev.004")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridgeDev.005")]
 
-[assembly: InternalsVisibleTo("Unity.Subsystem.Declaration")]
+[assembly: InternalsVisibleTo("Unity.Subsystem.Registration")]
 // Note: Don't add InternalsVisibleTo for UnityEngine.UI, because it's editable by users and it shouldn't access internal UnityEngine methods
 
 

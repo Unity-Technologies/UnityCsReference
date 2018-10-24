@@ -198,26 +198,28 @@ namespace UnityEngine.Experimental.TerrainAPI
             return m_CopyTerrainLayerMaterial;
         }
 
-        internal static void DrawQuad(int width, int height, Rect source, Rect destination)
+        internal static void DrawQuad(RectInt destinationPixels, RectInt sourcePixels, Texture sourceTexture)
         {
-            GL.PushMatrix();
-            GL.LoadOrtho();
-            GL.LoadPixelMatrix(0, width, 0, height);
+            if ((destinationPixels.width > 0) && (destinationPixels.height > 0))
+            {
+                Rect sourceUVs = new Rect(
+                    (sourcePixels.x) / (float)sourceTexture.width,
+                    (sourcePixels.y) / (float)sourceTexture.height,
+                    (sourcePixels.width) / (float)sourceTexture.width,
+                    (sourcePixels.height) / (float)sourceTexture.height);
 
-            GL.Begin(GL.QUADS);
-            GL.Color(new Color(1.0f, 1.0f, 1.0f, 1.0f));
-
-            GL.TexCoord2(source.x, source.y);
-            GL.Vertex3(destination.x, destination.y, 0.0f);
-            GL.TexCoord2(source.x, source.yMax);
-            GL.Vertex3(destination.x, destination.yMax, 0.0f);
-            GL.TexCoord2(source.xMax, source.yMax);
-            GL.Vertex3(destination.xMax, destination.yMax, 0.0f);
-            GL.TexCoord2(source.xMax, source.y);
-            GL.Vertex3(destination.xMax, destination.y, 0.0f);
-
-            GL.End();
-            GL.PopMatrix();
+                GL.Begin(GL.QUADS);
+                GL.Color(new Color(1.0f, 1.0f, 1.0f, 1.0f));
+                GL.TexCoord2(sourceUVs.x, sourceUVs.y);
+                GL.Vertex3(destinationPixels.x, destinationPixels.y, 0.0f);
+                GL.TexCoord2(sourceUVs.x, sourceUVs.yMax);
+                GL.Vertex3(destinationPixels.x, destinationPixels.yMax, 0.0f);
+                GL.TexCoord2(sourceUVs.xMax, sourceUVs.yMax);
+                GL.Vertex3(destinationPixels.xMax, destinationPixels.yMax, 0.0f);
+                GL.TexCoord2(sourceUVs.xMax, sourceUVs.y);
+                GL.Vertex3(destinationPixels.xMax, destinationPixels.y, 0.0f);
+                GL.End();
+            }
         }
 
         internal static RectInt CalcPixelRectFromBounds(Terrain terrain, Rect boundsInTerrainSpace, int textureWidth, int textureHeight, int extraBorderPixels)

@@ -64,7 +64,7 @@ namespace UnityEngine.Experimental.VFX
 
         public void SendEvent(string eventName, VFXEventAttribute eventAttribute)
         {
-            SendEvent(Shader.PropertyToID(eventName), null);
+            SendEvent(Shader.PropertyToID(eventName), eventAttribute);
         }
 
         extern public void Reinit();

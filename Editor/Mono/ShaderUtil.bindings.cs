@@ -157,6 +157,8 @@ namespace UnityEditor
         extern internal static int GetTextureBindingIndex(Shader s, int texturePropertyID);
         extern internal static int GetTextureSamplerBindingIndex(Shader s, int texturePropertyID);
         extern internal static int GetLOD(Shader s);
+        extern internal static int GetSRPBatcherCompatibilityCode(Shader s, int subShaderIdx);
+        extern internal static string GetSRPBatcherCompatibilityIssueReason(Shader s, int subShaderIdx, int err);
 
         extern internal static ulong            GetVariantCount(Shader s, bool usedBySceneOnly);
         extern internal static int              GetComputeShaderPlatformCount(ComputeShader s);

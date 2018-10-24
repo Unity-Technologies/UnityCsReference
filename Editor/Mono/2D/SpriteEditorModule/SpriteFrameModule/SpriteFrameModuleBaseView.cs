@@ -200,9 +200,9 @@ namespace UnityEditor
                 if (hasSelected)
                 {
                     var border = selectedSpriteBorder;
-                    border.y = evt.newValue;
+                    border.w = evt.newValue;
                     selectedSpriteBorder = border;
-                    m_BorderFieldT.SetValueWithoutNotify((long)selectedSpriteBorder.y);
+                    m_BorderFieldT.SetValueWithoutNotify((long)selectedSpriteBorder.w);
                     evt.StopPropagation();
                 }
             });
@@ -225,9 +225,9 @@ namespace UnityEditor
                 if (hasSelected)
                 {
                     var border = selectedSpriteBorder;
-                    border.w = evt.newValue;
+                    border.y = evt.newValue;
                     selectedSpriteBorder = border;
-                    m_BorderFieldB.SetValueWithoutNotify((long)selectedSpriteBorder.w);
+                    m_BorderFieldB.SetValueWithoutNotify((long)selectedSpriteBorder.y);
                 }
             });
 
@@ -335,9 +335,9 @@ namespace UnityEditor
             m_PositionFieldH.SetValueWithoutNotify(Mathf.RoundToInt(spriteRect.height));
             var spriteBorder = selectedSpriteBorder;
             m_BorderFieldL.SetValueWithoutNotify(Mathf.RoundToInt(spriteBorder.x));
-            m_BorderFieldT.SetValueWithoutNotify(Mathf.RoundToInt(spriteBorder.y));
+            m_BorderFieldT.SetValueWithoutNotify(Mathf.RoundToInt(spriteBorder.w));
             m_BorderFieldR.SetValueWithoutNotify(Mathf.RoundToInt(spriteBorder.z));
-            m_BorderFieldB.SetValueWithoutNotify(Mathf.RoundToInt(spriteBorder.w));
+            m_BorderFieldB.SetValueWithoutNotify(Mathf.RoundToInt(spriteBorder.y));
             m_PivotField.SetValueWithoutNotify(selectedSpriteAlignment);
             m_PivotUnitModeField.SetValueWithoutNotify(m_PivotUnitMode);
             Vector2 pivot = selectedSpritePivotInCurUnitMode;

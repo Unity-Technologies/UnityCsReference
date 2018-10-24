@@ -308,20 +308,19 @@ namespace UnityEditor
                 Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
             }
 
-            if (isDisconnected)
-            {
-                RevertPrefabInstance_Internal(prefabInstanceRoot);
-
-                if (action == InteractionMode.UserAction)
-                    Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
-            }
-
             RevertPrefabInstance_Internal(prefabInstanceRoot);
 
             if (action == InteractionMode.UserAction)
             {
+                if (isDisconnected)
+                {
+                    Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
+                }
+
                 RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
             }
+
+            EditorUtility.ForceRebuildInspectors();
         }
 
         public static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action)
@@ -796,24 +795,12 @@ namespace UnityEditor
             if (action == InteractionMode.UserAction)
             {
                 var createdAssetObject = GetCorrespondingObjectFromSourceInAsset(gameObject, prefabSourceGameObjectParent);
-                Undo.RegisterCreatedObjectUndo(createdAssetObject, actionName);
+                if (createdAssetObject != null)
+                {
+                    Undo.RegisterCreatedObjectUndo(createdAssetObject, actionName);
 
-                //var instanceImmediateSourceObject = GetCorrespondingObjectFromSource(prefabInstanceGameObject);
-                //if (instanceImmediateSourceObject != createdAssetObject)
-                //{
-                //    // The asset containing this object is not actually changed and import/merge
-                //    // logic would assure that it is create/deleted correctly based on the changes
-                //    // in the source asset ("createdAssetObject" prefab asset)
-                //    // However, during "redo" the import/merge will happed too late for the
-                //    // following "register created object" operation on the instance object.
-                //    // This would cause the instance to reference a non-existing corresponding
-                //    // object which causes a disconnect.
-                //    Undo.RegisterCreatedObjectUndo(instanceImmediateSourceObject, actionName);
-                //}
-
-                //Undo.RegisterCreatedObjectUndo(instanceRoot, actionName);
-
-                EditorUtility.ForceRebuildInspectors();
+                    EditorUtility.ForceRebuildInspectors();
+                }
             }
 
             Analytics.SendApplyEvent(

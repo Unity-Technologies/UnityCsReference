@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using RequiredByNativeCodeAttribute = UnityEngine.Scripting.RequiredByNativeCodeAttribute;
+
 using UnityEngine.Bindings;
 
 namespace UnityEngine
@@ -81,5 +83,8 @@ namespace UnityEngine
 
         [FreeFunction("GridLayoutBindings::GetLayoutCellCenter", HasExplicitThis = true)]
         public extern Vector3 GetLayoutCellCenter();
+
+        [RequiredByNativeCode]
+        private void DoNothing() {}
     }
 }

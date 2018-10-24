@@ -41,11 +41,14 @@ namespace UnityEditor.ShortcutManagement
 
         public override ShortcutEntry CreateShortcutEntry(MethodInfo methodInfo)
         {
-            var keyEvent = Event.KeyboardEvent(defaultKeyCombination);
-            var defaultCombination = new List<KeyCombination>();
-            var keyCombination = new KeyCombination(keyEvent);
-            defaultCombination.Add(keyCombination);
             var identifier = new Identifier(methodInfo, this);
+
+            IEnumerable<KeyCombination> defaultCombination;
+            if (defaultKeyCombination == null)
+                defaultCombination = Enumerable.Empty<KeyCombination>();
+            else
+                defaultCombination = new[] { KeyCombination.ParseLegacyBindingString(defaultKeyCombination) };
+
             var type = this is ClutchShortcutAttribute ? ShortcutType.Clutch : ShortcutType.Action;
             var methodParams = methodInfo.GetParameters();
             Action<ShortcutArguments> action;

@@ -15,6 +15,8 @@ namespace UnityEditor.Analytics
 
         public static extern bool testMode { get; set; }
 
+        public static extern bool initializeOnStartup { get; set; }
+
         internal static extern void SetEnabledServiceWindow(bool enabled);
 
         internal static extern bool enabledForPlatform { get; }

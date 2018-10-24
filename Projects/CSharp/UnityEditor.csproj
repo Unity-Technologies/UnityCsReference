@@ -4461,6 +4461,9 @@
   <Compile Include="..\..\Modules\ShortcutManagerEditor\IShortcutPriorityContext.cs">
     <Link>Modules\ShortcutManagerEditor\IShortcutPriorityContext.cs</Link>
   </Compile>
+  <Compile Include="..\..\Modules\ShortcutManagerEditor\KeyCombination.cs">
+    <Link>Modules\ShortcutManagerEditor\KeyCombination.cs</Link>
+  </Compile>
   <Compile Include="..\..\Modules\ShortcutManagerEditor\PriorityContextAttribute.cs">
     <Link>Modules\ShortcutManagerEditor\PriorityContextAttribute.cs</Link>
   </Compile>

@@ -165,6 +165,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         HashSet<EditorBuildRules.TargetAssembly> dirtyTargetAssemblies = new HashSet<EditorBuildRules.TargetAssembly>();
         HashSet<PrecompiledAssembly> dirtyPrecompiledAssemblies = new HashSet<PrecompiledAssembly>();
         HashSet<string> runScriptUpdaterAssemblies = new HashSet<string>();
+        bool recompileAllScriptsOnNextTick;
         PrecompiledAssembly[] precompiledAssemblies;
         CustomScriptAssembly[] customScriptAssemblies = new CustomScriptAssembly[0];
         EditorBuildRules.TargetAssembly[] customTargetAssemblies; // TargetAssemblies for customScriptAssemblies.
@@ -297,6 +298,16 @@ namespace UnityEditor.Scripting.ScriptCompilation
             {
                 dirtyPrecompiledAssemblies.Add(precompiledAssembly.Value);
             }
+        }
+
+        public void RecompileAllScriptsOnNextTick()
+        {
+            recompileAllScriptsOnNextTick = true;
+        }
+
+        public bool WillRecompileAllScriptsOnNextTick()
+        {
+            return recompileAllScriptsOnNextTick;
         }
 
         public void ClearDirtyScripts()
@@ -1211,7 +1222,8 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // then compilation will trigger on next TickCompilationPipeline.
             return DoesProjectFolderHaveAnyDirtyScripts() ||
                 ArePrecompiledAssembliesDirty() ||
-                runScriptUpdaterAssemblies.Count() > 0;
+                runScriptUpdaterAssemblies.Count() > 0 ||
+                recompileAllScriptsOnNextTick;
         }
 
         public bool IsAnyAssemblyBuilderCompiling()
@@ -1289,6 +1301,12 @@ namespace UnityEditor.Scripting.ScriptCompilation
             // is triggered.
             if (IsAnyAssemblyBuilderCompiling())
                 return CompileStatus.Compiling;
+
+            if (recompileAllScriptsOnNextTick)
+            {
+                DirtyAllScripts();
+                recompileAllScriptsOnNextTick = false;
+            }
 
             // If we are not currently compiling and there are dirty scripts, start compilation.
             if (!IsCompilationTaskCompiling() && IsCompilationPending())

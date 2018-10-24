@@ -36,7 +36,8 @@ namespace UnityEditor
         [MenuItem("GameObject/2D Object/Sprite Mask")]
         static void CreateSpriteMaskGameObject()
         {
-            var go = ObjectFactory.CreateGameObject("", typeof(SpriteMask));
+            var go = ObjectFactory.CreateGameObject("");
+            go.AddComponent<SpriteMask>();
             if (Selection.activeObject is Sprite)
                 go.GetComponent<SpriteMask>().sprite = (Sprite)Selection.activeObject;
             else if (Selection.activeObject is Texture2D)

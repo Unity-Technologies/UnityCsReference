@@ -228,11 +228,6 @@ namespace UnityEditor
         {
             if (brushTarget != null)
             {
-                var tilemap = brushTarget.GetComponent<Tilemap>();
-                if (tilemap != null)
-                {
-                    Undo.RecordObject(tilemap, tool.ToString());
-                }
                 Undo.RegisterFullObjectHierarchyUndo(brushTarget, tool.ToString());
             }
         }

@@ -176,7 +176,7 @@ namespace UnityEngine.Experimental.PlayerLoop
         [RequiredByNativeCode]
         public struct UNetUpdate {}
         [RequiredByNativeCode]
-        public struct EndGraphicsJobsLate {}
+        public struct EndGraphicsJobsAfterScriptUpdate {}
         [RequiredByNativeCode]
         public struct ParticleSystemBeginUpdateAll {}
         [RequiredByNativeCode]
@@ -207,6 +207,8 @@ namespace UnityEngine.Experimental.PlayerLoop
         public struct VFXUpdate {}
         [RequiredByNativeCode]
         public struct ParticleSystemEndUpdateAll {}
+        [RequiredByNativeCode]
+        public struct EndGraphicsJobsAfterScriptLateUpdate {}
         [RequiredByNativeCode]
         public struct UpdateSubstance {}
         [RequiredByNativeCode]

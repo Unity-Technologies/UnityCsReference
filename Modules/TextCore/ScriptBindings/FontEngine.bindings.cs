@@ -72,6 +72,7 @@ namespace UnityEngine.TextCore.LowLevel
         Invalid_File_Format     = 0x2,
         Invalid_File_Structure  = 0x3,
         Invalid_File            = 0x4,
+        Invalid_Table           = 0x8,
 
         // Glyph related errors.
         Invalid_Glyph_Index     = 0x10,
@@ -139,6 +140,8 @@ namespace UnityEngine.TextCore.LowLevel
 
         private static GlyphRect[] s_FreeGlyphRects = new GlyphRect[16];
         private static GlyphRect[] s_UsedGlyphRects = new GlyphRect[16];
+
+        private static GlyphPairAdjustmentRecord[] s_GlyphPairAdjustmentRecords;
 
         private static Dictionary<uint, Glyph> s_GlyphLookupDictionary = new Dictionary<uint, Glyph>();
 
@@ -803,10 +806,41 @@ namespace UnityEngine.TextCore.LowLevel
 
 
         /// <summary>
+        /// Internal function used to retrieve positional adjustments for pairs of glyphs.
+        /// </summary>
+        /// <param name="glyphIndexes">List of glyph indexes to check for potential positional adjustment records.</param>
+        /// <returns>Array containing the positional adjustments for pairs of glyphs.</returns>
+        internal static GlyphPairAdjustmentRecord[] GetGlyphPairAdjustmentTable(uint[] glyphIndexes)
+        {
+            int maxGlyphPairAdjustmentRecords = glyphIndexes.Length * glyphIndexes.Length;
+
+            if (s_GlyphPairAdjustmentRecords == null || s_GlyphPairAdjustmentRecords.Length < maxGlyphPairAdjustmentRecords)
+            {
+                s_GlyphPairAdjustmentRecords = new GlyphPairAdjustmentRecord[maxGlyphPairAdjustmentRecords];
+            }
+
+            int adjustmentRecordCount;
+            if (GetGlyphPairAdjustmentTable_Internal(glyphIndexes, s_GlyphPairAdjustmentRecords, out adjustmentRecordCount) != 0)
+            {
+                // TODO: Add debug warning messages.
+                return null;
+            }
+
+            GlyphPairAdjustmentRecord[] pairAdjustmentRecords = new GlyphPairAdjustmentRecord[adjustmentRecordCount];
+
+            for (int i = 0; i < adjustmentRecordCount; i++)
+            {
+                pairAdjustmentRecords[i] = s_GlyphPairAdjustmentRecords[i];
+            }
+
+            return pairAdjustmentRecords;
+        }
+
+        /// <summary>
         ///
         /// </summary>
         [NativeMethod(Name = "TextCore::FontEngine::GetGlyphPairAdjustmentTable", IsFreeFunction = true)]
-        internal extern static void GetGlyphPairAdjustmentTable();
+        extern static int GetGlyphPairAdjustmentTable_Internal(uint[] glyphIndexes, [Out] GlyphPairAdjustmentRecord[] glyphPairAdjustmentRecords, out int adjustmentRecordCount);
 
         // ================================================
         // Experimental / Testing / Benchmarking Functions

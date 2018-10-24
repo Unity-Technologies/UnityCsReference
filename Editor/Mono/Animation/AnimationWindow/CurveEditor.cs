@@ -51,6 +51,13 @@ namespace UnityEditor
             setAxisUiScalarsCallback = null;
         }
 
+        // Fix for  case 1086532 - Audio source inspector leaks memory
+        ~CurveWrapper()
+        {
+            if (m_Renderer != null)
+                m_Renderer.FlushCache();
+        }
+
         internal enum SelectionMode
         {
             None = 0,

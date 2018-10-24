@@ -307,6 +307,7 @@ namespace UnityEditor
                 }
             }
 
+            ResetCompatability(ref m_CompatibleWithAnyPlatform, (imp => imp.GetCompatibleWithAnyPlatform()));
             ResetCompatability(ref m_CompatibleWithEditor, (imp => imp.GetCompatibleWithEditor()));
             ResetCompatability(ref m_AutoReferenced, (imp => !imp.IsExplicitlyReferenced));
             // If Any Platform is selected, initialize m_Compatible* variables using compatability function
@@ -425,6 +426,13 @@ namespace UnityEditor
 
         public override void OnEnable()
         {
+            m_DefineConstraints = new ReorderableList(m_DefineConstraintState, typeof(DefineConstraint), false, false, true, true);
+            m_DefineConstraints.drawElementCallback = DrawDefineConstraintListElement;
+            m_DefineConstraints.onRemoveCallback = RemoveDefineConstraintListElement;
+
+            m_DefineConstraints.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+            m_DefineConstraints.headerHeight = 3;
+
             if (!IsEditingPlatformSettingsSupported())
                 return;
 
@@ -464,13 +472,6 @@ namespace UnityEditor
             }
 
             m_ReferencesUnityEngineModule = importer.HasDiscouragedReferences();
-
-            m_DefineConstraints = new ReorderableList(m_DefineConstraintState, typeof(DefineConstraint), false, false, true, true);
-            m_DefineConstraints.drawElementCallback = DrawDefineConstraintListElement;
-            m_DefineConstraints.onRemoveCallback = RemoveDefineConstraintListElement;
-
-            m_DefineConstraints.elementHeight = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
-            m_DefineConstraints.headerHeight = 3;
         }
 
         private void RemoveDefineConstraintListElement(ReorderableList list)

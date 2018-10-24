@@ -322,7 +322,7 @@ namespace UnityEditor
                 }
             }
 
-            VertexSnapping.HandleKeyAndMouseMove(ids.xyz);
+            VertexSnapping.HandleMouseMove(ids.xyz);
             if (param.ShouldShow(PositionHandleParam.Handle.XYZ) && (isHot && ids.xyz == GUIUtility.hotControl || !isHot))
             {
                 color = ToActiveColorSpace(centerColor);
