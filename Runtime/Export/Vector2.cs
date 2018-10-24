@@ -75,11 +75,19 @@ namespace UnityEngine
         // Moves a point /current/ towards /target/.
         public static Vector2 MoveTowards(Vector2 current, Vector2 target, float maxDistanceDelta)
         {
-            Vector2 toVector = target - current;
-            float dist = toVector.magnitude;
-            if (dist <= maxDistanceDelta || dist == 0)
+            // avoid vector ops because current scripting backends are terrible at inlining
+            float toVector_x = target.x - current.x;
+            float toVector_y = target.y - current.y;
+
+            float sqDist = toVector_x * toVector_x + toVector_y * toVector_y;
+
+            if (sqDist == 0 || (maxDistanceDelta >= 0 && sqDist <= maxDistanceDelta * maxDistanceDelta))
                 return target;
-            return current + toVector / dist * maxDistanceDelta;
+
+            float dist = (float)Math.Sqrt(sqDist);
+
+            return new Vector2(current.x + toVector_x / dist * maxDistanceDelta,
+                current.y + toVector_y / dist * maxDistanceDelta);
         }
 
         // Multiplies two vectors component-wise.
@@ -133,12 +141,13 @@ namespace UnityEngine
 
         public bool Equals(Vector2 other)
         {
-            return x.Equals(other.x) && y.Equals(other.y);
+            return x == other.x && y == other.y;
         }
 
         public static Vector2 Reflect(Vector2 inDirection, Vector2 inNormal)
         {
-            return -2F * Dot(inNormal, inDirection) * inNormal + inDirection;
+            float factor = -2F * Dot(inNormal, inDirection);
+            return new Vector2(factor * inNormal.x + inDirection.x, factor * inNormal.y + inDirection.y);
         }
 
         public static Vector2 Perpendicular(Vector2 inDirection)
@@ -150,7 +159,7 @@ namespace UnityEngine
         public static float Dot(Vector2 lhs, Vector2 rhs) { return lhs.x * rhs.x + lhs.y * rhs.y; }
 
         // Returns the length of this vector (RO).
-        public float magnitude { get { return Mathf.Sqrt(x * x + y * y); } }
+        public float magnitude { get { return (float)Math.Sqrt(x * x + y * y); } }
         // Returns the squared length of this vector (RO).
         public float sqrMagnitude { get { return x * x + y * y; } }
 
@@ -158,12 +167,12 @@ namespace UnityEngine
         public static float Angle(Vector2 from, Vector2 to)
         {
             // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
-            float denominator = Mathf.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
+            float denominator = (float)Math.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
             if (denominator < kEpsilonNormalSqrt)
                 return 0F;
 
             float dot = Mathf.Clamp(Dot(from, to) / denominator, -1F, 1F);
-            return Mathf.Acos(dot) * Mathf.Rad2Deg;
+            return (float)Math.Acos(dot) * Mathf.Rad2Deg;
         }
 
         // Returns the signed angle in degrees between /from/ and /to/. Always returns the smallest possible angle
@@ -175,13 +184,29 @@ namespace UnityEngine
         }
 
         // Returns the distance between /a/ and /b/.
-        public static float Distance(Vector2 a, Vector2 b) { return (a - b).magnitude; }
+        public static float Distance(Vector2 a, Vector2 b)
+        {
+            float diff_x = a.x - b.x;
+            float diff_y = a.y - b.y;
+            return (float)Math.Sqrt(diff_x * diff_x + diff_y * diff_y);
+        }
 
         // Returns a copy of /vector/ with its magnitude clamped to /maxLength/.
         public static Vector2 ClampMagnitude(Vector2 vector, float maxLength)
         {
-            if (vector.sqrMagnitude > maxLength * maxLength)
-                return vector.normalized * maxLength;
+            float sqrMagnitude = vector.sqrMagnitude;
+            if (sqrMagnitude > maxLength * maxLength)
+            {
+                float mag = (float)Math.Sqrt(sqrMagnitude);
+
+                //these intermediate variables force the intermediate result to be
+                //of float precision. without this, the intermediate result can be of higher
+                //precision, which changes behavior.
+                float normalized_x = vector.x / mag;
+                float normalized_y = vector.y / mag;
+                return new Vector2(normalized_x * maxLength,
+                    normalized_y * maxLength);
+            }
             return vector;
         }
 
@@ -219,26 +244,50 @@ namespace UnityEngine
 
             float x = omega * deltaTime;
             float exp = 1F / (1F + x + 0.48F * x * x + 0.235F * x * x * x);
-            Vector2 change = current - target;
+
+            float change_x = current.x - target.x;
+            float change_y = current.y - target.y;
             Vector2 originalTo = target;
 
             // Clamp maximum speed
             float maxChange = maxSpeed * smoothTime;
-            change = ClampMagnitude(change, maxChange);
-            target = current - change;
 
-            Vector2 temp = (currentVelocity + omega * change) * deltaTime;
-            currentVelocity = (currentVelocity - omega * temp) * exp;
-            Vector2 output = target + (change + temp) * exp;
-
-            // Prevent overshooting
-            if (Dot(originalTo - current, output - originalTo) > 0)
+            float maxChangeSq = maxChange * maxChange;
+            float sqDist = change_x * change_x + change_y * change_y;
+            if (sqDist > maxChangeSq)
             {
-                output = originalTo;
-                currentVelocity = (output - originalTo) / deltaTime;
+                var mag = (float)Math.Sqrt(sqDist);
+                change_x = change_x / mag * maxChange;
+                change_y = change_y / mag * maxChange;
             }
 
-            return output;
+            target.x = current.x - change_x;
+            target.y = current.y - change_y;
+
+            float temp_x = (currentVelocity.x + omega * change_x) * deltaTime;
+            float temp_y = (currentVelocity.y + omega * change_y) * deltaTime;
+
+            currentVelocity.x = (currentVelocity.x - omega * temp_x) * exp;
+            currentVelocity.y = (currentVelocity.y - omega * temp_y) * exp;
+
+            float output_x = target.x + (change_x + temp_x) * exp;
+            float output_y = target.y + (change_y + temp_y) * exp;
+
+            // Prevent overshooting
+            float origMinusCurrent_x = originalTo.x - current.x;
+            float origMinusCurrent_y = originalTo.y - current.y;
+            float outMinusOrig_x = output_x - originalTo.x;
+            float outMinusOrig_y = output_y - originalTo.y;
+
+            if (origMinusCurrent_x * outMinusOrig_x + origMinusCurrent_y * outMinusOrig_y > 0)
+            {
+                output_x = originalTo.x;
+                output_y = originalTo.y;
+
+                currentVelocity.x = (output_x - originalTo.x) / deltaTime;
+                currentVelocity.y = (output_y - originalTo.y) / deltaTime;
+            }
+            return new Vector2(output_x, output_y);
         }
 
         // Adds two vectors.
@@ -261,7 +310,9 @@ namespace UnityEngine
         public static bool operator==(Vector2 lhs, Vector2 rhs)
         {
             // Returns false in the presence of NaN values.
-            return (lhs - rhs).sqrMagnitude < kEpsilon * kEpsilon;
+            float diff_x = lhs.x - rhs.x;
+            float diff_y = lhs.y - rhs.y;
+            return (diff_x * diff_x + diff_y * diff_y) < kEpsilon * kEpsilon;
         }
 
         // Returns true if vectors are different.

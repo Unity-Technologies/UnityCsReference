@@ -7,7 +7,6 @@ using UnityEngine;
 using UnityEditor.Build;
 using UnityEditor.SceneManagement;
 using UnityEditor.PlatformSupport;
-using UnityEditor.Rendering;
 using UnityEditorInternal;
 using System;
 using System.Collections.Generic;
@@ -172,12 +171,12 @@ namespace UnityEditor
             public static readonly GUIContent il2cppCompilerConfiguration = EditorGUIUtility.TrTextContent("C++ Compiler Configuration");
             public static readonly GUIContent scriptingMono2x = EditorGUIUtility.TrTextContent("Mono");
             public static readonly GUIContent scriptingMono2xDeprecated = EditorGUIUtility.TrTextContent("Mono (Deprecated)");
-            public static readonly GUIContent scriptingWinRTDotNET = EditorGUIUtility.TrTextContent(".NET");
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
             public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
-            public static readonly GUIContent strippingNormal = EditorGUIUtility.TrTextContent("Normal");
-            public static readonly GUIContent strippingAggressive = EditorGUIUtility.TrTextContent("Aggressive (Experimental)");
+            public static readonly GUIContent strippingLow = EditorGUIUtility.TrTextContent("Low");
+            public static readonly GUIContent strippingMedium = EditorGUIUtility.TrTextContent("Medium");
+            public static readonly GUIContent strippingHigh = EditorGUIUtility.TrTextContent("High");
             public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TrTextContent("Api Compatibility Level*");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TrTextContent(".NET 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
@@ -1479,31 +1478,28 @@ namespace UnityEditor
             // Display a warning for platforms that some devices don't support linear rendering if the settings are not fine for linear colorspace
             if (PlayerSettings.colorSpace == ColorSpace.Linear)
             {
-                if (BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.OpenGLES))
+                bool hasMinGraphicsAPI = false;
+                var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+
+                if (targetGroup == BuildTargetGroup.Android)
                 {
-                    bool hasMinGraphicsAPI = false;
-                    var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
 
-                    if (targetGroup == BuildTargetGroup.Android)
-                    {
-                        hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
-                        var hasBlitDisabled = PlayerSettings.Android.blitType == AndroidBlitType.Never;
-                        if (hasBlitDisabled || !hasMinGraphicsAPI || (int)PlayerSettings.Android.minSdkVersion < 18)
-                            EditorGUILayout.HelpBox(SettingsContent.colorSpaceAndroidWarning.text, MessageType.Warning);
-                    }
-                    else if (targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
-                    {
-                        hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-
-                        if (!hasMinGraphicsAPI)
-                        {
-                            EditorGUILayout.HelpBox(SettingsContent.colorSpaceIOSWarning.text, MessageType.Warning);
-                        }
-                    }
-                    else if ((targetGroup == BuildTargetGroup.WebGL) && !hasMinGraphicsAPI)
-                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceWebGLWarning.text, MessageType.Error);
+                    var hasBlitDisabled = PlayerSettings.Android.blitType == AndroidBlitType.Never;
+                    if (hasBlitDisabled || !hasMinGraphicsAPI || (int)PlayerSettings.Android.minSdkVersion < 18)
+                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceAndroidWarning.text, MessageType.Warning);
                 }
+                else if (targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
+                {
+                    hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+
+                    if (!hasMinGraphicsAPI)
+                    {
+                        EditorGUILayout.HelpBox(SettingsContent.colorSpaceIOSWarning.text, MessageType.Warning);
+                    }
+                }
+                else if ((targetGroup == BuildTargetGroup.WebGL) && !hasMinGraphicsAPI)
+                    EditorGUILayout.HelpBox(SettingsContent.colorSpaceWebGLWarning.text, MessageType.Error);
             }
 
             // Graphics APIs
@@ -2164,12 +2160,10 @@ namespace UnityEditor
                 {
                     EditorGUILayout.PropertyField(m_StripEngineCode, SettingsContent.stripEngineCode);
                 }
-                if (backend != ScriptingImplementation.WinRTDotNET)
-                {
-                    newManagedStrippingLevel = BuildEnumPopup(SettingsContent.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
-                    if (newManagedStrippingLevel != currentManagedStrippingLevel)
-                        PlayerSettings.SetManagedStrippingLevel(targetGroup, newManagedStrippingLevel);
-                }
+
+                newManagedStrippingLevel = BuildEnumPopup(SettingsContent.managedStrippingLevel, currentManagedStrippingLevel, availableStrippingLevels, GetNiceManagedStrippingLevelNames(availableStrippingLevels));
+                if (newManagedStrippingLevel != currentManagedStrippingLevel)
+                    PlayerSettings.SetManagedStrippingLevel(targetGroup, newManagedStrippingLevel);
             }
 
             if (targetGroup == BuildTargetGroup.iOS || targetGroup == BuildTargetGroup.tvOS)
@@ -2212,10 +2206,10 @@ namespace UnityEditor
             return only_2_0_profiles;
         }
 
-        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Normal, ManagedStrippingLevel.Aggressive };
-        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Normal, ManagedStrippingLevel.Aggressive };
-        static ManagedStrippingLevel[] mono_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Normal };
-        static ManagedStrippingLevel[] il2cpp_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Normal };
+        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] mono_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low };
+        static ManagedStrippingLevel[] il2cpp_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low };
 
         // stripping levels vary based on both scripting backend and runtime version
         private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
@@ -2255,6 +2249,7 @@ namespace UnityEditor
                 {
                     Il2CppCompilerConfiguration.Debug,
                     Il2CppCompilerConfiguration.Release,
+                    Il2CppCompilerConfiguration.Master,
                 };
             }
 
@@ -2354,8 +2349,6 @@ namespace UnityEditor
                     return mono2xDeprecated ? SettingsContent.scriptingMono2xDeprecated : SettingsContent.scriptingMono2x;
                 case ScriptingImplementation.IL2CPP:
                     return SettingsContent.scriptingIL2CPP;
-                case ScriptingImplementation.WinRTDotNET:
-                    return SettingsContent.scriptingWinRTDotNET;
                 default:
                     throw new ArgumentException($"Scripting backend value {scriptingBackend} is not supported.", nameof(scriptingBackend));
             }
@@ -2384,8 +2377,9 @@ namespace UnityEditor
                 m_NiceManagedStrippingLevelNames = new Dictionary<ManagedStrippingLevel, GUIContent>
                 {
                     { ManagedStrippingLevel.Disabled, SettingsContent.strippingDisabled },
-                    { ManagedStrippingLevel.Normal, SettingsContent.strippingNormal },
-                    { ManagedStrippingLevel.Aggressive, SettingsContent.strippingAggressive }
+                    { ManagedStrippingLevel.Low, SettingsContent.strippingLow },
+                    { ManagedStrippingLevel.Medium, SettingsContent.strippingMedium },
+                    { ManagedStrippingLevel.High, SettingsContent.strippingHigh },
                 };
             }
             return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);
@@ -2583,14 +2577,12 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Player", "ProjectSettings/ProjectSettings.asset")
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Player", "ProjectSettings/ProjectSettings.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<SettingsContent>());
+            provider.activateHandler = (searchContext, rootElement) =>
             {
-                icon = EditorGUIUtility.LoadIconRequired("BuildSettings.Editor")
-            };
-            provider.PopulateSearchKeywordsFromGUIContentProperties<SettingsContent>();
-            provider.onEditorCreated = editor =>
-            {
-                (editor as PlayerSettingsEditor).SetSectionOpenListener(provider.settingsWindow.Repaint);
+                (provider.settingsEditor as PlayerSettingsEditor)?.SetSectionOpenListener(provider.Repaint);
             };
             return provider;
         }

@@ -400,18 +400,15 @@ namespace UnityEditor
                 var hasMinGraphicsAPI = true;
                 var hasMinOSVersion = true;
 
-                if (BuildTargetDiscovery.PlatformHasFlag(platform.defaultTarget, TargetAttributes.OpenGLES))
+                var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
+                if (platform.targetGroup == BuildTargetGroup.Android)
                 {
-                    var apis = PlayerSettings.GetGraphicsAPIs(platform.defaultTarget);
-                    if (platform.targetGroup == BuildTargetGroup.Android)
-                    {
-                        hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
-                        hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                    }
-                    else if (platform.targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
-                    {
-                        hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
-                    }
+                    hasMinOSVersion = (int)PlayerSettings.Android.minSdkVersion >= 18;
+                    hasMinGraphicsAPI = (apis.Contains(GraphicsDeviceType.Vulkan) || apis.Contains(GraphicsDeviceType.OpenGLES3)) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
+                }
+                else if (platform.targetGroup == BuildTargetGroup.iOS || platform.targetGroup == BuildTargetGroup.tvOS)
+                {
+                    hasMinGraphicsAPI = !apis.Contains(GraphicsDeviceType.OpenGLES3) && !apis.Contains(GraphicsDeviceType.OpenGLES2);
                 }
                 return hasMinGraphicsAPI && hasMinOSVersion;
             }

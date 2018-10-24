@@ -16,7 +16,6 @@ namespace UnityEditor
             if (!Selection.activeTransform || Tools.s_Hidden)
                 return;
 
-
             if (!StageUtility.IsGameObjectRenderedByCamera(Selection.activeTransform.gameObject, Camera.current))
                 return;
 
@@ -221,6 +220,11 @@ namespace UnityEditor
 
         public override void ToolGUI(SceneView view, Vector3 handlePosition, bool isStatic)
         {
+            if (Tools.pivotRotation == PivotRotation.Global && Event.current.GetTypeForControl(GUIUtility.hotControl) == EventType.MouseUp)
+            {
+                Tools.ResetGlobalHandleRotation();
+            }
+
             Quaternion before = Tools.handleRotation;
 
             EditorGUI.BeginChangeCheck();
@@ -663,7 +667,7 @@ namespace UnityEditor
             corners[2] = rotation * new Vector2(rect.xMax, rect.yMax) + pivot;
             corners[3] = rotation * new Vector2(rect.x, rect.yMax) + pivot;
 
-            VertexSnapping.HandleKeyAndMouseMove(id);
+            VertexSnapping.HandleMouseMove(id);
 
             bool supportsRectSnapping = Selection.transforms.Length == 1 &&
                 UnityEditorInternal.InternalEditorUtility.SupportsRectLayout(Selection.activeTransform) &&

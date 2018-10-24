@@ -14,6 +14,7 @@ namespace UnityEngine.Experimental.Rendering
         int                 m_LayerMask;
         UInt32              m_RenderingLayerMask;
         private Int32       m_ExcludeMotionVectorObjects;
+        SortingLayerRange   m_SortingLayerRange;
 
         public FilterRenderersSettings(bool initializeValues = false) : this()
         {
@@ -23,6 +24,7 @@ namespace UnityEngine.Experimental.Rendering
                 m_LayerMask = ~0;
                 m_RenderingLayerMask = UInt32.MaxValue;
                 m_ExcludeMotionVectorObjects = 0;
+                m_SortingLayerRange = SortingLayerRange.all;
             }
         }
 
@@ -48,6 +50,12 @@ namespace UnityEngine.Experimental.Rendering
         {
             get { return m_ExcludeMotionVectorObjects != 0; }
             set { m_ExcludeMotionVectorObjects = value ? 1 : 0; }
+        }
+
+        public SortingLayerRange sortingLayerRange
+        {
+            get { return m_SortingLayerRange; }
+            set { m_SortingLayerRange = value; }
         }
     }
 }

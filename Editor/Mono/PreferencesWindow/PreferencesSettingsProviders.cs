@@ -179,10 +179,9 @@ namespace UnityEditor
             }
         }
 
-        public PreferencesProvider(string path)
-            : base(path)
+        public PreferencesProvider(string path, IEnumerable<string> keywords = null)
+            : base(path, SettingsScope.User, keywords)
         {
-            scopes = SettingsScopes.User;
             prefWinExtensions = ModuleManager.GetPreferenceWindowExtensions();
             ReadPreferences();
         }
@@ -190,45 +189,40 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateGeneralProvider()
         {
-            var settings = new PreferencesProvider("Preferences/_General") { label = "General" };
-            settings.PopulateSearchKeywordsFromGUIContentProperties<GeneralProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowGeneral); };
+            var settings = new PreferencesProvider("Preferences/_General", GetSearchKeywordsFromGUIContentProperties<GeneralProperties>()) { label = "General" };
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGeneral); };
             return settings;
         }
 
         [SettingsProvider]
         internal static SettingsProvider CreateExternalToolsProvider()
         {
-            var settings = new PreferencesProvider("Preferences/External Tools");
-            settings.PopulateSearchKeywordsFromGUIContentProperties<ExternalProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowExternalApplications); };
+            var settings = new PreferencesProvider("Preferences/External Tools", GetSearchKeywordsFromGUIContentProperties<ExternalProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowExternalApplications); };
             return settings;
         }
 
         [SettingsProvider]
         internal static SettingsProvider CreateColorsProvider()
         {
-            var settings = new PreferencesProvider("Preferences/Colors");
-            settings.PopulateSearchKeywordsFromGUIContentProperties<ColorsProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowColors); };
+            var settings = new PreferencesProvider("Preferences/Colors", GetSearchKeywordsFromGUIContentProperties<ColorsProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowColors); };
             return settings;
         }
 
         [SettingsProvider]
         internal static SettingsProvider CreateGICacheProvider()
         {
-            var settings = new PreferencesProvider("Preferences/GI Cache");
-            settings.PopulateSearchKeywordsFromGUIContentProperties<GICacheProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowGICache); };
+            var settings = new PreferencesProvider("Preferences/GI Cache", GetSearchKeywordsFromGUIContentProperties<GICacheProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowGICache); };
             return settings;
         }
 
         [SettingsProvider]
         internal static SettingsProvider Create2DProvider()
         {
-            var settings = new PreferencesProvider("Preferences/2D");
-            settings.PopulateSearchKeywordsFromGUIContentProperties<TwoDProperties>();
-            settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.Show2D); };
+            var settings = new PreferencesProvider("Preferences/2D", GetSearchKeywordsFromGUIContentProperties<TwoDProperties>());
+            settings.guiHandler = searchContext => { OnGUI(searchContext, settings.Show2D); };
             return settings;
         }
 
@@ -260,7 +254,7 @@ namespace UnityEditor
             if (editorLanguages.Length > 1)
             {
                 var settings = new PreferencesProvider("Preferences/Languages");
-                settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowLanguage); };
+                settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowLanguage); };
                 return settings;
             }
 
@@ -274,14 +268,14 @@ namespace UnityEditor
             if (Unsupported.IsDeveloperMode() || UnityConnect.preferencesEnabled)
             {
                 var settings = new PreferencesProvider("Preferences/Unity Services");
-                settings.guiHandler = searchContext => { settings.OnGUI(searchContext, settings.ShowUnityConnectPrefs); };
+                settings.guiHandler = searchContext => { OnGUI(searchContext, settings.ShowUnityConnectPrefs); };
                 return settings;
             }
             return null;
         }
 
         // Group Preference sections with the same name
-        private void OnGUI(string searchContext, Action<string> drawAction)
+        private static void OnGUI(string searchContext, Action<string> drawAction)
         {
             using (new SettingsWindow.GUIScope())
                 drawAction(searchContext);
@@ -540,7 +534,7 @@ namespace UnityEditor
 
         private void RevertColors()
         {
-            foreach (KeyValuePair<string, PrefColor> kvp in Settings.Prefs<PrefColor>())
+            foreach (KeyValuePair<string, PrefColor> kvp in PrefSettings.Prefs<PrefColor>())
             {
                 kvp.Value.ResetToDefault();
                 EditorPrefs.SetString(kvp.Value.Name, kvp.Value.ToUniqueString());
@@ -551,7 +545,7 @@ namespace UnityEditor
         {
             if (s_CachedColors == null)
             {
-                s_CachedColors = OrderPrefs(Settings.Prefs<PrefColor>());
+                s_CachedColors = OrderPrefs(PrefSettings.Prefs<PrefColor>());
             }
 
             var changedColor = false;
@@ -571,7 +565,7 @@ namespace UnityEditor
                     }
                 }
                 if (ccolor != null)
-                    Settings.Set(ccolor.Name, ccolor);
+                    PrefSettings.Set(ccolor.Name, ccolor);
             }
             GUILayout.Space(5f);
 

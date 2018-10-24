@@ -35,13 +35,6 @@ namespace UnityEditor
             Dark = 2,
         }
 
-        public enum WSACompilationOverrides
-        {
-            None = 0,
-            UseNetCore = 1,
-            UseNetCorePartially = 2
-        }
-
         // match these with the capabilities listed in MetroCapabilities.h
         public enum WSACapability
         {
@@ -258,16 +251,6 @@ namespace UnityEditor
 
             [NativeProperty("metroDefaultTileSize", TargetType.Field)]
             public static extern WSADefaultTileSize defaultTileSize
-            {
-                [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
-                get;
-
-                [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
-                set;
-            }
-
-            [NativeProperty("metroCompilationOverrides", TargetType.Field)]
-            public static extern WSACompilationOverrides compilationOverrides
             {
                 [StaticAccessor("GetPlayerSettings().GetEditorOnly()", StaticAccessorType.Dot)]
                 get;

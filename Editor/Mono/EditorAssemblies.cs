@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Scripting;
 
@@ -125,8 +126,13 @@ namespace UnityEditor
             m_TotalNumRuntimeInitializeMethods += methodNames.Count;
         }
 
+        [NonSerialized]
+        static ProfilerMarker s_ProcessEditorInitializeOnLoadMarker = new ProfilerMarker("EditorAssemblies.ProcessEditorInitializeOnLoad");
+
         private static void ProcessEditorInitializeOnLoad(Type type)
         {
+            s_ProcessEditorInitializeOnLoadMarker.Begin();
+
             try
             {
                 RuntimeHelpers.RunClassConstructor(type.TypeHandle);
@@ -135,10 +141,17 @@ namespace UnityEditor
             {
                 Debug.LogError(x.InnerException);
             }
+
+            s_ProcessEditorInitializeOnLoadMarker.End();
         }
+
+        [NonSerialized]
+        static ProfilerMarker s_ProcessRuntimeInitializeOnLoadMarker = new ProfilerMarker("EditorAssemblies.ProcessRuntimeInitializeOnLoad");
 
         private static void ProcessRuntimeInitializeOnLoad(MethodInfo method)
         {
+            s_ProcessRuntimeInitializeOnLoadMarker.Begin();
+
             RuntimeInitializeLoadType loadType = RuntimeInitializeLoadType.AfterSceneLoad;
 
             object[] attrs = method.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
@@ -146,10 +159,17 @@ namespace UnityEditor
                 loadType = ((RuntimeInitializeOnLoadMethodAttribute)attrs[0]).loadType;
 
             StoreRuntimeInitializeClassInfo(method.DeclaringType, new List<string>() { method.Name }, new List<RuntimeInitializeLoadType>() { loadType });
+
+            s_ProcessRuntimeInitializeOnLoadMarker.End();
         }
+
+        [NonSerialized]
+        static ProfilerMarker s_ProcessInitializeOnLoadMethodMarker = new ProfilerMarker("EditorAssemblies.ProcessInitializeOnLoadMethod");
 
         private static void ProcessInitializeOnLoadMethod(MethodInfo method)
         {
+            s_ProcessInitializeOnLoadMethodMarker.Begin();
+
             try
             {
                 method.Invoke(null, null);
@@ -158,6 +178,8 @@ namespace UnityEditor
             {
                 Debug.LogError(x.InnerException);
             }
+
+            s_ProcessInitializeOnLoadMethodMarker.End();
         }
 
         [RequiredByNativeCode]

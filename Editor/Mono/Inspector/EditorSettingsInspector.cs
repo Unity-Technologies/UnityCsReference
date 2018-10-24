@@ -774,8 +774,9 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Editor", "ProjectSettings/EditorSettings.asset");
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Editor", "ProjectSettings/EditorSettings.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
             return provider;
         }
     }

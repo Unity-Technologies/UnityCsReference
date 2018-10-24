@@ -27,7 +27,7 @@ namespace UnityEngine.Rendering
     public enum GraphicsFenceType
     {
         AsyncQueueSynchronisation = 0,
-//        CPUSynchronisation = 0,
+        CPUSynchronisation = 1,
     }
 
 
@@ -50,7 +50,7 @@ namespace UnityEngine.Rendering
             {
                 Validate();
 
-                if (!SystemInfo.supportsGraphicsFence)
+                if (!SystemInfo.supportsGraphicsFence || (m_FenceType == GraphicsFenceType.AsyncQueueSynchronisation && !SystemInfo.supportsAsyncCompute))
                     throw new System.NotSupportedException("Cannot determine if this GraphicsFence has passed as this platform has not implemented GraphicsFences.");
 
                 if (!IsFencePending())

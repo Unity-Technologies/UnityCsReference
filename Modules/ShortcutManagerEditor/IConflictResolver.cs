@@ -12,4 +12,5 @@ interface IConflictResolver
     void Cancel();
     void ExecuteOnce(ShortcutEntry entry);
     void ExecuteAlways(ShortcutEntry entry);
+    void GoToShortcutManagerConflictCategory();
 }

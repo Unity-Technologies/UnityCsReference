@@ -3,11 +3,11 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
-using Unity.Collections.LowLevel.Unsafe;
-using System.Diagnostics;
 
 namespace Unity.Profiling
 {
@@ -33,7 +33,7 @@ namespace Unity.Profiling
     public struct ProfilerMarker
     {
         [NativeDisableUnsafePtrRestriction]
-        internal IntPtr m_Ptr;
+        internal readonly IntPtr m_Ptr;
 
         public ProfilerMarker(string name)
         {
@@ -62,7 +62,7 @@ namespace Unity.Profiling
         public struct AutoScope : IDisposable
         {
             [NativeDisableUnsafePtrRestriction]
-            internal IntPtr m_Ptr;
+            internal readonly IntPtr m_Ptr;
 
             internal AutoScope(IntPtr markerPtr)
             {

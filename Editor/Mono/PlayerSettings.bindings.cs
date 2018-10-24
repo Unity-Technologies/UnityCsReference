@@ -35,6 +35,7 @@ namespace UnityEditor
     {
         Debug = 0,
         Release = 1,
+        Master = 2,
     }
 
     // Must be in sync with kAspectRatioSerializeNames and kAspectRatioValues
@@ -181,8 +182,9 @@ namespace UnityEditor
     public enum ManagedStrippingLevel
     {
         Disabled = 0,
-        Normal = 1,
-        Aggressive = 2
+        Low = 1,
+        Medium = 2,
+        High = 3
     }
 
     // What to do on uncaught .NET exception (on iOS)

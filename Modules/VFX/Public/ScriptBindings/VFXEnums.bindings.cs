@@ -125,6 +125,21 @@ namespace UnityEngine.Experimental.VFX
         LogicalOr,
         LogicalNot,
 
+        // Noise
+        ValueNoise1D,
+        ValueNoise2D,
+        ValueNoise3D,
+
+        PerlinNoise1D,
+        PerlinNoise2D,
+        PerlinNoise3D,
+
+        SimplexNoise1D,
+        SimplexNoise2D,
+        SimplexNoise3D,
+
+        VoroNoise2D,
+
         // This allows backward compatibility
         InverseTRS = InverseMatrix,
     }

@@ -232,6 +232,16 @@ namespace UnityEngine
         Exception = 4
     }
 
+    // The options of the log message in the delegate registered with Application.RegisterLogCallback.
+    // Should be kept in sync with LogOption enum in Runtime/Logging/LogAssert.h
+    public enum LogOption
+    {
+        // LogOption used for default behaviour
+        None = 0,
+        // LogOption used for supressing stacktraces from log message
+        NoStacktrace = 1,
+    }
+
     // Priority of a thread.
     public enum ThreadPriority
     {

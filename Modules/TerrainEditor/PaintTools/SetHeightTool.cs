@@ -10,7 +10,7 @@ using UnityEngine.Experimental.TerrainAPI;
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [FilePathAttribute("Library/TerrainTools/SetHeight", FilePathAttribute.Location.ProjectFolder)]
-    public class SetHeightTool : TerrainPaintTool<SetHeightTool>
+    internal class SetHeightTool : TerrainPaintTool<SetHeightTool>
     {
         [SerializeField]
         float m_Height;

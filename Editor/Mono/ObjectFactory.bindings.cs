@@ -4,8 +4,10 @@
 
 using System;
 using System.Reflection;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.Bindings;
+using UnityEngine.SceneManagement;
 using UnityEngine.Scripting;
 using Object = UnityEngine.Object;
 
@@ -14,6 +16,8 @@ namespace UnityEditor
     [NativeHeader("Editor/Src/ObjectFactory.h")]
     public static class ObjectFactory
     {
+        const int kInvalidSceneHandle = 0;
+
         [FreeFunction(ThrowsException = true)]
         static extern Object CreateDefaultInstance([NotNull] Type type);
 
@@ -81,6 +85,21 @@ namespace UnityEditor
                 throw new ArgumentException("Non-Component type must use ObjectFactory.CreateInstance instead : " + type.FullName);
             }
             return AddDefaultComponent(gameObject, type);
+        }
+
+        public static GameObject CreateGameObject(Scene scene, HideFlags hideFlags, string name, params Type[] types)
+        {
+            if (!scene.IsValid())
+            {
+                throw new ArgumentException("Cannot create a GameObject to a null Scene.");
+            }
+
+            //Internally, this sets the target scene that the scene points to.
+            EditorSceneManager.SetTargetSceneForNewGameObjects(scene);
+            var go = CreateGameObject(name, types);
+            go.hideFlags = hideFlags;
+            EditorSceneManager.ClearTargetSceneForNewGameObjects();
+            return go;
         }
 
         public static GameObject CreateGameObject(string name, params Type[] types)

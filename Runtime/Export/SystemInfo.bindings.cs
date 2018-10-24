@@ -219,6 +219,11 @@ namespace UnityEngine
             get { return HasHiddenSurfaceRemovalOnGPU(); }
         }
 
+        public static bool hasDynamicUniformArrayIndexingInFragmentShaders
+        {
+            get { return HasDynamicUniformArrayIndexingInFragmentShaders(); }
+        }
+
         // Are built-in shadows supported? (RO)
         public static bool supportsShadows
         {
@@ -535,6 +540,9 @@ namespace UnityEngine
 
         [FreeFunction("ScriptingGraphicsCaps::HasHiddenSurfaceRemovalOnGPU")]
         static extern bool HasHiddenSurfaceRemovalOnGPU();
+
+        [FreeFunction("ScriptingGraphicsCaps::HasDynamicUniformArrayIndexingInFragmentShaders")]
+        static extern bool HasDynamicUniformArrayIndexingInFragmentShaders();
 
         [FreeFunction("ScriptingGraphicsCaps::SupportsShadows")]
         static extern bool SupportsShadows();

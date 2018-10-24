@@ -25,21 +25,6 @@ namespace UnityEditor.Scripting.Compilers
 
         BuildTarget BuildTarget => m_Island._target;
 
-        public static string[] GetClassLibraries(BuildTarget buildTarget)
-        {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(buildTarget);
-            if (PlayerSettings.GetScriptingBackend(buildTargetGroup) != ScriptingImplementation.WinRTDotNET)
-            {
-                return new string[] {};
-            }
-
-            if (buildTarget != BuildTarget.WSAPlayer)
-                throw new InvalidOperationException($"MicrosoftCSharpCompiler cannot build for .NET Scripting backend for BuildTarget. {buildTarget}.");
-
-            var resolver = new NuGetPackageResolver { ProjectLockFile = @"UWP\project.lock.json" };
-            return resolver.Resolve();
-        }
-
         private void FillCompilerOptions(List<string> arguments, out string argsPrefix)
         {
             // This will ensure that csc.exe won't include csc.rsp
@@ -52,11 +37,10 @@ namespace UnityEditor.Scripting.Compilers
             arguments.Add("/langversion:latest");
 
             var platformSupportModule = ModuleManager.FindPlatformSupportModule(ModuleManager.GetTargetStringFromBuildTarget(BuildTarget));
-            if (platformSupportModule != null)
+            if (platformSupportModule != null && !m_Island._editor)
             {
                 var compilationExtension = platformSupportModule.CreateCompilationExtension();
 
-                arguments.AddRange(GetClassLibraries(BuildTarget).Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetAdditionalAssemblyReferences().Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetWindowsMetadataReferences().Select(r => "/reference:\"" + r + "\""));
                 arguments.AddRange(compilationExtension.GetAdditionalDefines().Select(d => "/define:" + d));
@@ -191,22 +175,15 @@ namespace UnityEditor.Scripting.Compilers
             if (m_Island._allowUnsafeCode)
                 arguments.Add("/unsafe");
 
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
+            arguments.Add("/debug:portable");
+
             var disableOptimizations = m_Island._development_player || (m_Island._editor && EditorPrefs.GetBool("AllowAttachedDebuggingOfEditor", true));
             if (!disableOptimizations)
             {
-                if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
-                    arguments.Add("/debug:pdbonly");
-                else
-                    arguments.Add("/debug:portable");
                 arguments.Add("/optimize+");
             }
             else
             {
-                if (PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
-                    arguments.Add("/debug:full");
-                else
-                    arguments.Add("/debug:portable");
                 arguments.Add("/optimize-");
             }
 
@@ -217,12 +194,6 @@ namespace UnityEditor.Scripting.Compilers
 
         protected override string[] GetSystemReferenceDirectories()
         {
-            var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(BuildTarget);
-            if (BuildTarget == BuildTarget.WSAPlayer && PlayerSettings.GetScriptingBackend(buildTargetGroup) == ScriptingImplementation.WinRTDotNET)
-            {
-                return GetClassLibraries(BuildTarget).Select(library => Directory.GetParent(library).FullName).Distinct().ToArray();
-            }
-
             return MonoLibraryHelpers.GetSystemReferenceDirectories(m_Island._api_compatibility_level);
         }
 

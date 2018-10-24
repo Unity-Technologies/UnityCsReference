@@ -9,7 +9,7 @@ using UnityEngine.Experimental.TerrainAPI;
 namespace UnityEditor.Experimental.TerrainAPI
 {
     [FilePathAttribute("Library/TerrainTools/Stamp", FilePathAttribute.Location.ProjectFolder)]
-    public class StampTool : TerrainPaintTool<StampTool>
+    internal class StampTool : TerrainPaintTool<StampTool>
     {
         [SerializeField]
         float m_StampHeight = 0.0f;

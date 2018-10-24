@@ -13,24 +13,6 @@ using UnityEngine.Scripting;
 namespace UnityEngine.Experimental.U2D
 {
     [StructLayoutAttribute(LayoutKind.Sequential)]
-    public struct SpriteShapeParameters
-    {
-        public Matrix4x4 transform;
-        public Texture2D fillTexture;
-        public uint fillScale;                       // A Fill Scale of 0 means NO fill.
-        public uint splineDetail;
-        public float angleThreshold;
-        public float borderPivot;
-        public float bevelCutoff;
-        public float bevelSize;
-
-        public bool carpet;                            // Carpets have Fills.
-        public bool smartSprite;                       // Enabling this would mean a specialized Shape using only one Texture for all Sprites. If enabled must define CarpetInfo.
-        public bool adaptiveUV;                        // Adaptive UV.
-        public bool spriteBorders;                     // Allow 9 - Splice Corners to be used.
-    }
-
-    [StructLayoutAttribute(LayoutKind.Sequential)]
     public struct SpriteShapeMetaData
     {
         public float height;
@@ -58,14 +40,6 @@ namespace UnityEngine.Experimental.U2D
         public int[] sprites;
     }
 
-    [NativeType(Header = "Modules/SpriteShape/Public/SpriteShapeRenderer.h")]
-    public sealed partial class SpriteShapeRenderer : Renderer
-    {
-        extern internal int GetVertexCount();
-        extern internal int GetIndexCount();
-        extern internal Bounds GetLocalAABB();
-    }
-
     [NativeHeader("Modules/SpriteShape/Public/SpriteShapeUtility.h")]
     public class SpriteShapeUtility
     {
@@ -75,5 +49,6 @@ namespace UnityEngine.Experimental.U2D
         [NativeThrows]
         [FreeFunction("SpriteShapeUtility::GenerateSpriteShape")]
         extern public static void GenerateSpriteShape(SpriteShapeRenderer renderer, SpriteShapeParameters shapeParams, ShapeControlPoint[] points, SpriteShapeMetaData[] metaData, AngleRangeInfo[] angleRange, Sprite[] sprites, Sprite[] corners);
+
     }
 }

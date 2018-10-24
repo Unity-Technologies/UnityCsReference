@@ -9,43 +9,13 @@ using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
-    class ConflictNotificationConsole : IConflictResolver
-    {
-        public void ResolveConflict(IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries)
-        {
-            var builder = new StringBuilder();
-
-            builder.Append($"Shortcut conflict detected for key binding {KeyCombination.SequenceToString(keyCombinationSequence)}.\n");
-            builder.Append("Please resolve the conflict by rebinding one or more of the following shortcuts:\n");
-
-            foreach (var entry in entries)
-                builder.Append($"{entry.identifier.path} ({KeyCombination.SequenceToString(entry.combinations)})\n");
-
-            Debug.Log(builder.ToString());
-        }
-
-        public void Cancel()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ExecuteOnce(ShortcutEntry entry)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void ExecuteAlways(ShortcutEntry entry)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     class ConflictResolver : IConflictResolver
     {
         IShortcutProfileManager m_ProfileManager;
         IContextManager m_ContextManager;
         IConflictResolverView m_ConflictResolverView;
         List<ShortcutEntry> m_Entries = new List<ShortcutEntry>();
+        bool m_UnresolvedConflictPending;
 
 
         public ConflictResolver(IShortcutProfileManager profileManager, IContextManager contextManager, IConflictResolverView conflictResolverView)
@@ -57,23 +27,35 @@ namespace UnityEditor.ShortcutManagement
 
         public void ResolveConflict(IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries)
         {
+            // Ignore further conflicts while there is an unresolved conflict pending
+            if (m_UnresolvedConflictPending)
+                return;
+
+            m_UnresolvedConflictPending = true;
+
             m_Entries.AddRange(entries);
             m_ConflictResolverView.Show(this, keyCombinationSequence, m_Entries);
         }
 
         public void Cancel()
         {
+            m_UnresolvedConflictPending = false;
+
             Cleanup();
         }
 
         public void ExecuteOnce(ShortcutEntry entry)
         {
+            m_UnresolvedConflictPending = false;
+
             Execute(entry);
             Cleanup();
         }
 
         public void ExecuteAlways(ShortcutEntry entry)
         {
+            m_UnresolvedConflictPending = false;
+
             foreach (var shortcutEntry in m_Entries)
             {
                 if (shortcutEntry != entry)
@@ -82,8 +64,14 @@ namespace UnityEditor.ShortcutManagement
                 }
             }
 
-            Execute(entry);
+            if (entry.type != ShortcutType.Clutch)
+                Execute(entry);
             Cleanup();
+        }
+
+        public void GoToShortcutManagerConflictCategory()
+        {
+            ShortcutManagerWindow.ShowConflicts();
         }
 
         void Execute(ShortcutEntry entry)

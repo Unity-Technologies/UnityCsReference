@@ -74,6 +74,12 @@ namespace UnityEditor.Rendering
         XboxOneD3D12    = 20  // Xbox One D3D12
     }
 
+    public enum ShaderCompilerMessageSeverity
+    {
+        Error,
+        Warning
+    }
+
     [Flags]
     public enum ShaderRequirements
     {

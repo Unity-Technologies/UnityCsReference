@@ -277,8 +277,12 @@ namespace UnityEditor
                 float gpuMemory = Lightmapping.ComputeTotalGPUMemoryUsageInBytes();
                 if (gpuMemory > 0.0f)
                 {
-                    string foldoutNameGPU = String.Format("Total GPU memory ({0})", SizeString(gpuMemory));
-                    EditorGUILayout.FoldoutTitlebar(false, new GUIContent(foldoutNameGPU), true);
+                    string foldoutGPUMemoryGPU = String.Format("Total GPU memory ({0})", SizeString(gpuMemory));
+                    EditorGUILayout.FoldoutTitlebar(false, new GUIContent(foldoutGPUMemoryGPU), true);
+                    if (GUILayout.Button("Dump detail to Editor.log", EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    {
+                        Lightmapping.LogGPUMemoryStatistics();
+                    }
                 }
             }
 

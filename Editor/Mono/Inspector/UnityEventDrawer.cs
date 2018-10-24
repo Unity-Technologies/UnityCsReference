@@ -26,19 +26,19 @@ namespace UnityEditorInternal
         private const string kNoFunctionString = "No Function";
 
         //Persistent Listener Paths
-        private const string kInstancePath   = "m_Target";
-        private const string kCallStatePath  = "m_CallState";
-        private const string kArgumentsPath  = "m_Arguments";
-        private const string kModePath       = "m_Mode";
-        private const string kMethodNamePath = "m_MethodName";
+        internal const string kInstancePath   = "m_Target";
+        internal const string kCallStatePath  = "m_CallState";
+        internal const string kArgumentsPath  = "m_Arguments";
+        internal const string kModePath       = "m_Mode";
+        internal const string kMethodNamePath = "m_MethodName";
 
         //ArgumentCache paths
-        private const string kFloatArgument  = "m_FloatArgument";
-        private const string kIntArgument    = "m_IntArgument";
-        private const string kObjectArgument = "m_ObjectArgument";
-        private const string kStringArgument = "m_StringArgument";
-        private const string kBoolArgument = "m_BoolArgument";
-        private const string kObjectArgumentAssemblyTypeName = "m_ObjectArgumentAssemblyTypeName";
+        internal const string kFloatArgument  = "m_FloatArgument";
+        internal const string kIntArgument    = "m_IntArgument";
+        internal const string kObjectArgument = "m_ObjectArgument";
+        internal const string kStringArgument = "m_StringArgument";
+        internal const string kBoolArgument = "m_BoolArgument";
+        internal const string kObjectArgumentAssemblyTypeName = "m_ObjectArgumentAssemblyTypeName";
 
         string m_Text;
         UnityEventBase m_DummyEvent;
@@ -86,13 +86,12 @@ namespace UnityEditorInternal
                 SerializedProperty listenersArray = prop.FindPropertyRelative("m_PersistentCalls.m_Calls");
                 state.m_ReorderableList = new ReorderableList(prop.serializedObject, listenersArray, false, true, true, true);
                 state.m_ReorderableList.drawHeaderCallback = DrawEventHeader;
-                state.m_ReorderableList.drawElementCallback = DrawEventListener;
-                state.m_ReorderableList.onSelectCallback = SelectEventListener;
-                state.m_ReorderableList.onReorderCallback = EndDragChild;
-                state.m_ReorderableList.onAddCallback = AddEventListener;
-                state.m_ReorderableList.onRemoveCallback = RemoveButton;
-                // Two standard lines with standard spacing between and extra spacing below to better separate items visually.
-                state.m_ReorderableList.elementHeight = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + kExtraSpacing;
+                state.m_ReorderableList.drawElementCallback = DrawEvent;
+                state.m_ReorderableList.onSelectCallback = OnSelectEvent;
+                state.m_ReorderableList.onReorderCallback = OnReorderEvent;
+                state.m_ReorderableList.onAddCallback = OnAddEvent;
+                state.m_ReorderableList.onRemoveCallback = OnRemoveEvent;
+                SetupReorderableList(state.m_ReorderableList);
 
                 m_States[key] = state;
             }
@@ -154,6 +153,12 @@ namespace UnityEditorInternal
             }
         }
 
+        protected virtual void SetupReorderableList(ReorderableList list)
+        {
+            // Two standard lines with standard spacing between and extra spacing below to better separate items visually.
+            list.elementHeight = EditorGUI.kSingleLineHeight * 2 + EditorGUI.kControlVerticalSpacing + kExtraSpacing;
+        }
+
         protected virtual void DrawEventHeader(Rect headerRect)
         {
             headerRect.height = 16;
@@ -167,7 +172,7 @@ namespace UnityEditorInternal
             return (PersistentListenerMode)mode.enumValueIndex;
         }
 
-        void DrawEventListener(Rect rect, int index, bool isactive, bool isfocused)
+        protected virtual void DrawEvent(Rect rect, int index, bool isActive, bool isFocused)
         {
             var pListener = m_ListenersArray.GetArrayElementAtIndex(index);
 
@@ -316,13 +321,13 @@ namespace UnityEditorInternal
             return rects;
         }
 
-        void RemoveButton(ReorderableList list)
+        protected virtual void OnRemoveEvent(ReorderableList list)
         {
             ReorderableList.defaultBehaviours.DoRemoveButton(list);
             m_LastSelectedIndex = list.index;
         }
 
-        private void AddEventListener(ReorderableList list)
+        protected virtual void OnAddEvent(ReorderableList list)
         {
             if (m_ListenersArray.hasMultipleDifferentValues)
             {
@@ -367,12 +372,12 @@ namespace UnityEditorInternal
             arguments.FindPropertyRelative(kObjectArgumentAssemblyTypeName).stringValue = null;
         }
 
-        void SelectEventListener(ReorderableList list)
+        protected virtual void OnSelectEvent(ReorderableList list)
         {
             m_LastSelectedIndex = list.index;
         }
 
-        void EndDragChild(ReorderableList list)
+        protected virtual void OnReorderEvent(ReorderableList list)
         {
             m_LastSelectedIndex = list.index;
         }

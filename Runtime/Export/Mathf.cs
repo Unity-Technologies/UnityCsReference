@@ -399,7 +399,8 @@ namespace UnityEngine
             float cy = p3.y - p1.y;
             float t = (cx * dy - cy * dx) / bDotDPerp;
 
-            result = new Vector2(p1.x + t * bx, p1.y + t * by);
+            result.x = p1.x + t * bx;
+            result.y = p1.y + t * by;
             return true;
         }
 
@@ -427,7 +428,9 @@ namespace UnityEngine
             {
                 return false;
             }
-            result = new Vector2(p1.x + t * bx, p1.y + t * by);
+
+            result.x = p1.x + t * bx;
+            result.y = p1.y + t * by;
             return true;
         }
 

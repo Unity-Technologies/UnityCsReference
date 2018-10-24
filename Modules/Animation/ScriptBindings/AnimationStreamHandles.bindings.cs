@@ -362,11 +362,8 @@ namespace UnityEngine.Experimental.Animations
             return GetPositionInternal(ref stream);
         }
 
-        public void SetPosition(AnimationStream stream, Vector3 position)
-        {
-            CheckIsValid(ref stream);
-            SetPositionInternal(ref stream, position);
-        }
+        [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
+        public void SetPosition(AnimationStream stream, Vector3 position) {}
 
         public Vector3 GetLocalPosition(AnimationStream stream)
         {
@@ -374,11 +371,8 @@ namespace UnityEngine.Experimental.Animations
             return GetLocalPositionInternal(ref stream);
         }
 
-        public void SetLocalPosition(AnimationStream stream, Vector3 position)
-        {
-            CheckIsValid(ref stream);
-            SetLocalPositionInternal(ref stream, position);
-        }
+        [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
+        public void SetLocalPosition(AnimationStream stream, Vector3 position) {}
 
         public Quaternion GetRotation(AnimationStream stream)
         {
@@ -386,11 +380,8 @@ namespace UnityEngine.Experimental.Animations
             return GetRotationInternal(ref stream);
         }
 
-        public void SetRotation(AnimationStream stream, Quaternion rotation)
-        {
-            CheckIsValid(ref stream);
-            SetRotationInternal(ref stream, rotation);
-        }
+        [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
+        public void SetRotation(AnimationStream stream, Quaternion rotation) {}
 
         public Quaternion GetLocalRotation(AnimationStream stream)
         {
@@ -398,11 +389,8 @@ namespace UnityEngine.Experimental.Animations
             return GetLocalRotationInternal(ref stream);
         }
 
-        public void SetLocalRotation(AnimationStream stream, Quaternion rotation)
-        {
-            CheckIsValid(ref stream);
-            SetLocalRotationInternal(ref stream, rotation);
-        }
+        [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
+        public void SetLocalRotation(AnimationStream stream, Quaternion rotation) {}
 
         public Vector3 GetLocalScale(AnimationStream stream)
         {
@@ -410,11 +398,8 @@ namespace UnityEngine.Experimental.Animations
             return GetLocalScaleInternal(ref stream);
         }
 
-        public void SetLocalScale(AnimationStream stream, Vector3 scale)
-        {
-            CheckIsValid(ref stream);
-            SetLocalScaleInternal(ref stream, scale);
-        }
+        [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
+        public void SetLocalScale(AnimationStream stream, Vector3 scale) {}
 
         [ThreadSafe]
         private extern bool HasValidTransform(ref AnimationStream stream);
@@ -422,32 +407,17 @@ namespace UnityEngine.Experimental.Animations
         [NativeMethod(Name = "TransformSceneHandleBindings::GetPositionInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern Vector3 GetPositionInternal(ref AnimationStream stream);
 
-        [NativeMethod(Name = "TransformSceneHandleBindings::SetPositionInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
-        private extern void SetPositionInternal(ref AnimationStream stream, Vector3 position);
-
         [NativeMethod(Name = "TransformSceneHandleBindings::GetLocalPositionInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern Vector3 GetLocalPositionInternal(ref AnimationStream stream);
-
-        [NativeMethod(Name = "TransformSceneHandleBindings::SetLocalPositionInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
-        private extern void SetLocalPositionInternal(ref AnimationStream stream, Vector3 position);
 
         [NativeMethod(Name = "TransformSceneHandleBindings::GetRotationInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern Quaternion GetRotationInternal(ref AnimationStream stream);
 
-        [NativeMethod(Name = "TransformSceneHandleBindings::SetRotationInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
-        private extern void SetRotationInternal(ref AnimationStream stream, Quaternion rotation);
-
         [NativeMethod(Name = "TransformSceneHandleBindings::GetLocalRotationInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern Quaternion GetLocalRotationInternal(ref AnimationStream stream);
 
-        [NativeMethod(Name = "TransformSceneHandleBindings::SetLocalRotationInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
-        private extern void SetLocalRotationInternal(ref AnimationStream stream, Quaternion rotation);
-
         [NativeMethod(Name = "TransformSceneHandleBindings::GetLocalScaleInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
         private extern Vector3 GetLocalScaleInternal(ref AnimationStream stream);
-
-        [NativeMethod(Name = "TransformSceneHandleBindings::SetLocalScaleInternal", IsFreeFunction = true, IsThreadSafe = true, HasExplicitThis = true)]
-        private extern void SetLocalScaleInternal(ref AnimationStream stream, Vector3 scale);
     }
 
     [NativeHeader("Modules/Animation/Director/AnimationSceneHandles.h")]
@@ -512,11 +482,8 @@ namespace UnityEngine.Experimental.Animations
             return GetFloatInternal(ref stream);
         }
 
-        public void SetFloat(AnimationStream stream, float value)
-        {
-            CheckIsValid(ref stream);
-            SetFloatInternal(ref stream, value);
-        }
+        [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
+        public void SetFloat(AnimationStream stream, float value) {}
 
         public int GetInt(AnimationStream stream)
         {
@@ -524,11 +491,8 @@ namespace UnityEngine.Experimental.Animations
             return GetIntInternal(ref stream);
         }
 
-        public void SetInt(AnimationStream stream, int value)
-        {
-            CheckIsValid(ref stream);
-            SetIntInternal(ref stream, value);
-        }
+        [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
+        public void SetInt(AnimationStream stream, int value) {}
 
         public bool GetBool(AnimationStream stream)
         {
@@ -536,11 +500,8 @@ namespace UnityEngine.Experimental.Animations
             return GetBoolInternal(ref stream);
         }
 
-        public void SetBool(AnimationStream stream, bool value)
-        {
-            CheckIsValid(ref stream);
-            SetBoolInternal(ref stream, value);
-        }
+        [Obsolete("SceneHandle is now read-only; it was problematic with the engine multithreading and determinism", true)]
+        public void SetBool(AnimationStream stream, bool value) {}
 
         [ThreadSafe]
         private extern bool HasValidTransform(ref AnimationStream stream);
@@ -554,20 +515,11 @@ namespace UnityEngine.Experimental.Animations
         [NativeMethod(Name = "GetFloat", IsThreadSafe = true)]
         private extern float GetFloatInternal(ref AnimationStream stream);
 
-        [NativeMethod(Name = "SetFloat", IsThreadSafe = true)]
-        private extern void SetFloatInternal(ref AnimationStream stream, float value);
-
         [NativeMethod(Name = "GetInt", IsThreadSafe = true)]
         private extern int GetIntInternal(ref AnimationStream stream);
 
-        [NativeMethod(Name = "SetInt", IsThreadSafe = true)]
-        private extern void SetIntInternal(ref AnimationStream stream, int value);
-
         [NativeMethod(Name = "GetBool", IsThreadSafe = true)]
         private extern bool GetBoolInternal(ref AnimationStream stream);
-
-        [NativeMethod(Name = "SetBool", IsThreadSafe = true)]
-        private extern void SetBoolInternal(ref AnimationStream stream, bool value);
     }
 }
 

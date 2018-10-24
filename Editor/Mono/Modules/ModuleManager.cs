@@ -14,6 +14,7 @@ using UnityEditor.Hardware;
 using UnityEditorInternal;
 using UnityEngine;
 using Unity.DataContract;
+using Unity.Profiling;
 using UnityEditor.Callbacks;
 using UnityEditor.Utils;
 using UnityEditor.DeploymentTargets;
@@ -160,11 +161,17 @@ namespace UnityEditor.Modules
             }
         }
 
+        [NonSerialized]
+        static ProfilerMarker s_InitializeModuleManagerMarker = new ProfilerMarker("ModuleManager.InitializeModuleManager");
+
         // entry point from native
         [RequiredByNativeCode]
         internal static void InitializeModuleManager()
         {
-            if (s_PackageManager == null)
+            if (s_PackageManager != null)
+                return;
+
+            using (s_InitializeModuleManagerMarker.Auto())
             {
                 RegisterPackageManager();
                 if (s_PackageManager != null)

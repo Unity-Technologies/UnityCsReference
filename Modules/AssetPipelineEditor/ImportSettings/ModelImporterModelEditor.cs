@@ -19,7 +19,7 @@ namespace UnityEditor
 
         SerializedProperty m_ImportBlendShapes;
         SerializedProperty m_ImportVisibility;
-        SerializedProperty m_ImportCameras;
+        protected  SerializedProperty m_ImportCameras;
         SerializedProperty m_ImportLights;
 
         // Meshes
@@ -30,7 +30,7 @@ namespace UnityEditor
         // Geometry
         SerializedProperty m_KeepQuads;
         SerializedProperty m_WeldVertices;
-        SerializedProperty m_IndexFormat;
+        protected SerializedProperty m_IndexFormat;
 
         SerializedProperty m_SwapUVChannels;
 
@@ -41,13 +41,13 @@ namespace UnityEditor
         SerializedProperty m_SecondaryUVHardAngle;
         SerializedProperty m_SecondaryUVPackMargin;
 
-        SerializedProperty m_NormalImportMode;
-        SerializedProperty m_NormalCalculationMode;
+        protected SerializedProperty m_NormalImportMode;
+        protected SerializedProperty m_NormalCalculationMode;
         SerializedProperty m_BlendShapeNormalCalculationMode;
         SerializedProperty m_LegacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes;
         SerializedProperty m_NormalSmoothingSource;
-        SerializedProperty m_NormalSmoothAngle;
-        SerializedProperty m_TangentImportMode;
+        protected SerializedProperty m_NormalSmoothAngle;
+        protected SerializedProperty m_TangentImportMode;
 
         // Prefab
         SerializedProperty m_PreserveHierarchy;
@@ -93,7 +93,7 @@ namespace UnityEditor
             m_PreserveHierarchy = serializedObject.FindProperty("m_PreserveHierarchy");
         }
 
-        static class Styles
+        protected static class Styles
         {
             public static GUIContent Scene = EditorGUIUtility.TrTextContent("Scene", "FBX Scene import settings");
             public static GUIContent ScaleFactor = EditorGUIUtility.TrTextContent("Scale Factor", "How much to scale the models compared to what is in the source file.");
@@ -165,7 +165,7 @@ namespace UnityEditor
             return GUI.Button(buttonRect, buttonContent);
         }
 
-        void MeshesGUI()
+        protected void MeshesGUI()
         {
             GUILayout.Label(Styles.Meshes, EditorStyles.boldLabel);
             using (var horizontal = new EditorGUILayout.HorizontalScope())
@@ -232,7 +232,7 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_PreserveHierarchy, Styles.PreserveHierarchy);
         }
 
-        void GeometryGUI()
+        protected void GeometryGUI()
         {
             GUILayout.Label(Styles.Geometry, EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(m_KeepQuads, Styles.KeepQuads);
@@ -353,12 +353,12 @@ namespace UnityEditor
             }
         }
 
-        bool TangentModeAvailabilityCheck(Enum value)
+        protected bool TangentModeAvailabilityCheck(Enum value)
         {
             return (int)(ModelImporterTangents)value >= m_NormalImportMode.intValue;
         }
 
-        void UvsGUI()
+        protected void UvsGUI()
         {
             EditorGUILayout.PropertyField(m_SwapUVChannels, Styles.SwapUVChannels);
             EditorGUILayout.PropertyField(m_GenerateSecondaryUV, Styles.GenerateSecondaryUV);

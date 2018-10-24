@@ -12,6 +12,7 @@ using UnityEditor.ProjectWindowCallback;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEditor.Experimental;
+using UnityEditor.Utils;
 using UnityEngine;
 using UnityEngine.Internal;
 using Object = UnityEngine.Object;
@@ -264,7 +265,7 @@ namespace UnityEditor
 
             string sourcePath = AssetDatabase.GetAssetPath(go);
 
-            string sourceDir = System.IO.Path.GetDirectoryName(sourcePath);
+            string sourceDir = Path.GetDirectoryName(sourcePath).ConvertSeparatorsToUnity();
             string variantPath = string.Format("{0}/{1} Variant.prefab", sourceDir, go.name);
 
             StartNameEditingIfProjectWindowExists(
@@ -287,14 +288,8 @@ namespace UnityEditor
             Texture2D icon = null;
             switch (Path.GetExtension(destName))
             {
-                case ".js":
-                    icon = EditorGUIUtility.IconContent("js Script Icon").image as Texture2D;
-                    break;
                 case ".cs":
                     icon = EditorGUIUtility.IconContent("cs Script Icon").image as Texture2D;
-                    break;
-                case ".boo":
-                    icon = EditorGUIUtility.IconContent("boo Script Icon").image as Texture2D;
                     break;
                 case ".shader":
                     icon = EditorGUIUtility.IconContent<Shader>().image as Texture2D;

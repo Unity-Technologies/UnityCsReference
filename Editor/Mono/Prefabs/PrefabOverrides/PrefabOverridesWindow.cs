@@ -47,6 +47,15 @@ namespace UnityEditor
             public static GUIContent instanceLabel = EditorGUIUtility.TrTextContent("Overrides to");
             public static GUIContent contextLabel = EditorGUIUtility.TrTextContent("in");
 
+            public static GUIContent infoMultiple = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.");
+            public static GUIContent infoMultipleNoApply = EditorGUIUtility.TrTextContent("Multiple Prefabs selected. Cannot show overrides.\nApplying is not possible for one or more Prefabs. Select individual Prefabs for details.");
+            public static GUIContent warningDisconnected = EditorGUIUtility.TrTextContent("Disconnected. Cannot show overrides.");
+            public static GUIContent infoInvalidAsset = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nThe Prefab file contains an invalid script. Applying is not possible. Enter Prefab Mode and remove the script.");
+            public static GUIContent infoInvalidInstance = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nThe Prefab instance contains an invalid script. Applying is not possible. Remove the script.");
+            public static GUIContent infoModel = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nApplying to a model Prefab is not possible.");
+            public static GUIContent infoImmutable = EditorGUIUtility.TrTextContent("Click on individual items to review and revert.\nThe Prefab file is immutable. Applying is not possible.");
+            public static GUIContent infoDefault = EditorGUIUtility.TrTextContent("Click on individual items to review, revert and apply.");
+
             public static GUIStyle boldRightAligned;
 
             static Styles()
@@ -177,19 +186,15 @@ namespace UnityEditor
             if (HasMultiSelection())
             {
                 if (m_InvalidComponentOnAsset || m_InvalidComponentOnInstance || m_ModelPrefab || m_Immutable)
-                    EditorGUILayout.HelpBox(
-                        "Multiple Prefabs selected. Cannot show overrides.\nApplying is not possible for one or more Prefabs. Select individual Prefabs for details.",
-                        MessageType.Info);
+                    EditorGUILayout.HelpBox(Styles.infoMultipleNoApply.text, MessageType.Info);
                 else
-                    EditorGUILayout.HelpBox(
-                        "Multiple Prefabs selected. Cannot show overrides.",
-                        MessageType.Info);
+                    EditorGUILayout.HelpBox(Styles.infoMultiple.text, MessageType.Info);
             }
             else
             {
                 if (m_Disconnected)
                 {
-                    EditorGUILayout.HelpBox("Disconnected. Cannot show overrides.", MessageType.Warning);
+                    EditorGUILayout.HelpBox(Styles.warningDisconnected.text, MessageType.Warning);
                 }
                 else if (m_AnyOverrides)
                 {
@@ -197,24 +202,15 @@ namespace UnityEditor
                     m_TreeView.OnGUI(treeViewRect);
 
                     if (m_InvalidComponentOnAsset)
-                        EditorGUILayout.HelpBox(
-                            "Click on individual items to review and revert.\nThe Prefab file contains an invalid script. Applying is not possible. Enter Prefab Mode and remove the script.",
-                            MessageType.Info);
+                        EditorGUILayout.HelpBox(Styles.infoInvalidAsset.text, MessageType.Info);
                     else if (m_InvalidComponentOnInstance)
-                        EditorGUILayout.HelpBox(
-                            "Click on individual items to review and revert.\nThe Prefab instance contains an invalid script. Applying is not possible. Remove the script.",
-                            MessageType.Info);
+                        EditorGUILayout.HelpBox(Styles.infoInvalidInstance.text, MessageType.Info);
                     else if (m_ModelPrefab)
-                        EditorGUILayout.HelpBox(
-                            "Click on individual items to review and revert.\nApplying to a model Prefab is not possible.",
-                            MessageType.Info);
+                        EditorGUILayout.HelpBox(Styles.infoModel.text, MessageType.Info);
                     else if (m_Immutable)
-                        EditorGUILayout.HelpBox(
-                            "Click on individual items to review and revert.\nThe Prefab file is immutable. Applying is not possible.",
-                            MessageType.Info);
+                        EditorGUILayout.HelpBox(Styles.infoImmutable.text, MessageType.Info);
                     else
-                        EditorGUILayout.HelpBox("Click on individual items to review, revert and apply.",
-                            MessageType.Info);
+                        EditorGUILayout.HelpBox(Styles.infoDefault.text, MessageType.Info);
                 }
             }
 
@@ -263,10 +259,10 @@ namespace UnityEditor
 
             // If more than one instance of the same Prefab Asset, show dialog to user.
             if (multipleOfSame && !EditorUtility.DisplayDialog(
-                "Multiple instances of same Prefab Asset",
-                "Multiple instances of the same Prefab Asset were detected. Potentially conflicting overrides will be applied sequentially and will overwrite each other.",
-                "OK",
-                "Cancel"))
+                L10n.Tr("Multiple instances of same Prefab Asset"),
+                L10n.Tr("Multiple instances of the same Prefab Asset were detected. Potentially conflicting overrides will be applied sequentially and will overwrite each other."),
+                L10n.Tr("OK"),
+                L10n.Tr("Cancel")))
                 return false;
 
             // Make sure assets are checked out in version control.

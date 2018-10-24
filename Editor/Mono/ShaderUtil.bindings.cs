@@ -4,6 +4,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Bindings;
 using UnityEngine.Scripting;
@@ -27,6 +28,66 @@ namespace UnityEditor
         public bool     hasErrors { get { return m_HasErrors; } }
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ShaderMessage : IEquatable<ShaderMessage>
+    {
+        public ShaderMessage(string msg, ShaderCompilerMessageSeverity sev = ShaderCompilerMessageSeverity.Error)
+        {
+            message = msg;
+            messageDetails = string.Empty;
+            file = string.Empty;
+            line = 0;
+            platform = ShaderCompilerPlatform.None;
+            severity = sev;
+        }
+
+        public string message { get; }
+        public string messageDetails { get; }
+        public string file { get; }
+        public int line { get; }
+        public ShaderCompilerPlatform platform { get; }
+        public ShaderCompilerMessageSeverity severity { get; }
+
+        public bool Equals(ShaderMessage other)
+        {
+            return string.Equals(message, other.message)
+                && string.Equals(messageDetails, other.messageDetails)
+                && string.Equals(file, other.file)
+                && line == other.line
+                && platform == other.platform
+                && severity == other.severity;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is ShaderMessage && Equals((ShaderMessage)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (message != null ? message.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (messageDetails != null ? messageDetails.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (file != null ? file.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ line;
+                hashCode = (hashCode * 397) ^ (int)platform;
+                hashCode = (hashCode * 397) ^ (int)severity;
+                return hashCode;
+            }
+        }
+
+        public static bool operator==(ShaderMessage left, ShaderMessage right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator!=(ShaderMessage left, ShaderMessage right)
+        {
+            return !left.Equals(right);
+        }
+    }
 
     [NativeHeader("Editor/Mono/ShaderUtil.bindings.h")]
     [NativeHeader("Editor/Src/ShaderData.h")]
@@ -40,31 +101,6 @@ namespace UnityEditor
             Float,
             Range,
             TexEnv,
-        };
-
-        internal enum ShaderCompilerPlatformType
-        {
-            OpenGL = 0, // removed
-            D3D9, // removed
-            Xbox360, // removed
-            PS3, // removed
-            D3D11,
-            OpenGLES20,
-            OpenGLES20Desktop, // removed
-            Flash, // removed
-            D3D11_9x, // removed
-            OpenGLES30,
-            PSVita, // removed
-            PS4,
-            XboxOne,
-            PSM, // removed
-            Metal,
-            OpenGLCore,
-            N3DS, // removed
-            WiiU, // removed
-            Vulkan,
-            Switch,
-            Count
         };
 
         extern internal static int GetAvailableShaderCompilerPlatforms();
@@ -81,6 +117,12 @@ namespace UnityEditor
 
         extern public static int GetPropertyCount([NotNull] Shader s);
 
+        extern internal static void FetchCachedMessages([NotNull] Shader s);
+        extern public static int GetShaderMessageCount([NotNull] Shader s);
+        extern public static ShaderMessage[] GetShaderMessages([NotNull] Shader s);
+        extern public static void ClearShaderMessages([NotNull] Shader s);
+        extern public static int GetComputeShaderMessageCount([NotNull] ComputeShader s);
+        extern public static ShaderMessage[] GetComputeShaderMessages([NotNull] ComputeShader s);
 
         private static void CheckPropertyIndex(Shader s, int idx)
         {

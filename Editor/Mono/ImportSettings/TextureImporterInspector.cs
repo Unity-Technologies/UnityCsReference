@@ -109,11 +109,6 @@ namespace UnityEditor
             return (format == TextureImporterFormat.DXT1 || format == TextureImporterFormat.DXT5);
         }
 
-        internal static bool IsGLESMobileTargetPlatform(BuildTarget target)
-        {
-            return BuildTargetDiscovery.PlatformHasFlag(target, TargetAttributes.OpenGLES | TargetAttributes.IsMobile);
-        }
-
         // Which platforms should we display?
         // For each of these, what are the formats etc. to display?
         [SerializeField]

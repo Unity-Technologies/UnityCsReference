@@ -4,6 +4,7 @@
 
 using System.IO;
 using UnityEditor.ProjectWindowCallback;
+using UnityEditor.Utils;
 using UnityEngine;
 
 
@@ -44,7 +45,7 @@ namespace UnityEditor
 
         public string folder
         {
-            get { return Path.GetDirectoryName(m_Path); }
+            get { return Path.GetDirectoryName(m_Path).ConvertSeparatorsToUnity(); }
         }
 
         public string extension
@@ -77,19 +78,23 @@ namespace UnityEditor
         // Selection changes when calling BeginNewAsset if it succeeds
         public bool BeginNewAssetCreation(int instanceID, EndNameEditAction newAssetEndAction, string filePath, Texture2D icon, string newAssetResourceFile)
         {
+            //Sanitize input
+            string sanitizedFilePath = filePath != null ? filePath.ConvertSeparatorsToUnity() : filePath;
+            string sanitizedNewAssetResourceFile = newAssetResourceFile != null ? newAssetResourceFile.ConvertSeparatorsToUnity() : newAssetResourceFile;
+
             string uniquePath;
-            if (!filePath.StartsWith("assets/", System.StringComparison.CurrentCultureIgnoreCase))
+            if (!sanitizedFilePath.StartsWith("assets/", System.StringComparison.CurrentCultureIgnoreCase))
             {
-                uniquePath = AssetDatabase.GetUniquePathNameAtSelectedPath(filePath);
+                uniquePath = AssetDatabase.GetUniquePathNameAtSelectedPath(sanitizedFilePath);
             }
             else
             {
-                uniquePath = AssetDatabase.GenerateUniqueAssetPath(filePath);
+                uniquePath = AssetDatabase.GenerateUniqueAssetPath(sanitizedFilePath);
             }
 
             if (!IsPathDataValid(uniquePath))
             {
-                Debug.LogErrorFormat("Invalid generated unique path '{0}' (input path '{1}')", uniquePath, filePath);
+                Debug.LogErrorFormat("Invalid generated unique path '{0}' (input path '{1}')", uniquePath, sanitizedFilePath);
                 Clear();
                 return false;
             }
@@ -98,7 +103,7 @@ namespace UnityEditor
             m_Path = uniquePath;
             m_Icon = icon;
             m_EndAction = newAssetEndAction;
-            m_ResourceFile = newAssetResourceFile;
+            m_ResourceFile = sanitizedNewAssetResourceFile;
 
             // Change selection to none or instanceID
             Selection.activeObject = EditorUtility.InstanceIDToObject(instanceID);

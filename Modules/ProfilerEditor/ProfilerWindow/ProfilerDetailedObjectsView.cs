@@ -281,10 +281,13 @@ namespace UnityEditorInternal.Profiling
             var objectsDatas = new List<string>[columnsCount];
 
             // Collect all the data
-            var instanceIDs = new List<int>();
+            var instanceIDs = new List<int>(samplesCount);
             m_FrameDataView.GetItemMergedSamplesInstanceID(selectedId, instanceIDs);
             for (var i = 0; i < columnsCount; i++)
+            {
+                objectsDatas[i] = new List<string>(samplesCount);
                 m_FrameDataView.GetItemMergedSamplesColumnData(selectedId, m_MultiColumnHeader.columns[i].profilerColumn, objectsDatas[i]);
+            }
 
             // Store it per sample
             for (var i = 0; i < samplesCount; i++)

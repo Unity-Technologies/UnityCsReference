@@ -2,9 +2,11 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Globalization;
+using UnityEditor.Rendering;
 using Object = UnityEngine.Object;
 using UnityEngine.Experimental.Rendering;
 
@@ -145,9 +147,9 @@ namespace UnityEditor
         }
 
         // shared by compute shader inspector too
-        internal static void ShaderErrorListUI(Object shader, ShaderError[] errors, ref Vector2 scrollPosition)
+        internal static void ShaderErrorListUI(Object shader, ShaderMessage[] messages, ref Vector2 scrollPosition)
         {
-            int n = errors.Length;
+            int n = messages.Length;
 
             GUILayout.Space(kSpace);
             GUILayout.Label(string.Format("Errors ({0}):", n), EditorStyles.boldLabel);
@@ -164,11 +166,11 @@ namespace UnityEditor
             {
                 Rect r = EditorGUILayout.GetControlRect(false, lineHeight);
 
-                string err = errors[i].message;
-                string plat = errors[i].platform;
-                bool warn = errors[i].warning != 0;
-                string fileName = FileUtil.GetLastPathNameComponent(errors[i].file);
-                int line = errors[i].line;
+                string err = messages[i].message;
+                string plat = messages[i].platform.ToString();
+                bool warn = messages[i].severity != ShaderCompilerMessageSeverity.Error;
+                string fileName = FileUtil.GetLastPathNameComponent(messages[i].file);
+                int line = messages[i].line;
 
                 // Double click opens shader file at error line
                 if (e.type == EventType.MouseDown && e.button == 0 && r.Contains(e.mousePosition))
@@ -176,7 +178,7 @@ namespace UnityEditor
                     GUIUtility.keyboardControl = errorListID;
                     if (e.clickCount == 2)
                     {
-                        string filePath = errors[i].file;
+                        string filePath = messages[i].file;
                         Object asset = string.IsNullOrEmpty(filePath) ? null : AssetDatabase.LoadMainAssetAtPath(filePath);
 
                         // if we don't have an asset and the filePath is an absolute path, it's an error in a system
@@ -199,11 +201,11 @@ namespace UnityEditor
                     // (C# closures close over variables, not their values)
                     var errorIndex = i;
                     menu.AddItem(EditorGUIUtility.TrTextContent("Copy error text"), false, delegate {
-                        string errMsg = errors[errorIndex].message;
-                        if (!string.IsNullOrEmpty(errors[errorIndex].messageDetails))
+                        string errMsg = messages[errorIndex].message;
+                        if (!string.IsNullOrEmpty(messages[errorIndex].messageDetails))
                         {
                             errMsg += '\n';
-                            errMsg += errors[errorIndex].messageDetails;
+                            errMsg += messages[errorIndex].messageDetails;
                         }
                         EditorGUIUtility.systemCopyBuffer = errMsg;
                     });
@@ -270,10 +272,10 @@ namespace UnityEditor
 
         private void ShowShaderErrors(Shader s)
         {
-            int n = ShaderUtil.GetShaderErrorCount(s);
+            int n = ShaderUtil.GetShaderMessageCount(s);
             if (n < 1)
                 return;
-            ShaderErrorListUI(s, ShaderUtil.GetShaderErrors(s), ref m_ScrollPosition);
+            ShaderErrorListUI(s, ShaderUtil.GetShaderMessages(s), ref m_ScrollPosition);
         }
 
         // Compiled shader code button+dropdown
@@ -432,7 +434,7 @@ namespace UnityEditor
             {
                 if (s_CurrentPlatformMask < 0)
                 {
-                    const int defaultMask = (1 << (int)ShaderUtil.ShaderCompilerPlatformType.Count) - 1;
+                    int defaultMask = (1 << Enum.GetNames(typeof(Rendering.ShaderCompilerPlatform)).Length - 1);
                     s_CurrentPlatformMask = EditorPrefs.GetInt("ShaderInspectorPlatformMask", defaultMask);
                 }
                 return s_CurrentPlatformMask;
@@ -479,7 +481,7 @@ namespace UnityEditor
             {
                 if ((platformMask & (1 << i)) == 0)
                     continue;
-                names.Add(((ShaderUtil.ShaderCompilerPlatformType)i).ToString());
+                names.Add(((Rendering.ShaderCompilerPlatform)i).ToString());
                 indices.Add(i);
             }
             s_ShaderPlatformNames = names.ToArray();

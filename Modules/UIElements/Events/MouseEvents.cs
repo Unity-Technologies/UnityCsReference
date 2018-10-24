@@ -23,6 +23,7 @@ namespace UnityEngine.Experimental.UIElements
     internal interface IMouseEventInternal
     {
         bool triggeredByOS { get; set; }
+        bool recomputeTopElementUnderMouse { get; set; }
     }
 
     public abstract class MouseEventBase<T> : EventBase<T>, IMouseEvent, IMouseEventInternal where T : MouseEventBase<T>, new()
@@ -71,6 +72,8 @@ namespace UnityEngine.Experimental.UIElements
 
         bool IMouseEventInternal.triggeredByOS { get; set; }
 
+        bool IMouseEventInternal.recomputeTopElementUnderMouse { get; set; }
+
         protected override void Init()
         {
             base.Init();
@@ -82,6 +85,7 @@ namespace UnityEngine.Experimental.UIElements
             clickCount = 0;
             button = 0;
             ((IMouseEventInternal)this).triggeredByOS = false;
+            ((IMouseEventInternal)this).recomputeTopElementUnderMouse = true;
         }
 
         public override IEventHandler currentTarget
@@ -112,6 +116,7 @@ namespace UnityEngine.Experimental.UIElements
                 e.button = systemEvent.button;
                 e.clickCount = systemEvent.clickCount;
                 ((IMouseEventInternal)e).triggeredByOS = true;
+                ((IMouseEventInternal)e).recomputeTopElementUnderMouse = true;
             }
             return e;
         }
@@ -144,6 +149,7 @@ namespace UnityEngine.Experimental.UIElements
                 if (mouseEventInternal != null)
                 {
                     ((IMouseEventInternal)e).triggeredByOS = mouseEventInternal.triggeredByOS;
+                    ((IMouseEventInternal)e).recomputeTopElementUnderMouse = false;
                 }
             }
             return e;

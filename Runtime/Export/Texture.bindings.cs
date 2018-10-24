@@ -295,6 +295,9 @@ namespace UnityEngine
         [FreeFunction(Name = "CubemapScripting::Apply", HasExplicitThis = true)]
         extern private void ApplyImpl(bool updateMipmaps, bool makeNoLongerReadable);
 
+        [FreeFunction("CubemapScripting::UpdateExternalTexture", HasExplicitThis = true)]
+        extern public void UpdateExternalTexture(IntPtr nativeTexture);
+
         extern override public bool isReadable { get; }
         [NativeName("SetPixel")] extern private void SetPixelImpl(int image, int x, int y, Color color);
         [NativeName("GetPixel")] extern private Color GetPixelImpl(int image, int x, int y);

@@ -58,6 +58,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("UnityEngine.SpatialTracking")]
 [assembly: InternalsVisibleTo("GoogleAR.UnityNative")]
 [assembly: InternalsVisibleTo("Unity.WindowsMRAutomation")]
+[assembly: InternalsVisibleTo("UnityEngine.SpriteShapeModule")]
 
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.001")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridge.002")]
@@ -89,7 +90,7 @@ using System.Runtime.CompilerServices;
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridgeDev.004")]
 [assembly: InternalsVisibleTo("Unity.InternalAPIEngineBridgeDev.005")]
 
-[assembly: InternalsVisibleTo("Unity.Subsystem.Declaration")]
+[assembly: InternalsVisibleTo("Unity.Subsystem.Registration")]
 // Note: Don't add InternalsVisibleTo for UnityEngine.UI, because it's editable by users and it shouldn't access internal UnityEngine methods
 
 

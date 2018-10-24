@@ -336,11 +336,13 @@ namespace UnityEditor
 
             if ((overridden || m_OverriddenIsDifferent) && m_PlatformSettings.format < 0)
             {
+                var showSettingsForPreset = m_Inspector.assetTarget == null;
+
                 m_PlatformSettings.format = TextureImporter.DefaultFormatFromTextureParameters(
                     GetSettings(importers[0]),
                     m_PlatformSettings,
-                    importers[0].DoesSourceTextureHaveAlpha(),
-                    importers[0].IsSourceTextureHDR(),
+                    showSettingsForPreset || importers[0].DoesSourceTextureHaveAlpha(),
+                    showSettingsForPreset || importers[0].IsSourceTextureHDR(),
                     m_Target
                 );
                 m_TextureFormatIsDifferent = false;
@@ -352,8 +354,8 @@ namespace UnityEditor
 
                     TextureImporterFormat format = TextureImporter.DefaultFormatFromTextureParameters(settings,
                         m_PlatformSettings,
-                        imp.DoesSourceTextureHaveAlpha(),
-                        imp.IsSourceTextureHDR(),
+                        showSettingsForPreset || imp.DoesSourceTextureHaveAlpha(),
+                        showSettingsForPreset || imp.IsSourceTextureHDR(),
                         m_Target
                     );
                     if (format != m_PlatformSettings.format)

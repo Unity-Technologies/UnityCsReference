@@ -65,7 +65,13 @@ namespace UnityEngine
         public int sqrMagnitude { get { return x * x + y * y; } }
 
         // Returns the distance between /a/ and /b/.
-        public static float Distance(Vector2Int a, Vector2Int b) { return (a - b).magnitude; }
+        public static float Distance(Vector2Int a, Vector2Int b)
+        {
+            float diff_x = a.x - b.x;
+            float diff_y = a.y - b.y;
+
+            return (float)Math.Sqrt(diff_x * diff_x + diff_y * diff_y);
+        }
 
         // Returns a vector that is made from the smallest components of two vectors.
         public static Vector2Int Min(Vector2Int lhs, Vector2Int rhs) { return new Vector2Int(Mathf.Min(lhs.x, rhs.x), Mathf.Min(lhs.y, rhs.y)); }

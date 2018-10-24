@@ -14,6 +14,10 @@ namespace UnityEditor
 
         public static extern int CalcTriangleCount(Mesh mesh);
 
+        public static extern bool HasSupportedTopologyForGI(Mesh mesh);
+
+        public static extern bool HasVertices(Mesh mesh);
+
         public static extern bool HasNormals(Mesh mesh);
 
         public static extern string GetVertexFormat(Mesh mesh);

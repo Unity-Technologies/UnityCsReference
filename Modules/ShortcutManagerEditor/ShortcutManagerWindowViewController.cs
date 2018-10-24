@@ -34,6 +34,7 @@ namespace UnityEditor.ShortcutManagement
         int m_SelectedCategoryIndex;
 
         List<ShortcutEntry> m_SelectedCategoryShortcutList = new List<ShortcutEntry>();
+        List<string> m_SelectedCategoryShortcutPathList = new List<string>();
         ShortcutEntry m_SelectedEntry;
         int m_SelectedEntryIndex;
 
@@ -69,7 +70,9 @@ namespace UnityEditor.ShortcutManagement
 
         void OnActiveProfileChanged(IShortcutProfileManager shortcutProfileManager, ShortcutProfile previousActiveProfile, ShortcutProfile currentActiveProfile)
         {
+            UpdateCommandsWithConflicts();
             BuildKeyMapBindingStateData();
+            PopulateShortcutList();
             m_ShortcutManagerWindowView.RefreshAll();
         }
 
@@ -241,7 +244,7 @@ namespace UnityEditor.ShortcutManagement
         {
             selectedCategory = category;
             m_ShortcutManagerWindowView.UpdateSearchFilterOptions();
-            m_ShortcutManagerWindowView.RefreshshortcutList();
+            m_ShortcutManagerWindowView.RefreshShortcutList();
         }
 
         string  selectedCategory
@@ -272,7 +275,7 @@ namespace UnityEditor.ShortcutManagement
             m_SerializedState.search = newSearch;
             PopulateShortcutList();
             m_ShortcutManagerWindowView.UpdateSearchFilterOptions();
-            m_ShortcutManagerWindowView.RefreshshortcutList();
+            m_ShortcutManagerWindowView.RefreshShortcutList();
         }
 
         public string GetSearch()
@@ -290,7 +293,7 @@ namespace UnityEditor.ShortcutManagement
             m_SerializedState.bindingsSearch = newBindingSearch;
             PopulateShortcutList();
             m_ShortcutManagerWindowView.UpdateSearchFilterOptions();
-            m_ShortcutManagerWindowView.RefreshshortcutList();
+            m_ShortcutManagerWindowView.RefreshShortcutList();
         }
 
         public bool ShouldShowSearchFilters()
@@ -333,7 +336,7 @@ namespace UnityEditor.ShortcutManagement
             PopulateShortcutList();
 
             m_ShortcutManagerWindowView.UpdateSearchFilterOptions();
-            m_ShortcutManagerWindowView.RefreshshortcutList();
+            m_ShortcutManagerWindowView.RefreshShortcutList();
         }
 
         public int selectedCategoryIndex =>  m_SelectedCategoryIndex;
@@ -341,6 +344,7 @@ namespace UnityEditor.ShortcutManagement
         void PopulateShortcutList()
         {
             m_SelectedCategoryShortcutList.Clear();
+            m_SelectedCategoryShortcutPathList.Clear();
 
             var category = selectedCategory;
 
@@ -353,7 +357,10 @@ namespace UnityEditor.ShortcutManagement
             {
                 var entry = indentifier;
                 if (BelongsToSearch(entry))
+                {
                     m_SelectedCategoryShortcutList.Add(entry);
+                    m_SelectedCategoryShortcutPathList.Add(entry.identifier.path.StartsWith(category) ? entry.identifier.path.Substring(category.Length + 1) : entry.identifier.path);
+                }
             }
         }
 
@@ -376,6 +383,11 @@ namespace UnityEditor.ShortcutManagement
         public IList<ShortcutEntry> GetShortcutList()
         {
             return m_SelectedCategoryShortcutList;
+        }
+
+        public IList<string> GetShortcutPathList()
+        {
+            return m_SelectedCategoryShortcutPathList;
         }
 
         public ShortcutEntry selectedEntry
@@ -410,7 +422,7 @@ namespace UnityEditor.ShortcutManagement
                 throw new InvalidOperationException("This would create a conflict");
 
             var keyCombination = new List<KeyCombination>();
-            keyCombination.Add(new KeyCombination(keyCode, eventModifier));
+            keyCombination.Add(KeyCombination.FromKeyboardInput(keyCode, eventModifier));
             RebindEntry(entry, keyCombination);
         }
 
@@ -453,7 +465,7 @@ namespace UnityEditor.ShortcutManagement
 
         public bool CanEntryBeAssignedToKey(KeyCode keyCode, EventModifiers eventModifier, ShortcutEntry entry)
         {
-            var keycombination = new KeyCombination(keyCode, eventModifier);
+            var keycombination = KeyCombination.FromKeyboardInput(keyCode, eventModifier);
             List<ShortcutEntry> entries;
             if (m_KeyBindingRootToBoundEntries.TryGetValue(keycombination, out entries))
             {
@@ -473,7 +485,7 @@ namespace UnityEditor.ShortcutManagement
         void PopulateShortcutsBoundToSelectedKey()
         {
             m_ShortcutsBoundToSelectedKey.Clear();
-            var keycombination = new KeyCombination(m_SerializedState.selectedKey, m_SerializedState.selectedModifiers);
+            var keycombination = KeyCombination.FromKeyboardInput(m_SerializedState.selectedKey, m_SerializedState.selectedModifiers);
             List<ShortcutEntry> entries;
             if (m_KeyBindingRootToBoundEntries.TryGetValue(keycombination, out entries))
             {
@@ -491,7 +503,7 @@ namespace UnityEditor.ShortcutManagement
             SetCategorySelected(FindCategoryFor(shortcutEntry));
             selectedEntry = shortcutEntry;
             m_ShortcutManagerWindowView.RefreshCategoryList();
-            m_ShortcutManagerWindowView.RefreshshortcutList();
+            m_ShortcutManagerWindowView.RefreshShortcutList();
         }
 
         string FindCategoryFor(ShortcutEntry shortcutEntry)
@@ -567,7 +579,7 @@ namespace UnityEditor.ShortcutManagement
 
         public IList<ShortcutEntry> GetShortcutsBoundTo(KeyCode keyCode, EventModifiers modifiers)
         {
-            var keyCombination = new KeyCombination(keyCode, modifiers);
+            var keyCombination = KeyCombination.FromKeyboardInput(keyCode, modifiers);
             List<ShortcutEntry> entries;
             if (m_KeyBindingRootToBoundEntries.TryGetValue(keyCombination, out entries))
             {
@@ -619,7 +631,7 @@ namespace UnityEditor.ShortcutManagement
 
         public BindingState GetBindingStateForKeyWithModifiers(KeyCode keyCode, EventModifiers modifiers)
         {
-            var keycombination = new KeyCombination(keyCode, modifiers);
+            var keycombination = KeyCombination.FromKeyboardInput(keyCode, modifiers);
             List<ShortcutEntry> entries;
             if (m_KeyBindingRootToBoundEntries.TryGetValue(keycombination, out entries))
             {
@@ -675,6 +687,12 @@ namespace UnityEditor.ShortcutManagement
         static bool IsGlobalContext(ShortcutEntry entry)
         {
             return entry.context == ContextManager.globalContextType;
+        }
+
+        public void SelectConflictCategory()
+        {
+            SetCategorySelected(m_CommandsWithConflicts);
+            GetView().RefreshCategoryList();
         }
     }
 

@@ -125,7 +125,7 @@ namespace UnityEditor
             if (isometricLayout != grid.cellLayout)
             {
                 grid.cellLayout = isometricLayout;
-                grid.cellSize = new Vector3(1.0f, 0.5f, 0.0f);
+                grid.cellSize = new Vector3(1.0f, 0.5f, 1.0f);
             }
 
             var tilemapRenderer = tilemapGO.GetComponent<TilemapRenderer>();

@@ -282,6 +282,10 @@ namespace UnityEditor
                 set;
             }
 
+            [StaticAccessor("GetPlayerSettings().GetEditorOnlyForUpdate()", StaticAccessorType.Dot)]
+            [NativeProperty("androidUseCustomKeystore", TargetType.Function)]
+            public static extern bool useCustomKeystore { get; set; }
+
             // Android keystore name
             public static extern string keystoreName
             {
@@ -397,6 +401,14 @@ namespace UnityEditor
                 [NativeMethod("GetAndroidStartInFullscreen")]
                 get;
                 [NativeMethod("SetAndroidStartInFullscreen")]
+                set;
+            }
+            // Start application in fullscreen mode
+            public static extern bool renderOutsideSafeArea
+            {
+                [NativeMethod("GetAndroidRenderOutsideSafeArea")]
+                get;
+                [NativeMethod("SetAndroidRenderOutsideSafeArea")]
                 set;
             }
         }

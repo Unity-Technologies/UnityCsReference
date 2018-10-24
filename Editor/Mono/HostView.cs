@@ -6,6 +6,7 @@ using UnityEngine;
 using System;
 using System.Reflection;
 using UnityEditor.Experimental.UIElements.Debugger;
+using UnityEngine.Experimental.UIElements.StyleEnums;
 using UnityEngine.Experimental.UIElements;
 
 using Unity.Experimental.EditorMode;
@@ -59,8 +60,19 @@ namespace UnityEditor
             UpdateViewMargins(window);
         }
 
-        protected virtual void UpdateViewMargins(EditorWindow view)
+        protected void UpdateViewMargins(EditorWindow view)
         {
+            if (view == null)
+                return;
+
+            RectOffset margins = GetBorderSize();
+
+            IStyle style = EditorModes.GetRootElement(view).style;
+            style.positionTop = margins.top;
+            style.positionBottom = margins.bottom;
+            style.positionLeft = margins.left;
+            style.positionRight = margins.right;
+            style.positionType = PositionType.Absolute;
         }
 
         protected override void SetPosition(Rect newPos)

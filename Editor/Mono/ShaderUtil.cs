@@ -2,6 +2,8 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System.Linq;
+using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Assertions;
 
@@ -94,6 +96,13 @@ namespace UnityEditor
         public static ShaderData GetShaderData(Shader shader)
         {
             return new ShaderData(shader);
+        }
+
+        // GetShaderMessageCount includes warnings, this function filters them out
+        public static bool ShaderHasError(Shader shader)
+        {
+            var errors = GetShaderMessages(shader);
+            return errors.Any(x => x.severity == ShaderCompilerMessageSeverity.Error);
         }
 
         internal static bool MaterialsUseInstancingShader(SerializedProperty materialsArray)

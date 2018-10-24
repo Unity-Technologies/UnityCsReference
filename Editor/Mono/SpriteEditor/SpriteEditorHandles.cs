@@ -99,7 +99,8 @@ namespace UnityEditorInternal
                     }
                     break;
                 case EventType.Repaint:
-                    EditorGUIUtility.AddCursorRect(cursorRect, cursor, id);
+                    if (GUIUtility.hotControl == 0 || GUIUtility.hotControl == id)
+                        EditorGUIUtility.AddCursorRect(cursorRect, cursor, id);
                     break;
             }
             return pos;

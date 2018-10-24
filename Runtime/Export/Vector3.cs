@@ -54,11 +54,20 @@ namespace UnityEngine
         // Moves a point /current/ in a straight line towards a /target/ point.
         public static Vector3 MoveTowards(Vector3 current, Vector3 target, float maxDistanceDelta)
         {
-            Vector3 toVector = target - current;
-            float dist = toVector.magnitude;
-            if (dist <= maxDistanceDelta || dist < float.Epsilon)
+            // avoid vector ops because current scripting backends are terrible at inlining
+            float toVector_x = target.x - current.x;
+            float toVector_y = target.y - current.y;
+            float toVector_z = target.z - current.z;
+
+            float sqdist = toVector_x * toVector_x + toVector_y * toVector_y + toVector_z * toVector_z;
+
+            if (sqdist == 0 || sqdist <= maxDistanceDelta * maxDistanceDelta)
                 return target;
-            return current + toVector / dist * maxDistanceDelta;
+            var dist = (float)Math.Sqrt(sqdist);
+
+            return new Vector3(current.x + toVector_x / dist * maxDistanceDelta,
+                current.y + toVector_y / dist * maxDistanceDelta,
+                current.z + toVector_z / dist * maxDistanceDelta);
         }
 
         [uei.ExcludeFromDocs]
@@ -79,29 +88,71 @@ namespace UnityEngine
         // Gradually changes a vector towards a desired goal over time.
         public static Vector3 SmoothDamp(Vector3 current, Vector3 target, ref Vector3 currentVelocity, float smoothTime, [uei.DefaultValue("Mathf.Infinity")]  float maxSpeed, [uei.DefaultValue("Time.deltaTime")]  float deltaTime)
         {
+            float output_x = 0f;
+            float output_y = 0f;
+            float output_z = 0f;
+
+            // Based on Game Programming Gems 4 Chapter 1.10
             smoothTime = Mathf.Max(0.0001F, smoothTime);
             float omega = 2F / smoothTime;
 
             float x = omega * deltaTime;
             float exp = 1F / (1F + x + 0.48F * x * x + 0.235F * x * x * x);
-            Vector3 change = current - target;
+
+            float change_x = current.x - target.x;
+            float change_y = current.y - target.y;
+            float change_z = current.z - target.z;
             Vector3 originalTo = target;
 
+            // Clamp maximum speed
             float maxChange = maxSpeed * smoothTime;
-            change = Vector3.ClampMagnitude(change, maxChange);
-            target = current - change;
 
-            Vector3 temp = (currentVelocity + omega * change) * deltaTime;
-            currentVelocity = (currentVelocity - omega * temp) * exp;
-            Vector3 output = target + (change + temp) * exp;
-
-            if (Vector3.Dot(originalTo - current, output - originalTo) > 0)
+            float maxChangeSq = maxChange * maxChange;
+            float sqrmag = change_x * change_x + change_y * change_y + change_z * change_z;
+            if (sqrmag > maxChangeSq)
             {
-                output = originalTo;
-                currentVelocity = (output - originalTo) / deltaTime;
+                var mag = (float)Math.Sqrt(sqrmag);
+                change_x = change_x / mag * maxChange;
+                change_y = change_y / mag * maxChange;
+                change_z = change_z / mag * maxChange;
             }
 
-            return output;
+            target.x = current.x - change_x;
+            target.y = current.y - change_y;
+            target.z = current.z - change_z;
+
+            float temp_x = (currentVelocity.x + omega * change_x) * deltaTime;
+            float temp_y = (currentVelocity.y + omega * change_y) * deltaTime;
+            float temp_z = (currentVelocity.z + omega * change_z) * deltaTime;
+
+            currentVelocity.x = (currentVelocity.x - omega * temp_x) * exp;
+            currentVelocity.y = (currentVelocity.y - omega * temp_y) * exp;
+            currentVelocity.z = (currentVelocity.z - omega * temp_z) * exp;
+
+            output_x = target.x + (change_x + temp_x) * exp;
+            output_y = target.y + (change_y + temp_y) * exp;
+            output_z = target.z + (change_z + temp_z) * exp;
+
+            // Prevent overshooting
+            float origMinusCurrent_x = originalTo.x - current.x;
+            float origMinusCurrent_y = originalTo.y - current.y;
+            float origMinusCurrent_z = originalTo.z - current.z;
+            float outMinusOrig_x = output_x - originalTo.x;
+            float outMinusOrig_y = output_y - originalTo.y;
+            float outMinusOrig_z = output_z - originalTo.z;
+
+            if (origMinusCurrent_x * outMinusOrig_x + origMinusCurrent_y * outMinusOrig_y + origMinusCurrent_z * outMinusOrig_z > 0)
+            {
+                output_x = originalTo.x;
+                output_y = originalTo.y;
+                output_z = originalTo.z;
+
+                currentVelocity.x = (output_x - originalTo.x) / deltaTime;
+                currentVelocity.y = (output_y - originalTo.y) / deltaTime;
+                currentVelocity.z = (output_z - originalTo.z) / deltaTime;
+            }
+
+            return new Vector3(output_x, output_y, output_z);
         }
 
         // Access the x, y, z components using [0], [1], [2] respectively.
@@ -171,13 +222,16 @@ namespace UnityEngine
 
         public bool Equals(Vector3 other)
         {
-            return x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z);
+            return x == other.x && y == other.y && z == other.z;
         }
 
         // Reflects a vector off the plane defined by a normal.
         public static Vector3 Reflect(Vector3 inDirection, Vector3 inNormal)
         {
-            return -2F * Dot(inNormal, inDirection) * inNormal + inDirection;
+            float factor = -2F * Dot(inNormal, inDirection);
+            return new Vector3(factor * inNormal.x + inDirection.x,
+                factor * inNormal.y + inDirection.y,
+                factor * inNormal.z + inDirection.z);
         }
 
         // *undoc* --- we have normalized property now
@@ -213,25 +267,39 @@ namespace UnityEngine
             if (sqrMag < Mathf.Epsilon)
                 return zero;
             else
-                return onNormal * Dot(vector, onNormal) / sqrMag;
+            {
+                var dot = Dot(vector, onNormal);
+                return new Vector3(onNormal.x * dot / sqrMag,
+                    onNormal.y * dot / sqrMag,
+                    onNormal.z * dot / sqrMag);
+            }
         }
 
         // Projects a vector onto a plane defined by a normal orthogonal to the plane.
         public static Vector3 ProjectOnPlane(Vector3 vector, Vector3 planeNormal)
         {
-            return vector - Project(vector, planeNormal);
+            float sqrMag = Dot(planeNormal, planeNormal);
+            if (sqrMag < Mathf.Epsilon)
+                return vector;
+            else
+            {
+                var dot = Dot(vector, planeNormal);
+                return new Vector3(vector.x - planeNormal.x * dot / sqrMag,
+                    vector.y - planeNormal.y * dot / sqrMag,
+                    vector.z - planeNormal.z * dot / sqrMag);
+            }
         }
 
         // Returns the angle in degrees between /from/ and /to/. This is always the smallest
         public static float Angle(Vector3 from, Vector3 to)
         {
             // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
-            float denominator = Mathf.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
+            float denominator = (float)Math.Sqrt(from.sqrMagnitude * to.sqrMagnitude);
             if (denominator < kEpsilonNormalSqrt)
                 return 0F;
 
             float dot = Mathf.Clamp(Dot(from, to) / denominator, -1F, 1F);
-            return Mathf.Acos(dot) * Mathf.Rad2Deg;
+            return ((float)Math.Acos(dot)) * Mathf.Rad2Deg;
         }
 
         // The smaller of the two possible angles between the two vectors is returned, therefore the result will never be greater than 180 degrees or smaller than -180 degrees.
@@ -240,30 +308,48 @@ namespace UnityEngine
         public static float SignedAngle(Vector3 from, Vector3 to, Vector3 axis)
         {
             float unsignedAngle = Angle(from, to);
-            float sign = Mathf.Sign(Dot(axis, Cross(from, to)));
+
+            float cross_x = from.y * to.z - from.z * to.y;
+            float cross_y = from.z * to.x - from.x * to.z;
+            float cross_z = from.x * to.y - from.y * to.x;
+            float sign = Mathf.Sign(axis.x * cross_x + axis.y * cross_y + axis.z * cross_z);
             return unsignedAngle * sign;
         }
 
         // Returns the distance between /a/ and /b/.
         public static float Distance(Vector3 a, Vector3 b)
         {
-            Vector3 vec = new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
-            return Mathf.Sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z);
+            float diff_x = a.x - b.x;
+            float diff_y = a.y - b.y;
+            float diff_z = a.z - b.z;
+            return (float)Math.Sqrt(diff_x * diff_x + diff_y * diff_y + diff_z * diff_z);
         }
 
         // Returns a copy of /vector/ with its magnitude clamped to /maxLength/.
         public static Vector3 ClampMagnitude(Vector3 vector, float maxLength)
         {
-            if (vector.sqrMagnitude > maxLength * maxLength)
-                return vector.normalized * maxLength;
+            float sqrmag = vector.sqrMagnitude;
+            if (sqrmag > maxLength * maxLength)
+            {
+                float mag = (float)Math.Sqrt(sqrmag);
+                //these intermediate variables force the intermediate result to be
+                //of float precision. without this, the intermediate result can be of higher
+                //precision, which changes behavior.
+                float normalized_x = vector.x / mag;
+                float normalized_y = vector.y / mag;
+                float normalized_z = vector.z / mag;
+                return new Vector3(normalized_x * maxLength,
+                    normalized_y * maxLength,
+                    normalized_z * maxLength);
+            }
             return vector;
         }
 
         // *undoc* --- there's a property now
-        public static float Magnitude(Vector3 vector) { return Mathf.Sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z); }
+        public static float Magnitude(Vector3 vector) { return (float)Math.Sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z); }
 
         // Returns the length of this vector (RO).
-        public float magnitude { get { return Mathf.Sqrt(x * x + y * y + z * z); } }
+        public float magnitude { get { return (float)Math.Sqrt(x * x + y * y + z * z); } }
 
         // *undoc* --- there's a property now
         public static float SqrMagnitude(Vector3 vector) { return vector.x * vector.x + vector.y * vector.y + vector.z * vector.z; }
@@ -329,7 +415,11 @@ namespace UnityEngine
         public static bool operator==(Vector3 lhs, Vector3 rhs)
         {
             // Returns false in the presence of NaN values.
-            return SqrMagnitude(lhs - rhs) < kEpsilon * kEpsilon;
+            float diff_x = lhs.x - rhs.x;
+            float diff_y = lhs.y - rhs.y;
+            float diff_z = lhs.z - rhs.z;
+            float sqrmag = diff_x * diff_x + diff_y * diff_y + diff_z * diff_z;
+            return sqrmag < kEpsilon * kEpsilon;
         }
 
         // Returns true if vectors are different.
@@ -352,7 +442,7 @@ namespace UnityEngine
         [System.Obsolete("Use Vector3.forward instead.")]
         public static Vector3 fwd { get { return new Vector3(0F, 0F, 1F); } }
         [System.Obsolete("Use Vector3.Angle instead. AngleBetween uses radians instead of degrees and was deprecated for this reason")]
-        public static float AngleBetween(Vector3 from, Vector3 to) { return Mathf.Acos(Mathf.Clamp(Vector3.Dot(from.normalized, to.normalized), -1F, 1F)); }
+        public static float AngleBetween(Vector3 from, Vector3 to) { return (float)Math.Acos(Mathf.Clamp(Vector3.Dot(from.normalized, to.normalized), -1F, 1F)); }
         [System.Obsolete("Use Vector3.ProjectOnPlane instead.")]
         public static Vector3 Exclude(Vector3 excludeThis, Vector3 fromThat) { return ProjectOnPlane(fromThat, excludeThis); }
     }

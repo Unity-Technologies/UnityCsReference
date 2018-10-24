@@ -292,13 +292,17 @@ namespace UnityEditor
             Vector2 warningSize = m_NotificationSize;
             float targetWidth = position.width - EditorStyles.notificationText.margin.horizontal;
             float targetHeight = position.height - EditorStyles.notificationText.margin.vertical - 20;
+
             // See if we can fit horizontally. If not, rescale down.
+            GUIStyle scaledNotificationText = EditorStyles.notificationText;
             if (targetWidth < m_NotificationSize.x)
             {
                 float scale = targetWidth / m_NotificationSize.x;
                 warningSize.x *= scale;
-
                 warningSize.y = EditorStyles.notificationText.CalcHeight(m_Notification, warningSize.x);
+
+                scaledNotificationText = new GUIStyle(EditorStyles.notificationText);
+                scaledNotificationText.fontSize = Mathf.FloorToInt(scaledNotificationText.font.fontSize * scale);
             }
 
             if (warningSize.y > targetHeight)
@@ -309,7 +313,7 @@ namespace UnityEditor
             if (time > m_FadeoutTime)
                 GUI.color = new Color(1, 1, 1, 1 - (float)((time - m_FadeoutTime) / kWarningFadeoutTime));
             GUI.Label(r, GUIContent.none, EditorStyles.notificationBackground);
-            EditorGUI.DoDropShadowLabel(r, m_Notification, EditorStyles.notificationText, .3f);
+            EditorGUI.DoDropShadowLabel(r, m_Notification, scaledNotificationText, .3f);
         }
 
         internal bool dontClearBackground

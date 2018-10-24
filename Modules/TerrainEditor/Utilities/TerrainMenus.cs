@@ -8,6 +8,7 @@ using System.Collections;
 using System.IO;
 using UnityEngine.Rendering;
 using UnityEditor.SceneManagement;
+using UnityEditor.Experimental.TerrainAPI;
 
 namespace UnityEditor
 {
@@ -175,7 +176,7 @@ namespace UnityEditor
         [MenuItem("CONTEXT/TerrainEngineTrees/Edit Tree", true)]
         static internal bool EditTreeCheck(MenuCommand item)
         {
-            return TreePainter.selectedTree >= 0;
+            return PaintTreesTool.instance.selectedTree >= 0;
         }
 
         [MenuItem("CONTEXT/TerrainEngineTrees/Remove Tree")]
@@ -188,7 +189,7 @@ namespace UnityEditor
         [MenuItem("CONTEXT/TerrainEngineTrees/Remove Tree", true)]
         static internal bool RemoveTreeCheck(MenuCommand item)
         {
-            return TreePainter.selectedTree >= 0;
+            return PaintTreesTool.instance.selectedTree >= 0;
         }
     }
 

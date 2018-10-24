@@ -99,10 +99,10 @@ namespace UnityEditor
 
         private void ShowShaderErrors(ComputeShader s)
         {
-            int n = ShaderUtil.GetComputeShaderErrorCount(s);
+            int n = ShaderUtil.GetComputeShaderMessageCount(s);
             if (n < 1)
                 return;
-            ShaderInspector.ShaderErrorListUI(s, ShaderUtil.GetComputeShaderErrors(s), ref m_ScrollPosition);
+            ShaderInspector.ShaderErrorListUI(s, ShaderUtil.GetComputeShaderMessages(s), ref m_ScrollPosition);
         }
     }
 }

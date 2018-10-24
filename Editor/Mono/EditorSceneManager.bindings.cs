@@ -96,6 +96,12 @@ namespace UnityEditor.SceneManagement
         [NativeMethod("ReloadScene")]
         internal extern static bool ReloadScene(Scene scene);
 
+        internal static void SetTargetSceneForNewGameObjects(Scene scene) { SetTargetSceneForNewGameObjects(scene.handle); }
+
+        [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
+        [NativeMethod("ClearTargetSceneForNewGameObjects")]
+        internal extern static void ClearTargetSceneForNewGameObjects();
+
         [StaticAccessor("EditorSceneManagerBindings", StaticAccessorType.DoubleColon)]
         [NativeMethod("SetTargetSceneForNewGameObjects")]
         internal extern static void SetTargetSceneForNewGameObjects(int sceneHandle);

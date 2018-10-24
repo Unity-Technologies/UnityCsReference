@@ -20,15 +20,15 @@ namespace UnityEditor.ShortcutManagement
     //TODO: migrate those into USS.
     class StyleUtility
     {
-        public static void NormalTextColor(VisualElement e)
+        public static void NormalTextColor(VisualElement el)
         {
             if (EditorGUIUtility.isProSkin)
             {
-                e.style.color = new Color(0.7058824f, 0.7058824f, 0.7058824f);
+                el.style.color = new Color(0.7058824f, 0.7058824f, 0.7058824f);
             }
             else
             {
-                e.style.color = new Color(39f / 255f, 39f / 255f, 39f / 255f);
+                el.style.color = new Color(39f / 255f, 39f / 255f, 39f / 255f);
             }
         }
 
@@ -44,7 +44,7 @@ namespace UnityEditor.ShortcutManagement
             el.style.positionType = PositionType.Absolute;
         }
 
-        public static void StyleColumDirection(VisualElement el)
+        public static void StyleColumnDirection(VisualElement el)
         {
             el.style.flexDirection = FlexDirection.Column;
         }
@@ -65,7 +65,7 @@ namespace UnityEditor.ShortcutManagement
             el.style.flexBasis = 0;
         }
 
-        public static void StyleFlexbileTableCell(VisualElement el)
+        public static void StyleFlexibleTableCell(VisualElement el)
         {
             StyleFlexibleElement(el);
             el.style.flexBasis = 0;
@@ -75,7 +75,7 @@ namespace UnityEditor.ShortcutManagement
         static void StyleBorderColor(VisualElement el)
         {
             if (EditorGUIUtility.isProSkin)
-                el.style.borderColor = Color.black;
+                el.style.borderColor = new Color(37f / 255f, 37f / 255f, 37f / 255f);
             else
                 el.style.borderColor = new Color(216f / 255f, 216f / 255f, 216f / 255f);
         }
@@ -126,12 +126,17 @@ namespace UnityEditor.ShortcutManagement
             element.style.borderRadius = 5f;
         }
 
-        public static void StyleTextRow(VisualElement element)
+        public static void StyleTextRowNoPadding(VisualElement el)
         {
-            NormalTextColor(element);
-            element.style.paddingRight = 10f;
-            element.style.paddingLeft = 10f;
-            element.style.unityTextAlign = TextAnchor.MiddleLeft;
+            NormalTextColor(el);
+            el.style.unityTextAlign = TextAnchor.MiddleLeft;
+        }
+
+        public static void StyleTextRow(VisualElement el)
+        {
+            StyleTextRowNoPadding(el);
+            el.style.paddingRight = 10f;
+            el.style.paddingLeft = 10f;
         }
 
         public static void StyleSearchContainer(VisualElement el)
@@ -171,7 +176,7 @@ namespace UnityEditor.ShortcutManagement
 
         public static void StyleRootPanel(VisualElement el)
         {
-            StyleColumDirection(el);
+            StyleColumnDirection(el);
             StyleFlexibleElement(el);
             StyleRootPanelPadding(el);
         }
@@ -186,7 +191,7 @@ namespace UnityEditor.ShortcutManagement
 
         public static void StyleCategoryContainer(VisualElement el)
         {
-            StyleColumDirection(el);
+            StyleColumnDirection(el);
             StyleFlexibleElement(el);
             RightMarginBetweenTables(el);
             StylePanel(el);
@@ -403,6 +408,7 @@ namespace UnityEditor.ShortcutManagement
         public static void FixPopupStyle(VisualElement el)
         {
             el.style.paddingRight += 12;
+            el.style.width = 115;
         }
 
         public static void StyleProfileOptionsDropdown(VisualElement profileContextMenu)
@@ -417,7 +423,7 @@ namespace UnityEditor.ShortcutManagement
         public static void StyleAsTextField(VisualElement el)
         {
             el.style.width = 100;
-            el.style.height = 16;
+            el.style.height = 15;
             el.style.backgroundImage = (Texture2D)EditorGUIUtility.Load(EditorResources.lightSkinSourcePath + "Images/TextField.png");
             el.style.sliceLeft = 3;
             el.style.sliceRight = 3;
@@ -425,6 +431,8 @@ namespace UnityEditor.ShortcutManagement
             el.style.sliceBottom = 3;
             el.style.paddingLeft = 2;
             el.style.paddingRight = 2;
+            el.style.paddingTop = 2;
+            el.style.positionTop = 2;
         }
     }
 
@@ -442,7 +450,7 @@ namespace UnityEditor.ShortcutManagement
         ListView m_ShortcutsTable;
         TextField m_SearchTextField;
 
-        bool m_SartedDrag;
+        bool m_StartedDrag;
         Vector2 m_MouseDownStartPos;
         ListView m_CategoryTreeView;
         VisualElement m_SearchCancelEnding;
@@ -467,7 +475,7 @@ namespace UnityEditor.ShortcutManagement
         public void RefreshAll()
         {
             RefreshKeyboard();
-            RefreshshortcutList();
+            RefreshShortcutList();
             RefreshProfiles();
         }
 
@@ -482,7 +490,7 @@ namespace UnityEditor.ShortcutManagement
             m_CategoryTreeView.Refresh();
         }
 
-        public void RefreshshortcutList()
+        public void RefreshShortcutList()
         {
             m_ShortcutsTable.Refresh();
         }
@@ -492,11 +500,11 @@ namespace UnityEditor.ShortcutManagement
             UpdateShortcutTableSearchFilter();
         }
 
-        public RebindResolution HandleRebindWillCreateConflict(ShortcutEntry entry, IList<KeyCombination> newBnding, IList<ShortcutEntry> conflicts)
+        public RebindResolution HandleRebindWillCreateConflict(ShortcutEntry entry, IList<KeyCombination> newBinding, IList<ShortcutEntry> conflicts)
         {
             var title = L10n.Tr("Binding conflict");
-            var message = string.Format(L10n.Tr("The key {0} is already assigned to the \" {1}\" shortcut\nDo you want to reassign this key?"), KeyCombination.SequenceToString(newBnding), conflicts[0].identifier.path);
-            var result = EditorUtility.DisplayDialogComplex(title, message, "Reassign", "Cancel", "Create conflict");
+            var message = string.Format(L10n.Tr("The key {0} is already assigned to the \"{1}\" shortcut.\nDo you want to reassign this key?"), KeyCombination.SequenceToString(newBinding), conflicts[0].identifier.path);
+            var result = EditorUtility.DisplayDialogComplex(title, message, L10n.Tr("Reassign"), L10n.Tr("Cancel"), L10n.Tr("Create conflict"));
             switch (result)
             {
                 case 0:
@@ -514,23 +522,24 @@ namespace UnityEditor.ShortcutManagement
         {
             //TODO: Read from a uxml
             var shortcutNameCell = new TextElement();
-            var bindingContainter = new VisualElement();
+            var bindingContainer = new VisualElement();
             var shortcutBinding = new TextElement();
             var rebindControl = new ShortcutTextField();
 
-            bindingContainter.Add(shortcutBinding);
-            bindingContainter.Add(rebindControl);
+            bindingContainer.Add(shortcutBinding);
+            bindingContainer.Add(rebindControl);
+            StyleUtility.StyleRow(bindingContainer);
 
+            StyleUtility.StyleTextRowNoPadding(shortcutBinding);
             StyleUtility.StyleAsTextField(rebindControl);
-
-            StyleUtility.NormalTextColor(shortcutBinding);
             StyleUtility.StyleHidden(rebindControl);
 
             rebindControl.RegisterCallback<BlurEvent>(OnRebindControlBlurred);
+            rebindControl.RegisterCallback<DetachFromPanelEvent>(OnRebindControlDetachedFromPanel);
             rebindControl.OnCancel += RebindControl_OnCancel;
 
 
-            var rowElement = MakeRow(shortcutNameCell, bindingContainter);
+            var rowElement = MakeRow(shortcutNameCell, bindingContainer);
 
             rowElement.RegisterCallback<MouseDownEvent>(OnMouseDownCategoryTable);
             rowElement.RegisterCallback<MouseUpEvent>(OnMouseUpCategoryTable);
@@ -550,17 +559,22 @@ namespace UnityEditor.ShortcutManagement
                 EndRebind();
         }
 
+        void OnRebindControlDetachedFromPanel(DetachFromPanelEvent evt)
+        {
+            EndRebind(false);
+        }
+
         void BindShortcutEntryItem(VisualElement shortcutElementTemplate, int index)
         {
             var shortcutEntry = m_ViewController.GetShortcutList()[index];
 
-            var chidlren = shortcutElementTemplate.Children().ToList();
-            var nameElement = (TextElement)chidlren[0];
-            var bindingContainer = chidlren[1];
+            var children = shortcutElementTemplate.Children().ToList();
+            var nameElement = (TextElement)children[0];
+            var bindingContainer = children[1];
             var bindingTextElement = bindingContainer.Query<TextElement>().First();
             var bindingField = bindingContainer.Query<ShortcutTextField>().First();
 
-            nameElement.text = shortcutEntry.identifier.path;
+            nameElement.text = m_ViewController.GetShortcutPathList()[index];
             bindingTextElement.text = KeyCombination.SequenceToString(shortcutEntry.combinations);
             bindingField.SetValueWithoutNotify(shortcutEntry.combinations.ToList());
             bindingField.OnValueChanged(EditingShortcutEntryBindingChanged);
@@ -620,8 +634,8 @@ namespace UnityEditor.ShortcutManagement
 
             StyleUtility.StyleRow(row);
 
-            StyleUtility.StyleFlexbileTableCell(label);
-            StyleUtility.StyleFlexbileTableCell(content);
+            StyleUtility.StyleFlexibleTableCell(label);
+            StyleUtility.StyleFlexibleTableCell(content);
             StyleUtility.StyleTextRow(label);
             StyleUtility.StyleTextRow(content);
 
@@ -697,24 +711,38 @@ namespace UnityEditor.ShortcutManagement
         void BuildProfileContextMenus()
         {
             m_ProfileContextMenu = new GenericMenu();
-            m_ProfileContextMenu.AddItem(new GUIContent("Create new profile..."), false, OnCreateProfileClicked);
-            m_ProfileContextMenu.AddItem(new GUIContent("Rename profile..."), false, OnRenameProfileClicked);
-            m_ProfileContextMenu.AddItem(new GUIContent("Delete profile..."), false, OnDeleteProfileClicked);
+            m_ProfileContextMenu.AddItem(EditorGUIUtility.TrTextContent("Create new profile..."), false, OnCreateProfileClicked);
+            m_ProfileContextMenu.AddItem(EditorGUIUtility.TrTextContent("Rename profile..."), false, OnRenameProfileClicked);
+            m_ProfileContextMenu.AddItem(EditorGUIUtility.TrTextContent("Delete profile..."), false, OnDeleteProfileClicked);
 
             m_ProfileContextMenuDefaultProfile = new GenericMenu();
-            m_ProfileContextMenuDefaultProfile.AddItem(new GUIContent("Create new profile..."), false, OnCreateProfileClicked);
-            m_ProfileContextMenuDefaultProfile.AddDisabledItem(new GUIContent("Rename profile..."));
-            m_ProfileContextMenuDefaultProfile.AddDisabledItem(new GUIContent("Delete profile..."));
+            m_ProfileContextMenuDefaultProfile.AddItem(EditorGUIUtility.TrTextContent("Create new profile..."), false, OnCreateProfileClicked);
+            m_ProfileContextMenuDefaultProfile.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename profile..."));
+            m_ProfileContextMenuDefaultProfile.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete profile..."));
         }
 
         void OnCreateProfileClicked()
         {
-            PromptWindow.Show("Create profile", "New profile name", "Create", m_ViewController.CanCreateProfile, m_ViewController.CreateProfile);
+            PromptWindow.Show(L10n.Tr("Create profile"),
+                L10n.Tr("Create a shortcut profile"),
+                L10n.Tr("Enter the name of the profile you want to create"),
+                L10n.Tr("Profile Name:"),
+                L10n.Tr("New profile"),
+                L10n.Tr("Create"),
+                m_ViewController.CanCreateProfile,
+                m_ViewController.CreateProfile);
         }
 
         void OnRenameProfileClicked()
         {
-            PromptWindow.Show("Rename profile", m_ViewController.activeProfile, "Rename", m_ViewController.CanRenameActiveProfile, m_ViewController.RenameActiveProfile);
+            PromptWindow.Show(L10n.Tr("Rename profile"),
+                L10n.Tr("Rename a shortcut profile"),
+                string.Format(L10n.Tr("Enter the new name you want to give the profile '{0}'"), m_ViewController.activeProfile),
+                L10n.Tr("Profile Name:"),
+                m_ViewController.activeProfile,
+                L10n.Tr("Rename"),
+                m_ViewController.CanRenameActiveProfile,
+                m_ViewController.RenameActiveProfile);
         }
 
         void OnDeleteProfileClicked()
@@ -732,17 +760,17 @@ namespace UnityEditor.ShortcutManagement
             var targetElement = (VisualElement)evt.target;
             var menu = new GenericMenu();
 
-            menu.AddItem(new GUIContent("Create new profile..."), false, OnCreateProfileClicked);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Create new profile..."), false, OnCreateProfileClicked);
 
             if (m_ViewController.CanRenameActiveProfile())
-                menu.AddItem(new GUIContent("Rename profile..."), false, OnRenameProfileClicked);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Rename profile..."), false, OnRenameProfileClicked);
             else
-                menu.AddDisabledItem(new GUIContent("Rename profile..."));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename profile..."));
 
             if (m_ViewController.CanDeleteActiveProfile())
-                menu.AddItem(new GUIContent("Delete profile..."), false, OnDeleteProfileClicked);
+                menu.AddItem(EditorGUIUtility.TrTextContent("Delete profile..."), false, OnDeleteProfileClicked);
             else
-                menu.AddDisabledItem(new GUIContent("Delete profile..."));
+                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete profile..."));
 
             menu.DropDown(targetElement.worldBound);
         }
@@ -841,6 +869,7 @@ namespace UnityEditor.ShortcutManagement
             m_KeyboardElement.CanDrop += CanEntryBeAssignedToKey;
             //m_KeyboardElement.KeySelectedAction += KeySelected;
             m_KeyboardElement.TooltipProvider += GetToolTipForKey;
+            m_KeyboardElement.ContextMenuProvider += GetContextMenuForKey;
 
 
             var searchRowContainer = CreateVisualElement("searchRowContainer");
@@ -851,8 +880,8 @@ namespace UnityEditor.ShortcutManagement
             m_CategoryTreeView = new ListView((IList)m_ViewController.GetCategories(), k_ListItemHeight, MakeItemForCategoriesTable, BindCategoriesTableItem) { name = "categoryTreeView"};
             var shortcutsTableContainer = CreateVisualElement("shortcutsTableContainer");
             var shortcutsTableHeader = CreateVisualElement("shortcutsTableHeader");
-            var shortcutsTableHeaderName = new TextElement() { text = L10n.Tr("Name"), name = "shortcutsTableHeaderName"};
-            var shortcutsTableHeaderBindings = new TextElement() { text = L10n.Tr("Bindings"), name = "shortcutsTableHeaderBindings"};
+            var shortcutsTableHeaderName = new TextElement() { text = L10n.Tr("Command"), name = "shortcutsTableHeaderName"};
+            var shortcutsTableHeaderBindings = new TextElement() { text = L10n.Tr("Shortcuts"), name = "shortcutsTableHeaderBindings"};
             m_ShortcutsTable = new ListView((IList)m_ViewController.GetShortcutList(), k_ListItemHeight,  MakeItemForShortcutTable, BindShortcutEntryItem) {name = "shortcutsTable"};
 
 
@@ -861,7 +890,7 @@ namespace UnityEditor.ShortcutManagement
 
             m_ShortcutsTable.onSelectionChanged += ShortcutSelectionChanged;
             m_ShortcutsTable.onItemChosen += ShortcutTableEntryChosen;
-
+            m_ShortcutsTable.RegisterCallback<MouseUpEvent>(ShortcutTableRightClick);
 
             StyleUtility.NormalTextColor(shortcutsTableHeaderName);
             StyleUtility.NormalTextColor(shortcutsTableHeaderBindings);
@@ -887,8 +916,8 @@ namespace UnityEditor.ShortcutManagement
             StyleUtility.StyleRow(shortcutsTableHeader);
             StyleUtility.StyleHeaderCell(shortcutsTableHeader);
 
-            StyleUtility.StyleFlexbileTableCell(shortcutsTableHeaderName);
-            StyleUtility.StyleFlexbileTableCell(shortcutsTableHeaderBindings);
+            StyleUtility.StyleFlexibleTableCell(shortcutsTableHeaderName);
+            StyleUtility.StyleFlexibleTableCell(shortcutsTableHeaderBindings);
             StyleUtility.StyleHeaderText(shortcutsTableHeaderName);
             StyleUtility.StyleHeaderText(shortcutsTableHeaderBindings);
 
@@ -919,10 +948,48 @@ namespace UnityEditor.ShortcutManagement
             m_Root.Add(shortcutEntriesContainer);
         }
 
+        GenericMenu GetContextMenuForEntries(IEnumerable<ShortcutEntry> entries)
+        {
+            if (entries == null || !entries.Any())
+                return null;
+
+            var menu = new GenericMenu();
+
+            foreach (var entry in entries)
+            {
+                // Change / to : here to avoid deep submenu nesting
+                var mangledPath = $"{entry.identifier.path.Replace('/', ':')} ({entry.combinations.FirstOrDefault()})";
+                if (entry.overridden)
+                    menu.AddItem(new GUIContent($"{mangledPath}/{L10n.Tr("Reset to default")}"), false, ResetToDefault, entry);
+                else
+                    menu.AddDisabledItem(new GUIContent($"{mangledPath}/{L10n.Tr("Reset to default")}"));
+                menu.AddItem(new GUIContent($"{mangledPath}/{L10n.Tr("Remove shortcut")}"), false, RemoveShortcut, entry);
+            }
+
+            return menu;
+        }
+
+        private GenericMenu GetContextMenuForKey(KeyCode keyCode, EventModifiers modifiers)
+        {
+            return GetContextMenuForEntries(m_ViewController.GetShortcutsBoundTo(keyCode, modifiers));
+        }
+
+        private void ResetToDefault(object entryObject)
+        {
+            (entryObject as ShortcutEntry)?.ResetToDefault();
+            RefreshShortcutList();
+        }
+
+        private void RemoveShortcut(object entryObject)
+        {
+            (entryObject as ShortcutEntry)?.SetOverride(new List<KeyCombination>());
+            RefreshShortcutList();
+        }
+
         string GetToolTipForKey(KeyCode keyCode, EventModifiers modifiers)
         {
             var entries = m_ViewController.GetShortcutsBoundTo(keyCode, modifiers);
-            if (entries == null)
+            if (entries == null || entries.Count == 0)
                 return null;
 
             var builder = new StringBuilder();
@@ -953,15 +1020,15 @@ namespace UnityEditor.ShortcutManagement
             bindingInput.Focus();
         }
 
-        void EndRebind()
+        void EndRebind(bool refresh = true)
         {
             if (m_EditingBindings == null)
                 return;
 
-            m_ShortcutsTable.panel.focusController.SwitchFocus(null);
             m_EditingBindings = null;
             //TODO: this refresh causes issues when trying to double click another binding, while a binding is being edited.
-            m_ShortcutsTable.Refresh();
+            if (refresh)
+                m_ShortcutsTable.Refresh();
         }
 
         void OnSearchStringChanged(ChangeEvent<string> evt)
@@ -1008,8 +1075,8 @@ namespace UnityEditor.ShortcutManagement
         {
             var targetElement = (VisualElement)evt.target;
             var menu = new GenericMenu();
-            menu.AddItem(new GUIContent("Name"),    m_ViewController.searchMode == SearchOption.Name,    SearchOptionSelected, SearchOption.Name);
-            menu.AddItem(new GUIContent("Binding"), m_ViewController.searchMode == SearchOption.Binding, SearchOptionSelected, SearchOption.Binding);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Command"),    m_ViewController.searchMode == SearchOption.Name,    SearchOptionSelected, SearchOption.Name);
+            menu.AddItem(EditorGUIUtility.TrTextContent("Shortcut"), m_ViewController.searchMode == SearchOption.Binding, SearchOptionSelected, SearchOption.Binding);
             var menuPosition = new Vector2(0.0f, targetElement.layout.height);
             menuPosition = targetElement.LocalToWorld(menuPosition);
             var menuRect = new Rect(menuPosition, Vector2.zero);
@@ -1056,6 +1123,14 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
+        void ShortcutTableRightClick(MouseUpEvent evt)
+        {
+            if (evt.button != 1 || m_ViewController.selectedEntry == null)
+                return;
+            GenericMenu menu = GetContextMenuForEntries(new[] {m_ViewController.selectedEntry});
+            menu.ShowAsContext();
+        }
+
         bool CanEntryBeAssignedToKey(KeyCode keyCode, EventModifiers eventModifier, ShortcutEntry entry)
         {
             return m_ViewController.CanEntryBeAssignedToKey(keyCode, eventModifier, entry);
@@ -1069,7 +1144,7 @@ namespace UnityEditor.ShortcutManagement
         void OnMouseDownCategoryTable(MouseDownEvent evt)
         {
             m_MouseDownStartPos = evt.localMousePosition;
-            m_SartedDrag = false;
+            m_StartedDrag = false;
             var visualElement = ((VisualElement)evt.currentTarget);
 
 
@@ -1084,7 +1159,7 @@ namespace UnityEditor.ShortcutManagement
 
         void OnMouseUpCategoryTable(MouseUpEvent evt)
         {
-            m_SartedDrag = false;
+            m_StartedDrag = false;
             m_MouseDownStartPos = Vector2.zero;
             var visualElement = ((VisualElement)evt.currentTarget);
             visualElement.UnregisterCallback<MouseMoveEvent>(OnMouseMoveCategoryTable);
@@ -1101,12 +1176,12 @@ namespace UnityEditor.ShortcutManagement
 
         void StartDrag(VisualElement target)
         {
-            if (m_SartedDrag)
+            if (m_StartedDrag)
                 return;
 
             target.UnregisterCallback<MouseMoveEvent>(OnMouseMoveCategoryTable);
             target.UnregisterCallback<MouseLeaveEvent>(OnMouseLeaveWhileButtonDownCategoryTable);
-            m_SartedDrag = true;
+            m_StartedDrag = true;
             DragAndDrop.activeControlID = target.GetHashCode(); //TODO: how to handle activeControlID in UIELements
             DragAndDrop.PrepareStartDrag();
             DragAndDrop.SetGenericData("ShortcutCommandItem",  m_ViewController.GetShortcutList()[m_ShortcutsTable.selectedIndex]);
@@ -1163,18 +1238,35 @@ namespace UnityEditor.ShortcutManagement
         internal event Action<KeyCode, EventModifiers, ShortcutEntry> DragPerformed;
         internal event Func<KeyCode, EventModifiers, ShortcutEntry, bool> CanDrop;
         internal event Func<KeyCode, EventModifiers, string> TooltipProvider;
+        internal event Func<KeyCode, EventModifiers, GenericMenu> ContextMenuProvider;
 
 
         public Keyboard(IKeyBindingStateProvider keyBindingStateProvider, KeyCode initiallySelectedKey = KeyCode.None, EventModifiers initiallyActiveModifiers = EventModifiers.None)
         {
             m_KeyBindingStateProvider = keyBindingStateProvider;
-            var leftControlOrCommand  = new KeyDef(KeyCode.LeftControl, "Control");
-            var rightControlOrCommand = new KeyDef(KeyCode.RightControl, "Control");
+            KeyDef[] bottomRow;
 
             if (SystemInfo.operatingSystemFamily == OperatingSystemFamily.MacOSX)
             {
-                leftControlOrCommand = new KeyDef(KeyCode.LeftCommand, "Command");
-                rightControlOrCommand = new KeyDef(KeyCode.RightCommand, "Command");
+                bottomRow = new[]
+                {
+                    new KeyDef(KeyCode.LeftAlt, "Option"),
+                    new KeyDef(KeyCode.LeftCommand, "Command"),
+                    new KeyDef(KeyCode.Space),
+                    new KeyDef(KeyCode.RightCommand, "Command"),
+                    new KeyDef(KeyCode.RightAlt, "Option"),
+                };
+            }
+            else
+            {
+                bottomRow = new[]
+                {
+                    new KeyDef(KeyCode.LeftControl, "Control"),
+                    new KeyDef(KeyCode.LeftAlt, "Alt"),
+                    new KeyDef(KeyCode.Space),
+                    new KeyDef(KeyCode.RightAlt, "Alt"),
+                    new KeyDef(KeyCode.RightControl, "Control"),
+                };
             }
 
             var keysList = new List<KeyDef[]>
@@ -1263,14 +1355,7 @@ namespace UnityEditor.ShortcutManagement
                     new KeyDef(KeyCode.Backslash, "/"),
                     new KeyDef(KeyCode.RightShift, "Shift"),
                 },
-                new[]
-                {
-                    leftControlOrCommand,
-                    new KeyDef(KeyCode.LeftAlt, "Alt"),
-                    new KeyDef(KeyCode.Space),
-                    new KeyDef(KeyCode.RightAlt, "Alt"),
-                    rightControlOrCommand,
-                },
+                bottomRow,
             };
 
             var cursorControlKeysList = new List<KeyDef[]>()
@@ -1278,7 +1363,7 @@ namespace UnityEditor.ShortcutManagement
                 new[]
                 {
                     new KeyDef(KeyCode.F13),
-                    new KeyDef(KeyCode.F12),
+                    new KeyDef(KeyCode.F14),
                     new KeyDef(KeyCode.F15)
                 },
                 new[]
@@ -1322,11 +1407,13 @@ namespace UnityEditor.ShortcutManagement
                 {KeyCode.RightShift, StyleUtility.StyleKeyFlexibleWidth},
                 {KeyCode.LeftControl, StyleUtility.StyleKeyFlexibleWidth},
                 {KeyCode.LeftWindows, StyleUtility.StyleKeyFlexibleWidth},
+                {KeyCode.LeftCommand, StyleUtility.StyleKeyFlexibleWidth},
                 {KeyCode.LeftAlt, StyleUtility.StyleKeyFlexibleWidth},
                 {KeyCode.Space, StyleUtility.StyleSpace},
                 {KeyCode.RightAlt, StyleUtility.StyleKeyFlexibleWidth},
                 {KeyCode.RightWindows, StyleUtility.StyleKeyFlexibleWidth},
                 {KeyCode.RightControl, StyleUtility.StyleKeyFlexibleWidth},
+                {KeyCode.RightCommand, StyleUtility.StyleKeyFlexibleWidth},
             };
 
             var mainContainer = new VisualElement() {name = "fullKeyboardContainer"};
@@ -1555,7 +1642,20 @@ namespace UnityEditor.ShortcutManagement
             panel.focusController.SwitchFocus(this);
             var keyElement = evt.target as Key;
             if (keyElement != null)
-                SetKeySelected(keyElement);
+            {
+                switch (evt.button)
+                {
+                    case 0:
+                        SetKeySelected(keyElement);
+                        break;
+                    case 1:
+                        var menu = ContextMenuProvider?.Invoke(keyElement.key, m_CurrentModifiers);
+                        menu?.DropDown(keyElement.worldBound);
+                        break;
+                    default:
+                        break;
+                }
+            }
         }
 
         void SetKeySelected(Key keyElement)
@@ -1701,7 +1801,7 @@ namespace UnityEditor.ShortcutManagement
 
         void AppendKeyCombination(KeyCode keyCode, EventModifiers modifiers)
         {
-            m_WorkingValue.Add(new KeyCombination(keyCode, modifiers));
+            m_WorkingValue.Add(KeyCombination.FromKeyboardInput(keyCode, modifiers));
             text = KeyCombination.SequenceToString(m_WorkingValue);
             if (OnWorkingValueChanged != null)
                 OnWorkingValueChanged(m_WorkingValue);
@@ -1752,110 +1852,6 @@ namespace UnityEditor.ShortcutManagement
             if (!string.IsNullOrEmpty(persistenceKey))
                 SavePersistentData();
             MarkDirtyRepaint();
-        }
-    }
-
-    class PromptWindow : EditorWindow
-    {
-        static readonly Color k_InvalidColorLightSkin = new Color(1f, 0.69f, 0.73f);
-        static readonly Color k_InvalidColorDarkSkin = new Color(1f, 0.87f, 0.89f);
-
-        TextField m_TextField;
-        Button m_SubmitButton;
-        Predicate<string> m_Validator;
-        Action<string> m_Action;
-        bool m_IsValid;
-
-        public static void Show(string title, string initialValue, string buttonText, Predicate<string> validator, Action<string> action)
-        {
-            var promptWindow = GetWindow<PromptWindow>(true, title, true);
-
-            promptWindow.minSize = promptWindow.maxSize = new Vector2(220, 45);
-            promptWindow.m_TextField.value = initialValue;
-            promptWindow.m_SubmitButton.text = buttonText;
-            promptWindow.m_Validator = validator;
-            promptWindow.m_Action = action;
-
-            promptWindow.m_TextField.SelectAll();
-            promptWindow.m_TextField.Focus();
-            promptWindow.UpdateValidation();
-
-            promptWindow.ShowModal();
-        }
-
-        void OnEnable()
-        {
-            var root = new VisualElement();
-
-            m_TextField = new TextField();
-            m_TextField.style.height = 16;
-            m_TextField.OnValueChanged(OnTextFieldValueChanged);
-            m_TextField.RegisterCallback<KeyDownEvent>(OnTextFieldKeyDown);
-
-            var buttons = new VisualElement();
-            buttons.style.flexDirection = FlexDirection.Row;
-
-            m_SubmitButton = new Button(Submit);
-            m_SubmitButton.style.flexGrow = 1;
-            m_SubmitButton.style.height = 20;
-
-            var cancelButton = new Button(Close) { text = "Cancel" };
-            cancelButton.style.flexGrow = 1;
-            cancelButton.style.height = 20;
-
-            buttons.Add(m_SubmitButton);
-            buttons.Add(cancelButton);
-
-            root.Add(m_TextField);
-            root.Add(buttons);
-
-            rootVisualContainer.Add(root);
-        }
-
-        void UpdateValidation()
-        {
-            m_IsValid = m_Validator == null || m_Validator(m_TextField.value);
-            if (m_IsValid)
-            {
-                m_SubmitButton.SetEnabled(true);
-                m_TextField.style.backgroundColor = Color.white;
-            }
-            else
-            {
-                m_SubmitButton.SetEnabled(false);
-                m_TextField.style.backgroundColor = EditorGUIUtility.isProSkin ? k_InvalidColorDarkSkin : k_InvalidColorLightSkin;
-            }
-        }
-
-        void Submit()
-        {
-            m_Action(m_TextField.text);
-            Close();
-        }
-
-        void OnTextFieldValueChanged(ChangeEvent<string> evt)
-        {
-            UpdateValidation();
-        }
-
-        void OnTextFieldKeyDown(KeyDownEvent evt)
-        {
-            switch (evt.keyCode)
-            {
-                case KeyCode.Return:
-                case KeyCode.KeypadEnter:
-                    if (m_IsValid)
-                    {
-                        Submit();
-                        evt.StopPropagation();
-                    }
-                    break;
-
-                case KeyCode.Escape:
-                    Close();
-                    evt.StopPropagation();
-                    break;
-            }
         }
     }
 }

@@ -35,7 +35,15 @@ namespace UnityEngine.Experimental.UIElements
                 // update element under mouse and fire necessary events
                 if (basePanel != null)
                 {
-                    VisualElement elementUnderMouse = basePanel.Pick(mouseEvent.mousePosition);
+                    bool shouldRecomputeTopElementUnderMouse = true;
+                    if ((IMouseEventInternal)mouseEvent != null)
+                    {
+                        shouldRecomputeTopElementUnderMouse =
+                            ((IMouseEventInternal)mouseEvent).recomputeTopElementUnderMouse;
+                    }
+                    VisualElement elementUnderMouse = shouldRecomputeTopElementUnderMouse ?
+                        basePanel.Pick(mouseEvent.mousePosition) :
+                        basePanel.topElementUnderMouse;
 
                     if (evt.target == null)
                     {

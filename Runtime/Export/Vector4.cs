@@ -95,11 +95,25 @@ namespace UnityEngine
         // Moves a point /current/ towards /target/.
         public static Vector4 MoveTowards(Vector4 current, Vector4 target, float maxDistanceDelta)
         {
-            Vector4 toVector = target - current;
-            float dist = toVector.magnitude;
-            if (dist <= maxDistanceDelta || dist == 0)
+            float toVector_x = target.x - current.x;
+            float toVector_y = target.y - current.y;
+            float toVector_z = target.z - current.z;
+            float toVector_w = target.w - current.w;
+
+            float sqdist = (toVector_x * toVector_x +
+                toVector_y * toVector_y +
+                toVector_z * toVector_z +
+                toVector_w * toVector_w);
+
+            if (sqdist == 0 || (maxDistanceDelta >= 0 && sqdist <= maxDistanceDelta * maxDistanceDelta))
                 return target;
-            return current + toVector / dist * maxDistanceDelta;
+
+            var dist = (float)Math.Sqrt(sqdist);
+
+            return new Vector4(current.x + toVector_x / dist * maxDistanceDelta,
+                current.y + toVector_y / dist * maxDistanceDelta,
+                current.z + toVector_z / dist * maxDistanceDelta,
+                current.w + toVector_w / dist * maxDistanceDelta);
         }
 
         // Multiplies two vectors component-wise.
@@ -133,7 +147,7 @@ namespace UnityEngine
 
         public bool Equals(Vector4 other)
         {
-            return x.Equals(other.x) && y.Equals(other.y) && z.Equals(other.z) && w.Equals(other.w);
+            return x == other.x && y == other.y && z == other.z && w == other.w;
         }
 
         // *undoc* --- we have normalized property now
@@ -169,16 +183,16 @@ namespace UnityEngine
         public static float Dot(Vector4 a, Vector4 b) { return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w; }
 
         // Projects a vector onto another vector.
-        public static Vector4 Project(Vector4 a, Vector4 b) { return b * Dot(a, b) / Dot(b, b); }
+        public static Vector4 Project(Vector4 a, Vector4 b) { return b * (Dot(a, b) / Dot(b, b)); }
 
         // Returns the distance between /a/ and /b/.
         public static float Distance(Vector4 a, Vector4 b) { return Magnitude(a - b); }
 
         // *undoc* --- there's a property now
-        public static float Magnitude(Vector4 a) { return Mathf.Sqrt(Dot(a, a)); }
+        public static float Magnitude(Vector4 a) { return (float)Math.Sqrt(Dot(a, a)); }
 
         // Returns the length of this vector (RO).
-        public float magnitude { get { return Mathf.Sqrt(Dot(this, this)); } }
+        public float magnitude { get { return (float)Math.Sqrt(Dot(this, this)); } }
 
         // Returns the squared length of this vector (RO).
         public float sqrMagnitude { get { return Dot(this, this); } }
@@ -226,7 +240,12 @@ namespace UnityEngine
         public static bool operator==(Vector4 lhs, Vector4 rhs)
         {
             // Returns false in the presence of NaN values.
-            return SqrMagnitude(lhs - rhs) < kEpsilon * kEpsilon;
+            float diffx = lhs.x - rhs.x;
+            float diffy = lhs.y - rhs.y;
+            float diffz = lhs.z - rhs.z;
+            float diffw = lhs.w - rhs.w;
+            float sqrmag = diffx * diffx + diffy * diffy + diffz * diffz + diffw * diffw;
+            return sqrmag < kEpsilon * kEpsilon;
         }
 
         // Returns true if vectors are different.

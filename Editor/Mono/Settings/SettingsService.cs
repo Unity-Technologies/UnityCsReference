@@ -8,14 +8,27 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using UnityEngine;
-using UnityEngine.Internal;
 
 namespace UnityEditor
 {
-    [ExcludeFromDocs]
     [InitializeOnLoad]
-    public class SettingsService
+    public static class SettingsService
     {
+        public static EditorWindow OpenProjectSettings(string settingsPath = null)
+        {
+            return SettingsWindow.Show(SettingsScope.Project, settingsPath);
+        }
+
+        public static EditorWindow OpenUserPreferences(string settingsPath = null)
+        {
+            return SettingsWindow.Show(SettingsScope.User, settingsPath);
+        }
+
+        public static void NotifySettingsProviderChanged()
+        {
+            settingsProviderChanged?.Invoke();
+        }
+
         const string k_ProjectSettings = "Edit/Project Settings";
         static SettingsService()
         {
@@ -23,9 +36,8 @@ namespace UnityEditor
             EditorApplication.update += CheckProjectSettings;
         }
 
-        public static event Action settingsProviderChanged;
-
-        public static SettingsProvider[] FetchSettingsProviders()
+        internal static event Action settingsProviderChanged;
+        internal static SettingsProvider[] FetchSettingsProviders()
         {
             return
                 FetchSettingProviderFromAttribute()
@@ -35,9 +47,9 @@ namespace UnityEditor
                     .ToArray();
         }
 
-        public static void NotifySettingsProviderChanged()
+        internal static EditorWindow OpenUserPreferenceWindow()
         {
-            settingsProviderChanged?.Invoke();
+            return SettingsWindow.Show(SettingsScope.User);
         }
 
         private static void CheckProjectSettings()
@@ -69,7 +81,7 @@ namespace UnityEditor
 #pragma warning disable CS0618
                     var attributeName = (method.attribute as PreferenceItem).name;
 #pragma warning restore CS0618
-                    return new SettingsProvider("Preferences/" + attributeName) { guiHandler = searchContext => callback(), scopes = SettingsScopes.User };
+                    return new SettingsProvider("Preferences/" + attributeName, SettingsScope.User) { guiHandler = searchContext => callback() };
                 }
 
                 return null;

@@ -12,6 +12,7 @@ namespace UnityEngine
 {
     [NativeHeader("ParticleSystemScriptingClasses.h")]
     [NativeHeader("Runtime/ParticleSystem/ParticleSystem.h")]
+    [NativeHeader("Runtime/ParticleSystem/ParticleSystemGeometryJob.h")]
     [NativeHeader("Runtime/ParticleSystem/ScriptBindings/ParticleSystemScriptBindings.h")]
     [RequireComponent(typeof(Transform))]
     public partial class ParticleSystem : Component
@@ -307,6 +308,9 @@ namespace UnityEngine
         [FreeFunction(Name = "ParticleSystemScriptBindings::TriggerSubEmitter", HasExplicitThis = true)]
         extern public void TriggerSubEmitter(int subEmitterIndex, List<ParticleSystem.Particle> particles);
 
+        [FreeFunction(Name = "ParticleSystemGeometryJob::ResetPreMappedBufferMemory")]
+        extern public static void ResetPreMappedBufferMemory();
+
 
         [FreeFunction(Name = "ParticleSystemEditor::SetupDefaultParticleSystemType", HasExplicitThis = true)]
         extern internal void SetupDefaultType(ParticleSystemSubEmitterType type);
@@ -325,10 +329,10 @@ namespace UnityEngine
         extern internal bool CalculateEffectUISubEmitterData(ref int particleCount, ref float fastestParticle, ref float slowestParticle);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::CheckVertexStreamsMatchShader")]
-        extern static internal bool CheckVertexStreamsMatchShader(bool hasTangent, bool hasColor, int texCoordChannelCount, Material material, ref bool tangentError, ref bool colorError, ref bool uvError);
+        extern internal static bool CheckVertexStreamsMatchShader(bool hasTangent, bool hasColor, int texCoordChannelCount, Material material, ref bool tangentError, ref bool colorError, ref bool uvError);
 
         [FreeFunction(Name = "ParticleSystemScriptBindings::GetMaxTexCoordStreams")]
-        extern static internal int GetMaxTexCoordStreams();
+        extern internal static int GetMaxTexCoordStreams();
 
     }
 

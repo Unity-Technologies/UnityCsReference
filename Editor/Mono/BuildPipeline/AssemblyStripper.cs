@@ -88,10 +88,12 @@ namespace UnityEditorInternal
             if (EditorUserBuildSettings.development)
                 args.Add("--editor-settings-flag=Development");
 
-            // One final check to make sure we only run aggressive on latest runtime.
-            if ((managedStrippingLevel == ManagedStrippingLevel.Aggressive) && (PlayerSettingsEditor.IsLatestApiCompatibility(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))))
+            args.Add($"--rule-set={GetRuleSetForStrippingLevel(managedStrippingLevel)}");
+
+            // One final check to make sure we only run high on latest runtime.
+            if ((managedStrippingLevel == ManagedStrippingLevel.High) && (PlayerSettingsEditor.IsLatestApiCompatibility(PlayerSettings.GetApiCompatibilityLevel(buildTargetGroup))))
             {
-                // Prepare the arguments to run the UnityLinker.  When in aggressive mode, need to also
+                // Prepare the arguments to run the UnityLinker.  When in high mode, need to also
                 // supply the IL2CPP compiler platform and compiler architecture.  When the scripting backend
                 // is not IL2CPP, we have to map those strings and use a utility function to figure out proper strings.
 
@@ -108,7 +110,7 @@ namespace UnityEditorInternal
                 {
                     GetUnityLinkerPlatformStringsFromBuildTarget(platformProvider.target, out compilerPlatform, out compilerArchitecture);
                 }
-                args.Add("--aggressive");
+
                 args.Add($"--platform={compilerPlatform}");
                 if (platformProvider.target != BuildTarget.Android)
                     args.Add($"--architecture={compilerArchitecture}");
@@ -133,7 +135,7 @@ namespace UnityEditorInternal
 
                 var modulesAssetPath = Path.Combine(platformProvider.moduleStrippingInformationFolder, "../modules.asset");
                 if (File.Exists(modulesAssetPath))
-                    args.Add($"--engine-modules-asset-file={modulesAssetPath}");
+                    args.Add($"--engine-modules-asset-file=\"{modulesAssetPath}\"");
             }
 
             var additionalArgs = System.Environment.GetEnvironmentVariable("UNITYLINKER_ADDITIONAL_ARGS");
@@ -145,6 +147,21 @@ namespace UnityEditorInternal
                 args.Add(additionalArgs);
 
             return RunAssemblyLinker(args, out output, out error, linkerPath, workingDirectory);
+        }
+
+        private static string GetRuleSetForStrippingLevel(ManagedStrippingLevel managedStrippingLevel)
+        {
+            switch (managedStrippingLevel)
+            {
+                case ManagedStrippingLevel.Low:
+                    return "Conservative";
+                case ManagedStrippingLevel.Medium:
+                    return "Aggressive";
+                case ManagedStrippingLevel.High:
+                    return "Experimental";
+            }
+
+            throw new ArgumentException($"Unhandled {nameof(ManagedStrippingLevel)} value of {managedStrippingLevel}");
         }
 
         private static void GetUnityLinkerPlatformStringsFromBuildTarget(BuildTarget target, out string platform, out string architecture)
@@ -189,7 +206,7 @@ namespace UnityEditorInternal
                     architecture = "ARM64";
                     break;
                 default:
-                    throw new NotSupportedException($"Aggressive stripping is not supported for mono backend on {target}.");
+                    throw new ArgumentException($"Mapping to UnityLinker platform not implemented for {nameof(BuildTarget)} `{target}`");
             }
         }
 

@@ -84,6 +84,18 @@ namespace UnityEditorInternal
             get { return true; }
         }
 
+        internal bool OverriddenCacheDirectory
+        {
+            get
+            {
+                var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
+                if (string.IsNullOrEmpty(additionalArgs))
+                    return false;
+
+                return additionalArgs.Contains("--cachedirectory=");
+            }
+        }
+
         /// <summary>
         /// Change the relative include paths into absolute paths that can be passed to the C++ compiler.
         /// By default this method returns its input with each path relative to the current directory.

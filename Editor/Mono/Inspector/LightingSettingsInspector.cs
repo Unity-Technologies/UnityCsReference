@@ -37,6 +37,8 @@ namespace UnityEditor
             public static readonly GUIContent ClampedPackingResolution = EditorGUIUtility.TrTextContent("Object's size in the realtime lightmap has reached the maximum size. If you need higher resolution for this object, divide it into smaller meshes.");
             public static readonly GUIContent ZeroAreaPackingMesh = EditorGUIUtility.TrTextContent("Mesh used by the renderer has zero UV or surface area. Non zero area is required for lightmapping.");
             public static readonly GUIContent NoNormalsNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have normals. Normals are needed for lightmapping.");
+            public static readonly GUIContent NoVerticesNoLightmapping = EditorGUIUtility.TrTextContent("Mesh used by the renderer doesn't have vertices. Vertices are needed for lightmapping.");
+            public static readonly GUIContent UnsupportedTopology = EditorGUIUtility.TrTextContent("Mesh with point, strip or line topology is not supported by lightmapping.");
             public static readonly GUIContent UVOverlap = EditorGUIUtility.TrTextContent("This GameObject has overlapping UVs. Please enable 'Generate Lightmap UVs' on the Asset or fix in your modelling package.");
             public static readonly GUIContent Atlas = EditorGUIUtility.TrTextContent("Baked Lightmap");
             public static readonly GUIContent RealtimeLM = EditorGUIUtility.TrTextContent("Realtime Lightmap");
@@ -236,17 +238,19 @@ namespace UnityEditor
                     EditorGUI.indentLevel -= 1;
                 }
 
-                if (LightmapEditorSettings.HasZeroAreaMesh(m_Renderers[0]))
-                    EditorGUILayout.HelpBox(Styles.ZeroAreaPackingMesh.text, MessageType.Warning);
+                DisplayMeshWarning();
 
-                if (LightmapEditorSettings.HasClampedResolution(m_Renderers[0]))
-                    EditorGUILayout.HelpBox(Styles.ClampedPackingResolution.text, MessageType.Warning);
+                if (showEnlightenSettings)
+                {
+                    if (LightmapEditorSettings.HasClampedResolution(m_Renderers[0]))
+                        EditorGUILayout.HelpBox(Styles.ClampedPackingResolution.text, MessageType.Warning);
+                }
 
-                if (!HasNormals(m_Renderers[0]))
-                    EditorGUILayout.HelpBox(Styles.NoNormalsNoLightmapping.text, MessageType.Warning);
-
-                if (LightmapEditorSettings.HasUVOverlaps(m_Renderers[0]))
-                    EditorGUILayout.HelpBox(Styles.UVOverlap.text, MessageType.Warning);
+                if (showProgressiveSettings)
+                {
+                    if (LightmapEditorSettings.HasUVOverlaps(m_Renderers[0]))
+                        EditorGUILayout.HelpBox(Styles.UVOverlap.text, MessageType.Warning);
+                }
 
                 m_SerializedObject.ApplyModifiedProperties();
             }
@@ -598,20 +602,66 @@ namespace UnityEditor
             GUILayout.Space(spacing);
         }
 
-        static bool HasNormals(Renderer renderer)
+        private void DisplayMeshWarning()
+        {
+            Mesh mesh = GetSharedMesh(m_Renderers[0]);
+            bool showEnlightenSettings = isPrefabAsset || m_EnabledRealtimeGI.boolValue || (m_EnabledBakedGI.boolValue && LightmapEditorSettings.lightmapper == LightmapEditorSettings.Lightmapper.Enlighten);
+
+            if (!HasSupportedTopologyForGI(mesh))
+            {
+                EditorGUILayout.HelpBox(Styles.UnsupportedTopology.text, MessageType.Warning);
+                return;
+            }
+
+            if (!HasVertices(mesh))
+            {
+                EditorGUILayout.HelpBox(Styles.NoVerticesNoLightmapping.text, MessageType.Warning);
+                return;
+            }
+
+            if (!HasNormals(mesh))
+            {
+                EditorGUILayout.HelpBox(Styles.NoNormalsNoLightmapping.text, MessageType.Warning);
+                return;
+            }
+
+            if (showEnlightenSettings)
+            {
+                if (LightmapEditorSettings.HasZeroAreaMesh(m_Renderers[0]))
+                {
+                    EditorGUILayout.HelpBox(Styles.ZeroAreaPackingMesh.text, MessageType.Warning);
+                    return;
+                }
+            }
+        }
+
+        static Mesh GetSharedMesh(Renderer renderer)
         {
             Mesh mesh = null;
+
             if (renderer is MeshRenderer)
             {
                 MeshFilter mf = renderer.GetComponent<MeshFilter>();
                 if (mf != null)
                     mesh = mf.sharedMesh;
             }
-            else if (renderer is SkinnedMeshRenderer)
-            {
-                mesh = (renderer as SkinnedMeshRenderer).sharedMesh;
-            }
+
+            return mesh;
+        }
+
+        static bool HasNormals(Mesh mesh)
+        {
             return mesh != null && InternalMeshUtil.HasNormals(mesh);
+        }
+
+        static bool HasVertices(Mesh mesh)
+        {
+            return mesh != null && InternalMeshUtil.HasVertices(mesh);
+        }
+
+        static bool HasSupportedTopologyForGI(Mesh mesh)
+        {
+            return mesh != null && InternalMeshUtil.HasSupportedTopologyForGI(mesh);
         }
 
         static private bool isBuiltIn(SerializedProperty prop)

@@ -395,7 +395,19 @@ namespace UnityEditor.Scripting.ScriptCompilation
                 HashSet<string> assemblySourceFiles;
 
                 var scriptExtension = ScriptCompilers.GetExtensionOfSourceFile(dirtySourceFile);
-                var scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
+                SupportedLanguage scriptLanguage = null;
+
+                try
+                {
+                    scriptLanguage = ScriptCompilers.GetLanguageFromExtension(scriptExtension);
+                }
+                catch (Exception e)
+                {
+                    // UnityScript/Boo support has been disabled but not removed,
+                    // so we log the exception and skip the source file.
+                    UnityEngine.Debug.Log(e);
+                    continue;
+                }
 
                 if (!dirtyTargetAssemblies.TryGetValue(targetAssembly, out assemblySourceFiles))
                 {
@@ -577,10 +589,9 @@ namespace UnityEditor.Scripting.ScriptCompilation
 
         static bool IsPrecompiledAssemblyCompatibleWithScriptAssembly(PrecompiledAssembly compiledAssembly, ScriptAssembly scriptAssembly)
         {
-            bool useDotNet = WSAHelpers.UseDotNetCore(scriptAssembly);
-
-            if (useDotNet)
+            if (scriptAssembly.BuildTarget == BuildTarget.WSAPlayer)
             {
+                // Apparently this is used for IL2CPP too. TO DO: figure out why we need this (.winmd files end up not being referenced when this gets removed)
                 bool compiledAssemblyCompatibleWithDotNet = (compiledAssembly.Flags & AssemblyFlags.UseForDotNet) == AssemblyFlags.UseForDotNet;
                 return compiledAssemblyCompatibleWithDotNet;
             }

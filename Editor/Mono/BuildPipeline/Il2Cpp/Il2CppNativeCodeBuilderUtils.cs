@@ -21,7 +21,10 @@ namespace UnityEditorInternal
                 arguments.Add("--libil2cpp-static");
             arguments.Add(FormatArgument("platform", builder.CompilerPlatform));
             arguments.Add(FormatArgument("architecture", builder.CompilerArchitecture));
-            arguments.Add(FormatArgument("configuration", compilerConfiguration.ToString()));
+
+            // In IL2CPP, Master config is called "ReleasePlus"
+            string configurationName = compilerConfiguration != Il2CppCompilerConfiguration.Master ? compilerConfiguration.ToString() : "ReleasePlus";
+            arguments.Add(FormatArgument("configuration", configurationName));
 
             arguments.Add(FormatArgument("outputpath", builder.ConvertOutputFileToFullPath(outputRelativePath)));
 

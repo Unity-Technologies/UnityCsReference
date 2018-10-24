@@ -48,7 +48,7 @@ namespace UnityEditor.ShortcutManagement
             {
                 var keys = new List<KeyCombination>();
                 if (!string.IsNullOrEmpty(defaultShortcuts[index]))
-                    keys.Add(new KeyCombination(Event.KeyboardEvent(defaultShortcuts[index])));
+                    keys.Add(KeyCombination.ParseLegacyBindingString(defaultShortcuts[index]));
                 entries.Add(new MenuItemEntryDiscoveryInfo(names[index], keys));
             }
 
@@ -173,19 +173,19 @@ namespace UnityEditor.ShortcutManagement
                 return;
 
             m_DebugInfoFetched = true;
-            var managedMenuItemMehtods = EditorAssemblies.GetAllMethodsWithAttribute<MenuItem>();
-            foreach (var managedMenuItemMehtod in managedMenuItemMehtods)
+            var managedMenuItemMethods = EditorAssemblies.GetAllMethodsWithAttribute<MenuItem>();
+            foreach (var managedMenuItemMethod in managedMenuItemMethods)
             {
-                var attrbiutes = managedMenuItemMehtod.GetCustomAttributes(typeof(MenuItem), false);
-                foreach (var attribute in attrbiutes)
+                var attributes = managedMenuItemMethod.GetCustomAttributes(typeof(MenuItem), false);
+                foreach (var attribute in attributes)
                 {
                     var menuAttribute = (MenuItem)attribute;
                     if (menuAttribute.menuItem == m_MenuItemPath)
                     {
-                        var sourceInfo = MethodSourceFinderUtility.GetSourceInfo(managedMenuItemMehtod);
+                        var sourceInfo = MethodSourceFinderUtility.GetSourceInfo(managedMenuItemMethod);
                         m_FilePath = sourceInfo.filePath;
                         m_LineNumber = sourceInfo.lineNumber;
-                        m_FullMemberName = managedMenuItemMehtod.DeclaringType.FullName + "." + managedMenuItemMehtod.Name;
+                        m_FullMemberName = managedMenuItemMethod.DeclaringType.FullName + "." + managedMenuItemMethod.Name;
                         return;
                     }
                 }

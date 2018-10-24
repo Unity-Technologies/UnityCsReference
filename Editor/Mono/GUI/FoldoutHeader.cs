@@ -42,6 +42,12 @@ namespace UnityEditor
 
         public static bool BeginFoldoutHeaderGroup(Rect position, bool foldout, GUIContent content, [DefaultValue("EditorStyles.foldoutHeader")] GUIStyle style = null, Action<Rect> menuAction = null, GUIStyle menuIcon = null)
         {
+            // Removing the default margin for inspectors
+            if (EditorGUIUtility.hierarchyMode)
+            {
+                position.xMin -= EditorStyles.inspectorDefaultMargins.padding.left;
+            }
+
             if (style == null)
                 style = EditorStyles.foldoutHeader;
             if (s_FoldoutHeaderGroupActive)

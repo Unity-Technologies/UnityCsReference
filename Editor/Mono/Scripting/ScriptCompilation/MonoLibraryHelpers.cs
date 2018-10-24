@@ -23,9 +23,6 @@ namespace UnityEditor.Scripting.ScriptCompilation
         public static string[] GetSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel, BuildTarget buildTarget, SupportedLanguage supportedLanguage,
             bool buildingForEditor, string assemblyName)
         {
-            if (WSAHelpers.BuildingForDotNet(buildTarget, buildingForEditor, assemblyName))
-                return new string[0];
-
             // The language may not be compatible with these additional references
             if (supportedLanguage != null && !supportedLanguage.CompilerRequiresAdditionalReferences())
                 return new string[0];

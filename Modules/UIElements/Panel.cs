@@ -185,7 +185,7 @@ namespace UnityEngine.Experimental.UIElements
 
         internal abstract IVisualTreeUpdater GetUpdater(VisualTreeUpdatePhase phase);
 
-        VisualElement topElementUnderMouse { get; set; }
+        internal VisualElement topElementUnderMouse { get; private set; }
 
         internal void SetElementUnderMouse(VisualElement newElementUnderMouse, EventBase triggerEvent)
         {

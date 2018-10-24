@@ -690,7 +690,7 @@ namespace UnityEditorInternal
 
                     var tr = r;
                     tr.y -= fullRect.y;
-                    if (tr.Overlaps(m_TimeArea.shownArea))
+                    if (tr.yMin < m_TimeArea.shownArea.yMax && tr.yMax > m_TimeArea.shownArea.yMin)
                     {
                         iter.SetRoot(frameIndex, threadInfo.threadIndex);
                         DoNativeProfilerTimeline(r, frameIndex, threadInfo.threadIndex, offset, ghost, scaleForThreadHeight);

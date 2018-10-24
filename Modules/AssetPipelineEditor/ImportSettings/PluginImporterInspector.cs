@@ -307,6 +307,7 @@ namespace UnityEditor
                 }
             }
 
+            ResetCompatability(ref m_CompatibleWithAnyPlatform, (imp => imp.GetCompatibleWithAnyPlatform()));
             ResetCompatability(ref m_CompatibleWithEditor, (imp => imp.GetCompatibleWithEditor()));
             ResetCompatability(ref m_AutoReferenced, (imp => !imp.IsExplicitlyReferenced));
             // If Any Platform is selected, initialize m_Compatible* variables using compatability function

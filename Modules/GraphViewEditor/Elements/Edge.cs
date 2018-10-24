@@ -190,14 +190,9 @@ namespace UnityEditor.Experimental.UIElements.GraphView
         public override bool ContainsPoint(Vector2 localPoint)
         {
             Profiler.BeginSample("Edge.ContainsPoint");
-            m_EndPointsDirty = true;
-            if (!UpdateEdgeControl())
-            {
-                Profiler.EndSample();
-                return false;
-            }
 
-            bool result =  edgeControl.ContainsPoint(this.ChangeCoordinatesTo(edgeControl, localPoint));
+            var result = UpdateEdgeControl() &&
+                edgeControl.ContainsPoint(this.ChangeCoordinatesTo(edgeControl, localPoint));
 
             Profiler.EndSample();
 
@@ -212,8 +207,6 @@ namespace UnityEditor.Experimental.UIElements.GraphView
 
         public bool UpdateEdgeControl()
         {
-            // bounding box check succeeded, do more fine grained check by measuring distance to bezier points
-
             if (m_OutputPort == null && m_InputPort == null)
                 return false;
 

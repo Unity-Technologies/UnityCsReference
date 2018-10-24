@@ -4,7 +4,6 @@
 
 using System.Linq;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
 using UnityEditor.SceneManagement;
 
@@ -237,7 +236,8 @@ namespace UnityEditor
             get
             {
                 StageHandle currentStageHandle = StageUtility.GetCurrentStageHandle();
-                return currentStageHandle.FindComponentsOfType<Tilemap>().Where(x => x.gameObject.scene.isLoaded).Select(x => x.gameObject).ToArray();
+                return currentStageHandle.FindComponentsOfType<Tilemap>().Where(x => x.gameObject.scene.isLoaded
+                    && x.gameObject.activeInHierarchy).Select(x => x.gameObject).ToArray();
             }
         }
 
@@ -321,13 +321,12 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateSettingsProvider()
         {
-            var settingsProvider = new SettingsProvider("Preferences/2D/Grid Brush") {
+            var settingsProvider = new SettingsProvider("Preferences/2D/Grid Brush", SettingsScope.User, SettingsProvider.GetSearchKeywordsFromGUIContentProperties<GridBrushProperties>()) {
                 guiHandler = searchContext =>
                 {
                     PreferencesGUI();
-                }, scopes = SettingsScopes.User
+                }
             };
-            settingsProvider.PopulateSearchKeywordsFromGUIContentProperties<GridBrushProperties>();
             return settingsProvider;
         }
 

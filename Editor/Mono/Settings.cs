@@ -41,7 +41,7 @@ namespace UnityEditor
             this.m_Color = this.m_DefaultColor = new Color(defaultRed, defaultGreen, defaultBlue, defaultAlpha);
             this.m_SeparateColors = false;
             this.m_OptionalDarkColor = this.m_OptionalDarkDefaultColor = Color.clear;
-            Settings.Add(this);
+            PrefSettings.Add(this);
             m_Loaded = false;
         }
 
@@ -51,7 +51,7 @@ namespace UnityEditor
             this.m_Color = this.m_DefaultColor = new Color(defaultRed, defaultGreen, defaultBlue, defaultAlpha);
             this.m_SeparateColors = true;
             this.m_OptionalDarkColor = this.m_OptionalDarkDefaultColor = new Color(defaultRed2, defaultGreen2, defaultBlue2, defaultAlpha2);
-            Settings.Add(this);
+            PrefSettings.Add(this);
             m_Loaded = false;
         }
 
@@ -62,7 +62,7 @@ namespace UnityEditor
 
             m_Loaded = true;
 
-            PrefColor pk = Settings.Get(m_Name, this);
+            PrefColor pk = PrefSettings.Get(m_Name, this);
             this.m_Name = pk.m_Name;
             this.m_Color = pk.m_Color;
             this.m_SeparateColors = pk.m_SeparateColors;
@@ -187,7 +187,7 @@ namespace UnityEditor
             this.m_name = name;
             this.m_Shortcut = shortcut;
             this.m_DefaultShortcut = shortcut;
-            Settings.Add(this);
+            PrefSettings.Add(this);
             m_Loaded = false;
         }
 
@@ -199,7 +199,7 @@ namespace UnityEditor
             m_Loaded = true;
 
             this.m_event = Event.KeyboardEvent(m_Shortcut);
-            PrefKey pk = Settings.Get(m_name, this);
+            PrefKey pk = PrefSettings.Get(m_name, this);
             this.m_name = pk.Name;
             this.m_event = pk.KeyboardEvent;
         }
@@ -235,25 +235,28 @@ namespace UnityEditor
             }
         }
 
-        internal static bool TryParseUniquePrefString(string prefString, out string name, out Event keyboardEvent)
+        internal static bool TryParseUniquePrefString(string prefString, out string name, out Event keyboardEvent, out string shortcut)
         {
             int i = prefString.IndexOf(";");
             if (i < 0)
             {
                 name = null;
                 keyboardEvent = null;
+                shortcut = null;
                 return false;
             }
             name = prefString.Substring(0, i);
-            keyboardEvent = Event.KeyboardEvent(prefString.Substring(i + 1));
+            shortcut = prefString.Substring(i + 1);
+            keyboardEvent = Event.KeyboardEvent(shortcut);
             return true;
         }
 
         public void FromUniqueString(string s)
         {
             Load();
-            if (!TryParseUniquePrefString(s, out m_name, out m_event))
+            if (!TryParseUniquePrefString(s, out m_name, out m_event, out m_Shortcut))
                 Debug.LogError("Malformed string in Keyboard preferences");
+            m_DefaultShortcut = m_Shortcut;
         }
 
         internal void ResetToDefault()
@@ -264,7 +267,7 @@ namespace UnityEditor
     }
 
 
-    internal class Settings
+    internal class PrefSettings
     {
         static List<IPrefType> m_AddedPrefs = new List<IPrefType>();
         static SortedList<string, object> m_Prefs = new SortedList<string, object>();

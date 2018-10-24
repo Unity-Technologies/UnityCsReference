@@ -17,43 +17,55 @@ namespace UnityEditor
     internal static class BuildTargetDiscovery
     {
         const int kShortNameIndex = 0;
-        const int kAssemblyNameIndex = 1;
 
         [Flags]
         public enum TargetAttributes
         {
-            None = 0,
-            IsDeprecated = (1 << 0),
-            IsMobile = (1 << 1),
-            IsConsole = (1 << 2),
-            IsX64 = (1 << 3),
-            IsStandalonePlatform = (1 << 4),
-            DynamicBatchingDisabled = (1 << 5),
-            CompressedGPUSkinningDisabled = (1 << 6),
-            UseForsythOptimizedMeshData = (1 << 7),
-            DisableEnlighten = (1 << 8),
-            ReflectionEmitDisabled = (1 << 9),
-            OSFontsDisabled = (1 << 10),
-            ETC = (1 << 11),
-            ETC2 = (1 << 12),
-            PVRTC = (1 << 13),
-            ASTC = (1 << 14),
-            DXTDisabled = (1 << 15),
-            OpenGLES = (1 << 16),
-            SupportsFacebook = (1 << 17),
-            WarnForExpensiveQualitySettings = (1 << 18),
-            WarnForMouseEvents = (1 << 19),
-            HideInUI = (1 << 20),
-            GPUSkinningNotSupported = (1 << 21),
-            StrippingNotSupported = (1 << 22),
-            IsMTRenderingDisabledByDefault = (1 << 23),
+            None                            = 0,
+            IsDeprecated                    = (1 << 0),
+            IsMobile                        = (1 << 1),
+            IsConsole                       = (1 << 2),
+            IsX64                           = (1 << 3),
+            IsStandalonePlatform            = (1 << 4),
+            DynamicBatchingDisabled         = (1 << 5),
+            CompressedGPUSkinningDisabled   = (1 << 6),
+            UseForsythOptimizedMeshData     = (1 << 7),
+            DisableEnlighten                = (1 << 8),
+            ReflectionEmitDisabled          = (1 << 9),
+            OSFontsDisabled                 = (1 << 10),
+            NoDefaultUnityFonts             = (1 << 11),
+            SupportsFacebook                = (1 << 12),
+            WarnForExpensiveQualitySettings = (1 << 13),
+            WarnForMouseEvents              = (1 << 14),
+            HideInUI                        = (1 << 15),
+            GPUSkinningNotSupported         = (1 << 16),
+            StrippingNotSupported           = (1 << 17),
+            Il2CPPRequiresLatestScripting   = (1 << 18),
+            IsMTRenderingDisabledByDefault  = (1 << 19)
         }
 
-        public enum TargetDefaultScriptingBackend
+        [Flags]
+        public enum SupportedTextureCompression
         {
-            Il2cpp = 0,
-            Mono = 1,
-            DotNet = 2
+            None   = 0,
+            ETC    = (1 << 0),
+            ETC2   = (1 << 1),
+            PVRTC  = (1 << 2),
+            ASTC   = (1 << 3),
+            DXTC   = (1 << 4),
+            DXT5nm = (1 << 5)
+        }
+
+        [Flags]
+        public enum VRAttributes
+        {
+            None                                = 0,
+            SupportSinglePassStereoRendering    = (1 << 0),
+            SupportStereoInstancingRendering    = (1 << 1),
+            SupportStereoMultiviewRendering     = (1 << 2),
+            SupportStereo360Capture             = (1 << 3),
+            SupportVuforia                      = (1 << 4),
+            SupportTango                        = (1 << 5)
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -65,11 +77,9 @@ namespace UnityEditor
             public string platformDefine;
             public string niceName;
             public string iconName;
+            public string assemblyName;
 
             public BuildTarget buildTgtPlatformVal;
-
-            // Default scripting backend
-            public TargetDefaultScriptingBackend scriptingBackend;
 
             // Build targets can have many names to identify them
             public string[] nameList;
@@ -79,12 +89,16 @@ namespace UnityEditor
 
             public TargetAttributes flags;
 
+            public VRAttributes vrFlags;
+
             public bool HasFlag(TargetAttributes flag) { return (flags & flag) == flag; }
         }
 
         public static extern bool PlatformHasFlag(BuildTarget platform, TargetAttributes flag);
 
         public static extern bool PlatformGroupHasFlag(BuildTargetGroup group, TargetAttributes flag);
+
+        public static extern bool PlatformGroupHasVRFlag(BuildTargetGroup group, VRAttributes flag);
 
         public static extern DiscoveredTargetInfo[] GetBuildTargetInfoList();
 
@@ -119,9 +133,11 @@ namespace UnityEditor
 
         public static string GetScriptAssemblyName(DiscoveredTargetInfo btInfo)
         {
-            if (btInfo.nameList.Length == 1)
-                return btInfo.nameList[kShortNameIndex];
-            return btInfo.nameList[kAssemblyNameIndex];
+            if (!String.IsNullOrEmpty(btInfo.assemblyName))
+                return btInfo.assemblyName;
+
+            // Use shortname if assemblyName isn't set
+            return btInfo.nameList[kShortNameIndex];
         }
     }
 }

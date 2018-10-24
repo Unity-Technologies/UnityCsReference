@@ -11,6 +11,16 @@ namespace UnityEditor.Utils
 {
     internal static class Paths
     {
+        static char[] invalidFilenameChars;
+
+        static Paths()
+        {
+            var uniqueChars = new HashSet<char>(Path.GetInvalidFileNameChars());
+            uniqueChars.Add(Path.DirectorySeparatorChar);
+            uniqueChars.Add(Path.AltDirectorySeparatorChar);
+            invalidFilenameChars = uniqueChars.ToArray();
+        }
+
         public static string Combine(params string[] components)
         {
             if (components.Length < 1)
@@ -169,6 +179,7 @@ namespace UnityEditor.Utils
         // If an error message is wanted then input an empty string for 'errorMsg'. If 'errorMsg' is null then no error string is allocated.
         static bool CheckIfAssetPathIsValid(string assetPath, string requiredExtensionWithDot, ref string errorMsg)
         {
+            string fileName;
             try
             {
                 if (string.IsNullOrEmpty(assetPath))
@@ -178,43 +189,82 @@ namespace UnityEditor.Utils
                     return false;
                 }
 
-                string fileName = Path.GetFileName(assetPath); // Will throw an ArgumentException if the path contains one or more of the invalid characters defined in GetInvalidPathChars
+                fileName = Path.GetFileName(assetPath); // Will throw an ArgumentException if the path contains one or more of the invalid characters defined in GetInvalidPathChars
+            }
+            catch (Exception e)
+            {
+                if (errorMsg != null)
+                    SetFullErrorMessage(e.Message, assetPath, ref errorMsg);
+                return false;
+            }
 
-                if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+            return CheckIfFilenameIsValid(fileName, "asset name", requiredExtensionWithDot, ref errorMsg);
+        }
+
+        public static bool IsValidFilename(string assetPath)
+        {
+            const string requiredExtension = null;
+            return IsValidFilename(assetPath, requiredExtension);
+        }
+
+        public static bool IsValidFilename(string assetPath, string requiredExtensionWithDot)
+        {
+            string errorMsg = null;
+            return CheckIfFilenameIsValid(assetPath, "filename", requiredExtensionWithDot, ref errorMsg);
+        }
+
+        public static bool IsValidFilename(string assetPath, string requiredExtensionWithDot, out string errorMsg)
+        {
+            errorMsg = string.Empty;
+            return CheckIfFilenameIsValid(assetPath, "filename", requiredExtensionWithDot, ref errorMsg);
+        }
+
+        static bool CheckIfFilenameIsValid(string fileName, string argumentName, string requiredExtensionWithDot, ref string errorMsg)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(fileName))
                 {
                     if (errorMsg != null)
-                        SetFullErrorMessage("Filename contains invalid characters", assetPath, ref errorMsg);
+                        SetFullErrorMessage(string.Format("The {0} is empty", argumentName), fileName, ref errorMsg);
+                    return false;
+                }
+
+                if (fileName.IndexOfAny(invalidFilenameChars) >= 0)
+                {
+                    if (errorMsg != null)
+                        SetFullErrorMessage(string.Format("The {0} contains invalid characters", argumentName), fileName, ref errorMsg);
                     return false;
                 }
 
                 if (fileName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
                 {
                     if (errorMsg != null)
-                        SetFullErrorMessage("Invalid characters in file name: ", assetPath, ref errorMsg);
+                        SetFullErrorMessage("Invalid characters in file name: ", fileName, ref errorMsg);
                     return false;
                 }
 
                 if (fileName.StartsWith("."))
                 {
                     if (errorMsg != null)
-                        SetFullErrorMessage("Do not prefix asset name with '.'", assetPath, ref errorMsg);
+                        SetFullErrorMessage(string.Format("Do not prefix {0} with '.'", argumentName), fileName, ref errorMsg);
                     return false;
                 }
 
                 if (fileName.StartsWith(" "))
                 {
                     if (errorMsg != null)
-                        SetFullErrorMessage("Do not prefix asset name with white space", assetPath, ref errorMsg);
+                        SetFullErrorMessage(string.Format("Do not prefix {0} with white space", argumentName), fileName, ref errorMsg);
                     return false;
                 }
 
                 if (!string.IsNullOrEmpty(requiredExtensionWithDot))
                 {
-                    string extension = Path.GetExtension(assetPath);
+                    string extension = Path.GetExtension(fileName);
                     if (!String.Equals(extension, requiredExtensionWithDot, StringComparison.OrdinalIgnoreCase))
                     {
                         if (errorMsg != null)
-                            SetFullErrorMessage(string.Format("Incorrect extension. Required extension is: '{0}'", requiredExtensionWithDot), assetPath, ref errorMsg);
+                            SetFullErrorMessage(string.Format("Incorrect extension. Required extension is: '{0}'", requiredExtensionWithDot), fileName, ref errorMsg);
                         return false;
                     }
                 }
@@ -222,7 +272,7 @@ namespace UnityEditor.Utils
             catch (Exception e)
             {
                 if (errorMsg != null)
-                    SetFullErrorMessage(e.Message, assetPath, ref errorMsg);
+                    SetFullErrorMessage(e.Message, fileName, ref errorMsg);
                 return false;
             }
             return true;

@@ -156,6 +156,9 @@ namespace UnityEngine.XR
         public static InputUsage<Quaternion> rightEyeRotation = new InputUsage<Quaternion>("RightEyeRotation");
         public static InputUsage<Quaternion> centerEyeRotation = new InputUsage<Quaternion>("CenterEyeRotation");
         public static InputUsage<Quaternion> colorCameraRotation = new InputUsage<Quaternion>("CameraRotation");
+
+        public static InputUsage<Hand> handData = new InputUsage<Hand>("HandData");
+        public static InputUsage<Eyes> eyesData = new InputUsage<Eyes>("EyesData");
     };
 
     [UsedByNativeCode]
@@ -175,12 +178,15 @@ namespace UnityEngine.XR
         public void StopHaptics()                                                               { InputDevices.StopHaptics(m_DeviceId); }
 
         // Features
-        public bool TryGetFeatureValue(InputUsage<bool> usage, out bool value)                       { return InputDevices.TryGetFeatureValue_bool(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<uint> usage, out uint value)                       { return InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<float> usage, out float value)                     { return InputDevices.TryGetFeatureValue_float(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Vector2> usage, out Vector2 value)                 { return InputDevices.TryGetFeatureValue_Vector2f(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Vector3> usage, out Vector3 value)                 { return InputDevices.TryGetFeatureValue_Vector3f(m_DeviceId, usage.name, out value); }
-        public bool TryGetFeatureValue(InputUsage<Quaternion> usage, out Quaternion value)           { return InputDevices.TryGetFeatureValue_Quaternionf(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<bool> usage, out bool value)                  { return InputDevices.TryGetFeatureValue_bool(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<uint> usage, out uint value)                  { return InputDevices.TryGetFeatureValue_UInt32(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<float> usage, out float value)                { return InputDevices.TryGetFeatureValue_float(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<Vector2> usage, out Vector2 value)            { return InputDevices.TryGetFeatureValue_Vector2f(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<Vector3> usage, out Vector3 value)            { return InputDevices.TryGetFeatureValue_Vector3f(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<Quaternion> usage, out Quaternion value)      { return InputDevices.TryGetFeatureValue_Quaternionf(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<Hand> usage, out Hand value)                  { return InputDevices.TryGetFeatureValue_XRHand(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<Bone> usage, out Bone value)                  { return InputDevices.TryGetFeatureValue_XRBone(m_DeviceId, usage.name, out value); }
+        public bool TryGetFeatureValue(InputUsage<Eyes> usage, out Eyes value)                  { return InputDevices.TryGetFeatureValue_XREyes(m_DeviceId, usage.name, out value); }
 
         public override bool Equals(object obj)
         {
@@ -211,8 +217,227 @@ namespace UnityEngine.XR
         }
     }
 
-    [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputDevices.h")]
+    public enum HandFinger
+    {
+        Thumb,
+        Index,
+        Middle,
+        Ring,
+        Pinky
+    };
+
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
     [NativeConditional("ENABLE_VR")]
+    [NativeHeader("Modules/XR/XRPrefix.h")]
+    [NativeHeader("XRScriptingClasses.h")]
+    [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputDevices.h")]
+    [StaticAccessor("XRInputDevices::Get()", StaticAccessorType.Dot)]
+    public struct Hand : IEquatable<Hand>
+    {
+        UInt64 m_DeviceId;
+        UInt32 m_FeatureIndex;
+        internal UInt64 deviceId { get { return m_DeviceId; } }
+        internal UInt32 featureIndex { get { return m_FeatureIndex; } }
+
+        public bool TryGetRootBone(out Bone boneOut)
+        {
+            return Hand_TryGetRootBone(this, out boneOut);
+        }
+
+        private static extern bool Hand_TryGetRootBone(Hand hand, out Bone boneOut);
+
+        public bool TryGetFingerBones(HandFinger finger, List<Bone> bonesOut)
+        {
+            if (bonesOut == null)
+                throw new ArgumentNullException("bonesOut");
+
+            return Hand_TryGetFingerBonesAsList(this, finger, bonesOut);
+        }
+
+        private static extern bool Hand_TryGetFingerBonesAsList(Hand hand, HandFinger finger, List<Bone> bonesOut);
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Hand))
+                return false;
+
+            return Equals((Hand)obj);
+        }
+
+        public bool Equals(Hand other)
+        {
+            return deviceId == other.deviceId &&
+                featureIndex == other.featureIndex;
+        }
+
+        public override int GetHashCode()
+        {
+            return deviceId.GetHashCode() ^ (featureIndex.GetHashCode() << 1);
+        }
+
+        public static bool operator==(Hand a, Hand b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(Hand a, Hand b)
+        {
+            return !(a == b);
+        }
+    }
+
+    internal enum EyeSide
+    {
+        Left,
+        Right
+    };
+
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeConditional("ENABLE_VR")]
+    [NativeHeader("Modules/XR/XRPrefix.h")]
+    [NativeHeader("XRScriptingClasses.h")]
+    [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputDevices.h")]
+    [StaticAccessor("XRInputDevices::Get()", StaticAccessorType.Dot)]
+    public struct Eyes : IEquatable<Eyes>
+    {
+        UInt64 m_DeviceId;
+        UInt32 m_FeatureIndex;
+        internal UInt64 deviceId { get { return m_DeviceId; } }
+        internal UInt32 featureIndex { get { return m_FeatureIndex; } }
+
+        public bool TryGetLeftEyePosition(out Vector3 position)
+        {
+            return Eyes_TryGetEyePosition(this, EyeSide.Left, out position);
+        }
+
+        public bool TryGetRightEyePosition(out Vector3 position)
+        {
+            return Eyes_TryGetEyePosition(this, EyeSide.Right, out position);
+        }
+
+        public bool TryGetLeftEyeRotation(out Quaternion rotation)
+        {
+            return Eyes_TryGetEyeRotation(this, EyeSide.Left, out rotation);
+        }
+
+        public bool TryGetRightEyeRotation(out Quaternion rotation)
+        {
+            return Eyes_TryGetEyeRotation(this, EyeSide.Right, out rotation);
+        }
+
+        private static extern bool Eyes_TryGetEyePosition(Eyes eyes, EyeSide chirality, out Vector3 position);
+        private static extern bool Eyes_TryGetEyeRotation(Eyes eyes, EyeSide chirality, out Quaternion rotation);
+
+        public bool TryGetFixationPoint(out Vector3 fixationPoint)
+        {
+            return Eyes_TryGetFixationPoint(this, out fixationPoint);
+        }
+
+        private static extern bool Eyes_TryGetFixationPoint(Eyes eyes, out Vector3 fixationPoint);
+
+        public bool TryGetLeftEyeOpenAmount(out float openAmount)
+        {
+            return Eyes_TryGetEyeOpenAmount(this, EyeSide.Left, out openAmount);
+        }
+
+        public bool TryGetRightEyeOpenAmount(out float openAmount)
+        {
+            return Eyes_TryGetEyeOpenAmount(this, EyeSide.Right, out openAmount);
+        }
+
+        private static extern bool Eyes_TryGetEyeOpenAmount(Eyes eyes, EyeSide chirality, out float openAmount);
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Eyes))
+                return false;
+
+            return Equals((Eyes)obj);
+        }
+
+        public bool Equals(Eyes other)
+        {
+            return deviceId == other.deviceId &&
+                featureIndex == other.featureIndex;
+        }
+
+        public override int GetHashCode()
+        {
+            return deviceId.GetHashCode() ^ (featureIndex.GetHashCode() << 1);
+        }
+
+        public static bool operator==(Eyes a, Eyes b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(Eyes a, Eyes b)
+        {
+            return !(a == b);
+        }
+    }
+
+    [RequiredByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeConditional("ENABLE_VR")]
+    [NativeHeader("Modules/XR/XRPrefix.h")]
+    [NativeHeader("XRScriptingClasses.h")]
+    [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputDevices.h")]
+    [StaticAccessor("XRInputDevices::Get()", StaticAccessorType.Dot)]
+    public struct Bone : IEquatable<Bone>
+    {
+        UInt64 m_DeviceId;
+        UInt32 m_FeatureIndex;
+
+        internal UInt64 deviceId { get { return m_DeviceId; } }
+        internal UInt32 featureIndex { get { return m_FeatureIndex; } }
+
+        public bool TryGetPosition(out Vector3 position) { return Bone_TryGetPosition(this, out position); }
+        private static extern bool Bone_TryGetPosition(Bone bone, out Vector3 position);
+
+        public bool TryGetRotation(out Quaternion rotation) { return Bone_TryGetRotation(this, out rotation); }
+        private static extern bool Bone_TryGetRotation(Bone bone, out Quaternion rotation);
+
+        public bool TryGetParentBone(out Bone parentBone) { return Bone_TryGetParentBone(this, out parentBone); }
+        private static extern bool Bone_TryGetParentBone(Bone bone, out Bone parentBone);
+
+        public override bool Equals(object obj)
+        {
+            if (!(obj is Bone))
+                return false;
+
+            return Equals((Bone)obj);
+        }
+
+        public bool Equals(Bone other)
+        {
+            return deviceId == other.deviceId &&
+                featureIndex == other.featureIndex;
+        }
+
+        public override int GetHashCode()
+        {
+            return deviceId.GetHashCode() ^
+                (featureIndex.GetHashCode() << 1);
+        }
+
+        public static bool operator==(Bone a, Bone b)
+        {
+            return a.Equals(b);
+        }
+
+        public static bool operator!=(Bone a, Bone b)
+        {
+            return !(a == b);
+        }
+    }
+
+    [UsedByNativeCode]
+    [StructLayout(LayoutKind.Sequential)]
+    [NativeConditional("ENABLE_VR")]
+    [NativeHeader("Modules/XR/Subsystems/Input/Public/XRInputDevices.h")]
     [StaticAccessor("XRInputDevices::Get()", StaticAccessorType.Dot)]
     public partial class InputDevices
     {
@@ -234,6 +459,9 @@ namespace UnityEngine.XR
         internal static extern bool TryGetFeatureValue_Vector2f(UInt64 deviceId, string usage, out Vector2 value);
         internal static extern bool TryGetFeatureValue_Vector3f(UInt64 deviceId, string usage, out Vector3 value);
         internal static extern bool TryGetFeatureValue_Quaternionf(UInt64 deviceId, string usage, out Quaternion value);
+        internal static extern bool TryGetFeatureValue_XRHand(UInt64 deviceId, string usage, out Hand value);
+        internal static extern bool TryGetFeatureValue_XRBone(UInt64 deviceId, string usage, out Bone value);
+        internal static extern bool TryGetFeatureValue_XREyes(UInt64 deviceId, string usage, out Eyes value);
 
         internal static extern bool IsDeviceValid(UInt64 deviceId);
     }

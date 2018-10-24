@@ -308,20 +308,19 @@ namespace UnityEditor
                 Undo.RegisterFullObjectHierarchyUndo(prefabInstanceRoot, actionName);
             }
 
-            if (isDisconnected)
-            {
-                RevertPrefabInstance_Internal(prefabInstanceRoot);
-
-                if (action == InteractionMode.UserAction)
-                    Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
-            }
-
             RevertPrefabInstance_Internal(prefabInstanceRoot);
 
             if (action == InteractionMode.UserAction)
             {
+                if (isDisconnected)
+                {
+                    Undo.RegisterCreatedObjectUndo(GetPrefabInstanceHandle(prefabInstanceRoot), actionName);
+                }
+
                 RegisterNewObjects(prefabInstanceRoot, hierarchy, actionName);
             }
+
+            EditorUtility.ForceRebuildInspectors();
         }
 
         public static void ApplyPrefabInstance(GameObject instanceRoot, InteractionMode action)
@@ -479,9 +478,9 @@ namespace UnityEditor
                         Debug.LogWarning("Cannot apply default-override property, since it is protected from being applied or reverted.");
                     else
                         EditorUtility.DisplayDialog(
-                            "Cannot apply default-override property",
-                            "Default-override properties are protected from being applied or reverted.",
-                            "OK");
+                            L10n.Tr("Cannot apply default-override property"),
+                            L10n.Tr("Default-override properties are protected from being applied or reverted."),
+                            L10n.Tr("OK"));
                 }
                 return;
             }
@@ -505,9 +504,9 @@ namespace UnityEditor
                             Debug.LogWarning("Cannot apply reference to scene object that is not part of apply target prefab.");
                         else
                             EditorUtility.DisplayDialog(
-                                "Cannot apply reference to object in scene",
-                                "A reference to an object in the scene cannot be applied to the Prefab asset.",
-                                "OK");
+                                L10n.Tr("Cannot apply reference to object in scene"),
+                                L10n.Tr("A reference to an object in the scene cannot be applied to the Prefab asset."),
+                                L10n.Tr("OK"));
                     }
                     return;
                 }
@@ -615,7 +614,10 @@ namespace UnityEditor
             {
                 if (action == InteractionMode.UserAction)
                 {
-                    EditorUtility.DisplayDialog("Can't add component", exception.Message, "OK");
+                    EditorUtility.DisplayDialog(
+                        L10n.Tr("Can't add component"),
+                        exception.Message,
+                        L10n.Tr("OK"));
                     Undo.RevertAllInCurrentGroup();
                 }
                 else
@@ -796,24 +798,12 @@ namespace UnityEditor
             if (action == InteractionMode.UserAction)
             {
                 var createdAssetObject = GetCorrespondingObjectFromSourceInAsset(gameObject, prefabSourceGameObjectParent);
-                Undo.RegisterCreatedObjectUndo(createdAssetObject, actionName);
+                if (createdAssetObject != null)
+                {
+                    Undo.RegisterCreatedObjectUndo(createdAssetObject, actionName);
 
-                //var instanceImmediateSourceObject = GetCorrespondingObjectFromSource(prefabInstanceGameObject);
-                //if (instanceImmediateSourceObject != createdAssetObject)
-                //{
-                //    // The asset containing this object is not actually changed and import/merge
-                //    // logic would assure that it is create/deleted correctly based on the changes
-                //    // in the source asset ("createdAssetObject" prefab asset)
-                //    // However, during "redo" the import/merge will happed too late for the
-                //    // following "register created object" operation on the instance object.
-                //    // This would cause the instance to reference a non-existing corresponding
-                //    // object which causes a disconnect.
-                //    Undo.RegisterCreatedObjectUndo(instanceImmediateSourceObject, actionName);
-                //}
-
-                //Undo.RegisterCreatedObjectUndo(instanceRoot, actionName);
-
-                EditorUtility.ForceRebuildInspectors();
+                    EditorUtility.ForceRebuildInspectors();
+                }
             }
 
             Analytics.SendApplyEvent(
@@ -1378,12 +1368,17 @@ namespace UnityEditor
 
         internal static bool PromptAndCheckoutPrefabIfNeeded(string[] assetPaths, SaveVerb saveVerb)
         {
-            string prefabNoun = assetPaths.Length > 1 ? "Prefabs" : "Prefab";
+            // Some strings in these dialogs are nearly identical.
+            // They are included like this instead of being created programatically
+            // in order for localization strings to have sufficient context.
+
+            string prefabNoun = assetPaths.Length > 1 ? L10n.Tr("Prefabs") : L10n.Tr("Prefab");
             bool result = Provider.PromptAndCheckoutIfNeeded(
                 assetPaths,
                 String.Format(
-                    "The version control requires you to check out the {1} before {0} changes.",
-                    saveVerb == SaveVerb.Save ? "saving" : "applying",
+                    saveVerb == SaveVerb.Save ?
+                    L10n.Tr("The version control requires you to check out the {0} before saving changes.") :
+                    L10n.Tr("The version control requires you to check out the {0} before applying changes."),
                     prefabNoun
                 )
             );
@@ -1391,14 +1386,16 @@ namespace UnityEditor
             if (!result)
                 EditorUtility.DisplayDialog(
                     String.Format(
-                        "Could not {0} {1}",
-                        saveVerb == SaveVerb.Save ? "save" : "apply to",
+                        saveVerb == SaveVerb.Save ?
+                        L10n.Tr("Could not save {0}") :
+                        L10n.Tr("Could not apply to {0}"),
                         prefabNoun),
                     String.Format(
-                        "It was not possible to check out the {1} so the {0} operation has been canceled.",
-                        saveVerb == SaveVerb.Save ? "save" : "apply",
+                        saveVerb == SaveVerb.Save ?
+                        L10n.Tr("It was not possible to check out the {0} so the save operation has been canceled.") :
+                        L10n.Tr("It was not possible to check out the {0} so the apply operation has been canceled."),
                         prefabNoun),
-                    "OK");
+                    L10n.Tr("OK"));
 
             return result;
         }

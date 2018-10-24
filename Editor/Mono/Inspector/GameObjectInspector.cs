@@ -94,7 +94,6 @@ namespace UnityEditor
         }
         static Styles s_Styles;
         const float kIconSize = 24;
-        Vector2 previewDir;
 
         class PreviewData : IDisposable
         {
@@ -131,8 +130,8 @@ namespace UnityEditor
 
         Dictionary<int, PreviewData> m_PreviewInstances = new Dictionary<int, PreviewData>();
         Dictionary<int, Texture> m_PreviewCache;
-
-
+        Vector2 m_PreviewDir;
+        Rect m_PreviewRect;
         bool m_PlayModeObjects;
         bool m_IsAsset;
         bool m_ImmutableSelf;
@@ -146,9 +145,9 @@ namespace UnityEditor
         public void OnEnable()
         {
             if (EditorSettings.defaultBehaviorMode == EditorBehaviorMode.Mode2D)
-                previewDir = new Vector2(0, 0);
+                m_PreviewDir = new Vector2(0, 0);
             else
-                previewDir = new Vector2(120, -20);
+                m_PreviewDir = new Vector2(120, -20);
 
             m_Name = serializedObject.FindProperty("m_Name");
             m_IsActive = serializedObject.FindProperty("m_IsActive");
@@ -777,7 +776,7 @@ namespace UnityEditor
             float halfSize = Mathf.Max(bounds.extents.magnitude, 0.0001f);
             float distance = halfSize * 3.8f;
 
-            Quaternion rot = Quaternion.Euler(-previewDir.y, -previewDir.x, 0);
+            Quaternion rot = Quaternion.Euler(-m_PreviewDir.y, -m_PreviewDir.x, 0);
             Vector3 pos = bounds.center - rot * (Vector3.forward * distance);
 
             previewData.renderUtility.camera.transform.position = pos;
@@ -819,16 +818,22 @@ namespace UnityEditor
                 return;
             }
 
-            var direction = PreviewGUI.Drag2D(previewDir, r);
-            if (direction != previewDir)
+            var direction = PreviewGUI.Drag2D(m_PreviewDir, r);
+            if (direction != m_PreviewDir)
             {
                 // None of the preview are valid since the camera position has changed.
                 ClearPreviewCache();
-                previewDir = direction;
+                m_PreviewDir = direction;
             }
 
             if (Event.current.type != EventType.Repaint)
                 return;
+
+            if (m_PreviewRect != r)
+            {
+                ClearPreviewCache();
+                m_PreviewRect = r;
+            }
 
             var previewUtility = GetPreviewData().renderUtility;
             Texture previewTexture;

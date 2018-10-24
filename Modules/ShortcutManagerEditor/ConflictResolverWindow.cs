@@ -24,34 +24,60 @@ namespace UnityEditor.ShortcutManagement
 
     class ConflictResolverWindow : EditorWindow
     {
-        internal const string justOnceButtonControlName = "JustOnceButton";
-        internal const string alwaysButtonControlName = "AlwaysButton";
+        internal const string performButtonControlName = "PerformButton";
         internal const string cancelButtonControlName = "CancelButton";
+        internal const string rebindToggleCommandName = "rebindToggle";
+
 
         internal static ConflictResolverWindow Show(IConflictResolver conflictResolver, IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries)
         {
             var win = CreateInstance<ConflictResolverWindow>();
-
-            win.Init(conflictResolver, keyCombinationSequence, entries);
-            win.minSize = new Vector2(300, 200);
+            win.Init(conflictResolver, keyCombinationSequence, entries, GUIView.focusedView);
+            win.minSize = new Vector2(550, 250);
+            win.maxSize = new Vector2(550, 600);
             win.ShowModal();
+            win.Focus();
             return win;
         }
 
         static class Styles
         {
             public static GUIStyle wordWrapped = EditorStyles.wordWrappedLabel;
+            public static GUIStyle commandsArea;
+            public static GUIStyle panel;
+            public static GUIStyle warningIcon;
+
+            static Styles()
+            {
+                commandsArea = new GUIStyle();
+                commandsArea.margin = new RectOffset(0, 10, 0, 0);
+                commandsArea.stretchHeight = true;
+
+                panel = new GUIStyle();
+                panel.margin = new RectOffset(10, 10, 10, 10);
+
+                warningIcon = new GUIStyle();
+                warningIcon.margin = new RectOffset(15, 15, 15, 15);
+            }
         }
 
         static class Contents
         {
+            public static GUIContent description = EditorGUIUtility.TrTextContent("You can choose to perform a single command, rebind the shortcut to the selected command, or resolve the conflict in the Shortcut Manager.");
             public static GUIContent cancel = EditorGUIUtility.TrTextContent("Cancel");
-            public static GUIContent justOnce = EditorGUIUtility.TrTextContent("Just Once");
-            public static GUIContent always = EditorGUIUtility.TrTextContent("Always");
+            public static GUIContent perform = EditorGUIUtility.TrTextContent("Perform Selected");
+            public static GUIContent rebind = EditorGUIUtility.TrTextContent("Rebind Selected");
 
             public static GUIContent itemName = EditorGUIUtility.TrTextContent("Name");
             public static GUIContent itemType = EditorGUIUtility.TrTextContent("Type");
-            public static GUIContent itemBindings = EditorGUIUtility.TrTextContent("Bindings");
+            public static GUIContent itemBindings = EditorGUIUtility.TrTextContent("Shortcut");
+
+            public static GUIContent windowTitle = EditorGUIUtility.TrTextContent("Shortcut Conflict");
+            public static GUIContent rebindToSelectedCommand = EditorGUIUtility.TrTextContent("Rebind to selected command");
+            public static GUIContent SelectCommandHeading = EditorGUIUtility.TrTextContent("Select a command to perform:");
+            public static GUIContent OpenShortcutManager = EditorGUIUtility.TrTextContent("Resolve Conflict...");
+
+            public static Texture2D warningIcon = (Texture2D)EditorGUIUtility.LoadRequired("Icons/ShortcutManager/alertDialog.png");
         }
 
 
@@ -141,6 +167,13 @@ namespace UnityEditor.ShortcutManagement
             }
         }
 
+        enum ActionSelected
+        {
+            Cancel,
+            ExecuteOnce,
+            ExecuteAlways
+        }
+
         IConflictResolver m_ConflictResolver;
         List<ShortcutEntry> m_Entries;
 
@@ -150,10 +183,17 @@ namespace UnityEditor.ShortcutManagement
         MultiColumnHeaderState m_MulticolumnHeaderState;
         ConflictListView m_ConflictListView;
 
-        string m_Description;
+        bool m_Rebind;
+        string m_Header;
+        bool m_InitialSizingDone;
+        ShortcutEntry m_SelectedEntry;
 
-        internal void Init(IConflictResolver conflictResolver, IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries)
+        ActionSelected m_CloseBehaviour = ActionSelected.Cancel;
+        GUIView m_PreviouslyFocusedView;
+
+        internal void Init(IConflictResolver conflictResolver, IEnumerable<KeyCombination> keyCombinationSequence, IEnumerable<ShortcutEntry> entries, GUIView previouslyFocusedView)
         {
+            m_PreviouslyFocusedView = previouslyFocusedView;
             m_ConflictResolver = conflictResolver;
             m_Entries = entries.ToList();
 
@@ -162,11 +202,12 @@ namespace UnityEditor.ShortcutManagement
             m_ConflictListView = new ConflictListView(m_TreeViewState, multiColumnHeader, m_Entries);
 
 
-            m_Description = string.Format("Unity has detected a conflict in your shortcut configuration, the key sequence {0} is currently assigned to the following shortcuts:", KeyCombination.SequenceToString(keyCombinationSequence));
+            m_Header = string.Format(L10n.Tr("The binding \"{0}\" conflicts with multiple commands."), KeyCombination.SequenceToString(keyCombinationSequence));
         }
 
         private void OnEnable()
         {
+            titleContent = Contents.windowTitle;
             if (m_TreeViewState == null)
                 m_TreeViewState = new TreeViewState();
 
@@ -177,7 +218,8 @@ namespace UnityEditor.ShortcutManagement
                     headerContent = Contents.itemName,
                     headerTextAlignment = TextAlignment.Left,
                     canSort = false,
-                    autoResize = true, allowToggleVisibility = false
+                    autoResize = true, allowToggleVisibility = false,
+                    width = 350,
                 },
                 new MultiColumnHeaderState.Column
                 {
@@ -193,6 +235,7 @@ namespace UnityEditor.ShortcutManagement
                     headerTextAlignment = TextAlignment.Left,
                     canSort = false,
                     autoResize = true, allowToggleVisibility = false,
+                    width = 75f,
                 }
             };
 
@@ -203,61 +246,115 @@ namespace UnityEditor.ShortcutManagement
             }
             m_MulticolumnHeaderState = newHeader;
 
-
             EditorApplication.LockReloadAssemblies();
         }
 
         private void OnDisable()
         {
-            EditorApplication.UnlockReloadAssemblies();
-        }
+            if (m_CloseBehaviour == ActionSelected.Cancel)
+                m_ConflictResolver.Cancel();
 
-        public new void Close()
-        {
-            base.Close();
-            GUIUtility.ExitGUI();
+            EditorApplication.UnlockReloadAssemblies();
+
+            //We need to delay this action, since actions can depend on the right view having focus, and when closing a window
+            //that will change the current focused view to null.
+            new DelayedCallback(() => {
+                m_PreviouslyFocusedView?.Focus();
+
+                switch (m_CloseBehaviour)
+                {
+                    case ActionSelected.ExecuteAlways:
+                        m_ConflictResolver.ExecuteAlways(m_SelectedEntry);
+                        break;
+                    case ActionSelected.ExecuteOnce:
+                        m_ConflictResolver.ExecuteOnce(m_SelectedEntry);
+                        break;
+                }
+            }, 0f);
         }
 
         private void OnGUI()
         {
-            GUILayout.Label(m_Description, Styles.wordWrapped);
-            var rect = GUILayoutUtility.GetRect(100, 400, 50, 100);
-            GUI.Box(rect, GUIContent.none);
+            EditorGUILayout.BeginVertical(Styles.panel);
+
+            HandleInitialSizing();
+            Rect rect;
+            EditorGUILayout.BeginHorizontal();
+            {
+                GUILayout.Label(Contents.warningIcon, Styles.warningIcon);
+                EditorGUILayout.BeginVertical(Styles.commandsArea);
+                {
+                    GUILayout.Label(m_Header, EditorStyles.boldLabel);
+                    GUILayout.Label(Contents.description, EditorStyles.wordWrappedLabel);
+                    GUILayout.Label(Contents.SelectCommandHeading, EditorStyles.boldLabel);
+                    rect = GUILayoutUtility.GetRect(100, 4000, 50, 10000);
+                    GUI.Box(rect, GUIContent.none);
+
+                    GUI.SetNextControlName(rebindToggleCommandName);
+                    m_Rebind = GUILayout.Toggle(m_Rebind, Contents.rebindToSelectedCommand);
+                }
+                EditorGUILayout.EndVertical();
+            }
+            EditorGUILayout.EndHorizontal();
+
             m_ConflictListView.OnGUI(rect);
 
-            GUILayout.BeginHorizontal();
-            bool hasSelection = m_ConflictListView.HasSelection();
-            using (var scope = new EditorGUI.DisabledScope(!hasSelection))
+            EditorGUILayout.BeginHorizontal();
             {
-                ShortcutEntry entry = null;
-                if (hasSelection)
-                    entry = m_Entries[m_ConflictListView.GetSelection().First()];
-
-                using (var onceScope = new EditorGUI.DisabledScope(entry == null || entry.type == ShortcutType.Clutch))
+                if (GUILayout.Button(Contents.OpenShortcutManager))
                 {
-                    GUI.SetNextControlName(justOnceButtonControlName);
-                    if (GUILayout.Button(Contents.justOnce))
+                    Close();
+                    m_ConflictResolver.GoToShortcutManagerConflictCategory();
+                }
+
+                GUILayout.FlexibleSpace();
+
+
+                bool hasSelection = m_ConflictListView.HasSelection();
+                using (new EditorGUI.DisabledScope(!hasSelection))
+                {
+                    ShortcutEntry entry = null;
+                    if (hasSelection)
+                        entry = m_Entries[m_ConflictListView.GetSelection().First()];
+
+                    using (new EditorGUI.DisabledScope(entry == null || (entry.type == ShortcutType.Clutch && !m_Rebind)))
                     {
-                        m_ConflictResolver.ExecuteOnce(entry);
-                        Close();
+                        var buttonLabel = hasSelection && entry.type == ShortcutType.Clutch ? Contents.rebind : Contents.perform;
+                        GUI.SetNextControlName(performButtonControlName);
+                        if (GUILayout.Button(buttonLabel))
+                        {
+                            m_SelectedEntry = entry;
+                            if (m_Rebind)
+                                m_CloseBehaviour = ActionSelected.ExecuteAlways;
+                            else
+                                m_CloseBehaviour = ActionSelected.ExecuteOnce;
+                            Close();
+                            GUIUtility.ExitGUI();
+                        }
                     }
                 }
 
-                GUI.SetNextControlName(alwaysButtonControlName);
-                if (GUILayout.Button(Contents.always))
+                GUI.SetNextControlName(cancelButtonControlName);
+                if (GUILayout.Button(Contents.cancel))
                 {
-                    m_ConflictResolver.ExecuteAlways(entry);
                     Close();
+                    GUIUtility.ExitGUI();
                 }
             }
+            EditorGUILayout.EndHorizontal();
+            EditorGUILayout.EndVertical();
+        }
 
-            GUI.SetNextControlName(cancelButtonControlName);
-            if (GUILayout.Button(Contents.cancel))
-            {
-                m_ConflictResolver.Cancel();
-                Close();
-            }
-            GUILayout.EndHorizontal();
+        void HandleInitialSizing()
+        {
+            if (m_InitialSizingDone)
+                return;
+
+            var pos = position;
+            pos.height = 250;
+            position = pos;
+
+            m_InitialSizingDone = true;
         }
     }
 }

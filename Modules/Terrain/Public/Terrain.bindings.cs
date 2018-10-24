@@ -101,7 +101,14 @@ namespace UnityEngine
         [NativeProperty("GarbageCollectCameraData")]
         extern public bool freeUnusedRenderingResources { get; set; }
 
-        extern public bool castShadows { get; set; }
+        [Obsolete("castShadows is deprecated, please use shadowCastingMode instead.")]
+        public bool castShadows
+        {
+            get { return shadowCastingMode != ShadowCastingMode.Off; }
+            set { shadowCastingMode = value ? ShadowCastingMode.TwoSided : ShadowCastingMode.Off; }
+        }
+
+        extern public ShadowCastingMode shadowCastingMode { get; set; }
 
         extern public ReflectionProbeUsage reflectionProbeUsage { get; set; }
 

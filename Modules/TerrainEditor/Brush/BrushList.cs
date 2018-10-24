@@ -99,7 +99,7 @@ namespace UnityEditor
 
         public Brush GetCircleBrush()
         {
-            return m_BrushList[0];
+            return m_BrushList[3];
         }
 
         public Brush GetActiveBrush()

@@ -11,8 +11,6 @@ using UnityEditor.StyleSheets;
 using UnityEditor.Experimental;
 using UnityEditorInternal;
 using UnityEngine.Experimental.UIElements;
-using UnityEngine.Experimental.UIElements.StyleEnums;
-using Unity.Experimental.EditorMode;
 using UnityEngine.XR;
 
 namespace UnityEditor
@@ -154,23 +152,6 @@ namespace UnityEditor
             base.OnEnable();
 
             imguiContainer.name = VisualElementUtils.GetUniqueName("Dockarea");
-        }
-
-        protected override void UpdateViewMargins(EditorWindow view)
-        {
-            base.UpdateViewMargins(view);
-
-            if (view == null)
-                return;
-
-            RectOffset margins = GetBorderSize();
-
-            IStyle style = EditorModes.GetRootElement(view).style;
-            style.positionTop = margins.top;
-            style.positionBottom = margins.bottom;
-            style.positionLeft = margins.left;
-            style.positionRight = margins.right;
-            style.positionType = PositionType.Absolute;
         }
 
         public void AddTab(EditorWindow pane, bool sendPaneEvents = true)

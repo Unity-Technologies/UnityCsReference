@@ -81,8 +81,6 @@ namespace UnityEditor.Scripting
 
             var types = new List<Type>();
             types.Add(typeof(CSharpLanguage));
-            types.Add(typeof(BooLanguage));
-            types.Add(typeof(UnityScriptLanguage));
 
             foreach (var t in types)
             {

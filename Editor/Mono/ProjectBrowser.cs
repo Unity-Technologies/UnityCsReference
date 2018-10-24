@@ -62,6 +62,7 @@ namespace UnityEditor
             public GUIStyle topBarBg = "ProjectBrowserTopBarBg";
             public GUIStyle selectedPathLabel = "Label";
             public GUIStyle exposablePopup = GetStyle("ExposablePopupMenu");
+            public GUIStyle exposablePopupItem = GetStyle("ExposablePopupItem");
             public GUIStyle lockButton = "IN LockButton";
             public GUIStyle separator = "ArrowNavigationRight";
 
@@ -537,8 +538,8 @@ namespace UnityEditor
 
             List<ExposablePopupMenu.ItemData> buttonData = new List<ExposablePopupMenu.ItemData>();
 
-            GUIStyle onStyle = "ExposablePopupItem";
-            GUIStyle offStyle = "ExposablePopupItem";
+            GUIStyle onStyle = s_Styles.exposablePopupItem;
+            GUIStyle offStyle = s_Styles.exposablePopupItem;
             bool hasFolderSelected = m_SearchFilter.folders.Length > 0;
             m_SearchAssetStore.text = m_ListArea.GetAssetStoreButtonText();
 

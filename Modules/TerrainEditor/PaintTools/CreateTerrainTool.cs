@@ -11,7 +11,7 @@ using UnityEngine.Experimental.TerrainAPI;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
-    public class CreateTerrainTool : TerrainPaintTool<CreateTerrainTool>
+    internal class CreateTerrainTool : TerrainPaintTool<CreateTerrainTool>
     {
         private class Styles
         {

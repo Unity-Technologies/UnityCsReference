@@ -496,18 +496,6 @@ namespace UnityEditor
             [NativeMethod("SetSelectedWSABuildAndRunDeployTarget")]
             set;
         }
-        // *undocumented*
-        public static extern bool wsaGenerateReferenceProjects
-        {
-            [NativeMethod("GetGenerateWSAReferenceProjects")]
-            get;
-            [NativeMethod("SetGenerateWSAReferenceProjects")]
-            set;
-        }
-
-        public static extern void SetWSADotNetNative(WSABuildType config, bool enabled);
-
-        public static extern bool GetWSADotNetNative(WSABuildType config);
 
         // The currently active build target.
         public static extern BuildTarget activeBuildTarget { get; }

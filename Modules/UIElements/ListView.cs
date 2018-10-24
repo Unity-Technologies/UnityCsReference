@@ -275,6 +275,10 @@ namespace UnityEngine.Experimental.UIElements
                 return;
 
             var clickedIndex = (int)(evt.localMousePosition.y / itemHeight);
+
+            if (clickedIndex > m_ItemsSource.Count - 1)
+                return;
+
             var clickedItem = m_ItemsSource[clickedIndex];
             var clickedItemId = GetIdFromIndex(clickedIndex);
             switch (evt.clickCount)
@@ -465,14 +469,16 @@ namespace UnityEngine.Experimental.UIElements
 
         private void ResizeHeight(float height)
         {
-            m_ScrollView.contentContainer.style.height = itemsSource.Count * itemHeight;
+            var contentHeight = itemsSource.Count * itemHeight;
+            m_ScrollView.contentContainer.style.height = contentHeight;
 
             // Restore scroll offset and pre-emptively update the highValue
             // in case this is the initial restore from persistent data and
             // the ScrollView's OnGeometryChanged() didn't update the low
             // and highValues.
-            m_ScrollView.verticalScroller.highValue = Mathf.Max(m_ScrollOffset, m_ScrollView.verticalScroller.highValue);
-            m_ScrollView.verticalScroller.value = m_ScrollOffset;
+            var scrollableHeight = Mathf.Max(0, contentHeight - m_ScrollView.contentViewport.layout.height);
+            m_ScrollView.verticalScroller.highValue = Mathf.Min(Mathf.Max(m_ScrollOffset, m_ScrollView.verticalScroller.highValue), scrollableHeight);
+            m_ScrollView.verticalScroller.value = Mathf.Min(m_ScrollOffset, m_ScrollView.verticalScroller.highValue);
 
             int itemCount = Math.Min((int)(height / itemHeight) + m_ExtraVisibleItems, itemsSource.Count);
 

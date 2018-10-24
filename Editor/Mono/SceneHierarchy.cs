@@ -989,10 +989,21 @@ namespace UnityEditor
 
                     if (!string.IsNullOrEmpty(assetPath))
                     {
-                        menu.AddItem(EditorGUIUtility.TrTextContent("Open Prefab Asset"), false, () =>
+                        if (PrefabUtility.IsPartOfModelPrefab(go))
                         {
-                            PrefabStageUtility.OpenPrefab(assetPath, go, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
-                        });
+                            menu.AddItem(EditorGUIUtility.TrTextContent("Open Model"), false, () =>
+                            {
+                                GameObject asset = PrefabUtility.GetOriginalSourceOrVariantRoot(go);
+                                AssetDatabase.OpenAsset(asset);
+                            });
+                        }
+                        else
+                        {
+                            menu.AddItem(EditorGUIUtility.TrTextContent("Open Prefab Asset"), false, () =>
+                            {
+                                PrefabStageUtility.OpenPrefab(assetPath, go, StageNavigationManager.Analytics.ChangeType.EnterViaInstanceHierarchyContextMenu);
+                            });
+                        }
 
                         menu.AddItem(EditorGUIUtility.TrTextContent("Select Prefab Asset"), false, () =>
                         {

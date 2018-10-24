@@ -474,7 +474,9 @@ namespace UnityEditor.Scripting.Compilers
                 return;
 
             var pathMappingsFilePath = Path.GetTempFileName();
-            File.WriteAllLines(pathMappingsFilePath, pathMappings.ToArray());
+
+            if (pathMappings != null)
+                File.WriteAllLines(pathMappingsFilePath, pathMappings.ToArray());
 
             APIUpdaterHelper.UpdateScripts(
                 responseFile,

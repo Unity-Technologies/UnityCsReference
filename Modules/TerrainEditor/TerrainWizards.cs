@@ -8,6 +8,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using UnityEditor.Experimental.TerrainAPI;
 
 namespace UnityEditor
 {
@@ -391,7 +392,7 @@ namespace UnityEditor
                 newTrees[trees.Length].bendFactor = m_BendFactor;
                 m_PrototypeIndex = trees.Length;
                 m_Terrain.terrainData.treePrototypes = newTrees;
-                TreePainter.selectedTree = m_PrototypeIndex;
+                PaintTreesTool.instance.selectedTree = m_PrototypeIndex;
             }
             else
             {
@@ -715,7 +716,7 @@ namespace UnityEditor
                 Debug.LogError(errorString);
                 return;
             }
-            TreePainter.MassPlaceTrees(m_Terrain.terrainData, numberOfTrees, true, keepExistingTrees);
+            PaintTreesTool.instance.MassPlaceTrees(m_Terrain.terrainData, numberOfTrees, true, keepExistingTrees);
             m_Terrain.Flush();
         }
     }

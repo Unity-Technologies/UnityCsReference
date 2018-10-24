@@ -259,6 +259,9 @@ namespace UnityEditor
         internal static extern float ComputeTotalGPUMemoryUsageInBytes();
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
+        internal static extern void LogGPUMemoryStatistics();
+
+        [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]
         internal static extern float GetLightmapBakeTimeRaw();
 
         [StaticAccessor("ProgressiveRuntimeManager::Get()", StaticAccessorType.Arrow)]

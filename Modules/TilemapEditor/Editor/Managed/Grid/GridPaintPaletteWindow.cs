@@ -310,15 +310,13 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateSettingsProvider()
         {
-            var settingsProvider = new SettingsProvider("Preferences/2D/Tile Palette")
+            var settingsProvider = new SettingsProvider("Preferences/2D/Tile Palette", SettingsScope.User, SettingsProvider.GetSearchKeywordsFromGUIContentProperties<TilePaletteProperties>())
             {
                 guiHandler = searchContext =>
                 {
                     PreferencesGUI();
-                },
-                scopes = SettingsScopes.User
+                }
             };
-            settingsProvider.PopulateSearchKeywordsFromGUIContentProperties<TilePaletteProperties>();
             return settingsProvider;
         }
 
@@ -1011,7 +1009,7 @@ namespace UnityEditor
                                 // Do nothing here for "No"
                                 break;
                             case 2:
-                                var settingsWindow = SettingsWindow.Show(SettingsScopes.User);
+                                var settingsWindow = SettingsWindow.Show(SettingsScope.User);
                                 settingsWindow.FilterProviders(TilePaletteProperties.targetEditModeLookup);
                                 break;
                         }
@@ -1177,6 +1175,9 @@ namespace UnityEditor
 
         private void EnableFocus()
         {
+            if (GridPaintingState.scenePaintTarget == null)
+                return;
+
             switch (TilemapEditorUserSettings.focusMode)
             {
                 case TilemapEditorUserSettings.FocusMode.Tilemap:

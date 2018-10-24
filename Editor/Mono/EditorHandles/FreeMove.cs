@@ -22,7 +22,7 @@ namespace UnityEditorInternal
             Vector3 worldPosition = Handles.matrix.MultiplyPoint(position);
             Matrix4x4 origMatrix = Handles.matrix;
 
-            VertexSnapping.HandleKeyAndMouseMove(id);
+            VertexSnapping.HandleMouseMove(id);
 
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))
@@ -162,7 +162,7 @@ namespace UnityEditorInternal
             Vector3 worldPosition = Handles.matrix.MultiplyPoint(position);
             Matrix4x4 origMatrix = Handles.matrix;
 
-            VertexSnapping.HandleKeyAndMouseMove(id);
+            VertexSnapping.HandleMouseMove(id);
 
             Event evt = Event.current;
             switch (evt.GetTypeForControl(id))

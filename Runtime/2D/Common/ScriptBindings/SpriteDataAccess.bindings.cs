@@ -48,6 +48,7 @@ namespace UnityEngine.Experimental.U2D
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    [VisibleToOtherModules]
     internal struct SpriteChannelInfo
     {
         [NativeNameAttribute("buffer")]

@@ -281,6 +281,10 @@ namespace UnityEngine
             get;
         }
 
+        extern public HumanDescription humanDescription
+        {
+            get;
+        }
         extern internal void SetMuscleMinMax(int muscleId, float min, float max);
 
         extern internal void SetParameter(int parameterId, float value);

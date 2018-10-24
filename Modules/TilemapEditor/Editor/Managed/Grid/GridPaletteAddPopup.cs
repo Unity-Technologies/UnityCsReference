@@ -64,7 +64,30 @@ namespace UnityEditor
 
             GUILayout.BeginHorizontal();
             GUILayout.Label(Styles.gridLabel, GUILayout.Width(90f));
-            m_Layout = (Grid.CellLayout)EditorGUILayout.EnumPopup(m_Layout);
+            EditorGUI.BeginChangeCheck();
+            var newLayout = (Grid.CellLayout)EditorGUILayout.EnumPopup(m_Layout);
+            if (EditorGUI.EndChangeCheck())
+            {
+                // Set useful user settings for certain layouts
+                switch (newLayout)
+                {
+                    case Grid.CellLayout.Rectangle:
+                    case Grid.CellLayout.Hexagon:
+                    {
+                        m_CellSizing = GridPalette.CellSizing.Automatic;
+                        m_CellSize = new Vector3(1, 1, 0);
+                        break;
+                    }
+                    case Grid.CellLayout.Isometric:
+                    case Grid.CellLayout.IsometricZAsY:
+                    {
+                        m_CellSizing = GridPalette.CellSizing.Manual;
+                        m_CellSize = new Vector3(1, 0.5f, 1);
+                        break;
+                    }
+                }
+                m_Layout = newLayout;
+            }
             GUILayout.EndHorizontal();
 
             if (m_Layout == GridLayout.CellLayout.Hexagon)

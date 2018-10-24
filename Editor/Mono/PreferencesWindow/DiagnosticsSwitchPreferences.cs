@@ -129,14 +129,13 @@ namespace UnityEditor
         [SettingsProvider]
         internal static SettingsProvider CreateDiagnosticProvider()
         {
-            return new SettingsProvider("Preferences/Diagnostics")
+            return new SettingsProvider("Preferences/Diagnostics", SettingsScope.User)
             {
                 guiHandler = searchContext =>
                 {
                     using (new SettingsWindow.GUIScope())
                         OnGUI(searchContext);
                 },
-                scopes = SettingsScopes.User,
                 hasSearchInterestHandler = searchContext =>
                 {
                     var switches = new List<DiagnosticSwitch>();

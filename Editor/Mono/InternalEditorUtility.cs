@@ -28,11 +28,9 @@ namespace UnityEditorInternal
                 // Most .asset files use their scriptable object defined icon instead of a default one.
                 case "asset": return AssetDatabase.GetCachedIcon(fileName) as Texture2D ?? EditorGUIUtility.FindTexture("GameManager Icon");
 
-                case "boo": return EditorGUIUtility.FindTexture("boo Script Icon");
                 case "cginc": return EditorGUIUtility.FindTexture("CGProgram Icon");
                 case "cs": return EditorGUIUtility.FindTexture("cs Script Icon");
                 case "guiskin": return EditorGUIUtility.FindTexture(typeof(GUISkin));
-                case "js": return EditorGUIUtility.FindTexture("Js Script Icon");
                 case "dll": return EditorGUIUtility.FindTexture("Assembly Icon");
                 case "asmdef": return EditorGUIUtility.FindTexture(typeof(AssemblyDefinitionAsset));
                 case "mat": return EditorGUIUtility.FindTexture(typeof(Material));

@@ -8,7 +8,7 @@ using UnityEngine.Experimental.TerrainAPI;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
-    public class PaintHeightTool : TerrainPaintTool<PaintHeightTool>
+    internal class PaintHeightTool : TerrainPaintTool<PaintHeightTool>
     {
         public override string GetName()
         {

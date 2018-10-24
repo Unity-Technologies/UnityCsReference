@@ -17,7 +17,7 @@ namespace UnityEngine
     internal sealed partial class DebugLogHandler
     {
         [ThreadAndSerializationSafe]
-        internal static extern void Internal_Log(LogType level, string msg, Object obj);
+        internal static extern void Internal_Log(LogType level, LogOption options, string msg, Object obj);
         [ThreadAndSerializationSafe]
         internal static extern void Internal_LogException(Exception exception, Object obj);
     }
@@ -115,6 +115,15 @@ namespace UnityEngine
         public static void LogFormat(UnityEngine.Object context, string format, params object[] args)
         {
             unityLogger.LogFormat(LogType.Log, context, format, args);
+        }
+
+        public static void LogFormat(LogType logType, LogOption logOptions, Object context, string format, params object[] args)
+        {
+            var l = unityLogger.logHandler as DebugLogHandler;
+            if (l == null)
+                unityLogger.LogFormat(logType, context, format, args);
+            else
+                l.LogFormat(logType, logOptions, context, format, args);
         }
 
         // A variant of Debug.Log that logs an error message to the console.

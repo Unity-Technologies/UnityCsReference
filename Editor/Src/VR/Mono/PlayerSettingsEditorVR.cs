@@ -13,6 +13,7 @@ using UnityEditor.Modules;
 using UnityEditorInternal;
 using UnityEngine;
 using GraphicsDeviceType = UnityEngine.Rendering.GraphicsDeviceType;
+using VRAttributes = UnityEditor.BuildTargetDiscovery.VRAttributes;
 
 namespace UnityEditorInternal.VR
 {
@@ -124,8 +125,8 @@ namespace UnityEditorInternal.VR
 
         internal bool TargetGroupSupportsAugmentedReality(BuildTargetGroup targetGroup)
         {
-            return TargetGroupSupportsTango(targetGroup) ||
-                TargetGroupSupportsVuforia(targetGroup);
+            return BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportVuforia) ||
+                BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportTango);
         }
 
         internal void XRSectionGUI(BuildTargetGroup targetGroup, int sectionIndex)
@@ -248,66 +249,11 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        // Keep these in sync with BuildTargetPlatformSpecific.cpp
-        private static bool DoesBuildTargetSupportSinglePassStereoRendering(BuildTargetGroup targetGroup)
-        {
-            switch (targetGroup)
-            {
-                case BuildTargetGroup.Standalone:
-                case BuildTargetGroup.PS4:
-                case BuildTargetGroup.WSA:
-                case BuildTargetGroup.Android:
-                case BuildTargetGroup.iOS:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        // Keep these in sync with BuildTargetPlatformSpecific.cpp
-        private static bool DoesBuildTargetSupportStereoInstancingRendering(BuildTargetGroup targetGroup)
-        {
-            switch (targetGroup)
-            {
-                case BuildTargetGroup.Standalone:
-                case BuildTargetGroup.PS4:
-                case BuildTargetGroup.WSA:
-                case BuildTargetGroup.Lumin:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        // Keep these in sync with BuildTargetPlatformSpecific.cpp
-        private static bool DoesBuildTargetSupportStereoMultiviewRendering(BuildTargetGroup targetGroup)
-        {
-            switch (targetGroup)
-            {
-                case BuildTargetGroup.Android:
-                case BuildTargetGroup.Lumin:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
-        // Keep these in sync with BuildTargetPlatformSpecific.cpp
-        private static bool DoesBuildTargetSupportStereo360Capture(BuildTargetGroup targetGroup)
-        {
-            switch (targetGroup)
-            {
-                case BuildTargetGroup.Standalone:
-                case BuildTargetGroup.PS4:
-                    return true;
-                default:
-                    return false;
-            }
-        }
-
         private static GUIContent[] GetStereoRenderingPaths(BuildTargetGroup targetGroup)
         {
-            return DoesBuildTargetSupportStereoMultiviewRendering(targetGroup) ? Styles.kMultiviewStereoRenderingPaths : Styles.kDefaultStereoRenderingPaths;
+            if (BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportStereoMultiviewRendering))
+                return Styles.kMultiviewStereoRenderingPaths;
+            return Styles.kDefaultStereoRenderingPaths;
         }
 
         private bool IsStereoRenderingModeSupported(BuildTargetGroup targetGroup, StereoRenderingPath stereoRenderingPath)
@@ -318,12 +264,11 @@ namespace UnityEditorInternal.VR
                     return (UnityEngine.Rendering.GraphicsSettings.renderPipelineAsset == null);
 
                 case StereoRenderingPath.SinglePass:
-                    return DoesBuildTargetSupportSinglePassStereoRendering(targetGroup);
+                    return BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportSinglePassStereoRendering);
 
                 case StereoRenderingPath.Instancing:
-                    return DoesBuildTargetSupportStereoInstancingRendering(targetGroup);
+                    return BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportStereoInstancingRendering);
             }
-            ;
 
             return false;
         }
@@ -433,7 +378,7 @@ namespace UnityEditorInternal.VR
 
         private void Stereo360CaptureGUI(BuildTargetGroup targetGroup)
         {
-            if (DoesBuildTargetSupportStereo360Capture(targetGroup))
+            if (BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportStereo360Capture))
                 EditorGUILayout.PropertyField(m_Enable360StereoCapture, Styles.stereo360CaptureCheckbox);
         }
 
@@ -625,22 +570,9 @@ namespace UnityEditorInternal.VR
             }
         }
 
-        internal bool TargetGroupSupportsTango(BuildTargetGroup targetGroup)
-        {
-            return targetGroup == BuildTargetGroup.Android;
-        }
-
-        internal bool TargetGroupSupportsVuforia(BuildTargetGroup targetGroup)
-        {
-            return targetGroup == BuildTargetGroup.Standalone ||
-                targetGroup == BuildTargetGroup.Android ||
-                targetGroup == BuildTargetGroup.iOS ||
-                targetGroup == BuildTargetGroup.WSA;
-        }
-
         internal void TangoGUI(BuildTargetGroup targetGroup)
         {
-            if (!TargetGroupSupportsTango(targetGroup))
+            if (!BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportTango))
                 return;
 
             // Google Tango settings
@@ -649,7 +581,8 @@ namespace UnityEditorInternal.VR
 
         internal void VuforiaGUI(BuildTargetGroup targetGroup)
         {
-            if (!TargetGroupSupportsVuforia(targetGroup) || !m_VuforiaInstalled)
+            if (!BuildTargetDiscovery.PlatformGroupHasVRFlag(targetGroup, VRAttributes.SupportVuforia)
+                || !m_VuforiaInstalled)
                 return;
 
             // Disable toggle when Vuforia is in the VRDevice list and VR Supported == true

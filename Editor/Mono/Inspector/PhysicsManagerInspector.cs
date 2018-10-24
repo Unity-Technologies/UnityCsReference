@@ -3,7 +3,6 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using UnityEngine;
-using UnityEditor;
 using UnityEditorInternal;
 
 namespace UnityEditor
@@ -39,16 +38,17 @@ namespace UnityEditor
             GUILayout.EndHorizontal();
             if (show)
             {
-                var scrollPos = GUI.GetTopScrollView() != null ? GUI.GetTopScrollView().scrollPosition : Vector2.zero;
+                var scrollState = GUI.GetTopScrollView();
+                var scrollStatePosOffset = scrollState?.position.y ?? 0;
+                var scrollPos = scrollState?.scrollPosition ?? Vector2.zero;
                 var topLabelRect = GUILayoutUtility.GetRect(checkboxSize + labelSize, labelSize);
-                var scrollArea = GUIClip.topmostRect;
                 var topLeft = new Vector2(topLabelRect.x, topLabelRect.y);
                 var y = 0;
                 for (int i = 0; i < kMaxLayers; i++)
                 {
                     if (LayerMask.LayerToName(i) != "")
                     {
-                        var translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.x - scrollPos.x, topLeft.y - scrollPos.y, 0);
+                        var translate = new Vector3(labelSize + indent + checkboxSize * (numLayers - y) + topLeft.x - scrollPos.x + scrollStatePosOffset, topLeft.y - scrollPos.y + scrollStatePosOffset, 0);
                         GUI.matrix = Matrix4x4.TRS(translate, Quaternion.Euler(0, 0, 90), Vector3.one);
                         GUI.Label(new Rect(scrollPos.x, scrollPos.y, labelSize, checkboxSize), LayerMask.LayerToName(i), "RightLabel");
                         y++;
@@ -157,11 +157,9 @@ namespace UnityEditor
         [SettingsProvider]
         static SettingsProvider CreateProjectSettingsProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Physics", "ProjectSettings/DynamicsManager.asset")
-            {
-                icon = EditorGUIUtility.IconContent("Profiler.Physics").image as Texture2D
-            };
-            SettingsProvider.GetSearchKeywordsFromSerializedObject(provider.CreateEditor().serializedObject, provider.keywords);
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Physics", "ProjectSettings/DynamicsManager.asset",
+                SettingsProvider.GetSearchKeywordsFromPath("ProjectSettings/DynamicsManager.asset"));
             return provider;
         }
     }

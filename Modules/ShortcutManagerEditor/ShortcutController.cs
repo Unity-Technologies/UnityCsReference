@@ -124,17 +124,10 @@ namespace UnityEditor.ShortcutManagement
 
             IConflictResolver conflictResolver;
 
-            //TODO: disabled while we iterate on the window UI.
-            bool enableConflictResolutionWorkflow = false;
-            if (enableConflictResolutionWorkflow)
-            {
-                var conflictResolverView = new ConflictResolverView();
-                conflictResolver = new ConflictResolver(profileManager, contextManager, conflictResolverView);
-            }
-            else
-            {
-                conflictResolver = new ConflictNotificationConsole();
-            }
+
+            var conflictResolverView = new ConflictResolverView();
+            conflictResolver = new ConflictResolver(profileManager, contextManager, conflictResolverView);
+
 
             m_Trigger = new Trigger(directory, conflictResolver);
         }

@@ -199,21 +199,24 @@ namespace UnityEditor.Presets
 
         public override void OnInspectorGUI()
         {
+            //MinWidth to force the horizontal scroll with a good size. MaxWidth because without it it sets the list at the MinWidth
+            GUILayout.BeginVertical(GUILayout.MinWidth(350), GUILayout.MaxWidth(SettingsWindow.s_DefaultLayoutMaxWidth));
+
             serializedObject.Update();
 
             m_List.DoLayoutList();
 
             serializedObject.ApplyModifiedProperties();
+
+            GUILayout.EndVertical();
         }
 
         [SettingsProvider]
         static SettingsProvider CreatePresetManagerProvider()
         {
-            var provider = new AssetSettingsProvider("Project/Preset Manager", "ProjectSettings/PresetManager.asset")
-            {
-                icon = EditorGUIUtility.FindTexture("UnityEditor/Presets/Preset Icon")
-            };
-            provider.PopulateSearchKeywordsFromGUIContentProperties<Content>();
+            var provider = AssetSettingsProvider.CreateProviderFromAssetPath(
+                "Project/Preset Manager", "ProjectSettings/PresetManager.asset",
+                SettingsProvider.GetSearchKeywordsFromGUIContentProperties<Content>());
             return provider;
         }
     }

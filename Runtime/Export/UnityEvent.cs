@@ -950,6 +950,12 @@ namespace UnityEngine.Events
             DirtyPersistentCalls();
         }
 
+        internal void RegisterVoidPersistentListenerWithoutValidation(int index, Object target, string methodName)
+        {
+            m_PersistentCalls.RegisterVoidPersistentListener(index, target, methodName);
+            DirtyPersistentCalls();
+        }
+
         internal void AddIntPersistentListener(UnityAction<int> call, int argument)
         {
             var count = GetPersistentEventCount();

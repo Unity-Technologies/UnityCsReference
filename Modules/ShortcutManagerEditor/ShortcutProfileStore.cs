@@ -30,7 +30,10 @@ namespace UnityEditor.ShortcutManagement
                 return false;
 
             // TODO: This could be problematic since Path.GetInvalidFileNameChars is platform dependent
-            return !string.IsNullOrEmpty(id) && id.IndexOfAny(Path.GetInvalidFileNameChars()) == -1 && id != ShortcutManager.defaultProfileId;
+            return !string.IsNullOrEmpty(id) &&
+                id.Length <= 127 &&
+                id.IndexOfAny(Path.GetInvalidFileNameChars()) == -1 &&
+                id != ShortcutManager.defaultProfileId;
         }
 
         public bool ProfileExists(string id)

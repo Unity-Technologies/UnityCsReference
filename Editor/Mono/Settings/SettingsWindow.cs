@@ -20,7 +20,7 @@ namespace UnityEditor
         [SerializeField] private Vector2 m_PosLeft;
         [SerializeField] private Vector2 m_PosRight;
 
-        [SerializeField] private SettingsScopes m_Scopes;
+        [SerializeField] private SettingsScope m_Scope;
         [SerializeField] public float m_SplitterFlex = 0.2f;
 
         private SettingsProvider[] m_Providers;
@@ -50,7 +50,7 @@ namespace UnityEditor
         public SettingsWindow()
         {
             m_SearchFieldGiveFocus = true;
-            m_Scopes = SettingsScopes.None;
+            m_Scope = SettingsScope.Project;
         }
 
         internal SettingsProvider[] GetProviders()
@@ -113,17 +113,15 @@ namespace UnityEditor
 
         internal void OnDisable()
         {
-            if (m_Splitter.childCount >= 1)
+            if (m_Splitter != null && m_Splitter.childCount >= 1)
             {
                 var splitLeft = m_Splitter.Children().First();
                 float flexGrow = splitLeft.style.flex.value.grow;
                 EditorPrefs.SetFloat(GetPrefKeyName(nameof(m_Splitter)), flexGrow);
             }
 
-            if (m_TreeView.currentProvider != null)
-            {
+            if (m_TreeView != null && m_TreeView.currentProvider != null)
                 EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), m_TreeView.currentProvider.settingsPath);
-            }
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;
@@ -170,7 +168,7 @@ namespace UnityEditor
 
         private void Init()
         {
-            m_Providers = SettingsService.FetchSettingsProviders().Where(p => (p.scopes & m_Scopes) != 0).ToArray();
+            m_Providers = SettingsService.FetchSettingsProviders().Where(p => p.scope == m_Scope).ToArray();
 
             WarnAgainstDuplicates();
 
@@ -335,53 +333,27 @@ namespace UnityEditor
             m_TreeView.searchString = m_SearchText;
         }
 
-        [MenuItem("Edit/All Settings &F8", false, 260, true)]
-        internal static void OpenAllSettings()
-        {
-            OpenAllSettings(null);
-        }
-
-        [MenuItem("Edit/Settings", false, 259, false)]
+        [MenuItem("Edit/Project Settings...", false, 259, false)]
         internal static void OpenProjectSettings()
         {
-            OpenProjectSettings(null);
-        }
-
-        internal static SettingsWindow OpenAllSettings(string settingsPath)
-        {
-            return Show(SettingsScopes.Any, settingsPath);
-        }
-
-        internal static SettingsWindow OpenProjectSettings(string settingsPath)
-        {
-            return Show(SettingsScopes.Project, settingsPath);
+            Show(SettingsScope.Project);
         }
 
         internal static SettingsWindow OpenUserPreferences()
         {
-            return OpenUserPreferences(null);
+            return Show(SettingsScope.User);
         }
 
-        internal static SettingsWindow OpenUserPreferences(string settingsPath)
-        {
-            return Show(SettingsScopes.User, settingsPath);
-        }
-
-        private static SettingsWindow Create(SettingsScopes scopes)
+        private static SettingsWindow Create(SettingsScope scope)
         {
             var settingsWindow = CreateInstance<SettingsWindow>();
-            settingsWindow.m_Scopes = scopes;
-            if ((scopes & SettingsScopes.Project) != 0)
-                settingsWindow.titleContent.text = "Settings";
-            else if ((scopes & SettingsScopes.User) != 0)
-                settingsWindow.titleContent.text = "Preferences";
-            else
-                settingsWindow.titleContent.text = scopes.ToString();
+            settingsWindow.m_Scope = scope;
+            settingsWindow.titleContent.text = scope == SettingsScope.Project ? "Settings" : "Preferences";
             settingsWindow.Init();
             return settingsWindow;
         }
 
-        internal static SettingsWindow Show(SettingsScopes scopes, string settingsPath = null)
+        internal static SettingsWindow Show(SettingsScope scopes, string settingsPath = null)
         {
             var settingsWindow = FindWindowByScope(scopes) ?? Create(scopes);
             settingsWindow.Show();
@@ -394,10 +366,10 @@ namespace UnityEditor
             return settingsWindow;
         }
 
-        internal static SettingsWindow FindWindowByScope(SettingsScopes scopes)
+        internal static SettingsWindow FindWindowByScope(SettingsScope scopes)
         {
             var settingsWindows = Resources.FindObjectsOfTypeAll(typeof(SettingsWindow)).Cast<SettingsWindow>();
-            return settingsWindows.FirstOrDefault(settingsWindow => (settingsWindow.m_Scopes & scopes) != 0);
+            return settingsWindows.FirstOrDefault(settingsWindow => settingsWindow.m_Scope == scopes);
         }
 
         internal class GUIScope : GUI.Scope

@@ -8,7 +8,7 @@ using UnityEngine.Experimental.TerrainAPI;
 
 namespace UnityEditor.Experimental.TerrainAPI
 {
-    public class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
+    internal class SmoothHeightTool : TerrainPaintTool<SmoothHeightTool>
     {
         public override string GetName()
         {

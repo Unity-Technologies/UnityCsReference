@@ -24,11 +24,11 @@ namespace UnityEditor.ShortcutManagement
         void RefreshAll();
         void RefreshKeyboard();
         void RefreshCategoryList();
-        void RefreshshortcutList();
+        void RefreshShortcutList();
 
         void UpdateSearchFilterOptions();
 
-        RebindResolution HandleRebindWillCreateConflict(ShortcutEntry entry, IList<KeyCombination> newBnding, IList<ShortcutEntry> conflicts);
+        RebindResolution HandleRebindWillCreateConflict(ShortcutEntry entry, IList<KeyCombination> newBinding, IList<ShortcutEntry> conflicts);
     }
 
     enum BindingState
@@ -74,6 +74,7 @@ namespace UnityEditor.ShortcutManagement
 
 
         IList<ShortcutEntry> GetShortcutList();
+        IList<string> GetShortcutPathList();
         ShortcutEntry selectedEntry { get; }
         int selectedEntryIndex { get; }
         void ShortcutEntrySelected(ShortcutEntry shortcutEntry);
@@ -142,9 +143,8 @@ namespace UnityEditor.ShortcutManagement
         [MenuItem("Edit/Shortcuts...", false, 261)]
         static void Open()
         {
-            var win = (ShortcutManagerWindow)CreateInstance(typeof(ShortcutManagerWindow));
+            var win = GetWindowDontShow<ShortcutManagerWindow>();
             win.ShowUtility();
-            win.titleContent = new GUIContent("Shortcut Manager");
         }
 
         void OnEnable()
@@ -156,6 +156,7 @@ namespace UnityEditor.ShortcutManagement
             rootVisualContainer.style.positionRight = 0;
             rootVisualContainer.style.positionType = PositionType.Absolute;
 
+            titleContent = new GUIContent("Shortcut Manager");
             minSize = new Vector2(740, 700);
             maxSize = new Vector2(740, 10000);
 
@@ -186,6 +187,13 @@ namespace UnityEditor.ShortcutManagement
         {
             EditorApplication.modifierKeysChanged -= OnModifiersMightHaveChanged;
             m_ViewController.OnDisable();
+        }
+
+        public static void ShowConflicts()
+        {
+            var win = GetWindowDontShow<ShortcutManagerWindow>();
+            win.m_ViewController.SelectConflictCategory();
+            win.ShowUtility();
         }
     }
 }

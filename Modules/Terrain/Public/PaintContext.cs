@@ -30,17 +30,12 @@ namespace UnityEngine.Experimental.TerrainAPI
 
         public RectInt GetClippedPixelRectInTerrainPixels(int terrainIndex)
         {
-            return m_TerrainTiles[terrainIndex].clippedLocal;
+            return m_TerrainTiles[terrainIndex].clippedLocalPixels;
         }
 
         public RectInt GetClippedPixelRectInRenderTexturePixels(int terrainIndex)
         {
-            Rect vp = m_TerrainTiles[terrainIndex].validPaintRect;
-            return new RectInt(
-                Mathf.RoundToInt(vp.xMin),
-                Mathf.RoundToInt(vp.yMin),
-                Mathf.RoundToInt(vp.width),
-                Mathf.RoundToInt(vp.height));
+            return m_TerrainTiles[terrainIndex].clippedPCPixels;
         }
 
         // initialized by constructor
@@ -54,18 +49,16 @@ namespace UnityEngine.Experimental.TerrainAPI
         internal class TerrainTile
         {
             public TerrainTile() {}
-            public TerrainTile(Terrain newTerrain, RectInt newRegion) { rect = newRegion; terrain = newTerrain; }
+            public TerrainTile(Terrain newTerrain, int tileOriginPixelsX, int tileOriginPixelsY)   { terrain = newTerrain; tileOriginPixels = new Vector2Int(tileOriginPixelsX, tileOriginPixelsY); }
 
-            public Terrain terrain;               // the terrain object
-            public RectInt rect;                  // coordinates of this terrain tile in paint context pixels (essentially originTerrain target texture pixels)
-            public RectInt clippedLocal;          // pixelRect in local pixel coordinates (for target texture), clipped to the local tile
-            public Rect validPaintRect;           // the area per tile where the source texture was able to read from (in paint context pixels)
-            public int mapIndex;                  //
-            public int channelIndex;              //
+            public Terrain terrain;                 // the terrain object for this tile
+            public Vector2Int tileOriginPixels;     // coordinates of this terrain tile in originTerrain target texture pixels
 
-            // offsets used for gather / scatter
-            public Vector2Int readOffset;         // offsets used when reading from the terrain heightmap
-            public Vector2Int writeOffset;        // offsets used when copying from PaintContext clipped heightmap back to the terrain heightmap
+            public RectInt clippedLocalPixels;      // the tile pixels touched by this PaintContext (in local target texture pixels)
+            public RectInt clippedPCPixels;         // the tile pixels touched by this PaintContext (in PaintContext/source/destRenderTexture pixels)
+
+            public int mapIndex;                  // for splatmap operations, the splatmap index on this Terrain containing the desired TerrainLayer weight
+            public int channelIndex;              // for splatmap operations, the channel on the splatmap containing the desired TerrainLayer weight
         }
 
         [Flags]
@@ -129,9 +122,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             }
 
             // add center tile
-            TerrainTile tile = new TerrainTile(originTerrain, new RectInt(0, 0, targetTextureWidth, targetTextureHeight));
-            tile.readOffset = Vector2Int.zero;
-            tile.writeOffset = Vector2Int.zero;
+            TerrainTile tile = new TerrainTile(originTerrain, 0, 0);
             m_TerrainTiles.Add(tile);
 
             // add horizontal and vertical neighbors
@@ -139,48 +130,34 @@ namespace UnityEngine.Experimental.TerrainAPI
             Terrain vert = null;
             Terrain cornerTerrain = null;
 
-            int xBias = 0;
-            int yBias = 0;
-            int xReadBias = 0;
-            int yReadBias = 0;
-            int xWriteBias = 0;
-            int yWriteBias = 0;
+            int horizTileDelta = 0;     // how many tiles to move horizontally
+            int vertTileDelta = 0;      // how many tiles to move vertically
 
             if (wantLeft)
             {
-                xBias = -1;
-                xReadBias = -1;
-                xWriteBias = 1;
+                horizTileDelta = -1;
                 horiz = left;
             }
             else if (wantRight)
             {
-                xBias = 1;
-                xReadBias = 1;
-                xWriteBias = -1;
+                horizTileDelta = 1;
                 horiz = right;
             }
 
             if (wantTop)
             {
-                yBias = 1;
-                yReadBias = 1;
-                yWriteBias = -1;
+                vertTileDelta = 1;
                 vert = top;
             }
             else if (wantBottom)
             {
-                yBias = -1;
-                yReadBias = -1;
-                yWriteBias = 1;
+                vertTileDelta = -1;
                 vert = bottom;
             }
 
             if (horiz)
             {
-                tile = new TerrainTile(horiz, new RectInt(xBias * targetTextureWidth, 0, targetTextureWidth, targetTextureHeight));
-                tile.readOffset = new Vector2Int(xReadBias, 0);
-                tile.writeOffset = new Vector2Int(xWriteBias, 0);
+                tile = new TerrainTile(horiz, horizTileDelta * (targetTextureWidth - 1), 0);
                 m_TerrainTiles.Add(tile);
 
                 // add corner, if we have a link
@@ -192,9 +169,7 @@ namespace UnityEngine.Experimental.TerrainAPI
 
             if (vert)
             {
-                tile = new PaintContext.TerrainTile(vert, new RectInt(0, yBias * targetTextureHeight, targetTextureWidth, targetTextureHeight));
-                tile.readOffset = new Vector2Int(0, yReadBias);
-                tile.writeOffset = new Vector2Int(0, yWriteBias);
+                tile = new PaintContext.TerrainTile(vert, 0, vertTileDelta * (targetTextureHeight - 1));
                 m_TerrainTiles.Add(tile);
 
                 // add corner, if we have a link
@@ -206,9 +181,7 @@ namespace UnityEngine.Experimental.TerrainAPI
 
             if (cornerTerrain != null)
             {
-                tile = new TerrainTile(cornerTerrain, new RectInt(xBias * targetTextureWidth, yBias * targetTextureHeight, targetTextureWidth, targetTextureHeight));
-                tile.readOffset = new Vector2Int(xReadBias, yReadBias);
-                tile.writeOffset = new Vector2Int(xWriteBias, yWriteBias);
+                tile = new TerrainTile(cornerTerrain, horizTileDelta * (targetTextureWidth - 1), vertTileDelta * (targetTextureHeight - 1));
                 m_TerrainTiles.Add(tile);
             }
         }
@@ -218,17 +191,17 @@ namespace UnityEngine.Experimental.TerrainAPI
             for (int i = 0; i < m_TerrainTiles.Count; i++)
             {
                 TerrainTile tile = m_TerrainTiles[i];
-                tile.clippedLocal = new RectInt();
-                tile.clippedLocal.x = Mathf.Max(0, pixelRect.x - tile.rect.x);
-                tile.clippedLocal.y = Mathf.Max(0, pixelRect.y - tile.rect.y);
-                tile.clippedLocal.xMax = Mathf.Min(tile.rect.width, pixelRect.xMax - tile.rect.x);
-                tile.clippedLocal.yMax = Mathf.Min(tile.rect.height, pixelRect.yMax - tile.rect.y);
+                tile.clippedLocalPixels = new RectInt();
+                tile.clippedLocalPixels.x = Mathf.Max(0, pixelRect.x - tile.tileOriginPixels.x);
+                tile.clippedLocalPixels.y = Mathf.Max(0, pixelRect.y - tile.tileOriginPixels.y);
+                tile.clippedLocalPixels.xMax = Mathf.Min(targetTextureWidth, pixelRect.xMax - tile.tileOriginPixels.x);
+                tile.clippedLocalPixels.yMax = Mathf.Min(targetTextureHeight, pixelRect.yMax - tile.tileOriginPixels.y);
 
-                tile.validPaintRect = new Rect(
-                    tile.clippedLocal.x + tile.rect.x - pixelRect.x,
-                    tile.clippedLocal.y + tile.rect.y - pixelRect.y,
-                    tile.clippedLocal.width,
-                    tile.clippedLocal.height);
+                tile.clippedPCPixels = new RectInt(
+                    tile.clippedLocalPixels.x + tile.tileOriginPixels.x - pixelRect.x,
+                    tile.clippedLocalPixels.y + tile.tileOriginPixels.y - pixelRect.y,
+                    tile.clippedLocalPixels.width,
+                    tile.clippedLocalPixels.height);
             }
         }
 
@@ -261,10 +234,13 @@ namespace UnityEngine.Experimental.TerrainAPI
             RenderTexture.active = sourceRenderTexture;
             GL.Clear(false, true, new Color(0.0f, 0.0f, 0.0f, 0.0f));
 
+            GL.PushMatrix();
+            GL.LoadPixelMatrix(0, pixelRect.width, 0, pixelRect.height);
+
             for (int i = 0; i < m_TerrainTiles.Count; i++)
             {
                 TerrainTile terrainTile = m_TerrainTiles[i];
-                if (terrainTile.clippedLocal.width == 0 || terrainTile.clippedLocal.height == 0)
+                if (terrainTile.clippedLocalPixels.width == 0 || terrainTile.clippedLocalPixels.height == 0)
                     continue;
 
                 Texture sourceTexture = terrainTile.terrain.terrainData.heightmapTexture;
@@ -274,12 +250,6 @@ namespace UnityEngine.Experimental.TerrainAPI
                     continue;
                 }
 
-                Rect readRect = new Rect(
-                    (terrainTile.clippedLocal.x + terrainTile.readOffset.x) / (float)targetTextureWidth,
-                    (terrainTile.clippedLocal.y + terrainTile.readOffset.y) / (float)targetTextureHeight,
-                    (terrainTile.clippedLocal.width) / (float)targetTextureWidth,
-                    (terrainTile.clippedLocal.height) / (float)targetTextureHeight);
-
                 FilterMode oldFilterMode = sourceTexture.filterMode;
 
                 sourceTexture.filterMode = FilterMode.Point;
@@ -287,10 +257,12 @@ namespace UnityEngine.Experimental.TerrainAPI
                 blitMaterial.SetTexture("_MainTex", sourceTexture);
                 blitMaterial.SetPass(0);
 
-                TerrainPaintUtility.DrawQuad(pixelRect.width, pixelRect.height, readRect, terrainTile.validPaintRect);
+                TerrainPaintUtility.DrawQuad(terrainTile.clippedPCPixels, terrainTile.clippedLocalPixels, sourceTexture);
 
                 sourceTexture.filterMode = oldFilterMode;
             }
+
+            GL.PopMatrix();
 
             RenderTexture.active = oldRenderTexture;
         }
@@ -302,7 +274,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             for (int i = 0; i < m_TerrainTiles.Count; i++)
             {
                 TerrainTile terrainTile = m_TerrainTiles[i];
-                if (terrainTile.clippedLocal.width == 0 || terrainTile.clippedLocal.height == 0)
+                if (terrainTile.clippedLocalPixels.width == 0 || terrainTile.clippedLocalPixels.height == 0)
                     continue;
 
                 RenderTexture heightmap = terrainTile.terrain.terrainData.heightmapTexture;
@@ -316,27 +288,19 @@ namespace UnityEngine.Experimental.TerrainAPI
                     onTerrainTileBeforePaint(terrainTile, ToolAction.PaintHeightmap, editorUndoName);
 
                 RenderTexture.active = heightmap;
-
-                Rect readRect = new Rect(
-                    (terrainTile.clippedLocal.x + terrainTile.rect.x - pixelRect.x + terrainTile.writeOffset.x) / (float)pixelRect.width,
-                    (terrainTile.clippedLocal.y + terrainTile.rect.y - pixelRect.y + terrainTile.writeOffset.y) / (float)pixelRect.height,
-                    (terrainTile.clippedLocal.width) / (float)pixelRect.width,
-                    (terrainTile.clippedLocal.height) / (float)pixelRect.height);
-
-                Rect writeRect = new Rect(
-                    terrainTile.clippedLocal.x,
-                    terrainTile.clippedLocal.y,
-                    terrainTile.clippedLocal.width,
-                    terrainTile.clippedLocal.height);
+                GL.PushMatrix();
+                GL.LoadPixelMatrix(0, heightmap.width, 0, heightmap.height);
 
                 destinationRenderTexture.filterMode = FilterMode.Point;
 
                 blitMaterial.SetTexture("_MainTex", destinationRenderTexture);
                 blitMaterial.SetPass(0);
 
-                TerrainPaintUtility.DrawQuad(heightmap.width, heightmap.height, readRect, writeRect);
+                TerrainPaintUtility.DrawQuad(terrainTile.clippedLocalPixels, terrainTile.clippedPCPixels, destinationRenderTexture);
 
-                terrainTile.terrain.terrainData.UpdateDirtyRegion(terrainTile.clippedLocal.x, terrainTile.clippedLocal.y, terrainTile.clippedLocal.width, terrainTile.clippedLocal.height, !terrainTile.terrain.drawInstanced);
+                GL.PopMatrix();
+
+                terrainTile.terrain.terrainData.UpdateDirtyRegion(terrainTile.clippedLocalPixels.x, terrainTile.clippedLocalPixels.y, terrainTile.clippedLocalPixels.width, terrainTile.clippedLocalPixels.height, !terrainTile.terrain.drawInstanced);
                 OnTerrainPainted(terrainTile, ToolAction.PaintHeightmap);
             }
         }
@@ -349,11 +313,13 @@ namespace UnityEngine.Experimental.TerrainAPI
 
             RenderTexture.active = sourceRenderTexture;
             GL.Clear(false, true, new Color(0.5f, 0.5f, 0.5f, 0.5f));
+            GL.PushMatrix();
+            GL.LoadPixelMatrix(0, pixelRect.width, 0, pixelRect.height);
 
             for (int i = 0; i < m_TerrainTiles.Count; i++)
             {
                 TerrainTile terrainTile = m_TerrainTiles[i];
-                if (terrainTile.clippedLocal.width == 0 || terrainTile.clippedLocal.height == 0)
+                if (terrainTile.clippedLocalPixels.width == 0 || terrainTile.clippedLocalPixels.height == 0)
                     continue;
 
                 Texture sourceTexture = terrainTile.terrain.normalmapTexture;
@@ -363,12 +329,6 @@ namespace UnityEngine.Experimental.TerrainAPI
                     continue;
                 }
 
-                Rect readRect = new Rect(
-                    (terrainTile.clippedLocal.x + terrainTile.readOffset.x) / (float)targetTextureWidth,
-                    (terrainTile.clippedLocal.y + terrainTile.readOffset.y) / (float)targetTextureHeight,
-                    (terrainTile.clippedLocal.width) / (float)targetTextureWidth,
-                    (terrainTile.clippedLocal.height) / (float)targetTextureHeight);
-
                 FilterMode oldFilterMode = sourceTexture.filterMode;
 
                 sourceTexture.filterMode = FilterMode.Point;
@@ -376,10 +336,12 @@ namespace UnityEngine.Experimental.TerrainAPI
                 blitMaterial.SetTexture("_MainTex", sourceTexture);
                 blitMaterial.SetPass(0);
 
-                TerrainPaintUtility.DrawQuad(pixelRect.width, pixelRect.height, readRect, terrainTile.validPaintRect);
+                TerrainPaintUtility.DrawQuad(terrainTile.clippedPCPixels, terrainTile.clippedLocalPixels, sourceTexture);
 
                 sourceTexture.filterMode = oldFilterMode;
             }
+
+            GL.PopMatrix();
 
             RenderTexture.active = oldRenderTexture;
         }
@@ -395,6 +357,8 @@ namespace UnityEngine.Experimental.TerrainAPI
 
             RenderTexture.active = sourceRenderTexture;
             GL.Clear(false, true, new Color(0.0f, 0.0f, 0.0f, 0.0f));
+            GL.PushMatrix();
+            GL.LoadPixelMatrix(0, pixelRect.width, 0, pixelRect.height);
 
             Vector4[] layerMasks = { new Vector4(1, 0, 0, 0), new Vector4(0, 1, 0, 0), new Vector4(0, 0, 1, 0), new Vector4(0, 0, 0, 1) };
 
@@ -402,14 +366,8 @@ namespace UnityEngine.Experimental.TerrainAPI
             for (int i = 0; i < m_TerrainTiles.Count; i++)
             {
                 TerrainTile terrainTile = m_TerrainTiles[i];
-                if (terrainTile.clippedLocal.width == 0 || terrainTile.clippedLocal.height == 0)
+                if (terrainTile.clippedLocalPixels.width == 0 || terrainTile.clippedLocalPixels.height == 0)
                     continue;
-
-                Rect readRect = new Rect(
-                    (terrainTile.clippedLocal.x + terrainTile.readOffset.x) / (float)targetTextureWidth,
-                    (terrainTile.clippedLocal.y + terrainTile.readOffset.y) / (float)targetTextureHeight,
-                    (terrainTile.clippedLocal.width) / (float)targetTextureWidth,
-                    (terrainTile.clippedLocal.height) / (float)targetTextureHeight);
 
                 int tileLayerIndex = TerrainPaintUtility.FindTerrainLayerIndex(terrainTile.terrain, inputLayer);
                 if (tileLayerIndex == -1)
@@ -417,10 +375,10 @@ namespace UnityEngine.Experimental.TerrainAPI
                     if (!addLayerIfDoesntExist)
                     {
                         // setting these to zero will prevent them from being used later
-                        terrainTile.clippedLocal.width = 0;
-                        terrainTile.clippedLocal.height = 0;
-                        terrainTile.validPaintRect.width = 0;
-                        terrainTile.validPaintRect.height = 0;
+                        terrainTile.clippedLocalPixels.width = 0;
+                        terrainTile.clippedLocalPixels.height = 0;
+                        terrainTile.clippedPCPixels.width = 0;
+                        terrainTile.clippedPCPixels.height = 0;
                         continue;
                     }
                     tileLayerIndex = TerrainPaintUtility.AddTerrainLayer(terrainTile.terrain, inputLayer);
@@ -432,7 +390,9 @@ namespace UnityEngine.Experimental.TerrainAPI
                 Texture sourceTexture = TerrainPaintUtility.GetTerrainAlphaMapChecked(terrainTile.terrain, terrainTile.mapIndex);
                 if ((sourceTexture.width != targetTextureWidth) || (sourceTexture.height != targetTextureHeight))
                 {
-                    Debug.LogWarning("PaintContext alphamap operations must use the same resolution for all Terrains - mismatched Terrains are ignored.", terrainTile.terrain);
+                    Debug.LogWarning("PaintContext alphamap operations must use the same resolution for all Terrains - mismatched Terrains are ignored. (" +
+                        sourceTexture.width + " x " + sourceTexture.height + ") != (" + targetTextureWidth + " x " + targetTextureHeight + ")",
+                        terrainTile.terrain);
                     continue;
                 }
 
@@ -443,10 +403,12 @@ namespace UnityEngine.Experimental.TerrainAPI
                 copyTerrainLayerMaterial.SetTexture("_MainTex", sourceTexture);
                 copyTerrainLayerMaterial.SetPass(0);
 
-                TerrainPaintUtility.DrawQuad(pixelRect.width, pixelRect.height, readRect, terrainTile.validPaintRect);
+                TerrainPaintUtility.DrawQuad(terrainTile.clippedPCPixels, terrainTile.clippedLocalPixels, sourceTexture);
 
                 sourceTexture.filterMode = oldFilterMode;
             }
+
+            GL.PopMatrix();
 
             RenderTexture.active = oldRenderTexture;
         }
@@ -460,7 +422,7 @@ namespace UnityEngine.Experimental.TerrainAPI
             for (int i = 0; i < m_TerrainTiles.Count; i++)
             {
                 TerrainTile terrainTile = m_TerrainTiles[i];
-                if (terrainTile.clippedLocal.width == 0 || terrainTile.clippedLocal.height == 0)
+                if (terrainTile.clippedLocalPixels.width == 0 || terrainTile.clippedLocalPixels.height == 0)
                     continue;
 
                 if (onTerrainTileBeforePaint != null)
@@ -473,19 +435,19 @@ namespace UnityEngine.Experimental.TerrainAPI
                 RenderTexture destTarget = RenderTexture.GetTemporary(rtdesc);
                 RenderTexture.active = destTarget;
 
-                var writeRect = new RectInt(
-                    terrainTile.clippedLocal.x + terrainTile.rect.x - pixelRect.x + terrainTile.writeOffset.x,
-                    terrainTile.clippedLocal.y + terrainTile.rect.y - pixelRect.y + terrainTile.writeOffset.y,
-                    terrainTile.clippedLocal.width,
-                    terrainTile.clippedLocal.height);
+                RectInt writeRect = terrainTile.clippedPCPixels;
 
-                var readRect = new Rect(
+                Rect readRect = new Rect(
                     writeRect.x / (float)pixelRect.width,
                     writeRect.y / (float)pixelRect.height,
                     writeRect.width / (float)pixelRect.width,
                     writeRect.height / (float)pixelRect.height);
 
                 destinationRenderTexture.filterMode = FilterMode.Point;
+
+                int mapIndex = terrainTile.mapIndex;
+                int channelIndex = terrainTile.channelIndex;
+                Texture2D sourceTexTargetChannel = terrainTile.terrain.terrainData.alphamapTextures[mapIndex];
 
                 for (int j = 0; j < terrainTile.terrain.terrainData.alphamapTextureCount; j++)
                 {
@@ -496,23 +458,22 @@ namespace UnityEngine.Experimental.TerrainAPI
                         continue;
                     }
 
-                    int mapIndex = terrainTile.mapIndex;
-                    int channelIndex = terrainTile.channelIndex;
-
                     Rect combineRect = new Rect(
-                        terrainTile.clippedLocal.x / (float)sourceTex.width,
-                        terrainTile.clippedLocal.y / (float)sourceTex.height,
-                        terrainTile.clippedLocal.width / (float)sourceTex.width,
-                        terrainTile.clippedLocal.height / (float)sourceTex.height);
+                        terrainTile.clippedLocalPixels.x / (float)sourceTex.width,
+                        terrainTile.clippedLocalPixels.y / (float)sourceTex.height,
+                        terrainTile.clippedLocalPixels.width / (float)sourceTex.width,
+                        terrainTile.clippedLocalPixels.height / (float)sourceTex.height);
 
                     copyTerrainLayerMaterial.SetTexture("_MainTex", destinationRenderTexture);
                     copyTerrainLayerMaterial.SetTexture("_OldAlphaMapTexture", sourceRenderTexture);
+                    copyTerrainLayerMaterial.SetTexture("_OriginalTargetAlphaMap", sourceTexTargetChannel);
+
                     copyTerrainLayerMaterial.SetTexture("_AlphaMapTexture", sourceTex);
                     copyTerrainLayerMaterial.SetVector("_LayerMask", j == mapIndex ? layerMasks[channelIndex] : Vector4.zero);
+                    copyTerrainLayerMaterial.SetVector("_OriginalTargetAlphaMask", layerMasks[channelIndex]);
                     copyTerrainLayerMaterial.SetPass(1);
 
                     GL.PushMatrix();
-                    GL.LoadOrtho();
                     GL.LoadPixelMatrix(0, destTarget.width, 0, destTarget.height);
 
                     GL.Begin(GL.QUADS);
@@ -546,7 +507,7 @@ namespace UnityEngine.Experimental.TerrainAPI
 
                         // Composes mip0 in a RT with full mipchain.
                         Graphics.CopyTexture(sourceTex, 0, 0, mips, 0, 0);
-                        Graphics.CopyTexture(destTarget, 0, 0, writeRect.x, writeRect.y, writeRect.width, writeRect.height, mips, 0, 0, terrainTile.clippedLocal.x, terrainTile.clippedLocal.y);
+                        Graphics.CopyTexture(destTarget, 0, 0, writeRect.x, writeRect.y, writeRect.width, writeRect.height, mips, 0, 0, terrainTile.clippedLocalPixels.x, terrainTile.clippedLocalPixels.y);
                         mips.GenerateMips();
 
                         // Copy them into sourceTex.
@@ -558,9 +519,9 @@ namespace UnityEngine.Experimental.TerrainAPI
                     {
                         GraphicsDeviceType deviceType = SystemInfo.graphicsDeviceType;
                         if (deviceType == GraphicsDeviceType.Metal || deviceType == GraphicsDeviceType.OpenGLCore)
-                            sourceTex.ReadPixels(new Rect(writeRect.x, writeRect.y, writeRect.width, writeRect.height), terrainTile.clippedLocal.x, terrainTile.clippedLocal.y);
+                            sourceTex.ReadPixels(new Rect(writeRect.x, writeRect.y, writeRect.width, writeRect.height), terrainTile.clippedLocalPixels.x, terrainTile.clippedLocalPixels.y);
                         else
-                            sourceTex.ReadPixels(new Rect(writeRect.x, destTarget.height - writeRect.y - writeRect.height, writeRect.width, writeRect.height), terrainTile.clippedLocal.x, terrainTile.clippedLocal.y);
+                            sourceTex.ReadPixels(new Rect(writeRect.x, destTarget.height - writeRect.y - writeRect.height, writeRect.width, writeRect.height), terrainTile.clippedLocalPixels.x, terrainTile.clippedLocalPixels.y);
                         sourceTex.Apply();
                     }
                 }
@@ -601,6 +562,7 @@ namespace UnityEngine.Experimental.TerrainAPI
                 if ((pt.action & ToolAction.PaintHeightmap) != 0)
                 {
                     pt.terrain.ApplyDelayedHeightmapModification();
+                    pt.terrain.editorRenderFlags = TerrainRenderFlags.All;
                 }
                 if ((pt.action & ToolAction.PaintTexture) != 0)
                 {
