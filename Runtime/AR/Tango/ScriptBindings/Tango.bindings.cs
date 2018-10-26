@@ -50,22 +50,17 @@ namespace UnityEngine.XR.Tango
 
     [UsedByNativeCode]
     [NativeHeader("ARScriptingClasses.h")]
-    [StructLayout(LayoutKind.Explicit, Size = 92)]
+    [StructLayout(LayoutKind.Explicit, Size = 60)]
     internal struct PoseData
     {
-        [FieldOffset(0)] public uint version;
-        [FieldOffset(8)] public double timestamp;
-        [FieldOffset(16)] public double orientation_x;
-        [FieldOffset(24)] public double orientation_y;
-        [FieldOffset(32)] public double orientation_z;
-        [FieldOffset(40)] public double orientation_w;
-        [FieldOffset(48)] public double translation_x;
-        [FieldOffset(56)] public double translation_y;
-        [FieldOffset(64)] public double translation_z;
-        [FieldOffset(72)] public PoseStatus statusCode;
-        [FieldOffset(76)] public CoordinateFramePair frame;
-        [FieldOffset(84)] public uint confidence;
-        [FieldOffset(88)] public float accuracy;
+        [FieldOffset(0)] public double orientation_x;
+        [FieldOffset(8)] public double orientation_y;
+        [FieldOffset(16)] public double orientation_z;
+        [FieldOffset(24)] public double orientation_w;
+        [FieldOffset(32)] public double translation_x;
+        [FieldOffset(40)] public double translation_y;
+        [FieldOffset(48)] public double translation_z;
+        [FieldOffset(56)] public PoseStatus statusCode;
 
         public Quaternion rotation
         {

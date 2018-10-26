@@ -184,19 +184,41 @@ namespace UnityEditor
             GameViewSize k16_9 = new GameViewSize(GameViewSizeType.AspectRatio, 16, 9, "");
             GameViewSize kStandalone = new GameViewSize(GameViewSizeType.FixedResolution, 0, 0, "Standalone");
 
+            // all mobiles
+            GameViewSize k_4_3_Portrait = new GameViewSize(GameViewSizeType.AspectRatio, 3, 4, "4:3 Portrait");
+            GameViewSize k_4_3_Landscape = new GameViewSize(GameViewSizeType.AspectRatio, 4, 3, "4:3 Landscape");
+            GameViewSize k_16_10_Portrait = new GameViewSize(GameViewSizeType.AspectRatio, 10, 16, "16:10 Portrait");
+            GameViewSize k_16_10_Landscape = new GameViewSize(GameViewSizeType.AspectRatio, 16, 10, "16:10 Landscape");
+            GameViewSize k_16_9_Portrait = new GameViewSize(GameViewSizeType.AspectRatio, 9, 16, "16:9 Portrait");
+            GameViewSize k_16_9_Landscape = new GameViewSize(GameViewSizeType.AspectRatio, 16, 9, "16:9 Landscape");
+
+
             // iOS
-            GameViewSize k_iPhoneTall = new GameViewSize(GameViewSizeType.FixedResolution, 320, 480, "iPhone Tall");
-            GameViewSize k_iPhoneWide = new GameViewSize(GameViewSizeType.FixedResolution, 480, 320, "iPhone Wide");
-            GameViewSize k_iPhone4GTall = new GameViewSize(GameViewSizeType.FixedResolution, 640, 960, "iPhone 4 Tall");
-            GameViewSize k_iPhone4GWide = new GameViewSize(GameViewSizeType.FixedResolution, 960, 640, "iPhone 4 Wide");
-            GameViewSize k_iPadTall = new GameViewSize(GameViewSizeType.FixedResolution, 768, 1024, "iPad Tall");
-            GameViewSize k_iPadWide = new GameViewSize(GameViewSizeType.FixedResolution, 1024, 768, "iPad Wide");
-            GameViewSize k_iPhone5Tall = new GameViewSize(GameViewSizeType.AspectRatio, 9, 16, "iPhone 5 Tall");
-            GameViewSize k_iPhone5Wide = new GameViewSize(GameViewSizeType.AspectRatio, 16, 9, "iPhone 5 Wide");
-            GameViewSize k_iPhoneTall2_3 = new GameViewSize(GameViewSizeType.AspectRatio, 2, 3, "iPhone Tall");
-            GameViewSize k_iPhoneWide3_2 = new GameViewSize(GameViewSizeType.AspectRatio, 3, 2, "iPhone Wide");
-            GameViewSize k_iPadTall3_4 = new GameViewSize(GameViewSizeType.AspectRatio, 3, 4, "iPad Tall");
-            GameViewSize k_iPadWide4_3 = new GameViewSize(GameViewSizeType.AspectRatio, 4, 3, "iPad Wide");
+            GameViewSize k_iPhone_750p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 750, 1334, "iPhone 1334x750 Portrait");
+            GameViewSize k_iPhone_750p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1334, 750, "iPhone 1334x750 Landscape");
+            GameViewSize k_iPhone_1080p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1080, 1920, "iPhone 1920x1080 Portrait");
+            GameViewSize k_iPhone_1080p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1920, 1080, "iPhone 1920x1080 Landscape");
+            GameViewSize k_iPhone_X_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1125, 2436, "iPhone X/XS 2436x1125 Portrait");
+            GameViewSize k_iPhone_X_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2436, 1125, "iPhone X/XS 2436x1125 Landscape");
+            GameViewSize k_iPhone_828p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 828, 1792, "iPhone XR 1792x828 Portrait");
+            GameViewSize k_iPhone_828p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1792, 828, "iPhone XR 1792x828 Landscape");
+            GameViewSize k_iPhone_1242p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1242, 2688, "iPhone XS Max 2688x1242 Portrait");
+            GameViewSize k_iPhone_1242p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2688, 1242, "iPhone XS Max 2688x1242 Landscape");
+            GameViewSize k_iPad_1536p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2048, 1536, "iPad 2048x1536 Landscape");
+            GameViewSize k_iPad_1536p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1536, 2048, "iPad 2048x1536 Portrait");
+
+            GameViewSize k_iPad_2048p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2732, 2048, "iPadPro 2732x2048 Landscape");
+            GameViewSize k_iPad_2048p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 2048, 2732, "iPadPro 2732x2048 Portrait");
+            GameViewSize k_iPad_1668p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 2224, 1668, "iPadPro 2224x1668 Landscape");
+            GameViewSize k_iPad_1668p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 1668, 2224, "iPadPro 2224x1668 Portrait");
+
+
+            GameViewSize k_iPhone4_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 640, 960, "iPhone 4/4S Portrait");
+            GameViewSize k_iPhone4_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 960, 640, "iPhone 4/4S Landscape");
+            GameViewSize k_iPhone5_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 640, 1136, "iPhone 5/5S/5C/SE Portrait");
+            GameViewSize k_iPhone5_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1136, 640, "iPhone 5/5S/5C/SE Landscape");
+            GameViewSize k_iPad_768p_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1024, 768, "iPad 2/Mini Landscape");
+            GameViewSize k_iPad_768p_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 768, 1024, "iPad 2/Mini Portrait");
 
             // Android
             GameViewSize k_HVGA_Portrait = new GameViewSize(GameViewSizeType.FixedResolution, 320, 480, "HVGA Portrait");
@@ -211,8 +233,6 @@ namespace UnityEditor
             GameViewSize k_WXGA_Landscape = new GameViewSize(GameViewSizeType.FixedResolution, 1280, 800, "WXGA Landscape");
             GameViewSize k_3_2_Portrait = new GameViewSize(GameViewSizeType.AspectRatio, 2, 3, "3:2 Portrait");
             GameViewSize k_3_2_Landscape = new GameViewSize(GameViewSizeType.AspectRatio, 3, 2, "3:2 Landscape");
-            GameViewSize k_16_10_Portrait = new GameViewSize(GameViewSizeType.AspectRatio, 10, 16, "16:10 Portrait");
-            GameViewSize k_16_10_Landscape = new GameViewSize(GameViewSizeType.AspectRatio, 16, 10, "16:10 Landscape");
 
             // Wii U
             GameViewSize kWiiU_1080p_169 = new GameViewSize(GameViewSizeType.FixedResolution, 1920, 1080, "1080p (16:9)");
@@ -231,12 +251,20 @@ namespace UnityEditor
 
             m_WiiU.AddBuiltinSizes(kFree, k4_3, k16_9, kWiiU_1080p_169, kWiiU_720p_169, kWiiU_GamePad_854_480);
             m_iOS.AddBuiltinSizes(kFree,
-                k_iPhoneTall, k_iPhoneWide,
-                k_iPhone4GTall, k_iPhone4GWide,
-                k_iPadTall, k_iPadWide,
-                k_iPhone5Tall, k_iPhone5Wide,
-                k_iPhoneTall2_3, k_iPhoneWide3_2,
-                k_iPadTall3_4, k_iPadWide4_3);
+                k_iPhone_750p_Portrait, k_iPhone_750p_Landscape,
+                k_iPhone_1080p_Portrait, k_iPhone_1080p_Landscape,
+                k_iPhone_X_Portrait, k_iPhone_X_Landscape,
+                k_iPhone_828p_Portrait, k_iPhone_828p_Landscape,
+                k_iPhone_1242p_Portrait, k_iPhone_1242p_Landscape,
+                k_iPad_1536p_Landscape, k_iPad_1536p_Portrait,
+                k_iPad_2048p_Landscape, k_iPad_2048p_Portrait,
+                k_iPad_1668p_Landscape, k_iPad_1668p_Portrait,
+                k_16_9_Landscape, k_16_9_Portrait,
+                k_4_3_Landscape, k_4_3_Portrait,
+                k_iPhone4_Portrait, k_iPhone4_Landscape,
+                k_iPhone5_Portrait, k_iPhone5_Landscape,
+                k_iPad_768p_Landscape, k_iPad_768p_Portrait);
+
             m_Android.AddBuiltinSizes(kFree, m_Remote,
                 k_HVGA_Portrait, k_HVGA_Landscape,
                 k_WVGA_Portrait, k_WVGA_Landscape,
