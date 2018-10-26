@@ -1016,6 +1016,13 @@ namespace UnityEditor
                                 Event.current.Use();
                         }
                         break;
+                    case KeyCode.Delete:
+                        if (Event.current.shift)
+                        {
+                            DeleteSelectedAssets(false);
+                            Event.current.Use();
+                        }
+                        break;
                 }
             }
         }
@@ -1271,6 +1278,13 @@ namespace UnityEditor
                         {
                             Event.current.Use();
                             OpenAssetSelection(Selection.instanceIDs);
+                        }
+                        break;
+                    case KeyCode.Delete:
+                        if (Event.current.shift)
+                        {
+                            DeleteSelectedAssets(false);
+                            Event.current.Use();
                         }
                         break;
                 }

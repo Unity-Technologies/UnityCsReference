@@ -11,6 +11,14 @@ using UnityEngine;
 
 namespace UnityEditor.Scripting.ScriptCompilation
 {
+    internal class IllegalNamespaceParsing : Exception
+    {
+        public IllegalNamespaceParsing(string className, Exception cause)
+            : base($"Searching for classname: '{className}' caused error in CSharpNameParser", cause)
+        {
+        }
+    }
+
     internal static class CSharpNamespaceParser
     {
         static readonly Regex k_ReDefineExpr = new Regex(@"r'\s+|([=!]=)\s*(true|false)|([_a-zA-Z][_a-zA-Z0-9]*)|([()!]|&&|\|\|)", RegexOptions.Compiled);
@@ -20,6 +28,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static readonly Regex k_VerbatimStrings = new Regex(@"@(""[^""]*"")+", RegexOptions.Compiled);
         static readonly Regex k_NewlineRegex = new Regex("\r\n?", RegexOptions.Compiled);
         static readonly Regex k_SingleQuote = new Regex(@"((?<![\\])['])(?:.(?!(?<![\\])\1))*.?\1", RegexOptions.Compiled);
+        static readonly Regex k_ConditionalCompilation = new Regex(@"[\t ]*#[\t ]*(if|else|elif|endif|define|undef)([\t ]+[^/\n]*)?", RegexOptions.Compiled);
         static string s_ClassName;
 
         public static string GetNamespace(string sourceCode, string className, params string[] defines)
@@ -40,9 +49,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
             }
             catch (Exception e)
             {
-                Debug.LogError("Searching for classname: '" + className + "' caused error in CSharpNameParser");
-                Debug.LogException(e);
-                throw;
+                throw new IllegalNamespaceParsing(className, e);
             }
         }
 
@@ -163,34 +170,35 @@ namespace UnityEditor.Scripting.ScriptCompilation
             var split = source.Split(new[] { "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
             foreach (var s in split)
             {
-                if (s.Contains("#define"))
+                var match = k_ConditionalCompilation.Match(s);
+                var directive = match.Groups[1].Value;
+                var arg = match.Groups[2].Value;
+                if (directive == "define")
                 {
-                    if (stack.Count == 0 || stack.Peek().Item1) defines.Add(s.Split(new[] { "#define" }, StringSplitOptions.None)[1].Trim());
+                    if (stack.Count == 0 || stack.Peek().Item1) defines.Add(arg.Trim());
                 }
-                else if (s.Contains("#undefine"))
+                else if (directive == "undefine")
                 {
-                    if (stack.Count == 0 || stack.Peek().Item1) defines.Add(s.Split(new[] { "#define" }, StringSplitOptions.None)[1].Trim());
+                    if (stack.Count == 0 || stack.Peek().Item1) defines.Add(arg.Trim());
                 }
-                else if (s.Contains("#if"))
+                else if (directive == "if")
                 {
-                    var evalResult = EvaluateDefine(s.Split(new[] { "#if" }, StringSplitOptions.None)[1].Trim(), defines);
+                    var evalResult = EvaluateDefine(arg.Trim(), defines);
                     var isEmitting = stack.Count == 0 || stack.Peek().Item1;
                     stack.Push(new Tuple<bool, bool>(isEmitting && evalResult, isEmitting && !evalResult));
                 }
-                else if (s.Contains("#elif"))
+                else if (directive == "elif")
+                {
+                    var evalResult = EvaluateDefine(arg, defines);
+                    var elseEmitting = stack.Peek().Item2;
+                    stack.Pop(); stack.Push(new Tuple<bool, bool>(elseEmitting && evalResult, elseEmitting && !evalResult));
+                }
+                else if (directive == "else")
                 {
                     var elseEmitting = stack.Peek().Item2;
-                    var evalResult = EvaluateDefine(s.Split(new[] { "#elif" }, StringSplitOptions.None)[1], defines);
-                    stack.Pop();
-                    stack.Push(new Tuple<bool, bool>(elseEmitting && evalResult, elseEmitting && !evalResult));
+                    stack.Pop(); stack.Push(new Tuple<bool, bool>(elseEmitting, false));
                 }
-                else if (s.Contains("#else"))
-                {
-                    var elseEmitting = stack.Peek().Item2;
-                    stack.Pop();
-                    stack.Push(new Tuple<bool, bool>(elseEmitting, false));
-                }
-                else if (s.Contains("#endif"))
+                else if (directive == "endif")
                 {
                     stack.Pop();
                 }
