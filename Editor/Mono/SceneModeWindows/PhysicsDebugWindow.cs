@@ -7,20 +7,25 @@ using UnityEngine;
 
 using System;
 using System.Collections.Generic;
+using UnityEngine.SceneManagement;
+using UnityEditor.AnimatedValues;
 
 namespace UnityEditor
 {
     public class PhysicsDebugWindow : EditorWindow
     {
-        [SerializeField] bool m_FilterColliderTypesFoldout = false;
-        [SerializeField] bool m_ColorFoldout = false;
-        [SerializeField] bool m_RenderingFoldout = false;
         [SerializeField] Vector2 m_MainScrollPos = Vector2.zero;
+
+        private SavedBool m_ShowInfoFoldout;
+        private SavedBool m_ShowColliderTypeFoldout;
+        private SavedBool m_ColorFoldout;
+        private SavedBool m_RenderingFoldout;
+
 
         bool m_PickAdded = false;
         bool m_MouseLeaveListenerAdded = false;
 
-        private static class Contents
+        private static class Style
         {
             public static readonly GUIContent physicsDebug          = EditorGUIUtility.TrTextContent("Physics Debug");
             public static readonly GUIContent workflow              = EditorGUIUtility.TrTextContent("Workflow", "The \"Hide\" mode is useful for fast discovery while the \"Show\" mode is useful for finding specific items.");
@@ -29,15 +34,39 @@ namespace UnityEditor
             public static readonly GUIContent rigidbodyColor        = EditorGUIUtility.TrTextContent("Rigidbodies");
             public static readonly GUIContent kinematicColor        = EditorGUIUtility.TrTextContent("Kinematic Bodies");
             public static readonly GUIContent sleepingBodyColor     = EditorGUIUtility.TrTextContent("Sleeping Bodies");
+            public static readonly GUIContent colorVariaition       = EditorGUIUtility.TrTextContent("Variation");
             public static readonly GUIContent forceOverdraw         = EditorGUIUtility.TrTextContent("Force Overdraw", "Draws Collider geometry on top of render geometry");
+            public static readonly GUIContent transparency          = EditorGUIUtility.TrTextContent("Transparency");
             public static readonly GUIContent viewDistance          = EditorGUIUtility.TrTextContent("View Distance", "Lower bound on distance from camera to physics geometry.");
             public static readonly GUIContent terrainTilesMax       = EditorGUIUtility.TrTextContent("Terrain Tiles Max", "Number of mesh tiles to drawn.");
             public static readonly GUIContent devOptions            = EditorGUIUtility.TrTextContent("devOptions");
             public static readonly GUIContent forceDot              = EditorGUIUtility.TrTextContent("Force Dot");
+            public static readonly GUIContent dotAlpha              = EditorGUIUtility.TrTextContent("DotAlpha");
             public static readonly GUIContent toolsHidden           = EditorGUIUtility.TrTextContent("Hide tools");
             public static readonly GUIContent showCollisionGeometry = EditorGUIUtility.TrTextContent("Collision Geometry");
             public static readonly GUIContent enableMouseSelect     = EditorGUIUtility.TrTextContent("Mouse Select");
             public static readonly GUIContent useSceneCam           = EditorGUIUtility.TrTextContent("Use Scene Cam");
+            public static readonly GUIContent showLayers            = EditorGUIUtility.TrTextContent("Show Layers", "Show selected layers");
+            public static readonly GUIContent showPhysicsScenes     = EditorGUIUtility.TrTextContent("Show Physics Scene", "Show selected physics scenes");
+            public static readonly GUIContent showStaticCollider    = EditorGUIUtility.TrTextContent("Show Static Colliders", "Show collision geometry from Colliders that do not have a Rigidbody");
+            public static readonly GUIContent showTriggers          = EditorGUIUtility.TrTextContent("Show Triggers", "Show collision geometry from Colliders that have 'isTrigge' enabled");
+            public static readonly GUIContent showRigibodies        = EditorGUIUtility.TrTextContent("Show Rigidbodies", "Show collision geometry from Rigidbodies");
+            public static readonly GUIContent showKinematicBodies   = EditorGUIUtility.TrTextContent("Show Kinematic Bodies", "Show collision geometry from Kinematic Rigidbodies");
+            public static readonly GUIContent showSleepingBodies    = EditorGUIUtility.TrTextContent("Show Sleeping Bodies", "Show collision geometry from Sleeping Rigidbodies");
+            public static readonly GUIContent colliderTypes         = EditorGUIUtility.TrTextContent("Collider Types");
+            public static readonly GUIContent showBoxCollider       = EditorGUIUtility.TrTextContent("Show BoxColliders", "Show collision geometry that is BoxCollider");
+            public static readonly GUIContent showSphereCollider    = EditorGUIUtility.TrTextContent("Show SphereColliders", "Show collision geometry that is SphereCollider");
+            public static readonly GUIContent showCapsuleCollider   = EditorGUIUtility.TrTextContent("Show CapsuleColliders", "Show collision geometry that is CapsuleCollider");
+            public static readonly GUIContent showConvexMeshCollider = EditorGUIUtility.TrTextContent("Show MeshColliders (convex)", "Show collision geometry that is Convex MeshCollider");
+            public static readonly GUIContent showConcaveMeshCollider = EditorGUIUtility.TrTextContent("Show MeshColliders (concave)", "Show collision geometry that is Concave MeshCollider");
+            public static readonly GUIContent showTerrainCollider   = EditorGUIUtility.TrTextContent("Show TerrainColliders", "Show collision geometry that is TerrainCollider");
+            public static readonly GUIContent selectedObjectInfo    = EditorGUIUtility.TrTextContent("Selected Object Info");
+            public static readonly GUIContent showAll               = EditorGUIUtility.TrTextContent("Show All");
+            public static readonly GUIContent showNone              = EditorGUIUtility.TrTextContent("Show None");
+            public static readonly GUIContent gameObject            = EditorGUIUtility.TrTextContent("GameObject");
+            public static readonly GUIContent scene                 = EditorGUIUtility.TrTextContent("Scene");
+            public static readonly GUIContent colors                = EditorGUIUtility.TrTextContent("Colors");
+            public static readonly GUIContent rendering             = EditorGUIUtility.TrTextContent("Rendering");
         }
 
         //---------------------------------------------------------------------
@@ -51,6 +80,14 @@ namespace UnityEditor
                 window.titleContent.text = "Physics Debug";
             }
             return window;
+        }
+
+        public void OnEnable()
+        {
+            m_ShowInfoFoldout = new SavedBool($"PhysicsDebugWindow.ShowFoldout", false);
+            m_ShowColliderTypeFoldout = new SavedBool($"PhysicsDebugWindow.ShowColliderType", false);
+            m_ColorFoldout = new SavedBool($"PhysicsDebugWindow.ShowColorFoldout", false);
+            m_RenderingFoldout = new SavedBool($"PhysicsDebugWindow.ShowRenderingFoldout", false);
         }
 
         void AddPicker()
@@ -89,7 +126,7 @@ namespace UnityEditor
 
         void OnSceneViewGUI(SceneView view)
         {
-            SceneViewOverlay.Window(Contents.physicsDebug, DisplayControls, (int)SceneViewOverlay.Ordering.PhysicsDebug,
+            SceneViewOverlay.Window(Style.physicsDebug, DisplayControls, (int)SceneViewOverlay.Ordering.PhysicsDebug,
                 SceneViewOverlay.WindowDisplayOption.OneWindowPerTarget);
         }
 
@@ -122,10 +159,6 @@ namespace UnityEditor
 
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
 
-            // Workflow
-            PhysicsVisualizationSettings.filterWorkflow = (PhysicsVisualizationSettings.FilterWorkflow)EditorGUILayout.EnumPopup(
-                PhysicsVisualizationSettings.filterWorkflow, EditorStyles.toolbarPopup, GUILayout.Width(130));
-
             GUILayout.FlexibleSpace();
 
             if (GUILayout.Button("Reset", EditorStyles.toolbarButton))
@@ -135,80 +168,102 @@ namespace UnityEditor
 
             m_MainScrollPos = GUILayout.BeginScrollView(m_MainScrollPos);
 
-            PhysicsVisualizationSettings.FilterWorkflow filterMode = PhysicsVisualizationSettings.filterWorkflow;
-            string action = (filterMode == PhysicsVisualizationSettings.FilterWorkflow.ShowSelectedItems) ? "Show " : "Hide ";
+            {
+                EditorGUILayout.Space();
+                m_ShowInfoFoldout.value = EditorGUILayout.Foldout(m_ShowInfoFoldout.value, Style.selectedObjectInfo);
+                if (m_ShowColliderTypeFoldout.value)
+                {
+                    EditorGUI.indentLevel++;
+                    EditorGUILayout.Space();
+                    EditorGUI.BeginDisabledGroup(true);
+                    var transforms = Selection.transforms;
+                    if (transforms.Length > 0)
+                    {
+                        foreach (var tr in transforms)
+                        {
+                            EditorGUILayout.TextField(Style.gameObject, tr.name);
+                            EditorGUILayout.TextField(Style.scene, tr.gameObject.scene.name);
+                        }
+                    }
+                    EditorGUI.EndDisabledGroup();
+                    Repaint();
+                    EditorGUI.indentLevel--;
+                }
+            }
+            GUILayout.Space(4);
+
+            int sceneCount = SceneManager.sceneCount;
+            List<string> options = new List<string>();
+            for (int i = 0; i < sceneCount; ++i)
+            {
+                var scene = SceneManager.GetSceneAt(i);
+                options.Add(string.Format("{0} ", scene.name));
+            }
+
+            int newPhysicsSceneMask = EditorGUILayout.MaskField(Style.showPhysicsScenes, PhysicsVisualizationSettings.GetShowPhysicsSceneMask(), options.ToArray());
+
+            PhysicsVisualizationSettings.SetShowPhysicsSceneMask(newPhysicsSceneMask);
 
             // Layers
             int oldConcatenatedMask = InternalEditorUtility.LayerMaskToConcatenatedLayersMask(
-                PhysicsVisualizationSettings.GetShowCollisionLayerMask(filterMode));
+                PhysicsVisualizationSettings.GetShowCollisionLayerMask());
 
             int newConcatenatedMask = EditorGUILayout.MaskField(
-                GUIContent.Temp(action + "Layers", action + "selected layers"), oldConcatenatedMask, InternalEditorUtility.layers);
+                Style.showLayers, oldConcatenatedMask, InternalEditorUtility.layers);
 
             PhysicsVisualizationSettings.SetShowCollisionLayerMask(
-                filterMode, (int)InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(newConcatenatedMask));
+                (int)InternalEditorUtility.ConcatenatedLayersMaskToLayerMask(newConcatenatedMask));
 
             // Static Colliders
-            PhysicsVisualizationSettings.SetShowStaticColliders(filterMode, EditorGUILayout.Toggle(
-                GUIContent.Temp(action + "Static Colliders", action + "collision geometry from Colliders that do not have a Rigidbody")
-                , PhysicsVisualizationSettings.GetShowStaticColliders(filterMode)));
+            PhysicsVisualizationSettings.SetShowStaticColliders(EditorGUILayout.Toggle(
+                Style.showStaticCollider, PhysicsVisualizationSettings.GetShowStaticColliders()));
 
             // Triggers
-            PhysicsVisualizationSettings.SetShowTriggers(filterMode, EditorGUILayout.Toggle(
-                GUIContent.Temp(action + "Triggers", action + "collision geometry from Colliders that have 'isTrigger' enabled")
-                , PhysicsVisualizationSettings.GetShowTriggers(filterMode)));
+            PhysicsVisualizationSettings.SetShowTriggers(EditorGUILayout.Toggle(
+                Style.showTriggers, PhysicsVisualizationSettings.GetShowTriggers()));
 
             // Rigidbodies
-            PhysicsVisualizationSettings.SetShowRigidbodies(filterMode, EditorGUILayout.Toggle(
-                GUIContent.Temp(action + "Rigidbodies", action + "collision geometry from Rigidbodies")
-                , PhysicsVisualizationSettings.GetShowRigidbodies(filterMode)));
+            PhysicsVisualizationSettings.SetShowRigidbodies(EditorGUILayout.Toggle(
+                Style.showRigibodies, PhysicsVisualizationSettings.GetShowRigidbodies()));
 
             // Kinematic Bodies
-            PhysicsVisualizationSettings.SetShowKinematicBodies(filterMode, EditorGUILayout.Toggle(
-                GUIContent.Temp(action + "Kinematic Bodies", action + "collision geometry from Kinematic Rigidbodies")
-                , PhysicsVisualizationSettings.GetShowKinematicBodies(filterMode)));
+            PhysicsVisualizationSettings.SetShowKinematicBodies(EditorGUILayout.Toggle(
+                Style.showKinematicBodies, PhysicsVisualizationSettings.GetShowKinematicBodies()));
 
             // Sleeping Bodies
-            PhysicsVisualizationSettings.SetShowSleepingBodies(filterMode, EditorGUILayout.Toggle(
-                GUIContent.Temp(action + "Sleeping Bodies", action + "collision geometry from Sleeping Rigidbodies")
-                , PhysicsVisualizationSettings.GetShowSleepingBodies(filterMode)));
+            PhysicsVisualizationSettings.SetShowSleepingBodies(EditorGUILayout.Toggle(
+                Style.showSleepingBodies, PhysicsVisualizationSettings.GetShowSleepingBodies()));
 
-            m_FilterColliderTypesFoldout = EditorGUILayout.Foldout(m_FilterColliderTypesFoldout, "Collider Types");
-            if (m_FilterColliderTypesFoldout)
+            m_ShowColliderTypeFoldout.value = EditorGUILayout.Foldout(m_ShowColliderTypeFoldout.value, Style.colliderTypes);
+            if (m_ShowColliderTypeFoldout.value)
             {
                 EditorGUI.indentLevel++;
                 float oldWidth = EditorGUIUtility.labelWidth;
                 EditorGUIUtility.labelWidth = 200;
 
                 // BoxCollider
-                PhysicsVisualizationSettings.SetShowBoxColliders(filterMode, EditorGUILayout.Toggle(
-                    GUIContent.Temp(action + "BoxColliders", action + "collision geometry from BoxColliders")
-                    , PhysicsVisualizationSettings.GetShowBoxColliders(filterMode)));
+                PhysicsVisualizationSettings.SetShowBoxColliders(EditorGUILayout.Toggle(
+                    Style.showBoxCollider , PhysicsVisualizationSettings.GetShowBoxColliders()));
 
                 // SphereCollider
-                PhysicsVisualizationSettings.SetShowSphereColliders(filterMode, EditorGUILayout.Toggle(
-                    GUIContent.Temp(action + "SphereColliders", action + "collision geometry from SphereColliders")
-                    , PhysicsVisualizationSettings.GetShowSphereColliders(filterMode)));
+                PhysicsVisualizationSettings.SetShowSphereColliders(EditorGUILayout.Toggle(
+                    Style.showSphereCollider, PhysicsVisualizationSettings.GetShowSphereColliders()));
 
                 // CapsuleCollider
-                PhysicsVisualizationSettings.SetShowCapsuleColliders(filterMode, EditorGUILayout.Toggle(
-                    GUIContent.Temp(action + "CapsuleColliders", action + "collision geometry from CapsuleColliders")
-                    , PhysicsVisualizationSettings.GetShowCapsuleColliders(filterMode)));
+                PhysicsVisualizationSettings.SetShowCapsuleColliders(EditorGUILayout.Toggle(
+                    Style.showCapsuleCollider, PhysicsVisualizationSettings.GetShowCapsuleColliders()));
 
                 // MeshCollider convex
-                PhysicsVisualizationSettings.SetShowMeshColliders(filterMode, PhysicsVisualizationSettings.MeshColliderType.Convex, EditorGUILayout.Toggle(
-                    GUIContent.Temp(action + "MeshColliders (convex)", action + "collision geometry from convex MeshColliders")
-                    , PhysicsVisualizationSettings.GetShowMeshColliders(filterMode, PhysicsVisualizationSettings.MeshColliderType.Convex)));
+                PhysicsVisualizationSettings.SetShowMeshColliders(PhysicsVisualizationSettings.MeshColliderType.Convex, EditorGUILayout.Toggle(
+                    Style.showConvexMeshCollider, PhysicsVisualizationSettings.GetShowMeshColliders(PhysicsVisualizationSettings.MeshColliderType.Convex)));
 
                 // MeshCollider non-convex
-                PhysicsVisualizationSettings.SetShowMeshColliders(filterMode, PhysicsVisualizationSettings.MeshColliderType.NonConvex, EditorGUILayout.Toggle(
-                    GUIContent.Temp(action + "MeshColliders (concave)", action + "collision geometry from non-convex MeshColliders")
-                    , PhysicsVisualizationSettings.GetShowMeshColliders(filterMode, PhysicsVisualizationSettings.MeshColliderType.NonConvex)));
+                PhysicsVisualizationSettings.SetShowMeshColliders(PhysicsVisualizationSettings.MeshColliderType.NonConvex, EditorGUILayout.Toggle(
+                    Style.showConcaveMeshCollider, PhysicsVisualizationSettings.GetShowMeshColliders(PhysicsVisualizationSettings.MeshColliderType.NonConvex)));
 
                 // TerrainCollider
-                PhysicsVisualizationSettings.SetShowTerrainColliders(filterMode, EditorGUILayout.Toggle(
-                    GUIContent.Temp(action + "TerrainColliders", action + "collision geometry from TerrainColliders")
-                    , PhysicsVisualizationSettings.GetShowTerrainColliders(filterMode)));
+                PhysicsVisualizationSettings.SetShowTerrainColliders(EditorGUILayout.Toggle(
+                    Style.showTerrainCollider, PhysicsVisualizationSettings.GetShowTerrainColliders()));
 
                 EditorGUIUtility.labelWidth = oldWidth;
                 EditorGUI.indentLevel--;
@@ -219,54 +274,54 @@ namespace UnityEditor
             // Selection buttons
             GUILayout.BeginHorizontal();
 
-            bool selectNone = GUILayout.Button(action + "None", "MiniButton");
-            bool selectAll = GUILayout.Button(action + "All", "MiniButton");
+            bool selectNone = GUILayout.Button(Style.showNone);
+            bool selectAll = GUILayout.Button(Style.showAll);
             if (selectNone || selectAll)
-                PhysicsVisualizationSettings.SetShowForAllFilters(filterMode, selectAll);
+                PhysicsVisualizationSettings.SetShowForAllFilters(selectAll);
 
             GUILayout.EndHorizontal();
 
-            m_ColorFoldout = EditorGUILayout.Foldout(m_ColorFoldout, "Colors");
-            if (m_ColorFoldout)
+            m_ColorFoldout.value = EditorGUILayout.Foldout(m_ColorFoldout.value, Style.colors);
+            if (m_ColorFoldout.value)
             {
                 EditorGUI.indentLevel++;
 
                 PhysicsVisualizationSettings.staticColor =
-                    EditorGUILayout.ColorField(Contents.staticColor, PhysicsVisualizationSettings.staticColor);
+                    EditorGUILayout.ColorField(Style.staticColor, PhysicsVisualizationSettings.staticColor);
 
                 PhysicsVisualizationSettings.triggerColor =
-                    EditorGUILayout.ColorField(Contents.triggerColor, PhysicsVisualizationSettings.triggerColor);
+                    EditorGUILayout.ColorField(Style.triggerColor, PhysicsVisualizationSettings.triggerColor);
 
                 PhysicsVisualizationSettings.rigidbodyColor =
-                    EditorGUILayout.ColorField(Contents.rigidbodyColor, PhysicsVisualizationSettings.rigidbodyColor);
+                    EditorGUILayout.ColorField(Style.rigidbodyColor, PhysicsVisualizationSettings.rigidbodyColor);
 
                 PhysicsVisualizationSettings.kinematicColor =
-                    EditorGUILayout.ColorField(Contents.kinematicColor, PhysicsVisualizationSettings.kinematicColor);
+                    EditorGUILayout.ColorField(Style.kinematicColor, PhysicsVisualizationSettings.kinematicColor);
 
                 PhysicsVisualizationSettings.sleepingBodyColor =
-                    EditorGUILayout.ColorField(Contents.sleepingBodyColor, PhysicsVisualizationSettings.sleepingBodyColor);
+                    EditorGUILayout.ColorField(Style.sleepingBodyColor, PhysicsVisualizationSettings.sleepingBodyColor);
 
                 PhysicsVisualizationSettings.colorVariance =
-                    EditorGUILayout.Slider("Variation", PhysicsVisualizationSettings.colorVariance, 0f, 1f);
+                    EditorGUILayout.Slider(Style.colorVariaition, PhysicsVisualizationSettings.colorVariance, 0f, 1f);
 
                 EditorGUI.indentLevel--;
             }
 
-            m_RenderingFoldout = EditorGUILayout.Foldout(m_RenderingFoldout, "Rendering");
-            if (m_RenderingFoldout)
+            m_RenderingFoldout.value = EditorGUILayout.Foldout(m_RenderingFoldout.value, Style.rendering);
+            if (m_RenderingFoldout.value)
             {
                 EditorGUI.indentLevel++;
 
-                PhysicsVisualizationSettings.baseAlpha = 1f - EditorGUILayout.Slider("Transparency"
+                PhysicsVisualizationSettings.baseAlpha = 1f - EditorGUILayout.Slider(Style.transparency
                     , 1f - PhysicsVisualizationSettings.baseAlpha, 0f, 1f);
 
-                PhysicsVisualizationSettings.forceOverdraw = EditorGUILayout.Toggle(Contents.forceOverdraw
+                PhysicsVisualizationSettings.forceOverdraw = EditorGUILayout.Toggle(Style.forceOverdraw
                     , PhysicsVisualizationSettings.forceOverdraw);
 
-                PhysicsVisualizationSettings.viewDistance = EditorGUILayout.FloatField(Contents.viewDistance
+                PhysicsVisualizationSettings.viewDistance = EditorGUILayout.FloatField(Style.viewDistance
                     , PhysicsVisualizationSettings.viewDistance);
 
-                PhysicsVisualizationSettings.terrainTilesMax = EditorGUILayout.IntField(Contents.terrainTilesMax
+                PhysicsVisualizationSettings.terrainTilesMax = EditorGUILayout.IntField(Style.terrainTilesMax
                     , PhysicsVisualizationSettings.terrainTilesMax);
 
                 EditorGUI.indentLevel--;
@@ -274,19 +329,19 @@ namespace UnityEditor
 
             if (Unsupported.IsDeveloperMode() || PhysicsVisualizationSettings.devOptions)
             {
-                PhysicsVisualizationSettings.devOptions = EditorGUILayout.Toggle(Contents.devOptions
+                PhysicsVisualizationSettings.devOptions = EditorGUILayout.Toggle(Style.devOptions
                     , PhysicsVisualizationSettings.devOptions);
             }
 
             if (PhysicsVisualizationSettings.devOptions)
             {
-                PhysicsVisualizationSettings.dotAlpha = EditorGUILayout.Slider("dotAlpha"
+                PhysicsVisualizationSettings.dotAlpha = EditorGUILayout.Slider(Style.dotAlpha
                     , PhysicsVisualizationSettings.dotAlpha, -1f, 1f);
 
-                PhysicsVisualizationSettings.forceDot = EditorGUILayout.Toggle(Contents.forceDot
+                PhysicsVisualizationSettings.forceDot = EditorGUILayout.Toggle(Style.forceDot
                     , PhysicsVisualizationSettings.forceDot);
 
-                Tools.hidden = EditorGUILayout.Toggle(Contents.toolsHidden
+                Tools.hidden = EditorGUILayout.Toggle(Style.toolsHidden
                     , Tools.hidden);
             }
 
@@ -300,15 +355,15 @@ namespace UnityEditor
         {
             var dirtyCount = PhysicsVisualizationSettings.dirtyCount;
 
-            PhysicsVisualizationSettings.showCollisionGeometry = EditorGUILayout.Toggle(Contents.showCollisionGeometry
+            PhysicsVisualizationSettings.showCollisionGeometry = EditorGUILayout.Toggle(Style.showCollisionGeometry
                 , PhysicsVisualizationSettings.showCollisionGeometry);
 
-            PhysicsVisualizationSettings.enableMouseSelect = EditorGUILayout.Toggle(Contents.enableMouseSelect
+            PhysicsVisualizationSettings.enableMouseSelect = EditorGUILayout.Toggle(Style.enableMouseSelect
                 , PhysicsVisualizationSettings.enableMouseSelect);
 
             if (PhysicsVisualizationSettings.devOptions)
             {
-                PhysicsVisualizationSettings.useSceneCam = EditorGUILayout.Toggle(Contents.useSceneCam
+                PhysicsVisualizationSettings.useSceneCam = EditorGUILayout.Toggle(Style.useSceneCam
                     , PhysicsVisualizationSettings.useSceneCam);
             }
 

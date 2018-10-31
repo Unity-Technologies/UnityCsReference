@@ -18,12 +18,6 @@ namespace UnityEditor
     [StaticAccessor("GetPhysicsVisualizationSettings()", StaticAccessorType.Dot)]
     public static partial class PhysicsVisualizationSettings
     {
-        public enum FilterWorkflow
-        {
-            HideSelectedItems = 0,
-            ShowSelectedItems = 1
-        }
-
         public enum MeshColliderType
         {
             Convex = 0,
@@ -32,7 +26,6 @@ namespace UnityEditor
 
         public extern static bool devOptions {get; set; }
         public extern static int dirtyCount { get; }
-        public extern static PhysicsVisualizationSettings.FilterWorkflow filterWorkflow { get; set; }
         public extern static bool showCollisionGeometry { get; set; }
         public extern static bool enableMouseSelect {get; set; }
         public extern static bool useSceneCam { get; set; }
@@ -50,30 +43,32 @@ namespace UnityEditor
         public extern static bool forceDot { get; set; }
 
         public extern static void Reset();
-        public extern static bool GetShowStaticColliders(FilterWorkflow filterWorkFlow);
-        public extern static void SetShowStaticColliders(FilterWorkflow filterWorkflow, bool show);
-        public extern static bool GetShowTriggers(FilterWorkflow filterWorkflow);
-        public extern static void SetShowTriggers(FilterWorkflow filterWorkflow, bool show);
-        public extern static bool GetShowRigidbodies(FilterWorkflow filterWorkflow);
-        public extern static void SetShowRigidbodies(FilterWorkflow filterWorkflow, bool show);
-        public extern static bool GetShowKinematicBodies(FilterWorkflow filterWorkflow);
-        public extern static void SetShowKinematicBodies(FilterWorkflow filterWorkflow, bool show);
-        public extern static bool GetShowSleepingBodies(FilterWorkflow filterWorkflow);
-        public extern static void SetShowSleepingBodies(FilterWorkflow filterWorkflow, bool show);
-        public extern static bool GetShowCollisionLayer(FilterWorkflow filterWorkflow, int layer);
-        public extern static void SetShowCollisionLayer(FilterWorkflow filterWorkflow, int layer, bool show);
-        public extern static int GetShowCollisionLayerMask(FilterWorkflow filterWorkflow);
-        public extern static void SetShowCollisionLayerMask(FilterWorkflow filterWorkflow, int mask);
-        public extern static bool GetShowBoxColliders(FilterWorkflow filterWorkflow);
-        public extern static void SetShowBoxColliders(FilterWorkflow filterWorkflow, bool show);
-        public extern static bool GetShowSphereColliders(FilterWorkflow filterWorkflow);
-        public extern static void SetShowSphereColliders(FilterWorkflow filterWorkflow, bool show);
-        public extern static bool GetShowCapsuleColliders(FilterWorkflow filterWorkflow);
-        public extern static void SetShowCapsuleColliders(FilterWorkflow filterWorkflow, bool show);
-        public extern static bool GetShowMeshColliders(FilterWorkflow filterWorkflow, MeshColliderType colliderType);
-        public extern static void SetShowMeshColliders(FilterWorkflow filterWorkflow, MeshColliderType colliderType, bool show);
-        public extern static bool GetShowTerrainColliders(FilterWorkflow filterWorkflow);
-        public extern static void SetShowTerrainColliders(FilterWorkflow filterWorkflow, bool show);
+        public extern static bool GetShowStaticColliders();
+        public extern static void SetShowStaticColliders(bool show);
+        public extern static bool GetShowTriggers();
+        public extern static void SetShowTriggers(bool show);
+        public extern static bool GetShowRigidbodies();
+        public extern static void SetShowRigidbodies(bool show);
+        public extern static bool GetShowKinematicBodies();
+        public extern static void SetShowKinematicBodies(bool show);
+        public extern static bool GetShowSleepingBodies();
+        public extern static void SetShowSleepingBodies(bool show);
+        public extern static bool GetShowCollisionLayer(int layer);
+        public extern static void SetShowCollisionLayer(int layer, bool show);
+        public extern static int GetShowCollisionLayerMask();
+        public extern static void SetShowCollisionLayerMask(int mask);
+        public extern static bool GetShowBoxColliders();
+        public extern static void SetShowBoxColliders(bool show);
+        public extern static bool GetShowSphereColliders();
+        public extern static void SetShowSphereColliders(bool show);
+        public extern static bool GetShowCapsuleColliders();
+        public extern static void SetShowCapsuleColliders(bool show);
+        public extern static bool GetShowMeshColliders(MeshColliderType colliderType);
+        public extern static void SetShowMeshColliders(MeshColliderType colliderType, bool show);
+        public extern static bool GetShowTerrainColliders();
+        public extern static void SetShowTerrainColliders(bool show);
+        public extern static int GetShowPhysicsSceneMask();
+        public extern static void SetShowPhysicsSceneMask(int mask);
         public extern static void InitDebugDraw();
         public extern static void DeinitDebugDraw();
         public extern static void ClearMouseHighlight();
@@ -84,23 +79,24 @@ namespace UnityEditor
         [NativeName("CollectCollidersForDebugDraw")]
         private extern static void Internal_CollectCollidersForDebugDraw([NotNull] Camera cam, [NotNull] object colliderList);
 
-        public static void SetShowForAllFilters(FilterWorkflow filterWorkflow, bool selected)
+        public static void SetShowForAllFilters(bool selected)
         {
             const int kMaxLayers = 32;
             for (int i = 0; i < kMaxLayers; i++)
-                SetShowCollisionLayer(filterWorkflow, i, selected);
-            SetShowStaticColliders(filterWorkflow, selected);
-            SetShowTriggers(filterWorkflow, selected);
-            SetShowRigidbodies(filterWorkflow, selected);
-            SetShowKinematicBodies(filterWorkflow, selected);
-            SetShowSleepingBodies(filterWorkflow, selected);
+                SetShowCollisionLayer(i, selected);
 
-            SetShowBoxColliders(filterWorkflow, selected);
-            SetShowSphereColliders(filterWorkflow, selected);
-            SetShowCapsuleColliders(filterWorkflow, selected);
-            SetShowMeshColliders(filterWorkflow, MeshColliderType.Convex, selected);
-            SetShowMeshColliders(filterWorkflow, MeshColliderType.NonConvex, selected);
-            SetShowTerrainColliders(filterWorkflow, selected);
+            SetShowStaticColliders(selected);
+            SetShowTriggers(selected);
+            SetShowRigidbodies(selected);
+            SetShowKinematicBodies(selected);
+            SetShowSleepingBodies(selected);
+
+            SetShowBoxColliders(selected);
+            SetShowSphereColliders(selected);
+            SetShowCapsuleColliders(selected);
+            SetShowMeshColliders(MeshColliderType.Convex, selected);
+            SetShowMeshColliders(MeshColliderType.NonConvex, selected);
+            SetShowTerrainColliders(selected);
         }
     }
 }

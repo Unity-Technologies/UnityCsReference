@@ -98,6 +98,8 @@ namespace UnityEditor
                 "Audio controls not editable when using muliple selection.";
             public readonly string enableDecodingTooltip =
                 "Enable decoding for this track.  Only effective when not playing.  When playing from a URL, track details are shown only while playing back.";
+            public readonly string vulkanSupportHelp = "The Unity VideoPlayer does not support the Vulkan Graphics API.\nPlease go to PlayerSettings and remove 'Vulkan' from the list of Graphics APIs.";
+            public static readonly int ObjectFieldControlID = "VideoPlayerAudioSourceObjectFieldHash".GetHashCode();
         }
 
         internal class AudioTrackInfo
@@ -253,6 +255,12 @@ namespace UnityEditor
             HandleAudio();
 
             serializedObject.ApplyModifiedProperties();
+
+            if (EditorUserBuildSettings.selectedBuildTargetGroup == BuildTargetGroup.Android &&
+                PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan))
+            {
+                EditorGUILayout.HelpBox(s_Styles.vulkanSupportHelp, MessageType.Warning);
+            }
         }
 
         private void HandleDataSourceField()
@@ -600,9 +608,21 @@ namespace UnityEditor
                             EditorGUI.indentLevel++;
                             if (audioOutputMode == VideoAudioOutputMode.AudioSource)
                             {
-                                EditorGUILayout.PropertyField(
-                                    m_TargetAudioSources.GetArrayElementAtIndex(trackIdx),
-                                    s_Styles.audioSourceContent);
+                                var property = m_TargetAudioSources.GetArrayElementAtIndex(trackIdx);
+                                Rect rect = EditorGUILayout.GetControlRect();
+                                int id = GUIUtility.GetControlID(Styles.ObjectFieldControlID, FocusType.Keyboard, rect);
+                                var label = EditorGUI.BeginProperty(rect, s_Styles.audioSourceContent, property);
+                                rect = EditorGUI.PrefixLabel(rect, id, label);
+                                EditorGUI.BeginChangeCheck();
+
+                                var result = EditorGUI.DoObjectField(rect, rect, id, property.objectReferenceValue, typeof(AudioSource), null, null, true, EditorStyles.objectField);
+                                if (EditorGUI.EndChangeCheck())
+                                {
+                                    if (!EditorUtility.IsPersistent(result))
+                                        property.objectReferenceValue = result;
+                                    else
+                                        Debug.LogWarning("Invalid AudioSource for VideoPlayer. Use an instance of an AudioSource in the scene.");
+                                }
                             }
                             else if (audioOutputMode == VideoAudioOutputMode.Direct)
                             {

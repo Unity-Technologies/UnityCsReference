@@ -25,11 +25,6 @@ namespace UnityEditor.ShortcutManagement
     {
         public bool ValidateProfileId(string id)
         {
-            // Reserve id for default profile
-            if (id == "Default")
-                return false;
-
-            // TODO: This could be problematic since Path.GetInvalidFileNameChars is platform dependent
             return !string.IsNullOrEmpty(id) &&
                 id.Length <= 127 &&
                 id.IndexOfAny(Path.GetInvalidFileNameChars()) == -1 &&

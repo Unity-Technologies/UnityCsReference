@@ -647,11 +647,20 @@
   <Compile Include="..\..\Runtime\Export\ReflectionProbe.bindings.cs">
     <Link>Runtime\Export\ReflectionProbe.bindings.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\AttachmentDescriptor.cs">
+    <Link>Runtime\Export\RenderPipeline\AttachmentDescriptor.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\BlendState.cs">
     <Link>Runtime\Export\RenderPipeline\BlendState.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\CullingParameters.cs">
     <Link>Runtime\Export\RenderPipeline\CullingParameters.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\CullingResults.bindings.cs">
+    <Link>Runtime\Export\RenderPipeline\CullingResults.bindings.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\CullingResults.cs">
+    <Link>Runtime\Export\RenderPipeline\CullingResults.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\DepthState.cs">
     <Link>Runtime\Export\RenderPipeline\DepthState.cs</Link>
@@ -659,32 +668,23 @@
   <Compile Include="..\..\Runtime\Export\RenderPipeline\DrawRendererFlags.cs">
     <Link>Runtime\Export\RenderPipeline\DrawRendererFlags.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\DrawRendererSortSettings.cs">
-    <Link>Runtime\Export\RenderPipeline\DrawRendererSortSettings.cs</Link>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\DrawingSettings.cs">
+    <Link>Runtime\Export\RenderPipeline\DrawingSettings.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\DrawShadowsSettings.cs">
-    <Link>Runtime\Export\RenderPipeline\DrawShadowsSettings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\FilterRenderersSettings.cs">
-    <Link>Runtime\Export\RenderPipeline\FilterRenderersSettings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\FilterResults.cs">
-    <Link>Runtime\Export\RenderPipeline\FilterResults.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\IRenderPipeline.cs">
-    <Link>Runtime\Export\RenderPipeline\IRenderPipeline.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\IRenderPipelineAsset.cs">
-    <Link>Runtime\Export\RenderPipeline\IRenderPipelineAsset.cs</Link>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\FilteringSettings.cs">
+    <Link>Runtime\Export\RenderPipeline\FilteringSettings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\LODParameters.cs">
     <Link>Runtime\Export\RenderPipeline\LODParameters.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\PerObjectData.cs">
+    <Link>Runtime\Export\RenderPipeline\PerObjectData.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\RasterState.cs">
     <Link>Runtime\Export\RenderPipeline\RasterState.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\ReflectionProbeSortOptions.cs">
-    <Link>Runtime\Export\RenderPipeline\ReflectionProbeSortOptions.cs</Link>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\ReflectionProbeSortingCriteria.cs">
+    <Link>Runtime\Export\RenderPipeline\ReflectionProbeSortingCriteria.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderPipeline.cs">
     <Link>Runtime\Export\RenderPipeline\RenderPipeline.cs</Link>
@@ -701,29 +701,38 @@
   <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderStateBlock.cs">
     <Link>Runtime\Export\RenderPipeline\RenderStateBlock.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderStateMapping.cs">
-    <Link>Runtime\Export\RenderPipeline\RenderStateMapping.cs</Link>
-  </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderStateMask.cs">
     <Link>Runtime\Export\RenderPipeline\RenderStateMask.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\RenderTargetBlendState.cs">
     <Link>Runtime\Export\RenderPipeline\RenderTargetBlendState.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\RendererConfiguration.cs">
-    <Link>Runtime\Export\RenderPipeline\RendererConfiguration.cs</Link>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\ScopedRenderPass.cs">
+    <Link>Runtime\Export\RenderPipeline\ScopedRenderPass.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\ScriptableRenderContext.bindings.cs">
+    <Link>Runtime\Export\RenderPipeline\ScriptableRenderContext.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\ScriptableRenderContext.cs">
     <Link>Runtime\Export\RenderPipeline\ScriptableRenderContext.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\ShaderTagId.cs">
+    <Link>Runtime\Export\RenderPipeline\ShaderTagId.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\ShadowDrawingSettings.cs">
+    <Link>Runtime\Export\RenderPipeline\ShadowDrawingSettings.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\ShadowSplitData.cs">
     <Link>Runtime\Export\RenderPipeline\ShadowSplitData.cs</Link>
   </Compile>
-  <Compile Include="..\..\Runtime\Export\RenderPipeline\SortFlags.cs">
-    <Link>Runtime\Export\RenderPipeline\SortFlags.cs</Link>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\SortingCriteria.cs">
+    <Link>Runtime\Export\RenderPipeline\SortingCriteria.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\SortingLayerRange.cs">
     <Link>Runtime\Export\RenderPipeline\SortingLayerRange.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\SortingSettings.cs">
+    <Link>Runtime\Export\RenderPipeline\SortingSettings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\StencilState.cs">
     <Link>Runtime\Export\RenderPipeline\StencilState.cs</Link>
@@ -731,8 +740,14 @@
   <Compile Include="..\..\Runtime\Export\RenderPipeline\SupportedRenderingFeatures.cs">
     <Link>Runtime\Export\RenderPipeline\SupportedRenderingFeatures.cs</Link>
   </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\VisibleLight.cs">
+    <Link>Runtime\Export\RenderPipeline\VisibleLight.cs</Link>
+  </Compile>
   <Compile Include="..\..\Runtime\Export\RenderPipeline\VisibleLightFlags.cs">
     <Link>Runtime\Export\RenderPipeline\VisibleLightFlags.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Runtime\Export\RenderPipeline\VisibleReflectionProbe.cs">
+    <Link>Runtime\Export\RenderPipeline\VisibleReflectionProbe.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\RenderingCommandBuffer.bindings.cs">
     <Link>Runtime\Export\RenderingCommandBuffer.bindings.cs</Link>
@@ -775,18 +790,6 @@
   </Compile>
   <Compile Include="..\..\Runtime\Export\ScriptableObject.bindings.cs">
     <Link>Runtime\Export\ScriptableObject.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\ScriptableRenderContext.bindings.cs">
-    <Link>Runtime\Export\ScriptableRenderContext.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\ScriptableRenderLoop\RenderPass.cs">
-    <Link>Runtime\Export\ScriptableRenderLoop\RenderPass.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\ScriptableRenderLoop\RenderPassAttachment.bindings.cs">
-    <Link>Runtime\Export\ScriptableRenderLoop\RenderPassAttachment.bindings.cs</Link>
-  </Compile>
-  <Compile Include="..\..\Runtime\Export\ScriptableRenderLoop\ScriptableRenderLoop.bindings.cs">
-    <Link>Runtime\Export\ScriptableRenderLoop\ScriptableRenderLoop.bindings.cs</Link>
   </Compile>
   <Compile Include="..\..\Runtime\Export\Scripting\APIUpdating\UpdatedFromAttribute.cs">
     <Link>Runtime\Export\Scripting\APIUpdating\UpdatedFromAttribute.cs</Link>
@@ -1696,6 +1699,9 @@
   </Compile>
   <Compile Include="..\..\Modules\Tilemap\Managed\TileBase.cs">
     <Link>Modules\Tilemap\Managed\TileBase.cs</Link>
+  </Compile>
+  <Compile Include="..\..\Modules\Tilemap\Managed\Tilemap.cs">
+    <Link>Modules\Tilemap\Managed\Tilemap.cs</Link>
   </Compile>
   <Compile Include="..\..\Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs">
     <Link>Modules\Tilemap\ScriptBindings\Tilemap.bindings.cs</Link>

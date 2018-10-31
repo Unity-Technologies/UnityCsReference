@@ -93,6 +93,16 @@ namespace UnityEditor.StyleSheets
             }
         }
 
+        internal class Function : Value
+        {
+            public Function(string functionName) : base(StyleValueType.Function, functionName)
+            {
+                args = new List<Value[]>();
+            }
+
+            public List<Value[]> args;
+        }
+
         internal class Property
         {
             public string Name { get; set; }
@@ -212,8 +222,7 @@ namespace UnityEditor.StyleSheets
             {
                 if (m_ResolvedSheet == null)
                 {
-                    ResolveSheets();
-                    ResolveExtend();
+                    Resolve();
                     m_ResolvedSheet = ConvertToStyleSheet();
                 }
                 return m_ResolvedSheet;
@@ -268,9 +277,11 @@ namespace UnityEditor.StyleSheets
             return ResolvedSheet;
         }
 
-        public StyleSheet Resolve()
+        public void Resolve()
         {
-            return ResolvedSheet;
+            ResolveSheets();
+            ResolveExtend();
+            ResolveVariables();
         }
 
         public void ResolveSheets()
@@ -380,41 +391,35 @@ namespace UnityEditor.StyleSheets
             }
         }
 
+        public void ResolveVariables()
+        {
+            ResolveVariables(Rules.Values, Variables, Options);
+        }
+
         public StyleSheet ConvertToStyleSheet()
         {
-            return ConvertToStyleSheet(Rules.Values, Variables, Options);
+            return ConvertToStyleSheet(Rules.Values, Options);
         }
 
-        public List<Value> ResolveValues(Property property)
+        public void ResolveValues(Property property)
         {
-            return ResolveValues(property, Variables, Options);
+            ResolveValues(property, Variables, Options);
         }
 
-        public static List<Value> ResolveValues(Property property, Dictionary<string, Property> variables, ResolvingOptions options)
+        public static void ResolveVariables(IEnumerable<Rule> rules, Dictionary<string, Property> variables, ResolvingOptions options)
         {
-            if (property.Values.Count == 1 &&
-                property.Values[0].ValueType == StyleValueType.Enum &&
-                property.Values[0].AsString().StartsWith("--"))
+            foreach (var rule in rules)
             {
-                Property varProperty;
-                if (variables.TryGetValue(property.Values[0].AsString(), out varProperty))
+                foreach (var property in rule.Properties.Values)
                 {
-                    return varProperty.Values;
-                }
-                else if (options.ThrowIfCannotResolve)
-                {
-                    throw new Exception("Cannot resolve variable: " + property.Values[0].AsString());
-                    // Debug.Log("Cannot resolve variable: " + property.Values[0].AsString());
+                    ResolveValues(property, variables, options);
                 }
             }
-
-            return property.Values;
         }
 
-        public static StyleSheet ConvertToStyleSheet(IEnumerable<Rule> rules, Dictionary<string, Property> variables = null, ResolvingOptions options = null)
+        public static StyleSheet ConvertToStyleSheet(IEnumerable<Rule> rules, ResolvingOptions options = null)
         {
             options = options ?? new ResolvingOptions();
-            variables = variables ?? new Dictionary<string, Property>();
             var helper = new StyleSheetBuilderHelper();
             if (options.SortRules)
                 rules = rules.OrderBy(rule => rule.SelectorName);
@@ -429,15 +434,46 @@ namespace UnityEditor.StyleSheets
                 foreach (var property in propertyValues)
                 {
                     helper.builder.BeginProperty(property.Name);
-                    // Try to resolve variable
-                    var values = ResolveValues(property, variables, options);
-                    AddValues(helper, values);
+                    AddValues(helper, property.Values);
                     helper.builder.EndProperty();
                 }
                 helper.EndRule();
             }
             helper.PopulateSheet();
             return helper.sheet;
+        }
+
+        public static bool IsVariableProperty(Property property)
+        {
+            return property.Values.Any(IsVariableValue);
+        }
+
+        public static bool IsVariableValue(StyleSheetResolver.Value value)
+        {
+            return value.ValueType == StyleValueType.Enum && value.AsString().StartsWith("--");
+        }
+
+        public static List<Value> ResolveValues(Property property, Dictionary<string, Property> variables, ResolvingOptions options)
+        {
+            for (var i = 0; i < property.Values.Count; ++i)
+            {
+                var value = property.Values[i];
+                if (!IsVariableValue(value))
+                    continue;
+
+                Property varProperty;
+                if (variables.TryGetValue(value.AsString(), out varProperty))
+                {
+                    property.Values[i] = varProperty.Values[0];
+                }
+                else if (options != null && options.ThrowIfCannotResolve)
+                {
+                    throw new Exception("Cannot resolve variable: " + property.Values[0].AsString());
+                    // Debug.Log("Cannot resolve variable: " + property.Values[0].AsString());
+                }
+            }
+
+            return property.Values;
         }
 
         private Rule GetParentRule(string childSelectorName)
@@ -491,6 +527,8 @@ namespace UnityEditor.StyleSheets
             if (ConverterUtils.IsPseudoSelector(rule.SelectorName))
             {
                 var mainRuleName = ConverterUtils.GetNoPseudoSelector(rule.SelectorName);
+                if (mainRuleName == "")
+                    return;
                 Rule mainRule;
                 if (Rules.TryGetValue(mainRuleName, out mainRule))
                 {
@@ -554,7 +592,56 @@ namespace UnityEditor.StyleSheets
 
         private static List<Value> ToValues(StyleProperty srcProp, StyleSheet srcSheet)
         {
-            return srcProp.values.Select(v => new Value(v.valueType, GetPropertyValue(v, srcSheet))).ToList();
+            return ToValues(srcProp.values, 0, srcProp.values.Length, srcSheet);
+        }
+
+        private static List<Value> ToValues(StyleValueHandle[] sourceValues, int from, int to, StyleSheet srcSheet)
+        {
+            int argCount = sourceValues.Length;
+            var parsedValues = new List<Value>(argCount);
+            for (int i = from; i < to; ++i)
+            {
+                var valueHandle = sourceValues[i];
+                if (valueHandle.valueType == StyleValueType.Function)
+                {
+                    parsedValues.Add(ParseFunction(sourceValues, srcSheet, valueHandle, ref i));
+                }
+                else
+                    parsedValues.Add(new Value(valueHandle.valueType, GetPropertyValue(valueHandle, srcSheet)));
+            }
+
+            return parsedValues;
+        }
+
+        private static Function ParseFunction(StyleValueHandle[] sourceValues, StyleSheet srcSheet, StyleValueHandle valueHandle, ref int handleIndex)
+        {
+            var funcName = srcSheet.ReadFunctionName(valueHandle);
+            var funcArgCount = (int)srcSheet.ReadFloat(sourceValues[++handleIndex]);
+
+            var func = new Function(funcName);
+
+            handleIndex++;
+            var argValues = new List<Value>();
+            for (int a = 0; a < funcArgCount; ++a, ++handleIndex)
+            {
+                var argHandle = sourceValues[handleIndex];
+
+                if (argHandle.valueType == StyleValueType.Function)
+                {
+                    argValues.Add(ParseFunction(sourceValues, srcSheet, argHandle, ref handleIndex));
+                }
+                else if (argHandle.valueType == StyleValueType.FunctionSeparator)
+                {
+                    func.args.Add(argValues.ToArray());
+                    argValues.Clear();
+                }
+                else
+                    argValues.Add(new Value(argHandle.valueType, GetPropertyValue(argHandle, srcSheet)));
+            }
+
+            func.args.Add(argValues.ToArray());
+
+            return func;
         }
 
         private static Property AddProperty(Rule aggregate, StyleProperty property, StyleSheet srcSheet)

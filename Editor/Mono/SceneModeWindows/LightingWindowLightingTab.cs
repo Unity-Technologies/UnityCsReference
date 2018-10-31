@@ -14,7 +14,7 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngineInternal;
 using Object = UnityEngine.Object;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -185,7 +185,7 @@ namespace UnityEditor
 
         void OtherSettingsGUI()
         {
-            if (SupportedRenderingFeatures.active.rendererOverridesFog && SupportedRenderingFeatures.active.rendererOverridesOtherLightingSettings)
+            if (SupportedRenderingFeatures.active.overridesFog && SupportedRenderingFeatures.active.overridesOtherLightingSettings)
                 return;
 
             m_ShowOtherSettings = EditorGUILayout.FoldoutTitlebar(m_ShowOtherSettings, Styles.OtherSettings, true);
@@ -194,10 +194,10 @@ namespace UnityEditor
             {
                 EditorGUI.indentLevel++;
 
-                if (!SupportedRenderingFeatures.active.rendererOverridesFog)
+                if (!SupportedRenderingFeatures.active.overridesFog)
                     fogEditor.OnInspectorGUI();
 
-                if (!SupportedRenderingFeatures.active.rendererOverridesOtherLightingSettings)
+                if (!SupportedRenderingFeatures.active.overridesOtherLightingSettings)
                     otherRenderingEditor.OnInspectorGUI();
 
                 EditorGUI.indentLevel--;
@@ -211,7 +211,7 @@ namespace UnityEditor
 
             m_ScrollPosition = EditorGUILayout.BeginScrollView(m_ScrollPosition);
 
-            if (!SupportedRenderingFeatures.active.rendererOverridesEnvironmentLighting)
+            if (!SupportedRenderingFeatures.active.overridesEnvironmentLighting)
                 lightingEditor.OnInspectorGUI();
 
             m_BakeSettings.OnGUI();

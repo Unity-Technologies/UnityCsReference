@@ -289,11 +289,9 @@ namespace UnityEditor
         internal class Styles
         {
             public GUIStyle curveEditorBackground = "PopupCurveEditorBackground";
-            public GUIStyle miniToolbarPopup = "MiniToolbarPopup";
             public GUIStyle miniToolbarButton = "MiniToolbarButtonLeft";
             public GUIStyle curveSwatch = "PopupCurveEditorSwatch";
             public GUIStyle curveSwatchArea = "PopupCurveSwatchBackground";
-            public GUIStyle curveWrapPopup = "PopupCurveDropdown";
         }
         internal static Styles ms_Styles;
 

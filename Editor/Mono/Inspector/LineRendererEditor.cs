@@ -8,7 +8,7 @@ using UnityEditor.AnimatedValues;
 using UnityEditor.IMGUI.Controls;
 using UnityEditorInternal;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -123,9 +123,9 @@ namespace UnityEditor
             excludedProperties.Add("m_Parameters");
             excludedProperties.Add("m_Positions");
             excludedProperties.AddRange(Probes.GetFieldsStringArray());
-            if (!SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+            if (!SupportedRenderingFeatures.active.motionVectors)
                 excludedProperties.Add("m_MotionVectors");
-            if (!SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
+            if (!SupportedRenderingFeatures.active.receiveShadows)
                 excludedProperties.Add("m_ReceiveShadows");
             excludedProperties.Add("m_RenderingLayerMask");
             m_ExcludedProperties = excludedProperties.ToArray();

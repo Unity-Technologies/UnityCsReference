@@ -217,6 +217,7 @@ namespace UnityEditor
             [NativeProperty("ps4IncludedModules", false, TargetType.Field)] extern public static string[] includedModules { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool enableApplicationExit { get; set; }
             [NativeProperty(TargetType = TargetType.Field)] extern public static bool resetTempFolder { get; set; }
+            [NativeProperty(TargetType = TargetType.Field)] extern public static int playerPrefsMaxSize { get; set; }
         }
     }
 }

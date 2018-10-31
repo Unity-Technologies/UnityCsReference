@@ -6,14 +6,14 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     // Must match GfxRasterState on C++ side
     [StructLayout(LayoutKind.Sequential)]
-    public struct RasterState
+    public struct RasterState : IEquatable<RasterState>
     {
         // Passing a single parameter here to force non-default constructor
-        public static readonly RasterState Default = new RasterState(CullMode.Back);
+        public static readonly RasterState defaultValue = new RasterState(CullMode.Back);
 
         public RasterState(
             CullMode cullingMode = CullMode.Back,
@@ -61,5 +61,38 @@ namespace UnityEngine.Experimental.Rendering
         byte m_Padding1;
         byte m_Padding2;
         byte m_Padding3;
+
+        public bool Equals(RasterState other)
+        {
+            return m_CullingMode == other.m_CullingMode && m_OffsetUnits == other.m_OffsetUnits && m_OffsetFactor.Equals(other.m_OffsetFactor) && m_DepthClip == other.m_DepthClip;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is RasterState && Equals((RasterState)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (int)m_CullingMode;
+                hashCode = (hashCode * 397) ^ m_OffsetUnits;
+                hashCode = (hashCode * 397) ^ m_OffsetFactor.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_DepthClip.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public static bool operator==(RasterState left, RasterState right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator!=(RasterState left, RasterState right)
+        {
+            return !left.Equals(right);
+        }
     }
 }

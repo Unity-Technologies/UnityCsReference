@@ -4,13 +4,12 @@
 
 using System;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     [Flags]
-    public enum VisibleLightFlags
+    enum VisibleLightFlags
     {
-        None = 0,
-        IntersectsNearPlane = 1,
-        IntersectsFarPlane = 2,
+        IntersectsNearPlane = 1 << 0,
+        IntersectsFarPlane = 1 << 1,
     }
 }

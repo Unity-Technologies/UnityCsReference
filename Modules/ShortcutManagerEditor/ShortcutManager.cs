@@ -4,8 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using UnityEngine;
 
 namespace UnityEditor.ShortcutManagement
 {
@@ -14,6 +14,7 @@ namespace UnityEditor.ShortcutManagement
         event Action<ActiveProfileChangedEventArgs> activeProfileChanged;
         string activeProfileId { get; set; }
         IEnumerable<string> GetAvailableProfileIds();
+        bool IsProfileIdValid(string profileId);
         bool IsProfileReadOnly(string profileId);
         void CreateProfile(string profileId);
         void DeleteProfile(string profileId);
@@ -115,6 +116,16 @@ namespace UnityEditor.ShortcutManagement
             yield return ShortcutManager.defaultProfileId;
             foreach (var id in m_ShortcutProfileManager.GetProfiles().Select(profile => profile.id))
                 yield return id;
+        }
+
+        public bool IsProfileIdValid(string profileId)
+        {
+            if (profileId == null)
+            {
+                throw new ArgumentNullException(nameof(profileId));
+            }
+
+            return !profileId.Equals(string.Empty) && profileId.Length <= 127 && profileId.IndexOfAny(Path.GetInvalidFileNameChars()) == -1;
         }
 
         public bool IsProfileReadOnly(string profileId)

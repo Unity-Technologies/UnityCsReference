@@ -37,6 +37,8 @@ namespace UnityEditor
         // * DesktopPluginImporterExtension (where it's possible to individually enable or disable specific Standalone target)
 
         public static readonly GUIContent defineConstraints = EditorGUIUtility.TrTextContent("Define Constraints");
+        public static readonly GUIContent loadSettings = EditorGUIUtility.TrTextContent("Plugin load settings");
+        public static readonly GUIContent preload = EditorGUIUtility.TrTextContent("Load on startup", "Always load plugin during startup instead of on-demand");
 
         internal enum Compatibility : int
         {
@@ -50,6 +52,8 @@ namespace UnityEditor
         private Compatibility m_CompatibleWithEditor;
         private Compatibility[] m_CompatibleWithPlatform = new Compatibility[GetPlatformGroupArraySize()];
         private List<DefineConstraint> m_DefineConstraintState = new List<DefineConstraint>();
+
+        private Compatibility m_Preload;
 
         private readonly static BuildTarget[] m_StandaloneTargets = new BuildTarget[]
         {
@@ -332,6 +336,8 @@ namespace UnityEditor
                 }
             }
 
+            ResetCompatability(ref m_Preload, (imp => imp.isPreloaded));
+
             if (!IsEditingPlatformSettingsSupported())
                 return;
 
@@ -399,6 +405,9 @@ namespace UnityEditor
                     if (m_CompatibleWithPlatform[(int)platform] > Compatibility.Mixed)
                         imp.SetExcludeFromAnyPlatform(platform, m_CompatibleWithPlatform[(int)platform] == Compatibility.NotCompatible);
                 }
+
+                if (m_Preload > Compatibility.Mixed)
+                    imp.isPreloaded = (m_Preload == Compatibility.Compatible);
             }
 
             if (!IsEditingPlatformSettingsSupported())
@@ -472,6 +481,8 @@ namespace UnityEditor
             }
 
             m_ReferencesUnityEngineModule = importer.HasDiscouragedReferences();
+
+            ResetCompatability(ref m_Preload, (imp => imp.isPreloaded));
         }
 
         private void RemoveDefineConstraintListElement(ReorderableList list)
@@ -630,6 +641,14 @@ namespace UnityEditor
             }
         }
 
+        private void ShowLoadSettings()
+        {
+            EditorGUI.BeginChangeCheck();
+            m_Preload = ToggleWithMixedValue(m_Preload, preload.text);
+            if (EditorGUI.EndChangeCheck())
+                m_HasModified = true;
+        }
+
         private void ShowReferenceOptions()
         {
             GUILayout.Label(EditorGUIUtility.TrTempContent("General"), EditorStyles.boldLabel);
@@ -664,6 +683,13 @@ namespace UnityEditor
 
                 GUILayout.Label(defineConstraints, EditorStyles.boldLabel);
                 m_DefineConstraints.DoLayoutList();
+
+                if (importers.All(imp => imp.isNativePlugin))
+                {
+                    GUILayout.Space(10f);
+                    GUILayout.Label(loadSettings, EditorStyles.boldLabel);
+                    ShowLoadSettings();
+                }
             }
             ApplyRevertGUI();
 

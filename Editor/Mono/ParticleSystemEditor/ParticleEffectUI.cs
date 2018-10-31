@@ -451,7 +451,7 @@ namespace UnityEditor
                 ParticleSystemRenderer renderer = go.GetComponent<ParticleSystemRenderer>();
                 Material particleMat = null;
                 if (GraphicsSettings.renderPipelineAsset != null)
-                    particleMat = GraphicsSettings.renderPipelineAsset.GetDefaultParticleMaterial();
+                    particleMat = GraphicsSettings.renderPipelineAsset.defaultParticleMaterial;
 
                 if (particleMat == null)
                     particleMat = AssetDatabase.GetBuiltinExtraResource<Material>("Default-ParticleSystem.mat");

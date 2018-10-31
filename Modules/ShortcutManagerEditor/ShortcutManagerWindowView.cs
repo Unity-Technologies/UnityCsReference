@@ -359,6 +359,13 @@ namespace UnityEditor.ShortcutManagement
             el.style.flexGrow = 1;
         }
 
+        public static void StyleActiveProfileDropdownButton(VisualElement el)
+        {
+            el.AddToClassList("popupField");
+            NormalTextColor(el);
+            FixPopupStyle(el);
+        }
+
         public static void StyleSearchDropdown(VisualElement el)
         {
             if (EditorGUIUtility.isProSkin)
@@ -443,9 +450,7 @@ namespace UnityEditor.ShortcutManagement
         IShortcutManagerWindowViewController m_ViewController;
         IKeyBindingStateProvider m_BindingStateProvider;
 
-        PopupField<string> m_ActiveProfileDropdown;
-        GenericMenu m_ProfileContextMenu;
-        GenericMenu m_ProfileContextMenuDefaultProfile;
+        TextElement m_ActiveProfileDropdownButton;
         Keyboard m_KeyboardElement;
         ListView m_ShortcutsTable;
         TextField m_SearchTextField;
@@ -686,39 +691,20 @@ namespace UnityEditor.ShortcutManagement
 
         void RefreshProfiles()
         {
-            m_ActiveProfileDropdown.choices = m_ViewController.GetAvailableProfiles();
-            m_ActiveProfileDropdown.value = m_ViewController.activeProfile;
+            m_ActiveProfileDropdownButton.text = m_ViewController.activeProfile;
         }
 
         void BuildProfileManagementRow(VisualElement header)
         {
             //TODO: Read from a uxml
-            m_ActiveProfileDropdown = new PopupField<string>(m_ViewController.GetAvailableProfiles(), m_ViewController.activeProfile);
-            var profileContextMenu = new VisualElement();
+            m_ActiveProfileDropdownButton = new TextElement();
 
-            StyleUtility.FixPopupStyle(m_ActiveProfileDropdown);
-            StyleUtility.StyleHeaderIcon(profileContextMenu);
-            StyleUtility.StyleProfileOptionsDropdown(profileContextMenu);
+            m_ActiveProfileDropdownButton.text = m_ViewController.activeProfile;
+            StyleUtility.StyleActiveProfileDropdownButton(m_ActiveProfileDropdownButton);
 
-            m_ActiveProfileDropdown.OnValueChanged(OnActiveProfileChanged);
-            BuildProfileContextMenus();
-            profileContextMenu.RegisterCallback<MouseDownEvent>(OnProfileContextMenuMouseDown);
+            m_ActiveProfileDropdownButton.RegisterCallback<MouseDownEvent>(OnProfileContextMenuMouseDown);
 
-            header.Add(m_ActiveProfileDropdown);
-            header.Add(profileContextMenu);
-        }
-
-        void BuildProfileContextMenus()
-        {
-            m_ProfileContextMenu = new GenericMenu();
-            m_ProfileContextMenu.AddItem(EditorGUIUtility.TrTextContent("Create new profile..."), false, OnCreateProfileClicked);
-            m_ProfileContextMenu.AddItem(EditorGUIUtility.TrTextContent("Rename profile..."), false, OnRenameProfileClicked);
-            m_ProfileContextMenu.AddItem(EditorGUIUtility.TrTextContent("Delete profile..."), false, OnDeleteProfileClicked);
-
-            m_ProfileContextMenuDefaultProfile = new GenericMenu();
-            m_ProfileContextMenuDefaultProfile.AddItem(EditorGUIUtility.TrTextContent("Create new profile..."), false, OnCreateProfileClicked);
-            m_ProfileContextMenuDefaultProfile.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename profile..."));
-            m_ProfileContextMenuDefaultProfile.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete profile..."));
+            header.Add(m_ActiveProfileDropdownButton);
         }
 
         void OnCreateProfileClicked()
@@ -755,24 +741,36 @@ namespace UnityEditor.ShortcutManagement
             m_ViewController.activeProfile = evt.newValue;
         }
 
+        void OnActiveProfileChanged(string profile)
+        {
+            m_ViewController.activeProfile = profile;
+        }
+
         void OnProfileContextMenuMouseDown(MouseDownEvent evt)
         {
             var targetElement = (VisualElement)evt.target;
-            var menu = new GenericMenu();
+            var genericMenu = new GenericMenu();
 
-            menu.AddItem(EditorGUIUtility.TrTextContent("Create new profile..."), false, OnCreateProfileClicked);
+            foreach (var profile in m_ViewController.GetAvailableProfiles())
+            {
+                genericMenu.AddItem(new GUIContent(profile), false, () => OnActiveProfileChanged(profile));
+            }
+
+            genericMenu.AddSeparator("");
+
+            genericMenu.AddItem(EditorGUIUtility.TrTextContent("Create new profile..."), false, OnCreateProfileClicked);
 
             if (m_ViewController.CanRenameActiveProfile())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Rename profile..."), false, OnRenameProfileClicked);
+                genericMenu.AddItem(EditorGUIUtility.TrTextContent("Rename profile..."), false, OnRenameProfileClicked);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename profile..."));
+                genericMenu.AddDisabledItem(EditorGUIUtility.TrTextContent("Rename profile..."));
 
             if (m_ViewController.CanDeleteActiveProfile())
-                menu.AddItem(EditorGUIUtility.TrTextContent("Delete profile..."), false, OnDeleteProfileClicked);
+                genericMenu.AddItem(EditorGUIUtility.TrTextContent("Delete profile..."), false, OnDeleteProfileClicked);
             else
-                menu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete profile..."));
+                genericMenu.AddDisabledItem(EditorGUIUtility.TrTextContent("Delete profile..."));
 
-            menu.DropDown(targetElement.worldBound);
+            genericMenu.DropDown(targetElement.worldBound);
         }
 
         void BuildLegendRow(VisualElement root)

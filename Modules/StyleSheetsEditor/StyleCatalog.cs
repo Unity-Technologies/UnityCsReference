@@ -329,6 +329,7 @@ namespace UnityEditor.StyleSheets
             Text = StyleValueType.String,
             Rect,
             Group,
+            Function,
 
             Any = 0x7FFFFFFF
         }
@@ -626,6 +627,24 @@ namespace UnityEditor.StyleSheets
             return defaultValue;
         }
 
+        public T Execute<T>(int key, Func<StyleBlock, string, List<StyleSheetResolver.Value[]>, T> callback)
+        {
+            var index = GetValueIndex(key, StyleValue.Type.Function);
+            if (index == -1)
+                return default(T);
+            var func = catalog.buffers.functions[index];
+            return callback(this, func.AsString(), func.args);
+        }
+
+        public T Execute<T, C>(int key, Func<StyleBlock, string, List<StyleSheetResolver.Value[]>, C, T> callback, C c)
+        {
+            var index = GetValueIndex(key, StyleValue.Type.Function);
+            if (index == -1)
+                return default(T);
+            var func = catalog.buffers.functions[index];
+            return callback(this, func.AsString(), func.args, c);
+        }
+
         public bool HasValue(int key, StyleValue.Type type = StyleValue.Type.Any)
         {
             return GetValueIndex(key, type) != -1;
@@ -703,6 +722,7 @@ namespace UnityEditor.StyleSheets
             public Color[] colors;
             public StyleRect[] rects;
             public StyleValueGroup[] groups;
+            public StyleSheetResolver.Function[] functions;
         }
 
         private static readonly StyleValue[] k_NoValue = {};
@@ -823,15 +843,15 @@ namespace UnityEditor.StyleSheets
             var colors = new List<Color>();
             var blocks = new List<StyleBlock>();
             var groups = new List<StyleValueGroup>();
+            var functions = new List<StyleSheetResolver.Function>();
 
             m_NameCollisionTable.Clear();
             try
             {
                 var resolver = new StyleSheetResolver();
                 resolver.AddStyleSheets(sheets);
-                resolver.ResolveSheets();
-                resolver.ResolveExtend();
-                Compile(resolver, numbers, colors, strings, rects, groups, blocks);
+                resolver.Resolve();
+                Compile(resolver, numbers, colors, strings, rects, groups, functions, blocks);
             }
             catch (Exception ex)
             {
@@ -844,7 +864,8 @@ namespace UnityEditor.StyleSheets
                 numbers = numbers.ToArray(),
                 colors = colors.ToArray(),
                 rects = rects.ToArray(),
-                groups = groups.ToArray()
+                groups = groups.ToArray(),
+                functions = functions.ToArray()
             };
 
             m_Blocks = blocks.ToArray();
@@ -958,7 +979,8 @@ namespace UnityEditor.StyleSheets
         }
 
         private void Compile(StyleSheetResolver resolver,
-            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups,
+            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects,
+            List<StyleValueGroup> groups, List<StyleSheetResolver.Function> functions,
             List<StyleBlock> blocks)
         {
             foreach (var rule in resolver.Rules.Values)
@@ -974,7 +996,7 @@ namespace UnityEditor.StyleSheets
                 List<StyleValue> values = new List<StyleValue>(rule.Properties.Count);
                 foreach (var property in rule.Properties.Values)
                 {
-                    var newValue = CompileValue(resolver, property, stateFlags, numbers, colors, strings, rects, groups);
+                    var newValue = CompileValue(resolver, property, stateFlags, numbers, colors, strings, rects, groups, functions);
                     values.Add(newValue);
                 }
 
@@ -984,12 +1006,12 @@ namespace UnityEditor.StyleSheets
         }
 
         private StyleValue CompileValue(StyleSheetResolver resolver, StyleSheetResolver.Property property, StyleState stateFlags,
-            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups)
+            List<float> numbers, List<Color> colors, List<string> strings, List<StyleRect> rects, List<StyleValueGroup> groups, List<StyleSheetResolver.Function> functions)
         {
-            var values = resolver.ResolveValues(property);
+            var values = property.Values;
             if (values.Count == 1)
             {
-                return CompileBaseValue(property.Name, stateFlags, values[0], numbers, colors, strings);
+                return CompileBaseValue(property.Name, stateFlags, values[0], numbers, colors, strings, functions);
             }
 
             if (values.Count == 2 &&
@@ -1012,7 +1034,7 @@ namespace UnityEditor.StyleSheets
 
             // Compile list of primitive values
             if (values.Count >= 2 && values.Count <= 5)
-                return CompileValueGroup(property.Name, values, stateFlags, groups, numbers, colors, strings);
+                return CompileValueGroup(property.Name, values, stateFlags, groups, numbers, colors, strings, functions);
 
             // Value form not supported, lets report it and keep a undefined value to the property.
             Debug.LogWarning($"Failed to compile style block property {property.Name} " +
@@ -1038,12 +1060,14 @@ namespace UnityEditor.StyleSheets
             };
         }
 
-        private StyleValue CompileValueGroup(string propertyName, List<StyleSheetResolver.Value> values, StyleState stateFlags, List<StyleValueGroup> groups, List<float> numbers, List<Color> colors, List<string> strings)
+        private StyleValue CompileValueGroup(string propertyName, List<StyleSheetResolver.Value> values, StyleState stateFlags,
+            List<StyleValueGroup> groups, List<float> numbers, List<Color> colors, List<string> strings,
+            List<StyleSheetResolver.Function> functions)
         {
             int propertyKey = GetNameKey(propertyName);
             StyleValueGroup vg = new StyleValueGroup(propertyKey, values.Count);
             for (int i = 0; i < values.Count; ++i)
-                vg[i] = CompileBaseValue(propertyName, stateFlags, values[i], numbers, colors, strings);
+                vg[i] = CompileBaseValue(propertyName, stateFlags, values[i], numbers, colors, strings, functions);
 
             return new StyleValue
             {
@@ -1054,14 +1078,15 @@ namespace UnityEditor.StyleSheets
             };
         }
 
-        private StyleValue CompileBaseValue(string propertyName, StyleState stateFlags, StyleSheetResolver.Value value, List<float> numbers, List<Color> colors, List<string> strings)
+        private StyleValue CompileBaseValue(string propertyName, StyleState stateFlags, StyleSheetResolver.Value value,
+            List<float> numbers, List<Color> colors, List<string> strings, List<StyleSheetResolver.Function> functions)
         {
             return new StyleValue
             {
                 key = GetNameKey(propertyName),
                 state = stateFlags,
                 type = ReduceStyleValueType(value),
-                index = MergeValue(value, numbers, colors, strings)
+                index = MergeValue(value, numbers, colors, strings, functions)
             };
         }
 
@@ -1076,6 +1101,7 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.AssetReference:
                 case StyleValueType.ResourcePath:
                 case StyleValueType.Enum:
+                {
                     var str = value.AsString();
                     // Try a few conversions
                     Color parsedColor;
@@ -1083,10 +1109,12 @@ namespace UnityEditor.StyleSheets
                         return StyleValue.Type.Color;
 
                     return StyleValue.Type.Text;
-                case StyleValueType.String:
-                {
-                    return StyleValue.Type.Text;
                 }
+                case StyleValueType.String:
+                    return StyleValue.Type.Text;
+
+                case StyleValueType.Function:
+                    return StyleValue.Type.Function;
 
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -1094,7 +1122,7 @@ namespace UnityEditor.StyleSheets
         }
 
         private static int MergeValue(StyleSheetResolver.Value value,
-            List<float> numbers, List<Color> colors, List<string> strings)
+            List<float> numbers, List<Color> colors, List<string> strings, List<StyleSheetResolver.Function> functions)
         {
             switch (value.ValueType)
             {
@@ -1116,9 +1144,9 @@ namespace UnityEditor.StyleSheets
                 case StyleValueType.AssetReference:
                     return SetIndex(strings, AssetDatabase.GetAssetPath(value.AsAssetReference()));
                 case StyleValueType.String:
-                {
                     return SetIndex(strings, value.AsString());
-                }
+                case StyleValueType.Function:
+                    return SetIndex(functions, value as StyleSheetResolver.Function);
                 default:
                     throw new Exception("Unknown value type: " + value.ValueType);
             }

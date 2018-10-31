@@ -28,12 +28,13 @@ namespace UnityEditor
 
             // controlID will get hotControl if using arrow keys while shortcut context is not active
             // passing a value of zero disables the arrow keys
-            public InputSamplingScope(CameraFlyModeContext context, ViewTool currentViewTool, int controlID, bool orthographic = false)
+            public InputSamplingScope(CameraFlyModeContext context, ViewTool currentViewTool, int controlID, EditorWindow window, bool orthographic = false)
             {
                 m_ArrowKeysActive = false;
                 m_Disposed = false;
                 m_Context = context;
                 m_Context.active = currentViewTool == ViewTool.FPS;
+                m_Context.m_Window = window;
 
                 if (m_Context.active)
                 {
@@ -73,7 +74,7 @@ namespace UnityEditor
                 foreach (KeyCode key in s_ArrowKeysDown)
                 {
                     var action = s_ArrowKeyBindings[key];
-                    action(orthographic, new ShortcutArguments { stage = ShortcutStage.End });
+                    action(orthographic, new ShortcutArguments { stage = ShortcutStage.End, context = m_Context });
                 }
 
                 s_ArrowKeysDown.Clear();
@@ -93,7 +94,7 @@ namespace UnityEditor
                     case EventType.KeyDown:
                         if (!s_ArrowKeyBindings.TryGetValue(evt.keyCode, out action))
                             return false;
-                        action(orthographic, new ShortcutArguments { stage = ShortcutStage.Begin });
+                        action(orthographic, new ShortcutArguments { stage = ShortcutStage.Begin, context = m_Context });
                         GUIUtility.hotControl = id;
                         s_ArrowKeysDown.Add(evt.keyCode);
                         evt.Use();
@@ -101,7 +102,7 @@ namespace UnityEditor
                     case EventType.KeyUp:
                         if (!s_ArrowKeyBindings.TryGetValue(evt.keyCode, out action))
                             return false;
-                        action(orthographic, new ShortcutArguments { stage = ShortcutStage.End });
+                        action(orthographic, new ShortcutArguments { stage = ShortcutStage.End, context = m_Context });
                         s_ArrowKeysDown.Remove(evt.keyCode);
                         if (s_ArrowKeysDown.Count == 0)
                             GUIUtility.hotControl = 0;
@@ -115,6 +116,7 @@ namespace UnityEditor
 
         public bool active { get; set; }
 
+        EditorWindow m_Window;
         Vector3 m_PreviousVector;
 
         public static float deltaTime => s_Timer.Update();
@@ -128,6 +130,8 @@ namespace UnityEditor
         static void WalkForward(ShortcutArguments args)
         {
             s_CurrentInputVector.z = args.stage == ShortcutStage.Begin ? 1f : s_CurrentInputVector.z > 0f ? 0f : s_CurrentInputVector.z;
+            var context = (CameraFlyModeContext)args.context;
+            context.m_Window.Repaint();
         }
 
         [ClutchShortcut("3D Viewport/Fly Mode Backward", typeof(CameraFlyModeContext), KeyCode.S)]
@@ -135,6 +139,8 @@ namespace UnityEditor
         static void WalkBackward(ShortcutArguments args)
         {
             s_CurrentInputVector.z = args.stage == ShortcutStage.Begin ? -1f : s_CurrentInputVector.z < 0f ? 0f : s_CurrentInputVector.z;
+            var context = (CameraFlyModeContext)args.context;
+            context.m_Window.Repaint();
         }
 
         [ClutchShortcut("3D Viewport/Fly Mode Left", typeof(CameraFlyModeContext), KeyCode.A)]
@@ -142,6 +148,8 @@ namespace UnityEditor
         static void WalkLeft(ShortcutArguments args)
         {
             s_CurrentInputVector.x = args.stage == ShortcutStage.Begin ? -1f : s_CurrentInputVector.x < 0f ? 0f : s_CurrentInputVector.x;
+            var context = (CameraFlyModeContext)args.context;
+            context.m_Window.Repaint();
         }
 
         [ClutchShortcut("3D Viewport/Fly Mode Right", typeof(CameraFlyModeContext), KeyCode.D)]
@@ -149,6 +157,8 @@ namespace UnityEditor
         static void WalkRight(ShortcutArguments args)
         {
             s_CurrentInputVector.x = args.stage == ShortcutStage.Begin ? 1f : s_CurrentInputVector.x > 0f ? 0f : s_CurrentInputVector.x;
+            var context = (CameraFlyModeContext)args.context;
+            context.m_Window.Repaint();
         }
 
         [ClutchShortcut("3D Viewport/Fly Mode Up", typeof(CameraFlyModeContext), KeyCode.E)]
@@ -156,6 +166,8 @@ namespace UnityEditor
         static void WalkUp(ShortcutArguments args)
         {
             s_CurrentInputVector.y = args.stage == ShortcutStage.Begin ? 1f : s_CurrentInputVector.y > 0f ? 0f : s_CurrentInputVector.y;
+            var context = (CameraFlyModeContext)args.context;
+            context.m_Window.Repaint();
         }
 
         [ClutchShortcut("3D Viewport/Fly Mode Down", typeof(CameraFlyModeContext), KeyCode.Q)]
@@ -163,6 +175,8 @@ namespace UnityEditor
         static void WalkDown(ShortcutArguments args)
         {
             s_CurrentInputVector.y = args.stage == ShortcutStage.Begin ? -1f : s_CurrentInputVector.y < 0f ? 0f : s_CurrentInputVector.y;
+            var context = (CameraFlyModeContext)args.context;
+            context.m_Window.Repaint();
         }
     }
 }

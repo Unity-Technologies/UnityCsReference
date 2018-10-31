@@ -4,115 +4,67 @@
 
 using System.Collections.Generic;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
-    public abstract class RenderPipelineAsset : ScriptableObject, IRenderPipelineAsset
+    public abstract class RenderPipelineAsset : ScriptableObject
     {
-        private readonly List<IRenderPipeline> m_CreatedPipelines = new List<IRenderPipeline>();
+        private readonly List<RenderPipeline> m_Pipelines = new List<RenderPipeline>();
 
-        public void DestroyCreatedInstances()
+        internal void DestroyInstances()
         {
-            foreach (var pipeline in m_CreatedPipelines)
+            foreach (var pipeline in m_Pipelines)
                 pipeline.Dispose();
-
-            m_CreatedPipelines.Clear();
+            m_Pipelines.Clear();
         }
 
-        public IRenderPipeline CreatePipeline()
+        internal RenderPipeline InternalCreatePipeline()
         {
-            var pipe = InternalCreatePipeline();
-            if (pipe != null)
-                m_CreatedPipelines.Add(pipe);
-
-            return pipe;
+            var pipeline = CreatePipeline();
+            if (pipeline != null)
+                m_Pipelines.Add(pipeline);
+            return pipeline;
         }
 
-        public virtual int GetTerrainBrushPassIndex()
-        {
-            return (int)UnityEngine.Rendering.RenderQueue.GeometryLast;
-        }
+        public virtual int terrainBrushPassIndex => (int)UnityEngine.Rendering.RenderQueue.GeometryLast;
 
+        public virtual string[] renderingLayerMaskNames => null;
 
-        public virtual string[] GetRenderingLayerMaskNames()
-        {
-            return null;
-        }
+        public virtual Material defaultMaterial => null;
 
-        public virtual Material GetDefaultMaterial()
-        {
-            return null;
-        }
+        public virtual Shader autodeskInteractiveShader => null;
 
-        public virtual Shader GetAutodeskInteractiveShader()
-        {
-            return null;
-        }
+        public virtual Shader autodeskInteractiveTransparentShader => null;
 
-        public virtual Shader GetAutodeskInteractiveTransparentShader()
-        {
-            return null;
-        }
+        public virtual Shader autodeskInteractiveMaskedShader => null;
 
-        public virtual Shader GetAutodeskInteractiveMaskedShader()
-        {
-            return null;
-        }
+        public virtual Material defaultParticleMaterial => null;
 
-        public virtual Material GetDefaultParticleMaterial()
-        {
-            return null;
-        }
+        public virtual Material defaultLineMaterial => null;
 
-        public virtual Material GetDefaultLineMaterial()
-        {
-            return null;
-        }
+        public virtual Material defaultTerrainMaterial => null;
 
-        public virtual Material GetDefaultTerrainMaterial()
-        {
-            return null;
-        }
+        public virtual Material defaultUIMaterial => null;
 
-        public virtual Material GetDefaultUIMaterial()
-        {
-            return null;
-        }
+        public virtual Material defaultUIOverdrawMaterial => null;
 
-        public virtual Material GetDefaultUIOverdrawMaterial()
-        {
-            return null;
-        }
+        public virtual Material defaultUIETC1SupportedMaterial => null;
 
-        public virtual Material GetDefaultUIETC1SupportedMaterial()
-        {
-            return null;
-        }
+        public virtual Material default2DMaterial => null;
 
-        public virtual Material GetDefault2DMaterial()
-        {
-            return null;
-        }
+        public virtual Shader defaultShader => null;
 
-        public virtual Shader GetDefaultShader()
-        {
-            return null;
-        }
+        protected abstract RenderPipeline CreatePipeline();
 
-        protected abstract IRenderPipeline InternalCreatePipeline();
-
-        protected IEnumerable<IRenderPipeline> CreatedInstances()
-        {
-            return m_CreatedPipelines;
-        }
+        protected IEnumerable<RenderPipeline> instances => m_Pipelines;
 
         protected virtual void OnValidate()
         {
-            DestroyCreatedInstances();
+            DestroyInstances();
         }
 
         protected virtual void OnDisable()
         {
-            DestroyCreatedInstances();
+            DestroyInstances();
         }
     }
 }

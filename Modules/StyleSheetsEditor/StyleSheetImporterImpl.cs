@@ -141,6 +141,8 @@ namespace UnityEditor.StyleSheets
             var colorTerm = term as HtmlColor;
             var funcTerm = term as GenericFunction;
             var termList = term as TermList;
+            var commaTerm = term as Comma;
+            var wsTerm = term as Whitespace;
 
             if (term == PrimitiveTerm.Inherit)
             {
@@ -193,7 +195,16 @@ namespace UnityEditor.StyleSheets
                 }
                 else
                 {
-                    m_Errors.AddSemanticError(StyleSheetImportErrorCode.UnsupportedFunction, funcTerm.Name);
+                    if (funcTerm.Arguments.Length == 0)
+                    {
+                        m_Errors.AddSemanticError(StyleSheetImportErrorCode.MissingFunctionArgument, funcTerm.Name);
+                        return;
+                    }
+
+                    m_Builder.AddValue(funcTerm.Name, StyleValueType.Function);
+                    m_Builder.AddValue(funcTerm.Arguments.Count(a => !(a is Whitespace)));
+                    foreach (var arg in funcTerm.Arguments)
+                        VisitValue(arg);
                 }
             }
             else if (termList != null)
@@ -202,6 +213,14 @@ namespace UnityEditor.StyleSheets
                 {
                     VisitValue(childTerm);
                 }
+            }
+            else if (commaTerm != null)
+            {
+                m_Builder.AddValue(commaTerm.ToString(), StyleValueType.FunctionSeparator);
+            }
+            else if (wsTerm != null)
+            {
+                // skip
             }
             else
             {

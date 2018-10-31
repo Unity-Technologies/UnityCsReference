@@ -5,7 +5,6 @@
 using System;
 using UnityEngine;
 using UnityEditor.Build;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using EditorGraphicsSettings = UnityEditor.Rendering.EditorGraphicsSettings;
 using TierSettings = UnityEditor.Rendering.TierSettings;
@@ -353,7 +352,7 @@ namespace UnityEditor
                     EditorGUILayout.LabelField(Styles.semitransparentShadows);
                 }
 
-                if (SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
+                if (SupportedRenderingFeatures.active.lightProbeProxyVolumes)
                     EditorGUILayout.LabelField(Styles.enableLPPV);
 
                 if (!vertical)
@@ -444,7 +443,7 @@ namespace UnityEditor
                     ts.semitransparentShadows = EditorGUILayout.Toggle(ts.semitransparentShadows);
                 }
 
-                if (SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
+                if (SupportedRenderingFeatures.active.lightProbeProxyVolumes)
                     ts.enableLPPV = EditorGUILayout.Toggle(ts.enableLPPV);
 
                 if (!vertical)

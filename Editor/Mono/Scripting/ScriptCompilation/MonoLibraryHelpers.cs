@@ -21,7 +21,7 @@ namespace UnityEditor.Scripting.ScriptCompilation
         static CachedReferences cachedReferences;
 
         public static string[] GetSystemLibraryReferences(ApiCompatibilityLevel apiCompatibilityLevel, BuildTarget buildTarget, SupportedLanguage supportedLanguage,
-            bool buildingForEditor, string assemblyName)
+            bool buildingForEditor, ScriptAssembly scriptAssembly)
         {
             // The language may not be compatible with these additional references
             if (supportedLanguage != null && !supportedLanguage.CompilerRequiresAdditionalReferences())

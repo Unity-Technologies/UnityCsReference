@@ -110,5 +110,8 @@ namespace UnityEngine.Playables
 
         [FreeFunction("PlayableOutputHandleBindings::RemoveNotificationReceiver", HasExplicitThis = true, ThrowsException = true)]
         extern internal void RemoveNotificationReceiver(INotificationReceiver receiver);
+
+        [FreeFunction("PlayableOutputHandleBindings::GetEditorName", HasExplicitThis = true, ThrowsException = true)]
+        extern internal string GetEditorName();
     }
 }

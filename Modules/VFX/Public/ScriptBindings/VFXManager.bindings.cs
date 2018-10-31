@@ -9,7 +9,6 @@ using UnityEngine.Bindings;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 using UnityEngine.Experimental.VFX;
-using UnityEngine.Experimental.Rendering;
 
 namespace UnityEngine.Experimental.VFX
 {
@@ -25,18 +24,6 @@ namespace UnityEngine.Experimental.VFX
 
         extern internal static string renderPipeSettingsPath { get; }
 
-        extern internal static void ProcessCamera(Camera cam); // Hook for SRP
-
-        [RequiredByNativeCode]
-        internal static void RegisterPerCameraCallback()
-        {
-            RenderPipeline.beginCameraRendering += ProcessCamera;
-        }
-
-        [RequiredByNativeCode]
-        internal static void UnregisterPerCameraCallback()
-        {
-            RenderPipeline.beginCameraRendering -= ProcessCamera;
-        }
+        extern public static void ProcessCamera(Camera cam); // Hook for SRP
     }
 }

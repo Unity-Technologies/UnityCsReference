@@ -12,7 +12,6 @@ using BuiltinShadersEditor          = UnityEditor.GraphicsSettingsWindow.Builtin
 using AlwaysIncludedShadersEditor   = UnityEditor.GraphicsSettingsWindow.AlwaysIncludedShadersEditor;
 using ShaderStrippingEditor         = UnityEditor.GraphicsSettingsWindow.ShaderStrippingEditor;
 using ShaderPreloadEditor           = UnityEditor.GraphicsSettingsWindow.ShaderPreloadEditor;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
 namespace UnityEditor

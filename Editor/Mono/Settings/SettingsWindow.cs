@@ -39,9 +39,9 @@ namespace UnityEditor
 
         private static class Styles
         {
-            public static StyleBlock window => EditorResources.GetStyle("settings-window");
-            public static StyleBlock settingsPanel => EditorResources.GetStyle("settings-panel-client-area");
-            public static StyleBlock header => EditorResources.GetStyle("settings-header");
+            public static StyleBlock window => EditorResources.GetStyle("sb-settings-window");
+            public static StyleBlock settingsPanel => EditorResources.GetStyle("sb-settings-panel-client-area");
+            public static StyleBlock header => EditorResources.GetStyle("sb-settings-header");
         }
 
         public static float s_DefaultLabelWidth => Styles.window.GetFloat("-unity-label-width");
@@ -227,8 +227,8 @@ namespace UnityEditor
             minSize = new Vector2(Styles.window.GetFloat("min-width"), Styles.window.GetFloat("min-height"));
 
             var root = this.GetRootVisualContainer();
-            root.AddStyleSheetPath("StyleSheets/Extensions/common.uss");
-            root.AddStyleSheetPath($"StyleSheets/Extensions/{(EditorGUIUtility.isProSkin ? "dark" : "light")}.uss");
+            root.AddStyleSheetPath("StyleSheets/SettingsWindowCommon.uss");
+            root.AddStyleSheetPath($"StyleSheets/SettingsWindow{(EditorGUIUtility.isProSkin ? "Dark" : "Light")}.uss");
 
             root.style.flexDirection = FlexDirection.Column;
 
@@ -348,7 +348,7 @@ namespace UnityEditor
         {
             var settingsWindow = CreateInstance<SettingsWindow>();
             settingsWindow.m_Scope = scope;
-            settingsWindow.titleContent.text = scope == SettingsScope.Project ? "Settings" : "Preferences";
+            settingsWindow.titleContent.text = scope == SettingsScope.Project ? "Project Settings" : "Preferences";
             settingsWindow.Init();
             return settingsWindow;
         }

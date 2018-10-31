@@ -5,7 +5,7 @@
 using System;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     public class SupportedRenderingFeatures
     {
@@ -21,16 +21,16 @@ namespace UnityEngine.Experimental.Rendering
             set { s_Active = value; }
         }
 
-        [System.Flags]
-        public enum ReflectionProbeSupportFlags
+        [Flags]
+        public enum ReflectionProbeModes
         {
             None = 0,
             Rotation = 1
         }
 
         // this is done since the original enum doesn't allow flags due to it starting at 0, not 1
-        [System.Flags]
-        public enum LightmapMixedBakeMode
+        [Flags]
+        public enum LightmapMixedBakeModes
         {
             None = 0,
             IndirectOnly = 1,
@@ -38,28 +38,28 @@ namespace UnityEngine.Experimental.Rendering
             Shadowmask = 4
         };
 
-        public ReflectionProbeSupportFlags reflectionProbeSupportFlags { get; set; } = ReflectionProbeSupportFlags.None;
+        public ReflectionProbeModes reflectionProbeModes { get; set; } = ReflectionProbeModes.None;
 
-        public LightmapMixedBakeMode defaultMixedLightingMode { get; set; } = LightmapMixedBakeMode.None;
+        public LightmapMixedBakeModes defaultMixedLightingModes { get; set; } = LightmapMixedBakeModes.None;
 
-        public LightmapMixedBakeMode supportedMixedLightingModes { get; set; } =
-            LightmapMixedBakeMode.IndirectOnly | LightmapMixedBakeMode.Subtractive | LightmapMixedBakeMode.Shadowmask;
+        public LightmapMixedBakeModes mixedLightingModes { get; set; } =
+            LightmapMixedBakeModes.IndirectOnly | LightmapMixedBakeModes.Subtractive | LightmapMixedBakeModes.Shadowmask;
 
-        public LightmapBakeType supportedLightmapBakeTypes { get; set; } =
+        public LightmapBakeType lightmapBakeTypes { get; set; } =
             LightmapBakeType.Realtime | LightmapBakeType.Mixed | LightmapBakeType.Baked;
 
-        public LightmapsMode supportedLightmapsModes { get; set; } =
+        public LightmapsMode lightmapsModes { get; set; } =
             LightmapsMode.NonDirectional | LightmapsMode.CombinedDirectional;
 
-        public bool rendererSupportsLightProbeProxyVolumes { get; set; } = true;
-        public bool rendererSupportsMotionVectors { get; set; } = true;
-        public bool rendererSupportsReceiveShadows { get; set; } = true;
-        public bool rendererSupportsReflectionProbes { get; set; } = true;
-        public bool rendererSupportsRendererPriority { get; set; } = false;
+        public bool lightProbeProxyVolumes { get; set; } = true;
+        public bool motionVectors { get; set; } = true;
+        public bool receiveShadows { get; set; } = true;
+        public bool reflectionProbes { get; set; } = true;
+        public bool rendererPriority { get; set; } = false;
 
-        public bool rendererOverridesEnvironmentLighting { get; set; } = false;
-        public bool rendererOverridesFog { get; set; } = false;
-        public bool rendererOverridesOtherLightingSettings { get; set; } = false;
+        public bool overridesEnvironmentLighting { get; set; } = false;
+        public bool overridesFog { get; set; } = false;
+        public bool overridesOtherLightingSettings { get; set; } = false;
 
         internal static unsafe MixedLightingMode FallbackMixedLightingMode()
         {
@@ -74,16 +74,16 @@ namespace UnityEngine.Experimental.Rendering
             var fallbackMode = (MixedLightingMode*)fallbackModePtr;
 
             // if the pipeline has picked a default value that is supported
-            if ((SupportedRenderingFeatures.active.defaultMixedLightingMode != LightmapMixedBakeMode.None)
-                && ((SupportedRenderingFeatures.active.supportedMixedLightingModes & SupportedRenderingFeatures.active.defaultMixedLightingMode) == SupportedRenderingFeatures.active.defaultMixedLightingMode))
+            if ((active.defaultMixedLightingModes != LightmapMixedBakeModes.None)
+                && ((active.mixedLightingModes & active.defaultMixedLightingModes) == active.defaultMixedLightingModes))
             {
-                switch (SupportedRenderingFeatures.active.defaultMixedLightingMode)
+                switch (active.defaultMixedLightingModes)
                 {
-                    case LightmapMixedBakeMode.Shadowmask:
+                    case LightmapMixedBakeModes.Shadowmask:
                         *fallbackMode = MixedLightingMode.Shadowmask;
                         break;
 
-                    case LightmapMixedBakeMode.Subtractive:
+                    case LightmapMixedBakeModes.Subtractive:
                         *fallbackMode = MixedLightingMode.Subtractive;
                         break;
 
@@ -132,14 +132,14 @@ namespace UnityEngine.Experimental.Rendering
 
             // this is done since the original enum doesn't allow flags due to it starting at 0, not 1
             *isSupported = ((mixedMode == MixedLightingMode.IndirectOnly &&
-                ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                    LightmapMixedBakeMode.IndirectOnly) == LightmapMixedBakeMode.IndirectOnly)) ||
+                ((active.mixedLightingModes &
+                    LightmapMixedBakeModes.IndirectOnly) == LightmapMixedBakeModes.IndirectOnly)) ||
                 (mixedMode == MixedLightingMode.Subtractive &&
-                    ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                        LightmapMixedBakeMode.Subtractive) == LightmapMixedBakeMode.Subtractive)) ||
+                    ((active.mixedLightingModes &
+                        LightmapMixedBakeModes.Subtractive) == LightmapMixedBakeModes.Subtractive)) ||
                 (mixedMode == MixedLightingMode.Shadowmask &&
-                    ((SupportedRenderingFeatures.active.supportedMixedLightingModes &
-                        LightmapMixedBakeMode.Shadowmask) == LightmapMixedBakeMode.Shadowmask)));
+                    ((active.mixedLightingModes &
+                        LightmapMixedBakeModes.Shadowmask) == LightmapMixedBakeModes.Shadowmask)));
         }
 
         internal static unsafe bool IsLightmapBakeTypeSupported(LightmapBakeType bakeType)
@@ -160,14 +160,14 @@ namespace UnityEngine.Experimental.Rendering
                 bool isBakedSupported = IsLightmapBakeTypeSupported(LightmapBakeType.Baked);
 
                 // we can't support Mixed mode and then not support any of the different modes
-                if (!isBakedSupported || SupportedRenderingFeatures.active.supportedMixedLightingModes == LightmapMixedBakeMode.None)
+                if (!isBakedSupported || active.mixedLightingModes == LightmapMixedBakeModes.None)
                 {
                     *isSupported = false;
                     return;
                 }
             }
 
-            *isSupported = ((SupportedRenderingFeatures.active.supportedLightmapBakeTypes & bakeType) == bakeType);
+            *isSupported = ((active.lightmapBakeTypes & bakeType) == bakeType);
         }
 
         internal static unsafe bool IsLightmapsModeSupported(LightmapsMode mode)
@@ -181,7 +181,7 @@ namespace UnityEngine.Experimental.Rendering
         internal static unsafe void IsLightmapsModeSupportedByRef(LightmapsMode mode, IntPtr isSupportedPtr)
         {
             var isSupported = (bool*)isSupportedPtr;
-            *isSupported = ((SupportedRenderingFeatures.active.supportedLightmapsModes & mode) == mode);
+            *isSupported = ((active.lightmapsModes & mode) == mode);
         }
     }
 }

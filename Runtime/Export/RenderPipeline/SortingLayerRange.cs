@@ -5,7 +5,7 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct SortingLayerRange : IEquatable<SortingLayerRange>

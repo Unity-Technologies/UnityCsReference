@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -86,6 +87,7 @@ namespace UnityEditor.StyleSheets
 
         public static Dictionary<string, string> k_GuiStyleTypeNames;
         public static HashSet<string> k_StyleProperties;
+        public static List<string> k_SkinStylePrefixes;
 
         static ConverterUtils()
         {
@@ -127,6 +129,11 @@ namespace UnityEditor.StyleSheets
             k_StyleProperties.Add(k_DoubleClickSelectsWord);
             k_StyleProperties.Add(k_TripleClickSelectsLine);
             k_StyleProperties.Add(k_Extend);
+
+            k_SkinStylePrefixes = new List<string>();
+            k_SkinStylePrefixes.Add(k_CustomAbstractGUIStyleSelectorPrefix);
+            k_SkinStylePrefixes.Add(k_CustomGUIStyleSelectorPrefix);
+            k_SkinStylePrefixes.Add(k_GUISettingsSelector);
         }
 
         public static string ToUssString(TextAnchor anchor)
@@ -517,11 +524,6 @@ namespace UnityEditor.StyleSheets
             return name.Replace(" ", "-").Replace(".", "-");
         }
 
-        public static bool IsTypeStyleSelector(string guiStyleName)
-        {
-            return k_GuiStyleTypeNames.ContainsKey(guiStyleName);
-        }
-
         public static string ToStyleName(string selectorName)
         {
             if (selectorName.StartsWith(k_CustomGUIStyleSelectorPrefix))
@@ -598,6 +600,16 @@ namespace UnityEditor.StyleSheets
             return selectorStr.StartsWith(k_CustomAbstractGUIStyleSelectorPrefix) && !selectorStr.Contains(":");
         }
 
+        public static bool IsTypeStyleSelector(string guiStyleName)
+        {
+            return k_GuiStyleTypeNames.ContainsKey(guiStyleName.ToLower());
+        }
+
+        public static bool IsSkinStyleSelector(string guiStyleName)
+        {
+            return IsTypeStyleSelector(guiStyleName) || k_SkinStylePrefixes.Any(guiStyleName.StartsWith);
+        }
+
         public static void GetFontStylePropertyValues(FontStyle style, out string fontStyle, out string fontWeight)
         {
             fontStyle = style == FontStyle.Italic || style == FontStyle.BoldAndItalic ? "italic" : "normal";
@@ -667,6 +679,17 @@ namespace UnityEditor.StyleSheets
         {
             var skinName = target == SkinTarget.Dark ? "darkskin.guiskin" : "lightskin.guiskin";
             return String.Format("{0}/{1}", bundle ? k_BundleSkinPath : k_GeneratedSkinPath, skinName);
+        }
+
+        public static string[] GetSheetPathsFromRootFolders(IEnumerable<string> rootFolders, SkinTarget target, string sheetPostFix = "")
+        {
+            var skinSheetName = $"{(target == SkinTarget.Light ? "light" : "dark")}{sheetPostFix}.uss";
+            var sheetPaths = rootFolders.Select(folderPath => System.IO.Directory.GetFiles(EditorResources.ExpandPath(folderPath), "*.uss", SearchOption.AllDirectories))
+                .SelectMany(p => p)
+                .Where(p => p.EndsWith("common.uss") || p.EndsWith(skinSheetName))
+                .Select(p => p.Replace("\\", "/"))
+                .ToArray();
+            return sheetPaths;
         }
 
         public static GUISkin CreatePackageSkinFromBundleSkin(SkinTarget target)

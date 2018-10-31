@@ -32,11 +32,11 @@ namespace UnityEditor.StyleSheets
             {
                 customStyleSelectors.TryAdd(selectorStr, selector);
             }
-            else if (ConverterUtils.IsTypeStyleSelector(selectorStr.ToLower()))
+            else if (ConverterUtils.IsTypeStyleSelector(selectorStr))
             {
                 typeStyleSelectors.TryAdd(selectorStr, selector);
             }
-            else if (ConverterUtils.IsAbstractStyleSelector(selectorStr.ToLower()))
+            else if (ConverterUtils.IsAbstractStyleSelector(selectorStr))
             {
                 abstractStyleSelectors.TryAdd(selectorStr, selector);
             }

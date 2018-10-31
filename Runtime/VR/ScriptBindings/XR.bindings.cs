@@ -13,6 +13,7 @@ namespace UnityEngine.XR
     // Offsets must match UnityVRBlitMode in IUnityVR.h
     public enum GameViewRenderMode
     {
+        None = 0,
         LeftEye = 1,
         RightEye = 2,
         BothEyes = 3,

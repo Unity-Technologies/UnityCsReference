@@ -1364,10 +1364,10 @@ namespace UnityEditor
             DrawCameraImpl(position, camera, drawMode, true, gridParam, false);
         }
 
-        internal static void DrawCameraStep2(Camera camera, DrawCameraMode drawMode)
+        internal static void DrawCameraStep2(Camera camera, DrawCameraMode drawMode, bool drawGizmos)
         {
             if (Event.current.type == EventType.Repaint && drawMode != DrawCameraMode.Normal)
-                Internal_FinishDrawingCamera(camera);
+                Internal_FinishDrawingCamera(camera, drawGizmos);
         }
 
         // Draws a camera inside a rectangle.

@@ -172,6 +172,8 @@ namespace UnityEditorInternal.VR
                     Stereo360CaptureGUI(targetGroup);
 
                     ErrorOnARDeviceIncompatibility(targetGroup);
+
+                    WarnOnGraphicsAPIIncompatibility(targetGroup);
                 }
 
                 InstallGUI(targetGroup);
@@ -566,6 +568,17 @@ namespace UnityEditorInternal.VR
                 if (PlayerSettings.Android.ARCoreEnabled && PlayerSettings.GetPlatformVuforiaEnabled(targetGroup))
                 {
                     EditorGUILayout.HelpBox("Both ARCore and Vuforia XR Device support cannot be selected at the same time. Please select only one XR Device that will manage the Android device.", MessageType.Error);
+                }
+            }
+        }
+
+        private void WarnOnGraphicsAPIIncompatibility(BuildTargetGroup targetGroup)
+        {
+            if (targetGroup == BuildTargetGroup.Android && PlayerSettings.GetGraphicsAPIs(BuildTarget.Android).Contains(UnityEngine.Rendering.GraphicsDeviceType.Vulkan))
+            {
+                if (PlayerSettings.Android.ARCoreEnabled || PlayerSettings.GetPlatformVuforiaEnabled(targetGroup) || PlayerSettings.virtualRealitySupported)
+                {
+                    EditorGUILayout.HelpBox("XR is currently not supported when using the Vulkan Graphics API.\nPlease go to 'Other Settings' and remove 'Vulkan' from the list of Graphics APIs.", MessageType.Warning);
                 }
             }
         }

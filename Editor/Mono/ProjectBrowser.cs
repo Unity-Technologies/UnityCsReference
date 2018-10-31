@@ -1909,7 +1909,7 @@ namespace UnityEditor
 
             OnEvent();
 
-            m_ToolbarHeight = EditorGUI.kWindowToolbarHeight + 1;
+            m_ToolbarHeight = EditorGUI.kWindowToolbarHeight;
             m_ItemSelectedByRightClickThisEvent = false;
 
             // Size splitterRects for different areas of the browser
@@ -2106,7 +2106,7 @@ namespace UnityEditor
         // This is our search field
         void TopToolbar()
         {
-            GUILayout.BeginArea(new Rect(0, 0, position.width, m_ToolbarHeight));
+            GUILayout.BeginArea(new Rect(0, -1, position.width, m_ToolbarHeight + 1));
 
             GUILayout.BeginHorizontal(EditorStyles.toolbar);
             {

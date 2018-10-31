@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 
 namespace UnityEditor
 {
@@ -69,9 +69,9 @@ namespace UnityEditor
             serializedObject.Update();
 
             List<string> excludedProperties = new List<string>();
-            if (!SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+            if (!SupportedRenderingFeatures.active.motionVectors)
                 excludedProperties.Add("m_MotionVectors");
-            if (!SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
+            if (!SupportedRenderingFeatures.active.receiveShadows)
                 excludedProperties.Add("m_ReceiveShadows");
             excludedProperties.AddRange(m_ExcludedProperties);
 

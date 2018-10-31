@@ -331,11 +331,6 @@ namespace UnityEngine
         // Try to search for a [[GUIStyle]]. This functions returns NULL and does not give an error.
         public GUIStyle FindStyle(string styleName)
         {
-            if (this == null)
-            {
-                Debug.LogError("GUISkin is NULL");
-                return null;
-            }
             if (m_Styles == null)
                 BuildStyleCache();
 

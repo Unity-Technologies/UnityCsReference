@@ -354,7 +354,9 @@ internal abstract class DesktopStandalonePostProcessor : DefaultBuildPostprocess
         // Mark all the managed DLLs in Data/Managed as engine API assemblies
         // Data/Managed may already contain managed DLLs in the UnityEngine.*.dll naming scheme from the extensions
         // So we find the files in the source Variations directory and mark the corresponding files in the output
-        foreach (var file in Directory.GetFiles(Path.Combine(variationSourceFolder, "Data/Managed"), "*.dll"))
+        var path = Path.Combine(variationSourceFolder, "Data/Managed");
+        foreach (var file in Directory.GetFiles(path, "*.dll")
+                 .Concat(Directory.GetFiles(path, "*.dll.mdb")))
         {
             var filename = Path.GetFileName(file);
             if (!filename.StartsWith("UnityEngine"))

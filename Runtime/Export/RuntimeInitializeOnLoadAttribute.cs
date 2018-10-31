@@ -9,7 +9,9 @@ namespace UnityEngine
     public enum RuntimeInitializeLoadType
     {
         AfterSceneLoad  = 0,
-        BeforeSceneLoad
+        BeforeSceneLoad,
+        AfterAssembliesLoaded,
+        BeforeSplashScreen
     };
 
     [System.AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]

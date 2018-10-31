@@ -238,5 +238,10 @@ namespace UnityEngine.StyleSheets
         {
             return TryCheckAccess(assets, StyleValueType.AssetReference, handles, index, out value);
         }
+
+        public string ReadFunctionName(StyleValueHandle handle)
+        {
+            return CheckAccess(strings, StyleValueType.Function, handle);
+        }
     }
 }

@@ -5,7 +5,7 @@
 using UnityEngine;
 using System.Linq;
 using UnityEditor.AnimatedValues;
-using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
 using UnityEngineInternal;
 
 namespace UnityEditor
@@ -165,13 +165,13 @@ namespace UnityEditor
             EditorGUILayout.PropertyField(m_CastShadows, Styles.CastShadows, true);
             bool isDeferredRenderingPath = SceneView.IsUsingDeferredRenderingPath();
 
-            if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
+            if (SupportedRenderingFeatures.active.receiveShadows)
             {
                 using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
                     EditorGUILayout.PropertyField(m_ReceiveShadows, Styles.ReceiveShadows, true);
             }
 
-            if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+            if (SupportedRenderingFeatures.active.motionVectors)
                 EditorGUILayout.PropertyField(m_MotionVectors, Styles.MotionVectors, true);
 
             if (!showLightmapSettings)

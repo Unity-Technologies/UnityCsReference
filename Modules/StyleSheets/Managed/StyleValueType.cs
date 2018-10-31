@@ -15,6 +15,8 @@ namespace UnityEngine.StyleSheets
         ResourcePath, // When using resource("...")
         AssetReference,
         Enum, // A literal value that is not quoted
-        String // A quoted value or any other value that is not recognized as a primitive
+        String, // A quoted value or any other value that is not recognized as a primitive
+        Function,
+        FunctionSeparator
     }
 }

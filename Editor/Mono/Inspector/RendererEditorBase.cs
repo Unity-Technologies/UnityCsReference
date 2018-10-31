@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using System.Linq;
-using UnityEngine.Experimental.Rendering;
 using Object = UnityEngine.Object;
 
 namespace UnityEditor
@@ -69,7 +68,7 @@ namespace UnityEditor
             {
                 if (IsUsingLightProbeProxyVolume(selectionCount))
                 {
-                    if (LightProbeProxyVolume.isFeatureSupported && SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
+                    if (LightProbeProxyVolume.isFeatureSupported && SupportedRenderingFeatures.active.lightProbeProxyVolumes)
                     {
                         LightProbeProxyVolume lightProbeProxyVol = renderer.GetComponent<LightProbeProxyVolume>();
                         bool invalidProxyVolumeOverride = (renderer.lightProbeProxyVolumeOverride == null) ||
@@ -88,7 +87,7 @@ namespace UnityEditor
 
             internal void RenderReflectionProbeUsage(bool useMiniStyle, bool isDeferredRenderingPath, bool isDeferredReflections)
             {
-                if (!SupportedRenderingFeatures.active.rendererSupportsReflectionProbes)
+                if (!SupportedRenderingFeatures.active.reflectionProbes)
                     return;
 
                 using (new EditorGUI.DisabledScope(isDeferredRenderingPath))
@@ -147,7 +146,7 @@ namespace UnityEditor
                         if (!m_LightProbeUsage.hasMultipleDifferentValues)
                         {
                             if (m_LightProbeUsage.intValue == (int)LightProbeUsage.UseProxyVolume
-                                && SupportedRenderingFeatures.active.rendererSupportsLightProbeProxyVolumes)
+                                && SupportedRenderingFeatures.active.lightProbeProxyVolumes)
                             {
                                 EditorGUI.indentLevel++;
                                 if (useMiniStyle)
@@ -379,7 +378,7 @@ namespace UnityEditor
 
             var renderer = target;
             var mask = (int)renderer.renderingLayerMask;
-            var layerNames = srpAsset.GetRenderingLayerMaskNames();
+            var layerNames = srpAsset.renderingLayerMaskNames;
             if (layerNames == null)
                 layerNames = defaultRenderingLayerNames;
 
@@ -420,7 +419,7 @@ namespace UnityEditor
 
         internal static void RenderRendererPriority(SerializedProperty rendererPrority, bool useMiniStyle = false)
         {
-            if (!SupportedRenderingFeatures.active.rendererSupportsRendererPriority)
+            if (!SupportedRenderingFeatures.active.rendererPriority)
                 return;
 
             if (!useMiniStyle)

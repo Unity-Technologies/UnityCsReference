@@ -4,10 +4,10 @@
 
 using System;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     [Flags]
-    public enum DrawRendererFlags
+    enum DrawRendererFlags
     {
         None = 0,
         EnableDynamicBatching = (1 << 0),

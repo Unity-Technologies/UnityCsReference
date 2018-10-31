@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEditorInternal;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
 namespace UnityEditor
@@ -350,7 +349,7 @@ namespace UnityEditor
 
             GUIPopup(s_Texts.castShadows, m_CastShadows, EditorGUIUtility.TempContent(m_CastShadows.enumDisplayNames));
 
-            if (SupportedRenderingFeatures.active.rendererSupportsReceiveShadows)
+            if (SupportedRenderingFeatures.active.receiveShadows)
             {
                 // Disable ReceiveShadows options for Deferred rendering path
                 if (SceneView.IsUsingDeferredRenderingPath())
@@ -366,7 +365,7 @@ namespace UnityEditor
             if (renderMode != RenderMode.Mesh)
                 GUIFloat(s_Texts.shadowBias, m_ShadowBias);
 
-            if (SupportedRenderingFeatures.active.rendererSupportsMotionVectors)
+            if (SupportedRenderingFeatures.active.motionVectors)
                 GUIPopup(s_Texts.motionVectors, m_MotionVectors, s_Texts.motionVectorOptions);
 
             GUISortingLayerField(s_Texts.sortingLayer, m_SortingLayerID);

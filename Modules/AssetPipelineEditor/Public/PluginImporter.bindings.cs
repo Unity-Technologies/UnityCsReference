@@ -228,9 +228,13 @@ namespace UnityEditor
 
         extern public bool GetCompatibleWithEditor(string buildTargetGroup, string buildTarget);
 
-        extern internal void SetIsPreloaded(bool isPreloaded);
-
-        extern internal bool GetIsPreloaded();
+        public extern bool isPreloaded
+        {
+            [NativeMethod("GetIsPreloaded")]
+            get;
+            [NativeMethod("SetIsPreloaded")]
+            set;
+        }
 
         extern public bool GetIsOverridable();
 

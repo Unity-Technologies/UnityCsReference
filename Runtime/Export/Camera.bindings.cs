@@ -361,5 +361,19 @@ namespace UnityEngine
         internal void OnlyUsedForTesting2()
         {
         }
+
+        public unsafe bool TryGetCullingParameters(out Rendering.ScriptableCullingParameters cullingParameters)
+        {
+            return GetCullingParameters_Internal(this, false, out cullingParameters, sizeof(Rendering.ScriptableCullingParameters));
+        }
+
+        public unsafe bool TryGetCullingParameters(bool stereoAware, out Rendering.ScriptableCullingParameters cullingParameters)
+        {
+            return GetCullingParameters_Internal(this, stereoAware, out cullingParameters, sizeof(Rendering.ScriptableCullingParameters));
+        }
+
+        [NativeHeader("Runtime/Export/RenderPipeline/ScriptableRenderPipeline.bindings.h")]
+        [FreeFunction("ScriptableRenderPipeline_Bindings::GetCullingParameters_Internal")]
+        extern private static bool GetCullingParameters_Internal(Camera camera, bool stereoAware, out Rendering.ScriptableCullingParameters cullingParameters, int managedCullingParametersSize);
     }
 }

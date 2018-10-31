@@ -6,20 +6,20 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     // Must match GfxStencilState on C++ side
     [StructLayout(LayoutKind.Sequential)]
-    public struct StencilState
+    public struct StencilState : IEquatable<StencilState>
     {
-        public static StencilState Default
+        public static StencilState defaultValue
         {
             // Passing a single parameter here to force non-default constructor
-            get { return new StencilState(false); }
+            get { return new StencilState(true); }
         }
 
         public StencilState(
-            bool enabled = false,
+            bool enabled = true,
             byte readMask = 255,
             byte writeMask = 255,
             CompareFunction compareFunction = CompareFunction.Always,
@@ -73,40 +73,28 @@ namespace UnityEngine.Experimental.Rendering
             set { m_WriteMask = value; }
         }
 
-        public CompareFunction compareFunction
+        public void SetCompareFunction(CompareFunction value)
         {
-            set
-            {
-                compareFunctionFront = value;
-                compareFunctionBack = value;
-            }
+            compareFunctionFront = value;
+            compareFunctionBack = value;
         }
 
-        public StencilOp passOperation
+        public void SetPassOperation(StencilOp value)
         {
-            set
-            {
-                passOperationFront = value;
-                passOperationBack = value;
-            }
+            passOperationFront = value;
+            passOperationBack = value;
         }
 
-        public StencilOp failOperation
+        public void SetFailOperation(StencilOp value)
         {
-            set
-            {
-                failOperationFront = value;
-                failOperationBack = value;
-            }
+            failOperationFront = value;
+            failOperationBack = value;
         }
 
-        public StencilOp zFailOperation
+        public void SetZFailOperation(StencilOp value)
         {
-            set
-            {
-                zFailOperationFront = value;
-                zFailOperationBack = value;
-            }
+            zFailOperationFront = value;
+            zFailOperationBack = value;
         }
 
         public CompareFunction compareFunctionFront
@@ -169,5 +157,45 @@ namespace UnityEngine.Experimental.Rendering
         byte m_PassOperationBack;
         byte m_FailOperationBack;
         byte m_ZFailOperationBack;
+
+        public bool Equals(StencilState other)
+        {
+            return m_Enabled == other.m_Enabled && m_ReadMask == other.m_ReadMask && m_WriteMask == other.m_WriteMask && m_CompareFunctionFront == other.m_CompareFunctionFront && m_PassOperationFront == other.m_PassOperationFront && m_FailOperationFront == other.m_FailOperationFront && m_ZFailOperationFront == other.m_ZFailOperationFront && m_CompareFunctionBack == other.m_CompareFunctionBack && m_PassOperationBack == other.m_PassOperationBack && m_FailOperationBack == other.m_FailOperationBack && m_ZFailOperationBack == other.m_ZFailOperationBack;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is StencilState && Equals((StencilState)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = m_Enabled.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_ReadMask.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_WriteMask.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_CompareFunctionFront.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_PassOperationFront.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_FailOperationFront.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_ZFailOperationFront.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_CompareFunctionBack.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_PassOperationBack.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_FailOperationBack.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_ZFailOperationBack.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public static bool operator==(StencilState left, StencilState right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator!=(StencilState left, StencilState right)
+        {
+            return !left.Equals(right);
+        }
     }
 }

@@ -208,20 +208,25 @@ namespace UnityEngine.Networking
     public sealed class DownloadHandlerFile : DownloadHandler
     {
         [NativeThrows]
-        private extern static IntPtr Create(DownloadHandlerFile obj, string path);
+        private extern static IntPtr Create(DownloadHandlerFile obj, string path, bool append);
 
-        private void InternalCreateVFS(string path)
+        private void InternalCreateVFS(string path, bool append)
         {
             string dir = Path.GetDirectoryName(path);
             // On UWP CreateDirectory fails when passing something like Application.presistentDataPath (works if subdir of it)
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
-            m_Ptr = Create(this, path);
+            m_Ptr = Create(this, path, append);
         }
 
         public DownloadHandlerFile(string path)
         {
-            InternalCreateVFS(path);
+            InternalCreateVFS(path, false);
+        }
+
+        public DownloadHandlerFile(string path, bool append)
+        {
+            InternalCreateVFS(path, append);
         }
 
         protected override byte[] GetData()

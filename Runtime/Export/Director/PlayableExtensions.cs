@@ -246,18 +246,21 @@ namespace UnityEngine.Playables
             return inputIndex;
         }
 
+        [Obsolete("SetDelay is obsolete; use a custom ScriptPlayable to implement this feature", false)]
         public static void SetDelay<U>(this U playable, double delay)
             where U : struct, IPlayable
         {
             playable.GetHandle().SetDelay(delay);
         }
 
+        [Obsolete("GetDelay is obsolete; use a custom ScriptPlayable to implement this feature", false)]
         public static double GetDelay<U>(this U playable)
             where U : struct, IPlayable
         {
             return playable.GetHandle().GetDelay();
         }
 
+        [Obsolete("IsDelayed is obsolete; use a custom ScriptPlayable to implement this feature", false)]
         public static bool IsDelayed<U>(this U playable)
             where U : struct, IPlayable
         {

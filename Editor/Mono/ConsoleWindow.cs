@@ -53,6 +53,7 @@ namespace UnityEditor
             public static readonly string CollapseLabel = L10n.Tr("Collapse");
             public static readonly string StopForAssertLabel = L10n.Tr("Stop for Assert");
             public static readonly string StopForErrorLabel = L10n.Tr("Stop for Error");
+            public static readonly string ClearOnBuildLabel = L10n.Tr("Clear on Build");
 
             public static int LogStyleLineCount
             {
@@ -223,6 +224,7 @@ namespace UnityEditor
             LogLevelWarning = 1 << 8,
             LogLevelError = 1 << 9,
             ShowTimestamp = 1 << 10,
+            ClearOnBuild = 1 << 11,
         };
 
         static ConsoleWindow ms_ConsoleWindow = null;
@@ -567,6 +569,7 @@ namespace UnityEditor
             }
 
             SetFlag(ConsoleFlags.ClearOnPlay, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnPlay), Constants.ClearOnPlayLabel, Constants.MiniButton));
+            SetFlag(ConsoleFlags.ClearOnBuild, GUILayout.Toggle(HasFlag(ConsoleFlags.ClearOnBuild), Constants.ClearOnBuildLabel, Constants.MiniButton));
             SetFlag(ConsoleFlags.ErrorPause, GUILayout.Toggle(HasFlag(ConsoleFlags.ErrorPause), Constants.ErrorPauseLabel, Constants.MiniButton));
 
             ConnectionGUILayout.AttachToPlayerDropdown(m_ConsoleAttachToPlayerState, EditorStyles.toolbarDropDown);

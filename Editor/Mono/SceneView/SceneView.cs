@@ -104,6 +104,13 @@ namespace UnityEditor
         string m_WindowGUID;
         internal string windowGUID { get { return m_WindowGUID; } }
 
+        [SerializeField] bool m_Gizmos = true;
+        public bool drawGizmos
+        {
+            get { return m_Gizmos; }
+            set { m_Gizmos = value; }
+        }
+
         Scene m_CustomScene;
         protected internal Scene customScene
         {
@@ -476,12 +483,25 @@ namespace UnityEditor
         // Handle Dragging of stuff over scene view
         //static ArrayList s_DraggedEditors = null;
         //static GameObject[] s_PickedObject = { null };
-        GUIContent m_Lighting;
-        GUIContent m_Fx;
-        GUIContent audioPlayContent;
-        GUIContent m_GizmosContent;
-        GUIContent m_2DModeContent;
-        GUIContent m_RenderDocContent;
+
+        internal static class Styles
+        {
+            public static GUIContent lighting = EditorGUIUtility.TrIconContent("SceneviewLighting", "When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
+            public static GUIContent fx = EditorGUIUtility.TrIconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.");
+            public static GUIContent audioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
+            public static GUIContent gizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle visibility of all Gizmos in the Scene view");
+            public static GUIContent gizmosDropDownContent = EditorGUIUtility.TrTextContent("", "Toggle the visibility of different Gizmos in the Scene view.");
+            public static GUIContent mode2DContent = EditorGUIUtility.TrTextContent("2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
+            public static GUIContent renderDocContent;
+            public static GUIStyle gizmoButtonStyle;
+            public static GUIStyle fxDropDownStyle;
+            static Styles()
+            {
+                gizmoButtonStyle = (GUIStyle)"GV Gizmo DropDown";
+                fxDropDownStyle = (GUIStyle)"GV Gizmo DropDown";
+                renderDocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc.");
+            }
+        }
 
         // Which tool are we currently editing with.
         // This gets updated whenever hotControl == 0, so once the user has started sth, they can't change it mid-drag by e.g. pressing alt
@@ -628,13 +648,6 @@ namespace UnityEditor
             dontClearBackground = true;
             s_SceneViews.Add(this);
 
-            m_Lighting = EditorGUIUtility.TrIconContent("SceneviewLighting", "When toggled on, the Scene lighting is used. When toggled off, a light attached to the Scene view camera is used.");
-            m_Fx = EditorGUIUtility.TrIconContent("SceneviewFx", "Toggle skybox, fog, and various other effects.");
-            audioPlayContent = EditorGUIUtility.TrIconContent("SceneviewAudio", "Toggle audio on or off.");
-            m_GizmosContent = EditorGUIUtility.TrTextContent("Gizmos", "Toggle the visibility of different Gizmos in the Scene view.");
-            m_2DModeContent = EditorGUIUtility.TrTextContent("2D", "When toggled on, the Scene is in 2D view. When toggled off, the Scene is in 3D view.");
-            m_RenderDocContent = EditorGUIUtility.TrIconContent("renderdoc", "Capture the current view and open in RenderDoc.");
-
             m_SceneViewOverlay = new SceneViewOverlay(this);
 
             EditorApplication.playModeStateChanged += OnPlayModeStateChanged;
@@ -773,17 +786,6 @@ namespace UnityEditor
                 RefreshAudioPlay();
         }
 
-        private static GUIStyle s_DropDownStyle;
-        private GUIStyle effectsDropDownStyle
-        {
-            get
-            {
-                if (s_DropDownStyle == null)
-                    s_DropDownStyle = "GV Gizmo DropDown";
-                return s_DropDownStyle;
-            }
-        }
-
         void ToolbarDisplayStateGUI()
         {
             // render mode popup
@@ -799,21 +801,21 @@ namespace UnityEditor
 
             EditorGUILayout.Space();
 
-            in2DMode = GUILayout.Toggle(in2DMode, m_2DModeContent, EditorStyles.toolbarButton);
+            in2DMode = GUILayout.Toggle(in2DMode, Styles.mode2DContent, EditorStyles.toolbarButton);
 
             EditorGUILayout.Space();
 
-            m_SceneIsLit = GUILayout.Toggle(m_SceneIsLit, m_Lighting, EditorStyles.toolbarButton);
+            m_SceneIsLit = GUILayout.Toggle(m_SceneIsLit, Styles.lighting, EditorStyles.toolbarButton);
             if (cameraMode.drawMode == DrawCameraMode.ShadowCascades)     // cascade visualization requires actual lights with shadows
                 m_SceneIsLit = true;
 
             using (new EditorGUI.DisabledScope(Application.isPlaying))
             {
-                audioPlay = GUILayout.Toggle(audioPlay, audioPlayContent, EditorStyles.toolbarButton);
+                audioPlay = GUILayout.Toggle(audioPlay, Styles.audioPlayContent, EditorStyles.toolbarButton);
             }
 
-            Rect fxRect = GUILayoutUtility.GetRect(m_Fx, effectsDropDownStyle);
-            Rect fxRightRect = new Rect(fxRect.xMax - effectsDropDownStyle.border.right, fxRect.y, effectsDropDownStyle.border.right, fxRect.height);
+            Rect fxRect = GUILayoutUtility.GetRect(Styles.fx, Styles.fxDropDownStyle);
+            Rect fxRightRect = new Rect(fxRect.xMax - Styles.fxDropDownStyle.border.right, fxRect.y, Styles.fxDropDownStyle.border.right, fxRect.height);
             if (EditorGUI.DropdownButton(fxRightRect, GUIContent.none, FocusType.Passive, GUIStyle.none))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
@@ -821,15 +823,16 @@ namespace UnityEditor
                 GUIUtility.ExitGUI();
             }
 
-            var allOn = GUI.Toggle(fxRect, sceneViewState.allEnabled, m_Fx, effectsDropDownStyle);
+            var allOn = GUI.Toggle(fxRect, sceneViewState.allEnabled, Styles.fx, Styles.fxDropDownStyle);
             if (allOn != sceneViewState.allEnabled)
                 sceneViewState.SetAllEnabled(allOn);
         }
 
         void ToolbarGizmosDropdownGUI()
         {
-            Rect r = GUILayoutUtility.GetRect(m_GizmosContent, EditorStyles.toolbarDropDown);
-            if (EditorGUI.DropdownButton(r, m_GizmosContent, FocusType.Passive, EditorStyles.toolbarDropDown))
+            Rect r = GUILayoutUtility.GetRect(Styles.gizmosContent, GameView.Styles.gizmoButtonStyle);
+            Rect rightRect = new Rect(r.xMax - GameView.Styles.gizmoButtonStyle.border.right, r.y, GameView.Styles.gizmoButtonStyle.border.right, r.height);
+            if (EditorGUI.DropdownButton(rightRect, Styles.gizmosDropDownContent, FocusType.Passive, GUIStyle.none))
             {
                 Rect rect = GUILayoutUtility.topLevel.GetLast();
                 if (AnnotationWindow.ShowAtPosition(rect, false))
@@ -837,6 +840,7 @@ namespace UnityEditor
                     GUIUtility.ExitGUI();
                 }
             }
+            drawGizmos = GUI.Toggle(r, drawGizmos, Styles.gizmosContent, GameView.Styles.gizmoButtonStyle);
         }
 
         void ToolbarRenderDocGUI()
@@ -845,7 +849,7 @@ namespace UnityEditor
             {
                 using (new EditorGUI.DisabledScope(!RenderDoc.IsSupported()))
                 {
-                    if (GUILayout.Button(m_RenderDocContent, EditorStyles.toolbarButton))
+                    if (GUILayout.Button(Styles.renderDocContent, EditorStyles.toolbarButton))
                     {
                         m_Parent.CaptureRenderDocScene();
                         GUIUtility.ExitGUI();
@@ -1974,7 +1978,7 @@ namespace UnityEditor
             {
                 // Blit to final target RT in deferred mode
                 if (m_Camera.gameObject.activeInHierarchy)
-                    Handles.DrawCameraStep2(m_Camera, m_CameraMode.drawMode);
+                    Handles.DrawCameraStep2(m_Camera, m_CameraMode.drawMode, drawGizmos);
             }
 
             RestoreFogAndShadowDistance(oldFog, oldShadowDistance);

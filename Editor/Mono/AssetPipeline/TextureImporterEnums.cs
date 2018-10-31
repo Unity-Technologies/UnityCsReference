@@ -140,29 +140,54 @@ namespace UnityEditor
         ETC2_RGB4_PUNCHTHROUGH_ALPHA = 46,
         // ETC2 (GLES3.0) 8 bits/pixel compressed RGBA texture format.
         ETC2_RGBA8 = 47,
-        // ASTC (block size 4x4) compressed RGB texture format.
+
+        // ASTC uses 128bit block of varying sizes (we use only square blocks). It does not distinguish RGB/RGBA
+        ASTC_4x4 = 48,
+        ASTC_5x5 = 49,
+        ASTC_6x6 = 50,
+        ASTC_8x8 = 51,
+        ASTC_10x10 = 52,
+        ASTC_12x12 = 53,
+
+        // please note that obsolete attrs are currently disabled because we have tests that checks for "no warnings"
+        // yet at the same time there are packages that reference old ASTC enums.
+        // hence the only way is to go to trunk -> fix packages -> obsolete
+
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_4x4 (UnityUpgradable) -> ASTC_4x4")]
         ASTC_RGB_4x4 = 48,
-        // ASTC (block size 5x5) compressed RGB texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_5x5 (UnityUpgradable) -> ASTC_5x5")]
         ASTC_RGB_5x5 = 49,
-        // ASTC (block size 6x6) compressed RGB texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_6x6 (UnityUpgradable) -> ASTC_6x6")]
         ASTC_RGB_6x6 = 50,
-        // ASTC (block size 8x8) compressed RGB texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_8x8 (UnityUpgradable) -> ASTC_8x8")]
         ASTC_RGB_8x8 = 51,
-        // ASTC (block size 10x10) compressed RGB texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_10x10 (UnityUpgradable) -> ASTC_10x10")]
         ASTC_RGB_10x10 = 52,
-        // ASTC (block size 12x12) compressed RGB texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_12x12 (UnityUpgradable) -> ASTC_12x12")]
         ASTC_RGB_12x12 = 53,
-        // ASTC (block size 4x4) compressed RGBA texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_4x4 (UnityUpgradable) -> ASTC_4x4")]
         ASTC_RGBA_4x4 = 54,
-        // ASTC (block size 5x5) compressed RGBA texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_5x5 (UnityUpgradable) -> ASTC_5x5")]
         ASTC_RGBA_5x5 = 55,
-        // ASTC (block size 6x6) compressed RGBA texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_6x6 (UnityUpgradable) -> ASTC_6x6")]
         ASTC_RGBA_6x6 = 56,
-        // ASTC (block size 8x8) compressed RGBA texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_8x8 (UnityUpgradable) -> ASTC_8x8")]
         ASTC_RGBA_8x8 = 57,
-        // ASTC (block size 10x10) compressed RGBA texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_10x10 (UnityUpgradable) -> ASTC_10x10")]
         ASTC_RGBA_10x10 = 58,
-        // ASTC (block size 12x12) compressed RGBA texture format.
+        // [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        // [System.Obsolete("Use ASTC_12x12 (UnityUpgradable) -> ASTC_12x12")]
         ASTC_RGBA_12x12 = 59,
 
         // Nintendo 3DS-flavoured ETC

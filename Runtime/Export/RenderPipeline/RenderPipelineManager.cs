@@ -3,23 +3,37 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Rendering;
 using UnityEngine.Scripting;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     public static class RenderPipelineManager
     {
-        private static IRenderPipelineAsset s_CurrentPipelineAsset;
+        static RenderPipelineAsset s_CurrentPipelineAsset;
 
-        public static IRenderPipeline currentPipeline { get; private set; }
+        public static RenderPipeline currentPipeline { get; private set; }
+
+        public static event Action<Camera[]> beginFrameRendering;
+        public static event Action<Camera> beginCameraRendering;
+
+        internal static void BeginFrameRendering(Camera[] cameras)
+        {
+            beginFrameRendering?.Invoke(cameras);
+        }
+
+        internal static void BeginCameraRendering(Camera camera)
+        {
+            beginCameraRendering?.Invoke(camera);
+        }
 
         [RequiredByNativeCode]
         internal static void CleanupRenderPipeline()
         {
             if (s_CurrentPipelineAsset != null)
             {
-                s_CurrentPipelineAsset.DestroyCreatedInstances();
+                s_CurrentPipelineAsset.DestroyInstances();
                 s_CurrentPipelineAsset = null;
                 currentPipeline = null;
                 SupportedRenderingFeatures.active = new SupportedRenderingFeatures();
@@ -27,21 +41,20 @@ namespace UnityEngine.Experimental.Rendering
         }
 
         [RequiredByNativeCode]
-        private static void DoRenderLoop_Internal(IRenderPipelineAsset pipe, Camera[] cameras, IntPtr loopPtr)
+        static void DoRenderLoop_Internal(RenderPipelineAsset pipe, Camera[] cameras, IntPtr loopPtr, AtomicSafetyHandle safety)
         {
             PrepareRenderPipeline(pipe);
             if (currentPipeline == null)
                 return;
 
-            ScriptableRenderContext loop = new ScriptableRenderContext(loopPtr);
-            currentPipeline.Render(loop, cameras);
+            var loop =
+                new ScriptableRenderContext(loopPtr, safety);
+            currentPipeline.InternalRender(loop, cameras);
         }
 
-        private static void PrepareRenderPipeline(IRenderPipelineAsset pipe)
+        static void PrepareRenderPipeline(RenderPipelineAsset pipelineAsset)
         {
-            // UnityObject overloads operator == and treats destroyed objects and null as equals
-            // However here is needed to differentiate them in other to bookkeep RenderPipeline lifecycle
-            if ((object)s_CurrentPipelineAsset != (object)pipe)
+            if (!ReferenceEquals(s_CurrentPipelineAsset, pipelineAsset))
             {
                 if (s_CurrentPipelineAsset != null)
                 {
@@ -51,12 +64,12 @@ namespace UnityEngine.Experimental.Rendering
                     CleanupRenderPipeline();
                 }
 
-                s_CurrentPipelineAsset = pipe;
+                s_CurrentPipelineAsset = pipelineAsset;
             }
 
             if (s_CurrentPipelineAsset != null
                 && (currentPipeline == null || currentPipeline.disposed))
-                currentPipeline = s_CurrentPipelineAsset.CreatePipeline();
+                currentPipeline = s_CurrentPipelineAsset.InternalCreatePipeline();
         }
     }
 }

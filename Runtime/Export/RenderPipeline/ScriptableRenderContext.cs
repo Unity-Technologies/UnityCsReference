@@ -4,109 +4,214 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine.Rendering;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
-    public partial struct ScriptableRenderContext
+    [StructLayout(LayoutKind.Sequential)]
+    public partial struct ScriptableRenderContext : IEquatable<ScriptableRenderContext>
     {
-        //@TODO: Would be good if there was some safety
-        // against keeping hold RenderLoop after destruction
-        private IntPtr m_Ptr;
+        IntPtr m_Ptr;
 
-        internal ScriptableRenderContext(IntPtr ptr)
+        AtomicSafetyHandle m_Safety;
+
+        internal ScriptableRenderContext(IntPtr ptr, AtomicSafetyHandle safety)
         {
             m_Ptr = ptr;
+            m_Safety = safety;
+        }
+
+
+        public unsafe void BeginRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex = -1)
+        {
+            Validate();
+            BeginRenderPass_Internal(m_Ptr, width, height, samples, (IntPtr)attachments.GetUnsafeReadOnlyPtr(), attachments.Length, depthAttachmentIndex);
+        }
+
+        public ScopedRenderPass BeginScopedRenderPass(int width, int height, int samples, NativeArray<AttachmentDescriptor> attachments, int depthAttachmentIndex = -1)
+        {
+            BeginRenderPass(width, height, samples, attachments, depthAttachmentIndex);
+            return new ScopedRenderPass(this);
+        }
+
+        public unsafe void BeginSubPass(NativeArray<int> colors, NativeArray<int> inputs, bool isDepthReadOnly = false)
+        {
+            Validate();
+            BeginSubPass_Internal(m_Ptr, (IntPtr)colors.GetUnsafeReadOnlyPtr(), colors.Length, (IntPtr)inputs.GetUnsafeReadOnlyPtr(), inputs.Length, isDepthReadOnly);
+        }
+
+        public unsafe void BeginSubPass(NativeArray<int> colors, bool isDepthReadOnly = false)
+        {
+            Validate();
+            BeginSubPass_Internal(m_Ptr, (IntPtr)colors.GetUnsafeReadOnlyPtr(), colors.Length, IntPtr.Zero, 0, isDepthReadOnly);
+        }
+
+        public ScopedSubPass BeginScopedSubPass(NativeArray<int> colors, NativeArray<int> inputs, bool isDepthReadOnly = false)
+        {
+            BeginSubPass(colors, inputs, isDepthReadOnly);
+            return new ScopedSubPass(this);
+        }
+
+        public ScopedSubPass BeginScopedSubPass(NativeArray<int> colors, bool isDepthReadOnly = false)
+        {
+            BeginSubPass(colors, isDepthReadOnly);
+            return new ScopedSubPass(this);
+        }
+
+        public void EndSubPass()
+        {
+            Validate();
+            EndSubPass_Internal(m_Ptr);
+        }
+
+        public void EndRenderPass()
+        {
+            Validate();
+            EndRenderPass_Internal(m_Ptr);
         }
 
         public void Submit()
         {
-            CheckValid();
+            Validate();
             Submit_Internal();
         }
 
-        public void DrawRenderers(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings)
+        public void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings)
         {
-            CheckValid();
-            DrawRenderers_Internal(renderers, ref drawSettings, filterSettings);
+            Validate();
+            cullingResults.Validate();
+            DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, IntPtr.Zero, IntPtr.Zero, 0);
         }
 
-        public void DrawRenderers(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings, RenderStateBlock stateBlock)
+        public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, ref RenderStateBlock stateBlock)
         {
-            CheckValid();
-            DrawRenderers_StateBlock_Internal(renderers, ref drawSettings, filterSettings, stateBlock);
+            Validate();
+            cullingResults.Validate();
+            var renderType = new ShaderTagId();
+            fixed(RenderStateBlock* stateBlockPtr = &stateBlock)
+            {
+                DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, (IntPtr)(&renderType), (IntPtr)stateBlockPtr, 1);
+            }
         }
 
-        public void DrawRenderers(FilterResults renderers, ref DrawRendererSettings drawSettings, FilterRenderersSettings filterSettings, List<RenderStateMapping> stateMap)
+        public unsafe void DrawRenderers(CullingResults cullingResults, ref DrawingSettings drawingSettings, ref FilteringSettings filteringSettings, NativeArray<ShaderTagId> renderTypes, NativeArray<RenderStateBlock> stateBlocks)
         {
-            CheckValid();
-            DrawRenderers_StateMap_Internal(renderers, ref drawSettings, filterSettings, NoAllocHelpers.ExtractArrayFromList(stateMap), stateMap.Count);
+            Validate();
+            cullingResults.Validate();
+            if (renderTypes.Length != stateBlocks.Length)
+                throw new ArgumentException($"Arrays {nameof(renderTypes)} and {nameof(stateBlocks)} should have same length, but {nameof(renderTypes)} had length {renderTypes.Length} while {nameof(stateBlocks)} had length {stateBlocks.Length}.");
+            DrawRenderers_Internal(cullingResults.ptr, ref drawingSettings, ref filteringSettings, (IntPtr)renderTypes.GetUnsafeReadOnlyPtr(), (IntPtr)stateBlocks.GetUnsafeReadOnlyPtr(), renderTypes.Length);
         }
 
-        public void DrawShadows(ref DrawShadowsSettings settings)
+        public unsafe void DrawShadows(ref ShadowDrawingSettings settings)
         {
-            CheckValid();
-            DrawShadows_Internal(ref settings);
+            Validate();
+            settings.cullingResults.Validate();
+            fixed(ShadowDrawingSettings* settingsPtr = &settings)
+            {
+                DrawShadows_Internal((IntPtr)settingsPtr);
+            }
         }
 
         public void ExecuteCommandBuffer(CommandBuffer commandBuffer)
         {
             if (commandBuffer == null)
-                throw new ArgumentNullException("commandBuffer");
+                throw new ArgumentNullException(nameof(commandBuffer));
 
-            CheckValid();
+            Validate();
             ExecuteCommandBuffer_Internal(commandBuffer);
         }
 
         public void ExecuteCommandBufferAsync(CommandBuffer commandBuffer, ComputeQueueType queueType)
         {
             if (commandBuffer == null)
-                throw new ArgumentNullException("commandBuffer");
+                throw new ArgumentNullException(nameof(commandBuffer));
 
-            CheckValid();
+            Validate();
             ExecuteCommandBufferAsync_Internal(commandBuffer, queueType);
         }
 
-        public void SetupCameraProperties(Camera camera)
+        public void SetupCameraProperties(Camera camera, bool stereoSetup = false)
         {
-            CheckValid();
-            SetupCameraProperties_Internal(camera,  false);
-        }
-
-        public void SetupCameraProperties(Camera camera, bool stereoSetup)
-        {
-            CheckValid();
+            Validate();
             SetupCameraProperties_Internal(camera, stereoSetup);
         }
 
         public void StereoEndRender(Camera camera)
         {
-            CheckValid();
+            Validate();
             StereoEndRender_Internal(camera);
         }
 
         public void StartMultiEye(Camera camera)
         {
-            CheckValid();
+            Validate();
             StartMultiEye_Internal(camera);
         }
 
         public void StopMultiEye(Camera camera)
         {
-            CheckValid();
+            Validate();
             StopMultiEye_Internal(camera);
         }
 
         public void DrawSkybox(Camera camera)
         {
-            CheckValid();
+            Validate();
             DrawSkybox_Internal(camera);
         }
 
-        internal void CheckValid()
+        public unsafe CullingResults Cull(ref ScriptableCullingParameters parameters)
+        {
+            var results = new CullingResults();
+            Internal_Cull(ref parameters, this, (IntPtr)(&results));
+            return results;
+        }
+
+        [Conditional("ENABLE_UNITY_COLLECTIONS_CHECKS")]
+        internal void Validate()
         {
             if (m_Ptr.ToInt64() == 0)
-                throw new ArgumentException("Invalid ScriptableRenderContext.  This can be caused by allocating a context in user code.");
+                throw new InvalidOperationException($"The {nameof(ScriptableRenderContext)} instance is invalid. This can happen if you construct an instance using the default constructor.");
+
+            try
+            {
+                AtomicSafetyHandle.CheckExistsAndThrow(m_Safety);
+            }
+            catch (Exception e)
+            {
+                throw new InvalidOperationException($"The {nameof(ScriptableRenderContext)} instance is no longer valid. This can happen if you re-use it across multiple frames.", e);
+            }
+        }
+
+        public bool Equals(ScriptableRenderContext other)
+        {
+            return m_Ptr.Equals(other.m_Ptr);
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is ScriptableRenderContext && Equals((ScriptableRenderContext)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            return m_Ptr.GetHashCode();
+        }
+
+        public static bool operator==(ScriptableRenderContext left, ScriptableRenderContext right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator!=(ScriptableRenderContext left, ScriptableRenderContext right)
+        {
+            return !left.Equals(right);
         }
     }
 }

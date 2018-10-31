@@ -2,16 +2,17 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
+using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     // Must match GfxRenderTargetBlendState on C++ side
     [StructLayout(LayoutKind.Sequential)]
-    public struct RenderTargetBlendState
+    public struct RenderTargetBlendState : IEquatable<RenderTargetBlendState>
     {
-        public static RenderTargetBlendState Default
+        public static RenderTargetBlendState defaultValue
         {
             // Passing a single parameter here to force non-default constructor
             get { return new RenderTargetBlendState(ColorWriteMask.All); }
@@ -86,5 +87,41 @@ namespace UnityEngine.Experimental.Rendering
         byte m_ColorBlendOperation;
         byte m_AlphaBlendOperation;
         byte m_Padding;
+
+        public bool Equals(RenderTargetBlendState other)
+        {
+            return m_WriteMask == other.m_WriteMask && m_SourceColorBlendMode == other.m_SourceColorBlendMode && m_DestinationColorBlendMode == other.m_DestinationColorBlendMode && m_SourceAlphaBlendMode == other.m_SourceAlphaBlendMode && m_DestinationAlphaBlendMode == other.m_DestinationAlphaBlendMode && m_ColorBlendOperation == other.m_ColorBlendOperation && m_AlphaBlendOperation == other.m_AlphaBlendOperation;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is RenderTargetBlendState && Equals((RenderTargetBlendState)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = m_WriteMask.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_SourceColorBlendMode.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_DestinationColorBlendMode.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_SourceAlphaBlendMode.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_DestinationAlphaBlendMode.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_ColorBlendOperation.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_AlphaBlendOperation.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public static bool operator==(RenderTargetBlendState left, RenderTargetBlendState right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator!=(RenderTargetBlendState left, RenderTargetBlendState right)
+        {
+            return !left.Equals(right);
+        }
     }
 }

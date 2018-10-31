@@ -47,9 +47,14 @@ namespace UnityEditor
             if (EndChangeCheck())
             {
                 s_RecycledEditor.text = s_RecycledEditor.text.ToUpper();
+                if (newHex.Length > 0)
+                {
+                    if (newHex[0] != '#')
+                        newHex = '#' + newHex;
+                }
 
                 Color newColor;
-                if (ColorUtility.TryParseHtmlString("#" + newHex, out newColor))
+                if (ColorUtility.TryParseHtmlString(newHex, out newColor))
                     color = new Color(newColor.r, newColor.g, newColor.b, showAlpha ? newColor.a : color.a);
             }
 

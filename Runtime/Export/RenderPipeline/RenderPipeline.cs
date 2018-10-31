@@ -3,35 +3,61 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
+using UnityEngine.Rendering;
 
 namespace UnityEngine.Experimental.Rendering
 {
-    public abstract class RenderPipeline : IRenderPipeline
+    // TODO: Obsolete/remove this when TMP updates to use new API.
+    public static class RenderPipeline
     {
-        public static event Action<Camera[]> beginFrameRendering;
-        public static event Action<Camera> beginCameraRendering;
+        public static event Action<Camera[]> beginFrameRendering
+        {
+            add { RenderPipelineManager.beginFrameRendering += value; }
+            remove { RenderPipelineManager.beginFrameRendering -= value; }
+        }
 
-        public virtual void Render(ScriptableRenderContext renderContext, Camera[] cameras)
+        public static event Action<Camera> beginCameraRendering
+        {
+            add { RenderPipelineManager.beginCameraRendering += value; }
+            remove { RenderPipelineManager.beginCameraRendering -= value; }
+        }
+    }
+}
+
+namespace UnityEngine.Rendering
+{
+    public abstract class RenderPipeline
+    {
+        protected abstract void Render(ScriptableRenderContext context, Camera[] cameras);
+
+        protected static void BeginFrameRendering(Camera[] cameras)
+        {
+            RenderPipelineManager.BeginFrameRendering(cameras);
+        }
+
+        protected static void BeginCameraRendering(Camera camera)
+        {
+            RenderPipelineManager.BeginCameraRendering(camera);
+        }
+
+        internal void InternalRender(ScriptableRenderContext context, Camera[] cameras)
         {
             if (disposed)
-                throw new ObjectDisposedException(string.Format("{0} has been disposed. Do not call Render on disposed RenderLoops.", this));
+                throw new ObjectDisposedException(string.Format("{0} has been disposed. Do not call Render on disposed a RenderPipeline.", this));
+            Render(context, cameras);
         }
 
         public bool disposed { get; private set; }
 
-        public virtual void Dispose()
+        internal void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
             disposed = true;
         }
 
-        public static void BeginFrameRendering(Camera[] cameras)
+        protected virtual void Dispose(bool disposing)
         {
-            beginFrameRendering?.Invoke(cameras);
-        }
-
-        public static void BeginCameraRendering(Camera camera)
-        {
-            beginCameraRendering?.Invoke(camera);
         }
     }
 }

@@ -17,7 +17,7 @@ namespace UnityEditor
         static class Styles
         {
             public static GUIStyle settingsStyle = "SettingsIconButton";
-            public static StyleBlock settingsBtn => EditorResources.GetStyle("settings-icon-btn");
+            public static StyleBlock settingsBtn => EditorResources.GetStyle("sb-settings-icon-btn");
         }
 
         Func<Editor> m_EditorCreator;

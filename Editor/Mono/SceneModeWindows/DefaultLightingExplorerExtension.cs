@@ -45,7 +45,7 @@ namespace UnityEditor
         {
             return new[]
             {
-                new LightingExplorerTab("Light Table", GetLights, GetLightColumns),
+                new LightingExplorerTab("Lights", GetLights, GetLightColumns),
                 new LightingExplorerTab("Reflection Probes", GetReflectionProbes, GetReflectionProbeColumns),
                 new LightingExplorerTab("Light Probes", GetLightProbes, GetLightProbeColumns),
                 new LightingExplorerTab("Static Emissives", GetEmissives, GetEmissivesColumns)

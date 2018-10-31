@@ -13,6 +13,9 @@ namespace UnityEngine
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Plane
     {
+        // sizeof(Plane) is not const in C# and so cannot be used in fixed arrays, so we define it here
+        internal const int size = 16;
+
         Vector3 m_Normal;
         float m_Distance;
 

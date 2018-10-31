@@ -309,11 +309,12 @@ namespace UnityEngine
     public enum ParticleSystemSubEmitterProperties
     {
         InheritNothing = 0,
-        InheritEverything = InheritColor | InheritSize | InheritRotation | InheritLifetime,
+        InheritEverything = InheritColor | InheritSize | InheritRotation | InheritLifetime | InheritDuration,
         InheritColor = 1 << 0,
         InheritSize = 1 << 1,
         InheritRotation = 1 << 2,
         InheritLifetime = 1 << 3,
+        InheritDuration = 1 << 4,
     }
 
     // The mode used for generating Particle Trails (Shuriken).

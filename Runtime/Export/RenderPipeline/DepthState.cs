@@ -6,13 +6,13 @@ using System;
 using System.Runtime.InteropServices;
 using UnityEngine.Rendering;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     // Must match GfxDepthState on C++ side
     [StructLayout(LayoutKind.Sequential)]
-    public struct DepthState
+    public struct DepthState : IEquatable<DepthState>
     {
-        public static DepthState Default
+        public static DepthState defaultValue
         {
             // Passing a single parameter here to force non-default constructor
             get { return new DepthState(true); }
@@ -40,5 +40,34 @@ namespace UnityEngine.Experimental.Rendering
 
         byte m_WriteEnabled;
         sbyte m_CompareFunction;
+
+        public bool Equals(DepthState other)
+        {
+            return m_WriteEnabled == other.m_WriteEnabled && m_CompareFunction == other.m_CompareFunction;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is DepthState && Equals((DepthState)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (m_WriteEnabled.GetHashCode() * 397) ^ m_CompareFunction.GetHashCode();
+            }
+        }
+
+        public static bool operator==(DepthState left, DepthState right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator!=(DepthState left, DepthState right)
+        {
+            return !left.Equals(right);
+        }
     }
 }

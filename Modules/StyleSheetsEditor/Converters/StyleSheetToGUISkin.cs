@@ -46,10 +46,7 @@ namespace UnityEditor.StyleSheets
 
             ConverterUtils.SetToDefault(currentSkin);
 
-            foreach (string folder in sheetFolders)
-            {
-                StyleSheetToGUISkin.CreateGUISkinFromSheetsFolder(folder, currentTarget, currentSkin);
-            }
+            StyleSheetToGUISkin.CreateGUISkinFromSheetsFolder(sheetFolders, currentTarget, currentSkin);
         }
 
         internal static void PopulateSkinFromSheetFolder(GUISkin skin, string sheetFolder, SkinTarget target)
@@ -76,11 +73,16 @@ namespace UnityEditor.StyleSheets
             PopulateSkin(mergedSheet, skin);
         }
 
-        internal static GUISkin CreateGUISkinFromSheetsFolder(string sheetsPath, SkinTarget target, GUISkin skin = null)
+        internal static GUISkin CreateGUISkinFromSheetsFolder(string folder, SkinTarget target, GUISkin skin = null)
+        {
+            return CreateGUISkinFromSheetsFolder(new[] { folder }, target, skin);
+        }
+
+        internal static GUISkin CreateGUISkinFromSheetsFolder(IEnumerable<string> folders, SkinTarget target, GUISkin skin = null)
         {
             skin = skin ?? ConverterUtils.CreateDefaultGUISkin();
 
-            var resolver = ResolveFromSheetsFolder(sheetsPath, target);
+            var resolver = ResolveFromSheetsFolder(folders, target);
 
             PopulateSkin(resolver.ResolvedSheet, skin);
 
@@ -89,28 +91,23 @@ namespace UnityEditor.StyleSheets
             return skin;
         }
 
-        internal static StyleSheetResolver ResolveFromSheetsFolder(string sheetsPath, SkinTarget target, StyleSheetResolver.ResolvingOptions options = null, string sheetPostFix = "")
+        internal static StyleSheetResolver ResolveFromSheetsFolder(string folder, SkinTarget target, StyleSheetResolver.ResolvingOptions options = null, string sheetPostFix = "")
         {
-            var sheetFolders = AssetDatabase.GetSubFolders(sheetsPath);
-            if (sheetFolders.Length == 0)
+            return ResolveFromSheetsFolder(new[] { folder }, target, options, sheetPostFix);
+        }
+
+        internal static StyleSheetResolver ResolveFromSheetsFolder(IEnumerable<string> folders, SkinTarget target, StyleSheetResolver.ResolvingOptions options = null, string sheetPostFix = "")
+        {
+            var sheetPaths = ConverterUtils.GetSheetPathsFromRootFolders(folders, target, sheetPostFix);
+            if (sheetPaths.Length == 0)
             {
-                throw new Exception("Cannot find EditorStyles: " + sheetsPath);
+                throw new Exception("Cannot find sheets to generate skin");
             }
 
-            var skinSheetName = string.Format("{0}{1}.uss", target == SkinTarget.Light ? "light" : "dark", sheetPostFix);
             var resolver = new StyleSheetResolver(options ?? new StyleSheetResolver.ResolvingOptions() { ThrowIfCannotResolve = true });
-            var themeDir = sheetsPath + "/_Variables";
-            if (Directory.Exists(themeDir))
+            foreach (var sheet in sheetPaths)
             {
-                var themeSheetPath = themeDir + "/" + skinSheetName;
-                resolver.AddStyleSheet(themeSheetPath);
-            }
-
-            foreach (var sheetFolder in sheetFolders)
-            {
-                var commonPath = sheetFolder + "/" + string.Format("{0}{1}.uss", "common", sheetPostFix);
-                var skinSheetPath = sheetFolder + "/" + skinSheetName;
-                resolver.AddStyleSheets(commonPath, skinSheetPath);
+                resolver.AddStyleSheets(sheet);
             }
 
             return resolver;

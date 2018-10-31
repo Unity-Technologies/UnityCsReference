@@ -22,6 +22,7 @@ namespace UnityEngine.Playables
         public virtual void OnPlayableCreate(Playable playable) {}
         public virtual void OnPlayableDestroy(Playable playable) {}
 
+        [Obsolete("OnBehaviourDelay is obsolete; use a custom ScriptPlayable to implement this feature", false)]
         public virtual void OnBehaviourDelay(Playable playable, FrameData info) {}
         public virtual void OnBehaviourPlay(Playable playable, FrameData info) {}
         public virtual void OnBehaviourPause(Playable playable, FrameData info) {}

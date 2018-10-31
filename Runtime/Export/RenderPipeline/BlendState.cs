@@ -5,13 +5,13 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
     // Must match GfxBlendState on C++ side
     [StructLayout(LayoutKind.Sequential)]
-    public struct BlendState
+    public struct BlendState : IEquatable<BlendState>
     {
-        public static BlendState Default
+        public static BlendState defaultValue
         {
             // Passing a single parameter here to force non-default constructor
             get { return new BlendState(false); }
@@ -19,14 +19,14 @@ namespace UnityEngine.Experimental.Rendering
 
         public BlendState(bool separateMRTBlend = false, bool alphaToMask = false)
         {
-            m_BlendState0 = RenderTargetBlendState.Default;
-            m_BlendState1 = RenderTargetBlendState.Default;
-            m_BlendState2 = RenderTargetBlendState.Default;
-            m_BlendState3 = RenderTargetBlendState.Default;
-            m_BlendState4 = RenderTargetBlendState.Default;
-            m_BlendState5 = RenderTargetBlendState.Default;
-            m_BlendState6 = RenderTargetBlendState.Default;
-            m_BlendState7 = RenderTargetBlendState.Default;
+            m_BlendState0 = RenderTargetBlendState.defaultValue;
+            m_BlendState1 = RenderTargetBlendState.defaultValue;
+            m_BlendState2 = RenderTargetBlendState.defaultValue;
+            m_BlendState3 = RenderTargetBlendState.defaultValue;
+            m_BlendState4 = RenderTargetBlendState.defaultValue;
+            m_BlendState5 = RenderTargetBlendState.defaultValue;
+            m_BlendState6 = RenderTargetBlendState.defaultValue;
+            m_BlendState7 = RenderTargetBlendState.defaultValue;
             m_SeparateMRTBlendStates = Convert.ToByte(separateMRTBlend);
             m_AlphaToMask = Convert.ToByte(alphaToMask);
             m_Padding = 0;
@@ -103,5 +103,44 @@ namespace UnityEngine.Experimental.Rendering
         byte m_SeparateMRTBlendStates;
         byte m_AlphaToMask;
         short m_Padding;
+
+        public bool Equals(BlendState other)
+        {
+            return m_BlendState0.Equals(other.m_BlendState0) && m_BlendState1.Equals(other.m_BlendState1) && m_BlendState2.Equals(other.m_BlendState2) && m_BlendState3.Equals(other.m_BlendState3) && m_BlendState4.Equals(other.m_BlendState4) && m_BlendState5.Equals(other.m_BlendState5) && m_BlendState6.Equals(other.m_BlendState6) && m_BlendState7.Equals(other.m_BlendState7) && m_SeparateMRTBlendStates == other.m_SeparateMRTBlendStates && m_AlphaToMask == other.m_AlphaToMask;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is BlendState && Equals((BlendState)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = m_BlendState0.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_BlendState1.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_BlendState2.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_BlendState3.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_BlendState4.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_BlendState5.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_BlendState6.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_BlendState7.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_SeparateMRTBlendStates.GetHashCode();
+                hashCode = (hashCode * 397) ^ m_AlphaToMask.GetHashCode();
+                return hashCode;
+            }
+        }
+
+        public static bool operator==(BlendState left, BlendState right)
+        {
+            return left.Equals(right);
+        }
+
+        public static bool operator!=(BlendState left, BlendState right)
+        {
+            return !left.Equals(right);
+        }
     }
 }

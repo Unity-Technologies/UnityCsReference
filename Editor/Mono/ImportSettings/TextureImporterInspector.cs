@@ -128,18 +128,12 @@ namespace UnityEditor
             TextureImporterFormat.ETC2_RGB4,
             TextureImporterFormat.ETC2_RGB4_PUNCHTHROUGH_ALPHA,
             TextureImporterFormat.ETC2_RGBA8,
-            TextureImporterFormat.ASTC_RGB_4x4,
-            TextureImporterFormat.ASTC_RGB_5x5,
-            TextureImporterFormat.ASTC_RGB_6x6,
-            TextureImporterFormat.ASTC_RGB_8x8,
-            TextureImporterFormat.ASTC_RGB_10x10,
-            TextureImporterFormat.ASTC_RGB_12x12,
-            TextureImporterFormat.ASTC_RGBA_4x4,
-            TextureImporterFormat.ASTC_RGBA_5x5,
-            TextureImporterFormat.ASTC_RGBA_6x6,
-            TextureImporterFormat.ASTC_RGBA_8x8,
-            TextureImporterFormat.ASTC_RGBA_10x10,
-            TextureImporterFormat.ASTC_RGBA_12x12
+            TextureImporterFormat.ASTC_4x4,
+            TextureImporterFormat.ASTC_5x5,
+            TextureImporterFormat.ASTC_6x6,
+            TextureImporterFormat.ASTC_8x8,
+            TextureImporterFormat.ASTC_10x10,
+            TextureImporterFormat.ASTC_12x12,
         };
 
         enum CookieMode

@@ -2,9 +2,9 @@
 // Copyright (c) Unity Technologies. For terms of use, see
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
-namespace UnityEngine.Experimental.Rendering
+namespace UnityEngine.Rendering
 {
-    public enum ReflectionProbeSortOptions
+    public enum ReflectionProbeSortingCriteria
     {
         None,
         Importance,

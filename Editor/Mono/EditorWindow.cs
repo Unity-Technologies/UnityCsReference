@@ -309,6 +309,15 @@ namespace UnityEditor
                 warningSize.y = targetHeight;
 
             Rect r = new Rect((position.width - warningSize.x) * .5f, 20 + (position.height - 20 - warningSize.y) * .7f, warningSize.x, warningSize.y);
+
+            // Round notification coordinate & with to integers, so that text
+            // shadow rendering(which is offset from base text) gets exactly
+            // the same floating point results for text wrapping. Without this,
+            // it can lead to tiny differences that make shadow be word - wrapped
+            // differently from foreground text.
+            r.x = Mathf.FloorToInt(r.x);
+            r.width = Mathf.FloorToInt(r.width);
+
             double time = EditorApplication.timeSinceStartup;
             if (time > m_FadeoutTime)
                 GUI.color = new Color(1, 1, 1, 1 - (float)((time - m_FadeoutTime) / kWarningFadeoutTime));
