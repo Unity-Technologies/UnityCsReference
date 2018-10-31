@@ -44,7 +44,7 @@ namespace UnityEditor
                 view.FixNegativeSize();
             }
 
-            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(s_CameraFlyModeContext, Tools.s_LockedViewTool, id, view.orthographic))
+            using (var inputSamplingScope = new CameraFlyModeContext.InputSamplingScope(s_CameraFlyModeContext, Tools.s_LockedViewTool, id, view, view.orthographic))
             {
                 if (inputSamplingScope.currentlyMoving)
                     view.viewIsLockedToObject = false;

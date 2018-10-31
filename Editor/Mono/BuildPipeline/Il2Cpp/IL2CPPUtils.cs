@@ -141,6 +141,28 @@ namespace UnityEditorInternal
                 EditorApplication.applicationContentsPath,
                 "il2cpp"));
         }
+
+        internal static string GetAdditionalArguments()
+        {
+            var arguments = new List<string>();
+            var additionalArgs = PlayerSettings.GetAdditionalIl2CppArgs();
+            if (!string.IsNullOrEmpty(additionalArgs))
+                arguments.Add(additionalArgs);
+
+            additionalArgs = System.Environment.GetEnvironmentVariable("IL2CPP_ADDITIONAL_ARGS");
+            if (!string.IsNullOrEmpty(additionalArgs))
+            {
+                arguments.Add(additionalArgs);
+            }
+
+            additionalArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs") as string;
+            if (!string.IsNullOrEmpty(additionalArgs))
+            {
+                arguments.Add(additionalArgs);
+            }
+
+            return arguments.Aggregate(String.Empty, (current, arg) => current + arg + " ");
+        }
     }
 
     internal class IL2CPPBuilder
@@ -177,6 +199,11 @@ namespace UnityEditorInternal
             var buildTargetGroup = BuildPipeline.GetBuildTargetGroup(m_PlatformProvider.target);
 
             var managedStrippingLevel = PlayerSettings.GetManagedStrippingLevel(buildTargetGroup);
+
+            // IL2CPP does not support a managed stripping level of disabled. If the player settings
+            // do try this (which should not be possible from the editor), use Low instead.
+            if (managedStrippingLevel == ManagedStrippingLevel.Disabled)
+                managedStrippingLevel = ManagedStrippingLevel.Low;
             AssemblyStripper.StripAssemblies(managedDir, m_PlatformProvider, m_RuntimeClassRegistry, managedStrippingLevel);
 
             // The IL2CPP editor integration here is responsible to give il2cpp.exe an empty directory to use.
@@ -289,21 +316,9 @@ namespace UnityEditorInternal
 
             arguments.Add(string.Format("--map-file-parser=\"{0}\"", GetMapFileParserPath()));
 
-            var additionalArgs = PlayerSettings.GetAdditionalIl2CppArgs();
+            var additionalArgs = IL2CPPUtils.GetAdditionalArguments();
             if (!string.IsNullOrEmpty(additionalArgs))
                 arguments.Add(additionalArgs);
-
-            additionalArgs = System.Environment.GetEnvironmentVariable("IL2CPP_ADDITIONAL_ARGS");
-            if (!string.IsNullOrEmpty(additionalArgs))
-            {
-                arguments.Add(additionalArgs);
-            }
-
-            additionalArgs = Debug.GetDiagnosticSwitch("VMIl2CppAdditionalArgs") as string;
-            if (!string.IsNullOrEmpty(additionalArgs))
-            {
-                arguments.Add(additionalArgs);
-            }
 
             arguments.Add("--directory=\"" + Path.GetFullPath(inputDirectory) + "\"");
 

@@ -115,7 +115,7 @@ namespace UnityEditor
             Brush brush = AssetDatabase.LoadMainAssetAtPath(assetPath) as Brush;
 
             if (brush == null)
-                return Brush.DefaultMask();
+                return null;
 
             if (brush.m_Mask == null)
                 brush.m_Mask = Brush.DefaultMask();

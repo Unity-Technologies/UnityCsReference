@@ -79,10 +79,11 @@ namespace UnityEditor
             public static GUIContent streamPositionText = EditorGUIUtility.TrTextContent("Position (POSITION.xyz)");
             public static GUIContent streamNormalText = EditorGUIUtility.TrTextContent("Normal (NORMAL.xyz)");
             public static GUIContent streamColorText = EditorGUIUtility.TrTextContent("Color (COLOR.xyzw)");
+            public static GUIContent streamColorInstancedText = EditorGUIUtility.TrTextContent("Color (INSTANCED0.xyzw)");
             public static GUIContent streamUVText = EditorGUIUtility.TrTextContent("UV (TEXCOORD0.xy)");
             public static GUIContent streamUV2Text = EditorGUIUtility.TrTextContent("UV2 (TEXCOORD0.zw)");
             public static GUIContent streamAnimBlendText = EditorGUIUtility.TrTextContent("AnimBlend (TEXCOORD1.x)");
-            public static GUIContent streamAnimFrameText = EditorGUIUtility.TrTextContent("AnimFrame (INSTANCED0.x)");
+            public static GUIContent streamAnimFrameText = EditorGUIUtility.TrTextContent("AnimFrame (INSTANCED1.x)");
             public static GUIContent streamTangentText = EditorGUIUtility.TrTextContent("Tangent (TANGENT.xyzw)");
 
             public static GUIContent streamApplyToAllSystemsText = EditorGUIUtility.TrTextContent("Apply to Systems", "Apply the vertex stream layout to all Particle Systems using this material");
@@ -477,14 +478,20 @@ namespace UnityEditor
             bool useLighting = (material.GetFloat("_LightingEnabled") > 0.0f);
             bool useFlipbookBlending = (material.GetFloat("_FlipbookMode") > 0.0f);
             bool useTangents = material.GetTexture("_BumpMap") && useLighting;
+
             bool useGPUInstancing = ShaderUtil.HasProceduralInstancing(material.shader);
+            if (useGPUInstancing && m_RenderersUsingThisMaterial.Count > 0)
+            {
+                if (!m_RenderersUsingThisMaterial[0].enableGPUInstancing)
+                    useGPUInstancing = false;
+            }
 
             GUILayout.Label(Styles.streamPositionText, EditorStyles.label);
 
             if (useLighting)
                 GUILayout.Label(Styles.streamNormalText, EditorStyles.label);
 
-            GUILayout.Label(Styles.streamColorText, EditorStyles.label);
+            GUILayout.Label(useGPUInstancing ? Styles.streamColorInstancedText : Styles.streamColorText, EditorStyles.label);
             GUILayout.Label(Styles.streamUVText, EditorStyles.label);
 
             if (useTangents)

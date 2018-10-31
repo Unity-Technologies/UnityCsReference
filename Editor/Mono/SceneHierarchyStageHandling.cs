@@ -257,6 +257,8 @@ namespace UnityEditor
             }
 
             var prefabStage = currentItem.prefabStage;
+            if (prefabStage == null)
+                return;
 
             // Cache header text
             if (m_PrefabHeaderContent == null || m_LastPrefabStageModifiedState == prefabStage.HasSceneBeenModified())

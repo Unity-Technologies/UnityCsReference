@@ -48,7 +48,8 @@ namespace UnityEditor
                 "Color",
                 "Size",
                 "Rotation",
-                "Lifetime"
+                "Lifetime",
+                "Duration"
             };
         }
         private static Texts s_Texts;

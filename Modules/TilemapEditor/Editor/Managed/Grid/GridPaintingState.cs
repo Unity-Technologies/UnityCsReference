@@ -59,6 +59,20 @@ namespace UnityEditor
             }
         }
 
+        private GameObject[] GetValidTargets()
+        {
+            if (m_FlushPaintTargetCache)
+            {
+                m_CachedPaintTargets = null;
+                if (activeBrushEditor != null)
+                    m_CachedPaintTargets = activeBrushEditor.validTargets;
+                if (m_CachedPaintTargets == null || m_CachedPaintTargets.Length == 0)
+                    scenePaintTarget = null;
+                m_FlushPaintTargetCache = false;
+            }
+            return m_CachedPaintTargets;
+        }
+
         public static void AutoSelectPaintTarget()
         {
             if (activeBrushEditor != null)
@@ -188,17 +202,7 @@ namespace UnityEditor
 
         public static GameObject[] validTargets
         {
-            get
-            {
-                if (instance.m_FlushPaintTargetCache)
-                {
-                    instance.m_CachedPaintTargets = null;
-                    if (activeBrushEditor != null)
-                        instance.m_CachedPaintTargets = activeBrushEditor.validTargets;
-                    instance.m_FlushPaintTargetCache = false;
-                }
-                return instance.m_CachedPaintTargets;
-            }
+            get { return instance.GetValidTargets(); }
         }
 
         public static void RegisterPainterInterest(Object painter)

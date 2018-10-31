@@ -517,7 +517,7 @@ namespace UnityEditor
         internal static extern string GetMonoBinDirectory(BuildTarget target);
 
         [FreeFunction]
-        internal static extern string GetMonoLibDirectory(BuildTarget target);
+        internal static extern string GetMonoRuntimeLibDirectory(BuildTarget target);
 
         [FreeFunction]
         internal static extern string CompatibilityProfileToClassLibFolder(ApiCompatibilityLevel compatibilityLevel);

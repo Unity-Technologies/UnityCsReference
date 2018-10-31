@@ -208,6 +208,13 @@ namespace UnityEditor.SceneManagement
             var prefabStage = currentItem.prefabStage;
             if (prefabStage != null)
             {
+                if (EditorApplication.isCompiling && prefabStage.HasSceneBeenModified())
+                {
+                    SceneView.ShowNotification("Compiling must finish before you can exit Prefab Mode");
+                    SceneView.RepaintAll();
+                    return false;
+                }
+
                 bool continueDestroyingScene = AskUserToSaveModifiedPrefabStageBeforeDestroyingStage(prefabStage);
                 if (!continueDestroyingScene)
                     return false;

@@ -3,7 +3,7 @@
 // https://unity3d.com/legal/licenses/Unity_Reference_Only_License
 
 using System;
-using UnityEngine;
+using System.Linq;
 using UnityEngine.Scripting;
 
 namespace UnityEditor
@@ -13,6 +13,8 @@ namespace UnityEditor
     [RequiredByNativeCode]
     public sealed class MenuItem : Attribute
     {
+        private static readonly string[] kMenuItemSeparators = {"/"};
+
         // Creates a menu item and invokes the static function following it, when the menu item is selected.
         public MenuItem(string itemName) : this(itemName, false) {}
 
@@ -28,12 +30,18 @@ namespace UnityEditor
         // Creates a menu item and invokes the static function following it, when the menu item is selected.
         internal MenuItem(string itemName, bool isValidateFunction, int priority, bool internalMenu)
         {
+            itemName = NormalizeMenuItemName(itemName);
             if (internalMenu)
                 menuItem = "internal:" + itemName;
             else
                 menuItem = itemName;
             validate = isValidateFunction;
             this.priority = priority;
+        }
+
+        private static string NormalizeMenuItemName(string rawName)
+        {
+            return string.Join(kMenuItemSeparators[0], rawName.Split(kMenuItemSeparators, StringSplitOptions.None).Select(token => token.Trim()).ToArray());
         }
 
         public string menuItem;

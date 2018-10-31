@@ -113,17 +113,15 @@ namespace UnityEditor
 
         internal void OnDisable()
         {
-            if (m_Splitter.childCount >= 1)
+            if (m_Splitter != null && m_Splitter.childCount >= 1)
             {
                 var splitLeft = m_Splitter.Children().First();
                 float flexGrow = splitLeft.style.flex.value.grow;
                 EditorPrefs.SetFloat(GetPrefKeyName(nameof(m_Splitter)), flexGrow);
             }
 
-            if (m_TreeView.currentProvider != null)
-            {
+            if (m_TreeView != null && m_TreeView.currentProvider != null)
                 EditorPrefs.SetString(GetPrefKeyName(titleContent.text + "_current_provider"), m_TreeView.currentProvider.settingsPath);
-            }
 
             SettingsService.settingsProviderChanged -= OnSettingsProviderChanged;
             Undo.undoRedoPerformed -= OnUndoRedoPerformed;

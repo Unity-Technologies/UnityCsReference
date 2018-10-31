@@ -93,8 +93,6 @@ namespace UnityEditor
                 case Grid.CellLayout.Isometric:
                 case Grid.CellLayout.IsometricZAsY:
                 {
-                    // Difficult to frame isometric sprites, set generic cell size which suits most cases
-                    paletteGO.GetComponent<Grid>().cellSize = new Vector3(1f, 0.5f, 1f);
                     renderer.sortOrder = TilemapRenderer.SortOrder.TopRight;
                     break;
                 }

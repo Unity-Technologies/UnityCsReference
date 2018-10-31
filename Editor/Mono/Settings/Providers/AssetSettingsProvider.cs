@@ -70,16 +70,19 @@ namespace UnityEditor
         {
             if (m_SettingsEditor != null)
             {
-                using (new SettingsWindow.GUIScope())
-                    m_SettingsEditor.OnInspectorGUI();
-
-                // Emulate the Inspector by handling DnD at the native level.
-                var remainingRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true));
-                if ((Event.current.type == EventType.DragUpdated || Event.current.type == EventType.DragPerform) && remainingRect.Contains(Event.current.mousePosition))
+                using (new EditorGUI.DisabledScope(!m_SettingsEditor.IsEnabled()))
                 {
-                    DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(new[] { m_SettingsEditor.target }, Event.current.type == EventType.DragPerform);
-                    if (Event.current.type == EventType.DragPerform)
-                        DragAndDrop.AcceptDrag();
+                    using (new SettingsWindow.GUIScope())
+                        m_SettingsEditor.OnInspectorGUI();
+
+                    // Emulate the Inspector by handling DnD at the native level.
+                    var remainingRect = GUILayoutUtility.GetRect(GUIContent.none, GUIStyle.none, GUILayout.ExpandHeight(true));
+                    if ((Event.current.type == EventType.DragUpdated || Event.current.type == EventType.DragPerform) && remainingRect.Contains(Event.current.mousePosition))
+                    {
+                        DragAndDrop.visualMode = InternalEditorUtility.InspectorWindowDrag(new[] { m_SettingsEditor.target }, Event.current.type == EventType.DragPerform);
+                        if (Event.current.type == EventType.DragPerform)
+                            DragAndDrop.AcceptDrag();
+                    }
                 }
             }
 
@@ -90,15 +93,18 @@ namespace UnityEditor
         {
             if (m_SettingsEditor != null)
             {
-                var tagrObjects = new[] { m_SettingsEditor.serializedObject.targetObject };
-                var rect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleKeyword.width), Styles.settingsBtn.GetFloat(StyleKeyword.height));
-                rect.y = Styles.settingsBtn.GetFloat(StyleKeyword.marginTop);
-                EditorGUIUtility.DrawEditorHeaderItems(rect, tagrObjects);
-                var settingsRect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleKeyword.width), Styles.settingsBtn.GetFloat(StyleKeyword.height));
-                settingsRect.y = rect.y;
-                if (GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, Styles.settingsStyle))
+                using (new EditorGUI.DisabledScope(!m_SettingsEditor.IsEnabled()))
                 {
-                    EditorUtility.DisplayObjectContextMenu(settingsRect, tagrObjects, 0);
+                    var tagrObjects = new[] { m_SettingsEditor.serializedObject.targetObject };
+                    var rect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleKeyword.width), Styles.settingsBtn.GetFloat(StyleKeyword.height));
+                    rect.y = Styles.settingsBtn.GetFloat(StyleKeyword.marginTop);
+                    EditorGUIUtility.DrawEditorHeaderItems(rect, tagrObjects);
+                    var settingsRect = GUILayoutUtility.GetRect(Styles.settingsBtn.GetFloat(StyleKeyword.width), Styles.settingsBtn.GetFloat(StyleKeyword.height));
+                    settingsRect.y = rect.y;
+                    if (GUI.Button(settingsRect, EditorGUI.GUIContents.titleSettingsIcon, Styles.settingsStyle))
+                    {
+                        EditorUtility.DisplayObjectContextMenu(settingsRect, tagrObjects, 0);
+                    }
                 }
             }
         }

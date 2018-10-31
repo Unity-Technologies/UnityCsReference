@@ -244,7 +244,14 @@ namespace UnityEditor
             Place(go, parent);
         }
 
-        [MenuItem("GameObject/Effects/Trail", priority = 2)]
+        [MenuItem("GameObject/Effects/Particle System Force Field", priority = 2)]
+        static void CreateParticleSystemForceField(MenuCommand menuCommand)
+        {
+            var parent = menuCommand.context as GameObject;
+            Place(ObjectFactory.CreateGameObject("Particle System Force Field", typeof(ParticleSystemForceField)), parent);
+        }
+
+        [MenuItem("GameObject/Effects/Trail", priority = 3)]
         static void CreateTrail(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
@@ -253,7 +260,7 @@ namespace UnityEditor
             Place(go, parent);
         }
 
-        [MenuItem("GameObject/Effects/Line", priority = 3)]
+        [MenuItem("GameObject/Effects/Line", priority = 4)]
         static void CreateLine(MenuCommand menuCommand)
         {
             var parent = menuCommand.context as GameObject;
