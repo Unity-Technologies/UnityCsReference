@@ -39,6 +39,7 @@ namespace UnityEngineInternal.Video
         public delegate void MessageCallback(string message);
         extern public VideoPlayback CreateVideoPlayback(string fileName, MessageCallback errorCallback, Callback readyCallback, Callback reachedEndCallback);
         extern public void ReleaseVideoPlayback(VideoPlayback playback);
+        extern public ulong videoPlaybackCount { get; }
         extern public void Update();
 
         extern static internal void ProcessOSMainLoopMessagesForTesting();

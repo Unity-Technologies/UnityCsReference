@@ -175,7 +175,13 @@ namespace UnityEditor.Experimental.SceneManagement
         internal void OpenStage(string prefabPath)
         {
             if (LoadStage(prefabPath))
-                prefabStageOpened?.Invoke(this);
+            {
+                if (prefabStageOpened != null)
+                {
+                    prefabStageOpened(this);
+                    UpdateEnvironmentHideFlags();
+                }
+            }
         }
 
         internal void CloseStage()
@@ -214,7 +220,7 @@ namespace UnityEditor.Experimental.SceneManagement
                 Debug.Log("RELOADING Prefab at " + m_PrefabAssetPath);
 
             StageNavigationManager.instance.PrefabStageReloading(this);
-            LoadStage(m_PrefabAssetPath);
+            OpenStage(m_PrefabAssetPath);
             StageNavigationManager.instance.PrefabStageReloaded(this);
 
             if (SceneHierarchy.s_DebugPrefabStage)
@@ -229,7 +235,7 @@ namespace UnityEditor.Experimental.SceneManagement
             if (HasSceneBeenModified())
                 m_AnalyticsDidUserModify = true;
 
-            UpdateEnvironmentHideFlags();
+            UpdateEnvironmentHideFlagsIfNeeded();
             HandleAutoSave();
             HandlePrefabChangedOnDisk();
             DetectSceneDirtinessChange();
@@ -253,6 +259,13 @@ namespace UnityEditor.Experimental.SceneManagement
             if (m_PreviewScene.dirtyID != m_LastSceneDirtyID)
                 StageNavigationManager.instance.PrefabStageDirtinessChanged(this);
             m_LastSceneDirtyID = m_PreviewScene.dirtyID;
+        }
+
+        void UpdateEnvironmentHideFlagsIfNeeded()
+        {
+            if (m_HideFlagUtility == null)
+                m_HideFlagUtility = new HideFlagUtility(m_PreviewScene, m_PrefabContentsRoot);
+            m_HideFlagUtility.UpdateEnvironmentHideFlagsIfNeeded();
         }
 
         void UpdateEnvironmentHideFlags()
@@ -640,11 +653,11 @@ namespace UnityEditor.Experimental.SceneManagement
             return Icons.prefabIcon;
         }
 
+        internal const HideFlags kVisibleEnvironmentObjectHideFlags = HideFlags.DontSave | HideFlags.NotEditable;
+        internal const HideFlags kNotVisibleEnvironmentObjectHideFlags = HideFlags.DontSave | HideFlags.NotEditable | HideFlags.HideInHierarchy;
+
         class HideFlagUtility
         {
-            const HideFlags kVisibleContextObjectHideFlags = HideFlags.DontSave | HideFlags.NotEditable;
-            const HideFlags kNotVisibleContextObjectHideFlags = HideFlags.DontSave | HideFlags.NotEditable | HideFlags.HideInHierarchy;
-
             int m_LastSceneDirtyID = -1;
             List<GameObject> m_Roots = new List<GameObject>();
             GameObject m_PrefabInstanceRoot;
@@ -656,12 +669,16 @@ namespace UnityEditor.Experimental.SceneManagement
                 m_PrefabInstanceRoot = prefabInstanceRoot;
             }
 
-            public void UpdateEnvironmentHideFlags()
+            public void UpdateEnvironmentHideFlagsIfNeeded()
             {
                 if (m_LastSceneDirtyID == m_Scene.dirtyID)
                     return;
                 m_LastSceneDirtyID = m_Scene.dirtyID;
+                UpdateEnvironmentHideFlags();
+            }
 
+            public void UpdateEnvironmentHideFlags()
+            {
                 ValidatePreviewSceneConsistency();
 
                 // We use hideflags to hide all environment objects (and make them non-editable since the user cannot save them)
@@ -674,20 +691,20 @@ namespace UnityEditor.Experimental.SceneManagement
                     if (go == rootOfPrefabInstance)
                         continue;
 
-                    SetHideFlagsRecursively(go.transform, kNotVisibleContextObjectHideFlags);
+                    SetHideFlagsRecursively(go.transform, kNotVisibleEnvironmentObjectHideFlags);
                 }
 
                 if (rootOfPrefabInstance != m_PrefabInstanceRoot)
                 {
                     // Our prefab instance root might be a child of an environment object. Here we set those environment objects hidden (leaving the root prefab instance unchanged)
-                    SetHideFlagsRecursivelyWithIgnore(rootOfPrefabInstance.transform, m_PrefabInstanceRoot.transform, kNotVisibleContextObjectHideFlags);
+                    SetHideFlagsRecursivelyWithIgnore(rootOfPrefabInstance.transform, m_PrefabInstanceRoot.transform, kNotVisibleEnvironmentObjectHideFlags);
 
                     // And finally we ensure the ancestors of the prefab root are visible
                     Transform current = m_PrefabInstanceRoot.transform.parent;
                     while (current != null)
                     {
-                        if (current.hideFlags != kVisibleContextObjectHideFlags)
-                            current.gameObject.hideFlags = kVisibleContextObjectHideFlags;
+                        if (current.hideFlags != kVisibleEnvironmentObjectHideFlags)
+                            current.gameObject.hideFlags = kVisibleEnvironmentObjectHideFlags;
                         current = current.parent;
                     }
                 }

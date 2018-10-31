@@ -55,7 +55,9 @@ namespace UnityEditor
 
         Editor m_LastInteractedEditor;
         bool m_IsOpenForEdit = false;
+        int m_LastInitialEditorInstanceID;
         Component[] m_ComponentsInPrefabSource;
+        HashSet<Component> m_RemovedComponents;
 
         [SerializeField]
         PreviewResizer m_PreviewResizer = new PreviewResizer();
@@ -211,7 +213,6 @@ namespace UnityEditor
             if (m_Parent != null) // parent may be null in some situations (case 970700, 851988)
                 m_Parent.ClearKeyboardControl();
             ScriptAttributeUtility.ClearGlobalCache();
-            ExtractPrefabComponents();
             Repaint();
         }
 
@@ -332,25 +333,21 @@ namespace UnityEditor
             m_Tracker = sharedTrackerInUse ? new ActiveEditorTracker() : ActiveEditorTracker.sharedTracker;
             m_Tracker.inspectorMode = m_InspectorMode;
             m_Tracker.RebuildIfNecessary();
-
-            ExtractPrefabComponents();
         }
 
-        bool PrefabComponentsOutdated(Editor[] editors)
+        void OnTrackerRebuilt()
         {
-            if (m_ComponentsInPrefabSource != null && m_ComponentsInPrefabSource.Length >= 1 && editors.Length >= 2)
-            {
-                Object transformFromSource = PrefabUtility.GetCorrespondingObjectFromSource(editors[1].target);
-                Object cachedTransformFromSource = m_ComponentsInPrefabSource[0];
-                if (transformFromSource != cachedTransformFromSource)
-                    return true;
-            }
-            return false;
+            ExtractPrefabComponents();
         }
 
         void ExtractPrefabComponents()
         {
+            m_LastInitialEditorInstanceID = m_Tracker.activeEditors[0].GetInstanceID();
+
             m_ComponentsInPrefabSource = null;
+            if (m_RemovedComponents == null)
+                m_RemovedComponents = new HashSet<Component>();
+            m_RemovedComponents.Clear();
 
             if (m_Tracker.activeEditors.Length == 0)
                 return;
@@ -364,6 +361,11 @@ namespace UnityEditor
                 return;
 
             m_ComponentsInPrefabSource = sourceGo.GetComponents<Component>();
+            var removedComponentsList = PrefabUtility.GetRemovedComponents(PrefabUtility.GetOutermostPrefabInstanceRoot(go));
+            for (int i = 0; i < removedComponentsList.Count; i++)
+            {
+                m_RemovedComponents.Add(removedComponentsList[i].assetComponent);
+            }
         }
 
         protected virtual void CreatePreviewables()
@@ -905,13 +907,14 @@ namespace UnityEditor
             GUIUtility.ExitGUI();
         }
 
-        private static void DrawVCSSticky(EditorWindow hostWindow, Editor assetEditor, float offset)
+        private static void DrawVCSSticky(Rect anchorRect, Editor assetEditor, float offset)
         {
             string message = "";
             bool hasRemovedSticky = EditorPrefs.GetBool("vcssticky");
             if (!hasRemovedSticky && !Editor.IsAppropriateFileOpenForEdit(assetEditor.target, out message))
             {
-                var rect = new Rect(10, hostWindow.position.height - 94, hostWindow.position.width - 20, 80);
+                const int stickyRectHeight = 80;
+                var rect = new Rect(10, anchorRect.y - stickyRectHeight, anchorRect.width - 30, stickyRectHeight);
                 rect.y -= offset;
                 if (Event.current.type == EventType.Repaint)
                 {
@@ -1007,7 +1010,7 @@ namespace UnityEditor
                             hostWindow.Repaint();
                         }
                     }
-                    DrawVCSSticky(hostWindow, assetEditor, rect.height / 2);
+                    DrawVCSSticky(rect, assetEditor, rect.height / 2);
                 }
             }
         }
@@ -1067,9 +1070,9 @@ namespace UnityEditor
             bool showImportedObjectBarNext = false;
             Rect importedObjectBarRect = new Rect();
 
+            if (editors.Length > 0 && editors[0].GetInstanceID() != m_LastInitialEditorInstanceID)
+                OnTrackerRebuilt();
             int prefabComponentIndex = -1;
-            if (PrefabComponentsOutdated(editors))
-                ExtractPrefabComponents();
             for (int editorIndex = 0; editorIndex < editors.Length; editorIndex++)
             {
                 if (m_ComponentsInPrefabSource != null && editorIndex != 0)
@@ -1141,6 +1144,13 @@ namespace UnityEditor
 
         void DisplayRemovedComponent(GameObject go, Component comp)
         {
+            if (comp == null)
+                return;
+            if ((comp.hideFlags & HideFlags.HideInInspector) != 0)
+                return;
+            if (!m_RemovedComponents.Contains(comp))
+                return;
+
             Rect rect = GUILayoutUtility.GetRect(GUIContent.none, EditorStyles.inspectorTitlebar);
             EditorGUI.RemovedComponentTitlebar(rect, go, comp);
         }
@@ -1654,8 +1664,6 @@ namespace UnityEditor
             {
                 foreach (var editor in inspector.tracker.activeEditors)
                     InspectorWindowUtils.FlushOptimizedGUIBlock(editor);
-
-                inspector.ExtractPrefabComponents();
             }
         }
 

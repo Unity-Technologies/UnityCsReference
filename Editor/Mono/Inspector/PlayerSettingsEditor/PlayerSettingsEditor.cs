@@ -173,8 +173,9 @@ namespace UnityEditor
             public static readonly GUIContent scriptingIL2CPP = EditorGUIUtility.TrTextContent("IL2CPP");
             public static readonly GUIContent scriptingDefault = EditorGUIUtility.TrTextContent("Default");
             public static readonly GUIContent strippingDisabled = EditorGUIUtility.TrTextContent("Disabled");
-            public static readonly GUIContent strippingNormal = EditorGUIUtility.TrTextContent("Normal");
-            public static readonly GUIContent strippingAggressive = EditorGUIUtility.TrTextContent("Aggressive (Experimental)");
+            public static readonly GUIContent strippingLow = EditorGUIUtility.TrTextContent("Low");
+            public static readonly GUIContent strippingMedium = EditorGUIUtility.TrTextContent("Medium");
+            public static readonly GUIContent strippingHigh = EditorGUIUtility.TrTextContent("High");
             public static readonly GUIContent apiCompatibilityLevel = EditorGUIUtility.TrTextContent("Api Compatibility Level*");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0 = EditorGUIUtility.TrTextContent(".NET 2.0");
             public static readonly GUIContent apiCompatibilityLevel_NET_2_0_Subset = EditorGUIUtility.TrTextContent(".NET 2.0 Subset");
@@ -2215,10 +2216,10 @@ namespace UnityEditor
             return only_2_0_profiles;
         }
 
-        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Normal, ManagedStrippingLevel.Aggressive };
-        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Normal, ManagedStrippingLevel.Aggressive };
-        static ManagedStrippingLevel[] mono_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Normal };
-        static ManagedStrippingLevel[] il2cpp_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Normal };
+        static ManagedStrippingLevel[] mono_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] il2cpp_levels = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low, ManagedStrippingLevel.Medium, ManagedStrippingLevel.High };
+        static ManagedStrippingLevel[] mono_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Disabled, ManagedStrippingLevel.Low };
+        static ManagedStrippingLevel[] il2cpp_levels_old_runtime = new ManagedStrippingLevel[] { ManagedStrippingLevel.Low };
 
         // stripping levels vary based on both scripting backend and runtime version
         private ManagedStrippingLevel[] GetAvailableManagedStrippingLevels(ScriptingImplementation backend)
@@ -2387,8 +2388,9 @@ namespace UnityEditor
                 m_NiceManagedStrippingLevelNames = new Dictionary<ManagedStrippingLevel, GUIContent>
                 {
                     { ManagedStrippingLevel.Disabled, SettingsContent.strippingDisabled },
-                    { ManagedStrippingLevel.Normal, SettingsContent.strippingNormal },
-                    { ManagedStrippingLevel.Aggressive, SettingsContent.strippingAggressive }
+                    { ManagedStrippingLevel.Low, SettingsContent.strippingLow },
+                    { ManagedStrippingLevel.Medium, SettingsContent.strippingMedium },
+                    { ManagedStrippingLevel.High, SettingsContent.strippingHigh },
                 };
             }
             return GetGUIContentsForValues(m_NiceManagedStrippingLevelNames, managedStrippingLevels);

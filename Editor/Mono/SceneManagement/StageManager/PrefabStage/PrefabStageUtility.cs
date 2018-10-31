@@ -222,7 +222,7 @@ namespace UnityEditor.Experimental.SceneManagement
             bool rootHasRectTransform = instanceRoot.transform is RectTransform;
             if (rootHasRectTransform)
             {
-                GameObject canvasGameObject = GetOrCreateCanvasGameObject(scene);
+                GameObject canvasGameObject = GetOrCreateCanvasGameObject(instanceRoot, scene);
                 instanceRoot.transform.SetParent(canvasGameObject.transform, false);
                 return true;
             }
@@ -231,9 +231,9 @@ namespace UnityEditor.Experimental.SceneManagement
         }
 
         // TODO: make hooks for extensions to handle setting up
-        static GameObject GetOrCreateCanvasGameObject(Scene scene)
+        static GameObject GetOrCreateCanvasGameObject(GameObject instanceRoot, Scene scene)
         {
-            Canvas canvas = GetCanvasInScene(scene);
+            Canvas canvas = GetCanvasInScene(instanceRoot, scene);
             if (canvas != null)
                 return canvas.gameObject;
 
@@ -248,10 +248,14 @@ namespace UnityEditor.Experimental.SceneManagement
             return root;
         }
 
-        static Canvas GetCanvasInScene(Scene scene)
+        static Canvas GetCanvasInScene(GameObject instanceRoot, Scene scene)
         {
             foreach (GameObject go in scene.GetRootGameObjects())
             {
+                // Do not search for Canvas's under the prefab root since we want to
+                // have a Canvas for the prefab root
+                if (go == instanceRoot)
+                    continue;
                 var canvas = go.GetComponentInChildren<Canvas>();
                 if (canvas != null)
                     return canvas;

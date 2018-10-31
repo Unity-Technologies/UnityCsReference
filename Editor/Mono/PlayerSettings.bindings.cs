@@ -181,8 +181,9 @@ namespace UnityEditor
     public enum ManagedStrippingLevel
     {
         Disabled = 0,
-        Normal = 1,
-        Aggressive = 2
+        Low = 1,
+        Medium = 2,
+        High = 3
     }
 
     // What to do on uncaught .NET exception (on iOS)

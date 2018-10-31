@@ -81,10 +81,7 @@ namespace UnityEditor.Experimental.UIElements
         {
             var menu = new GenericMenu();
             AddMenuItems(menu);
-            var menuPosition = new Vector2(0.0f, layout.height);
-            menuPosition = this.LocalToWorld(menuPosition);
-            var menuRect = new Rect(menuPosition, Vector2.zero);
-            menu.DropDown(menuRect);
+            menu.DropDown(worldBound);
         }
     }
 }

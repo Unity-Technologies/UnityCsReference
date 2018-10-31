@@ -86,9 +86,11 @@ namespace UnityEditor.Modules
                 if (!platformSettings.isDefault && !platformSettings.overridden)
                 {
                     // If not overriden, show what the auto format is going to be
-                    // don't care about alpha in normal maps
-                    var sourceHasAlpha = imp.DoesSourceTextureHaveAlpha() &&
-                        textureTypeForThis != TextureImporterType.NormalMap;
+                    // don't care about alpha in normal maps. If editor.assetTarget is null
+                    // then we are dealing with texture preset and we show all options.
+                    var showSettingsForPreset = editor.assetTarget == null;
+                    var sourceHasAlpha = showSettingsForPreset || (imp.DoesSourceTextureHaveAlpha() &&
+                        textureTypeForThis != TextureImporterType.NormalMap);
 
                     format = (int)TextureImporter.DefaultFormatFromTextureParameters(settings,
                         platformSettings.platformTextureSettings,

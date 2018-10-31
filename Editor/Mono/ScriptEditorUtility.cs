@@ -159,6 +159,8 @@ namespace UnityEditorInternal
 
         static void AddIfDirectoryExists(string name, string path, Dictionary<string, string> list)
         {
+            if (list.ContainsKey(path))
+                return;
             if (Directory.Exists(path)) list.Add(path, name);
             else if (File.Exists(path)) list.Add(path, name);
         }

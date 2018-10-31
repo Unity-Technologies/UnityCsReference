@@ -1177,6 +1177,9 @@ namespace UnityEditor
 
         private void EnableFocus()
         {
+            if (GridPaintingState.scenePaintTarget == null)
+                return;
+
             switch (TilemapEditorUserSettings.focusMode)
             {
                 case TilemapEditorUserSettings.FocusMode.Tilemap:
